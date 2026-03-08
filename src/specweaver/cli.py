@@ -396,7 +396,7 @@ def _display_review_result(result: object) -> None:
 
 
 # ---------------------------------------------------------------------------
-# sw implement (stub)
+# sw implement
 # ---------------------------------------------------------------------------
 
 
@@ -412,7 +412,61 @@ def implement(
         help="Path to the target project directory.",
     ),
 ) -> None:
-    """Generate code + tests from a validated, reviewed spec."""
+    """Generate code + tests from a validated, reviewed spec.
+
+    Reads a validated spec and uses the LLM to generate:
+    - Implementation source file in src/
+    - Test file in tests/
+    """
+    spec_path = Path(spec)
+    if not spec_path.exists():
+        console.print(f"[red]Error:[/red] Spec not found: {spec}")
+        raise typer.Exit(code=1)
+
+    try:
+        project_path = resolve_project_path(project)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    from specweaver.implementation.generator import Generator
+
+    _, adapter, gen_config = _require_llm_adapter(project_path)
+    gen_config.temperature = 0.2  # Low temperature for code
+
+    generator = Generator(llm=adapter, config=gen_config)
+
+    # Derive output paths from spec name
+    # e.g., "greet_service_spec.md" -> "greet_service.py"
+    stem = spec_path.stem.removesuffix("_spec")
+    src_dir = project_path / "src"
+    tests_dir = project_path / "tests"
+
+    code_path = src_dir / f"{stem}.py"
+    test_path = tests_dir / f"test_{stem}.py"
+
     console.print(
-        f"[yellow]Implement[/yellow] is not yet implemented. (spec={spec})",
+        f"\n[bold]Implementing:[/bold] {spec_path.name}",
     )
+    console.print(
+        f"  [dim]Code:[/dim]  {code_path}\n"
+        f"  [dim]Tests:[/dim] {test_path}\n",
+    )
+
+    # Generate code
+    console.print("[dim]Generating implementation code...[/dim]")
+    asyncio.run(generator.generate_code(spec_path, code_path))
+    console.print(f"  [green]✓[/green] {code_path}")
+
+    # Generate tests
+    console.print("[dim]Generating test file...[/dim]")
+    asyncio.run(generator.generate_tests(spec_path, test_path))
+    console.print(f"  [green]✓[/green] {test_path}")
+
+    console.print(
+        "\n[green]Implementation complete![/green]\n"
+        "[dim]Next steps:\n"
+        "  sw check --level=code <generated_file>\n"
+        "  sw review <generated_file> --spec <spec_file>[/dim]",
+    )
+
