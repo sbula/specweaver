@@ -105,14 +105,14 @@ class TestCLIStubs:
         assert result.exit_code == 0
 
     def test_check_stub_not_implemented(self, tmp_path: Path) -> None:
-        """sw check without proper args shows not-implemented message."""
+        """sw check runs validation against a spec file."""
         spec = tmp_path / "test.md"
         spec.write_text("# Test")
         result = runner.invoke(
             app, ["check", "--level", "component", str(spec), "--project", str(tmp_path)]
         )
-        # Should exit 0 with a "not yet implemented" or similar message
-        assert "not yet implemented" in result.output.lower() or result.exit_code == 0
+        # A minimal spec will fail some rules; check outputs validation table
+        assert "S01" in result.output or "PASS" in result.output or "FAIL" in result.output
 
 
 # ---------------------------------------------------------------------------

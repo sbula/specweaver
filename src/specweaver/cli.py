@@ -14,8 +14,12 @@ Commands:
 
 from __future__ import annotations
 
+import asyncio
+from pathlib import Path
+
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from specweaver import __version__
 from specweaver.project.discovery import resolve_project_path
@@ -91,7 +95,7 @@ def init(
 
 
 # ---------------------------------------------------------------------------
-# sw check (stub)
+# sw check
 # ---------------------------------------------------------------------------
 
 @app.command()
@@ -116,14 +120,73 @@ def check(
     - component: Spec validation rules S01-S10
     - code: Code validation rules C01-C08
     """
-    console.print(
-        f"[yellow]Check[/yellow] is not yet implemented. "
-        f"(level={level}, target={target})"
-    )
+    from specweaver.validation.models import Status
+    from specweaver.validation.runner import get_spec_rules, run_rules
+
+    target_path = Path(target)
+    if not target_path.exists():
+        console.print(f"[red]Error:[/red] File not found: {target}")
+        raise typer.Exit(code=1)
+
+    spec_text = target_path.read_text(encoding="utf-8")
+
+    if level == "component":
+        rules = get_spec_rules(include_llm=False)
+        results = run_rules(rules, spec_text, target_path)
+
+        # Display results as a Rich table
+        table = Table(title=f"Spec Validation: {target_path.name}")
+        table.add_column("Rule", style="cyan")
+        table.add_column("Name", style="white")
+        table.add_column("Status", justify="center")
+        table.add_column("Message", style="dim")
+
+        for r in results:
+            status_style = {
+                Status.PASS: "[green]PASS[/green]",
+                Status.FAIL: "[red]FAIL[/red]",
+                Status.WARN: "[yellow]WARN[/yellow]",
+                Status.SKIP: "[dim]SKIP[/dim]",
+            }
+            table.add_row(
+                r.rule_id,
+                r.rule_name,
+                status_style.get(r.status, str(r.status)),
+                r.message[:80] if r.message else "",
+            )
+
+        console.print(table)
+
+        # Show findings for failed rules
+        for r in results:
+            if r.findings and r.status in (Status.FAIL, Status.WARN):
+                console.print(f"\n[bold]{r.rule_id} {r.rule_name}[/bold] findings:")
+                for f in r.findings:
+                    line_info = f" (line {f.line})" if f.line else ""
+                    console.print(f"  [{f.severity.value}] {f.message}{line_info}")
+                    if f.suggestion:
+                        console.print(f"    [dim]-> {f.suggestion}[/dim]")
+
+        # Summary
+        fail_count = sum(1 for r in results if r.status == Status.FAIL)
+        warn_count = sum(1 for r in results if r.status == Status.WARN)
+
+        if fail_count > 0:
+            console.print(f"\n[red]FAILED[/red]: {fail_count} rule(s) failed, {warn_count} warning(s)")
+            raise typer.Exit(code=1)
+        if warn_count > 0:
+            console.print(f"\n[yellow]PASSED with warnings[/yellow]: {warn_count} warning(s)")
+        else:
+            console.print("\n[green]ALL PASSED[/green]")
+    elif level == "code":
+        console.print("[yellow]Code validation[/yellow] is not yet implemented.")
+    else:
+        console.print(f"[red]Error:[/red] Unknown level '{level}'. Use 'component' or 'code'.")
+        raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------
-# sw draft (stub)
+# sw draft
 # ---------------------------------------------------------------------------
 
 @app.command()
@@ -137,13 +200,65 @@ def draft(
     ),
 ) -> None:
     """Interactively draft a new component spec with LLM assistance."""
-    console.print(
-        f"[yellow]Draft[/yellow] is not yet implemented. (name={name})"
+    try:
+        project_path = resolve_project_path(project)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    specs_dir = project_path / "specs"
+
+    # Check for existing spec
+    spec_path = specs_dir / f"{name}_spec.md"
+    if spec_path.exists():
+        console.print(
+            f"[yellow]Warning:[/yellow] {spec_path} already exists. "
+            "It will NOT be overwritten."
+        )
+        raise typer.Exit(code=1)
+
+    # Create adapter and drafter
+    from specweaver.config.settings import load_settings
+    from specweaver.context.hitl_provider import HITLProvider
+    from specweaver.drafting.drafter import Drafter
+    from specweaver.llm.gemini_adapter import GeminiAdapter
+    from specweaver.llm.models import GenerationConfig
+
+    settings = load_settings(project_path)
+    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
+
+    if not adapter.available():
+        console.print(
+            "[red]Error:[/red] No API key configured. "
+            "Set GEMINI_API_KEY environment variable."
+        )
+        raise typer.Exit(code=1)
+
+    gen_config = GenerationConfig(
+        model=settings.llm.model,
+        temperature=settings.llm.temperature,
+        max_output_tokens=settings.llm.max_output_tokens,
     )
+
+    drafter = Drafter(
+        llm=adapter,
+        context_provider=HITLProvider(console=console),
+        config=gen_config,
+    )
+
+    console.print(
+        f"\n[bold]Drafting spec for[/bold] [cyan]{name}[/cyan]\n"
+        "[dim]Answer the questions below. Press Enter to skip a section.[/dim]\n"
+    )
+
+    result_path = asyncio.run(drafter.draft(name, specs_dir))
+
+    console.print(f"\n[green]Spec drafted:[/green] {result_path}")
+    console.print("[dim]Run 'sw check' to validate the drafted spec.[/dim]")
 
 
 # ---------------------------------------------------------------------------
-# sw review (stub)
+# sw review
 # ---------------------------------------------------------------------------
 
 @app.command()
@@ -155,14 +270,84 @@ def review(
         "-p",
         help="Path to the target project directory.",
     ),
+    spec: str | None = typer.Option(
+        None,
+        "--spec",
+        "-s",
+        help="Path to the source spec (required for code review).",
+    ),
 ) -> None:
     """Submit a spec or code file for LLM-based review.
 
     Returns ACCEPTED or DENIED with structured findings.
+    For code review, also provide --spec to compare against.
     """
-    console.print(
-        f"[yellow]Review[/yellow] is not yet implemented. (target={target})"
+    target_path = Path(target)
+    if not target_path.exists():
+        console.print(f"[red]Error:[/red] File not found: {target}")
+        raise typer.Exit(code=1)
+
+    try:
+        project_path = resolve_project_path(project)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    from specweaver.config.settings import load_settings
+    from specweaver.llm.gemini_adapter import GeminiAdapter
+    from specweaver.llm.models import GenerationConfig
+    from specweaver.review.reviewer import Reviewer, ReviewVerdict
+
+    settings = load_settings(project_path)
+    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
+
+    if not adapter.available():
+        console.print(
+            "[red]Error:[/red] No API key configured. "
+            "Set GEMINI_API_KEY environment variable."
+        )
+        raise typer.Exit(code=1)
+
+    gen_config = GenerationConfig(
+        model=settings.llm.model,
+        temperature=0.3,
+        max_output_tokens=settings.llm.max_output_tokens,
     )
+
+    reviewer = Reviewer(llm=adapter, config=gen_config)
+
+    console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
+    console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
+
+    if spec:
+        # Code review
+        spec_path = Path(spec)
+        if not spec_path.exists():
+            console.print(f"[red]Error:[/red] Spec file not found: {spec}")
+            raise typer.Exit(code=1)
+        result = asyncio.run(reviewer.review_code(target_path, spec_path))
+    else:
+        # Spec review
+        result = asyncio.run(reviewer.review_spec(target_path))
+
+    # Display results
+    if result.verdict == ReviewVerdict.ACCEPTED:
+        console.print("[green bold]VERDICT: ACCEPTED[/green bold]")
+    elif result.verdict == ReviewVerdict.DENIED:
+        console.print("[red bold]VERDICT: DENIED[/red bold]")
+    else:
+        console.print("[yellow bold]VERDICT: ERROR[/yellow bold]")
+
+    if result.summary:
+        console.print(f"\n{result.summary}")
+
+    if result.findings:
+        console.print(f"\n[bold]Findings ({len(result.findings)}):[/bold]")
+        for f in result.findings:
+            console.print(f"  - {f.message}")
+
+    if result.verdict == ReviewVerdict.DENIED:
+        raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------
