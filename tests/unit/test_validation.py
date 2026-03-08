@@ -348,7 +348,9 @@ The service handles requests. TBD - to be determined later.
 """
         result = AmbiguityRule().check(spec)
         assert result.status in (Status.WARN, Status.FAIL)
-        assert any("tbd" in f.message.lower() or "later" in f.message.lower() for f in result.findings)
+        assert any(
+            "tbd" in f.message.lower() or "later" in f.message.lower() for f in result.findings
+        )
 
     def test_findings_have_line_numbers(self) -> None:
         spec = "Line 1\nLine 2\nThis should work properly.\nLine 4\n"

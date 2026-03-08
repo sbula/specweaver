@@ -123,7 +123,10 @@ class Generator:
         messages = [
             Message(
                 role=Role.SYSTEM,
-                content="You are a precise Python test generator. Output only valid Python code using pytest.",
+                content=(
+                    "You are a precise Python test generator. "
+                    "Output only valid Python code using pytest."
+                ),
             ),
             Message(role=Role.USER, content=prompt),
         ]

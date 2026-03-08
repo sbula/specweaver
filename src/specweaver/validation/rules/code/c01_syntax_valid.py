@@ -36,11 +36,13 @@ class SyntaxValidRule(Rule):
         except SyntaxError as exc:
             return self._fail(
                 f"Syntax error at line {exc.lineno}: {exc.msg}",
-                [Finding(
-                    message=f"SyntaxError: {exc.msg}",
-                    line=exc.lineno,
-                    severity=Severity.ERROR,
-                    suggestion="Fix the syntax error before proceeding.",
-                )],
+                [
+                    Finding(
+                        message=f"SyntaxError: {exc.msg}",
+                        line=exc.lineno,
+                        severity=Severity.ERROR,
+                        suggestion="Fix the syntax error before proceeding.",
+                    )
+                ],
             )
         return self._pass("Code parses without syntax errors")

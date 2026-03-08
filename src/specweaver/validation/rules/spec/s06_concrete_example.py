@@ -45,35 +45,46 @@ class ConcreteExampleRule(Rule):
         code_blocks_total = len(re.findall(r"```", spec_text)) // 2
 
         # Check for example/assert patterns
-        has_examples = bool(re.search(
-            r"(?:example|input|output|assert|->|=>|-->|returns?)\s*[:=]",
-            spec_text,
-            re.IGNORECASE,
-        ))
+        has_examples = bool(
+            re.search(
+                r"(?:example|input|output|assert|->|=>|-->|returns?)\s*[:=]",
+                spec_text,
+                re.IGNORECASE,
+            )
+        )
 
         findings: list[Finding] = []
 
         if code_blocks_in_contract == 0 and not contract:
-            findings.append(Finding(
-                message="No Contract section found",
-                severity=Severity.ERROR,
-                suggestion="Add a '## 2. Contract' section with interface definitions and examples.",
-            ))
+            findings.append(
+                Finding(
+                    message="No Contract section found",
+                    severity=Severity.ERROR,
+                    suggestion=(
+                        "Add a '## 2. Contract' section with "
+                        "interface definitions and examples."
+                    ),
+                )
+            )
             return self._fail("Missing Contract section", findings)
 
         if code_blocks_in_contract == 0:
-            findings.append(Finding(
-                message="Contract section has no code blocks",
-                severity=Severity.ERROR,
-                suggestion="Add at least one code block with concrete input -> output example.",
-            ))
+            findings.append(
+                Finding(
+                    message="Contract section has no code blocks",
+                    severity=Severity.ERROR,
+                    suggestion="Add at least one code block with concrete input -> output example.",
+                )
+            )
 
         if code_blocks_total == 0:
-            findings.append(Finding(
-                message="Entire spec has no code blocks",
-                severity=Severity.ERROR,
-                suggestion="A spec without code examples cannot be implemented precisely.",
-            ))
+            findings.append(
+                Finding(
+                    message="Entire spec has no code blocks",
+                    severity=Severity.ERROR,
+                    suggestion="A spec without code examples cannot be implemented precisely.",
+                )
+            )
             return self._fail("No code blocks found anywhere in spec", findings)
 
         if code_blocks_in_contract == 0 and not has_examples:

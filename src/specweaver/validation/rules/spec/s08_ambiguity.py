@@ -73,17 +73,19 @@ class AmbiguityRule(Rule):
                         continue
 
                     # Find line number
-                    line_num = spec_text[:match.start()].count("\n") + 1
+                    line_num = spec_text[: match.start()].count("\n") + 1
 
                     total_weasels += 1
-                    findings.append(Finding(
-                        message=f"Weasel word '{word}' ({category})",
-                        line=line_num,
-                        severity=Severity.WARNING
-                        if total_weasels <= _MAX_WEASEL_WARN
-                        else Severity.ERROR,
-                        suggestion="Replace with a concrete, measurable statement.",
-                    ))
+                    findings.append(
+                        Finding(
+                            message=f"Weasel word '{word}' ({category})",
+                            line=line_num,
+                            severity=Severity.WARNING
+                            if total_weasels <= _MAX_WEASEL_WARN
+                            else Severity.ERROR,
+                            suggestion="Replace with a concrete, measurable statement.",
+                        )
+                    )
 
         if total_weasels > _MAX_WEASEL_FAIL:
             return self._fail(

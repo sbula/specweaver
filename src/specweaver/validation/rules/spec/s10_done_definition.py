@@ -48,16 +48,20 @@ class DoneDefinitionRule(Rule):
 
         # Look for a Done Definition section
         has_done_section = any(
-            re.search(pattern, spec_text, re.IGNORECASE)
-            for pattern in _DONE_SECTION_PATTERNS
+            re.search(pattern, spec_text, re.IGNORECASE) for pattern in _DONE_SECTION_PATTERNS
         )
 
         if not has_done_section:
-            findings.append(Finding(
-                message="No 'Done Definition' section found",
-                severity=Severity.ERROR,
-                suggestion="Add a '## Done Definition' section with verifiable completion criteria.",
-            ))
+            findings.append(
+                Finding(
+                    message="No 'Done Definition' section found",
+                    severity=Severity.ERROR,
+                    suggestion=(
+                        "Add a '## Done Definition' section with "
+                        "verifiable completion criteria."
+                    ),
+                )
+            )
             return self._fail("Missing Done Definition section", findings)
 
         # Extract the Done Definition section content
@@ -74,25 +78,31 @@ class DoneDefinitionRule(Rule):
         done_content = done_match.group(1).strip() if done_match else ""
 
         if not done_content:
-            findings.append(Finding(
-                message="Done Definition section is empty",
-                severity=Severity.ERROR,
-                suggestion="Add specific, verifiable criteria (e.g., checkboxes, test requirements).",
-            ))
+            findings.append(
+                Finding(
+                    message="Done Definition section is empty",
+                    severity=Severity.ERROR,
+                    suggestion=(
+                        "Add specific, verifiable criteria "
+                        "(e.g., checkboxes, test requirements)."
+                    ),
+                )
+            )
             return self._fail("Done Definition section is empty", findings)
 
         # Check for verifiable criteria
         has_verifiable = any(
-            re.search(pattern, done_content, re.IGNORECASE)
-            for pattern in _VERIFIABLE_PATTERNS
+            re.search(pattern, done_content, re.IGNORECASE) for pattern in _VERIFIABLE_PATTERNS
         )
 
         if not has_verifiable:
-            findings.append(Finding(
-                message="Done Definition lacks verifiable criteria",
-                severity=Severity.WARNING,
-                suggestion="Add checkboxes (- [ ]), coverage thresholds, or test commands.",
-            ))
+            findings.append(
+                Finding(
+                    message="Done Definition lacks verifiable criteria",
+                    severity=Severity.WARNING,
+                    suggestion="Add checkboxes (- [ ]), coverage thresholds, or test commands.",
+                )
+            )
             return self._warn("Done Definition exists but lacks verifiable criteria", findings)
 
         # Count criteria items

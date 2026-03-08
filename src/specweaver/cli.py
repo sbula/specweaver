@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.console import Console
@@ -24,6 +25,9 @@ from rich.table import Table
 from specweaver import __version__
 from specweaver.project.discovery import resolve_project_path
 from specweaver.project.scaffold import scaffold_project
+
+if TYPE_CHECKING:
+    from specweaver.validation.models import RuleResult
 
 app = typer.Typer(
     name="sw",
@@ -34,11 +38,103 @@ app = typer.Typer(
 
 console = Console()
 
+# Status display mapping (shared across check command)
+_STATUS_STYLE = {
+    "pass": "[green]PASS[/green]",
+    "fail": "[red]FAIL[/red]",
+    "warn": "[yellow]WARN[/yellow]",
+    "skip": "[dim]SKIP[/dim]",
+}
+
 
 def _version_callback(value: bool) -> None:
     if value:
         console.print(f"SpecWeaver v{__version__}")
         raise typer.Exit()
+
+
+def _display_results(
+    results: list[RuleResult],
+    title: str,
+) -> None:
+    """Display validation results as a Rich table with findings."""
+    from specweaver.validation.models import Status
+
+    table = Table(title=title)
+    table.add_column("Rule", style="cyan")
+    table.add_column("Name", style="white")
+    table.add_column("Status", justify="center")
+    table.add_column("Message", style="dim")
+
+    for r in results:
+        table.add_row(
+            r.rule_id,
+            r.rule_name,
+            _STATUS_STYLE.get(r.status.value, str(r.status)),
+            r.message[:80] if r.message else "",
+        )
+    console.print(table)
+
+    # Show detailed findings for failed/warned rules
+    for r in results:
+        if r.findings and r.status in (Status.FAIL, Status.WARN):
+            console.print(
+                f"\n[bold]{r.rule_id} {r.rule_name}[/bold] findings:",
+            )
+            for f in r.findings:
+                line_info = f" (line {f.line})" if f.line else ""
+                console.print(
+                    f"  [{f.severity.value}] {f.message}{line_info}",
+                )
+                if f.suggestion:
+                    console.print(f"    [dim]-> {f.suggestion}[/dim]")
+
+
+def _print_summary(results: list[RuleResult]) -> None:
+    """Print pass/fail summary and raise Exit(1) on failures."""
+    from specweaver.validation.models import Status
+
+    fail_count = sum(1 for r in results if r.status == Status.FAIL)
+    warn_count = sum(1 for r in results if r.status == Status.WARN)
+
+    if fail_count > 0:
+        console.print(
+            f"\n[red]FAILED[/red]: {fail_count} rule(s) failed, {warn_count} warning(s)",
+        )
+        raise typer.Exit(code=1)
+    if warn_count > 0:
+        console.print(
+            f"\n[yellow]PASSED with warnings[/yellow]: {warn_count} warning(s)",
+        )
+    else:
+        console.print("\n[green]ALL PASSED[/green]")
+
+
+def _require_llm_adapter(project_path: Path) -> tuple:
+    """Create and validate an LLM adapter from project settings.
+
+    Returns (settings, adapter, gen_config) or raises typer.Exit.
+    """
+    from specweaver.config.settings import load_settings
+    from specweaver.llm.gemini_adapter import GeminiAdapter
+    from specweaver.llm.models import GenerationConfig
+
+    settings = load_settings(project_path)
+    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
+
+    if not adapter.available():
+        console.print(
+            "[red]Error:[/red] No API key configured. Set GEMINI_API_KEY environment variable.",
+        )
+        raise typer.Exit(code=1)
+
+    gen_config = GenerationConfig(
+        model=settings.llm.model,
+        temperature=settings.llm.temperature,
+        max_output_tokens=settings.llm.max_output_tokens,
+    )
+
+    return settings, adapter, gen_config
 
 
 @app.callback()
@@ -59,13 +155,14 @@ def main(
 # sw init
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def init(
     project: str | None = typer.Option(
         None,
         "--project",
         "-p",
-        help="Path to the target project directory. Defaults to current directory.",
+        help="Path to the target project directory. Defaults to cwd.",
     ),
 ) -> None:
     """Initialize a project with SpecWeaver scaffolding.
@@ -83,14 +180,14 @@ def init(
 
     if result.created:
         console.print(
-            f"[green]Project initialized[/green] at [bold]{result.project_path}[/bold]"
+            f"[green]Project initialized[/green] at [bold]{result.project_path}[/bold]",
         )
         for item in result.created:
             console.print(f"  [dim]Created:[/dim] {item}")
     else:
         console.print(
-            f"[yellow]Already initialized[/yellow] at [bold]{result.project_path}[/bold] "
-            "(no changes needed)"
+            f"[yellow]Already initialized[/yellow] at "
+            f"[bold]{result.project_path}[/bold] (no changes needed)",
         )
 
 
@@ -98,9 +195,12 @@ def init(
 # sw check
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def check(
-    target: str = typer.Argument(help="Path to the spec or code file to check."),
+    target: str = typer.Argument(
+        help="Path to the spec or code file to check.",
+    ),
     level: str = typer.Option(
         "component",
         "--level",
@@ -120,105 +220,33 @@ def check(
     - component: Spec validation rules S01-S10
     - code: Code validation rules C01-C08
     """
-    from specweaver.validation.models import Status
-    from specweaver.validation.runner import get_spec_rules, run_rules
+    from specweaver.validation.runner import (
+        get_code_rules,
+        get_spec_rules,
+        run_rules,
+    )
 
     target_path = Path(target)
     if not target_path.exists():
         console.print(f"[red]Error:[/red] File not found: {target}")
         raise typer.Exit(code=1)
 
-    spec_text = target_path.read_text(encoding="utf-8")
+    content = target_path.read_text(encoding="utf-8")
 
     if level == "component":
         rules = get_spec_rules(include_llm=False)
-        results = run_rules(rules, spec_text, target_path)
-
-        # Display results as a Rich table
-        table = Table(title=f"Spec Validation: {target_path.name}")
-        table.add_column("Rule", style="cyan")
-        table.add_column("Name", style="white")
-        table.add_column("Status", justify="center")
-        table.add_column("Message", style="dim")
-
-        for r in results:
-            status_style = {
-                Status.PASS: "[green]PASS[/green]",
-                Status.FAIL: "[red]FAIL[/red]",
-                Status.WARN: "[yellow]WARN[/yellow]",
-                Status.SKIP: "[dim]SKIP[/dim]",
-            }
-            table.add_row(
-                r.rule_id,
-                r.rule_name,
-                status_style.get(r.status, str(r.status)),
-                r.message[:80] if r.message else "",
-            )
-
-        console.print(table)
-
-        # Show findings for failed rules
-        for r in results:
-            if r.findings and r.status in (Status.FAIL, Status.WARN):
-                console.print(f"\n[bold]{r.rule_id} {r.rule_name}[/bold] findings:")
-                for f in r.findings:
-                    line_info = f" (line {f.line})" if f.line else ""
-                    console.print(f"  [{f.severity.value}] {f.message}{line_info}")
-                    if f.suggestion:
-                        console.print(f"    [dim]-> {f.suggestion}[/dim]")
-
-        # Summary
-        fail_count = sum(1 for r in results if r.status == Status.FAIL)
-        warn_count = sum(1 for r in results if r.status == Status.WARN)
-
-        if fail_count > 0:
-            console.print(f"\n[red]FAILED[/red]: {fail_count} rule(s) failed, {warn_count} warning(s)")
-            raise typer.Exit(code=1)
-        if warn_count > 0:
-            console.print(f"\n[yellow]PASSED with warnings[/yellow]: {warn_count} warning(s)")
-        else:
-            console.print("\n[green]ALL PASSED[/green]")
+        results = run_rules(rules, content, target_path)
+        _display_results(results, f"Spec Validation: {target_path.name}")
+        _print_summary(results)
     elif level == "code":
-        from specweaver.validation.runner import get_code_rules
-
         rules = get_code_rules(include_subprocess=False)
-        results = run_rules(rules, spec_text, target_path)
-
-        # Reuse the same Rich table display as component level
-        table = Table(title=f"Code Validation: {target_path.name}")
-        table.add_column("Rule", style="cyan")
-        table.add_column("Name", style="white")
-        table.add_column("Status", justify="center")
-        table.add_column("Message", style="dim")
-
-        for r in results:
-            status_style = {
-                Status.PASS: "[green]PASS[/green]",
-                Status.FAIL: "[red]FAIL[/red]",
-                Status.WARN: "[yellow]WARN[/yellow]",
-                Status.SKIP: "[dim]SKIP[/dim]",
-            }
-            table.add_row(
-                r.rule_id,
-                r.rule_name,
-                status_style.get(r.status, str(r.status)),
-                r.message[:80] if r.message else "",
-            )
-
-        console.print(table)
-
-        fail_count = sum(1 for r in results if r.status == Status.FAIL)
-        warn_count = sum(1 for r in results if r.status == Status.WARN)
-
-        if fail_count > 0:
-            console.print(f"\n[red]FAILED[/red]: {fail_count} rule(s) failed, {warn_count} warning(s)")
-            raise typer.Exit(code=1)
-        if warn_count > 0:
-            console.print(f"\n[yellow]PASSED with warnings[/yellow]: {warn_count} warning(s)")
-        else:
-            console.print("\n[green]ALL PASSED[/green]")
+        results = run_rules(rules, content, target_path)
+        _display_results(results, f"Code Validation: {target_path.name}")
+        _print_summary(results)
     else:
-        console.print(f"[red]Error:[/red] Unknown level '{level}'. Use 'component' or 'code'.")
+        console.print(
+            f"[red]Error:[/red] Unknown level '{level}'. Use 'component' or 'code'.",
+        )
         raise typer.Exit(code=1)
 
 
@@ -226,9 +254,12 @@ def check(
 # sw draft
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def draft(
-    name: str = typer.Argument(help="Name of the component to draft a spec for."),
+    name: str = typer.Argument(
+        help="Name of the component to draft a spec for.",
+    ),
     project: str | None = typer.Option(
         None,
         "--project",
@@ -244,38 +275,17 @@ def draft(
         raise typer.Exit(code=1) from exc
 
     specs_dir = project_path / "specs"
-
-    # Check for existing spec
     spec_path = specs_dir / f"{name}_spec.md"
     if spec_path.exists():
         console.print(
-            f"[yellow]Warning:[/yellow] {spec_path} already exists. "
-            "It will NOT be overwritten."
+            f"[yellow]Warning:[/yellow] {spec_path} already exists. It will NOT be overwritten.",
         )
         raise typer.Exit(code=1)
 
-    # Create adapter and drafter
-    from specweaver.config.settings import load_settings
     from specweaver.context.hitl_provider import HITLProvider
     from specweaver.drafting.drafter import Drafter
-    from specweaver.llm.gemini_adapter import GeminiAdapter
-    from specweaver.llm.models import GenerationConfig
 
-    settings = load_settings(project_path)
-    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
-
-    if not adapter.available():
-        console.print(
-            "[red]Error:[/red] No API key configured. "
-            "Set GEMINI_API_KEY environment variable."
-        )
-        raise typer.Exit(code=1)
-
-    gen_config = GenerationConfig(
-        model=settings.llm.model,
-        temperature=settings.llm.temperature,
-        max_output_tokens=settings.llm.max_output_tokens,
-    )
+    _, adapter, gen_config = _require_llm_adapter(project_path)
 
     drafter = Drafter(
         llm=adapter,
@@ -285,7 +295,7 @@ def draft(
 
     console.print(
         f"\n[bold]Drafting spec for[/bold] [cyan]{name}[/cyan]\n"
-        "[dim]Answer the questions below. Press Enter to skip a section.[/dim]\n"
+        "[dim]Answer questions below. Press Enter to skip.[/dim]\n",
     )
 
     result_path = asyncio.run(drafter.draft(name, specs_dir))
@@ -298,9 +308,12 @@ def draft(
 # sw review
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def review(
-    target: str = typer.Argument(help="Path to the spec or code file to review."),
+    target: str = typer.Argument(
+        help="Path to the spec or code file to review.",
+    ),
     project: str | None = typer.Option(
         None,
         "--project",
@@ -330,50 +343,45 @@ def review(
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.config.settings import load_settings
-    from specweaver.llm.gemini_adapter import GeminiAdapter
-    from specweaver.llm.models import GenerationConfig
-    from specweaver.review.reviewer import Reviewer, ReviewVerdict
+    from specweaver.review.reviewer import Reviewer
 
-    settings = load_settings(project_path)
-    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
-
-    if not adapter.available():
-        console.print(
-            "[red]Error:[/red] No API key configured. "
-            "Set GEMINI_API_KEY environment variable."
-        )
-        raise typer.Exit(code=1)
-
-    gen_config = GenerationConfig(
-        model=settings.llm.model,
-        temperature=0.3,
-        max_output_tokens=settings.llm.max_output_tokens,
-    )
+    _, adapter, gen_config = _require_llm_adapter(project_path)
+    gen_config.temperature = 0.3  # Lower for reviews
 
     reviewer = Reviewer(llm=adapter, config=gen_config)
 
     console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
     console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
 
+    result = _execute_review(reviewer, target_path, spec)
+    _display_review_result(result)
+
+
+def _execute_review(
+    reviewer: object,
+    target_path: Path,
+    spec: str | None,
+) -> object:
+    """Run the appropriate review (spec or code)."""
     if spec:
-        # Code review
         spec_path = Path(spec)
         if not spec_path.exists():
-            console.print(f"[red]Error:[/red] Spec file not found: {spec}")
+            console.print(f"[red]Error:[/red] Spec not found: {spec}")
             raise typer.Exit(code=1)
-        result = asyncio.run(reviewer.review_code(target_path, spec_path))
-    else:
-        # Spec review
-        result = asyncio.run(reviewer.review_spec(target_path))
+        return asyncio.run(reviewer.review_code(target_path, spec_path))
+    return asyncio.run(reviewer.review_spec(target_path))
 
-    # Display results
-    if result.verdict == ReviewVerdict.ACCEPTED:
-        console.print("[green bold]VERDICT: ACCEPTED[/green bold]")
-    elif result.verdict == ReviewVerdict.DENIED:
-        console.print("[red bold]VERDICT: DENIED[/red bold]")
-    else:
-        console.print("[yellow bold]VERDICT: ERROR[/yellow bold]")
+
+def _display_review_result(result: object) -> None:
+    """Display review verdict and findings."""
+    from specweaver.review.reviewer import ReviewVerdict
+
+    verdict_style = {
+        ReviewVerdict.ACCEPTED: "[green bold]VERDICT: ACCEPTED[/green bold]",
+        ReviewVerdict.DENIED: "[red bold]VERDICT: DENIED[/red bold]",
+        ReviewVerdict.ERROR: "[yellow bold]VERDICT: ERROR[/yellow bold]",
+    }
+    console.print(verdict_style.get(result.verdict, str(result.verdict)))
 
     if result.summary:
         console.print(f"\n{result.summary}")
@@ -391,9 +399,12 @@ def review(
 # sw implement (stub)
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def implement(
-    spec: str = typer.Argument(help="Path to the spec file to implement."),
+    spec: str = typer.Argument(
+        help="Path to the spec file to implement.",
+    ),
     project: str | None = typer.Option(
         None,
         "--project",
@@ -403,5 +414,5 @@ def implement(
 ) -> None:
     """Generate code + tests from a validated, reviewed spec."""
     console.print(
-        f"[yellow]Implement[/yellow] is not yet implemented. (spec={spec})"
+        f"[yellow]Implement[/yellow] is not yet implemented. (spec={spec})",
     )

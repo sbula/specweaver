@@ -45,9 +45,11 @@ class TestsExistRule(Rule):
 
         return self._fail(
             f"No test file '{test_name}' found",
-            [Finding(
-                message=f"Expected test file '{test_name}' not found in any tests/ directory",
-                severity=Severity.ERROR,
-                suggestion=f"Create a test file: tests/unit/{test_name}",
-            )],
+            [
+                Finding(
+                    message=f"Expected test file '{test_name}' not found in any tests/ directory",
+                    severity=Severity.ERROR,
+                    suggestion=f"Create a test file: tests/unit/{test_name}",
+                )
+            ],
         )

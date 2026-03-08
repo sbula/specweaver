@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 # Happy-path tests
 # ---------------------------------------------------------------------------
 
+
 class TestResolveProjectPath:
     """Test project path resolution from flag, env var, or default."""
 
@@ -26,17 +27,13 @@ class TestResolveProjectPath:
         result = resolve_project_path(project_arg=str(tmp_path))
         assert result == tmp_path.resolve()
 
-    def test_from_env_var(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_from_env_var(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """SW_PROJECT env var is used when no --project flag."""
         monkeypatch.setenv("SW_PROJECT", str(tmp_path))
         result = resolve_project_path(project_arg=None)
         assert result == tmp_path.resolve()
 
-    def test_explicit_overrides_env(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_explicit_overrides_env(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """Explicit --project flag takes precedence over SW_PROJECT env var."""
         other = tmp_path / "other"
         other.mkdir()
@@ -64,6 +61,7 @@ class TestResolveProjectPath:
 # ---------------------------------------------------------------------------
 # Edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestResolveProjectPathEdgeCases:
     """Edge cases for project path resolution."""
@@ -95,17 +93,13 @@ class TestResolveProjectPathEdgeCases:
         result = resolve_project_path(project_arg=str(unicode_dir))
         assert result == unicode_dir.resolve()
 
-    def test_env_var_nonexistent_raises(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_var_nonexistent_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """SW_PROJECT pointing to nonexistent dir raises FileNotFoundError."""
         monkeypatch.setenv("SW_PROJECT", "/nonexistent/env/path")
         with pytest.raises(FileNotFoundError, match="does not exist"):
             resolve_project_path(project_arg=None)
 
-    def test_env_var_is_file_raises(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_env_var_is_file_raises(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """SW_PROJECT pointing to a file raises NotADirectoryError."""
         f = tmp_path / "not_a_dir.txt"
         f.write_text("hi")

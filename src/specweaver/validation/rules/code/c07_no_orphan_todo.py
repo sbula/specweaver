@@ -33,13 +33,15 @@ class NoOrphanTodoRule(Rule):
         for line_num, line in enumerate(spec_text.splitlines(), start=1):
             match = _TODO_PATTERN.search(line)
             if match:
-                findings.append(Finding(
-                    message=f"{match.group(1).upper()} found: {line.strip()[:80]}",
-                    line=line_num,
-                    severity=Severity.WARNING,
-                    suggestion="Resolve or remove before shipping. "
-                    "Generated code should not contain TODO markers.",
-                ))
+                findings.append(
+                    Finding(
+                        message=f"{match.group(1).upper()} found: {line.strip()[:80]}",
+                        line=line_num,
+                        severity=Severity.WARNING,
+                        suggestion="Resolve or remove before shipping. "
+                        "Generated code should not contain TODO markers.",
+                    )
+                )
 
         if findings:
             return self._warn(f"Found {len(findings)} TODO/FIXME marker(s)", findings)

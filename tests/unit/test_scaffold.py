@@ -16,6 +16,7 @@ from specweaver.project.scaffold import scaffold_project
 # Happy-path tests
 # ---------------------------------------------------------------------------
 
+
 class TestScaffoldProject:
     """Test project scaffold creation."""
 
@@ -62,6 +63,7 @@ class TestScaffoldProject:
 # Idempotency tests
 # ---------------------------------------------------------------------------
 
+
 class TestScaffoldIdempotency:
     """Scaffold must be safe to run multiple times."""
 
@@ -106,6 +108,7 @@ class TestScaffoldIdempotency:
 # ---------------------------------------------------------------------------
 # Edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestScaffoldEdgeCases:
     """Edge cases for scaffold."""

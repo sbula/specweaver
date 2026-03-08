@@ -231,7 +231,11 @@ class TestC08TypeHints:
         assert result.status == Status.PASS  # No public functions
 
     def test_mixed_coverage(self) -> None:
-        code = "def foo() -> int:\n    return 1\ndef bar() -> int:\n    return 2\ndef baz():\n    pass\n"
+        code = (
+            "def foo() -> int:\n    return 1\n"
+            "def bar() -> int:\n    return 2\n"
+            "def baz():\n    pass\n"
+        )
         rule = TypeHintsRule()
         result = rule.check(code)
         # 2/3 typed = 66% -> WARN
@@ -282,10 +286,12 @@ class TestCodeRulesRunner:
 
 def _make_mock_llm(response_text: str = "def greet(): pass\n") -> MagicMock:
     mock_llm = MagicMock()
-    mock_llm.generate = AsyncMock(return_value=LLMResponse(
-        text=response_text,
-        model="test-model",
-    ))
+    mock_llm.generate = AsyncMock(
+        return_value=LLMResponse(
+            text=response_text,
+            model="test-model",
+        )
+    )
     return mock_llm
 
 

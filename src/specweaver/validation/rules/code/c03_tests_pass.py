@@ -69,9 +69,11 @@ class TestsPassRule(Rule):
 
         return self._fail(
             "Tests failed",
-            [Finding(
-                message=result.stdout[-500:] if result.stdout else "No output",
-                severity=Severity.ERROR,
-                suggestion="Fix failing tests before proceeding.",
-            )],
+            [
+                Finding(
+                    message=result.stdout[-500:] if result.stdout else "No output",
+                    severity=Severity.ERROR,
+                    suggestion="Fix failing tests before proceeding.",
+                )
+            ],
         )

@@ -19,7 +19,14 @@ ENV_CATEGORIES: dict[str, list[str]] = {
     "crash_sim": ["kill", "crash", "recover", "resume", "restart", "interrupt", "sigkill"],
     "network": ["mock server", "api call", "endpoint", "http", "grpc", "webhook", "rest api"],
     "database": ["database", "sql", "sqlite", "migration", "schema", "table", "query"],
-    "filesystem": ["file", "directory", "write to", "read from", "create directory", "path traversal"],
+    "filesystem": [
+        "file",
+        "directory",
+        "write to",
+        "read from",
+        "create directory",
+        "path traversal",
+    ],
     "concurrency": ["parallel", "thread", "mutex", "lock", "race", "fan-out", "semaphore"],
 }
 

@@ -68,8 +68,7 @@ class ErrorPathRule(Rule):
 
         # Count error-related keywords
         error_mentions = sum(
-            len(re.findall(r"\b" + re.escape(kw) + r"\b", spec_lower))
-            for kw in _ERROR_KEYWORDS
+            len(re.findall(r"\b" + re.escape(kw) + r"\b", spec_lower)) for kw in _ERROR_KEYWORDS
         )
 
         # Check for error-handling sections
@@ -79,25 +78,30 @@ class ErrorPathRule(Rule):
 
         # Check Policy section specifically
         policy = _extract_policy(spec_text)
-        policy_has_errors = bool(policy and any(
-            kw in policy.lower() for kw in _ERROR_KEYWORDS
-        ))
+        policy_has_errors = bool(policy and any(kw in policy.lower() for kw in _ERROR_KEYWORDS))
 
         if error_mentions == 0:
-            findings.append(Finding(
-                message="No error/failure keywords found in entire spec",
-                severity=Severity.ERROR,
-                suggestion="Add error handling to Policy section (## 4. Policy). "
-                "Define what happens when operations fail.",
-            ))
+            findings.append(
+                Finding(
+                    message="No error/failure keywords found in entire spec",
+                    severity=Severity.ERROR,
+                    suggestion="Add error handling to Policy section (## 4. Policy). "
+                    "Define what happens when operations fail.",
+                )
+            )
             return self._fail("Spec defines no error behavior", findings)
 
         if not has_error_section and not policy_has_errors:
-            findings.append(Finding(
-                message=f"Found {error_mentions} error keywords but no dedicated error section",
-                severity=Severity.WARNING,
-                suggestion="Consider adding an 'Error Handling' subsection to Policy (## 4. Policy).",
-            ))
+            findings.append(
+                Finding(
+                    message=f"Found {error_mentions} error keywords but no dedicated error section",
+                    severity=Severity.WARNING,
+                    suggestion=(
+                        "Consider adding an 'Error Handling' "
+                        "subsection to Policy (## 4. Policy)."
+                    ),
+                )
+            )
             return self._warn("Error keywords found but no structured error section", findings)
 
         return self._pass(

@@ -31,32 +31,71 @@ SPEC_SECTIONS: list[dict[str, str]] = [
     {
         "name": "Purpose",
         "heading": "## 1. Purpose",
-        "question": "What does this component do? Describe its single responsibility in one sentence.",
-        "prompt": "Based on the user's answer, write a clear, focused one-paragraph Purpose section for a component spec. The purpose must describe ONE thing the component does.",
+        "question": (
+            "What does this component do? Describe its "
+            "single responsibility in one sentence."
+        ),
+        "prompt": (
+            "Based on the user's answer, write a clear, "
+            "focused one-paragraph Purpose section for a "
+            "component spec. The purpose must describe "
+            "ONE thing the component does."
+        ),
     },
     {
         "name": "Contract",
         "heading": "## 2. Contract",
-        "question": "What are the inputs, outputs, and data types? Include code examples if possible.",
-        "prompt": "Based on the user's answer, write a Contract section with data models, interface definitions, and at least one concrete input -> output example in a Python code block.",
+        "question": (
+            "What are the inputs, outputs, and data types? "
+            "Include code examples if possible."
+        ),
+        "prompt": (
+            "Based on the user's answer, write a Contract "
+            "section with data models, interface definitions, "
+            "and at least one concrete input -> output example "
+            "in a Python code block."
+        ),
     },
     {
         "name": "Protocol",
         "heading": "## 3. Protocol",
-        "question": "What are the step-by-step rules for how this component processes its input?",
-        "prompt": "Based on the user's answer, write a Protocol section as a numbered list of processing steps. Each step should be concrete and actionable.",
+        "question": (
+            "What are the step-by-step rules for how this "
+            "component processes its input?"
+        ),
+        "prompt": (
+            "Based on the user's answer, write a Protocol "
+            "section as a numbered list of processing steps. "
+            "Each step should be concrete and actionable."
+        ),
     },
     {
         "name": "Policy",
         "heading": "## 4. Policy",
-        "question": "What happens when things go wrong? What are the error cases, limits, and configurable parameters?",
-        "prompt": "Based on the user's answer, write a Policy section with an Error Handling table (Error Condition | Behavior) and a Limits table (Parameter | Default | Range).",
+        "question": (
+            "What happens when things go wrong? What are "
+            "the error cases, limits, and configurable "
+            "parameters?"
+        ),
+        "prompt": (
+            "Based on the user's answer, write a Policy "
+            "section with an Error Handling table "
+            "(Error Condition | Behavior) and a Limits "
+            "table (Parameter | Default | Range)."
+        ),
     },
     {
         "name": "Boundaries",
         "heading": "## 5. Boundaries",
-        "question": "What is NOT this component's responsibility? What concerns belong to other components?",
-        "prompt": "Based on the user's answer, write a Boundaries section as a table (Concern | Owned By) listing what is explicitly out of scope for this component.",
+        "question": (
+            "What is NOT this component's responsibility? "
+            "What concerns belong to other components?"
+        ),
+        "prompt": (
+            "Based on the user's answer, write a Boundaries "
+            "section as a table (Concern | Owned By) listing "
+            "what is explicitly out of scope for this component."
+        ),
     },
 ]
 
@@ -148,10 +187,12 @@ class Drafter:
                     user_input=user_input,
                 )
 
-            sections.append({
-                "heading": section_def["heading"],
-                "content": content,
-            })
+            sections.append(
+                {
+                    "heading": section_def["heading"],
+                    "content": content,
+                }
+            )
 
         # Render the full spec
         date_str = datetime.now(tz=UTC).strftime("%Y-%m-%d")

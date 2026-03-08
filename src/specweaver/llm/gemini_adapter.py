@@ -53,10 +53,12 @@ def _messages_to_gemini(
             system_instruction = msg.content
         else:
             role = "user" if msg.role == Role.USER else "model"
-            contents.append(types.Content(
-                role=role,
-                parts=[types.Part.from_text(text=msg.content)],
-            ))
+            contents.append(
+                types.Content(
+                    role=role,
+                    parts=[types.Part.from_text(text=msg.content)],
+                )
+            )
 
     return system_instruction, contents
 
@@ -106,9 +108,7 @@ class GeminiAdapter(LLMAdapter):
             temperature=config.temperature,
             max_output_tokens=config.max_output_tokens,
             system_instruction=system_instruction,
-            response_mime_type="application/json"
-            if config.response_format == "json"
-            else None,
+            response_mime_type="application/json" if config.response_format == "json" else None,
         )
 
         try:

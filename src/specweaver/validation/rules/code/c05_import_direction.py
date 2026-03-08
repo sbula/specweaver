@@ -43,21 +43,25 @@ class ImportDirectionRule(Rule):
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     if alias.name in _FORBIDDEN_IMPORTS:
-                        findings.append(Finding(
-                            message=f"Forbidden import: '{alias.name}'",
-                            line=node.lineno,
-                            severity=Severity.ERROR,
-                            suggestion="Components should not import from the CLI layer.",
-                        ))
+                        findings.append(
+                            Finding(
+                                message=f"Forbidden import: '{alias.name}'",
+                                line=node.lineno,
+                                severity=Severity.ERROR,
+                                suggestion="Components should not import from the CLI layer.",
+                            )
+                        )
             elif isinstance(node, ast.ImportFrom) and node.module:
                 for forbidden in _FORBIDDEN_IMPORTS:
                     if node.module == forbidden or node.module.startswith(forbidden + "."):
-                        findings.append(Finding(
-                            message=f"Forbidden import from: '{node.module}'",
-                            line=node.lineno,
-                            severity=Severity.ERROR,
-                            suggestion="Components should not import from the CLI layer.",
-                        ))
+                        findings.append(
+                            Finding(
+                                message=f"Forbidden import from: '{node.module}'",
+                                line=node.lineno,
+                                severity=Severity.ERROR,
+                                suggestion="Components should not import from the CLI layer.",
+                            )
+                        )
 
         if findings:
             return self._fail(f"Found {len(findings)} forbidden import(s)", findings)

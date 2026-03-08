@@ -101,8 +101,13 @@ class TestLLMErrors:
         assert err.retry_after is None
 
     def test_all_errors_are_llm_error(self) -> None:
-        for cls in [AuthenticationError, RateLimitError, ModelNotFoundError,
-                    GenerationError, ContentFilterError]:
+        for cls in [
+            AuthenticationError,
+            RateLimitError,
+            ModelNotFoundError,
+            GenerationError,
+            ContentFilterError,
+        ]:
             err = cls("test", provider="test")
             assert isinstance(err, LLMError)
 

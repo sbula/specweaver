@@ -35,12 +35,20 @@ class NoBareExceptRule(Rule):
 
         for node in ast.walk(tree):
             if isinstance(node, ast.ExceptHandler) and node.type is None:
-                findings.append(Finding(
-                    message="Bare 'except:' clause — catches all exceptions including SystemExit",
-                    line=node.lineno,
-                    severity=Severity.WARNING,
-                    suggestion="Use 'except Exception:' instead to avoid catching SystemExit/KeyboardInterrupt.",
-                ))
+                findings.append(
+                    Finding(
+                        message=(
+                            "Bare 'except:' clause — catches all "
+                            "exceptions including SystemExit"
+                        ),
+                        line=node.lineno,
+                        severity=Severity.WARNING,
+                        suggestion=(
+                            "Use 'except Exception:' instead to "
+                            "avoid catching SystemExit/KeyboardInterrupt."
+                        ),
+                    )
+                )
 
         if findings:
             return self._warn(f"Found {len(findings)} bare except clause(s)", findings)

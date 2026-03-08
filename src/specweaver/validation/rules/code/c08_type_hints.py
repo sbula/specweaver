@@ -45,12 +45,14 @@ class TypeHintsRule(Rule):
 
                 if node.returns is None:
                     missing_hints += 1
-                    findings.append(Finding(
-                        message=f"Function '{node.name}' missing return type annotation",
-                        line=node.lineno,
-                        severity=Severity.WARNING,
-                        suggestion=f"Add return type: def {node.name}(...) -> <type>:",
-                    ))
+                    findings.append(
+                        Finding(
+                            message=f"Function '{node.name}' missing return type annotation",
+                            line=node.lineno,
+                            severity=Severity.WARNING,
+                            suggestion=f"Add return type: def {node.name}(...) -> <type>:",
+                        )
+                    )
 
         if total_public == 0:
             return self._pass("No public functions to check")
@@ -58,13 +60,15 @@ class TypeHintsRule(Rule):
         if missing_hints > 0:
             ratio = (total_public - missing_hints) / total_public * 100
             if ratio < 50:
-                return self._fail(
-                    f"{missing_hints}/{total_public} public functions missing type hints ({ratio:.0f}%)",
-                    findings,
+                msg = (
+                    f"{missing_hints}/{total_public} public "
+                    f"functions missing type hints ({ratio:.0f}%)"
                 )
-            return self._warn(
-                f"{missing_hints}/{total_public} public functions missing type hints ({ratio:.0f}%)",
-                findings,
+                return self._fail(msg, findings)
+            msg = (
+                f"{missing_hints}/{total_public} public "
+                f"functions missing type hints ({ratio:.0f}%)"
             )
+            return self._warn(msg, findings)
 
         return self._pass(f"All {total_public} public functions have return type annotations")

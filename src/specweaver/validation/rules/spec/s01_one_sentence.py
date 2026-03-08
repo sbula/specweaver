@@ -53,7 +53,11 @@ class OneSentenceRule(Rule):
         if not purpose:
             return self._warn(
                 "No Purpose section found",
-                [Finding(message="Could not find '## 1. Purpose' section", severity=Severity.WARNING)],
+                [
+                    Finding(
+                        message="Could not find '## 1. Purpose' section", severity=Severity.WARNING
+                    )
+                ],
             )
 
         # Count conjunctions in Purpose
@@ -63,21 +67,31 @@ class OneSentenceRule(Rule):
             count = purpose_lower.count(conj)
             if count > 0:
                 conjunction_count += count
-                findings.append(Finding(
-                    message=f"Found conjunction '{conj}' ({count}x) in Purpose section",
-                    severity=Severity.ERROR,
-                    suggestion="Each conjunction may indicate a separate responsibility. Consider splitting.",
-                ))
+                findings.append(
+                    Finding(
+                        message=f"Found conjunction '{conj}' ({count}x) in Purpose section",
+                        severity=Severity.ERROR,
+                        suggestion=(
+                            "Each conjunction may indicate a "
+                            "separate responsibility. Consider splitting."
+                        ),
+                    )
+                )
 
         # Count H2 sections in entire spec
         h2_count = len(re.findall(r"\n##\s", spec_text))
 
         if h2_count > 8:
-            findings.append(Finding(
-                message=f"Spec has {h2_count} H2 sections (max recommended: 8)",
-                severity=Severity.WARNING,
-                suggestion="Many sections may indicate multiple concerns. Consider decomposition.",
-            ))
+            findings.append(
+                Finding(
+                    message=f"Spec has {h2_count} H2 sections (max recommended: 8)",
+                    severity=Severity.WARNING,
+                    suggestion=(
+                        "Many sections may indicate multiple "
+                        "concerns. Consider decomposition."
+                    ),
+                )
+            )
 
         if conjunction_count > 2:
             return self._fail(

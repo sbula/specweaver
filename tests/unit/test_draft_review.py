@@ -88,10 +88,12 @@ class TestContextProvider:
 def _make_mock_llm(response_text: str = "Generated content") -> MagicMock:
     """Create a mock LLM adapter."""
     mock_llm = MagicMock()
-    mock_llm.generate = AsyncMock(return_value=LLMResponse(
-        text=response_text,
-        model="test-model",
-    ))
+    mock_llm.generate = AsyncMock(
+        return_value=LLMResponse(
+            text=response_text,
+            model="test-model",
+        )
+    )
     mock_llm.available.return_value = True
     return mock_llm
 
@@ -111,13 +113,15 @@ class TestDrafter:
     @pytest.mark.asyncio
     async def test_draft_creates_file(self, tmp_path: Path) -> None:
         mock_llm = _make_mock_llm()
-        provider = MockContextProvider(answers={
-            "Purpose": "Generates greetings",
-            "Contract": "Takes name, returns string",
-            "Protocol": "1. Validate input 2. Format greeting",
-            "Policy": "Raises ValueError on empty name",
-            "Boundaries": "No logging, no persistence",
-        })
+        provider = MockContextProvider(
+            answers={
+                "Purpose": "Generates greetings",
+                "Contract": "Takes name, returns string",
+                "Protocol": "1. Validate input 2. Format greeting",
+                "Policy": "Raises ValueError on empty name",
+                "Boundaries": "No logging, no persistence",
+            }
+        )
         drafter = Drafter(llm=mock_llm, context_provider=provider)
 
         result = await drafter.draft("greet_service", tmp_path)

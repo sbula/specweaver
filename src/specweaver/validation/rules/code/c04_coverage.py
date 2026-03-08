@@ -45,10 +45,15 @@ class CoverageRule(Rule):
         try:
             result = subprocess.run(
                 [
-                    "python", "-m", "pytest",
-                    "--cov", str(spec_path),
-                    "--cov-report", "term",
-                    "-q", "--tb=no",
+                    "python",
+                    "-m",
+                    "pytest",
+                    "--cov",
+                    str(spec_path),
+                    "--cov-report",
+                    "term",
+                    "-q",
+                    "--tb=no",
                 ],
                 capture_output=True,
                 text=True,
@@ -74,11 +79,13 @@ class CoverageRule(Rule):
         if coverage < self._threshold:
             return self._fail(
                 f"Coverage {coverage}% below threshold {self._threshold}%",
-                [Finding(
-                    message=f"Coverage: {coverage}% (threshold: {self._threshold}%)",
-                    severity=Severity.ERROR,
-                    suggestion=f"Add tests to reach at least {self._threshold}% coverage.",
-                )],
+                [
+                    Finding(
+                        message=f"Coverage: {coverage}% (threshold: {self._threshold}%)",
+                        severity=Severity.ERROR,
+                        suggestion=f"Add tests to reach at least {self._threshold}% coverage.",
+                    )
+                ],
             )
 
         return self._pass(f"Coverage: {coverage}% (threshold: {self._threshold}%)")

@@ -21,6 +21,7 @@ runner = CliRunner()
 # Help and version
 # ---------------------------------------------------------------------------
 
+
 class TestCLIHelp:
     """Test CLI help output and command discovery."""
 
@@ -44,6 +45,7 @@ class TestCLIHelp:
 # ---------------------------------------------------------------------------
 # sw init
 # ---------------------------------------------------------------------------
+
 
 class TestCLIInit:
     """Test the sw init command."""
@@ -79,6 +81,7 @@ class TestCLIInit:
 # ---------------------------------------------------------------------------
 # Stub commands (should exist but show "not implemented")
 # ---------------------------------------------------------------------------
+
 
 class TestCLIStubs:
     """Test that stub commands exist and exit cleanly."""
@@ -118,6 +121,7 @@ class TestCLIStubs:
 # ---------------------------------------------------------------------------
 # Edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestCLIEdgeCases:
     """Edge cases for the CLI."""

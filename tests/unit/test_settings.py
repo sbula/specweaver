@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def config_dir(tmp_path: Path) -> Path:
     """Create a .specweaver directory with a config.yaml."""
@@ -38,14 +39,18 @@ def _write_yaml(path: Path, data: dict[str, Any]) -> None:
 # Happy-path tests
 # ---------------------------------------------------------------------------
 
+
 class TestLoadSettings:
     """Test loading settings from YAML config file."""
 
     def test_load_from_yaml(self, config_dir: Path) -> None:
         """Settings load model name and temperature from config.yaml."""
-        _write_yaml(config_dir / "config.yaml", {
-            "llm": {"model": "gemini-2.5-pro", "temperature": 0.3},
-        })
+        _write_yaml(
+            config_dir / "config.yaml",
+            {
+                "llm": {"model": "gemini-2.5-pro", "temperature": 0.3},
+            },
+        )
         settings = load_settings(config_dir.parent)
         assert settings.llm.model == "gemini-2.5-pro"
         assert settings.llm.temperature == 0.3
@@ -57,21 +62,20 @@ class TestLoadSettings:
         assert settings.llm.temperature == 0.7
         assert settings.llm.max_output_tokens == 4096
 
-    def test_defaults_when_config_dir_exists_but_no_yaml(
-        self, config_dir: Path
-    ) -> None:
+    def test_defaults_when_config_dir_exists_but_no_yaml(self, config_dir: Path) -> None:
         """Settings use defaults when .specweaver/ exists but config.yaml doesn't."""
         settings = load_settings(config_dir.parent)
         assert settings.llm.model == "gemini-2.5-flash"
 
-    def test_partial_config_uses_defaults_for_missing(
-        self, config_dir: Path
-    ) -> None:
+    def test_partial_config_uses_defaults_for_missing(self, config_dir: Path) -> None:
         """Missing fields fall back to defaults; present fields are used."""
-        _write_yaml(config_dir / "config.yaml", {
-            "llm": {"model": "gemini-3.0-turbo"},
-            # temperature and max_output_tokens not specified
-        })
+        _write_yaml(
+            config_dir / "config.yaml",
+            {
+                "llm": {"model": "gemini-3.0-turbo"},
+                # temperature and max_output_tokens not specified
+            },
+        )
         settings = load_settings(config_dir.parent)
         assert settings.llm.model == "gemini-3.0-turbo"
         assert settings.llm.temperature == 0.7  # default
@@ -99,6 +103,7 @@ class TestSettingsFromEnv:
 # Edge cases
 # ---------------------------------------------------------------------------
 
+
 class TestSettingsEdgeCases:
     """Edge cases for config loading."""
 
@@ -110,11 +115,14 @@ class TestSettingsEdgeCases:
 
     def test_unknown_keys_are_ignored(self, config_dir: Path) -> None:
         """Unknown keys in config.yaml are silently ignored."""
-        _write_yaml(config_dir / "config.yaml", {
-            "llm": {"model": "gemini-2.5-pro"},
-            "unknown_section": {"foo": "bar"},
-            "another_unknown": 42,
-        })
+        _write_yaml(
+            config_dir / "config.yaml",
+            {
+                "llm": {"model": "gemini-2.5-pro"},
+                "unknown_section": {"foo": "bar"},
+                "another_unknown": 42,
+            },
+        )
         settings = load_settings(config_dir.parent)
         assert settings.llm.model == "gemini-2.5-pro"
 
@@ -132,9 +140,12 @@ class TestSettingsEdgeCases:
 
     def test_invalid_temperature_type(self, config_dir: Path) -> None:
         """Non-numeric temperature should raise a validation error."""
-        _write_yaml(config_dir / "config.yaml", {
-            "llm": {"temperature": "hot"},
-        })
+        _write_yaml(
+            config_dir / "config.yaml",
+            {
+                "llm": {"temperature": "hot"},
+            },
+        )
         with pytest.raises(ValueError):
             load_settings(config_dir.parent)
 
@@ -149,16 +160,22 @@ class TestSettingsModel:
 
     def test_response_format_json(self, config_dir: Path) -> None:
         """Can set response_format to 'json'."""
-        _write_yaml(config_dir / "config.yaml", {
-            "llm": {"response_format": "json"},
-        })
+        _write_yaml(
+            config_dir / "config.yaml",
+            {
+                "llm": {"response_format": "json"},
+            },
+        )
         settings = load_settings(config_dir.parent)
         assert settings.llm.response_format == "json"
 
     def test_invalid_response_format_raises(self, config_dir: Path) -> None:
         """Invalid response_format should raise a validation error."""
-        _write_yaml(config_dir / "config.yaml", {
-            "llm": {"response_format": "xml"},
-        })
+        _write_yaml(
+            config_dir / "config.yaml",
+            {
+                "llm": {"response_format": "xml"},
+            },
+        )
         with pytest.raises(ValueError):
             load_settings(config_dir.parent)
