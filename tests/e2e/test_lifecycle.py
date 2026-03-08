@@ -796,3 +796,176 @@ class TestMediumPriorityEdgeCases:
         # Should show specific rule IDs that failed
         assert "C06" in result.output or "C07" in result.output
 
+
+# ---------------------------------------------------------------------------
+# Final Real-World Edge Cases
+# ---------------------------------------------------------------------------
+
+
+class TestRealWorldEdgeCases:
+    """Edge cases modelled from realistic user workflows."""
+
+    def _init_and_create_spec(self, tmp_path: Path) -> Path:
+        """Helper: init project and write a realistic spec."""
+        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        spec_path = tmp_path / "specs" / "greet_service_spec.md"
+        spec_path.parent.mkdir(exist_ok=True)
+        spec_path.write_text(
+            "# greet_service\n\n"
+            "## 1. Purpose\n\n"
+            "Returns a personalized greeting for a given name.\n\n"
+            "## 2. Contract\n\n"
+            "```python\n"
+            "def greet(name: str) -> str: ...\n"
+            "```\n",
+            encoding="utf-8",
+        )
+        return spec_path
+
+    def test_implement_twice_overwrites_code(self, tmp_path: Path) -> None:
+        """User runs implement twice → second run overwrites with new code."""
+        spec_path = self._init_and_create_spec(tmp_path)
+
+        code_v1 = (
+            '"""Version 1."""\n\n'
+            'def greet(name: str) -> str:\n'
+            '    return f"Hi, {name}"\n'
+        )
+        tests_v1 = (
+            '"""Tests v1."""\n\n'
+            "def test_greet() -> None:\n"
+            "    pass\n"
+        )
+
+        # First implement
+        llm_v1 = _make_sequenced_llm([code_v1, tests_v1])
+        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+            mock_req.return_value = (
+                None, llm_v1, GenerationConfig(model="mock"),
+            )
+            result = runner.invoke(
+                app,
+                ["implement", str(spec_path), "--project", str(tmp_path)],
+            )
+            assert result.exit_code == 0
+
+        code_path = tmp_path / "src" / "greet_service.py"
+        first_content = code_path.read_text(encoding="utf-8")
+        assert "Version 1" in first_content
+
+        # Second implement with different code (user iterated on spec)
+        code_v2 = (
+            '"""Version 2 — improved."""\n\n'
+            'def greet(name: str) -> str:\n'
+            '    return f"Hello, {name}!"\n'
+        )
+        tests_v2 = (
+            '"""Tests v2."""\n\n'
+            "def test_greet_v2() -> None:\n"
+            "    pass\n"
+        )
+
+        llm_v2 = _make_sequenced_llm([code_v2, tests_v2])
+        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+            mock_req.return_value = (
+                None, llm_v2, GenerationConfig(model="mock"),
+            )
+            result = runner.invoke(
+                app,
+                ["implement", str(spec_path), "--project", str(tmp_path)],
+            )
+            assert result.exit_code == 0
+
+        # Code should now be v2, NOT v1
+        updated_content = code_path.read_text(encoding="utf-8")
+        assert "Version 2" in updated_content
+        assert "Version 1" not in updated_content
+
+        # Tests should also be v2
+        test_path = tmp_path / "tests" / "test_greet_service.py"
+        test_content = test_path.read_text(encoding="utf-8")
+        assert "test_greet_v2" in test_content
+
+    def test_llm_returns_markdown_fenced_code(self, tmp_path: Path) -> None:
+        """LLM wraps code in ```python fences → fences are stripped E2E."""
+        spec_path = self._init_and_create_spec(tmp_path)
+
+        # Simulate what LLMs actually return: markdown-wrapped code
+        fenced_code = (
+            "```python\n"
+            '"""Greet service."""\n'
+            "\n"
+            "\n"
+            "def greet(name: str) -> str:\n"
+            '    return f"Hello, {name}!"\n'
+            "```"
+        )
+        fenced_tests = (
+            "```python\n"
+            '"""Tests."""\n'
+            "\n"
+            "\n"
+            "def test_greet() -> None:\n"
+            "    assert True\n"
+            "```"
+        )
+
+        fenced_llm = _make_sequenced_llm([fenced_code, fenced_tests])
+        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+            mock_req.return_value = (
+                None, fenced_llm, GenerationConfig(model="mock"),
+            )
+            result = runner.invoke(
+                app,
+                ["implement", str(spec_path), "--project", str(tmp_path)],
+            )
+            assert result.exit_code == 0
+
+        code_path = tmp_path / "src" / "greet_service.py"
+        code_content = code_path.read_text(encoding="utf-8")
+
+        # The markdown fences should be STRIPPED — no ```python or ``` in file
+        assert "```" not in code_content, "Markdown fences were not stripped"
+        assert "def greet" in code_content, "Function definition missing"
+
+        # Tests should also be clean
+        test_path = tmp_path / "tests" / "test_greet_service.py"
+        test_content = test_path.read_text(encoding="utf-8")
+        assert "```" not in test_content, "Markdown fences in test file"
+
+    def test_llm_error_during_review_shows_error_verdict(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """LLM crashes during review → ERROR verdict, not a traceback."""
+        spec_path = self._init_and_create_spec(tmp_path)
+
+        # LLM that raises an exception
+        error_llm = AsyncMock()
+        error_llm.available.return_value = True
+
+        async def _crash(messages: object, config: object = None) -> None:
+            from specweaver.llm.errors import GenerationError
+
+            msg = "Service unavailable"
+            raise GenerationError(msg)
+
+        error_llm.generate = _crash
+
+        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+            mock_req.return_value = (
+                None, error_llm, GenerationConfig(model="mock"),
+            )
+            result = runner.invoke(
+                app,
+                ["review", str(spec_path), "--project", str(tmp_path)],
+            )
+
+        # Should NOT show a Python traceback
+        assert "Traceback" not in result.output
+        # Should show ERROR verdict (reviewer catches the exception)
+        assert "ERROR" in result.output
+        # Should contain the error message
+        assert "Service unavailable" in result.output or "failed" in result.output.lower()
+
+
