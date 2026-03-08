@@ -239,6 +239,30 @@ class TestS05DayTest:
         result = DayTestRule().check("")
         assert result.status == Status.PASS
 
+    def test_borderline_complexity_warns(self) -> None:
+        """Score between WARN and FAIL thresholds should WARN."""
+        # Build a spec that lands between 25 and 40 score.
+        # Weights: size*0.30, sections*0.20, branches*0.20,
+        #          states*0.15, code_blocks*0.15
+        # Use uppercase-only states (regex: `[A-Z][A-Z_]+`)
+        states = [
+            "ACTIVE", "PENDING", "WAITING", "RUNNING", "FAILED",
+            "COMPLETED", "CANCELLED", "PAUSED", "TERMINATED", "STARTING",
+            "STOPPING", "IDLE", "BLOCKED", "READY", "PROCESSING",
+        ]
+        spec = "## 1. Purpose\n\nModerately complex component.\n"
+        for i in range(30):
+            spec += f"\n### Section {i}\n\n"
+            spec += "If condition then handle, when state changes unless.\n"
+            state = states[i % len(states)]
+            spec += f"Handle `{state}` transitions.\n"
+            spec += "```python\ncode_block()\n```\n"
+        result = DayTestRule().check(spec)
+        assert result.status == Status.WARN
+        assert "score" in result.message.lower()
+
+
+
 
 # ---------------------------------------------------------------------------
 # S06: Concrete Example
@@ -291,6 +315,52 @@ Output: greeting (string)
         result = ConcreteExampleRule().check(spec)
         # Has example-like patterns but no code blocks
         assert result.status in (Status.WARN, Status.FAIL)
+
+    def test_no_contract_code_but_examples_elsewhere_warns(self) -> None:
+        """Contract has no code blocks but spec has code elsewhere."""
+        spec = """
+## 2. Contract
+
+The function processes data. Example: input -> output.
+
+## 3. Protocol
+
+```python
+result = process(data)
+```
+"""
+        result = ConcreteExampleRule().check(spec)
+        assert result.status == Status.WARN
+        assert any("elsewhere" in f.message.lower() or "code" in f.message.lower() for f in result.findings)
+
+    def test_no_code_blocks_and_no_examples_fails(self) -> None:
+        """Contract has no code blocks and no example patterns."""
+        spec = """
+## 2. Contract
+
+The function processes data.
+
+## 3. Protocol
+
+```python
+result = process(data)
+```
+"""
+        result = ConcreteExampleRule().check(spec)
+        assert result.status == Status.FAIL
+        assert "no concrete" in result.message.lower() or "contract" in result.message.lower()
+
+    def test_no_code_blocks_anywhere_fails(self) -> None:
+        """Spec has no code blocks at all."""
+        spec = """
+## 2. Contract
+
+The function processes data.
+No code blocks anywhere.
+"""
+        result = ConcreteExampleRule().check(spec)
+        assert result.status == Status.FAIL
+        assert "no code blocks" in result.message.lower()
 
 
 # ---------------------------------------------------------------------------
@@ -420,6 +490,34 @@ If the input is invalid, raise an exception.
         result = ErrorPathRule().check(spec)
         # Has error keywords but no dedicated section
         assert result.status in (Status.WARN, Status.PASS)
+
+    def test_error_keywords_no_policy_no_section_warns(self) -> None:
+        """Error keywords exist but no Policy section and no error section."""
+        spec = """
+## 1. Purpose
+
+Service that handles timeouts and retries on failure.
+
+## 3. Protocol
+
+1. Send request.
+2. On timeout, retry.
+3. After 3 failures, abort.
+"""
+        result = ErrorPathRule().check(spec)
+        assert result.status == Status.WARN
+        assert any("error keywords" in f.message.lower() or "no dedicated" in f.message.lower() for f in result.findings)
+
+    def test_policy_with_error_keywords_passes(self) -> None:
+        """Policy section containing error keywords should pass."""
+        spec = """
+## 4. Policy
+
+On invalid input, raise ValueError.
+On timeout, retry 3 times then abort.
+"""
+        result = ErrorPathRule().check(spec)
+        assert result.status == Status.PASS
 
 
 # ---------------------------------------------------------------------------
