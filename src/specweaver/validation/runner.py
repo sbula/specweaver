@@ -48,6 +48,40 @@ def get_spec_rules(*, include_llm: bool = False) -> list[Rule]:
     return [r for r in all_rules if not r.requires_llm]
 
 
+def get_code_rules(*, include_subprocess: bool = True) -> list[Rule]:
+    """Get all registered code validation rules.
+
+    Args:
+        include_subprocess: If False, skip rules that run subprocesses
+            (C03 Tests Pass, C04 Coverage). Useful for unit tests.
+
+    Returns:
+        List of Rule instances, ordered by rule_id.
+    """
+    from specweaver.validation.rules.code.c01_syntax_valid import SyntaxValidRule
+    from specweaver.validation.rules.code.c02_tests_exist import TestsExistRule
+    from specweaver.validation.rules.code.c03_tests_pass import TestsPassRule
+    from specweaver.validation.rules.code.c04_coverage import CoverageRule
+    from specweaver.validation.rules.code.c05_import_direction import ImportDirectionRule
+    from specweaver.validation.rules.code.c06_no_bare_except import NoBareExceptRule
+    from specweaver.validation.rules.code.c07_no_orphan_todo import NoOrphanTodoRule
+    from specweaver.validation.rules.code.c08_type_hints import TypeHintsRule
+
+    all_rules: list[Rule] = [
+        SyntaxValidRule(),
+        TestsExistRule(),
+        ImportDirectionRule(),
+        NoBareExceptRule(),
+        NoOrphanTodoRule(),
+        TypeHintsRule(),
+    ]
+
+    if include_subprocess:
+        all_rules[2:2] = [TestsPassRule(), CoverageRule()]
+
+    return all_rules
+
+
 def run_rules(
     rules: list[Rule],
     spec_text: str,

@@ -179,7 +179,44 @@ def check(
         else:
             console.print("\n[green]ALL PASSED[/green]")
     elif level == "code":
-        console.print("[yellow]Code validation[/yellow] is not yet implemented.")
+        from specweaver.validation.runner import get_code_rules
+
+        rules = get_code_rules(include_subprocess=False)
+        results = run_rules(rules, spec_text, target_path)
+
+        # Reuse the same Rich table display as component level
+        table = Table(title=f"Code Validation: {target_path.name}")
+        table.add_column("Rule", style="cyan")
+        table.add_column("Name", style="white")
+        table.add_column("Status", justify="center")
+        table.add_column("Message", style="dim")
+
+        for r in results:
+            status_style = {
+                Status.PASS: "[green]PASS[/green]",
+                Status.FAIL: "[red]FAIL[/red]",
+                Status.WARN: "[yellow]WARN[/yellow]",
+                Status.SKIP: "[dim]SKIP[/dim]",
+            }
+            table.add_row(
+                r.rule_id,
+                r.rule_name,
+                status_style.get(r.status, str(r.status)),
+                r.message[:80] if r.message else "",
+            )
+
+        console.print(table)
+
+        fail_count = sum(1 for r in results if r.status == Status.FAIL)
+        warn_count = sum(1 for r in results if r.status == Status.WARN)
+
+        if fail_count > 0:
+            console.print(f"\n[red]FAILED[/red]: {fail_count} rule(s) failed, {warn_count} warning(s)")
+            raise typer.Exit(code=1)
+        if warn_count > 0:
+            console.print(f"\n[yellow]PASSED with warnings[/yellow]: {warn_count} warning(s)")
+        else:
+            console.print("\n[green]ALL PASSED[/green]")
     else:
         console.print(f"[red]Error:[/red] Unknown level '{level}'. Use 'component' or 'code'.")
         raise typer.Exit(code=1)

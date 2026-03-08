@@ -117,3 +117,12 @@ class Rule(ABC):
             findings=findings or [],
             message=message,
         )
+
+    def _skip(self, message: str = "") -> RuleResult:
+        """Convenience: create a SKIP result."""
+        return RuleResult(
+            rule_id=self.rule_id,
+            rule_name=self.name,
+            status=Status.SKIP,
+            message=message,
+        )

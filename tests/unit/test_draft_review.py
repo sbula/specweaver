@@ -341,5 +341,5 @@ class TestCLICheck:
         runner = CliRunner()
         result = runner.invoke(app, ["check", "tests/fixtures/good_spec.md", "--level", "code"])
 
-        assert result.exit_code == 0
-        assert "not yet implemented" in result.output.lower()
+        # Code validation is now implemented — should show rule results
+        assert "C01" in result.output or "Code Validation" in result.output
