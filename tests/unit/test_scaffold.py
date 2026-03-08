@@ -135,3 +135,43 @@ class TestScaffoldEdgeCases:
         """Trying to scaffold a nonexistent directory raises FileNotFoundError."""
         with pytest.raises(FileNotFoundError):
             scaffold_project(Path("/nonexistent/scaffold/path"))
+
+
+# ---------------------------------------------------------------------------
+# Scaffold — behavioral tests (unexpected input, idempotency)
+# ---------------------------------------------------------------------------
+
+
+class TestScaffoldBehavioral:
+    """Behavioral tests: unexpected input, idempotency."""
+
+    def test_path_is_file_not_directory(self, tmp_path: Path) -> None:
+        """Unexpected input: path points to a file → error."""
+        file_path = tmp_path / "somefile.txt"
+        file_path.write_text("content", encoding="utf-8")
+
+        with pytest.raises((FileNotFoundError, NotADirectoryError, OSError)):
+            scaffold_project(file_path)
+
+    def test_second_run_returns_empty_created(self, tmp_path: Path) -> None:
+        """Idempotency: second run creates nothing new."""
+        first = scaffold_project(tmp_path)
+        assert len(first.created) > 0
+
+        second = scaffold_project(tmp_path)
+        assert len(second.created) == 0
+
+    def test_config_yaml_contains_no_secrets(self, tmp_path: Path) -> None:
+        """Security: generated config.yaml must NOT contain API key values."""
+        scaffold_project(tmp_path)
+        config_content = (tmp_path / ".specweaver" / "config.yaml").read_text(
+            encoding="utf-8",
+        )
+
+        # Config should reference env var, not contain actual keys
+        assert "api_key" not in config_content.lower() or "GEMINI_API_KEY" in config_content
+        # Must not contain any placeholder secret patterns
+        assert "sk-" not in config_content
+        assert "AIza" not in config_content
+
+

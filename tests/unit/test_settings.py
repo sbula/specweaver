@@ -179,3 +179,35 @@ class TestSettingsModel:
         )
         with pytest.raises(ValueError):
             load_settings(config_dir.parent)
+
+
+# ---------------------------------------------------------------------------
+# Settings — behavioral tests (unexpected input)
+# ---------------------------------------------------------------------------
+
+
+class TestSettingsBehavioral:
+    """Behavioral tests: unexpected input."""
+
+    def test_llm_key_is_string_not_dict(self, tmp_path: Path) -> None:
+        """Unexpected input: 'llm' value is a string → uses defaults."""
+        sw_dir = tmp_path / ".specweaver"
+        sw_dir.mkdir()
+        (sw_dir / "config.yaml").write_text(
+            "llm: just_a_string\n",
+            encoding="utf-8",
+        )
+        settings = load_settings(tmp_path)
+        assert settings.llm.model == "gemini-2.5-flash"
+
+    def test_nested_unknown_key_in_llm(self, tmp_path: Path) -> None:
+        """Unexpected input: unknown key under llm → ignored by Pydantic."""
+        sw_dir = tmp_path / ".specweaver"
+        sw_dir.mkdir()
+        (sw_dir / "config.yaml").write_text(
+            "llm:\n  model: gemini-2.5-pro\n  nonexistent_key: 42\n",
+            encoding="utf-8",
+        )
+        settings = load_settings(tmp_path)
+        assert settings.llm.model == "gemini-2.5-pro"
+

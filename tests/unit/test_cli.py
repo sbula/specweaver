@@ -14,6 +14,8 @@ from specweaver.cli import app
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import pytest
+
 runner = CliRunner()
 
 
@@ -137,3 +139,61 @@ class TestCLIEdgeCases:
         """Running sw with unknown command shows error."""
         result = runner.invoke(app, ["nonexistent"])
         assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# CLI — behavioral tests (failure, unexpected input)
+# ---------------------------------------------------------------------------
+
+
+class TestCLIBehavioral:
+    """Behavioral tests: failure paths, unexpected input."""
+
+    def test_check_with_directory_path(self) -> None:
+        """Unexpected input: check with a directory path → error."""
+        result = runner.invoke(app, ["check", "tests/"])
+        assert result.exit_code == 1
+
+    def test_implement_nonexistent_spec(self) -> None:
+        """Failure: implement with non-existent spec → error."""
+        result = runner.invoke(app, ["implement", "/nonexistent/spec.md"])
+        assert result.exit_code != 0
+
+    def test_review_nonexistent_spec(self) -> None:
+        """Failure: review with non-existent spec → error."""
+        result = runner.invoke(app, ["review", "/nonexistent/spec.md"])
+        assert result.exit_code != 0
+
+    def test_draft_without_api_key_shows_error(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Failure: draft without API key → friendly error, not traceback."""
+        import os
+
+        monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+        # Ensure no key from any source
+        monkeypatch.setattr(os, "environ", {k: v for k, v in os.environ.items() if k != "GEMINI_API_KEY"})
+
+        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        result = runner.invoke(app, ["draft", "test_comp", "--project", str(tmp_path)])
+
+        assert result.exit_code != 0
+        # Should show user-friendly error, not a Python traceback
+        assert "Traceback" not in result.output
+
+    def test_check_component_shows_summary(self, tmp_path: Path) -> None:
+        """Check with component level → shows summary line with pass/fail counts."""
+        spec = tmp_path / "test.md"
+        spec.write_text("# Test Spec\n\n## 1. Purpose\n\nDoes one thing.\n", encoding="utf-8")
+        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        result = runner.invoke(
+            app,
+            ["check", str(spec), "--level", "component", "--project", str(tmp_path)],
+        )
+
+        # Should show validation results with status indicators
+        assert "PASS" in result.output or "FAIL" in result.output
+
+

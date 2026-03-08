@@ -5,15 +5,24 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+import subprocess
+from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock, MagicMock, patch
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 import pytest
 
 from specweaver.implementation.generator import Generator
+from specweaver.llm.errors import GenerationError
 from specweaver.llm.models import GenerationConfig, LLMResponse
 from specweaver.validation.models import Status
 from specweaver.validation.rules.code.c01_syntax_valid import SyntaxValidRule
 from specweaver.validation.rules.code.c02_tests_exist import TestsExistRule
+from specweaver.validation.rules.code.c03_tests_pass import TestsPassRule
+from specweaver.validation.rules.code.c04_coverage import CoverageRule
 from specweaver.validation.rules.code.c05_import_direction import ImportDirectionRule
 from specweaver.validation.rules.code.c06_no_bare_except import NoBareExceptRule
 from specweaver.validation.rules.code.c07_no_orphan_todo import NoOrphanTodoRule
@@ -411,3 +420,547 @@ class TestCLICodeCheck:
 
         assert result.exit_code == 1
         assert "FAIL" in result.output
+
+
+# ---------------------------------------------------------------------------
+# C03: Tests Pass — subprocess mock tests
+# ---------------------------------------------------------------------------
+
+
+class TestC03TestsPass:
+    """C03 runs pytest and checks results (all subprocess-mocked)."""
+
+    def test_skip_when_no_path(self) -> None:
+        """Should SKIP when no spec_path is provided."""
+        rule = TestsPassRule()
+        result = rule.check("code content", spec_path=None)
+        assert result.status == Status.SKIP
+
+    def test_skip_when_no_tests_dir(self, tmp_path: Path) -> None:
+        """Should SKIP when tests/ directory doesn't exist."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        src = tmp_path / "src"
+        src.mkdir()
+        code = src / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        rule = TestsPassRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.SKIP
+        assert "tests/" in result.message.lower() or "no tests" in result.message.lower()
+
+    def test_skip_when_no_test_file(self, tmp_path: Path) -> None:
+        """Should SKIP when test file for the module doesn't exist."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        (tmp_path / "tests").mkdir()
+        src = tmp_path / "src"
+        src.mkdir()
+        code = src / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        rule = TestsPassRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.SKIP
+        assert "test_mymod" in result.message
+
+    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    def test_pass_when_tests_succeed(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should PASS when pytest returns exit code 0."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_mymod.py").write_text(
+            "def test_ok(): assert True",
+            encoding="utf-8",
+        )
+        src = tmp_path / "src"
+        src.mkdir()
+        code = src / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout="1 passed",
+            stderr="",
+        )
+
+        rule = TestsPassRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.PASS
+
+    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    def test_fail_when_tests_fail(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should FAIL when pytest returns non-zero exit code."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_mymod.py").write_text(
+            "def test_bad(): assert False",
+            encoding="utf-8",
+        )
+        src = tmp_path / "src"
+        src.mkdir()
+        code = src / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="FAILED test_bad - assert False",
+            stderr="",
+        )
+
+        rule = TestsPassRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.FAIL
+        assert len(result.findings) > 0
+
+    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    def test_fail_when_tests_timeout(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should FAIL with timeout message when pytest times out."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_mymod.py").write_text("", encoding="utf-8")
+        src = tmp_path / "src"
+        src.mkdir()
+        code = src / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.side_effect = subprocess.TimeoutExpired(
+            cmd="pytest",
+            timeout=60,
+        )
+
+        rule = TestsPassRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.FAIL
+        assert "timed out" in result.message.lower()
+
+    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    def test_fail_output_truncated(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Long output should be truncated to last 500 chars."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_mymod.py").write_text("", encoding="utf-8")
+        src = tmp_path / "src"
+        src.mkdir()
+        code = src / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        long_output = "x" * 1000
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout=long_output,
+            stderr="",
+        )
+
+        rule = TestsPassRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.FAIL
+        # Output is truncated to 500 chars
+        assert len(result.findings[0].message) <= 500
+
+    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    def test_fail_no_output(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should handle empty pytest output gracefully."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_mymod.py").write_text("", encoding="utf-8")
+        src = tmp_path / "src"
+        src.mkdir()
+        code = src / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="",
+            stderr="",
+        )
+
+        rule = TestsPassRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.FAIL
+        assert "No output" in result.findings[0].message
+
+
+# ---------------------------------------------------------------------------
+# C04: Coverage — subprocess mock tests
+# ---------------------------------------------------------------------------
+
+
+class TestC04Coverage:
+    """C04 runs pytest --cov and checks coverage (all subprocess-mocked)."""
+
+    def test_skip_when_no_path(self) -> None:
+        """Should SKIP when no spec_path is provided."""
+        rule = CoverageRule()
+        result = rule.check("code content", spec_path=None)
+        assert result.status == Status.SKIP
+
+    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    def test_pass_when_above_threshold(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should PASS when coverage is above the threshold."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        code = tmp_path / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout="TOTAL     100       5    95%",
+            stderr="",
+        )
+
+        rule = CoverageRule(threshold=70)
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.PASS
+        assert "95%" in result.message
+
+    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    def test_fail_when_below_threshold(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should FAIL when coverage is below the threshold."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        code = tmp_path / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout="TOTAL      50      30    40%",
+            stderr="",
+        )
+
+        rule = CoverageRule(threshold=70)
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.FAIL
+        assert "40%" in result.message
+        assert len(result.findings) > 0
+
+    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    def test_warn_when_output_unparseable(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should WARN when coverage output can't be parsed."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        code = tmp_path / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout="some unexpected output",
+            stderr="",
+        )
+
+        rule = CoverageRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.WARN
+        assert "unparseable" in result.message.lower() or "parse" in result.message.lower()
+
+    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    def test_fail_when_timeout(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should FAIL when coverage check times out."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        code = tmp_path / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.side_effect = subprocess.TimeoutExpired(
+            cmd="pytest",
+            timeout=120,
+        )
+
+        rule = CoverageRule()
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.FAIL
+        assert "timed out" in result.message.lower()
+
+    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    def test_pass_at_exact_threshold(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should PASS when coverage equals the threshold exactly."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        code = tmp_path / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout="TOTAL     100      30    70%",
+            stderr="",
+        )
+
+        rule = CoverageRule(threshold=70)
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.PASS
+
+    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    def test_fail_one_below_threshold(
+        self,
+        mock_run: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Should FAIL when coverage is 1% below threshold."""
+        (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
+        code = tmp_path / "mymod.py"
+        code.write_text("pass", encoding="utf-8")
+
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout="TOTAL     100      31    69%",
+            stderr="",
+        )
+
+        rule = CoverageRule(threshold=70)
+        result = rule.check("pass", spec_path=code)
+        assert result.status == Status.FAIL
+
+    def test_custom_threshold(self) -> None:
+        """CoverageRule should accept a custom threshold."""
+        rule = CoverageRule(threshold=90)
+        assert rule._threshold == 90
+
+    def test_default_threshold(self) -> None:
+        """Default threshold should be 70."""
+        rule = CoverageRule()
+        assert rule._threshold == 70
+
+
+# ---------------------------------------------------------------------------
+# Generator — behavioral tests (failure, boundaries, unexpected input)
+# ---------------------------------------------------------------------------
+
+
+def _failing_llm(exc: Exception | None = None) -> MagicMock:
+    """Create a mock LLM that raises on generate."""
+    mock = MagicMock()
+    mock.generate = AsyncMock(
+        side_effect=exc or GenerationError("LLM exploded", provider="test"),
+    )
+    return mock
+
+
+class TestGeneratorBehavioral:
+    """Behavioral tests: failure, boundaries, unexpected input."""
+
+    @pytest.mark.asyncio
+    async def test_llm_error_propagates(self, tmp_path: Path) -> None:
+        """Failure: LLM raises → exception propagates to caller."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec\n## 1. Purpose\nDoes things.", encoding="utf-8")
+        output = tmp_path / "code.py"
+
+        gen = Generator(llm=_failing_llm())
+        with pytest.raises(GenerationError, match="LLM exploded"):
+            await gen.generate_code(spec, output)
+
+    @pytest.mark.asyncio
+    async def test_llm_returns_empty_text(self, tmp_path: Path) -> None:
+        """Boundary: LLM returns empty string → file is still written."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec", encoding="utf-8")
+        output = tmp_path / "code.py"
+
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock(
+            return_value=LLMResponse(text="", model="test-model"),
+        )
+        gen = Generator(llm=mock_llm)
+        result = await gen.generate_code(spec, output)
+
+        assert result.exists()
+        assert result.read_text(encoding="utf-8") == "\n"
+
+    @pytest.mark.asyncio
+    async def test_spec_file_not_found(self, tmp_path: Path) -> None:
+        """Unexpected input: spec_path doesn't exist → FileNotFoundError."""
+        spec = tmp_path / "nonexistent.md"
+        output = tmp_path / "code.py"
+
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock(
+            return_value=LLMResponse(text="pass", model="test-model"),
+        )
+        gen = Generator(llm=mock_llm)
+        with pytest.raises(FileNotFoundError):
+            await gen.generate_code(spec, output)
+
+    @pytest.mark.asyncio
+    async def test_empty_spec_file(self, tmp_path: Path) -> None:
+        """Boundary: 0-byte spec → still generates (LLM gets empty content)."""
+        spec = tmp_path / "empty_spec.md"
+        spec.write_text("", encoding="utf-8")
+        output = tmp_path / "code.py"
+
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock(
+            return_value=LLMResponse(text="pass\n", model="test-model"),
+        )
+        gen = Generator(llm=mock_llm)
+        result = await gen.generate_code(spec, output)
+
+        assert result.exists()
+        assert "pass" in result.read_text(encoding="utf-8")
+
+    @pytest.mark.asyncio
+    async def test_llm_error_on_generate_tests(self, tmp_path: Path) -> None:
+        """Failure: LLM error during generate_tests → propagates."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec", encoding="utf-8")
+        output = tmp_path / "test_code.py"
+
+        gen = Generator(llm=_failing_llm())
+        with pytest.raises(GenerationError):
+            await gen.generate_tests(spec, output)
+
+    @pytest.mark.asyncio
+    async def test_output_not_written_on_error(self, tmp_path: Path) -> None:
+        """Exception: on LLM error, output file should NOT be created."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec", encoding="utf-8")
+        output = tmp_path / "code.py"
+
+        gen = Generator(llm=_failing_llm())
+        with pytest.raises(GenerationError):
+            await gen.generate_code(spec, output)
+
+        assert not output.exists()
+
+
+# ---------------------------------------------------------------------------
+# Generator._clean_code_output — pure function tests
+# ---------------------------------------------------------------------------
+
+
+class TestCleanCodeOutput:
+    """Test the markdown fence stripping helper."""
+
+    def test_removes_python_fences(self) -> None:
+        """Strips ```python ... ``` wrapper."""
+        raw = "```python\nprint('hello')\n```"
+        assert Generator._clean_code_output(raw) == "print('hello')\n"
+
+    def test_removes_plain_fences(self) -> None:
+        """Strips plain ``` ... ``` wrapper."""
+        raw = "```\nprint('hello')\n```"
+        assert Generator._clean_code_output(raw) == "print('hello')\n"
+
+    def test_no_fences_passthrough(self) -> None:
+        """Code without fences passes through unchanged (plus trailing newline)."""
+        raw = "print('hello')"
+        assert Generator._clean_code_output(raw) == "print('hello')\n"
+
+    def test_only_trailing_fence(self) -> None:
+        """Only trailing ``` is stripped."""
+        raw = "print('hello')\n```"
+        assert Generator._clean_code_output(raw) == "print('hello')\n"
+
+    def test_empty_input(self) -> None:
+        """Empty string → just a newline."""
+        assert Generator._clean_code_output("") == "\n"
+
+    def test_whitespace_around_fences(self) -> None:
+        """Leading/trailing whitespace around fenced code is stripped."""
+        raw = "  \n```python\ncode()\n```  \n"
+        assert Generator._clean_code_output(raw) == "code()\n"
+
+
+# ---------------------------------------------------------------------------
+# Validation runner — filter logic tests
+# ---------------------------------------------------------------------------
+
+
+class TestValidationRunnerFiltering:
+    """Test that runner filter flags work correctly."""
+
+    def test_code_rules_without_subprocess_excludes_c03_c04(self) -> None:
+        """include_subprocess=False → no TestsPassRule or CoverageRule."""
+        from specweaver.validation.runner import get_code_rules
+
+        rules = get_code_rules(include_subprocess=False)
+        rule_ids = {r.rule_id for r in rules}
+
+        assert "C03" not in rule_ids
+        assert "C04" not in rule_ids
+        assert "C01" in rule_ids
+        assert "C05" in rule_ids
+
+    def test_code_rules_with_subprocess_includes_c03_c04(self) -> None:
+        """include_subprocess=True → includes TestsPassRule and CoverageRule."""
+        from specweaver.validation.runner import get_code_rules
+
+        rules = get_code_rules(include_subprocess=True)
+        rule_ids = {r.rule_id for r in rules}
+
+        assert "C03" in rule_ids
+        assert "C04" in rule_ids
+
+    def test_spec_rules_without_llm_excludes_llm_rules(self) -> None:
+        """include_llm=False → only non-LLM spec rules returned."""
+        from specweaver.validation.runner import get_spec_rules
+
+        rules = get_spec_rules(include_llm=False)
+        assert all(not r.requires_llm for r in rules)
+
+    def test_run_rules_exception_in_rule(self) -> None:
+        """A crashing rule → FAIL result with error message, not an exception."""
+        from specweaver.validation.runner import run_rules
+
+        class CrashingRule:
+            rule_id = "X99"
+            name = "Crash"
+            requires_llm = False
+
+            def check(self, text: str, path: object = None) -> None:
+                msg = "boom"
+                raise RuntimeError(msg)
+
+        results = run_rules([CrashingRule()], "some text")  # type: ignore[list-item]
+
+        assert len(results) == 1
+        assert results[0].status == Status.FAIL
+        assert "boom" in results[0].message
+

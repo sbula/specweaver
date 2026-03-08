@@ -364,3 +364,52 @@ class TestGeminiAdapter:
 
         result = adapter._parse_response(mock_response, "test-model")
         assert result.finish_reason == "max_tokens"
+
+
+# ---------------------------------------------------------------------------
+# GeminiAdapter — behavioral tests (exceptions, boundaries)
+# ---------------------------------------------------------------------------
+
+
+class TestGeminiAdapterBehavioral:
+    """Behavioral tests: exception wrapping, boundaries."""
+
+    def test_handle_error_preserves_traceback(self) -> None:
+        """Exception: wrapped errors preserve original via 'from exc'."""
+        adapter = GeminiAdapter(api_key="test")
+        original = ValueError("original cause")
+
+        with pytest.raises(GenerationError) as exc_info:
+            adapter._handle_error(original)
+
+        assert exc_info.value.__cause__ is original
+
+    def test_handle_error_safety_maps_to_content_filter(self) -> None:
+        """Failure: 'safety' keyword maps to ContentFilterError."""
+        adapter = GeminiAdapter(api_key="test")
+        with pytest.raises(ContentFilterError):
+            adapter._handle_error(Exception("safety blocked"))
+
+    def test_parse_response_none_text(self) -> None:
+        """Boundary: response.text is None → returns empty string."""
+        adapter = GeminiAdapter(api_key="test")
+
+        mock_response = MagicMock()
+        mock_response.text = None
+        mock_response.usage_metadata = None
+        mock_response.candidates = []
+
+        result = adapter._parse_response(mock_response, "test-model")
+        assert result.text == ""
+
+    def test_lazy_client_initialization(self) -> None:
+        """Startup: client is NOT created at init, only on first use."""
+        adapter = GeminiAdapter(api_key="test-key")
+        assert adapter._client is None
+
+    def test_empty_messages_conversion(self) -> None:
+        """Boundary: empty messages list → empty contents."""
+        system, contents = _messages_to_gemini([])
+        assert system is None
+        assert contents == []
+

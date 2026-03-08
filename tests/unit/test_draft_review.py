@@ -6,12 +6,14 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.context.hitl_provider import HITLProvider
 from specweaver.context.provider import ContextProvider
 from specweaver.drafting.drafter import SPEC_SECTIONS, Drafter
+from specweaver.llm.errors import GenerationError
 from specweaver.llm.models import GenerationConfig, LLMResponse
 from specweaver.review.reviewer import Reviewer, ReviewFinding, ReviewResult, ReviewVerdict
 
@@ -347,3 +349,288 @@ class TestCLICheck:
 
         # Code validation is now implemented — should show rule results
         assert "C01" in result.output or "Code Validation" in result.output
+
+
+# ---------------------------------------------------------------------------
+# HITL Provider — Rich prompt tests
+# ---------------------------------------------------------------------------
+
+
+class TestHITLProvider:
+    """Test the Human-in-the-Loop context provider."""
+
+    def test_name(self) -> None:
+        """Provider name should be 'hitl'."""
+        provider = HITLProvider()
+        assert provider.name == "hitl"
+
+    @patch("specweaver.context.hitl_provider.Prompt.ask")
+    async def test_ask_returns_stripped_input(
+        self,
+        mock_ask: MagicMock,
+    ) -> None:
+        """Should return stripped user input."""
+        mock_ask.return_value = "  user answer  "
+        console = MagicMock()
+
+        provider = HITLProvider(console=console)
+        result = await provider.ask("What does it do?")
+        assert result == "user answer"
+
+    @patch("specweaver.context.hitl_provider.Prompt.ask")
+    async def test_ask_with_section(
+        self,
+        mock_ask: MagicMock,
+    ) -> None:
+        """Should display section context when provided."""
+        mock_ask.return_value = "answer"
+        console = MagicMock()
+
+        provider = HITLProvider(console=console)
+        result = await provider.ask(
+            "Describe the purpose",
+            section="Purpose",
+        )
+
+        assert result == "answer"
+        calls = console.print.call_args_list
+        section_printed = any(
+            "Section:" in str(c) and "Purpose" in str(c) for c in calls
+        )
+        assert section_printed
+
+    @patch("specweaver.context.hitl_provider.Prompt.ask")
+    async def test_ask_without_section(
+        self,
+        mock_ask: MagicMock,
+    ) -> None:
+        """Should NOT display section context when not provided."""
+        mock_ask.return_value = "answer"
+        console = MagicMock()
+
+        provider = HITLProvider(console=console)
+        await provider.ask("What?")
+
+        calls = console.print.call_args_list
+        section_printed = any("Section:" in str(c) for c in calls)
+        assert not section_printed
+
+    @patch("specweaver.context.hitl_provider.Prompt.ask")
+    async def test_ask_empty_input(
+        self,
+        mock_ask: MagicMock,
+    ) -> None:
+        """Should return empty string when user presses Enter."""
+        mock_ask.return_value = ""
+        console = MagicMock()
+
+        provider = HITLProvider(console=console)
+        result = await provider.ask("Skip this?")
+        assert result == ""
+
+    def test_default_console(self) -> None:
+        """Should create a default Console if none provided."""
+        provider = HITLProvider()
+        assert provider._console is not None
+
+
+# ---------------------------------------------------------------------------
+# Drafter — behavioral tests (failure, unexpected input)
+# ---------------------------------------------------------------------------
+
+
+def _failing_llm(exc: Exception | None = None) -> MagicMock:
+    """Create a mock LLM that raises on generate."""
+    mock = MagicMock()
+    mock.generate = AsyncMock(
+        side_effect=exc or GenerationError("LLM exploded", provider="test"),
+    )
+    return mock
+
+
+class TestDrafterBehavioral:
+    """Behavioral tests: failure, unexpected input."""
+
+    @pytest.mark.asyncio
+    async def test_llm_error_during_section_propagates(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Failure: LLM error during _generate_section → propagates."""
+        drafter = Drafter(
+            llm=_failing_llm(),
+            context_provider=MockContextProvider(),
+        )
+        with pytest.raises(GenerationError):
+            await drafter.draft("test_comp", tmp_path)
+
+    @pytest.mark.asyncio
+    async def test_name_with_special_chars(self, tmp_path: Path) -> None:
+        """Unexpected input: name with special chars → file still created."""
+        drafter = Drafter(
+            llm=_make_mock_llm("Generated content"),
+            context_provider=MockContextProvider(),
+        )
+        result = await drafter.draft("my special comp!", tmp_path)
+
+        assert result.exists()
+        assert result.name == "my special comp!_spec.md"
+
+    @pytest.mark.asyncio
+    async def test_empty_name(self, tmp_path: Path) -> None:
+        """Boundary: empty component name → file still created."""
+        drafter = Drafter(
+            llm=_make_mock_llm("Generated content"),
+            context_provider=MockContextProvider(),
+        )
+        result = await drafter.draft("", tmp_path)
+
+        assert result.exists()
+        assert result.name == "_spec.md"
+
+
+# ---------------------------------------------------------------------------
+# Reviewer — behavioral tests (failure, boundaries)
+# ---------------------------------------------------------------------------
+
+
+class TestReviewerBehavioral:
+    """Behavioral tests: failure, unexpected input, boundaries."""
+
+    @pytest.mark.asyncio
+    async def test_whitespace_only_response(self, tmp_path: Path) -> None:
+        """Unexpected input: LLM returns only whitespace → DENIED."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec", encoding="utf-8")
+
+        reviewer = Reviewer(llm=_make_mock_llm("   \n\n\t  "))
+        result = await reviewer.review_spec(spec)
+
+        assert result.verdict == ReviewVerdict.DENIED
+
+    @pytest.mark.asyncio
+    async def test_empty_spec_file_still_reviews(self, tmp_path: Path) -> None:
+        """Boundary: 0-byte spec → review still executes."""
+        spec = tmp_path / "empty.md"
+        spec.write_text("", encoding="utf-8")
+
+        reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED\nLooks fine."))
+        result = await reviewer.review_spec(spec)
+
+        assert result.verdict == ReviewVerdict.ACCEPTED
+
+    @pytest.mark.asyncio
+    async def test_error_verdict_preserves_message(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Exception: error verdict includes the original exception text."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec", encoding="utf-8")
+
+        specific_error = GenerationError("timeout after 30s", provider="gemini")
+        reviewer = Reviewer(llm=_failing_llm(specific_error))
+        result = await reviewer.review_spec(spec)
+
+        assert result.verdict == ReviewVerdict.ERROR
+        assert "timeout after 30s" in result.summary
+
+    @pytest.mark.asyncio
+    async def test_code_review_spec_not_found(self, tmp_path: Path) -> None:
+        """Unexpected input: spec path doesn't exist → FileNotFoundError."""
+        code = tmp_path / "code.py"
+        code.write_text("pass", encoding="utf-8")
+        spec = tmp_path / "nonexistent.md"
+
+        reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED"))
+        with pytest.raises(FileNotFoundError):
+            await reviewer.review_code(code, spec)
+
+    @pytest.mark.asyncio
+    async def test_code_review_code_not_found(self, tmp_path: Path) -> None:
+        """Unexpected input: code path doesn't exist → FileNotFoundError."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec", encoding="utf-8")
+        code = tmp_path / "nonexistent.py"
+
+        reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED"))
+        with pytest.raises(FileNotFoundError):
+            await reviewer.review_code(code, spec)
+
+
+# ---------------------------------------------------------------------------
+# Reviewer._parse_response — edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestReviewerParseResponse:
+    """Edge cases for _parse_response verdict and findings extraction."""
+
+    def test_multiple_findings_extracted(self) -> None:
+        """Multiple '- ' lines → multiple ReviewFinding objects."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "VERDICT: DENIED\n"
+            "- Missing type hints\n"
+            "- No error handling\n"
+            "- Docstring missing\n"
+            "Overall low quality.",
+        )
+
+        assert result.verdict == ReviewVerdict.DENIED
+        assert len(result.findings) == 3
+        assert result.findings[0].message == "Missing type hints"
+        assert result.findings[2].message == "Docstring missing"
+
+    def test_no_findings(self) -> None:
+        """Response with verdict but no '- ' lines → empty findings."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response("VERDICT: ACCEPTED\nLooks great.")
+
+        assert result.verdict == ReviewVerdict.ACCEPTED
+        assert len(result.findings) == 0
+        assert result.summary == "Looks great."
+
+    def test_verdict_on_later_line(self) -> None:
+        """VERDICT keyword not on first line → still detected."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "I've reviewed the spec carefully.\nVERDICT: ACCEPTED\nAll good.",
+        )
+
+        assert result.verdict == ReviewVerdict.ACCEPTED
+
+    def test_raw_response_preserved(self) -> None:
+        """raw_response field contains the original text."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        text = "VERDICT: DENIED\n- Issue found"
+        result = reviewer._parse_response(text)
+
+        assert result.raw_response == text
+
+
+# ---------------------------------------------------------------------------
+# Drafter — all sections skipped
+# ---------------------------------------------------------------------------
+
+
+class TestDrafterAllSkipped:
+    """Test draft behavior when user skips every section."""
+
+    @pytest.mark.asyncio
+    async def test_all_sections_skipped_creates_placeholders(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """All 5 sections skipped → file created with TODO placeholders."""
+        drafter = Drafter(
+            llm=_make_mock_llm("Should not be called"),
+            context_provider=SkipContextProvider(),
+        )
+        result = await drafter.draft("skipped_comp", tmp_path)
+
+        assert result.exists()
+        content = result.read_text(encoding="utf-8")
+        assert content.count("TODO") >= 5  # one per skipped section
+
+
