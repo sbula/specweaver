@@ -18,8 +18,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.tools.git_executor import GitExecutor
-from specweaver.tools.git_tool import (
+from specweaver.tools.git.executor import GitExecutor
+from specweaver.tools.git.tool import (
     GitTool,
     ToolResult,
     whitelist_for_role,

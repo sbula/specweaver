@@ -119,7 +119,8 @@ specweaver/
 │   ├── llm/                # Gemini adapter, models, errors
 │   ├── project/            # Scaffold, discovery
 │   ├── review/             # AI reviewer
-│   ├── tools/              # Agent tools (GitTool, role interfaces)
+│   ├── tools/              # Agent tools
+│   │   └── git/            # Git tool (executor, interfaces, role access)
 │   └── validation/         # Rules engine (S01-S10, C01-C08)
 ├── tests/
 │   ├── unit/               # 399 unit tests
@@ -137,7 +138,7 @@ SpecWeaver provides role-restricted tools for LLM agents, inspired by the [flowM
 High-level git operations that agents call by intent, not raw commands. Each intent maps to a safe sequence of git commands executed on the target project directory (never SpecWeaver's own repo).
 
 ```python
-from specweaver.tools.git_interfaces import create_git_interface
+from specweaver.tools.git.interfaces import create_git_interface
 
 # Agent gets only the methods its role allows
 git = create_git_interface("implementer", project_path)
