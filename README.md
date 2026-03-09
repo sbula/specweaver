@@ -15,6 +15,7 @@ sw init → sw draft → sw check → sw review → sw implement → sw check �
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with findings
 - **Code generation** — Generate implementation + test files from a validated spec
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
+- **Role-based git access** — LLM agents get MCP-like interfaces restricted to their role (implementer, reviewer, debugger, drafter)
 
 ## Quickstart
 
@@ -118,13 +119,44 @@ specweaver/
 │   ├── llm/                # Gemini adapter, models, errors
 │   ├── project/            # Scaffold, discovery
 │   ├── review/             # AI reviewer
+│   ├── tools/              # Agent tools (GitTool, role interfaces)
 │   └── validation/         # Rules engine (S01-S10, C01-C08)
 ├── tests/
-│   ├── unit/               # 270 unit tests
+│   ├── unit/               # 399 unit tests
 │   └── e2e/                # 17 E2E lifecycle tests
 ├── docs/                   # Architecture & methodology docs
 └── pyproject.toml
 ```
+
+## Agent Tools
+
+SpecWeaver provides role-restricted tools for LLM agents, inspired by the [flowManager](https://github.com/sbula/flowManager) atoms & tools architecture.
+
+### GitTool
+
+High-level git operations that agents call by intent, not raw commands. Each intent maps to a safe sequence of git commands executed on the target project directory (never SpecWeaver's own repo).
+
+```python
+from specweaver.tools.git_interfaces import create_git_interface
+
+# Agent gets only the methods its role allows
+git = create_git_interface("implementer", project_path)
+git.commit("feat: add login endpoint")    # ✅ stages, validates, commits
+git.history()                              # ❌ AttributeError — not on this interface
+```
+
+| Role | Allowed Intents |
+|---|---|
+| **Implementer** | commit, inspect_changes, discard, uncommit, start_branch, switch_branch |
+| **Reviewer** | history, show_commit, blame, compare, list_branches |
+| **Debugger** | history, file_history, show_old, search_history, reflog, inspect_changes |
+| **Drafter** | commit, inspect_changes, discard |
+
+**Built-in guardrails:**
+- Conventional commit messages enforced (`feat:`, `fix:`, `docs:`, ...)
+- Branch naming enforced (`feat/`, `fix/`, `docs/`, ...)
+- `push`, `pull`, `merge`, `rebase`, `tag` are permanently blocked
+- Auto-stash on branch switch
 
 ## Development
 
