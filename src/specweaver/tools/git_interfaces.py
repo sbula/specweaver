@@ -18,12 +18,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.tools.git_atom import (
-    AtomResult,
-    GitAtom,
+from specweaver.tools.git_executor import GitExecutor
+from specweaver.tools.git_tool import (
+    GitTool,
+    ToolResult,
     whitelist_for_role,
 )
-from specweaver.tools.git_tool import GitTool
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -40,32 +40,32 @@ class ImplementerGitInterface:
                      uncommit, start_branch, switch_branch.
     """
 
-    def __init__(self, atom: GitAtom) -> None:
-        self._atom = atom
+    def __init__(self, tool: GitTool) -> None:
+        self._tool = tool
 
-    def commit(self, message: str) -> AtomResult:
+    def commit(self, message: str) -> ToolResult:
         """Stage all changes and commit with a conventional commit message."""
-        return self._atom.commit(message)
+        return self._tool.commit(message)
 
-    def inspect_changes(self) -> AtomResult:
+    def inspect_changes(self) -> ToolResult:
         """Show current status and diff."""
-        return self._atom.inspect_changes()
+        return self._tool.inspect_changes()
 
-    def discard(self, file: str) -> AtomResult:
+    def discard(self, file: str) -> ToolResult:
         """Discard working tree changes for a specific file."""
-        return self._atom.discard(file)
+        return self._tool.discard(file)
 
-    def uncommit(self) -> AtomResult:
+    def uncommit(self) -> ToolResult:
         """Undo the last commit, keeping changes staged."""
-        return self._atom.uncommit()
+        return self._tool.uncommit()
 
-    def start_branch(self, name: str) -> AtomResult:
+    def start_branch(self, name: str) -> ToolResult:
         """Create and switch to a new branch."""
-        return self._atom.start_branch(name)
+        return self._tool.start_branch(name)
 
-    def switch_branch(self, name: str) -> AtomResult:
+    def switch_branch(self, name: str) -> ToolResult:
         """Switch to an existing branch (auto-stashes changes)."""
-        return self._atom.switch_branch(name)
+        return self._tool.switch_branch(name)
 
 
 class ReviewerGitInterface:
@@ -75,28 +75,28 @@ class ReviewerGitInterface:
     All read-only.
     """
 
-    def __init__(self, atom: GitAtom) -> None:
-        self._atom = atom
+    def __init__(self, tool: GitTool) -> None:
+        self._tool = tool
 
-    def history(self, n: int = 10) -> AtomResult:
+    def history(self, n: int = 10) -> ToolResult:
         """Show recent commit history."""
-        return self._atom.history(n)
+        return self._tool.history(n)
 
-    def show_commit(self, commit_hash: str) -> AtomResult:
+    def show_commit(self, commit_hash: str) -> ToolResult:
         """Show the contents of a specific commit."""
-        return self._atom.show_commit(commit_hash)
+        return self._tool.show_commit(commit_hash)
 
-    def blame(self, file: str) -> AtomResult:
+    def blame(self, file: str) -> ToolResult:
         """Show line-by-line authorship of a file."""
-        return self._atom.blame(file)
+        return self._tool.blame(file)
 
-    def compare(self, base: str, head: str) -> AtomResult:
+    def compare(self, base: str, head: str) -> ToolResult:
         """Compare two branches or commits."""
-        return self._atom.compare(base, head)
+        return self._tool.compare(base, head)
 
-    def list_branches(self) -> AtomResult:
+    def list_branches(self) -> ToolResult:
         """List all branches."""
-        return self._atom.list_branches()
+        return self._tool.list_branches()
 
 
 class DebuggerGitInterface:
@@ -106,32 +106,32 @@ class DebuggerGitInterface:
                      search_history, reflog, inspect_changes.
     """
 
-    def __init__(self, atom: GitAtom) -> None:
-        self._atom = atom
+    def __init__(self, tool: GitTool) -> None:
+        self._tool = tool
 
-    def history(self, n: int = 10) -> AtomResult:
+    def history(self, n: int = 10) -> ToolResult:
         """Show recent commit history."""
-        return self._atom.history(n)
+        return self._tool.history(n)
 
-    def file_history(self, file: str, n: int = 5) -> AtomResult:
+    def file_history(self, file: str, n: int = 5) -> ToolResult:
         """Show recent commits that touched a specific file."""
-        return self._atom.file_history(file, n)
+        return self._tool.file_history(file, n)
 
-    def show_old(self, file: str, rev: str = "HEAD~1") -> AtomResult:
+    def show_old(self, file: str, rev: str = "HEAD~1") -> ToolResult:
         """Show a previous version of a file."""
-        return self._atom.show_old(file, rev)
+        return self._tool.show_old(file, rev)
 
-    def search_history(self, text: str) -> AtomResult:
+    def search_history(self, text: str) -> ToolResult:
         """Find commits where a text string was added or removed."""
-        return self._atom.search_history(text)
+        return self._tool.search_history(text)
 
-    def reflog(self, n: int = 10) -> AtomResult:
+    def reflog(self, n: int = 10) -> ToolResult:
         """Show the reflog (recovery history)."""
-        return self._atom.reflog(n)
+        return self._tool.reflog(n)
 
-    def inspect_changes(self) -> AtomResult:
+    def inspect_changes(self) -> ToolResult:
         """Show current status and diff."""
-        return self._atom.inspect_changes()
+        return self._tool.inspect_changes()
 
 
 class DrafterGitInterface:
@@ -140,20 +140,20 @@ class DrafterGitInterface:
     Allowed intents: commit, inspect_changes, discard.
     """
 
-    def __init__(self, atom: GitAtom) -> None:
-        self._atom = atom
+    def __init__(self, tool: GitTool) -> None:
+        self._tool = tool
 
-    def commit(self, message: str) -> AtomResult:
+    def commit(self, message: str) -> ToolResult:
         """Stage all changes and commit with a conventional commit message."""
-        return self._atom.commit(message)
+        return self._tool.commit(message)
 
-    def inspect_changes(self) -> AtomResult:
+    def inspect_changes(self) -> ToolResult:
         """Show current status and diff."""
-        return self._atom.inspect_changes()
+        return self._tool.inspect_changes()
 
-    def discard(self, file: str) -> AtomResult:
+    def discard(self, file: str) -> ToolResult:
         """Discard working tree changes for a specific file."""
-        return self._atom.discard(file)
+        return self._tool.discard(file)
 
 
 # ---------------------------------------------------------------------------
@@ -195,8 +195,8 @@ def create_git_interface(role: str, cwd: Path) -> GitInterface:
         raise ValueError(msg)
 
     whitelist = whitelist_for_role(role)
-    tool = GitTool(cwd=cwd, whitelist=whitelist)
-    atom = GitAtom(tool=tool, role=role)
+    executor = GitExecutor(cwd=cwd, whitelist=whitelist)
+    tool = GitTool(executor=executor, role=role)
 
     interface_cls = _ROLE_INTERFACE_MAP[role]
-    return interface_cls(atom)
+    return interface_cls(tool)

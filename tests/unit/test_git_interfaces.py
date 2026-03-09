@@ -89,37 +89,37 @@ class TestInterfaceMethodExposure:
 class TestFactory:
     """create_git_interface returns the correct interface per role."""
 
-    @patch("specweaver.tools.git_interfaces.GitTool")
+    @patch("specweaver.tools.git_interfaces.GitExecutor")
     def test_implementer_returns_correct_type(
         self,
-        mock_tool_cls: MagicMock,
+        mock_executor_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         iface = create_git_interface("implementer", tmp_path)
         assert isinstance(iface, ImplementerGitInterface)
 
-    @patch("specweaver.tools.git_interfaces.GitTool")
+    @patch("specweaver.tools.git_interfaces.GitExecutor")
     def test_reviewer_returns_correct_type(
         self,
-        mock_tool_cls: MagicMock,
+        mock_executor_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         iface = create_git_interface("reviewer", tmp_path)
         assert isinstance(iface, ReviewerGitInterface)
 
-    @patch("specweaver.tools.git_interfaces.GitTool")
+    @patch("specweaver.tools.git_interfaces.GitExecutor")
     def test_debugger_returns_correct_type(
         self,
-        mock_tool_cls: MagicMock,
+        mock_executor_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         iface = create_git_interface("debugger", tmp_path)
         assert isinstance(iface, DebuggerGitInterface)
 
-    @patch("specweaver.tools.git_interfaces.GitTool")
+    @patch("specweaver.tools.git_interfaces.GitExecutor")
     def test_drafter_returns_correct_type(
         self,
-        mock_tool_cls: MagicMock,
+        mock_executor_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         iface = create_git_interface("drafter", tmp_path)
@@ -129,13 +129,13 @@ class TestFactory:
         with pytest.raises(ValueError, match="Unknown role"):
             create_git_interface("admin", tmp_path)
 
-    @patch("specweaver.tools.git_interfaces.GitTool")
-    def test_cwd_passed_to_tool(
+    @patch("specweaver.tools.git_interfaces.GitExecutor")
+    def test_cwd_passed_to_executor(
         self,
-        mock_tool_cls: MagicMock,
+        mock_executor_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         create_git_interface("implementer", tmp_path)
-        mock_tool_cls.assert_called_once()
-        call_kwargs = mock_tool_cls.call_args
+        mock_executor_cls.assert_called_once()
+        call_kwargs = mock_executor_cls.call_args
         assert call_kwargs.kwargs["cwd"] == tmp_path
