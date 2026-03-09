@@ -157,3 +157,84 @@ class TestGitExecutorExecution:
         assert cmd_args[1] == "-C"
         assert cmd_args[2] == str(tmp_path)
         assert cmd_args[3] == "status"
+
+
+# ---------------------------------------------------------------------------
+# Edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestGitExecutorEdgeCases:
+    """Edge cases for whitelist, error messages, and security."""
+
+    def test_error_message_includes_command_name_on_block(self, tmp_path: Path) -> None:
+        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        with pytest.raises(GitExecutorError) as exc_info:
+            executor.run("push")
+        assert "git push" in str(exc_info.value)
+
+    def test_error_message_includes_allowed_list_on_deny(self, tmp_path: Path) -> None:
+        executor = GitExecutor(cwd=tmp_path, whitelist={"status", "diff"})
+        with pytest.raises(GitExecutorError) as exc_info:
+            executor.run("commit")
+        error_msg = str(exc_info.value)
+        assert "diff" in error_msg
+        assert "status" in error_msg
+
+    def test_error_message_on_blocked_arg(self, tmp_path: Path) -> None:
+        executor = GitExecutor(cwd=tmp_path, whitelist={"log"})
+        with pytest.raises(GitExecutorError) as exc_info:
+            executor.run("log", "merge")
+        assert "git merge" in str(exc_info.value)
+
+    def test_whitelist_is_immutable_after_construction(self, tmp_path: Path) -> None:
+        original = {"status", "diff"}
+        executor = GitExecutor(cwd=tmp_path, whitelist=original)
+        # Mutating the original set should not affect the executor
+        original.add("push")
+        assert "push" not in executor.whitelist
+
+    def test_multiple_blocked_commands_in_whitelist(self, tmp_path: Path) -> None:
+        with pytest.raises(GitExecutorError, match="Cannot whitelist blocked commands"):
+            GitExecutor(cwd=tmp_path, whitelist={"push", "merge", "status"})
+
+    def test_exit_code_minus_one_on_timeout(self, tmp_path: Path) -> None:
+        import subprocess as sp
+        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        with patch(
+            "specweaver.tools.git_executor.subprocess.run",
+            side_effect=sp.TimeoutExpired(cmd="git", timeout=5),
+        ):
+            result = executor.run("status", timeout=5)
+        assert result.exit_code == -1
+
+    def test_exit_code_minus_one_on_os_error(self, tmp_path: Path) -> None:
+        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        with patch(
+            "specweaver.tools.git_executor.subprocess.run",
+            side_effect=OSError("No such file"),
+        ):
+            result = executor.run("status")
+        assert result.exit_code == -1
+
+    def test_args_are_passed_through(self, tmp_path: Path) -> None:
+        executor = GitExecutor(cwd=tmp_path, whitelist={"log"})
+        mock_result = type("R", (), {
+            "returncode": 0, "stdout": "", "stderr": "",
+        })()
+        with patch("specweaver.tools.git_executor.subprocess.run", return_value=mock_result) as mock_run:
+            executor.run("log", "--oneline", "-n5", "--", "file.py")
+        cmd_args = mock_run.call_args[0][0]
+        assert cmd_args == ["git", "-C", str(tmp_path), "log", "--oneline", "-n5", "--", "file.py"]
+
+    def test_stderr_preserved_on_failure(self, tmp_path: Path) -> None:
+        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        mock_result = type("R", (), {
+            "returncode": 128,
+            "stdout": "",
+            "stderr": "fatal: not a git repository",
+        })()
+        with patch("specweaver.tools.git_executor.subprocess.run", return_value=mock_result):
+            result = executor.run("status")
+        assert result.stderr == "fatal: not a git repository"
+        assert result.exit_code == 128

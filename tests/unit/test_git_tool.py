@@ -543,3 +543,195 @@ class TestToolResult:
         from specweaver.tools.git_tool import ToolResult
         r = ToolResult(status="success", message="ok")
         assert r.data == ""
+
+
+# ---------------------------------------------------------------------------
+# Edge cases: whitelist_for_role completeness
+# ---------------------------------------------------------------------------
+
+
+class TestWhitelistForRoleCompleteness:
+    """whitelist_for_role must return correct commands for every role."""
+
+    def test_debugger_has_log_and_show(self) -> None:
+        wl = whitelist_for_role("debugger")
+        assert "log" in wl
+        assert "show" in wl
+        assert "reflog" in wl
+        assert "status" in wl  # for inspect_changes
+        assert "diff" in wl  # for inspect_changes
+
+    def test_drafter_has_commit_no_branch(self) -> None:
+        wl = whitelist_for_role("drafter")
+        assert "commit" in wl
+        assert "add" in wl
+        assert "restore" in wl
+        assert "switch" not in wl
+        assert "stash" not in wl
+
+    def test_all_roles_produce_nonempty_whitelists(self) -> None:
+        for role in ROLE_INTENTS:
+            wl = whitelist_for_role(role)
+            assert len(wl) > 0, f"Role {role!r} has empty whitelist"
+
+    def test_no_blocked_commands_in_any_whitelist(self) -> None:
+        from specweaver.tools.git_executor import GitExecutor
+        blocked = GitExecutor._BLOCKED_ALWAYS
+        for role in ROLE_INTENTS:
+            wl = whitelist_for_role(role)
+            overlap = blocked & wl
+            assert not overlap, f"Role {role!r} whitelist contains blocked: {overlap}"
+
+
+# ---------------------------------------------------------------------------
+# Edge cases: ROLE_INTENTS and INTENT_COMMANDS consistency
+# ---------------------------------------------------------------------------
+
+
+class TestConfigConsistency:
+    """ROLE_INTENTS and INTENT_COMMANDS must be consistent."""
+
+    def test_all_role_intents_have_commands(self) -> None:
+        from specweaver.tools.git_tool import INTENT_COMMANDS
+        for role, intents in ROLE_INTENTS.items():
+            for intent in intents:
+                assert intent in INTENT_COMMANDS, (
+                    f"Role {role!r} has intent {intent!r} "
+                    f"not in INTENT_COMMANDS"
+                )
+
+    def test_all_intents_in_intent_commands_are_used_by_a_role(self) -> None:
+        from specweaver.tools.git_tool import INTENT_COMMANDS
+        all_role_intents = set()
+        for intents in ROLE_INTENTS.values():
+            all_role_intents |= intents
+        for intent in INTENT_COMMANDS:
+            assert intent in all_role_intents, (
+                f"INTENT_COMMANDS has orphan intent {intent!r} "
+                f"not used by any role"
+            )
+
+    def test_all_intent_methods_exist_on_git_tool(self) -> None:
+        from specweaver.tools.git_tool import INTENT_COMMANDS
+        for intent in INTENT_COMMANDS:
+            assert hasattr(GitTool, intent), (
+                f"GitTool is missing method for intent {intent!r}"
+            )
+
+
+# ---------------------------------------------------------------------------
+# Edge cases: executor call verification
+# ---------------------------------------------------------------------------
+
+
+class TestExecutorCallVerification:
+    """Verify the correct git commands are sent to the executor."""
+
+    def test_commit_calls_add_diff_commit(self) -> None:
+        executor = _make_executor(run_side_effect=[
+            ExecutorResult(status="success", exit_code=0),
+            ExecutorResult(status="success", stdout="1 file\n", exit_code=0),
+            ExecutorResult(status="success", stdout="ok\n", exit_code=0),
+        ])
+        tool = GitTool(executor=executor, role="implementer")
+        tool.commit("feat: add stuff")
+        calls = [c.args[0] for c in executor.run.call_args_list]
+        assert calls == ["add", "diff", "commit"]
+
+    def test_switch_branch_clean_calls_status_switch(self) -> None:
+        executor = _make_executor(run_side_effect=[
+            ExecutorResult(status="success", stdout="", exit_code=0),
+            ExecutorResult(status="success", exit_code=0),
+        ])
+        tool = GitTool(executor=executor, role="implementer")
+        tool.switch_branch("feat/other")
+        calls = [c.args[0] for c in executor.run.call_args_list]
+        assert calls == ["status", "switch"]
+
+    def test_switch_branch_dirty_calls_status_stash_switch_pop(self) -> None:
+        executor = _make_executor(run_side_effect=[
+            ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),
+            ExecutorResult(status="success", exit_code=0),
+            ExecutorResult(status="success", exit_code=0),
+            ExecutorResult(status="success", exit_code=0),
+        ])
+        tool = GitTool(executor=executor, role="implementer")
+        tool.switch_branch("feat/other")
+        calls = [c.args[0] for c in executor.run.call_args_list]
+        assert calls == ["status", "stash", "switch", "stash"]
+
+    def test_inspect_changes_calls_status_diff(self) -> None:
+        executor = _make_executor(run_side_effect=[
+            ExecutorResult(status="success", stdout="", exit_code=0),
+            ExecutorResult(status="success", stdout="", exit_code=0),
+        ])
+        tool = GitTool(executor=executor, role="implementer")
+        tool.inspect_changes()
+        calls = [c.args[0] for c in executor.run.call_args_list]
+        assert calls == ["status", "diff"]
+
+
+# ---------------------------------------------------------------------------
+# Edge cases: success path data returned
+# ---------------------------------------------------------------------------
+
+
+class TestSuccessPathData:
+    """Successful intents return correct data to the agent."""
+
+    def test_commit_returns_git_output(self) -> None:
+        executor = _make_executor(run_side_effect=[
+            ExecutorResult(status="success", exit_code=0),
+            ExecutorResult(status="success", stdout="1 file changed\n", exit_code=0),
+            ExecutorResult(status="success", stdout="[main abc1234] feat: hi\n", exit_code=0),
+        ])
+        tool = GitTool(executor=executor, role="implementer")
+        result = tool.commit("feat: hi")
+        assert result.status == "success"
+        assert "abc1234" in result.data
+
+    def test_discard_success_has_filename(self) -> None:
+        tool = GitTool(executor=_make_executor(), role="implementer")
+        result = tool.discard("app.py")
+        assert result.status == "success"
+        assert "app.py" in result.message
+
+    def test_uncommit_success_message_is_clear(self) -> None:
+        tool = GitTool(executor=_make_executor(), role="implementer")
+        result = tool.uncommit()
+        assert result.status == "success"
+        assert "staged" in result.message
+
+    def test_start_branch_success_includes_name(self) -> None:
+        tool = GitTool(executor=_make_executor(), role="implementer")
+        result = tool.start_branch("feat/new-feature")
+        assert result.status == "success"
+        assert "feat/new-feature" in result.message
+
+    def test_history_returns_log_data(self) -> None:
+        executor = _make_executor(run_returns=ExecutorResult(
+            status="success", stdout="abc1234 feat: hi\ndef5678 fix: bye\n", exit_code=0,
+        ))
+        tool = GitTool(executor=executor, role="reviewer")
+        result = tool.history(2)
+        assert result.status == "success"
+        assert "abc1234" in result.data
+
+    def test_list_branches_returns_data(self) -> None:
+        executor = _make_executor(run_returns=ExecutorResult(
+            status="success", stdout="* main\n  feat/login\n", exit_code=0,
+        ))
+        tool = GitTool(executor=executor, role="reviewer")
+        result = tool.list_branches()
+        assert result.status == "success"
+        assert "main" in result.data
+
+    def test_reflog_returns_data(self) -> None:
+        executor = _make_executor(run_returns=ExecutorResult(
+            status="success", stdout="abc HEAD@{0}: commit: feat: hi\n", exit_code=0,
+        ))
+        tool = GitTool(executor=executor, role="debugger")
+        result = tool.reflog(5)
+        assert result.status == "success"
+        assert "abc" in result.data
+

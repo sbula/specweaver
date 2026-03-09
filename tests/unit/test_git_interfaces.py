@@ -139,3 +139,102 @@ class TestFactory:
         mock_executor_cls.assert_called_once()
         call_kwargs = mock_executor_cls.call_args
         assert call_kwargs.kwargs["cwd"] == tmp_path
+
+
+# ---------------------------------------------------------------------------
+# Delegation: interfaces pass through to GitTool
+# ---------------------------------------------------------------------------
+
+
+class TestInterfaceDelegation:
+    """Interface methods must delegate to the underlying GitTool."""
+
+    def test_implementer_commit_delegates(self) -> None:
+        mock_tool = MagicMock()
+        mock_tool.commit.return_value = "result"
+        iface = ImplementerGitInterface(mock_tool)
+        result = iface.commit("feat: test")
+        mock_tool.commit.assert_called_once_with("feat: test")
+        assert result == "result"
+
+    def test_reviewer_history_delegates(self) -> None:
+        mock_tool = MagicMock()
+        mock_tool.history.return_value = "result"
+        iface = ReviewerGitInterface(mock_tool)
+        result = iface.history(5)
+        mock_tool.history.assert_called_once_with(5)
+        assert result == "result"
+
+    def test_debugger_file_history_delegates(self) -> None:
+        mock_tool = MagicMock()
+        mock_tool.file_history.return_value = "result"
+        iface = DebuggerGitInterface(mock_tool)
+        result = iface.file_history("app.py", 3)
+        mock_tool.file_history.assert_called_once_with("app.py", 3)
+        assert result == "result"
+
+    def test_drafter_discard_delegates(self) -> None:
+        mock_tool = MagicMock()
+        mock_tool.discard.return_value = "result"
+        iface = DrafterGitInterface(mock_tool)
+        result = iface.discard("file.py")
+        mock_tool.discard.assert_called_once_with("file.py")
+        assert result == "result"
+
+    def test_reviewer_compare_delegates(self) -> None:
+        mock_tool = MagicMock()
+        mock_tool.compare.return_value = "result"
+        iface = ReviewerGitInterface(mock_tool)
+        result = iface.compare("main", "dev")
+        mock_tool.compare.assert_called_once_with("main", "dev")
+        assert result == "result"
+
+    def test_implementer_switch_branch_delegates(self) -> None:
+        mock_tool = MagicMock()
+        mock_tool.switch_branch.return_value = "result"
+        iface = ImplementerGitInterface(mock_tool)
+        result = iface.switch_branch("feat/other")
+        mock_tool.switch_branch.assert_called_once_with("feat/other")
+        assert result == "result"
+
+
+# ---------------------------------------------------------------------------
+# Factory edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestFactoryEdgeCases:
+    """Additional factory edge cases."""
+
+    @patch("specweaver.tools.git_interfaces.GitExecutor")
+    def test_factory_passes_correct_whitelist_for_implementer(
+        self,
+        mock_executor_cls: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        create_git_interface("implementer", tmp_path)
+        whitelist = mock_executor_cls.call_args.kwargs["whitelist"]
+        assert "commit" in whitelist
+        assert "add" in whitelist
+        assert "switch" in whitelist
+
+    @patch("specweaver.tools.git_interfaces.GitExecutor")
+    def test_factory_passes_correct_whitelist_for_reviewer(
+        self,
+        mock_executor_cls: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        create_git_interface("reviewer", tmp_path)
+        whitelist = mock_executor_cls.call_args.kwargs["whitelist"]
+        assert "log" in whitelist
+        assert "commit" not in whitelist
+
+    def test_factory_error_message_lists_known_roles(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError) as exc_info:
+            create_git_interface("admin", tmp_path)
+        error_msg = str(exc_info.value)
+        assert "implementer" in error_msg
+        assert "reviewer" in error_msg
+        assert "debugger" in error_msg
+        assert "drafter" in error_msg
+
