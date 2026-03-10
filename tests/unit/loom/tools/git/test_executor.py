@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from specweaver.tools.git.executor import ExecutorResult, GitExecutor, GitExecutorError
+from specweaver.loom.commons.git.executor import ExecutorResult, GitExecutor, GitExecutorError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -94,7 +94,7 @@ class TestGitExecutorExecution:
             "stderr": "",
         })()
 
-        with patch("specweaver.tools.git.executor.subprocess.run", return_value=mock_result):
+        with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("status")
 
         assert result.status == "success"
@@ -109,7 +109,7 @@ class TestGitExecutorExecution:
             "stderr": "nothing to commit\n",
         })()
 
-        with patch("specweaver.tools.git.executor.subprocess.run", return_value=mock_result):
+        with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("commit", "-m", "test")
 
         assert result.status == "error"
@@ -121,7 +121,7 @@ class TestGitExecutorExecution:
         import subprocess as sp
 
         with patch(
-            "specweaver.tools.git.executor.subprocess.run",
+            "specweaver.loom.commons.git.executor.subprocess.run",
             side_effect=sp.TimeoutExpired(cmd="git", timeout=30),
         ):
             result = executor.run("log", timeout=30)
@@ -133,7 +133,7 @@ class TestGitExecutorExecution:
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
 
         with patch(
-            "specweaver.tools.git.executor.subprocess.run",
+            "specweaver.loom.commons.git.executor.subprocess.run",
             side_effect=OSError("git not found"),
         ):
             result = executor.run("status")
@@ -149,7 +149,7 @@ class TestGitExecutorExecution:
             "stderr": "",
         })()
 
-        with patch("specweaver.tools.git.executor.subprocess.run", return_value=mock_result) as mock_run:
+        with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result) as mock_run:
             executor.run("status")
 
         cmd_args = mock_run.call_args[0][0]
@@ -202,7 +202,7 @@ class TestGitExecutorEdgeCases:
         import subprocess as sp
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
         with patch(
-            "specweaver.tools.git.executor.subprocess.run",
+            "specweaver.loom.commons.git.executor.subprocess.run",
             side_effect=sp.TimeoutExpired(cmd="git", timeout=5),
         ):
             result = executor.run("status", timeout=5)
@@ -211,7 +211,7 @@ class TestGitExecutorEdgeCases:
     def test_exit_code_minus_one_on_os_error(self, tmp_path: Path) -> None:
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
         with patch(
-            "specweaver.tools.git.executor.subprocess.run",
+            "specweaver.loom.commons.git.executor.subprocess.run",
             side_effect=OSError("No such file"),
         ):
             result = executor.run("status")
@@ -222,7 +222,7 @@ class TestGitExecutorEdgeCases:
         mock_result = type("R", (), {
             "returncode": 0, "stdout": "", "stderr": "",
         })()
-        with patch("specweaver.tools.git.executor.subprocess.run", return_value=mock_result) as mock_run:
+        with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result) as mock_run:
             executor.run("log", "--oneline", "-n5", "--", "file.py")
         cmd_args = mock_run.call_args[0][0]
         assert cmd_args == ["git", "-C", str(tmp_path), "log", "--oneline", "-n5", "--", "file.py"]
@@ -234,7 +234,7 @@ class TestGitExecutorEdgeCases:
             "stdout": "",
             "stderr": "fatal: not a git repository",
         })()
-        with patch("specweaver.tools.git.executor.subprocess.run", return_value=mock_result):
+        with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("status")
         assert result.stderr == "fatal: not a git repository"
         assert result.exit_code == 128

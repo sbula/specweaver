@@ -110,18 +110,21 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 
 ```
 ├── src/specweaver/
-│   ├── atoms/              # Flow building blocks (Engine-level)
-│   │   └── git/            # Git atom (checkpoint, integrate, publish)
 │   ├── cli.py              # Typer CLI (sw command)
 │   ├── config/             # Settings, YAML config
 │   ├── context/            # Context providers (HITL)
 │   ├── drafting/           # Interactive spec drafter
 │   ├── implementation/     # Code generator
 │   ├── llm/                # Gemini adapter, models, errors
+│   ├── loom/               # Dev environment interaction layer
+│   │   ├── atoms/          # Engine-level building blocks
+│   │   │   └── git/        # Git atom (checkpoint, integrate, publish)
+│   │   ├── commons/        # Shared infrastructure (executors)
+│   │   │   └── git/        # GitExecutor, EngineGitExecutor
+│   │   └── tools/          # Agent-facing tools
+│   │       └── git/        # Git tool (intents, interfaces, roles)
 │   ├── project/            # Scaffold, discovery
 │   ├── review/             # AI reviewer
-│   ├── tools/              # Agent tools
-│   │   └── git/            # Git tool (executor, interfaces, role access)
 │   └── validation/         # Rules engine (S01-S10, C01-C08)
 ├── tests/
 │   ├── unit/               # 506 unit tests
@@ -139,7 +142,7 @@ SpecWeaver provides role-restricted tools for LLM agents, inspired by the [flowM
 High-level git operations that agents call by intent, not raw commands. Each intent maps to a safe sequence of git commands executed on the target project directory (never SpecWeaver's own repo).
 
 ```python
-from specweaver.tools.git.interfaces import create_git_interface
+from specweaver.loom.tools.git.interfaces import create_git_interface
 
 # Agent gets only the methods its role allows
 git = create_git_interface("implementer", project_path)
@@ -162,7 +165,7 @@ git.history()                              # ❌ AttributeError — not on this 
 Flow-level git operations for the Engine. Unlike GitTool (agent-facing, role-restricted), GitAtom handles orchestrator-driven tasks using `EngineGitExecutor` (no blocked commands).
 
 ```python
-from specweaver.atoms.git import GitAtom
+from specweaver.loom.atoms.git import GitAtom
 
 atom = GitAtom(cwd=project_path)
 result = atom.run({"intent": "checkpoint", "message": "flow step complete"})

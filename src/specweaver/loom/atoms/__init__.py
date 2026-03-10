@@ -3,7 +3,7 @@
 
 """Atoms package — fundamental building blocks of Flows."""
 
-from specweaver.atoms.base import Atom, AtomResult, AtomStatus
+from specweaver.loom.atoms.base import Atom, AtomResult, AtomStatus
 
 __all__ = [
     "Atom",

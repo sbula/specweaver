@@ -3,7 +3,7 @@
 
 """Git atoms package — git operations for the Flow Engine."""
 
-from specweaver.atoms.git.atom import GitAtom
+from specweaver.loom.atoms.git.atom import GitAtom
 
 __all__ = [
     "GitAtom",

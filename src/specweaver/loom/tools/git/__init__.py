@@ -3,9 +3,9 @@
 
 """Git tool — role-restricted git operations for LLM agents."""
 
-from specweaver.tools.git.engine_executor import EngineGitExecutor
-from specweaver.tools.git.executor import ExecutorResult, GitExecutor, GitExecutorError
-from specweaver.tools.git.interfaces import (
+from specweaver.loom.commons.git.engine_executor import EngineGitExecutor
+from specweaver.loom.commons.git.executor import ExecutorResult, GitExecutor, GitExecutorError
+from specweaver.loom.tools.git.interfaces import (
     ConflictResolverGitInterface,
     DebuggerGitInterface,
     DrafterGitInterface,
@@ -13,7 +13,7 @@ from specweaver.tools.git.interfaces import (
     ReviewerGitInterface,
     create_git_interface,
 )
-from specweaver.tools.git.tool import GitTool, GitToolError, ToolResult
+from specweaver.loom.tools.git.tool import GitTool, GitToolError, ToolResult
 
 __all__ = [
     "ConflictResolverGitInterface",

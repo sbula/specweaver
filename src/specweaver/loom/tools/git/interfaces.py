@@ -18,9 +18,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.tools.git.engine_executor import EngineGitExecutor
-from specweaver.tools.git.executor import GitExecutor
-from specweaver.tools.git.tool import (
+from specweaver.loom.commons.git.engine_executor import EngineGitExecutor
+from specweaver.loom.commons.git.executor import GitExecutor
+from specweaver.loom.tools.git.tool import (
     GitTool,
     ToolResult,
     whitelist_for_role,

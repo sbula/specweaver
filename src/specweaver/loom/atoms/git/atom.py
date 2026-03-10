@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from specweaver.atoms.base import Atom, AtomResult, AtomStatus
-from specweaver.tools.git.engine_executor import EngineGitExecutor
+from specweaver.loom.atoms.base import Atom, AtomResult, AtomStatus
+from specweaver.loom.commons.git.engine_executor import EngineGitExecutor
 
 if TYPE_CHECKING:
     from pathlib import Path
