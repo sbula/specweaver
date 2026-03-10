@@ -464,3 +464,74 @@ class TestAdditiveGrants:
         assert result.status == "success"
         result = tool.write_file("src/shared/currency/rates.py", "hacked")
         assert result.status == "error"
+
+
+# ===========================================================================
+# Grant Bypass Attack Vectors
+# ===========================================================================
+
+
+class TestGrantBypassAttempts:
+    """Security: prevent agents from escaping grants via path manipulation."""
+
+    def test_dotdot_read_escape_blocked_outside_grants(self, implementer: FileSystemTool) -> None:
+        """Agent tries ../.. to reach a path with NO grant at all."""
+        result = implementer.read_file("src/domain/billing/../../../specs/billing_spec.md")
+        assert result.status == "error"
+
+    def test_dotdot_write_escalation_blocked(self, implementer: FileSystemTool) -> None:
+        """Agent has FULL on billing, READ on shared/currency. Tries to
+        WRITE to shared via ../ from billing — must be blocked."""
+        result = implementer.write_file(
+            "src/domain/billing/../../shared/currency/rates.py", "hacked",
+        )
+        assert result.status == "error"
+
+    def test_dotdot_write_escape(self, implementer: FileSystemTool) -> None:
+        """Agent tries to WRITE outside grant via ../."""
+        result = implementer.write_file(
+            "src/domain/billing/../../../specs/hacked.md", "hacked",
+        )
+        assert result.status == "error"
+
+    def test_dotdot_to_root_context_yaml(self, implementer: FileSystemTool) -> None:
+        """Agent tries to reach root context.yaml via ../."""
+        result = implementer.write_file(
+            "src/domain/billing/../../../context.yaml", "hacked: true",
+        )
+        assert result.status == "error"
+
+    def test_backslash_normalization(self, implementer: FileSystemTool) -> None:
+        """Agent uses backslashes to confuse path matching."""
+        result = implementer.read_file("src\\domain\\billing\\calc.py")
+        assert result.status == "success"
+
+    def test_trailing_slash_in_path(self, implementer: FileSystemTool) -> None:
+        """Trailing slash should not confuse grant matching."""
+        result = implementer.list_directory("src/domain/billing/")
+        assert result.status == "success"
+
+    def test_empty_grants_blocks_everything(self, executor: FileExecutor) -> None:
+        """Tool with no grants blocks all operations."""
+        tool = FileSystemTool(executor=executor, role="implementer", grants=[])
+        result = tool.read_file("src/domain/billing/calc.py")
+        assert result.status == "error"
+
+    def test_dotdot_in_middle_of_granted_path(
+        self, executor: FileExecutor, project: Path,
+    ) -> None:
+        """src/domain/../domain/billing/calc.py normalizes INTO grant — should be allowed."""
+        grants = [FolderGrant("src/domain/billing", AccessMode.FULL, recursive=True)]
+        tool = FileSystemTool(executor=executor, role="implementer", grants=grants)
+        result = tool.read_file("src/domain/../domain/billing/calc.py")
+        assert result.status == "success"
+
+    def test_dotdot_escapes_then_returns(self, implementer: FileSystemTool) -> None:
+        """src/domain/billing/../../shared/../../domain/billing/calc.py resolves
+        to domain/billing/calc.py (NOT src/domain/billing/calc.py) because
+        the .. segments consume 'src'. This is correctly outside any grant."""
+        result = implementer.read_file(
+            "src/domain/billing/../../shared/../../domain/billing/calc.py",
+        )
+        # Normalizes to domain/billing/calc.py — no grant covers this
+        assert result.status == "error"

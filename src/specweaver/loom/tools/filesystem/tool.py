@@ -13,6 +13,7 @@ Each intent method checks:
 
 from __future__ import annotations
 
+import posixpath
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -307,6 +308,23 @@ class FileSystemTool:
     # Internal: boundary enforcement
     # -------------------------------------------------------------------
 
+    @staticmethod
+    def _normalize_path(path: str) -> str:
+        """Normalize a path for grant matching.
+
+        Resolves .., strips trailing slashes, normalizes backslashes.
+        This is CRITICAL for security — without it, agents can bypass
+        grants using paths like 'src/domain/billing/../../shared/secret.py'.
+        """
+        # Normalize separators
+        forward = path.replace("\\", "/")
+        # Resolve .. and . segments
+        normalized = posixpath.normpath(forward)
+        # normpath returns '.' for empty string, keep it consistent
+        if normalized == ".":
+            return ""
+        return normalized
+
     def _check_grant(
         self,
         path: str,
@@ -316,7 +334,7 @@ class FileSystemTool:
 
         Returns None if allowed, or an error ToolResult if blocked.
         """
-        normalized = path.replace("\\", "/")
+        normalized = self._normalize_path(path)
 
         best_mode = self._resolve_mode(normalized)
 
