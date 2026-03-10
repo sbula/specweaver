@@ -1,0 +1,25 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: filesystem-atom
+level: module
+purpose: >
+  Engine-level filesystem operations (scaffold, backup, restore, context aggregation).
+
+description: |
+  FileSystemAtom provides flow-level file operations for the Engine:
+  scaffold (create directory structure + context.yaml from spec boundaries),
+  backup/restore (for engine rollback), aggregate_context (build project-wide
+  boundary map), validate_boundaries (check consistency).
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/loom/commons/filesystem
+
+forbids:
+  - specweaver/loom/tools/*
+
+exposes:
+  - FileSystemAtom
+  - FileSystemAtomError

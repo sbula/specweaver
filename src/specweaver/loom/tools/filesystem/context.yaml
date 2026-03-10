@@ -1,0 +1,31 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: filesystem-tools
+level: module
+purpose: >
+  Role-restricted filesystem operations for agents with boundary enforcement via FolderGrants.
+
+description: |
+  FileSystemTool provides intent-based file operations (read, write, edit,
+  create, delete, list, search, find_placement) with FolderGrant-based
+  boundary enforcement. Three role interfaces (Implementer, Reviewer, Drafter)
+  expose only the intents permitted for each role.
+
+archetype: facade
+
+consumes:
+  - specweaver/loom/commons/filesystem
+
+forbids:
+  - specweaver/loom/atoms/*
+
+exposes:
+  - FileSystemTool
+  - ImplementerFileInterface
+  - ReviewerFileInterface
+  - DrafterFileInterface
+  - create_filesystem_interface
+  - FolderGrant
+  - AccessMode
+  - ToolResult
