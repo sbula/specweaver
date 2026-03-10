@@ -65,6 +65,15 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
         "inspect_changes",
         "discard",
     }),
+    # Hidden role — only the Engine can activate this for conflict resolution.
+    # Never assigned directly to agents.
+    "conflict_resolver": frozenset({
+        "list_conflicts",
+        "show_conflict",
+        "mark_resolved",
+        "abort_merge",
+        "complete_merge",
+    }),
 }
 
 # Intent → required git subcommands (for building the GitExecutor whitelist)
@@ -84,6 +93,12 @@ INTENT_COMMANDS: dict[str, frozenset[str]] = {
     "show_old": frozenset({"show"}),
     "search_history": frozenset({"log"}),
     "reflog": frozenset({"reflog"}),
+    # Conflict resolution intents (hidden, engine-activated)
+    "list_conflicts": frozenset({"diff"}),
+    "show_conflict": frozenset({"diff"}),
+    "mark_resolved": frozenset({"add"}),
+    "abort_merge": frozenset({"merge"}),
+    "complete_merge": frozenset({"commit"}),
 }
 
 
@@ -425,5 +440,91 @@ class GitTool:
         return ToolResult(
             status="success" if result.exit_code == 0 else "error",
             message=f"Last {n} reflog entries." if result.exit_code == 0 else result.stderr,
+            data=result.stdout,
+        )
+
+    # -- Conflict resolution intents (hidden, engine-activated) ----------
+
+    def list_conflicts(self) -> ToolResult:
+        """List files with merge conflicts."""
+        self._require_intent("list_conflicts")
+
+        result = self._executor.run("diff", "--name-only", "--diff-filter=U")
+        if result.exit_code != 0:
+            return ToolResult(
+                status="error",
+                message=f"git diff failed: {result.stderr}",
+            )
+
+        files = result.stdout.strip()
+        if not files:
+            return ToolResult(
+                status="success",
+                message="No conflicts found.",
+            )
+
+        return ToolResult(
+            status="success",
+            message=f"{len(files.splitlines())} file(s) with conflicts.",
+            data=files,
+        )
+
+    def show_conflict(self, file: str) -> ToolResult:
+        """Show conflict markers for a specific file."""
+        self._require_intent("show_conflict")
+
+        result = self._executor.run("diff", file)
+        return ToolResult(
+            status="success" if result.exit_code == 0 else "error",
+            message=f"Conflict in {file}." if result.exit_code == 0 else result.stderr,
+            data=result.stdout,
+        )
+
+    def mark_resolved(self, file: str) -> ToolResult:
+        """Stage a resolved file during conflict resolution."""
+        self._require_intent("mark_resolved")
+
+        result = self._executor.run("add", file)
+        if result.exit_code != 0:
+            return ToolResult(
+                status="error",
+                message=f"git add failed: {result.stderr}",
+            )
+
+        return ToolResult(
+            status="success",
+            message=f"Marked {file} as resolved.",
+        )
+
+    def abort_merge(self) -> ToolResult:
+        """Abort the current merge and restore clean state."""
+        self._require_intent("abort_merge")
+
+        result = self._executor.run("merge", "--abort")
+        if result.exit_code != 0:
+            return ToolResult(
+                status="error",
+                message=f"git merge --abort failed: {result.stderr}",
+            )
+
+        return ToolResult(
+            status="success",
+            message="Merge aborted. Working tree restored.",
+        )
+
+    def complete_merge(self) -> ToolResult:
+        """Complete the merge after all conflicts are resolved."""
+        self._require_intent("complete_merge")
+
+        result = self._executor.run("commit", "--no-edit")
+        if result.exit_code != 0:
+            return ToolResult(
+                status="error",
+                message=f"git commit failed: {result.stderr}",
+            )
+
+        return ToolResult(
+            status="success",
+            message="Merge completed.",
             data=result.stdout,
         )

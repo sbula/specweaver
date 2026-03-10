@@ -109,8 +109,9 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 ## Project Structure
 
 ```
-specweaver/
 ├── src/specweaver/
+│   ├── atoms/              # Flow building blocks (Engine-level)
+│   │   └── git/            # Git atom (checkpoint, integrate, publish)
 │   ├── cli.py              # Typer CLI (sw command)
 │   ├── config/             # Settings, YAML config
 │   ├── context/            # Context providers (HITL)
@@ -123,7 +124,7 @@ specweaver/
 │   │   └── git/            # Git tool (executor, interfaces, role access)
 │   └── validation/         # Rules engine (S01-S10, C01-C08)
 ├── tests/
-│   ├── unit/               # 399 unit tests
+│   ├── unit/               # 506 unit tests
 │   └── e2e/                # 17 E2E lifecycle tests
 ├── docs/                   # Architecture & methodology docs
 └── pyproject.toml
@@ -152,6 +153,33 @@ git.history()                              # ❌ AttributeError — not on this 
 | **Reviewer** | history, show_commit, blame, compare, list_branches |
 | **Debugger** | history, file_history, show_old, search_history, reflog, inspect_changes |
 | **Drafter** | commit, inspect_changes, discard |
+| **Conflict Resolver** | list_conflicts, show_conflict, mark_resolved, abort_merge, complete_merge |
+
+> The `conflict_resolver` role is hidden — only the Engine can activate it temporarily when a merge conflict occurs during `integrate`.
+
+### GitAtom
+
+Flow-level git operations for the Engine. Unlike GitTool (agent-facing, role-restricted), GitAtom handles orchestrator-driven tasks using `EngineGitExecutor` (no blocked commands).
+
+```python
+from specweaver.atoms.git import GitAtom
+
+atom = GitAtom(cwd=project_path)
+result = atom.run({"intent": "checkpoint", "message": "flow step complete"})
+result = atom.run({"intent": "integrate", "source": "feat/login", "target": "main"})
+```
+
+| Intent | Purpose | Git commands |
+|---|---|---|
+| **checkpoint** | Semantic commit after flow step | add, diff, commit |
+| **isolate** | Create isolation branch for flow | switch -c |
+| **restore** | Return to original branch | switch |
+| **discard_all** | Clean working tree | restore . |
+| **rollback** | Undo last checkpoint | reset --soft HEAD~1 |
+| **publish** | Push flow results to remote | push |
+| **integrate** | Merge branch into target | checkout, merge |
+| **sync** | Pull latest from remote | fetch, pull |
+| **tag** | Mark release/milestone | tag |
 
 **Built-in guardrails:**
 - Conventional commit messages enforced (`feat:`, `fix:`, `docs:`, ...)

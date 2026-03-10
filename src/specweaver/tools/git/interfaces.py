@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from specweaver.tools.git.engine_executor import EngineGitExecutor
 from specweaver.tools.git.executor import GitExecutor
 from specweaver.tools.git.tool import (
     GitTool,
@@ -156,6 +157,38 @@ class DrafterGitInterface:
         return self._tool.discard(file)
 
 
+class ConflictResolverGitInterface:
+    """Git interface for conflict resolution.
+
+    Hidden role — only the Engine can activate this.
+    Allowed intents: list_conflicts, show_conflict, mark_resolved,
+                     abort_merge, complete_merge.
+    """
+
+    def __init__(self, tool: GitTool) -> None:
+        self._tool = tool
+
+    def list_conflicts(self) -> ToolResult:
+        """List files with merge conflicts."""
+        return self._tool.list_conflicts()
+
+    def show_conflict(self, file: str) -> ToolResult:
+        """Show conflict markers for a specific file."""
+        return self._tool.show_conflict(file)
+
+    def mark_resolved(self, file: str) -> ToolResult:
+        """Stage a resolved file during conflict resolution."""
+        return self._tool.mark_resolved(file)
+
+    def abort_merge(self) -> ToolResult:
+        """Abort the current merge and restore clean state."""
+        return self._tool.abort_merge()
+
+    def complete_merge(self) -> ToolResult:
+        """Complete the merge after all conflicts are resolved."""
+        return self._tool.complete_merge()
+
+
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
@@ -165,6 +198,7 @@ _ROLE_INTERFACE_MAP = {
     "reviewer": ReviewerGitInterface,
     "debugger": DebuggerGitInterface,
     "drafter": DrafterGitInterface,
+    "conflict_resolver": ConflictResolverGitInterface,
 }
 
 GitInterface = (
@@ -172,6 +206,7 @@ GitInterface = (
     | ReviewerGitInterface
     | DebuggerGitInterface
     | DrafterGitInterface
+    | ConflictResolverGitInterface
 )
 
 
@@ -181,7 +216,8 @@ def create_git_interface(role: str, cwd: Path) -> GitInterface:
     The cwd is set by the project setup/config — the agent cannot change it.
 
     Args:
-        role: The agent's role ("implementer", "reviewer", "debugger", "drafter").
+        role: The agent's role ("implementer", "reviewer", "debugger",
+              "drafter", or "conflict_resolver").
         cwd: The target project's working directory (from config, not agent).
 
     Returns:
@@ -195,7 +231,13 @@ def create_git_interface(role: str, cwd: Path) -> GitInterface:
         raise ValueError(msg)
 
     whitelist = whitelist_for_role(role)
-    executor = GitExecutor(cwd=cwd, whitelist=whitelist)
+
+    # conflict_resolver needs EngineGitExecutor (merge is in its whitelist)
+    if role == "conflict_resolver":
+        executor = EngineGitExecutor(cwd=cwd, whitelist=whitelist)
+    else:
+        executor = GitExecutor(cwd=cwd, whitelist=whitelist)
+
     tool = GitTool(executor=executor, role=role)
 
     interface_cls = _ROLE_INTERFACE_MAP[role]

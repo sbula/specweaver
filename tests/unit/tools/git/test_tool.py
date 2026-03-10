@@ -574,13 +574,24 @@ class TestWhitelistForRoleCompleteness:
             wl = whitelist_for_role(role)
             assert len(wl) > 0, f"Role {role!r} has empty whitelist"
 
-    def test_no_blocked_commands_in_any_whitelist(self) -> None:
+    def test_no_blocked_commands_in_agent_whitelists(self) -> None:
+        """Agent roles must not require blocked commands.
+
+        conflict_resolver is excluded — it uses EngineGitExecutor,
+        which lifts the blocked-commands restriction.
+        """
         from specweaver.tools.git.executor import GitExecutor
         blocked = GitExecutor._BLOCKED_ALWAYS
-        for role in ROLE_INTENTS:
+        agent_roles = {r for r in ROLE_INTENTS if r != "conflict_resolver"}
+        for role in agent_roles:
             wl = whitelist_for_role(role)
             overlap = blocked & wl
             assert not overlap, f"Role {role!r} whitelist contains blocked: {overlap}"
+
+    def test_conflict_resolver_needs_blocked_commands(self) -> None:
+        """conflict_resolver intentionally requires merge (via EngineGitExecutor)."""
+        wl = whitelist_for_role("conflict_resolver")
+        assert "merge" in wl, "conflict_resolver must have merge in its whitelist"
 
 
 # ---------------------------------------------------------------------------

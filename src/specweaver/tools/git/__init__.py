@@ -3,8 +3,10 @@
 
 """Git tool — role-restricted git operations for LLM agents."""
 
+from specweaver.tools.git.engine_executor import EngineGitExecutor
 from specweaver.tools.git.executor import ExecutorResult, GitExecutor, GitExecutorError
 from specweaver.tools.git.interfaces import (
+    ConflictResolverGitInterface,
     DebuggerGitInterface,
     DrafterGitInterface,
     ImplementerGitInterface,
@@ -14,8 +16,10 @@ from specweaver.tools.git.interfaces import (
 from specweaver.tools.git.tool import GitTool, GitToolError, ToolResult
 
 __all__ = [
+    "ConflictResolverGitInterface",
     "DebuggerGitInterface",
     "DrafterGitInterface",
+    "EngineGitExecutor",
     "ExecutorResult",
     "GitExecutor",
     "GitExecutorError",
