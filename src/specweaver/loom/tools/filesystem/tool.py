@@ -235,12 +235,15 @@ class FileSystemTool:
         result = self._executor.list_dir(path)
         return self._wrap(result)
 
-    def search_content(self, path: str, regex: str) -> ToolResult:
+    def search_content(
+        self, path: str, regex: str, *, recursive: bool = False,
+    ) -> ToolResult:
         """Search for a regex pattern across files in a directory.
 
         Args:
             path: Directory to search in.
             regex: Regex pattern to match against each line.
+            recursive: If True, search subdirectories recursively.
 
         Returns:
             ToolResult with data=list of {file, line, content} matches.
@@ -255,41 +258,127 @@ class FileSystemTool:
         except re.error as exc:
             return ToolResult(status="error", message=f"Invalid regex: {exc}")
 
-        # List files in directory
+        matches: list[dict[str, Any]] = []
+
+        if recursive:
+            self._search_recursive(path, pattern, matches)
+        else:
+            self._search_flat(path, pattern, matches)
+
+        return ToolResult(status="success", data=matches)
+
+    def _search_flat(
+        self,
+        path: str,
+        pattern: re.Pattern[str],
+        matches: list[dict[str, Any]],
+    ) -> None:
+        """Search direct children of a directory."""
         list_result = self._executor.list_dir(path)
         if list_result.status != "success":
-            return ToolResult(status="error", message=list_result.error)
+            return
 
-        matches: list[dict[str, Any]] = []
         for name in list_result.data:
             file_path = f"{path}/{name}" if path else name
             read_result = self._executor.read(file_path)
             if read_result.status != "success":
-                continue  # skip directories, binary files, etc.
+                continue
             for i, line in enumerate(read_result.data.splitlines(), 1):
                 if pattern.search(line):
                     matches.append({"file": name, "line": i, "content": line.strip()})
 
-        return ToolResult(status="success", data=matches)
+    def _search_recursive(
+        self,
+        path: str,
+        pattern: re.Pattern[str],
+        matches: list[dict[str, Any]],
+    ) -> None:
+        """Search directory and all subdirectories recursively."""
+        import os
+
+        base = self._executor._cwd / path
+        if not base.is_dir():
+            return
+
+        for dirpath, _dirnames, filenames in os.walk(base):
+            for fname in filenames:
+                full = os.path.join(dirpath, fname)
+                rel = os.path.relpath(full, self._executor._cwd).replace("\\", "/")
+                read_result = self._executor.read(rel)
+                if read_result.status != "success":
+                    continue
+                for i, line in enumerate(read_result.data.splitlines(), 1):
+                    if pattern.search(line):
+                        matches.append({"file": rel, "line": i, "content": line.strip()})
 
     def find_placement(self, description: str) -> ToolResult:
         """Semantic search over context.yaml purpose fields.
 
-        MVP: Simple keyword matching on purpose fields.
+        MVP: Keyword matching — splits description into words, scores each
+        context.yaml boundary by how many keywords appear in its purpose.
+        Results sorted by score descending.
 
         Args:
             description: What the new code does.
 
         Returns:
-            ToolResult with data=list of matching boundaries.
+            ToolResult with data=list of matching boundaries (path, name, purpose, score).
         """
         self._require_intent("find_placement")
-        # Placeholder — will be implemented in Phase 4
-        return ToolResult(
-            status="success",
-            message="find_placement not yet implemented (Phase 4)",
-            data=[],
-        )
+
+        # Extract keywords (lowercase, 3+ chars to skip noise like 'a', 'to')
+        keywords = [
+            w.lower()
+            for w in re.split(r'\s+', description.strip())
+            if len(w) >= 3
+        ]
+        if not keywords:
+            return ToolResult(status="success", data=[])
+
+        # Walk all context.yaml files in the project
+        import os
+        from ruamel.yaml import YAML
+
+        yaml = YAML()
+        scored: list[dict[str, Any]] = []
+
+        for dirpath, _dirnames, filenames in os.walk(self._executor._cwd):
+            if "context.yaml" not in filenames:
+                continue
+            ctx_file = os.path.join(dirpath, "context.yaml")
+            try:
+                with open(ctx_file, encoding="utf-8") as fh:
+                    data = yaml.load(fh)
+            except Exception:
+                continue
+            if data is None:
+                continue
+
+            purpose = str(data.get("purpose", "")).lower()
+            name = str(data.get("name", ""))
+            if not purpose:
+                continue
+
+            # Score: count how many keywords appear as substrings in purpose
+            score = sum(1 for kw in keywords if kw in purpose)
+            if score == 0:
+                continue
+
+            rel_path = os.path.relpath(dirpath, self._executor._cwd).replace("\\", "/")
+            if rel_path == ".":
+                rel_path = ""
+
+            scored.append({
+                "path": rel_path,
+                "name": name,
+                "purpose": data.get("purpose", ""),
+                "score": score,
+            })
+
+        # Sort by score descending
+        scored.sort(key=lambda x: x["score"], reverse=True)
+
+        return ToolResult(status="success", data=scored)
 
     # -------------------------------------------------------------------
     # Internal: role gating

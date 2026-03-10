@@ -319,6 +319,18 @@ class FileSystemAtom(Atom):
             elif name:
                 names[name] = rel_path
 
+            # Consumes reference check
+            consumes = data.get("consumes", [])
+            if isinstance(consumes, list):
+                for dep_path in consumes:
+                    dep_dir = self._cwd / dep_path
+                    dep_ctx = dep_dir / "context.yaml"
+                    if not dep_dir.is_dir() or not dep_ctx.is_file():
+                        errors.append(
+                            f"{rel_path}: Consumes '{dep_path}' but no "
+                            f"context.yaml found at {dep_path}/context.yaml",
+                        )
+
         if errors:
             return AtomResult(
                 status=AtomStatus.SUCCESS,  # validation completed, report errors

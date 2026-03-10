@@ -49,6 +49,10 @@ def project(tmp_path: Path) -> Path:
     (tmp_path / "src" / "shared" / "currency" / "rates.py").write_text(
         "EUR = 1.0\nUSD = 1.1", encoding="utf-8",
     )
+    (tmp_path / "src" / "shared" / "currency" / "context.yaml").write_text(
+        "name: currency\nlevel: module\npurpose: Currency exchange rates and conversion\narchetype: pure-logic\n",
+        encoding="utf-8",
+    )
     # Specs
     (tmp_path / "specs").mkdir()
     (tmp_path / "specs" / "billing_spec.md").write_text("# Billing Spec\n", encoding="utf-8")
@@ -535,3 +539,94 @@ class TestGrantBypassAttempts:
         )
         # Normalizes to domain/billing/calc.py — no grant covers this
         assert result.status == "error"
+
+
+# ===========================================================================
+# find_placement MVP (keyword matching)
+# ===========================================================================
+
+
+class TestFindPlacement:
+    """find_placement uses keyword matching on context.yaml purpose fields."""
+
+    def test_finds_matching_boundary(self, implementer: FileSystemTool) -> None:
+        """Keywords in description match purpose field."""
+        result = implementer.find_placement("billing calculation")
+        assert result.status == "success"
+        assert len(result.data) > 0
+        paths = [m["path"] for m in result.data]
+        assert any("billing" in p for p in paths)
+
+    def test_no_match(self, implementer: FileSystemTool) -> None:
+        """No keywords match any purpose field."""
+        result = implementer.find_placement("quantum teleportation flux")
+        assert result.status == "success"
+        assert len(result.data) == 0
+
+    def test_returns_purpose_and_path(self, implementer: FileSystemTool) -> None:
+        """Each match includes path, name, and purpose."""
+        result = implementer.find_placement("currency")
+        assert result.status == "success"
+        assert len(result.data) > 0
+        for match in result.data:
+            assert "path" in match
+            assert "name" in match
+            assert "purpose" in match
+
+    def test_case_insensitive(self, implementer: FileSystemTool) -> None:
+        """Matching is case-insensitive."""
+        result = implementer.find_placement("BILLING")
+        assert result.status == "success"
+        assert len(result.data) > 0
+
+    def test_partial_word_match(self, implementer: FileSystemTool) -> None:
+        """Partial words still match (substring matching)."""
+        result = implementer.find_placement("exchang")  # partial 'exchange'
+        assert result.status == "success"
+        assert len(result.data) > 0
+
+    def test_multiple_keywords_ranked(self, implementer: FileSystemTool) -> None:
+        """More keyword matches = higher score."""
+        result = implementer.find_placement("currency exchange rates conversion")
+        assert result.status == "success"
+        # currency module should score highest (all keywords match)
+        if len(result.data) > 0:
+            assert "currency" in result.data[0]["name"] or "currency" in result.data[0]["path"]
+
+
+# ===========================================================================
+# search_content recursive
+# ===========================================================================
+
+
+class TestSearchContentRecursive:
+    """search_content should support recursive subdirectory search."""
+
+    def test_recursive_search_finds_nested_files(
+        self, executor: FileExecutor, project: Path,
+    ) -> None:
+        """Recursive search finds matches in subdirectories."""
+        grants = [FolderGrant("src", AccessMode.READ, recursive=True)]
+        tool = FileSystemTool(executor=executor, role="reviewer", grants=grants)
+        result = tool.search_content("src", r"def \w+", recursive=True)
+        assert result.status == "success"
+        # Should find 'def total' in src/domain/billing/calc.py
+        found_files = [m["file"] for m in result.data]
+        assert any("calc.py" in f for f in found_files)
+
+    def test_non_recursive_search_direct_children_only(
+        self, executor: FileExecutor,
+    ) -> None:
+        """Non-recursive search only searches direct children."""
+        grants = [FolderGrant("src", AccessMode.READ, recursive=True)]
+        tool = FileSystemTool(executor=executor, role="reviewer", grants=grants)
+        result = tool.search_content("src", r"def \w+", recursive=False)
+        assert result.status == "success"
+        # Direct children of src/ are directories, no .py files
+        assert len(result.data) == 0
+
+    def test_default_is_non_recursive(self, implementer: FileSystemTool) -> None:
+        """Default behavior is non-recursive (backward compatible)."""
+        result = implementer.search_content("src/domain/billing", r"def \w+")
+        assert result.status == "success"
+        assert len(result.data) > 0  # finds calc.py (direct child)

@@ -296,3 +296,33 @@ class TestValidateBoundariesIntent:
         # Could be SUCCESS with warnings, or FAILED — depends on severity
         errors = result.exports.get("errors", [])
         assert len(errors) > 0
+
+    def test_invalid_consumes_reference(
+        self, atom: FileSystemAtom, project: Path,
+    ) -> None:
+        """A context.yaml that consumes a nonexistent path should be flagged."""
+        (project / "src" / "domain" / "billing" / "context.yaml").write_text(
+            "name: billing\nlevel: module\nconsumes:\n  - nonexistent/module\n",
+            encoding="utf-8",
+        )
+        result = atom.run({"intent": "validate_boundaries"})
+        errors = result.exports.get("errors", [])
+        assert any("nonexistent" in e for e in errors)
+
+    def test_valid_consumes_reference(
+        self, atom: FileSystemAtom, project: Path,
+    ) -> None:
+        """A context.yaml that consumes an existing path should NOT be flagged."""
+        # Create a module that billing consumes
+        (project / "src" / "shared" / "currency").mkdir(parents=True)
+        (project / "src" / "shared" / "currency" / "context.yaml").write_text(
+            "name: currency\nlevel: module\n", encoding="utf-8",
+        )
+        (project / "src" / "domain" / "billing" / "context.yaml").write_text(
+            "name: billing\nlevel: module\nconsumes:\n  - src/shared/currency\n",
+            encoding="utf-8",
+        )
+        result = atom.run({"intent": "validate_boundaries"})
+        errors = result.exports.get("errors", [])
+        consumes_errors = [e for e in errors if "consumes" in e.lower()]
+        assert len(consumes_errors) == 0
