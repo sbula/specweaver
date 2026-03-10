@@ -1,0 +1,28 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: git-atom
+level: module
+purpose: >
+  Engine-level git workflow operations (checkpoint, isolate, integrate, restore, publish).
+
+description: |
+  GitAtom dispatches high-level engine intents into sequences of EngineGitExecutor
+  calls. It handles branching strategies, merge conflict detection, and rollback
+  operations that are too powerful for agent-facing tools.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/loom/commons/git
+
+forbids:
+  - specweaver/loom/tools/*
+
+exposes:
+  - GitAtom
+  - GitAtomError
+
+constraints:
+  - "Must use EngineGitExecutor, not GitExecutor"
+  - "Must not expose any methods directly to agents"

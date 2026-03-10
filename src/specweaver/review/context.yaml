@@ -1,0 +1,21 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: review
+level: module
+purpose: >
+  LLM-powered spec and code review with structured verdicts (ACCEPTED/DENIED).
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/llm
+  - specweaver/config
+
+forbids:
+  - specweaver/loom/*
+
+exposes:
+  - Reviewer
+  - ReviewResult
+  - ReviewVerdict

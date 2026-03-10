@@ -1,0 +1,20 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: project
+level: module
+purpose: >
+  Project discovery and scaffolding (find project root, create directory structures).
+
+archetype: adapter
+
+consumes:
+  - specweaver/config
+
+forbids:
+  - specweaver/loom/*
+  - specweaver/llm
+
+exposes:
+  - discover_project_root
+  - scaffold_project

@@ -11,12 +11,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from specweaver.loom.tools.git.interfaces import (
+    ConflictResolverGitInterface,
     DebuggerGitInterface,
     DrafterGitInterface,
     ImplementerGitInterface,
     ReviewerGitInterface,
     create_git_interface,
 )
+from specweaver.loom.tools.git.tool import ROLE_INTENTS
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -44,6 +46,19 @@ class TestInterfaceMethodExposure:
         assert not hasattr(ImplementerGitInterface, "show_commit")
         assert not hasattr(ImplementerGitInterface, "list_branches")
 
+    def test_implementer_has_no_debugger_methods(self) -> None:
+        assert not hasattr(ImplementerGitInterface, "file_history")
+        assert not hasattr(ImplementerGitInterface, "show_old")
+        assert not hasattr(ImplementerGitInterface, "search_history")
+        assert not hasattr(ImplementerGitInterface, "reflog")
+
+    def test_implementer_has_no_conflict_resolver_methods(self) -> None:
+        assert not hasattr(ImplementerGitInterface, "list_conflicts")
+        assert not hasattr(ImplementerGitInterface, "show_conflict")
+        assert not hasattr(ImplementerGitInterface, "mark_resolved")
+        assert not hasattr(ImplementerGitInterface, "abort_merge")
+        assert not hasattr(ImplementerGitInterface, "complete_merge")
+
     def test_reviewer_has_read_only(self) -> None:
         assert hasattr(ReviewerGitInterface, "history")
         assert hasattr(ReviewerGitInterface, "show_commit")
@@ -56,6 +71,21 @@ class TestInterfaceMethodExposure:
         assert not hasattr(ReviewerGitInterface, "discard")
         assert not hasattr(ReviewerGitInterface, "uncommit")
         assert not hasattr(ReviewerGitInterface, "start_branch")
+        assert not hasattr(ReviewerGitInterface, "switch_branch")
+
+    def test_reviewer_has_no_debugger_methods(self) -> None:
+        assert not hasattr(ReviewerGitInterface, "file_history")
+        assert not hasattr(ReviewerGitInterface, "show_old")
+        assert not hasattr(ReviewerGitInterface, "search_history")
+        assert not hasattr(ReviewerGitInterface, "reflog")
+        assert not hasattr(ReviewerGitInterface, "inspect_changes")
+
+    def test_reviewer_has_no_conflict_resolver_methods(self) -> None:
+        assert not hasattr(ReviewerGitInterface, "list_conflicts")
+        assert not hasattr(ReviewerGitInterface, "show_conflict")
+        assert not hasattr(ReviewerGitInterface, "mark_resolved")
+        assert not hasattr(ReviewerGitInterface, "abort_merge")
+        assert not hasattr(ReviewerGitInterface, "complete_merge")
 
     def test_debugger_has_investigation(self) -> None:
         assert hasattr(DebuggerGitInterface, "history")
@@ -68,7 +98,22 @@ class TestInterfaceMethodExposure:
     def test_debugger_has_no_write_methods(self) -> None:
         assert not hasattr(DebuggerGitInterface, "commit")
         assert not hasattr(DebuggerGitInterface, "discard")
+        assert not hasattr(DebuggerGitInterface, "uncommit")
         assert not hasattr(DebuggerGitInterface, "start_branch")
+        assert not hasattr(DebuggerGitInterface, "switch_branch")
+
+    def test_debugger_has_no_reviewer_only_methods(self) -> None:
+        assert not hasattr(DebuggerGitInterface, "show_commit")
+        assert not hasattr(DebuggerGitInterface, "blame")
+        assert not hasattr(DebuggerGitInterface, "compare")
+        assert not hasattr(DebuggerGitInterface, "list_branches")
+
+    def test_debugger_has_no_conflict_resolver_methods(self) -> None:
+        assert not hasattr(DebuggerGitInterface, "list_conflicts")
+        assert not hasattr(DebuggerGitInterface, "show_conflict")
+        assert not hasattr(DebuggerGitInterface, "mark_resolved")
+        assert not hasattr(DebuggerGitInterface, "abort_merge")
+        assert not hasattr(DebuggerGitInterface, "complete_merge")
 
     def test_drafter_has_minimal_write(self) -> None:
         assert hasattr(DrafterGitInterface, "commit")
@@ -79,6 +124,54 @@ class TestInterfaceMethodExposure:
         assert not hasattr(DrafterGitInterface, "start_branch")
         assert not hasattr(DrafterGitInterface, "switch_branch")
         assert not hasattr(DrafterGitInterface, "uncommit")
+
+    def test_drafter_has_no_reviewer_methods(self) -> None:
+        assert not hasattr(DrafterGitInterface, "history")
+        assert not hasattr(DrafterGitInterface, "show_commit")
+        assert not hasattr(DrafterGitInterface, "blame")
+        assert not hasattr(DrafterGitInterface, "compare")
+        assert not hasattr(DrafterGitInterface, "list_branches")
+
+    def test_drafter_has_no_debugger_methods(self) -> None:
+        assert not hasattr(DrafterGitInterface, "file_history")
+        assert not hasattr(DrafterGitInterface, "show_old")
+        assert not hasattr(DrafterGitInterface, "search_history")
+        assert not hasattr(DrafterGitInterface, "reflog")
+
+    def test_drafter_has_no_conflict_resolver_methods(self) -> None:
+        assert not hasattr(DrafterGitInterface, "list_conflicts")
+        assert not hasattr(DrafterGitInterface, "show_conflict")
+        assert not hasattr(DrafterGitInterface, "mark_resolved")
+        assert not hasattr(DrafterGitInterface, "abort_merge")
+        assert not hasattr(DrafterGitInterface, "complete_merge")
+
+    def test_conflict_resolver_has_only_conflict_methods(self) -> None:
+        assert hasattr(ConflictResolverGitInterface, "list_conflicts")
+        assert hasattr(ConflictResolverGitInterface, "show_conflict")
+        assert hasattr(ConflictResolverGitInterface, "mark_resolved")
+        assert hasattr(ConflictResolverGitInterface, "abort_merge")
+        assert hasattr(ConflictResolverGitInterface, "complete_merge")
+
+    def test_conflict_resolver_has_no_implementer_methods(self) -> None:
+        assert not hasattr(ConflictResolverGitInterface, "commit")
+        assert not hasattr(ConflictResolverGitInterface, "inspect_changes")
+        assert not hasattr(ConflictResolverGitInterface, "discard")
+        assert not hasattr(ConflictResolverGitInterface, "uncommit")
+        assert not hasattr(ConflictResolverGitInterface, "start_branch")
+        assert not hasattr(ConflictResolverGitInterface, "switch_branch")
+
+    def test_conflict_resolver_has_no_reviewer_methods(self) -> None:
+        assert not hasattr(ConflictResolverGitInterface, "history")
+        assert not hasattr(ConflictResolverGitInterface, "show_commit")
+        assert not hasattr(ConflictResolverGitInterface, "blame")
+        assert not hasattr(ConflictResolverGitInterface, "compare")
+        assert not hasattr(ConflictResolverGitInterface, "list_branches")
+
+    def test_conflict_resolver_has_no_debugger_methods(self) -> None:
+        assert not hasattr(ConflictResolverGitInterface, "file_history")
+        assert not hasattr(ConflictResolverGitInterface, "show_old")
+        assert not hasattr(ConflictResolverGitInterface, "search_history")
+        assert not hasattr(ConflictResolverGitInterface, "reflog")
 
 
 # ---------------------------------------------------------------------------
@@ -238,3 +331,50 @@ class TestFactoryEdgeCases:
         assert "debugger" in error_msg
         assert "drafter" in error_msg
 
+
+# ---------------------------------------------------------------------------
+# Exhaustive invisibility: data-driven from ROLE_INTENTS
+# ---------------------------------------------------------------------------
+
+# Map role name -> interface class
+_ROLE_INTERFACE_CLASS = {
+    "implementer": ImplementerGitInterface,
+    "reviewer": ReviewerGitInterface,
+    "debugger": DebuggerGitInterface,
+    "drafter": DrafterGitInterface,
+    "conflict_resolver": ConflictResolverGitInterface,
+}
+
+# Collect ALL intent method names across every role.
+_ALL_INTENTS: set[str] = set()
+for _intents in ROLE_INTENTS.values():
+    _ALL_INTENTS |= _intents
+
+# Build parametrize cases: (interface_class, forbidden_method)
+_INVISIBLE_CASES: list[tuple[type, str]] = []
+for _role, _iface_cls in _ROLE_INTERFACE_CLASS.items():
+    _allowed = ROLE_INTENTS[_role]
+    for _intent in sorted(_ALL_INTENTS - _allowed):
+        _INVISIBLE_CASES.append((_iface_cls, _intent))
+
+
+class TestExhaustiveInvisibility:
+    """Every non-whitelisted intent MUST be invisible on every interface.
+
+    This test is data-driven from ROLE_INTENTS so it automatically catches
+    regressions when new intents are added. It guarantees agents never see
+    methods they cannot use, saving tokens.
+    """
+
+    @pytest.mark.parametrize(
+        "iface_cls,method",
+        _INVISIBLE_CASES,
+        ids=[f"{cls.__name__}.{m}" for cls, m in _INVISIBLE_CASES],
+    )
+    def test_method_is_invisible(
+        self, iface_cls: type, method: str,
+    ) -> None:
+        assert not hasattr(iface_cls, method), (
+            f"{iface_cls.__name__} exposes '{method}' but should not — "
+            f"agents would waste tokens seeing a method they cannot use"
+        )

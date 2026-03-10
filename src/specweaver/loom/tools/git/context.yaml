@@ -1,0 +1,36 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: git
+level: module
+purpose: >
+  Role-restricted git operations for agents (commit, inspect, branch, review, debug, conflict resolution).
+
+description: |
+  Provides 5 role-specific interfaces (Implementer, Reviewer, Debugger, Drafter,
+  ConflictResolver) that physically expose only the methods whitelisted for each
+  role. Non-whitelisted methods are invisible to agents, saving tokens.
+
+  The GitTool class translates high-level intents into sequences of GitExecutor
+  calls. Role access is enforced at both the interface level (method visibility)
+  and the tool level (runtime intent checks).
+
+archetype: facade
+
+consumes:
+  - specweaver/loom/commons/git
+
+forbids:
+  - specweaver/loom/atoms/*
+
+exposes:
+  - create_git_interface
+  - ImplementerGitInterface
+  - ReviewerGitInterface
+  - DebuggerGitInterface
+  - DrafterGitInterface
+  - ConflictResolverGitInterface
+
+constraints:
+  - "Non-whitelisted intents must be invisible (not just blocked) at the interface level"
+  - "Each interface delegates to GitTool — no direct executor calls from interfaces"

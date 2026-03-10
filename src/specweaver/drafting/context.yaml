@@ -1,0 +1,20 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: drafting
+level: module
+purpose: >
+  LLM-assisted spec section drafting with HITL context providers.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/llm
+  - specweaver/config
+  - specweaver/context
+
+forbids:
+  - specweaver/loom/*
+
+exposes:
+  - Drafter

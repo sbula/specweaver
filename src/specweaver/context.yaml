@@ -1,0 +1,31 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: specweaver
+level: system
+purpose: >
+  Specification-driven development lifecycle tool for AI-assisted software engineering.
+
+description: |
+  SpecWeaver spans the full development lifecycle — from business requirements
+  through spec drafting, validation, review, code generation, and quality assurance.
+  It enforces spec quality through a 10-test battery and manages AI agents via
+  role-restricted tool interfaces.
+
+archetype: orchestrator
+
+consumes: []
+
+exposes:
+  - cli
+  - loom
+  - drafting
+  - review
+  - validation
+  - config
+  - llm
+  - project
+  - implementation
+  - context
+
+owner: sbula

@@ -22,6 +22,16 @@ Key patterns adopted from DMZ into SpecWeaver's methodology:
 - **AGENTS.md / MEMORY.md** for agent governance → Influenced SpecWeaver's context management approach
 - **15-point review checklist** → Basis for SpecWeaver's configurable review checklists
 
+### Agentic Insights — Codebase Context Specification (CCS)
+
+The [Codebase Context Specification](https://github.com/Agentic-Insights/codebase-context-spec) (v1.1.0-RFC) by **Agentic Insights** established a community standard for embedding AI-readable metadata in codebases using `.context` directories with structured YAML/Markdown files.
+
+SpecWeaver's `context.yaml` boundary manifest builds on CCS's foundation:
+- **Adopted**: Hierarchical context files, `module-name`/`description`/`related-modules`/`architecture` fields, tool-agnostic philosophy
+- **Extended**: Added enforcement fields (`archetype`, `consumes`, `forbids`, `exposes`, `constraints`) for algorithmic pre-code and post-code validation — turning passive documentation into active boundary enforcement
+
+See [context_yaml_spec.md](architecture/context_yaml_spec.md) for the full specification.
+
 ### Technology Decisions
 
 | Component | Choice | Rationale |

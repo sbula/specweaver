@@ -1,0 +1,18 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: context
+level: module
+purpose: >
+  HITL context providers for interactive spec drafting sessions.
+
+archetype: contract
+
+consumes: []
+
+forbids:
+  - specweaver/loom/*
+
+exposes:
+  - ContextProvider
+  - HITLProvider

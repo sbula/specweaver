@@ -1,0 +1,26 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: commons
+level: meta-module
+purpose: >
+  Shared infrastructure used by both tools and atoms — executors, base classes, utilities.
+
+description: |
+  Commons sits at the bottom of the loom dependency tree. Both tools/ and atoms/
+  depend on commons/, but commons/ never depends on either. This prevents
+  circular dependencies between the agent-facing and engine layers.
+
+archetype: adapter
+
+consumes: []
+
+forbids:
+  - specweaver/loom/tools/*
+  - specweaver/loom/atoms/*
+
+exposes:
+  - git
+
+constraints:
+  - "Must never import from tools/ or atoms/ — dependency flows upward only"

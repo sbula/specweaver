@@ -1,0 +1,23 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: atoms
+level: meta-module
+purpose: >
+  Engine-internal workflow operations with unrestricted access for orchestration.
+
+description: |
+  Atoms represent git (and future filesystem) operations within the engine's
+  workflow. Unlike tools, atoms are not agent-facing and use EngineGitExecutor
+  which bypasses the blocked-always list for operations like push, merge, and pull.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/loom/commons/*
+
+forbids:
+  - specweaver/loom/tools/*
+
+exposes:
+  - git

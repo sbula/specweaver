@@ -1,0 +1,27 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: validation
+level: module
+purpose: >
+  Spec quality validation through the 10-test battery (structure + completeness rules).
+
+description: |
+  Contains the validation rule engine, individual rule implementations,
+  and the runner that applies rules to spec documents. Rules check structure
+  (one-sentence, single-setup, size budget, dependency direction, conjunction count)
+  and completeness (weasel words, examples, error paths, done definition, scenarios).
+
+archetype: pure-logic
+
+consumes:
+  - specweaver/config
+
+forbids:
+  - specweaver/loom/*
+  - specweaver/llm
+
+exposes:
+  - ValidationRunner
+  - ValidationResult
+  - RuleSeverity

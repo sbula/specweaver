@@ -1,0 +1,27 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: loom
+level: meta-module
+purpose: >
+  Engine layer providing agent tools, workflow atoms, and shared infrastructure for git and filesystem operations.
+
+description: |
+  The Loom is SpecWeaver's execution engine. It is organized into three sub-layers:
+  - tools/ — agent-facing capability providers (role-restricted interfaces)
+  - atoms/ — engine-internal workflow operations (unrestricted)
+  - commons/ — shared infrastructure used by both tools and atoms
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/loom/tools/*
+  - specweaver/loom/atoms/*
+  - specweaver/loom/commons/*
+
+forbids: []
+
+exposes:
+  - tools
+  - atoms
+  - commons

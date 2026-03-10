@@ -1,0 +1,23 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: tools
+level: meta-module
+purpose: >
+  Agent-facing capability providers with role-based access control.
+
+description: |
+  Tools expose git (and future filesystem) operations to agents through
+  role-specific interfaces. Each interface physically hides methods not
+  whitelisted for the agent's role, saving tokens and preventing misuse.
+
+archetype: facade
+
+consumes:
+  - specweaver/loom/commons/*
+
+forbids:
+  - specweaver/loom/atoms/*
+
+exposes:
+  - git

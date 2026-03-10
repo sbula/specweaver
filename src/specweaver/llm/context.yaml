@@ -1,0 +1,26 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: llm
+level: module
+purpose: >
+  LLM provider abstraction layer with adapter pattern (currently Google Gemini).
+
+description: |
+  Provides a provider-agnostic interface for LLM calls. The base adapter defines
+  the contract; concrete adapters (GeminiAdapter) implement provider-specific logic.
+  Error hierarchy translates provider errors into domain-specific exceptions.
+
+archetype: adapter
+
+consumes:
+  - specweaver/config
+
+forbids:
+  - specweaver/loom/*
+
+exposes:
+  - LLMAdapter
+  - GeminiAdapter
+  - LLMResponse
+  - LLMError
