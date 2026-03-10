@@ -21,6 +21,7 @@ from specweaver.loom.atoms.base import Atom, AtomResult, AtomStatus
 from specweaver.loom.commons.filesystem.executor import EngineFileExecutor
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
 
@@ -62,7 +63,9 @@ class FileSystemAtom(Atom):
                 message="Missing 'intent' in context.",
             )
 
-        handler = getattr(self, f"_intent_{intent}", None)
+        handler: Callable[[dict[str, Any]], AtomResult] | None = getattr(
+            self, f"_intent_{intent}", None,
+        )
         if handler is None:
             return AtomResult(
                 status=AtomStatus.FAILED,

@@ -20,17 +20,14 @@ from pathlib import Path
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # We import AFTER writing the implementation — these will fail until then.
 # ---------------------------------------------------------------------------
 from specweaver.loom.commons.filesystem.executor import (
     EngineFileExecutor,
-    ExecutorResult,
     FileExecutor,
     FileExecutorError,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

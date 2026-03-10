@@ -13,7 +13,7 @@ Test structure:
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -24,9 +24,10 @@ from specweaver.loom.tools.filesystem.tool import (
     FileSystemTool,
     FileSystemToolError,
     FolderGrant,
-    ToolResult,
 )
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Fixtures

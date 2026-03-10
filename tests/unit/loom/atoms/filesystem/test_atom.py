@@ -13,14 +13,15 @@ FileSystemAtom is the engine-level counterpart. It has unrestricted access
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.loom.atoms.base import AtomResult, AtomStatus
+from specweaver.loom.atoms.base import AtomStatus
 from specweaver.loom.atoms.filesystem.atom import FileSystemAtom
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Fixtures

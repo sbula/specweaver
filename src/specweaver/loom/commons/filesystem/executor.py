@@ -16,11 +16,14 @@ Security controls:
 
 from __future__ import annotations
 
+import contextlib
 import os
 import uuid
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -145,10 +148,8 @@ class FileExecutor:
             os.replace(tmp_path, resolved)
         except OSError as exc:
             if tmp_path.exists():
-                try:
+                with contextlib.suppress(OSError):
                     tmp_path.unlink()
-                except OSError:
-                    pass
             return ExecutorResult(status="error", error=f"Write failed: {exc}")
 
         return ExecutorResult(status="success", data=str(resolved))
@@ -212,12 +213,14 @@ class FileExecutor:
         Returns:
             ExecutorResult with data=list of entry names.
         """
+        resolved: Path
         if path == "":
             resolved = self._cwd
         else:
-            resolved = self._validate_path(path)
-            if resolved is None:
+            validated = self._validate_path(path)
+            if validated is None:
                 return ExecutorResult(status="error", error=f"Path validation failed: {path}")
+            resolved = validated
 
         if not resolved.exists():
             return ExecutorResult(status="error", error=f"Directory not found: {path}")
@@ -382,11 +385,7 @@ class FileExecutor:
         normalized = path.replace("\\", "/")
         parts = normalized.split("/")
 
-        for part in parts:
-            if part in self._PROTECTED_PATTERNS:
-                return True
-
-        return False
+        return any(part in self._PROTECTED_PATTERNS for part in parts)
 
 
 class EngineFileExecutor(FileExecutor):

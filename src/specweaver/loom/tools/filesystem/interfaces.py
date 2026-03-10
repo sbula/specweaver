@@ -143,7 +143,9 @@ class DrafterFileInterface:
 # Factory
 # ---------------------------------------------------------------------------
 
-_ROLE_INTERFACE_MAP = {
+_ROLE_INTERFACE_MAP: dict[
+    str, type[ImplementerFileInterface] | type[ReviewerFileInterface] | type[DrafterFileInterface],
+] = {
     "implementer": ImplementerFileInterface,
     "reviewer": ReviewerFileInterface,
     "drafter": DrafterFileInterface,
@@ -160,7 +162,7 @@ def create_filesystem_interface(
     role: str,
     cwd: Path,
     grants: list[FolderGrant],
-) -> FileInterface:
+) -> ImplementerFileInterface | ReviewerFileInterface | DrafterFileInterface:
     """Create a role-specific filesystem interface.
 
     The cwd and grants are set by the Engine — the agent cannot change them.

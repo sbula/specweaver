@@ -17,10 +17,10 @@ import posixpath
 import re
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from specweaver.loom.commons.filesystem.executor import ExecutorResult, FileExecutor
-
+if TYPE_CHECKING:
+    from specweaver.loom.commons.filesystem.executor import ExecutorResult, FileExecutor
 
 # ---------------------------------------------------------------------------
 # Access models
@@ -337,6 +337,7 @@ class FileSystemTool:
 
         # Walk all context.yaml files in the project
         import os
+
         from ruamel.yaml import YAML
 
         yaml = YAML()
@@ -453,9 +454,11 @@ class FileSystemTool:
         for grant in self._grants:
             grant_path = grant.path.replace("\\", "/").rstrip("/")
 
-            if self._path_matches_grant(normalized_path, grant_path, grant.recursive):
-                if best is None or mode_priority[grant.mode] > mode_priority[best]:
-                    best = grant.mode
+            if (
+                self._path_matches_grant(normalized_path, grant_path, grant.recursive)
+                and (best is None or mode_priority[grant.mode] > mode_priority[best])
+            ):
+                best = grant.mode
 
         return best
 
