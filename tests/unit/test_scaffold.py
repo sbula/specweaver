@@ -50,6 +50,24 @@ class TestScaffoldProject:
         assert "Contract" in content
         assert "Protocol" in content
 
+    def test_creates_root_context_yaml(self, tmp_path: Path) -> None:
+        """scaffold_project creates a root context.yaml boundary manifest."""
+        scaffold_project(tmp_path)
+        context_path = tmp_path / "context.yaml"
+        assert context_path.is_file()
+        yaml = YAML()
+        data = yaml.load(context_path)
+        assert data["level"] == "system"
+        assert data["archetype"] == "orchestrator"
+
+    def test_context_yaml_uses_directory_name(self, tmp_path: Path) -> None:
+        """context.yaml name field is derived from the project directory name."""
+        scaffold_project(tmp_path)
+        yaml = YAML()
+        data = yaml.load(tmp_path / "context.yaml")
+        expected_name = tmp_path.name.lower().replace(" ", "-")
+        assert data["name"] == expected_name
+
     def test_returns_created_paths(self, tmp_path: Path) -> None:
         """scaffold_project returns a summary of what was created."""
         result = scaffold_project(tmp_path)
@@ -57,6 +75,7 @@ class TestScaffoldProject:
         assert result.specweaver_dir == tmp_path / ".specweaver"
         assert result.specs_dir == tmp_path / "specs"
         assert result.config_file == tmp_path / ".specweaver" / "config.yaml"
+        assert result.context_file == tmp_path / "context.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +102,16 @@ class TestScaffoldIdempotency:
 
         content = config_path.read_text()
         assert "my-custom-model" in content  # preserved, not overwritten
+
+    def test_does_not_overwrite_existing_context_yaml(self, tmp_path: Path) -> None:
+        """If context.yaml already exists, don't overwrite it."""
+        context_path = tmp_path / "context.yaml"
+        context_path.write_text("name: my-custom-project\nlevel: system\n")
+
+        scaffold_project(tmp_path)
+
+        content = context_path.read_text()
+        assert "my-custom-project" in content  # preserved, not overwritten
 
     def test_does_not_overwrite_existing_template(self, tmp_path: Path) -> None:
         """If templates/component_spec.md exists with custom content, don't overwrite."""

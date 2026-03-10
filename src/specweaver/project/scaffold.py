@@ -4,6 +4,7 @@
 """Project scaffolding — creates the .specweaver/ directory structure.
 
 Creates:
+- context.yaml           — root boundary manifest (context.yaml spec)
 - .specweaver/           — SpecWeaver config root
 - .specweaver/config.yaml — default config (non-secrets)
 - .specweaver/templates/ — spec templates (component_spec.md)
@@ -33,6 +34,23 @@ llm:
   max_output_tokens: 4096
   # Response format: "text" or "json"
   response_format: text
+"""
+
+_DEFAULT_CONTEXT_YAML = """\
+# Root boundary manifest — see docs/architecture/context_yaml_spec.md
+
+name: {project_name}
+level: system
+purpose: >
+  TODO: One sentence describing this project's responsibility.
+
+archetype: orchestrator
+
+consumes: []
+
+exposes: []
+
+owner: TODO
 """
 
 
@@ -127,6 +145,7 @@ class ScaffoldResult:
     specweaver_dir: Path
     specs_dir: Path
     config_file: Path
+    context_file: Path
     created: list[str]
 
 
@@ -151,25 +170,33 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
 
     created: list[str] = []
 
-    # 1. .specweaver/
+    # 1. context.yaml — root boundary manifest (only if not present)
+    context_file = project_path / "context.yaml"
+    if not context_file.exists():
+        project_name = project_path.name.lower().replace(" ", "-")
+        context_content = _DEFAULT_CONTEXT_YAML.format(project_name=project_name)
+        context_file.write_text(context_content, encoding="utf-8")
+        created.append("context.yaml")
+
+    # 2. .specweaver/
     sw_dir = project_path / ".specweaver"
     if not sw_dir.exists():
         sw_dir.mkdir(parents=True)
         created.append(".specweaver/")
 
-    # 2. specs/
+    # 3. specs/
     specs_dir = project_path / "specs"
     if not specs_dir.exists():
         specs_dir.mkdir(parents=True)
         created.append("specs/")
 
-    # 3. .specweaver/config.yaml (only if not present)
+    # 4. .specweaver/config.yaml (only if not present)
     config_file = sw_dir / "config.yaml"
     if not config_file.exists():
         config_file.write_text(_DEFAULT_CONFIG, encoding="utf-8")
         created.append(".specweaver/config.yaml")
 
-    # 4. .specweaver/templates/component_spec.md (only if not present)
+    # 5. .specweaver/templates/component_spec.md (only if not present)
     templates_dir = sw_dir / "templates"
     if not templates_dir.exists():
         templates_dir.mkdir(parents=True)
@@ -185,5 +212,6 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
         specweaver_dir=sw_dir,
         specs_dir=specs_dir,
         config_file=config_file,
+        context_file=context_file,
         created=created,
     )
