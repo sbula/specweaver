@@ -1,0 +1,35 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: filesystem-executor
+level: module
+purpose: >
+  Low-level filesystem operations with path validation, traversal prevention, and protected file patterns.
+
+description: |
+  FileExecutor provides raw file I/O (read, write, delete, mkdir, list, exists,
+  stat, move) constrained to a project directory. Security controls include path
+  traversal prevention, symlink blocking, protected file patterns (context.yaml,
+  .env, .git/, .specweaver/), and atomic writes.
+
+  EngineFileExecutor is a subclass that bypasses protected patterns for internal
+  engine operations.
+
+archetype: adapter
+
+consumes: []
+
+forbids:
+  - specweaver/loom/tools/*
+  - specweaver/loom/atoms/*
+
+exposes:
+  - FileExecutor
+  - EngineFileExecutor
+  - ExecutorResult
+  - FileExecutorError
+
+constraints:
+  - "FileExecutor must never allow path traversal outside cwd"
+  - "EngineFileExecutor is for internal engine use only — never exposed to agents"
+  - "All writes must be atomic (temp file + os.replace)"
