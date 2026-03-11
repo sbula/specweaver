@@ -37,7 +37,7 @@
 
 - [x] `pyproject.toml` with Typer dependency
 - [x] `src/specweaver/__init__.py`, `cli.py` — F1: CLI entry point with subcommands (stubs)
-- [ ] `src/specweaver/config/settings.py` — project path resolution (`--project` / `SW_PROJECT`)
+- [x] `src/specweaver/config/settings.py` — project path resolution (`--project` / `SW_PROJECT`)
 - [x] `src/specweaver/project/scaffold.py` — `sw init` creates `.specweaver/` in target
 - [x] Tests: CLI dispatch, settings resolution, scaffold creation
 - [x] **Runnable**: `sw init --project ./test-project` creates the directory structure
@@ -64,85 +64,83 @@
 
 > **Goal**: `sw validate spec path/to/spec.md` runs rules and reports results. This is the highest-leverage MVP feature — it proves the core concept without LLM cost.
 
-- [ ] `src/specweaver/validation/models.py` — Rule, RuleResult, Finding interfaces
-- [ ] `src/specweaver/validation/runner.py` — runs all rules, collects results
-- [ ] Spec rules (static-only first):
-  - [ ] `s01_one_sentence.py` — conjunction density in Purpose
-  - [ ] `s02_single_setup.py` — environment category count
-  - [ ] `s05_day_test.py` — complexity score heuristic
-  - [ ] `s06_concrete_example.py` — code block presence
-  - [ ] `s08_ambiguity.py` — weasel word scan
-  - [ ] `s09_error_path.py` — error/failure keyword search
-  - [ ] `s10_done_definition.py` — verification section check
-- [ ] Test fixtures: `good_spec.md`, `bad_spec_ambiguous.md`, `bad_spec_no_examples.md`, `bad_spec_too_big.md`
-- [ ] Tests: per-rule tests, runner integration test
-- [ ] **Runnable**: `sw validate spec good_spec.md` → all PASS. `sw validate spec bad_spec_ambiguous.md` → S08 FAIL.
+- [x] `src/specweaver/validation/models.py` — Rule, RuleResult, Finding interfaces
+- [x] `src/specweaver/validation/runner.py` — runs all rules, collects results
+- [x] Spec rules (static-only first):
+  - [x] `s01_one_sentence.py` — conjunction density in Purpose
+  - [x] `s02_single_setup.py` — environment category count
+  - [x] `s05_day_test.py` — complexity score heuristic
+  - [x] `s06_concrete_example.py` — code block presence
+  - [x] `s08_ambiguity.py` — weasel word scan
+  - [x] `s09_error_path.py` — error/failure keyword search
+  - [x] `s10_done_definition.py` — verification section check
+- [x] Test fixtures: `good_spec.md`, `bad_spec_ambiguous.md`, `bad_spec_no_examples.md`, `bad_spec_too_big.md`
+- [x] Tests: per-rule tests (5–7 cases each), runner integration test (9 tests)
+- [x] **Runnable**: `sw check good_spec.md` → all PASS. `sw check bad_spec_ambiguous.md` → S08 FAIL.
 
-**Estimated effort**: 2–3 sessions. This is the "product exists" moment.
+**Estimated effort**: 2–3 sessions. ✅ Completed.
 
 ---
 
-### Step 3: LLM Adapter + Remaining Spec Rules
+### Step 3: LLM Adapter + Remaining Spec Rules ✅ PARTIALLY COMPLETED
 
 > **Goal**: LLM adapter works. The 2 LLM-dependent spec rules (S03, S07) are implemented. The dependency-direction rule (S04) is wired.
 
-- [ ] `src/specweaver/llm/adapter.py` — LLMAdapter abstract interface
-- [ ] `src/specweaver/llm/gemini_adapter.py` — Gemini API concrete adapter
-- [ ] `s03_stranger.py` — LLM: summarize from Purpose alone
-- [ ] `s04_dependency_dir.py` — static: cross-reference direction scan
-- [ ] `s07_test_first.py` — LLM: generate test from Contract alone
-- [ ] Tests: adapter unit tests (with mocked responses), rule tests
-- [ ] **Runnable**: All 10 spec validation rules operational.
+- [x] `src/specweaver/llm/adapter.py` — LLMAdapter abstract interface
+- [x] `src/specweaver/llm/gemini_adapter.py` — Gemini API concrete adapter (with message conversion, error mapping, content filter handling)
+- [ ] `s03_stranger.py` — LLM: summarize from Purpose alone (**not yet implemented**)
+- [ ] `s04_dependency_dir.py` — static: cross-reference direction scan (**not yet implemented**)
+- [ ] `s07_test_first.py` — LLM: generate test from Contract alone (**not yet implemented**)
+- [x] Tests: adapter unit tests with mocked responses (20+ tests), error hierarchy tests, model tests
+- [ ] **Runnable**: 7/10 spec validation rules operational. 3 LLM rules remaining.
 
-**Estimated effort**: 2–3 sessions.
+**Estimated effort**: 2–3 sessions. ✅ LLM adapter done. 3 rules remaining.
 
 ---
 
-### Step 4: Spec Review (F4) + Spec Drafting (F2)
+### Step 4: Spec Review (F4) + Spec Drafting (F2) ✅ COMPLETED
 
 > **Goal**: LLM-powered features. `sw review spec` produces semantic judgment. `sw draft` co-authors a spec interactively.
 
-- [ ] `src/specweaver/review/reviewer.py` — F4: unified review engine
-- [ ] `src/specweaver/review/prompts/spec_review.md` — review prompt template
-- [ ] `src/specweaver/context/provider.py` — ContextProvider interface
-- [ ] `src/specweaver/context/hitl_provider.py` — HITL interactive context
-- [ ] `src/specweaver/drafting/drafter.py` — F2: interactive spec drafting
-- [ ] `src/specweaver/config/templates/component_spec.md` — 5-section template
-- [ ] Tests: reviewer prompt construction, drafter flow (mocked LLM)
-- [ ] **Runnable**: `sw draft greet_service` → interactive session → `greet_service_spec.md` produced.
+- [x] `src/specweaver/review/reviewer.py` — F4: unified review engine (ACCEPTED/DENIED/ERROR verdicts, finding extraction, raw response preserved)
+- [x] `src/specweaver/context/provider.py` — ContextProvider ABC
+- [x] `src/specweaver/context/hitl_provider.py` — HITL interactive context (Rich prompts, section display)
+- [x] `src/specweaver/drafting/drafter.py` — F2: interactive spec drafting (5-section template, LLM per section, TODO on skip)
+- [x] Tests: reviewer (10 tests incl. parse edge cases), drafter (8 tests), context provider (4 tests), HITL (5 tests), behavioral tests (error propagation, boundary inputs)
+- [x] **Runnable**: `sw draft greet_service` → interactive session → `greet_service_spec.md` produced.
 
-**Estimated effort**: 2–3 sessions.
+**Estimated effort**: 2–3 sessions. ✅ Completed.
 
 ---
 
-### Step 5: Implementation + Code Validation + Code Review (F5, F6, F7)
+### Step 5: Implementation + Code Validation + Code Review (F5, F6, F7) ✅ COMPLETED
 
 > **Goal**: The full loop works. Spec → code → tests → validation → review.
 
-- [ ] `src/specweaver/implementation/generator.py` — F5: code generation from spec
-- [ ] `src/specweaver/implementation/test_generator.py` — F5: test generation from spec
-- [ ] Code validation rules:
-  - [ ] `c01_syntax_valid.py` — import check
-  - [ ] `c02_tests_exist.py` — test file presence
-  - [ ] `c03_tests_pass.py` — pytest execution
-  - [ ] `c04_coverage.py` — coverage ≥ 70%
-  - [ ] `c05_import_direction.py` — upward import scan
-  - [ ] `c06_no_bare_except.py` — AST scan
-  - [ ] `c07_no_orphan_todo.py` — TODO/FIXME grep
-  - [ ] `c08_type_hints.py` — AST annotation check
-- [ ] `src/specweaver/review/prompts/code_review.md` — code review prompt
-- [ ] Integration test: `test_full_loop.py` — F2→F3→F4→F5→F6→F7
-- [ ] **Runnable**: Full core loop demonstrated on a real spec.
+- [x] `src/specweaver/implementation/generator.py` — F5: code generation + test generation (markdown fence cleaning, dir creation)
+- [x] Code validation rules:
+  - [x] `c01_syntax_valid.py` — `ast.parse` syntax check
+  - [x] `c02_tests_exist.py` — test file presence
+  - [x] `c03_tests_pass.py` — pytest subprocess (mocked, with timeout handling)
+  - [x] `c04_coverage.py` — coverage ≥ threshold (configurable, default 70%)
+  - [x] `c05_import_direction.py` — forbidden upward import scan
+  - [x] `c06_no_bare_except.py` — AST scan
+  - [x] `c07_no_orphan_todo.py` — TODO/FIXME/HACK/XXX grep
+  - [x] `c08_type_hints.py` — AST annotation coverage check
+- [x] Code review via `reviewer.review_code(code, spec)`
+- [x] Integration test: `test_pipeline.py` — init → check spec → implement → check code
+- [x] E2E test: `test_lifecycle.py` (972 lines) — full init → draft → check → review → implement → check → review
+- [x] **Runnable**: Full core loop demonstrated on a real spec.
 
-**Estimated effort**: 3–4 sessions.
+**Estimated effort**: 3–4 sessions. ✅ Completed.
 
 ---
 
-### Step 6: Dogfooding — SpecWeaver Validates Its Own Specs
+### Step 6: Dogfooding — SpecWeaver Validates Its Own Specs ⏳ NEXT
 
 > **Goal**: Use SpecWeaver on its own documentation. This is the "product works" moment.
 
-- [ ] Run `sw validate spec` on `mvp_feature_definition.md` and architecture docs
+- [ ] Run `sw check` on `mvp_feature_definition.md` and architecture docs
 - [ ] Run `sw draft` to create a real Component Spec for one of SpecWeaver's own modules
 - [ ] Run the full loop on a small, real feature
 - [ ] Fix any issues discovered during dogfooding
@@ -152,18 +150,25 @@
 
 ---
 
-## Phase 2: Stabilize & Harden
+## Phase 2: Flow Engine & Stabilize
 
-> **Goal**: MVP is solid. Tests are comprehensive. Per-layer configuration works. Ready for external use.
+> **Goal**: An engine that orchestrates atoms and tools into configurable, reusable pipelines. MVP individual steps become composable. Ready for external use.
 
+- [ ] **Flow Engine** — orchestrates atoms/tools into configurable pipelines
+  - [ ] Pipeline definition format (YAML/config describing step sequence, parameters, gates)
+  - [ ] State tracking — lifecycle position per spec (drafted → validated → reviewed → implemented)
+  - [ ] HITL gates — configurable pause points for human review/approval
+  - [ ] Retry/feedback loops — re-run on failure, escalate to human
+  - [ ] Adaptation — different flows for different scenarios (new feature, refactoring, bug fix)
+  - [ ] Reusable flow definitions — shareable across projects
 - [ ] Per-layer rule configuration (`.specweaver/config.yaml` with layer-specific thresholds)
 - [ ] CLI polish: colored output, progress indicators, `--verbose` / `--json` flags
 - [ ] Error handling: graceful LLM failures, network timeouts, API quota
 - [ ] Documentation: README, `sw --help` for all commands, quick-start guide
 - [ ] Test coverage target: 70–90%
-- [ ] **Milestone**: Someone else could install and use SpecWeaver.
+- [ ] **Milestone**: Pipelines are configurable and reusable. Someone else could install and use SpecWeaver.
 
-**Estimated effort**: 2–3 sessions.
+**Estimated effort**: 4–6 sessions.
 
 ---
 
