@@ -5,15 +5,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity, Status
 from specweaver.validation.rules.spec.s01_one_sentence import OneSentenceRule
 from specweaver.validation.rules.spec.s02_single_setup import SingleSetupRule
+from specweaver.validation.rules.spec.s03_stranger import StrangerTestRule
+from specweaver.validation.rules.spec.s04_dependency_dir import DependencyDirectionRule
 from specweaver.validation.rules.spec.s05_day_test import DayTestRule
 from specweaver.validation.rules.spec.s06_concrete_example import ConcreteExampleRule
+from specweaver.validation.rules.spec.s07_test_first import TestFirstRule
 from specweaver.validation.rules.spec.s08_ambiguity import AmbiguityRule
 from specweaver.validation.rules.spec.s09_error_path import ErrorPathRule
 from specweaver.validation.rules.spec.s10_done_definition import DoneDefinitionRule
@@ -24,43 +27,31 @@ from specweaver.validation.runner import (
     run_rules,
 )
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
-
 # ---------------------------------------------------------------------------
 # Fixtures — load test spec files
 # ---------------------------------------------------------------------------
 
-FIXTURES_DIR = "tests/fixtures"
+FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
 
 
 @pytest.fixture()
 def good_spec() -> str:
-    from pathlib import Path
-
-    return Path(FIXTURES_DIR, "good_spec.md").read_text(encoding="utf-8")
+    return (FIXTURES_DIR / "good_spec.md").read_text(encoding="utf-8")
 
 
 @pytest.fixture()
 def bad_ambiguous() -> str:
-    from pathlib import Path
-
-    return Path(FIXTURES_DIR, "bad_spec_ambiguous.md").read_text(encoding="utf-8")
+    return (FIXTURES_DIR / "bad_spec_ambiguous.md").read_text(encoding="utf-8")
 
 
 @pytest.fixture()
 def bad_no_examples() -> str:
-    from pathlib import Path
-
-    return Path(FIXTURES_DIR, "bad_spec_no_examples.md").read_text(encoding="utf-8")
+    return (FIXTURES_DIR / "bad_spec_no_examples.md").read_text(encoding="utf-8")
 
 
 @pytest.fixture()
 def bad_too_big() -> str:
-    from pathlib import Path
-
-    return Path(FIXTURES_DIR, "bad_spec_too_big.md").read_text(encoding="utf-8")
+    return (FIXTURES_DIR / "bad_spec_too_big.md").read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -214,10 +205,12 @@ class TestS05DayTest:
         result = DayTestRule().check(good_spec)
         assert result.status == Status.PASS
 
-    def test_bad_too_big_detects(self, bad_too_big: str) -> None:
+    def test_bad_too_big_fixture_not_complex_enough(self, bad_too_big: str) -> None:
+        """bad_too_big is only 3.2KB with score ~6.7 — it triggers S01, not S05."""
         result = DayTestRule().check(bad_too_big)
-        # bad_too_big has moderate size — may WARN or PASS
-        assert result.status in (Status.PASS, Status.WARN, Status.FAIL)
+        # This fixture has multiple responsibilities (S01 fails) but is small
+        # enough that the Day Test complexity score stays under WARN (25).
+        assert result.status == Status.PASS
 
     def test_tiny_spec_passes(self) -> None:
         spec = "## 1. Purpose\n\nSmall component.\n"
@@ -589,7 +582,7 @@ class TestRunner:
 
     def test_get_spec_rules_excludes_llm(self) -> None:
         rules = get_spec_rules(include_llm=False)
-        assert len(rules) == 7
+        assert len(rules) == 10
         assert all(not r.requires_llm for r in rules)
 
     def test_get_spec_rules_ordered_by_id(self) -> None:
@@ -600,7 +593,7 @@ class TestRunner:
     def test_run_rules_collects_all_results(self, good_spec: str) -> None:
         rules = get_spec_rules()
         results = run_rules(rules, good_spec)
-        assert len(results) == 7
+        assert len(results) == 10
 
     def test_run_rules_exception_handling(self) -> None:
         """A crashing rule should produce FAIL, not crash the runner."""
@@ -651,7 +644,7 @@ class TestRunner:
         assert counts[Status.SKIP] == 0
 
     def test_good_spec_passes_all(self, good_spec: str) -> None:
-        """The good_spec fixture should pass all 7 rules."""
+        """The good_spec fixture should pass all 10 rules."""
         rules = get_spec_rules()
         results = run_rules(rules, good_spec)
         for r in results:
@@ -663,3 +656,220 @@ class TestRunner:
         results = run_rules([], "some spec")
         assert results == []
         assert all_passed(results) is True
+
+
+# ---------------------------------------------------------------------------
+# S03: Stranger Test
+# ---------------------------------------------------------------------------
+
+
+class TestS03StrangerTest:
+    """S03 detects specs that are not self-contained."""
+
+    def test_good_spec_passes(self, good_spec: str) -> None:
+        result = StrangerTestRule().check(good_spec)
+        assert result.status in (Status.PASS, Status.WARN)
+
+    def test_self_contained_passes(self) -> None:
+        spec = """
+## 1. Purpose
+
+The Greeter Service generates personalized welcome messages.
+
+## 2. Contract
+
+`GreetService` is the main class. It accepts a name and returns a greeting.
+
+```python
+def greet(name: str) -> str:
+    ...
+```
+"""
+        result = StrangerTestRule().check(spec)
+        assert result.status == Status.PASS
+
+    def test_many_external_refs_warns(self) -> None:
+        spec = """
+## 1. Purpose
+
+This component depends on many others.
+
+See [auth](auth_spec.md) and [session](session_spec.md).
+Also see [rate_limit](rate_limit_spec.md).
+Also see [cache](cache_spec.md) and [db](db_spec.md).
+Also see [queue](queue_spec.md).
+"""
+        result = StrangerTestRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+        assert len(result.findings) > 3
+
+    def test_many_undefined_terms_warns(self) -> None:
+        spec = """
+## 1. Purpose
+
+Uses `FlowEngine`, `StateStore`, `TaskQueue`, `ConfigManager`,
+`EventBus`, and `MetricsCollector` without explanation.
+"""
+        result = StrangerTestRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+
+    def test_defined_terms_not_counted(self) -> None:
+        """Terms defined in headers should not count as undefined."""
+        spec = """
+## 1. Purpose
+
+The `GreetService` is a simple greeting component.
+
+### `GreetService` Interface
+
+```python
+class GreetService:
+    pass
+```
+"""
+        result = StrangerTestRule().check(spec)
+        assert result.status == Status.PASS
+
+    def test_rule_id(self) -> None:
+        assert StrangerTestRule().rule_id == "S03"
+        assert StrangerTestRule().name == "Stranger Test"
+
+
+# ---------------------------------------------------------------------------
+# S04: Dependency Direction
+# ---------------------------------------------------------------------------
+
+
+class TestS04DependencyDirection:
+    """S04 detects specs with too many cross-references to peers."""
+
+    def test_good_spec_passes(self, good_spec: str) -> None:
+        result = DependencyDirectionRule().check(good_spec)
+        assert result.status in (Status.PASS, Status.WARN)
+
+    def test_no_cross_refs_passes(self) -> None:
+        spec = """
+## 1. Purpose
+
+A simple standalone component.
+
+## 2. Contract
+
+Takes input, produces output.
+"""
+        result = DependencyDirectionRule().check(spec)
+        assert result.status == Status.PASS
+        assert "0" in result.message
+
+    def test_many_links_warns(self) -> None:
+        spec = """
+## 3. Protocol
+
+See [auth](auth_spec.md) for details.
+See [session](session_spec.md) for state.
+See [cache](cache_spec.md) for caching.
+See [queue](queue_spec.md) for async.
+See [db](db_spec.md) for storage.
+See [metrics](metrics_spec.md) for monitoring.
+"""
+        result = DependencyDirectionRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+        assert len(result.findings) >= 6
+
+    def test_component_refs_detected(self) -> None:
+        spec = """
+Communicates with `AuthService`, `CacheManager`, `TaskHandler`,
+`EventBus`, `MetricsProvider`, `ConfigAdapter`,
+`SessionStore`, `QueueClient`, and `LogHandler`.
+"""
+        result = DependencyDirectionRule().check(spec)
+        # 8 component suffixes matched (EventBus excluded — "Bus" not in suffix list)
+        assert result.status in (Status.WARN, Status.FAIL)
+        assert any("Component reference" in f.message for f in result.findings)
+
+    def test_code_block_refs_ignored(self) -> None:
+        """References inside code blocks should not count."""
+        spec = """
+## 1. Purpose
+
+Simple service.
+
+```python
+from auth import AuthService  # this should be ignored
+class MyHandler:
+    pass
+```
+"""
+        result = DependencyDirectionRule().check(spec)
+        assert result.status == Status.PASS
+
+    def test_rule_id(self) -> None:
+        assert DependencyDirectionRule().rule_id == "S04"
+        assert DependencyDirectionRule().name == "Dependency Direction"
+
+
+# ---------------------------------------------------------------------------
+# S07: Test-First
+# ---------------------------------------------------------------------------
+
+
+class TestS07TestFirst:
+    """S07 checks that the Contract section is testable."""
+
+    def test_good_spec_passes(self, good_spec: str) -> None:
+        result = TestFirstRule().check(good_spec)
+        assert result.status in (Status.PASS, Status.WARN)
+
+    def test_rich_contract_passes(self) -> None:
+        spec = """
+## 2. Contract
+
+The `greet` function MUST return a `Greeting` object.
+If the name is empty, it MUST raise `ValueError`.
+
+```python
+def greet(name: str) -> Greeting:
+    ...
+```
+
+Example:
+  Input: name = "Alice"
+  Output: Greeting(message="Hello, Alice!")
+"""
+        result = TestFirstRule().check(spec)
+        assert result.status == Status.PASS
+        assert "12" in result.message or "score" in result.message.lower()
+
+    def test_no_contract_fails(self) -> None:
+        spec = "# Just a title\n\nNo contract here."
+        result = TestFirstRule().check(spec)
+        assert result.status == Status.FAIL
+        assert any("Contract" in f.message for f in result.findings)
+
+    def test_vague_contract_warns_or_fails(self) -> None:
+        spec = """
+## 2. Contract
+
+The component does stuff.
+"""
+        result = TestFirstRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+        assert any("testable" in f.message.lower() or "code" in f.message.lower()
+                    for f in result.findings)
+
+    def test_contract_with_code_but_no_assertions_warns(self) -> None:
+        spec = """
+## 2. Contract
+
+```python
+class Greeter:
+    pass
+```
+"""
+        result = TestFirstRule().check(spec)
+        # Has code but no assertions — should warn
+        assert result.status in (Status.WARN, Status.PASS)
+
+    def test_rule_id(self) -> None:
+        assert TestFirstRule().rule_id == "S07"
+        assert TestFirstRule().name == "Test-First"

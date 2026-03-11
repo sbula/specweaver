@@ -26,8 +26,11 @@ def get_spec_rules(*, include_llm: bool = False) -> list[Rule]:
     """
     from specweaver.validation.rules.spec.s01_one_sentence import OneSentenceRule
     from specweaver.validation.rules.spec.s02_single_setup import SingleSetupRule
+    from specweaver.validation.rules.spec.s03_stranger import StrangerTestRule
+    from specweaver.validation.rules.spec.s04_dependency_dir import DependencyDirectionRule
     from specweaver.validation.rules.spec.s05_day_test import DayTestRule
     from specweaver.validation.rules.spec.s06_concrete_example import ConcreteExampleRule
+    from specweaver.validation.rules.spec.s07_test_first import TestFirstRule
     from specweaver.validation.rules.spec.s08_ambiguity import AmbiguityRule
     from specweaver.validation.rules.spec.s09_error_path import ErrorPathRule
     from specweaver.validation.rules.spec.s10_done_definition import DoneDefinitionRule
@@ -35,8 +38,11 @@ def get_spec_rules(*, include_llm: bool = False) -> list[Rule]:
     all_rules: list[Rule] = [
         OneSentenceRule(),
         SingleSetupRule(),
+        StrangerTestRule(),
+        DependencyDirectionRule(),
         DayTestRule(),
         ConcreteExampleRule(),
+        TestFirstRule(),
         AmbiguityRule(),
         ErrorPathRule(),
         DoneDefinitionRule(),
