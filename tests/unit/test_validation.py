@@ -734,6 +734,46 @@ class GreetService:
         assert StrangerTestRule().rule_id == "S03"
         assert StrangerTestRule().name == "Stranger Test"
 
+    def test_empty_spec(self) -> None:
+        result = StrangerTestRule().check("")
+        assert result.status == Status.PASS
+
+    def test_http_urls_excluded(self) -> None:
+        """HTTP links should not count as external cross-references."""
+        spec = """
+## 1. Purpose
+
+See [Python docs](https://docs.python.org) and [RFC 2119](https://tools.ietf.org/html/rfc2119).
+"""
+        result = StrangerTestRule().check(spec)
+        assert result.status == Status.PASS
+
+    def test_anchor_links_excluded(self) -> None:
+        """Anchor links within the same doc should not count."""
+        spec = """
+## 1. Purpose
+
+See [Contract](#contract) and [Protocol](#protocol) below.
+"""
+        result = StrangerTestRule().check(spec)
+        assert result.status == Status.PASS
+
+    def test_terms_inside_code_blocks_ignored(self) -> None:
+        """Backtick terms inside fenced code should not count as undefined."""
+        spec = """
+## 1. Purpose
+
+Simple greeter.
+
+```python
+# These should not trigger warnings
+from myapp import FlowEngine, StateStore, TaskQueue
+result = ConfigManager.get()
+```
+"""
+        result = StrangerTestRule().check(spec)
+        assert result.status == Status.PASS
+
 
 # ---------------------------------------------------------------------------
 # S04: Dependency Direction
@@ -807,6 +847,50 @@ class MyHandler:
         assert DependencyDirectionRule().rule_id == "S04"
         assert DependencyDirectionRule().name == "Dependency Direction"
 
+    def test_empty_spec(self) -> None:
+        result = DependencyDirectionRule().check("")
+        assert result.status == Status.PASS
+
+    def test_section_refs_detected(self) -> None:
+        """'see §3' patterns should be counted."""
+        spec = """
+See §1 for purpose.
+See §2 for contract.
+See §3 for protocol.
+See §4 for policy.
+See §5 for boundaries.
+See section 6 for extras.
+"""
+        result = DependencyDirectionRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+        assert any("Section reference" in f.message for f in result.findings)
+
+    def test_non_md_links_ignored(self) -> None:
+        """Links to non-.md files should not count as cross-references."""
+        spec = """
+See [config](config.yaml) and [script](deploy.sh) for details.
+"""
+        result = DependencyDirectionRule().check(spec)
+        # These are not .md links — should not be counted
+        assert result.status == Status.PASS
+
+    def test_findings_have_line_numbers(self) -> None:
+        """Line numbers must be populated when threshold triggers findings."""
+        spec = (
+            "Line 1\n"
+            "See [a](a_spec.md) link.\n"             # line 2
+            "See [b](b_spec.md) link.\n"             # line 3
+            "See [c](c_spec.md) link.\n"             # line 4
+            "See [d](d_spec.md) link.\n"             # line 5
+            "See [e](e_spec.md) link.\n"             # line 6
+            "See [target](target_spec.md) link.\n"   # line 7
+        )
+        result = DependencyDirectionRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+        target_findings = [f for f in result.findings if "target_spec.md" in f.message]
+        assert len(target_findings) == 1
+        assert target_findings[0].line == 7
+
 
 # ---------------------------------------------------------------------------
 # S07: Test-First
@@ -873,3 +957,54 @@ class Greeter:
     def test_rule_id(self) -> None:
         assert TestFirstRule().rule_id == "S07"
         assert TestFirstRule().name == "Test-First"
+
+    def test_empty_spec(self) -> None:
+        result = TestFirstRule().check("")
+        assert result.status == Status.FAIL
+
+    def test_contract_header_without_number(self) -> None:
+        """'## Contract' (no '2.') should still be detected."""
+        spec = """
+## Contract
+
+The function MUST return a string.
+
+```python
+def greet(name: str) -> str:
+    ...
+```
+"""
+        result = TestFirstRule().check(spec)
+        assert result.status in (Status.PASS, Status.WARN)
+
+    def test_contract_as_last_section(self) -> None:
+        """Contract at end of doc (no following ## header) should be extracted."""
+        spec = """
+## 1. Purpose
+
+A greeter.
+
+## 2. Contract
+
+The `greet` function MUST return a greeting string.
+It MUST raise `ValueError` for empty input.
+
+```python
+def greet(name: str) -> str:
+    ...
+```
+"""
+        result = TestFirstRule().check(spec)
+        assert result.status in (Status.PASS, Status.WARN)
+
+    def test_score_at_exact_fail_boundary(self) -> None:
+        """Score 0-2 should FAIL — no code, no assertions, no values."""
+        spec = """
+## 2. Contract
+
+The component handles things appropriately.
+It does what is expected.
+"""
+        result = TestFirstRule().check(spec)
+        assert result.status == Status.FAIL
+        assert "low testability" in result.message.lower()
