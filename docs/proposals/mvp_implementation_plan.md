@@ -1,6 +1,6 @@
 # SpecWeaver MVP — Implementation Roadmap
 
-> **Date**: 2026-03-08 (updated with gap analysis decisions)
+> **Date**: 2026-03-08 (updated 2026-03-10 — loom layer implemented)
 > **Purpose**: Technical implementation plan for the SpecWeaver MVP. Covers source reuse from flowManager, framework decisions, architecture decisions, module-by-module build plan, and verification strategy.
 
 ---
@@ -56,7 +56,7 @@ These modules are production-quality, well-tested, and map directly to SpecWeave
 | `src/flow/engine/core.py` (28KB) | Flow execution engine — completely different from SW |
 | `src/flow/atoms/` (27KB) | Workflow atoms — not applicable |
 | `src/flow/skills/` (33KB) | Agent skills — not applicable |
-| `src/flow/tools/` (14 files) | Shell/file/knowledge tools — not applicable |
+| `src/flow/tools/` (14 files) | Shell/file/knowledge tools — patterns partially reused in loom layer |
 | `src/flow/workflows/` | Workflow definitions — not applicable |
 | `src/flow/engine/events.py` | Event bus — not applicable |
 | `src/flow/engine/redactor.py` | Simpler redactor (1KB) — use `security/redactor.py` instead |
@@ -247,7 +247,27 @@ These modules have no equivalent in flowManager and must be written new.
 | `cli.py` | Typer app: `sw init`, `sw check --level=X`, `sw draft`, `sw review`, `sw implement` | Medium |
 | `__init__.py` | Package root, version | Low |
 
-**Total new code**: ~2000-3000 LOC (excluding tests)
+### 3.7 Loom: Filesystem Tools & Atoms ✅ COMPLETED (183 tests)
+
+> [!NOTE]
+> This section was implemented (2026-03-10) using TDD, achieving complete test coverage across all layers.
+
+| File | What It Does | Status |
+|:---|:---|:---|
+| `loom/commons/filesystem/executor.py` | `FileExecutor` + `EngineFileExecutor`: Low-level ops (read, write, delete, mkdir, list, exists, stat, move) with path traversal prevention, symlink blocking, protected patterns, atomic writes, Windows ADS blocking | ✅ 54 tests (+6 skipped) |
+| `loom/tools/filesystem/tool.py` | `FileSystemTool`: Role-based intent gating, `FolderGrant` boundary enforcement, `find_placement` (keyword MVP), `search_content` (recursive), `_normalize_path` security fix (posixpath.normpath for `../` bypass prevention) | ✅ 66 tests |
+| `loom/tools/filesystem/interfaces.py` | 3 role-specific interfaces (`ImplementerFileInterface`, `ReviewerFileInterface`, `DrafterFileInterface`) + `create_filesystem_interface` factory | ✅ 42 tests (+1 skipped) |
+| `loom/atoms/filesystem/atom.py` | `FileSystemAtom`: 5 intents — `scaffold`, `backup`, `restore`, `aggregate_context`, `validate_boundaries` (including consumes reference validation) | ✅ 21 tests |
+| `context.yaml` | Boundary manifests for both tools and atoms modules | ✅ |
+
+**Architecture:**
+```
+Agent    ──▶ Interface ──▶ FileSystemTool ──▶ FileExecutor        (commons/)
+Engine   ──▶ FileSystemAtom ─────────────────▶ EngineFileExecutor  (commons/)
+```
+
+**Total new code**: ~2000 LOC (source + tests)
+
 
 ---
 
@@ -256,11 +276,11 @@ These modules have no equivalent in flowManager and must be written new.
 ### Step 1: Project Scaffold + CLI Shell (1-2 sessions)
 
 **Create:**
-- `pyproject.toml` (uv, PEP 621, core deps)
-- `src/specweaver/__init__.py` + `cli.py` (Typer app with stubs)
-- `src/specweaver/config/settings.py` (path resolution)
-- `src/specweaver/project/discovery.py` + `scaffold.py` (`sw init`)
-- Tests: CLI dispatch, settings, scaffold
+- [x] `pyproject.toml` (uv, PEP 621, core deps)
+- [x] `src/specweaver/__init__.py` + `cli.py` (Typer app with stubs)
+- [ ] `src/specweaver/config/settings.py` (path resolution)
+- [x] `src/specweaver/project/discovery.py` + `scaffold.py` (`sw init`)
+- [x] Tests: CLI dispatch, settings, scaffold
 
 **Copy from FM:** Nothing yet.
 
@@ -380,6 +400,10 @@ tests/
 │   ├── test_reviewer.py             # Prompt construction
 │   ├── test_drafter.py              # Drafting flow (mocked LLM)
 │   ├── test_generator.py            # Code gen (mocked LLM)
+│   ├── loom/                        # ✅ IMPLEMENTED
+│   │   ├── commons/filesystem/      # FileExecutor tests (54 + 6 skip)
+│   │   ├── tools/filesystem/        # FileSystemTool + interfaces (108 + 1 skip)
+│   │   └── atoms/filesystem/        # FileSystemAtom tests (21)
 │   └── llm/                         # Adapter tests (copied from FM)
 ├── integration/
 │   ├── test_validate_spec.py        # Good/bad specs against runner

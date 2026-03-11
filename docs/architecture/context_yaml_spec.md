@@ -362,7 +362,7 @@ The filesystem tool follows the same 4-tier architecture as the git tool:
 |---|---|
 | `GitExecutor` whitelist → only allowed commands | Filesystem executor → only allowed operations **within boundary** |
 | `_BLOCKED_ALWAYS` → push, merge, rebase | `_PROTECTED_PATTERNS` → `context.yaml` |
-| `EngineGitExecutor` bypasses blocklist | Boundary architect agent gets `context.yaml` write access |
+| `EngineGitExecutor` bypasses blocklist | `EngineFileExecutor` bypasses protected patterns (engine-only, no agent access) |
 | Role-specific interfaces hide methods | Role-specific interfaces hide file operations |
 
 ### Agent permissions
@@ -403,10 +403,9 @@ This specification will be implemented through the following SpecWeaver componen
 | Component | Responsibility |
 |---|---|
 | **Filesystem Tool** (`loom/tools/filesystem/`) | `find_placement(description)` — scans `context.yaml` files and returns ranked placements |
-| **Filesystem Atom** (`loom/atoms/filesystem/`) | `validate_boundary(path, imports)` — pre-code validation against boundary rules |
+| **Filesystem Atom** (`loom/atoms/filesystem/`) | `scaffold()` — creates directories + `context.yaml` from boundary defs; `validate_boundaries()` — pre-code validation |
 | **Validation Rules** (`specweaver/validation/`) | `context_yaml_lint(path)` — structural validation of the YAML file itself |
 | **CLI** | `sw context validate` — check all `context.yaml` files in a project for consistency |
-| **Boundary Architect Tool** (`loom/tools/filesystem/`) | `modify_boundary(path, changes)` — restricted interface for `context.yaml` writes |
 
 ---
 
@@ -416,3 +415,4 @@ This specification will be implemented through the following SpecWeaver componen
 2. **Version field** — Should `context.yaml` include a schema version for forward compatibility?
 3. **Tags** — Should there be a `tags` field for more flexible semantic search beyond `purpose`?
 4. **Conflict resolution** — When a child's `consumes` conflicts with a parent's `forbids`, which wins? (Current rule: `forbids` always wins.)
+5. **Spec → scaffold pipeline** — When the drafter/spec authoring workflow creates a new component spec, the spec must define boundary information (name, level, purpose, archetype, consumes, forbids). How this is formatted in the spec template, and how the Engine parses it to call `FileSystemAtom.scaffold()`, is not yet defined. This is a prerequisite for the drafter workflow.

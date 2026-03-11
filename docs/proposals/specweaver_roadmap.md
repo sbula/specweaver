@@ -10,13 +10,15 @@
 
 ---
 
-## Current State (Phase 0)
+## Current State (updated 2026-03-10)
 
 **What exists:**
 - ✅ Repo: `sbula/specweaver` — fresh, clean
 - ✅ Documentation: MVP feature definition, methodology, architecture, lifecycle layers
 - ✅ Decision log: Python, Typer CLI, Gemini API, deployment isolation
-- ❌ No code yet — starting from scratch
+- ✅ Project scaffold: `pyproject.toml`, CLI shell, `sw init`
+- ✅ Loom layer: Filesystem tools, atoms, and interfaces (**183 tests**, fully linted + type-checked)
+- ❌ Validation engine, LLM adapter, drafting, review, implementation — not started
 
 **What we're building** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - A CLI tool (`sw`) that operates ON projects, not within them
@@ -33,14 +35,28 @@
 
 > **Goal**: `sw --help` works. Project structure is real.
 
-- [ ] `pyproject.toml` with Typer dependency
-- [ ] `src/specweaver/__init__.py`, `cli.py` — F1: CLI entry point with subcommands (stubs)
+- [x] `pyproject.toml` with Typer dependency
+- [x] `src/specweaver/__init__.py`, `cli.py` — F1: CLI entry point with subcommands (stubs)
 - [ ] `src/specweaver/config/settings.py` — project path resolution (`--project` / `SW_PROJECT`)
-- [ ] `src/specweaver/project/scaffold.py` — `sw init` creates `.specweaver/` in target
-- [ ] Tests: CLI dispatch, settings resolution, scaffold creation
-- [ ] **Runnable**: `sw init --project ./test-project` creates the directory structure
+- [x] `src/specweaver/project/scaffold.py` — `sw init` creates `.specweaver/` in target
+- [x] Tests: CLI dispatch, settings resolution, scaffold creation
+- [x] **Runnable**: `sw init --project ./test-project` creates the directory structure
 
-**Estimated effort**: 1–2 sessions.
+**Estimated effort**: 1–2 sessions. ✅ Largely completed.
+
+---
+
+### Step 1b: Loom — Filesystem Tools & Atoms ✅ COMPLETED
+
+> **Goal**: Agents and Engine have secure, role-gated filesystem access. Agents see only whitelisted boundaries.
+
+- [x] `loom/commons/filesystem/executor.py` — `FileExecutor` + `EngineFileExecutor` (path traversal, symlinks, protected patterns, atomic writes)
+- [x] `loom/tools/filesystem/tool.py` — `FileSystemTool` with role-intent gating, `FolderGrant` boundary enforcement, `../` security fix
+- [x] `loom/tools/filesystem/interfaces.py` — 3 role interfaces + factory
+- [x] `loom/atoms/filesystem/atom.py` — 5 intents: scaffold, backup, restore, aggregate_context, validate_boundaries
+- [x] `context.yaml` boundary manifests for filesystem modules
+- [x] 183 tests (780 total passing), ruff + mypy clean
+- [x] **Security audited**: `../` bypass, backslash normalization, trailing slashes, empty grants
 
 ---
 
