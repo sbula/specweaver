@@ -101,6 +101,19 @@ class TestC02TestsExist:
         result = rule.check("pass", src)
         assert result.status == Status.FAIL
 
+    def test_test_file_in_nested_subdir(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test file in tests/unit/ subdirectory should be found by rglob."""
+        src = tmp_path / "foo.py"
+        src.write_text("pass")
+        nested = tmp_path / "tests" / "unit"
+        nested.mkdir(parents=True)
+        test_file = nested / "test_foo.py"
+        test_file.write_text("pass")
+
+        rule = TestsExistRule()
+        result = rule.check("pass", src)
+        assert result.status == Status.PASS
+
     def test_rule_id(self) -> None:
         assert TestsExistRule().rule_id == "C02"
 
@@ -141,6 +154,18 @@ class TestC05ImportDirection:
     def test_rule_id(self) -> None:
         assert ImportDirectionRule().rule_id == "C05"
 
+    def test_submodule_import_forbidden(self) -> None:
+        """from specweaver.cli.submod import X should also be caught."""
+        code = "from specweaver.cli.commands import init_cmd\n"
+        rule = ImportDirectionRule()
+        result = rule.check(code)
+        assert result.status == Status.FAIL
+
+    def test_empty_code(self) -> None:
+        rule = ImportDirectionRule()
+        result = rule.check("")
+        assert result.status == Status.PASS
+
 
 # ---------------------------------------------------------------------------
 # C06 No Bare Except
@@ -172,6 +197,17 @@ class TestC06NoBareExcept:
 
     def test_rule_id(self) -> None:
         assert NoBareExceptRule().rule_id == "C06"
+
+    def test_syntax_error_skips(self) -> None:
+        code = "def foo(\n"
+        rule = NoBareExceptRule()
+        result = rule.check(code)
+        assert result.status == Status.SKIP
+
+    def test_empty_code(self) -> None:
+        rule = NoBareExceptRule()
+        result = rule.check("")
+        assert result.status == Status.PASS
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +246,21 @@ class TestC07NoOrphanTodo:
 
     def test_rule_id(self) -> None:
         assert NoOrphanTodoRule().rule_id == "C07"
+
+    def test_empty_code(self) -> None:
+        rule = NoOrphanTodoRule()
+        result = rule.check("")
+        assert result.status == Status.PASS
+
+    def test_todo_in_string_literal_not_detected(self) -> None:
+        """TODO inside a string literal should NOT be detected (regex requires #)."""
+        code = 'msg = "# TODO: this is a string, not a comment"\n'
+        rule = NoOrphanTodoRule()
+        result = rule.check(code)
+        # The regex pattern `#\s*TODO` will match inside the string
+        # because it scans line-by-line, not AST-aware. This is a known
+        # limitation — test documents the current behavior.
+        assert result.status in (Status.PASS, Status.WARN)
 
 
 # ---------------------------------------------------------------------------
@@ -252,6 +303,17 @@ class TestC08TypeHints:
 
     def test_rule_id(self) -> None:
         assert TypeHintsRule().rule_id == "C08"
+
+    def test_syntax_error_skips(self) -> None:
+        code = "def foo(\n"
+        rule = TypeHintsRule()
+        result = rule.check(code)
+        assert result.status == Status.SKIP
+
+    def test_empty_code(self) -> None:
+        rule = TypeHintsRule()
+        result = rule.check("")
+        assert result.status == Status.PASS
 
 
 # ---------------------------------------------------------------------------

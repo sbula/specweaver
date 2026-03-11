@@ -60,41 +60,41 @@
 
 ---
 
-### Step 2: Validation Engine + First Spec Rules
+### Step 2: Validation Engine + First Spec Rules ⚠️ PARTIALLY COMPLETED
 
 > **Goal**: `sw validate spec path/to/spec.md` runs rules and reports results. This is the highest-leverage MVP feature — it proves the core concept without LLM cost.
 
 - [x] `src/specweaver/validation/models.py` — Rule, RuleResult, Finding interfaces
 - [x] `src/specweaver/validation/runner.py` — runs all rules, collects results
-- [x] Spec rules (static-only first):
-  - [x] `s01_one_sentence.py` — conjunction density in Purpose
-  - [x] `s02_single_setup.py` — environment category count
-  - [x] `s05_day_test.py` — complexity score heuristic
-  - [x] `s06_concrete_example.py` — code block presence
-  - [x] `s08_ambiguity.py` — weasel word scan
-  - [x] `s09_error_path.py` — error/failure keyword search
-  - [x] `s10_done_definition.py` — verification section check
+- Spec rules (static-only first):
+  - [ ] `s01_one_sentence.py` — **code exists** but lacks spec definition (thresholds, edge cases, what exactly counts)
+  - [x] `s02_single_setup.py` — environment category count ✅
+  - [x] `s05_day_test.py` — complexity score heuristic ✅
+  - [ ] `s06_concrete_example.py` — **code exists** but lacks spec definition
+  - [ ] `s08_ambiguity.py` — **code exists** but lacks spec definition
+  - [ ] `s09_error_path.py` — **code exists** but lacks spec definition
+  - [ ] `s10_done_definition.py` — **code exists** but lacks spec definition
 - [x] Test fixtures: `good_spec.md`, `bad_spec_ambiguous.md`, `bad_spec_no_examples.md`, `bad_spec_too_big.md`
 - [x] Tests: per-rule tests (5–7 cases each), runner integration test (9 tests)
 - [x] **Runnable**: `sw check good_spec.md` → all PASS. `sw check bad_spec_ambiguous.md` → S08 FAIL.
 
-**Estimated effort**: 2–3 sessions. ✅ Completed.
+**Status**: Engine + runner done. 5 rules (S01, S06, S08, S09, S10) need spec definitions before they can be considered complete. See below.
 
 ---
 
-### Step 3: LLM Adapter + Remaining Spec Rules ✅ COMPLETED
+### Step 3: LLM Adapter + Remaining Spec Rules ⚠️ PARTIALLY COMPLETED
 
 > **Goal**: LLM adapter works. The 2 LLM-dependent spec rules (S03, S07) are implemented. The dependency-direction rule (S04) is wired.
 
 - [x] `src/specweaver/llm/adapter.py` — LLMAdapter abstract interface
 - [x] `src/specweaver/llm/gemini_adapter.py` — Gemini API concrete adapter (with message conversion, error mapping, content filter handling)
-- [x] `s03_stranger.py` — static heuristic: external refs + undefined term count (LLM enhancement future)
-- [x] `s04_dependency_dir.py` — static: cross-reference direction scan (md links, component refs)
-- [x] `s07_test_first.py` — static heuristic: contract testability scoring (LLM enhancement future)
+- [x] `s03_stranger.py` — static heuristic: external refs + undefined term count ✅
+- [x] `s04_dependency_dir.py` — static: cross-reference direction scan ✅
+- [x] `s07_test_first.py` — static heuristic: contract testability scoring ✅
 - [x] Tests: adapter unit tests (20+), rule tests (6 each for S03/S04/S07), error hierarchy, models
-- [x] **Runnable**: All 10 spec validation rules operational.
+- [ ] **Blocked**: 5 rules from Step 2 (S01, S06, S08, S09, S10) need spec definitions
 
-**Estimated effort**: 2–3 sessions. ✅ Completed.
+**Status**: LLM adapter + S03/S04/S07 done. Cannot mark 10/10 until Step 2 rules are spec'd.
 
 ---
 

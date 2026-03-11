@@ -149,6 +149,22 @@ The Greeter Service generates personalized welcome messages for new users.
         assert result.status == Status.WARN
         assert any("H2" in f.message for f in result.findings)
 
+    def test_empty_spec(self) -> None:
+        result = OneSentenceRule().check("")
+        assert result.status == Status.WARN
+
+    def test_rule_id(self) -> None:
+        assert OneSentenceRule().rule_id == "S01"
+        assert OneSentenceRule().name == "One-Sentence Test"
+
+    def test_purpose_without_number(self) -> None:
+        """'## Purpose' without '1.' prefix — S01 does NOT match this."""
+        spec = "## Purpose\n\nThis does many things and also handles events.\n"
+        result = OneSentenceRule().check(spec)
+        # Current regex requires '1.' — this is a known gap
+        assert result.status == Status.WARN
+        assert any("Purpose" in f.message for f in result.findings)
+
 
 # ---------------------------------------------------------------------------
 # S02: Single Test Setup
@@ -191,6 +207,10 @@ Uses a database for storage, reads from files, and calls an HTTP endpoint.
     def test_empty_spec_passes(self) -> None:
         result = SingleSetupRule().check("")
         assert result.status == Status.PASS
+
+    def test_rule_id(self) -> None:
+        assert SingleSetupRule().rule_id == "S02"
+        assert SingleSetupRule().name == "Single Test Setup"
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +273,10 @@ class TestS05DayTest:
         result = DayTestRule().check(spec)
         assert result.status == Status.WARN
         assert "score" in result.message.lower()
+
+    def test_rule_id(self) -> None:
+        assert DayTestRule().rule_id == "S05"
+        assert DayTestRule().name == "Day Test"
 
 
 
@@ -355,6 +379,14 @@ No code blocks anywhere.
         assert result.status == Status.FAIL
         assert "no code blocks" in result.message.lower()
 
+    def test_empty_spec(self) -> None:
+        result = ConcreteExampleRule().check("")
+        assert result.status == Status.FAIL
+
+    def test_rule_id(self) -> None:
+        assert ConcreteExampleRule().rule_id == "S06"
+        assert ConcreteExampleRule().name == "Concrete Example"
+
 
 # ---------------------------------------------------------------------------
 # S08: Ambiguity Test
@@ -420,6 +452,21 @@ The service handles requests. TBD - to be determined later.
         result = AmbiguityRule().check(spec)
         if result.findings:
             assert all(f.line is not None and f.line > 0 for f in result.findings)
+
+    def test_empty_spec(self) -> None:
+        result = AmbiguityRule().check("")
+        assert result.status == Status.PASS
+
+    def test_rule_id(self) -> None:
+        assert AmbiguityRule().rule_id == "S08"
+        assert AmbiguityRule().name == "Ambiguity Test"
+
+    def test_exactly_one_weasel_word(self) -> None:
+        """Score at _MAX_WEASEL_WARN boundary (1) should still PASS."""
+        spec = "The service should return a value.\n"
+        result = AmbiguityRule().check(spec)
+        # 1 weasel word ("should") = at threshold = PASS
+        assert result.status == Status.PASS
 
 
 # ---------------------------------------------------------------------------
@@ -512,6 +559,14 @@ On timeout, retry 3 times then abort.
         result = ErrorPathRule().check(spec)
         assert result.status == Status.PASS
 
+    def test_empty_spec(self) -> None:
+        result = ErrorPathRule().check("")
+        assert result.status == Status.FAIL
+
+    def test_rule_id(self) -> None:
+        assert ErrorPathRule().rule_id == "S09"
+        assert ErrorPathRule().name == "Error Path"
+
 
 # ---------------------------------------------------------------------------
 # S10: Done Definition
@@ -566,6 +621,24 @@ The component is complete and robust.
 ## Acceptance Criteria
 
 - [ ] Feature works as described
+- [ ] All tests pass
+"""
+        result = DoneDefinitionRule().check(spec)
+        assert result.status == Status.PASS
+
+    def test_empty_spec(self) -> None:
+        result = DoneDefinitionRule().check("")
+        assert result.status == Status.FAIL
+
+    def test_rule_id(self) -> None:
+        assert DoneDefinitionRule().rule_id == "S10"
+        assert DoneDefinitionRule().name == "Done Definition"
+
+    def test_dod_section_variant(self) -> None:
+        """'## DoD' and '## Definition of Done' should both work."""
+        spec = """
+## DoD
+
 - [ ] All tests pass
 """
         result = DoneDefinitionRule().check(spec)
