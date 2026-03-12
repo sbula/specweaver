@@ -189,6 +189,39 @@
 
 ---
 
+### Phase 2 Cross-Cutting Concerns
+
+> These are not discrete steps but architectural decisions that apply across Steps 8–14.
+
+#### Concurrency Readiness
+
+**Current state** (after Step 7): partially prepared.
+
+| Ready to parallelize | Needs work before parallelizing |
+|---|---|
+| Validation rules (stateless pure functions) | `ContextInferrer.infer_and_write()` — check-then-write race condition |
+| TopologyGraph queries (immutable after build) | `TopologyGraph.from_project(auto_infer=True)` — reads + writes during scan |
+| LLM calls (stateless per call, I/O-bound) | All I/O is synchronous — no `async/await` anywhere yet |
+
+**Plan**: Introduce `async/await` in the flow engine (Step 11). The LLM adapter, file I/O, and subprocess calls become async. Independent pipeline steps run concurrently via `asyncio.gather()`. File writes use atomic-write patterns or `filelock`. No fundamental redesign required — the existing architecture doesn't block parallelism.
+
+#### SQLite for Runtime State
+
+**Decision**: Human-edited config stays in YAML (git-diffable, PR-reviewable). Computed/runtime state goes to SQLite.
+
+| Data | Storage | Rationale |
+|---|---|---|
+| Project config, validation overrides | `.specweaver/config.yaml` | Human-edited, version-controlled |
+| `context.yaml` files | Co-located YAML | Locality principle, part of source tree |
+| Flow/pipeline definitions | YAML templates | Declarative, reviewable, shareable |
+| Pipeline execution state, audit log | **SQLite** (Step 11) | Transactional, supports resume, rollback |
+| Topology/analysis cache | **SQLite** (Step 11) | Computed data, can rebuild, fast queries |
+| Domain brain | **Qdrant** (Phase 5) | Vector search, graph queries |
+
+SQLite runs in WAL mode for concurrency. Single `.specweaver/state.db` file. Zero external dependencies (ships with Python).
+
+---
+
 ### Step 8: Per-Layer Rule Configuration ⏳ NEXT
 
 > **Goal**: Configurable thresholds per rule via `.specweaver/config.yaml`. Different projects or layers can tune warning/failure thresholds without code changes.
@@ -246,22 +279,26 @@
 
 ### Step 11: Flow Engine — Runner & State Tracking
 
-> **Goal**: Execute a pipeline step-by-step. Track where each spec is in the lifecycle. Persist state so interrupted runs can resume.
+> **Goal**: Execute a pipeline step-by-step. Track where each spec is in the lifecycle. Persist state so interrupted runs can resume. Introduce async execution and SQLite state persistence.
 
 - [ ] `src/specweaver/flow/runner.py` — `PipelineRunner`
   - [ ] Accept `PipelineDefinition` + project context
-  - [ ] Execute steps sequentially, pass outputs as inputs to next step
+  - [ ] **Async execution**: `async def run_step()` — LLM calls, file I/O, subprocess via `asyncio`
+  - [ ] Execute steps sequentially by default, `asyncio.gather()` for independent steps
   - [ ] Map step types to existing modules (validate → `runner.run_rules`, draft → `Drafter.draft`, etc.)
   - [ ] Track `PipelineState` per spec
-- [ ] `src/specweaver/flow/state.py` — state persistence
-  - [ ] Save/load state to `.specweaver/state.json`
-  - [ ] Support resume from last completed step
-- [ ] Tests: runner with mock steps, state save/load, resume from checkpoint
+- [ ] `src/specweaver/flow/state.py` — **SQLite** state persistence (`.specweaver/state.db`)
+  - [ ] Tables: `pipeline_runs`, `step_results`, `audit_log`
+  - [ ] WAL mode for concurrent read/write
+  - [ ] Save/load state, support resume from last completed step
+  - [ ] Atomic transitions (no half-written state on crash)
+- [ ] `src/specweaver/llm/adapter.py` — `async def generate()` (backward-compatible sync wrapper)
+- [ ] Tests: runner with mock steps, state save/load, resume from checkpoint, concurrent step execution
 - [ ] **Runnable**: Pipeline runs end-to-end programmatically (not yet via CLI)
 
 **Depends on**: Step 10 (Pipeline Models). Uses existing modules: `validation/runner`, `drafting/drafter`, `review/reviewer`, `implementation/generator`.
 
-**Estimated effort**: 2 sessions.
+**Estimated effort**: 2–3 sessions.
 
 ---
 
