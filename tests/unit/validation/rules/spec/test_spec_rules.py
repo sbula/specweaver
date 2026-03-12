@@ -32,7 +32,7 @@ from specweaver.validation.runner import (
 # Fixtures — load test spec files
 # ---------------------------------------------------------------------------
 
-FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent / "fixtures"
+FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "fixtures"
 
 
 @pytest.fixture()
