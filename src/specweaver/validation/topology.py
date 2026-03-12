@@ -250,6 +250,9 @@ class TopologyGraph:
                         break
                 if len(scc) > 1:
                     result.append(sorted(scc))
+                elif len(scc) == 1 and scc[0] in self._forward.get(scc[0], set()):
+                    # Self-referencing node — also a cycle
+                    result.append(scc)
 
         for node_name in self._nodes:
             if node_name not in indices:

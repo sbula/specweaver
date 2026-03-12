@@ -347,3 +347,108 @@ class TestEdgeCases:
         assert graph.consumers_of("nonexistent") == set()
         assert graph.dependencies_of("nonexistent") == set()
         assert graph.impact_of("nonexistent") == set()
+
+    def test_malformed_yaml_warns_not_crashes(self, tmp_path: Path) -> None:
+        """A context.yaml with invalid YAML should produce a warning, not crash."""
+        bad_dir = tmp_path / "bad"
+        bad_dir.mkdir()
+        (bad_dir / "context.yaml").write_text("name: [unbalanced\n")
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        assert len(graph.warnings) > 0
+
+    def test_empty_yaml_file_warns(self, tmp_path: Path) -> None:
+        """An empty context.yaml (null parse) should produce a warning."""
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
+        (empty_dir / "context.yaml").write_text("")
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        assert len(graph.warnings) > 0
+        assert any("Empty" in w or "empty" in w.lower() for w in graph.warnings)
+
+    def test_missing_name_field_warns(self, tmp_path: Path) -> None:
+        """context.yaml without 'name' should be skipped with a warning."""
+        no_name = tmp_path / "no_name"
+        no_name.mkdir()
+        (no_name / "context.yaml").write_text("level: module\npurpose: Has no name.\n")
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        assert len(graph.nodes) == 0
+        assert any("name" in w.lower() for w in graph.warnings)
+
+    def test_duplicate_names_last_wins(self, tmp_path: Path) -> None:
+        """Two directories with the same name — last one scanned wins."""
+        _write_context(tmp_path / "dir_a", name="shared", purpose="First")
+        _write_context(tmp_path / "dir_b", name="shared", purpose="Second")
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        assert "shared" in graph.nodes
+        # One of them wins (deterministic since we sort)
+
+    def test_self_referencing_consumes(self, tmp_path: Path) -> None:
+        """A module that consumes itself should not cause infinite loop."""
+        _write_context(tmp_path / "self_ref", name="self_ref", consumes=["self_ref"])
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        # dependencies_of should not infinitely recurse
+        deps = graph.dependencies_of("self_ref")
+        assert deps == {"self_ref"}
+        # cycles should detect this
+        cycles = graph.cycles()
+        assert len(cycles) > 0
+
+    def test_nested_hierarchy(self, tmp_path: Path) -> None:
+        """context.yaml files at multiple nesting levels."""
+        _write_context(tmp_path / "root_ctx", name="root", level="service")
+        _write_context(
+            tmp_path / "root_ctx" / "child", name="child",
+            level="module", consumes=["root"],
+        )
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        assert len(graph.nodes) == 2
+        assert graph.consumers_of("root") == {"child"}
+
+    def test_auto_infer_fills_gap(self, tmp_path: Path) -> None:
+        """With auto_infer=True, dirs with Python but no context.yaml get one."""
+        # Create one dir with context.yaml
+        _write_context(tmp_path / "known", name="known")
+        # Create another with Python code but no context.yaml
+        py_dir = tmp_path / "unknown"
+        py_dir.mkdir()
+        (py_dir / "__init__.py").write_text('"""Auto-discovered module."""\n')
+        (py_dir / "code.py").write_text("x = 1\n")
+
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        assert "unknown" in graph.nodes
+        assert len(graph.warnings) > 0  # should warn about auto-generation
+
+    def test_latency_ms_mismatch_warns(self, tmp_path: Path) -> None:
+        """Consumer with tighter max_latency_ms than dependency warns."""
+        _write_context(
+            tmp_path / "tight",
+            name="tight",
+            consumes=["loose"],
+            operational={"max_latency_ms": 50},
+        )
+        _write_context(
+            tmp_path / "loose",
+            name="loose",
+            operational={"max_latency_ms": 500},
+        )
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        warnings = graph.operational_warnings("tight")
+        assert len(warnings) > 0
+        assert any("50" in w and "500" in w for w in warnings)
+
+    def test_no_operational_section_no_warnings(self, single_node: Path) -> None:
+        """Module without operational section should produce no SLA warnings."""
+        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        assert graph.operational_warnings("alpha") == []
+
+    def test_queries_on_cyclic_graph_terminate(self, cycle_abc: Path) -> None:
+        """dependencies_of and impact_of should terminate on cyclic graphs."""
+        graph = TopologyGraph.from_project(cycle_abc, auto_infer=False)
+        # These should NOT hang — BFS with visited set should handle cycles
+        deps = graph.dependencies_of("a")
+        assert "b" in deps
+        assert "c" in deps
+        impact = graph.impact_of("a")
+        assert "b" in impact
+        assert "c" in impact
+

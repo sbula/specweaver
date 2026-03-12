@@ -141,3 +141,55 @@ class TestWarnings:
     ) -> None:
         result = inferrer.infer_and_write(python_module_with_context)
         assert len(result.warnings) == 0
+
+
+# ---------------------------------------------------------------------------
+# Edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestInferrerEdgeCases:
+    """Edge cases for auto-inference."""
+
+    def test_idempotent_second_run_skips(
+        self, inferrer: ContextInferrer, python_module: Path,
+    ) -> None:
+        """Running twice on the same dir: first generates, second skips."""
+        result1 = inferrer.infer_and_write(python_module)
+        assert result1.was_generated is True
+
+        result2 = inferrer.infer_and_write(python_module)
+        assert result2.was_generated is False  # context.yaml now exists
+
+    def test_pycache_only_skipped(self, inferrer: ContextInferrer, tmp_path: Path) -> None:
+        """__pycache__ dirs should not get context.yaml."""
+        cache = tmp_path / "__pycache__"
+        cache.mkdir()
+        (cache / "mod.cpython-313.pyc").write_bytes(b"")
+        result = inferrer.infer_and_write(cache)
+        assert result.was_generated is False
+
+    def test_level_from_system_parent(
+        self, inferrer: ContextInferrer, python_module: Path,
+    ) -> None:
+        result = inferrer.infer_and_write(python_module, parent_level="system")
+        assert result.node.level == "service"
+
+    def test_level_from_module_parent(
+        self, inferrer: ContextInferrer, python_module: Path,
+    ) -> None:
+        result = inferrer.infer_and_write(python_module, parent_level="module")
+        assert result.node.level == "sub-module"
+
+    def test_no_docstring_purpose_is_todo(
+        self, inferrer: ContextInferrer, tmp_path: Path,
+    ) -> None:
+        """Module with no docstring gets a TODO purpose."""
+        pkg = tmp_path / "no_doc"
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text("")
+        (pkg / "code.py").write_text("x = 1\n")
+        result = inferrer.infer_and_write(pkg)
+        assert result.was_generated is True
+        assert "TODO" in result.node.purpose
+

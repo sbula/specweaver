@@ -218,3 +218,74 @@ class TestPythonAnalyzerArchetype:
 
     def test_empty_dir_defaults_pure_logic(self, empty_dir: Path) -> None:
         assert PythonAnalyzer().infer_archetype(empty_dir) == "pure-logic"
+
+
+# ---------------------------------------------------------------------------
+# Edge case tests
+# ---------------------------------------------------------------------------
+
+
+class TestPythonAnalyzerEdgeCases:
+    """Edge cases and resilience tests."""
+
+    def test_syntax_error_in_file_skipped_for_imports(self, tmp_path: Path) -> None:
+        """Syntax errors in a .py file should be skipped, not crash."""
+        pkg = tmp_path / "broken"
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text('"""Valid module."""\n')
+        (pkg / "bad.py").write_text("def broken(:\n")  # invalid syntax
+        (pkg / "good.py").write_text("import os\n")
+        imports = PythonAnalyzer().extract_imports(pkg)
+        assert "os" in imports  # good.py was still parsed
+
+    def test_syntax_error_in_file_skipped_for_symbols(self, tmp_path: Path) -> None:
+        pkg = tmp_path / "broken2"
+        pkg.mkdir()
+        (pkg / "bad.py").write_text("class Oops(:\n")
+        (pkg / "good.py").write_text("class Valid:\n    pass\n")
+        symbols = PythonAnalyzer().extract_public_symbols(pkg)
+        assert "Valid" in symbols
+
+    def test_pycache_only_not_detected(self, tmp_path: Path) -> None:
+        """__pycache__ contains .py files but should not count."""
+        pkg = tmp_path / "__pycache__"
+        pkg.mkdir()
+        (pkg / "mod.cpython-313.pyc").write_bytes(b"")
+        # __pycache__ has no .py files (only .pyc), so shouldn't detect
+        assert PythonAnalyzer().detect(pkg) is False
+
+    def test_multiline_docstring_takes_first_line(self, tmp_path: Path) -> None:
+        pkg = tmp_path / "multi"
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text(
+            '"""First line of the docstring.\n\n'
+            'This is extra detail.\n'
+            'And more.\n"""\n'
+        )
+        purpose = PythonAnalyzer().extract_purpose(pkg)
+        assert purpose == "First line of the docstring."
+
+    def test_extracts_public_functions_not_just_classes(self, tmp_path: Path) -> None:
+        pkg = tmp_path / "funcs"
+        pkg.mkdir()
+        (pkg / "utils.py").write_text(
+            "def public_func():\n    pass\n\n"
+            "async def async_public():\n    pass\n\n"
+            "def _private_func():\n    pass\n"
+        )
+        symbols = PythonAnalyzer().extract_public_symbols(pkg)
+        assert "public_func" in symbols
+        assert "async_public" in symbols
+        assert "_private_func" not in symbols
+
+    def test_specweaver_imports_are_internal(self, tmp_path: Path) -> None:
+        """Imports from specweaver.* should not trigger 'adapter' archetype."""
+        pkg = tmp_path / "internal"
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text('"""Internal module."""\n')
+        (pkg / "code.py").write_text(
+            "from specweaver.validation.models import Rule\n"
+            "from specweaver.config.settings import load_settings\n"
+        )
+        assert PythonAnalyzer().infer_archetype(pkg) == "pure-logic"
+
