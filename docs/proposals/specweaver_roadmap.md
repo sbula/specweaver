@@ -139,9 +139,10 @@
 
 ---
 
-### Step 6: Dogfooding — SpecWeaver Validates Its Own Specs ⏳ NEXT
+### Step 6: Dogfooding — SpecWeaver Validates Its Own Specs ⏸ DEFERRED
 
 > **Goal**: Use SpecWeaver on its own documentation. This is the "product works" moment.
+> **Deferred**: Flow needs to be more stable and configurable with better validation integration before dogfooding provides meaningful feedback.
 
 - [ ] Run `sw check` on `mvp_feature_definition.md` and architecture docs
 - [ ] Run `sw draft` to create a real Component Spec for one of SpecWeaver's own modules
@@ -149,38 +150,169 @@
 - [ ] Fix any issues discovered during dogfooding
 - [ ] **Milestone**: SpecWeaver has been used on a real project (itself).
 
-**Estimated effort**: 1–2 sessions.
+**Estimated effort**: 1–2 sessions. Will be revisited after Phase 2 is finished.
 
 ---
 
 ## Phase 2: Flow Engine & Stabilize
 
-> **Goal**: An engine that orchestrates atoms and tools into configurable, reusable pipelines. MVP individual steps become composable. Ready for external use.
+> **Goal**: Agents use tools; the flow engine orchestrates atoms and subflows, whitelisting which tools agents can use at each pipeline step. MVP individual steps become composable. Agent has topology awareness. Ready for external use.
 
-- [ ] **Flow Engine** — orchestrates atoms/tools into configurable pipelines
-  - [ ] Pipeline definition format (YAML/config describing step sequence, parameters, gates)
-  - [ ] State tracking — lifecycle position per spec (drafted → validated → reviewed → implemented)
-  - [ ] HITL gates — configurable pause points for human review/approval
-  - [ ] Retry/feedback loops — re-run on failure, escalate to human
-  - [ ] Adaptation — different flows for different scenarios (new feature, refactoring, bug fix)
-  - [ ] Reusable flow definitions — shareable across projects
-- [ ] **Topology Graph** — in-memory adjacency graph from `context.yaml` ([proposal](domain_brain_hybrid_rag.md) Phase B)
-  - [ ] `TopologyGraph` class: load all `context.yaml`, build `consumes`/`exposes` adjacency
-  - [ ] Cycle detection (circular `consumes` dependencies)
-  - [ ] Impact query: "what modules depend on X, transitively?"
-  - [ ] Integration with `sw draft` — inject topology context into drafting prompts
-  - [ ] Integration with `sw review spec` — warn when spec touches high-impact modules
-- [ ] **Context-enriched prompts** — feed `context.yaml` constraints + topology into draft/review prompts
-  - [ ] Scan all `context.yaml` at `sw draft` startup
-  - [ ] Inject "System Context" block: consumers, dependencies, constraints, operational metadata
-- [ ] Per-layer rule configuration (`.specweaver/config.yaml` with layer-specific thresholds)
-- [ ] CLI polish: colored output, progress indicators, `--verbose` / `--json` flags
-- [ ] Error handling: graceful LLM failures, network timeouts, API quota
-- [ ] Documentation: README, `sw --help` for all commands, quick-start guide
-- [ ] Test coverage target: 70–90%
-- [ ] **Milestone**: Pipelines are configurable and reusable. Agent has topology awareness.
+---
 
-**Estimated effort**: 4–6 sessions.
+### Step 7: Topology Graph ⏳ NEXT
+
+> **Goal**: In-memory dependency graph from `context.yaml` files. Foundation for impact analysis and context-enriched prompts.
+
+- [ ] `src/specweaver/validation/topology.py` — `TopologyNode`, `OperationalMetadata`, `TopologyGraph`
+  - [ ] `TopologyGraph.from_project(root)` — scan for `context.yaml`, parse, build adjacency lists
+  - [ ] `consumers_of(module)` — direct reverse lookup
+  - [ ] `dependencies_of(module)` — transitive forward traversal
+  - [ ] `impact_of(module)` — transitive reverse traversal
+  - [ ] `cycles()` — detect circular `consumes` chains
+  - [ ] `constraints_for(module)` — aggregated constraints from module + consumers
+  - [ ] `operational_warnings(module)` — SLA mismatch detection (e.g., latency-critical consuming batch)
+- [ ] Tests: `tests/unit/test_topology.py` — TDD, ~15-20 cases (chains, cycles, wildcards, operational warnings)
+- [ ] **Runnable**: Load SpecWeaver's own 20 `context.yaml` files into a graph, verify structure
+
+**Estimated effort**: 1 session.
+
+---
+
+### Step 8: Per-Layer Rule Configuration
+
+> **Goal**: Configurable thresholds per rule via `.specweaver/config.yaml`. Different projects or layers can tune warning/failure thresholds without code changes.
+
+- [ ] `src/specweaver/config/settings.py` — add `ValidationSettings` model
+  - [ ] Per-rule threshold overrides: `spec_rules: {"S08": {"warn_count": 3}}`
+  - [ ] Per-rule enable/disable: `spec_rules: {"S11": {"enabled": false}}`
+- [ ] `src/specweaver/validation/runner.py` — accept `ValidationSettings`, apply overrides
+- [ ] Scaffold: `sw init` generates default validation config section in `config.yaml`
+- [ ] Tests: settings loading, override application, disabled rules
+- [ ] **Runnable**: `sw check` respects config overrides
+
+**Estimated effort**: 1 session.
+
+---
+
+### Step 9: Context-Enriched Prompts
+
+> **Goal**: Draft and review agents receive topology context (consumers, constraints, operational metadata) so they ask better questions and catch cross-module issues.
+
+- [ ] `src/specweaver/drafting/drafter.py` — accept optional `TopologyGraph`
+  - [ ] Build "System Context" block for LLM prompt (consumers, deps, constraints)
+- [ ] `src/specweaver/review/reviewer.py` — accept optional `TopologyGraph`
+  - [ ] Add "Impact Context" block to review prompt (affected modules, constraint checks)
+- [ ] `src/specweaver/cli.py` — load `TopologyGraph.from_project()` in `draft` and `review` commands
+  - [ ] Graceful fallback: no `context.yaml` → proceed without topology (no error)
+- [ ] Tests: prompt content assertions, fallback behavior
+- [ ] **Runnable**: `sw draft my_module` shows topology context in LLM interaction
+
+**Depends on**: Step 7 (Topology Graph).
+
+**Estimated effort**: 1 session.
+
+---
+
+### Step 10: Flow Engine — Pipeline Models & Definition Format
+
+> **Goal**: Define what a pipeline IS — YAML schema, step types, parameter model. No execution yet, just the data model and parsing.
+
+- [ ] `src/specweaver/flow/models.py` — pipeline data model
+  - [ ] `PipelineDefinition` — name, description, list of `PipelineStep`
+  - [ ] `PipelineStep` — step type enum (validate_spec, draft, review_spec, implement, validate_code, review_code), parameters, gates
+  - [ ] `GateDefinition` — gate type (auto, hitl), condition (pass/warn/fail), on_fail action
+  - [ ] `PipelineState` — lifecycle position per spec (pending → drafted → validated → reviewed → implemented ...)
+- [ ] `src/specweaver/flow/parser.py` — load pipeline YAML, validate against schema, return `PipelineDefinition`
+- [ ] Bundled pipeline templates:
+  - [ ] `new_feature.yaml` — draft → check spec → review spec → implement → check code → review code
+  - [ ] `validate_only.yaml` — check spec (simple, no LLM)
+- [ ] Tests: parsing valid/invalid YAML, model validation, step enum coverage
+- [ ] **Runnable**: `PipelineDefinition.from_yaml("new_feature.yaml")` returns a valid model
+
+**Estimated effort**: 1–2 sessions.
+
+---
+
+### Step 11: Flow Engine — Runner & State Tracking
+
+> **Goal**: Execute a pipeline step-by-step. Track where each spec is in the lifecycle. Persist state so interrupted runs can resume.
+
+- [ ] `src/specweaver/flow/runner.py` — `PipelineRunner`
+  - [ ] Accept `PipelineDefinition` + project context
+  - [ ] Execute steps sequentially, pass outputs as inputs to next step
+  - [ ] Map step types to existing modules (validate → `runner.run_rules`, draft → `Drafter.draft`, etc.)
+  - [ ] Track `PipelineState` per spec
+- [ ] `src/specweaver/flow/state.py` — state persistence
+  - [ ] Save/load state to `.specweaver/state.json`
+  - [ ] Support resume from last completed step
+- [ ] Tests: runner with mock steps, state save/load, resume from checkpoint
+- [ ] **Runnable**: Pipeline runs end-to-end programmatically (not yet via CLI)
+
+**Depends on**: Step 10 (Pipeline Models). Uses existing modules: `validation/runner`, `drafting/drafter`, `review/reviewer`, `implementation/generator`.
+
+**Estimated effort**: 2 sessions.
+
+---
+
+### Step 12: Flow Engine — Gates, Retry & Feedback Loops
+
+> **Goal**: Configurable gates (auto-pass, HITL approval), retry on failure, feedback loops (re-draft after failed review).
+
+- [ ] `src/specweaver/flow/gates.py` — gate implementations
+  - [ ] Auto gate: pass if step results meet threshold
+  - [ ] HITL gate: pause, show results, wait for human approve/reject/edit
+  - [ ] Validation gate: run `sw check` as a gate condition
+- [ ] `src/specweaver/flow/runner.py` — extend with gate + retry logic
+  - [ ] On gate failure: retry step, escalate, or abort (configurable)
+  - [ ] Feedback loop: e.g., review DENIED → re-run draft with review findings injected
+  - [ ] Max retry count per step
+- [ ] Tests: gate logic, retry counts, feedback injection, abort conditions
+- [ ] **Runnable**: Pipeline pauses at HITL gates, retries failed steps
+
+**Depends on**: Step 11 (Runner).
+
+**Estimated effort**: 1–2 sessions.
+
+---
+
+### Step 13: CLI Polish & Error Handling
+
+> **Goal**: `sw run` command to invoke pipelines from CLI. Proper error handling, colored progress, `--verbose` / `--json` output modes.
+
+- [ ] `sw run` CLI command — load pipeline YAML, run through `PipelineRunner`
+  - [ ] `sw run new_feature my_module` — run the `new_feature` pipeline for `my_module`
+  - [ ] `sw run --resume` — pick up from last checkpoint
+  - [ ] `--verbose` flag — show detailed step output
+  - [ ] `--json` flag — machine-readable output
+- [ ] Progress indicators: Rich spinners/progress bars during LLM calls
+- [ ] Error handling across all commands:
+  - [ ] Graceful LLM failures (timeout, rate limit, content filter)
+  - [ ] Network errors → retry with backoff
+  - [ ] File not found / permission errors → clear message
+- [ ] Tests: CLI integration tests, error scenarios
+- [ ] **Runnable**: `sw run new_feature greet_service` runs the full pipeline with visible progress
+
+**Depends on**: Steps 11-12 (Flow Engine Runner + Gates).
+
+**Estimated effort**: 1–2 sessions.
+
+---
+
+### Step 14: Documentation & Phase 2 Milestone
+
+> **Goal**: README, quick-start guide, `sw --help` for all commands. Test coverage audit.
+
+- [ ] `README.md` — installation, quick-start, command reference
+- [ ] `sw --help` and per-command help text audit
+- [ ] Quick-start guide: from `sw init` to a completed pipeline run
+- [ ] Test coverage audit: ensure 70–90% across all modules
+- [ ] Gap-fill: any under-tested modules from Steps 7-13
+- [ ] **Milestone**: Pipelines are configurable and reusable. Agent has topology awareness. Someone else could install and use SpecWeaver.
+
+**Depends on**: All preceding Phase 2 steps.
+
+**Estimated effort**: 1 session.
 
 ---
 
@@ -259,8 +391,8 @@ Order will be based on value and dependencies. Likely sequence:
 ## Timeline Estimate (Spare-Time + AI Agents)
 
 ```
-Phase 1: MVP (Steps 1-6)     ████████████████████████████     (~6-8 weeks)
-Phase 2: Flow Engine          ████████                         (~2-3 weeks)
+Phase 1: MVP (Steps 1-6)     ████████████████████████████     (~6-8 weeks)  [Steps 1-5 ✅, Step 6 ⏸]
+Phase 2: Flow Engine (7-14)   ████████████████████████████████ (~10-14 sessions)
 Phase 3: Feature Expansion    ████████████████████████████████ (~open-ended, feature by feature)
 Phase 4: Advanced             ████████████████████████████████ (~open-ended)
 Phase 5: Domain Brain         ████████████████             (~when in-memory graph proves insufficient)
