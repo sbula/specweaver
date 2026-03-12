@@ -160,26 +160,36 @@
 
 ---
 
-### Step 7: Topology Graph ⏳ NEXT
+### Step 7: Topology Graph ✅ COMPLETED
 
-> **Goal**: In-memory dependency graph from `context.yaml` files. Foundation for impact analysis and context-enriched prompts.
+> **Goal**: In-memory dependency graph from `context.yaml` files. Foundation for impact analysis and context-enriched prompts. Language-agnostic code analysis framework for auto-generating missing `context.yaml`.
 
-- [ ] `src/specweaver/validation/topology.py` — `TopologyNode`, `OperationalMetadata`, `TopologyGraph`
-  - [ ] `TopologyGraph.from_project(root)` — scan for `context.yaml`, parse, build adjacency lists
-  - [ ] `consumers_of(module)` — direct reverse lookup
-  - [ ] `dependencies_of(module)` — transitive forward traversal
-  - [ ] `impact_of(module)` — transitive reverse traversal
-  - [ ] `cycles()` — detect circular `consumes` chains
-  - [ ] `constraints_for(module)` — aggregated constraints from module + consumers
-  - [ ] `operational_warnings(module)` — SLA mismatch detection (e.g., latency-critical consuming batch)
-- [ ] Tests: `tests/unit/test_topology.py` — TDD, ~15-20 cases (chains, cycles, wildcards, operational warnings)
-- [ ] **Runnable**: Load SpecWeaver's own 20 `context.yaml` files into a graph, verify structure
+- [x] `src/specweaver/context/analyzers.py` — `LanguageAnalyzer` ABC, `PythonAnalyzer`, `AnalyzerFactory`
+  - [x] Language detection, purpose extraction (docstring), import extraction (AST), public symbol extraction, archetype inference
+  - [x] Strategy + Factory pattern — extensible for Java, Kotlin, Rust, TS, C++, SQL
+- [x] `src/specweaver/context/inferrer.py` — `ContextInferrer`
+  - [x] Auto-generates `context.yaml` for dirs missing one (with `AUTO-GENERATED` header + warnings)
+  - [x] Level inference from parent, graceful skip for empty dirs / existing files
+- [x] `src/specweaver/validation/topology.py` — `TopologyNode`, `OperationalMetadata`, `TopologyGraph`
+  - [x] `TopologyGraph.from_project(root)` — scan for `context.yaml`, parse, build adjacency lists
+  - [x] `consumers_of(module)` — direct reverse lookup
+  - [x] `dependencies_of(module)` — transitive forward traversal
+  - [x] `impact_of(module)` — transitive reverse traversal
+  - [x] `cycles()` — Tarjan's SCC detection (including self-loops)
+  - [x] `constraints_for(module)` — aggregated constraints from module + consumers
+  - [x] `operational_warnings(module)` — SLA mismatch detection (latency-critical ↔ batch, max_latency_ms)
+  - [x] `auto_infer=True` integration with `ContextInferrer`
+- [x] Tests (76 total):
+  - [x] `tests/unit/context/test_analyzers.py` — 26 tests (core + edge cases: syntax errors, `__pycache__`, multi-line docstrings)
+  - [x] `tests/unit/context/test_inferrer.py` — 15 tests (core + edge cases: idempotency, level inference, no-docstring TODO)
+  - [x] `tests/unit/validation/test_topology.py` — 35 tests (core + edge cases: malformed YAML, self-reference, duplicate names, cyclic traversal)
+- [x] Test restructure: `tests/unit/` reorganized to mirror `src/specweaver/` packages (7 subdirs + rules/spec/ + rules/code/)
 
-**Estimated effort**: 1 session.
+**Estimated effort**: 1 session. ✅ Completed.
 
 ---
 
-### Step 8: Per-Layer Rule Configuration
+### Step 8: Per-Layer Rule Configuration ⏳ NEXT
 
 > **Goal**: Configurable thresholds per rule via `.specweaver/config.yaml`. Different projects or layers can tune warning/failure thresholds without code changes.
 
