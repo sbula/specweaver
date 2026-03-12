@@ -34,6 +34,7 @@ def get_spec_rules(*, include_llm: bool = False) -> list[Rule]:
     from specweaver.validation.rules.spec.s08_ambiguity import AmbiguityRule
     from specweaver.validation.rules.spec.s09_error_path import ErrorPathRule
     from specweaver.validation.rules.spec.s10_done_definition import DoneDefinitionRule
+    from specweaver.validation.rules.spec.s11_terminology import TerminologyRule
 
     all_rules: list[Rule] = [
         OneSentenceRule(),
@@ -46,6 +47,7 @@ def get_spec_rules(*, include_llm: bool = False) -> list[Rule]:
         AmbiguityRule(),
         ErrorPathRule(),
         DoneDefinitionRule(),
+        TerminologyRule(),
     ]
 
     if include_llm:

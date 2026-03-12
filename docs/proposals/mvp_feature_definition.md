@@ -93,13 +93,14 @@ Automated rules against a spec file. Uniform rule interface — all rules run, r
 | S01 | One-Sentence | Static | Conjunction count in Purpose |
 | S02 | Single Test Setup | Static | H2/H3 section count |
 | S03 | Stranger | LLM | Summarization from Purpose alone |
-| S04 | Dependency Direction | Static | Cross-ref direction scan |
+| S04 | Dependency Direction | Static | Cross-ref direction scan + dead-link detection (traceability) |
 | S05 | Day Test | Static | Word/section count heuristic |
 | S06 | Concrete Example | Static | Code block presence in Contract |
 | S07 | Test-First | LLM | Test generation from Contract alone |
 | S08 | Ambiguity | Static | Weasel word scan |
 | S09 | Error Path | Static | Error/failure keyword search |
 | S10 | Done Definition | Static | Verification section check |
+| S11 | Terminology Consistency | Static | Inconsistent casing + undefined domain term detection |
 
 All rules are DRAFT implementations with `# DRAFT` markers. Uniform interface ensures independent upgrades.
 
@@ -174,7 +175,7 @@ src/specweaver/
 │   ├── runner.py                        # Runs all rules, collects results
 │   └── rules/
 │       ├── __init__.py
-│       ├── spec/                        # F3: 10 spec rules (s01-s10)
+│       ├── spec/                        # F3: 11 spec rules (s01-s11)
 │       │   ├── __init__.py
 │       │   ├── s01_one_sentence.py
 │       │   ├── s02_single_setup.py
@@ -185,7 +186,8 @@ src/specweaver/
 │       │   ├── s07_test_first.py        # LLM
 │       │   ├── s08_ambiguity.py
 │       │   ├── s09_error_path.py
-│       │   └── s10_done_definition.py
+│       │   ├── s10_done_definition.py
+│       │   └── s11_terminology.py
 │       └── code/                        # F6: 8 code rules (c01-c08)
 │           ├── __init__.py
 │           ├── c01_syntax_valid.py
@@ -284,7 +286,7 @@ Each layer has its own set of rules, thresholds, templates, and review prompts:
 layers:
   component:                       # MVP layer
     template: component_spec.md
-    validation_rules: [s01, s02, ..., s10]
+    validation_rules: [s01, s02, ..., s11]
     thresholds:
       s01_max_conjunctions: 1      # strict at component level
       s05_max_word_count: 3000
@@ -358,7 +360,7 @@ tests/
 │   ├── test_settings.py                 # Config loading
 │   ├── test_rule_models.py              # Interface compliance
 │   ├── test_runner.py                   # Result collection
-│   ├── test_spec_rules/                 # Per-rule tests (s01-s10)
+│   ├── test_spec_rules/                 # Per-rule tests (s01-s11)
 │   ├── test_code_rules/                 # Per-rule tests (c01-c08)
 │   ├── test_reviewer.py                 # Prompt construction
 │   └── test_project.py                 # Discovery, scaffold

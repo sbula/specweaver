@@ -20,6 +20,7 @@ from specweaver.validation.rules.spec.s07_test_first import TestFirstRule
 from specweaver.validation.rules.spec.s08_ambiguity import AmbiguityRule
 from specweaver.validation.rules.spec.s09_error_path import ErrorPathRule
 from specweaver.validation.rules.spec.s10_done_definition import DoneDefinitionRule
+from specweaver.validation.rules.spec.s11_terminology import TerminologyRule
 from specweaver.validation.runner import (
     all_passed,
     count_by_status,
@@ -655,7 +656,7 @@ class TestRunner:
 
     def test_get_spec_rules_excludes_llm(self) -> None:
         rules = get_spec_rules(include_llm=False)
-        assert len(rules) == 10
+        assert len(rules) == 11
         assert all(not r.requires_llm for r in rules)
 
     def test_get_spec_rules_ordered_by_id(self) -> None:
@@ -666,7 +667,7 @@ class TestRunner:
     def test_run_rules_collects_all_results(self, good_spec: str) -> None:
         rules = get_spec_rules()
         results = run_rules(rules, good_spec)
-        assert len(results) == 10
+        assert len(results) == 11
 
     def test_run_rules_exception_handling(self) -> None:
         """A crashing rule should produce FAIL, not crash the runner."""
@@ -1081,3 +1082,204 @@ It does what is expected.
         result = TestFirstRule().check(spec)
         assert result.status == Status.FAIL
         assert "low testability" in result.message.lower()
+
+
+# ---------------------------------------------------------------------------
+# S11: Terminology Consistency
+# ---------------------------------------------------------------------------
+
+
+class TestS11Terminology:
+    """S11 detects inconsistent and undefined terminology in specs."""
+
+    def test_good_spec_passes(self, good_spec: str) -> None:
+        result = TerminologyRule().check(good_spec)
+        assert result.status in (Status.PASS, Status.WARN)
+
+    def test_rule_id(self) -> None:
+        assert TerminologyRule().rule_id == "S11"
+        assert TerminologyRule().name == "Terminology Consistency"
+
+    def test_consistent_terms_passes(self) -> None:
+        spec = """
+## 1. Purpose
+
+The `GreetService` generates personalized greetings.
+
+## 2. Contract
+
+```python
+class GreetService:
+    def greet(self, name: str) -> str:
+        ...
+```
+"""
+        result = TerminologyRule().check(spec)
+        assert result.status == Status.PASS
+
+    def test_inconsistent_casing_warns(self) -> None:
+        """Same concept with different casing styles should trigger findings."""
+        spec = """
+## 1. Purpose
+
+The `userId` field identifies the user. The `user_id` is stored in the
+database. The `UserID` is sent in the header.
+"""
+        result = TerminologyRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+        assert any("inconsistent" in f.message.lower() for f in result.findings)
+
+    def test_many_inconsistencies_fails(self) -> None:
+        """3+ inconsistent term groups should FAIL."""
+        spec = """
+The `userId` and `user_id` identify the user.
+The `sessionToken` and `session_token` are used for auth.
+The `requestId` and `request_id` track requests.
+"""
+        result = TerminologyRule().check(spec)
+        assert result.status == Status.FAIL
+        assert len(result.findings) >= 3
+
+    def test_undefined_domain_terms_warns(self) -> None:
+        """PascalCase terms in backticks not defined in headers or code should warn."""
+        spec = """
+## 1. Purpose
+
+This component uses `FlowEngine` and `StateManager` to process data.
+"""
+        result = TerminologyRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+        assert any("undefined" in f.message.lower() or "not defined" in f.message.lower()
+                   for f in result.findings)
+
+    def test_defined_terms_not_flagged(self) -> None:
+        """Terms defined in headers or code blocks should not be flagged."""
+        spec = """
+## 1. Purpose
+
+The `GreetService` generates greetings.
+
+### `GreetService` Interface
+
+```python
+class GreetService:
+    pass
+```
+"""
+        result = TerminologyRule().check(spec)
+        assert result.status == Status.PASS
+        assert not any("GreetService" in f.message for f in result.findings)
+
+    def test_terms_in_code_blocks_counted_as_defined(self) -> None:
+        """Terms appearing inside code blocks count as definitions."""
+        spec = """
+## 1. Purpose
+
+Uses `ConfigManager` for configuration.
+
+```python
+class ConfigManager:
+    def get(self) -> dict:
+        ...
+```
+"""
+        result = TerminologyRule().check(spec)
+        assert result.status == Status.PASS
+
+    def test_empty_spec_passes(self) -> None:
+        result = TerminologyRule().check("")
+        assert result.status == Status.PASS
+
+    def test_findings_have_line_numbers(self) -> None:
+        spec = "Line 1\nThe `userId` is here.\nThe `user_id` is there.\nLine 4\n"
+        result = TerminologyRule().check(spec)
+        if result.findings:
+            assert all(f.line is not None and f.line > 0 for f in result.findings)
+
+    def test_snake_case_variants_detected(self) -> None:
+        """user_name vs userName should be detected as inconsistent."""
+        spec = """
+The `userName` field stores the user's name.
+Later, the `user_name` field is validated.
+"""
+        result = TerminologyRule().check(spec)
+        assert result.status in (Status.WARN, Status.FAIL)
+
+    def test_single_inconsistency_warns(self) -> None:
+        """One inconsistent group should WARN, not FAIL."""
+        spec = "The `userId` and `user_id` track the user.\n"
+        result = TerminologyRule().check(spec)
+        assert result.status == Status.WARN
+
+
+# ---------------------------------------------------------------------------
+# S04: Traceability Extension (Dead Link Detection)
+# ---------------------------------------------------------------------------
+
+
+class TestS04DeadLinks:
+    """S04 extension: dead link detection when spec_path is provided."""
+
+    def test_existing_link_no_warning(self, tmp_path: "Path") -> None:
+        """A link to an existing file should not produce a dead-link finding."""
+        target = tmp_path / "auth_spec.md"
+        target.write_text("# Auth Spec", encoding="utf-8")
+        spec_file = tmp_path / "my_spec.md"
+        spec_text = "See [auth](auth_spec.md) for details.\n"
+        spec_file.write_text(spec_text, encoding="utf-8")
+
+        result = DependencyDirectionRule().check(spec_text, spec_path=spec_file)
+        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
+                              or "not found" in f.message.lower()]
+        assert len(dead_link_findings) == 0
+
+    def test_missing_link_warns(self, tmp_path: "Path") -> None:
+        """A link to a non-existent file should produce a dead-link warning."""
+        spec_file = tmp_path / "my_spec.md"
+        spec_text = "See [missing](missing_spec.md) for details.\n"
+        spec_file.write_text(spec_text, encoding="utf-8")
+
+        result = DependencyDirectionRule().check(spec_text, spec_path=spec_file)
+        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
+                              or "not found" in f.message.lower()]
+        assert len(dead_link_findings) == 1
+        assert dead_link_findings[0].severity == Severity.WARNING
+
+    def test_no_path_skips_link_check(self) -> None:
+        """Without spec_path, dead link checking should be skipped."""
+        spec_text = "See [missing](missing_spec.md) for details.\n"
+        result = DependencyDirectionRule().check(spec_text, spec_path=None)
+        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
+                              or "not found" in f.message.lower()]
+        assert len(dead_link_findings) == 0
+
+    def test_multiple_dead_links(self, tmp_path: "Path") -> None:
+        """Multiple dead links should each produce a finding."""
+        spec_file = tmp_path / "my_spec.md"
+        spec_text = (
+            "See [a](a_spec.md) for details.\n"
+            "See [b](b_spec.md) for details.\n"
+            "See [c](c_spec.md) for details.\n"
+        )
+        spec_file.write_text(spec_text, encoding="utf-8")
+
+        result = DependencyDirectionRule().check(spec_text, spec_path=spec_file)
+        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
+                              or "not found" in f.message.lower()]
+        assert len(dead_link_findings) == 3
+
+    def test_mixed_existing_and_dead_links(self, tmp_path: "Path") -> None:
+        """Only non-existent links should produce dead-link findings."""
+        (tmp_path / "auth_spec.md").write_text("# Auth", encoding="utf-8")
+        spec_file = tmp_path / "my_spec.md"
+        spec_text = (
+            "See [auth](auth_spec.md) for auth.\n"
+            "See [missing](missing_spec.md) for missing.\n"
+        )
+        spec_file.write_text(spec_text, encoding="utf-8")
+
+        result = DependencyDirectionRule().check(spec_text, spec_path=spec_file)
+        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
+                              or "not found" in f.message.lower()]
+        assert len(dead_link_findings) == 1
+        assert "missing_spec.md" in dead_link_findings[0].message

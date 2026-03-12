@@ -13,12 +13,13 @@ Static accuracy: ~90% (from spec_methodology.md §7).
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    pass
 
 # Pattern: markdown links like [text](path/to/spec.md)
 _MD_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+\.md)\)")
@@ -51,7 +52,7 @@ class DependencyDirectionRule(Rule):
 
         findings: list[Finding] = []
 
-        # 1. Count markdown links to other .md files
+        # 1. Count markdown links to other .md files + check dead links
         md_links = _MD_LINK_RE.findall(cleaned)
         for text, href in md_links:
             line_num = _find_line(spec_text, href)
@@ -62,6 +63,19 @@ class DependencyDirectionRule(Rule):
                     severity=Severity.INFO,
                 )
             )
+
+            # Traceability: check if the linked file exists
+            if spec_path is not None:
+                target = spec_path.parent / href
+                if not target.exists():
+                    findings.append(
+                        Finding(
+                            message=f"Dead link: [{text}]({href}) — file not found",
+                            line=line_num,
+                            severity=Severity.WARNING,
+                            suggestion=f"Verify that '{href}' exists relative to this spec.",
+                        )
+                    )
 
         # 2. Count explicit section references ("see §3")
         section_refs = _SECTION_REF_RE.findall(cleaned)
@@ -91,6 +105,9 @@ class DependencyDirectionRule(Rule):
 
         total_refs = len(md_links) + len(section_refs) + len(unique_components)
 
+        # Separate dead-link findings from informational cross-ref findings
+        dead_link_findings = [f for f in findings if f.severity == Severity.WARNING]
+
         if total_refs > _FAIL_THRESHOLD:
             return self._fail(
                 f"{total_refs} cross-references found (threshold: {_FAIL_THRESHOLD}). "
@@ -102,6 +119,14 @@ class DependencyDirectionRule(Rule):
             return self._warn(
                 f"{total_refs} cross-references found (threshold: {_WARN_THRESHOLD}). "
                 "Consider reducing external dependencies.",
+                findings,
+            )
+
+        # Even if cross-ref count is fine, report dead links as warnings
+        if dead_link_findings:
+            return self._warn(
+                f"{total_refs} cross-references (within threshold), "
+                f"but {len(dead_link_findings)} dead link(s) found",
                 findings,
             )
 

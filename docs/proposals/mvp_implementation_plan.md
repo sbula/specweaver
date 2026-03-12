@@ -200,13 +200,14 @@ These modules have no equivalent in flowManager and must be written new.
 | `s01_one_sentence.py` | Conjunction count in Purpose section | Low |
 | `s02_single_setup.py` | H2/H3 section count heuristic | Low |
 | `s03_stranger.py` | LLM: summarize from Purpose alone | Medium (LLM) |
-| `s04_dependency_dir.py` | Cross-reference direction scan | Medium |
+| `s04_dependency_dir.py` | Cross-reference direction scan + dead-link detection (traceability) | Medium |
 | `s05_day_test.py` | Word/section count complexity score | Low |
 | `s06_concrete_example.py` | Code block presence in Contract | Low |
 | `s07_test_first.py` | LLM: generate test from Contract alone | Medium (LLM) |
 | `s08_ambiguity.py` | Weasel word regex scan | Low |
 | `s09_error_path.py` | Error/failure keyword search | Low |
 | `s10_done_definition.py` | Verification section check | Low |
+| `s11_terminology.py` | Inconsistent casing + undefined domain term detection | Medium |
 | **Code Rules** (8 files, ~30-60 LOC each): | | |
 | `c01_syntax_valid.py` | `import` check via `ast.parse` | Low |
 | `c02_tests_exist.py` | Test file presence check | Low |
@@ -295,7 +296,7 @@ Engine   ──▶ FileSystemAtom ───────────────�
 
 **Create:**
 - `validation/models.py`, `validation/runner.py`
-- 7 static spec rules: S01, S02, S05, S06, S08, S09, S10
+- 8 static spec rules: S01, S02, S05, S06, S08, S09, S10, S11
 - Test fixtures: good/bad specs
 - Per-rule unit tests + runner integration test
 
@@ -319,7 +320,7 @@ Engine   ──▶ FileSystemAtom ───────────────�
 - 3 remaining spec rules: S03, S04, S07
 - Adapter integration with validation runner
 
-**Runnable:** All 10 spec validation rules operational
+**Runnable:** All 11 spec validation rules operational
 
 ---
 
@@ -395,7 +396,7 @@ tests/
 │   ├── test_scaffold.py             # Init creates dirs
 │   ├── test_rule_models.py          # Interface compliance
 │   ├── test_runner.py               # Result collection
-│   ├── test_spec_rules/             # S01-S10 per-rule tests
+│   ├── test_spec_rules/             # S01-S11 per-rule tests
 │   ├── test_code_rules/             # C01-C08 per-rule tests
 │   ├── test_reviewer.py             # Prompt construction
 │   ├── test_drafter.py              # Drafting flow (mocked LLM)

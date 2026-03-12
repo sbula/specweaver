@@ -134,6 +134,14 @@ owner: billing-team                   # OPTIONAL — escalation target
 constraints:                          # OPTIONAL — free-form rules for agent/veto
   - "No mutable global state"
   - "All functions must be pure (no side effects)"
+
+# ── Operational Metadata ──────────────────────────────────
+operational:                          # OPTIONAL — runtime/SLA characteristics
+  multi_tenant_ready: true            #   Does this module handle tenant isolation?
+  latency_critical: false             #   Is this on a latency-sensitive path?
+  max_latency_ms: 200                 #   SLA warranty: max acceptable P99 latency
+  data_freshness: batch               #   realtime | near-realtime | batch | static
+  reliability_target: 0.999           #   Target availability (0.0-1.0)
 ```
 
 ### Required fields
@@ -157,6 +165,36 @@ constraints:                          # OPTIONAL — free-form rules for agent/v
 | `exposes` | `list[string]` | Public symbols (classes, functions, constants) |
 | `owner` | `string` | Team or person responsible for this boundary |
 | `constraints` | `list[string]` | Free-form rules that the Veto Agent checks against |
+| `operational` | `object` | Runtime/SLA characteristics (see Operational Metadata below) |
+
+---
+
+## Operational Metadata
+
+The `operational` section captures runtime and SLA characteristics of a boundary. These fields are **not enforced at code level** — they are metadata consumed by:
+
+- **Spec drafting agents** — to understand latency budgets and tenant requirements when writing specs
+- **Topology analysis** — to detect SLA mismatches (e.g., a latency-critical service consuming a batch-only data source)
+- **Qdrant enrichment** — to enable filtered semantic search ("find me a realtime, tenant-aware API")
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `multi_tenant_ready` | `bool` | `false` | Does this module handle tenant isolation (tenant IDs in params/context)? |
+| `latency_critical` | `bool` | `false` | Is this module on a latency-sensitive execution path? |
+| `max_latency_ms` | `int` | *(none)* | SLA warranty: maximum acceptable P99 latency in milliseconds |
+| `data_freshness` | `enum` | *(none)* | Data recency requirement. Values: `realtime`, `near-realtime`, `batch`, `static` |
+| `reliability_target` | `float` | *(none)* | Target availability as a decimal (e.g., `0.999` = 99.9% uptime) |
+
+> [!NOTE]
+> These fields are optional and only relevant for service/module boundaries with runtime behavior. Pure library or contract boundaries typically omit this section. Projects should define which fields are required for their domain in the system-level `context.yaml`.
+
+### Operational inheritance
+
+- `multi_tenant_ready` — **not inherited**. Each module explicitly declares tenant support.
+- `latency_critical` — **inherited downward**. If parent is critical, children are critical unless they explicitly override with `false`.
+- `max_latency_ms` — **inherited with tightening**. A child can set a stricter (lower) value but cannot relax the parent's constraint.
+- `data_freshness` — **not inherited**. Each module declares its own data recency needs.
+- `reliability_target` — **inherited with tightening**. A child can increase but not decrease the parent's target.
 
 ---
 
@@ -180,6 +218,7 @@ Each boundary inherits its parent's context. Specifically:
 - **`forbids`** — a child can add to the deny list but not remove from it. Forbidden items are cumulative going down the tree.
 - **`archetype`** — not inherited. Each boundary declares its own.
 - **`constraints`** — cumulative. A child inherits parent constraints and can add new ones.
+- **`operational`** — per-field rules (see Operational Metadata above).
 
 ---
 
