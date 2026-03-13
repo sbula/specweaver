@@ -50,6 +50,14 @@ _CONCRETE_VALUE_RE = re.compile(
 class TestFirstRule(Rule):
     """Check that Contract section is concrete enough to derive tests."""
 
+    def __init__(
+        self,
+        warn_score: int = 6,
+        fail_score: int = 3,
+    ) -> None:
+        self._warn_score = warn_score
+        self._fail_score = fail_score
+
     @property
     def rule_id(self) -> str:
         return "S07"
@@ -134,14 +142,14 @@ class TestFirstRule(Rule):
         if has_io_examples:
             testability_score += 2
 
-        if testability_score < 3:
+        if testability_score < self._fail_score:
             return self._fail(
                 f"Contract has low testability (score {testability_score}/12). "
                 "A test cannot be derived from this contract alone.",
                 findings,
             )
 
-        if testability_score < 6:
+        if testability_score < self._warn_score:
             return self._warn(
                 f"Contract has moderate testability (score {testability_score}/12). "
                 "Consider adding more concrete examples.",

@@ -12,15 +12,26 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli import app
 from specweaver.llm.models import LLMResponse
 
 if TYPE_CHECKING:
-    import pytest
+    pass
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _mock_db(tmp_path, monkeypatch):
+    """Patch get_db() to use a temp DB for all pipeline tests."""
+    from specweaver.config.database import Database
+
+    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
+    monkeypatch.setattr("specweaver.cli.get_db", lambda: db)
+    return db
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +79,7 @@ class TestInitCheckFlow:
     ) -> None:
         """Init a project, then check a good spec — should pass."""
         # Step 1: Init
-        result = runner.invoke(app, ["init", "--project", str(tmp_path)])
+        result = runner.invoke(app, ["init", "testapp", "--path", str(tmp_path)])
         assert result.exit_code == 0
         assert "initialized" in result.output.lower()
 
@@ -110,7 +121,7 @@ class TestInitCheckFlow:
         tmp_path: pytest.TempPathFactory,
     ) -> None:
         """Init, then check a bad spec — should fail."""
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", "badspec", "--path", str(tmp_path)])
 
         bad_spec = tmp_path / "specs" / "bad_spec.md"
         bad_spec.write_text("This is not a proper spec.", encoding="utf-8")
@@ -333,7 +344,7 @@ class TestFullPipeline:
     ) -> None:
         """Run the complete pipeline: init → check → implement → check."""
         # 1. Init
-        result = runner.invoke(app, ["init", "--project", str(tmp_path)])
+        result = runner.invoke(app, ["init", "calcapp", "--path", str(tmp_path)])
         assert result.exit_code == 0
 
         # 2. Create and check a spec

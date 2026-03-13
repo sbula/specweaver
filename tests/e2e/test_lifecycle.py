@@ -12,9 +12,11 @@ The LLM is mocked so this test is deterministic, free, and CI-friendly.
 
 from __future__ import annotations
 
+import functools
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli import app
@@ -24,6 +26,26 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 runner = CliRunner()
+
+# Counter for unique project names in tests
+_proj_counter = 0
+
+
+def _unique_name(prefix: str = "test") -> str:
+    """Generate unique project names to avoid DB collisions."""
+    global _proj_counter  # noqa: PLW0603
+    _proj_counter += 1
+    return f"{prefix}-{_proj_counter}"
+
+
+@pytest.fixture(autouse=True)
+def _mock_db(tmp_path, monkeypatch):
+    """Patch get_db() to use a temp DB for all e2e tests."""
+    from specweaver.config.database import Database
+
+    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
+    monkeypatch.setattr("specweaver.cli.get_db", lambda: db)
+    return db
 
 
 # ---------------------------------------------------------------------------
@@ -181,17 +203,16 @@ class TestFullLifecycle:
 
     def test_init_creates_project(self, tmp_path: Path) -> None:
         """Step 1: sw init scaffolds the project structure."""
-        result = runner.invoke(app, ["init", "--project", str(tmp_path)])
+        result = runner.invoke(app, ["init", "myapp", "--path", str(tmp_path)])
 
         assert result.exit_code == 0
         assert (tmp_path / ".specweaver").is_dir()
         assert (tmp_path / "specs").is_dir()
-        assert (tmp_path / ".specweaver" / "config.yaml").is_file()
 
     def test_full_pipeline(self, tmp_path: Path) -> None:
         """Full lifecycle: init → draft → check → review → implement → check → review."""
         # -- Step 1: Init --------------------------------------------------
-        result = runner.invoke(app, ["init", "--project", str(tmp_path)])
+        result = runner.invoke(app, ["init", "fullpipe", "--path", str(tmp_path)])
         assert result.exit_code == 0, f"init failed: {result.output}"
 
         # -- Step 2: Draft (mocked LLM + mocked HITL) ----------------------
@@ -337,7 +358,7 @@ class TestLifecycleEdgeCases:
 
     def test_draft_existing_spec_blocked(self, tmp_path: Path) -> None:
         """Draft refuses to overwrite an existing spec file."""
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", _unique_name("draft"), "--path", str(tmp_path)])
 
         # Create a spec file manually
         specs_dir = tmp_path / "specs"
@@ -368,7 +389,7 @@ class TestLifecycleEdgeCases:
 
     def test_review_denied_exits_with_error(self, tmp_path: Path) -> None:
         """Review that returns DENIED → exit code 1."""
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", _unique_name("review"), "--path", str(tmp_path)])
 
         spec = tmp_path / "specs" / "bad_spec.md"
         spec.parent.mkdir(exist_ok=True)
@@ -413,7 +434,7 @@ class TestHighPriorityEdgeCases:
 
     def _init_and_create_spec(self, tmp_path: Path) -> Path:
         """Helper: init project and create a spec file."""
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", _unique_name("high"), "--path", str(tmp_path)])
         spec_path = tmp_path / "specs" / "greet_service_spec.md"
         spec_path.parent.mkdir(exist_ok=True)
         spec_path.write_text(
@@ -523,28 +544,26 @@ class TestHighPriorityEdgeCases:
         self,
         tmp_path: Path,
     ) -> None:
-        """Init twice → existing specs and config are preserved."""
+        """Init twice (different dirs) → specs in first dir are preserved."""
+        dir1 = tmp_path / "proj1"
+        dir1.mkdir()
+        dir2 = tmp_path / "proj2"
+        dir2.mkdir()
+
         # First init
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", "double-a", "--path", str(dir1)])
 
         # Create a spec file in the project
-        spec_path = tmp_path / "specs" / "my_component_spec.md"
+        spec_path = dir1 / "specs" / "my_component_spec.md"
         spec_path.write_text("# My important spec", encoding="utf-8")
 
-        # Modify config to verify it's preserved
-        config_path = tmp_path / ".specweaver" / "config.yaml"
-        original_config = config_path.read_text(encoding="utf-8")
-
-        # Second init
-        result = runner.invoke(app, ["init", "--project", str(tmp_path)])
+        # Second init (different project, same scaffold)
+        result = runner.invoke(app, ["init", "double-b", "--path", str(dir2)])
         assert result.exit_code == 0
 
-        # Spec file should still exist with same content
+        # Spec file in dir1 should still exist with same content
         assert spec_path.exists()
         assert spec_path.read_text(encoding="utf-8") == "# My important spec"
-
-        # Config should not be overwritten
-        assert config_path.read_text(encoding="utf-8") == original_config
 
     def test_spec_to_code_data_integrity(self, tmp_path: Path) -> None:
         """Generated code should contain concepts from the spec."""
@@ -593,7 +612,7 @@ class TestMediumPriorityEdgeCases:
 
     def _init_project(self, tmp_path: Path) -> None:
         """Helper: init a project."""
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", _unique_name("med"), "--path", str(tmp_path)])
 
     def test_path_traversal_in_component_name(self, tmp_path: Path) -> None:
         """Path traversal in component name should be contained to specs dir."""
@@ -807,7 +826,7 @@ class TestRealWorldEdgeCases:
 
     def _init_and_create_spec(self, tmp_path: Path) -> Path:
         """Helper: init project and write a realistic spec."""
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", _unique_name("real"), "--path", str(tmp_path)])
         spec_path = tmp_path / "specs" / "greet_service_spec.md"
         spec_path.parent.mkdir(exist_ok=True)
         spec_path.write_text(

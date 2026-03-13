@@ -38,6 +38,16 @@ def _extract_purpose(spec_text: str) -> str:
 class OneSentenceRule(Rule):
     """Detect specs that try to do too many things at once."""
 
+    def __init__(
+        self,
+        warn_conjunctions: int = 0,
+        fail_conjunctions: int = 2,
+        max_h2: int = 8,
+    ) -> None:
+        self._warn_conjunctions = warn_conjunctions
+        self._fail_conjunctions = fail_conjunctions
+        self._max_h2 = max_h2
+
     @property
     def rule_id(self) -> str:
         return "S01"
@@ -81,10 +91,10 @@ class OneSentenceRule(Rule):
         # Count H2 sections in entire spec
         h2_count = len(re.findall(r"\n##\s", spec_text))
 
-        if h2_count > 8:
+        if h2_count > self._max_h2:
             findings.append(
                 Finding(
-                    message=f"Spec has {h2_count} H2 sections (max recommended: 8)",
+                    message=f"Spec has {h2_count} H2 sections (max recommended: {self._max_h2})",
                     severity=Severity.WARNING,
                     suggestion=(
                         "Many sections may indicate multiple "
@@ -93,16 +103,17 @@ class OneSentenceRule(Rule):
                 )
             )
 
-        if conjunction_count > 2:
+        if conjunction_count > self._fail_conjunctions:
             return self._fail(
                 f"Purpose has {conjunction_count} responsibility conjunctions",
                 findings,
             )
 
-        if conjunction_count > 0 or h2_count > 8:
+        if conjunction_count > self._warn_conjunctions or h2_count > self._max_h2:
             return self._warn(
                 f"Conjunctions: {conjunction_count}, H2 sections: {h2_count}",
                 findings,
             )
 
         return self._pass(f"Purpose is focused (conjunctions: {conjunction_count}, H2: {h2_count})")
+

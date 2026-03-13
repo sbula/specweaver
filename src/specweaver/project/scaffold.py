@@ -5,8 +5,7 @@
 
 Creates:
 - context.yaml           — root boundary manifest (context.yaml spec)
-- .specweaver/           — SpecWeaver config root
-- .specweaver/config.yaml — default config (non-secrets)
+- .specweaver/           — marker directory (config lives in DB)
 - .specweaver/templates/ — spec templates (component_spec.md)
 - specs/                 — where specs live
 """
@@ -19,22 +18,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-_DEFAULT_CONFIG = """\
-# SpecWeaver Configuration
-# See: docs/proposals/mvp_implementation_plan.md
-
-# LLM settings
-# API key is loaded from GEMINI_API_KEY env var or .env file, NOT from here.
-llm:
-  # Model to use for LLM-based rules and drafting
-  model: gemini-2.5-flash
-  # Temperature for generation (0.0 = deterministic, 1.0 = creative)
-  temperature: 0.7
-  # Maximum output tokens per generation
-  max_output_tokens: 4096
-  # Response format: "text" or "json"
-  response_format: text
-"""
 
 _DEFAULT_CONTEXT_YAML = """\
 # Root boundary manifest — see docs/architecture/context_yaml_spec.md
@@ -144,7 +127,6 @@ class ScaffoldResult:
     project_path: Path
     specweaver_dir: Path
     specs_dir: Path
-    config_file: Path
     context_file: Path
     created: list[str]
 
@@ -190,13 +172,7 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
         specs_dir.mkdir(parents=True)
         created.append("specs/")
 
-    # 4. .specweaver/config.yaml (only if not present)
-    config_file = sw_dir / "config.yaml"
-    if not config_file.exists():
-        config_file.write_text(_DEFAULT_CONFIG, encoding="utf-8")
-        created.append(".specweaver/config.yaml")
-
-    # 5. .specweaver/templates/component_spec.md (only if not present)
+    # 4. .specweaver/templates/component_spec.md (only if not present)
     templates_dir = sw_dir / "templates"
     if not templates_dir.exists():
         templates_dir.mkdir(parents=True)
@@ -211,7 +187,6 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
         project_path=project_path,
         specweaver_dir=sw_dir,
         specs_dir=specs_dir,
-        config_file=config_file,
         context_file=context_file,
         created=created,
     )

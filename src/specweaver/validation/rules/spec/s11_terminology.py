@@ -76,6 +76,14 @@ def _find_line(text: str, needle: str) -> int | None:
 class TerminologyRule(Rule):
     """Detect inconsistent naming and undefined domain terms."""
 
+    def __init__(
+        self,
+        warn_threshold: int = _WARN_THRESHOLD,
+        fail_threshold: int = _FAIL_THRESHOLD,
+    ) -> None:
+        self._warn_threshold = warn_threshold
+        self._fail_threshold = fail_threshold
+
     @property
     def rule_id(self) -> str:
         return "S11"
@@ -100,13 +108,13 @@ class TerminologyRule(Rule):
 
         total_issues = len(findings)
 
-        if total_issues >= _FAIL_THRESHOLD:
+        if total_issues >= self._fail_threshold:
             return self._fail(
-                f"Found {total_issues} terminology issues (threshold: {_FAIL_THRESHOLD})",
+                f"Found {total_issues} terminology issues (threshold: {self._fail_threshold})",
                 findings,
             )
 
-        if total_issues >= _WARN_THRESHOLD:
+        if total_issues >= self._warn_threshold:
             return self._warn(
                 f"Found {total_issues} terminology issue(s)",
                 findings,

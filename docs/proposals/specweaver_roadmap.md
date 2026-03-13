@@ -240,54 +240,61 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 - **`sw use <project>`**: switch active project. If name unknown → interactive setup dialog
 - **Active project**: tracked in DB (last-used project auto-selected on CLI start)
 
----
-
-### Step 8a: Project Registry & Config Store ⏳ NEXT
+### Step 8a: Project Registry & Config Store ✅ DONE
 
 > **Goal**: SQLite database at `~/.specweaver/` for multi-project management. Projects registered by name, config stored outside project directory (agents cannot modify guardrails).
 
-- [ ] `src/specweaver/config/database.py` — SQLite setup + schema
-  - [ ] `projects` table: `name` (PK), `root_path`, `created_at`, `last_used_at`
-  - [ ] `project_config` table: `project_name` (FK), `key`, `value` (JSON)
-  - [ ] WAL mode, `~/.specweaver/specweaver.db`
-  - [ ] Schema migration support (version table for future upgrades)
-- [ ] `src/specweaver/config/settings.py` — rewrite `load_settings()` to read from DB
-  - [ ] `register_project(name, root_path)` — insert project, validate name format
-  - [ ] `get_active_project()` / `set_active_project(name)`
-  - [ ] `get_project_config(name)` → `SpecWeaverSettings`
-  - [ ] Migration: read legacy `.specweaver/config.yaml` → import into DB on first use
-- [ ] `sw use <project>` CLI command
-  - [ ] Known project → switch active project, confirm
-  - [ ] Unknown project → interactive setup dialog (path, language, etc.)
-- [ ] `sw projects` CLI command — list registered projects, show active
-- [ ] `.specweaver/` in project dir becomes marker-only (no config.yaml inside)
-- [ ] Tests: DB creation, project CRUD, name validation, active project switching
-- [ ] **Runnable**: `sw use my-app` registers and switches to a project; `sw projects` lists it
+- [x] `src/specweaver/config/database.py` — SQLite setup + schema
+  - [x] `projects` table: `name` (PK, `^[a-z0-9][a-z0-9_-]*$`), `root_path`, timestamps
+  - [x] `llm_profiles` table: `id`, `name`, `is_global`, `model`, `temperature`, `max_output_tokens`, `response_format`
+  - [x] `project_llm_links` table: `project_name` + `role` → `profile_id` (ON DELETE CASCADE)
+  - [x] `active_state` table: singleton key-value (active_project)
+  - [x] `schema_version` table for future DB migrations
+  - [x] WAL mode, `~/.specweaver/specweaver.db`
+  - [x] Default seed: 3 global LLM profiles (review, draft, search)
+- [x] `src/specweaver/config/settings.py` — rewrite to read from DB
+  - [x] `register_project(name, root_path)` — validate name, insert, link default profiles
+  - [x] `get_active_project()` / `set_active_project(name)`
+  - [x] `get_project_config(name)` → `SpecWeaverSettings`
+  - [x] `remove_project(name)` — cascade delete
+  - [x] `update_project_path(name, new_path)`
+  - [x] Migration: read legacy `.specweaver/config.yaml` → import into DB on first use
+- [x] CLI commands:
+  - [x] `sw init <name> --path <path>` — create marker + register in DB + root context.yaml
+  - [x] `sw use <name>` — switch active (error + hint if not found)
+  - [x] `sw projects` — list registered projects, show active
+  - [x] `sw remove <name>` — unregister from DB (with confirmation)
+  - [x] `sw update <name> path <new-path>` — change project root path
+  - [x] `sw scan` — auto-generate missing context.yaml files (uses ContextInferrer)
+- [x] `.specweaver/` in project dir becomes marker-only (no config.yaml inside)
+- [x] Tests: DB creation, project CRUD, name validation, LLM profiles, active project, CLI (1034 tests)
+- [x] **Runnable**: `sw init my-app --path .` registers; `sw projects` lists; `sw use` switches
 
-**Estimated effort**: 2 sessions.
+**Completed**: March 2026.
 
 ---
 
-### Step 8b: Per-Rule Validation Configuration
+### Step 8b: Per-Rule Validation Configuration ⏳ IN PROGRESS
 
 > **Goal**: Configurable thresholds per validation rule, stored in the project config DB. Different projects can tune warning/failure thresholds and enable/disable rules without code changes.
 
-- [ ] `project_config` table entries for validation overrides
-  - [ ] Per-rule threshold overrides: `{"S08": {"warn_threshold": 5}}`
-  - [ ] Per-rule enable/disable: `{"S11": {"enabled": false}}`
-- [ ] `src/specweaver/config/settings.py` — add `RuleOverride`, `ValidationSettings` models
-- [ ] `src/specweaver/validation/runner.py` — accept `ValidationSettings`, apply overrides
-  - [ ] Inject thresholds into rules at construction
-  - [ ] Skip disabled rules
-- [ ] 6 rules with hardcoded thresholds updated to accept constructor overrides:
-  - [ ] S01, S03, S04, S05, S08 (spec rules), C04 (code rule — coverage)
-- [ ] `sw check` loads settings from DB, passes to runner
-- [ ] Tests: override application, disabled rules, default behavior unchanged, invalid rule ID
-- [ ] **Runnable**: `sw check` respects per-project config overrides from DB
+- [x] `validation_overrides` table in `database.py` — CRUD: set, get, list, delete + cascade on project removal
+- [x] `src/specweaver/config/settings.py` — `RuleOverride`, `ValidationSettings` Pydantic models
+- [x] `src/specweaver/validation/runner.py` — accept `ValidationSettings`, apply overrides, `run_all` flag
+  - [x] Inject thresholds into rules at construction via `_THRESHOLD_PARAMS` mapping
+  - [x] Skip disabled rules (unless `run_all=True`)
+- [x] 7 rules updated to accept constructor overrides:
+  - [x] S01 (`warn_conjunctions`, `fail_conjunctions`, `max_h2`), S03, S04, S05, S08, S11 (spec rules), S07 (`warn_score`, `fail_score`)
+  - [x] C04 (coverage — already configurable, verified)
+- [x] CLI: `sw config set/get/list/reset` commands
+- [ ] Wire `sw check` to load overrides from DB for the active project
+- [ ] Add `--strict` flag to `sw check`
+- [x] Tests: 76 tests covering override application, disabled rules, default behavior, edge cases (boundary values, upsert semantics, inverted thresholds, zero thresholds, multi-disable, run_all+threshold interaction)
+- [x] **1109 tests passing, 0 regressions, 0 new lint issues**
 
-**Depends on**: Step 8a (Config Store).
+**Depends on**: Step 8a (Config Store). ✅
 
-**Estimated effort**: 1 session.
+**Estimated effort**: 1 session. ~80% done — remaining: wire `sw check`, `--strict` flag.
 
 ---
 
@@ -492,14 +499,14 @@ Order will be based on value and dependencies. Likely sequence:
 ## Timeline Estimate (Spare-Time + AI Agents)
 
 ```
-Phase 1: MVP (Steps 1-6)     ████████████████████████████     (~6-8 weeks)  [Steps 1-5 ✅, Step 6 ⏸]
+Phase 1: MVP (Steps 1-6)     ████████████████████████████     (~8-12 sessions)  [Steps 1-5 ✅, Step 6 ⏸]
 Phase 2: Flow Engine (7-14)   ████████████████████████████████ (~10-14 sessions)
 Phase 3: Feature Expansion    ████████████████████████████████ (~open-ended, feature by feature)
 Phase 4: Advanced             ████████████████████████████████ (~open-ended)
 Phase 5: Domain Brain         ████████████████             (~when in-memory graph proves insufficient)
-Phase 6: External             ████████                         (~2 weeks)
+Phase 6: External             ████████                         (~2-3 sessions)
                               ─────────────────────────────────────────────
-                              Week 1    Week 4    Week 8    Week 12    ...
+                              S1        S5        S10       S15        ...
 ```
 
 > [!TIP]
@@ -510,7 +517,7 @@ Phase 6: External             ████████                         (
 ## Success Criteria
 
 **MVP is PROVEN when you can:**
-1. ✅ `sw init --project ./my-app` creates the project structure
+1. ✅ `sw init my-app --path .` registers and scaffolds the project
 2. ✅ `sw validate spec some_spec.md` reports PASS/FAIL with findings
 3. ✅ `sw draft greet_service` produces a real spec via HITL interaction
 4. ✅ `sw implement greet_service_spec.md` generates code + tests
@@ -522,6 +529,7 @@ Phase 6: External             ████████                         (
 8. ✅ You've used it on an external project (trading system)
 9. ✅ Features can be added without restructuring (interface extensibility confirmed)
 10. ✅ Topology-aware spec authoring catches cross-service issues before code generation
+11. ✅ Multi-project management: `sw projects`, `sw use`, `sw remove`, `sw update`, `sw scan`
 
 ---
 

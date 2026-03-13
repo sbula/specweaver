@@ -5,7 +5,12 @@
 
 Entry point registered as `sw` in pyproject.toml.
 Commands:
-- sw init       — Initialize project scaffold
+- sw init       — Register project + scaffold
+- sw use        — Switch active project
+- sw projects   — List registered projects
+- sw remove     — Unregister a project
+- sw update     — Update project settings
+- sw scan       — Auto-generate context.yaml files
 - sw check      — Run validation rules (spec or code)
 - sw draft      — Interactive spec drafting
 - sw review     — LLM-based spec/code review
@@ -23,6 +28,7 @@ from rich.console import Console
 from rich.table import Table
 
 from specweaver import __version__
+from specweaver.config.database import Database
 from specweaver.project.discovery import resolve_project_path
 from specweaver.project.scaffold import scaffold_project
 
@@ -36,6 +42,13 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 
+config_app = typer.Typer(
+    name="config",
+    help="Manage per-project validation rule overrides.",
+    no_args_is_help=True,
+)
+app.add_typer(config_app, name="config")
+
 console = Console()
 
 # Status display mapping (shared across check command)
@@ -45,6 +58,13 @@ _STATUS_STYLE = {
     "warn": "[yellow]WARN[/yellow]",
     "skip": "[dim]SKIP[/dim]",
 }
+
+_DEFAULT_DB_PATH = Path.home() / ".specweaver" / "specweaver.db"
+
+
+def get_db() -> Database:
+    """Get the global SpecWeaver database (creates if needed)."""
+    return Database(_DEFAULT_DB_PATH)
 
 
 def _version_callback(value: bool) -> None:
@@ -110,16 +130,28 @@ def _print_summary(results: list[RuleResult]) -> None:
         console.print("\n[green]ALL PASSED[/green]")
 
 
-def _require_llm_adapter(project_path: Path) -> tuple:
+def _require_llm_adapter(project_path: Path, *, llm_role: str = "draft") -> tuple:
     """Create and validate an LLM adapter from project settings.
 
     Returns (settings, adapter, gen_config) or raises typer.Exit.
     """
-    from specweaver.config.settings import load_settings
+    from specweaver.config.settings import load_settings_for_active
     from specweaver.llm.gemini_adapter import GeminiAdapter
     from specweaver.llm.models import GenerationConfig
 
-    settings = load_settings(project_path)
+    db = get_db()
+    try:
+        settings = load_settings_for_active(db, llm_role=llm_role)
+    except ValueError:
+        # Fallback: try loading from env with defaults
+        import os
+
+        from specweaver.config.settings import LLMSettings, SpecWeaverSettings
+
+        settings = SpecWeaverSettings(
+            llm=LLMSettings(api_key=os.environ.get("GEMINI_API_KEY", "")),
+        )
+
     adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
 
     if not adapter.available():
@@ -152,43 +184,260 @@ def main(
 
 
 # ---------------------------------------------------------------------------
-# sw init
+# sw init <name> --path <path>
 # ---------------------------------------------------------------------------
 
 
 @app.command()
 def init(
-    project: str | None = typer.Option(
+    name: str = typer.Argument(
+        help="Project name (lowercase, hyphens, underscores only).",
+    ),
+    path: str | None = typer.Option(
         None,
-        "--project",
+        "--path",
         "-p",
-        help="Path to the target project directory. Defaults to cwd.",
+        help="Path to the project directory. Defaults to cwd.",
     ),
 ) -> None:
-    """Initialize a project with SpecWeaver scaffolding.
+    """Register a project and create SpecWeaver scaffolding.
 
-    Creates .specweaver/, specs/, config.yaml, and spec templates.
-    Safe to run multiple times — existing files are never overwritten.
+    Creates .specweaver/ marker, context.yaml, specs/, templates.
+    Registers the project in the SpecWeaver database and sets it as active.
     """
     try:
-        project_path = resolve_project_path(project)
+        project_path = resolve_project_path(path)
     except (FileNotFoundError, NotADirectoryError) as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
+    # Register in DB
+    db = get_db()
+    try:
+        db.register_project(name, str(project_path))
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    db.set_active_project(name)
+
+    # Scaffold files
     result = scaffold_project(project_path)
 
-    if result.created:
+    console.print(
+        f"[green]Project initialized[/green] at [bold]{result.project_path}[/bold]",
+    )
+    for item in result.created:
+        console.print(f"  [dim]Created:[/dim] {item}")
+    console.print(f"  [dim]Registered:[/dim] project [bold]{name}[/bold]")
+    console.print(f"  [dim]Active:[/dim] {name}")
+
+
+# ---------------------------------------------------------------------------
+# sw use <name>
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def use(
+    name: str = typer.Argument(
+        help="Name of the project to switch to.",
+    ),
+) -> None:
+    """Switch the active project."""
+    db = get_db()
+    proj = db.get_project(name)
+    if not proj:
         console.print(
-            f"[green]Project initialized[/green] at [bold]{result.project_path}[/bold]",
+            f"[red]Error:[/red] Project '{name}' not found. "
+            f"Run [bold]sw init {name} --path <path>[/bold] to register it.",
         )
-        for item in result.created:
-            console.print(f"  [dim]Created:[/dim] {item}")
+        raise typer.Exit(code=1)
+
+    # Check path still exists
+    root = Path(proj["root_path"])
+    if not root.exists():
+        console.print(
+            f"[red]Error:[/red] Project root no longer exists: {root}\n"
+            f"  Run [bold]sw update {name} path <new-path>[/bold] if moved, or\n"
+            f"  [bold]sw remove {name}[/bold] to unregister.",
+        )
+        raise typer.Exit(code=1)
+
+    db.set_active_project(name)
+    console.print(f"[green]Switched[/green] to project [bold]{name}[/bold] ({root})")
+
+
+# ---------------------------------------------------------------------------
+# sw projects
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def projects() -> None:
+    """List all registered projects."""
+    db = get_db()
+    all_projects = db.list_projects()
+    active = db.get_active_project()
+
+    if not all_projects:
+        console.print(
+            "[dim]No projects registered. Run [bold]sw init <name>[/bold] to add one.[/dim]",
+        )
+        return
+
+    table = Table(title="SpecWeaver Projects")
+    table.add_column("", width=2)
+    table.add_column("Name", style="bold")
+    table.add_column("Path")
+    table.add_column("Last Used", style="dim")
+
+    for proj in all_projects:
+        marker = "*" if proj["name"] == active else ""
+        table.add_row(
+            marker,
+            proj["name"],
+            proj["root_path"],
+            proj["last_used_at"][:10],
+        )
+
+    console.print(table)
+
+
+# ---------------------------------------------------------------------------
+# sw remove <name>
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def remove(
+    name: str = typer.Argument(
+        help="Name of the project to unregister.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Skip confirmation prompt.",
+    ),
+) -> None:
+    """Unregister a project from SpecWeaver."""
+    db = get_db()
+    proj = db.get_project(name)
+    if not proj:
+        console.print(f"[red]Error:[/red] Project '{name}' not found.")
+        raise typer.Exit(code=1)
+
+    if not force:
+        confirm = typer.confirm(
+            f"Unregister project '{name}' and delete its config?",
+        )
+        if not confirm:
+            console.print("[dim]Cancelled.[/dim]")
+            return
+
+    db.remove_project(name)
+    console.print(f"[green]Removed[/green] project [bold]{name}[/bold]")
+
+
+# ---------------------------------------------------------------------------
+# sw update <name> path <new-path>
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def update(
+    name: str = typer.Argument(
+        help="Name of the project to update.",
+    ),
+    field: str = typer.Argument(
+        help="Field to update (currently: 'path').",
+    ),
+    value: str = typer.Argument(
+        help="New value for the field.",
+    ),
+) -> None:
+    """Update a project setting (e.g., root path)."""
+    db = get_db()
+    if field == "path":
+        try:
+            db.update_project_path(name, value)
+        except ValueError as exc:
+            console.print(f"[red]Error:[/red] {exc}")
+            raise typer.Exit(code=1) from exc
+        console.print(
+            f"[green]Updated[/green] project [bold]{name}[/bold] path → {value}",
+        )
     else:
+        console.print(f"[red]Error:[/red] Unknown field '{field}'. Supported: path")
+        raise typer.Exit(code=1)
+
+
+# ---------------------------------------------------------------------------
+# sw scan
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def scan() -> None:
+    """Scan the active project and auto-generate missing context.yaml files."""
+    db = get_db()
+    active = db.get_active_project()
+    if not active:
         console.print(
-            f"[yellow]Already initialized[/yellow] at "
-            f"[bold]{result.project_path}[/bold] (no changes needed)",
+            "[red]Error:[/red] No active project. "
+            "Run [bold]sw init <name>[/bold] or [bold]sw use <name>[/bold] first.",
         )
+        raise typer.Exit(code=1)
+
+    proj = db.get_project(active)
+    project_path = Path(proj["root_path"])
+
+    if not project_path.exists():
+        console.print(f"[red]Error:[/red] Project root does not exist: {project_path}")
+        raise typer.Exit(code=1)
+
+    from specweaver.context.inferrer import ContextInferrer
+
+    inferrer = ContextInferrer()
+    console.print(f"[bold]Scanning[/bold] {project_path}...")
+
+    generated = 0
+    skipped = 0
+    existing = 0
+
+    for subdir in sorted(project_path.rglob("*")):
+        if not subdir.is_dir():
+            continue
+        if any(p.startswith(".") or p == "__pycache__" for p in subdir.parts):
+            continue
+
+        context_file = subdir / "context.yaml"
+        if context_file.exists():
+            rel = subdir.relative_to(project_path)
+            console.print(f"  [green]✓[/green] {rel}/ — context.yaml exists")
+            existing += 1
+            continue
+
+        # Only infer for directories with Python files
+        py_files = list(subdir.glob("*.py"))
+        if not py_files:
+            skipped += 1
+            continue
+
+        try:
+            inferrer.infer_and_write(subdir)
+            rel = subdir.relative_to(project_path)
+            console.print(f"  [yellow]⚠[/yellow] {rel}/ — AUTO-GENERATED (review recommended)")
+            generated += 1
+        except Exception:  # noqa: BLE001
+            rel = subdir.relative_to(project_path)
+            console.print(f"  [red]✗[/red] {rel}/ — failed to infer")
+
+    console.print(
+        f"\n[bold]Scan complete[/bold]: "
+        f"{existing} existing, {generated} generated, {skipped} skipped",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -468,5 +717,141 @@ def implement(
         "[dim]Next steps:\n"
         "  sw check --level=code <generated_file>\n"
         "  sw review <generated_file> --spec <spec_file>[/dim]",
+    )
+
+
+# ---------------------------------------------------------------------------
+# sw config set/get/list/reset
+# ---------------------------------------------------------------------------
+
+
+def _require_active_project() -> str:
+    """Get the active project name or exit with error."""
+    db = get_db()
+    name = db.get_active_project()
+    if not name:
+        console.print(
+            "[red]Error:[/red] No active project. "
+            "Run [bold]sw init <name>[/bold] or [bold]sw use <name>[/bold].",
+        )
+        raise typer.Exit(code=1)
+    return name
+
+
+@config_app.command("set")
+def config_set(
+    rule_id: str = typer.Argument(help="Rule ID (e.g. S08, C04)."),
+    *,
+    enabled: bool | None = typer.Option(None, help="Enable/disable the rule."),
+    warn: float | None = typer.Option(None, "--warn", help="Warning threshold."),
+    fail: float | None = typer.Option(None, "--fail", help="Failure threshold."),
+) -> None:
+    """Set a validation override for the active project."""
+    name = _require_active_project()
+    rule_upper = rule_id.upper()
+
+    if enabled is None and warn is None and fail is None:
+        console.print(
+            "[red]Error:[/red] Provide at least one of "
+            "--enabled/--no-enabled, --warn, --fail.",
+        )
+        raise typer.Exit(code=1)
+
+    db = get_db()
+    db.set_validation_override(
+        name,
+        rule_upper,
+        enabled=enabled,
+        warn_threshold=warn,
+        fail_threshold=fail,
+    )
+
+    parts: list[str] = []
+    if enabled is not None:
+        parts.append(f"enabled={enabled}")
+    if warn is not None:
+        parts.append(f"warn={warn}")
+    if fail is not None:
+        parts.append(f"fail={fail}")
+
+    console.print(
+        f"[green]✓[/green] Override set for [bold]{rule_upper}[/bold] "
+        f"({', '.join(parts)}) on project [bold]{name}[/bold].",
+    )
+
+
+@config_app.command("get")
+def config_get(
+    rule_id: str = typer.Argument(help="Rule ID to query."),
+) -> None:
+    """Show the current override for a rule in the active project."""
+    name = _require_active_project()
+    rule_upper = rule_id.upper()
+
+    db = get_db()
+    o = db.get_validation_override(name, rule_upper)
+
+    if o is None:
+        console.print(
+            f"[dim]No override for [bold]{rule_upper}[/bold] "
+            f"on project [bold]{name}[/bold] (using defaults).[/dim]",
+        )
+        return
+
+    table = Table(title=f"Override: {rule_upper} ({name})")
+    table.add_column("Field", style="cyan")
+    table.add_column("Value")
+    table.add_row("enabled", str(bool(o["enabled"])))
+    table.add_row("warn_threshold", str(o["warn_threshold"]))
+    table.add_row("fail_threshold", str(o["fail_threshold"]))
+    console.print(table)
+
+
+@config_app.command("list")
+def config_list() -> None:
+    """List all validation overrides for the active project."""
+    name = _require_active_project()
+
+    db = get_db()
+    overrides = db.get_validation_overrides(name)
+
+    if not overrides:
+        console.print(
+            f"[dim]No overrides configured for project [bold]{name}[/bold] "
+            "(all rules use defaults).[/dim]",
+        )
+        return
+
+    table = Table(title=f"Validation Overrides ({name})")
+    table.add_column("Rule", style="cyan")
+    table.add_column("Enabled")
+    table.add_column("Warn Threshold")
+    table.add_column("Fail Threshold")
+
+    for o in overrides:
+        table.add_row(
+            o["rule_id"],
+            "[green]Yes[/green]" if o["enabled"] else "[red]No[/red]",
+            str(o["warn_threshold"]) if o["warn_threshold"] is not None else "[dim]—[/dim]",
+            str(o["fail_threshold"]) if o["fail_threshold"] is not None else "[dim]—[/dim]",
+        )
+
+    console.print(table)
+
+
+@config_app.command("reset")
+def config_reset(
+    rule_id: str = typer.Argument(help="Rule ID to reset (removes override)."),
+) -> None:
+    """Remove the override for a rule, reverting to defaults."""
+    name = _require_active_project()
+    rule_upper = rule_id.upper()
+
+    db = get_db()
+    db.delete_validation_override(name, rule_upper)
+
+    console.print(
+        f"[green]✓[/green] Override removed for [bold]{rule_upper}[/bold] "
+        f"on project [bold]{name}[/bold] (using defaults).",
     )
 

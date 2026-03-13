@@ -51,6 +51,14 @@ def _is_inside_code_block(text: str, position: int) -> bool:
 class AmbiguityRule(Rule):
     """Detect weasel words that leave implementation decisions unmade."""
 
+    def __init__(
+        self,
+        warn_threshold: int = _MAX_WEASEL_WARN,
+        fail_threshold: int = _MAX_WEASEL_FAIL,
+    ) -> None:
+        self._warn_threshold = warn_threshold
+        self._fail_threshold = fail_threshold
+
     @property
     def rule_id(self) -> str:
         return "S08"
@@ -81,21 +89,21 @@ class AmbiguityRule(Rule):
                             message=f"Weasel word '{word}' ({category})",
                             line=line_num,
                             severity=Severity.WARNING
-                            if total_weasels <= _MAX_WEASEL_WARN
+                            if total_weasels <= self._warn_threshold
                             else Severity.ERROR,
                             suggestion="Replace with a concrete, measurable statement.",
                         )
                     )
 
-        if total_weasels > _MAX_WEASEL_FAIL:
+        if total_weasels > self._fail_threshold:
             return self._fail(
-                f"Found {total_weasels} weasel words (max: {_MAX_WEASEL_FAIL})",
+                f"Found {total_weasels} weasel words (max: {self._fail_threshold})",
                 findings,
             )
 
-        if total_weasels > _MAX_WEASEL_WARN:
+        if total_weasels > self._warn_threshold:
             return self._warn(
-                f"Found {total_weasels} weasel words (warning at >{_MAX_WEASEL_WARN})",
+                f"Found {total_weasels} weasel words (warning at >{self._warn_threshold})",
                 findings,
             )
 

@@ -35,6 +35,14 @@ _FAIL_THRESHOLD = 10
 class StrangerTestRule(Rule):
     """Detect specs that are not self-contained enough for a stranger to implement."""
 
+    def __init__(
+        self,
+        warn_threshold: int = _WARN_THRESHOLD,
+        fail_threshold: int = _FAIL_THRESHOLD,
+    ) -> None:
+        self._warn_threshold = warn_threshold
+        self._fail_threshold = fail_threshold
+
     @property
     def rule_id(self) -> str:
         return "S03"
@@ -90,14 +98,14 @@ class StrangerTestRule(Rule):
 
         total_issues = external_count + len(undefined)
 
-        if total_issues > _FAIL_THRESHOLD:
+        if total_issues > self._fail_threshold:
             return self._fail(
                 f"{total_issues} external dependencies found. "
                 "A stranger would need to read too many other documents.",
                 findings,
             )
 
-        if total_issues > _WARN_THRESHOLD:
+        if total_issues > self._warn_threshold:
             return self._warn(
                 f"{total_issues} external dependencies found. "
                 "Consider defining referenced concepts inline.",

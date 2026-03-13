@@ -13,13 +13,12 @@ Static accuracy: ~90% (from spec_methodology.md §7).
 from __future__ import annotations
 
 import re
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 # Pattern: markdown links like [text](path/to/spec.md)
 _MD_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+\.md)\)")
@@ -37,6 +36,14 @@ _FAIL_THRESHOLD = 8
 
 class DependencyDirectionRule(Rule):
     """Detect specs with too many cross-references to other components."""
+
+    def __init__(
+        self,
+        warn_threshold: int = _WARN_THRESHOLD,
+        fail_threshold: int = _FAIL_THRESHOLD,
+    ) -> None:
+        self._warn_threshold = warn_threshold
+        self._fail_threshold = fail_threshold
 
     @property
     def rule_id(self) -> str:
@@ -108,16 +115,16 @@ class DependencyDirectionRule(Rule):
         # Separate dead-link findings from informational cross-ref findings
         dead_link_findings = [f for f in findings if f.severity == Severity.WARNING]
 
-        if total_refs > _FAIL_THRESHOLD:
+        if total_refs > self._fail_threshold:
             return self._fail(
-                f"{total_refs} cross-references found (threshold: {_FAIL_THRESHOLD}). "
+                f"{total_refs} cross-references found (threshold: {self._fail_threshold}). "
                 "This spec may be entangled with too many peer components.",
                 findings,
             )
 
-        if total_refs > _WARN_THRESHOLD:
+        if total_refs > self._warn_threshold:
             return self._warn(
-                f"{total_refs} cross-references found (threshold: {_WARN_THRESHOLD}). "
+                f"{total_refs} cross-references found (threshold: {self._warn_threshold}). "
                 "Consider reducing external dependencies.",
                 findings,
             )

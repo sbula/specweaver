@@ -5,13 +5,13 @@
 SpecWeaver enforces a spec-first workflow: write a spec, validate it, review it with AI, then generate code and tests — all from the CLI.
 
 ```
-sw init → sw draft → sw check → sw review → sw implement → sw check → sw review
+sw init <name> → sw draft → sw check → sw review → sw implement → sw check → sw review
 ```
 
 ## Features
 
 - **Interactive spec drafting** — Co-author specs with an LLM, section by section
-- **Static validation** — 15 built-in rules (7 spec + 8 code) catch issues before review
+- **Static validation** — 19 built-in rules (11 spec + 8 code) catch issues before review
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with findings
 - **Code generation** — Generate implementation + test files from a validated spec
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
@@ -46,8 +46,8 @@ $env:GEMINI_API_KEY = "your-key-here"
 ### Run the pipeline
 
 ```bash
-# 1. Initialize a project
-sw init --project ./my-project
+# 1. Initialize and register a project
+sw init my-app --path ./my-project
 
 # 2. Draft a spec interactively
 sw draft greet_service --project ./my-project
@@ -70,28 +70,54 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 
 ## CLI Commands
 
+### Spec Pipeline
+
 | Command | Description |
 |---|---|
-| `sw init` | Scaffold a new project (dirs, config, templates) |
+| `sw init <name>` | Register project in DB + scaffold dirs and templates |
 | `sw draft <name>` | Interactively draft a component spec |
-| `sw check <file> --level component` | Validate a spec against S01–S10 rules |
+| `sw check <file> --level component` | Validate a spec against S01–S11 rules |
 | `sw check <file> --level code` | Validate code against C01–C08 rules |
 | `sw review <file>` | AI-powered spec or code review |
 | `sw implement <spec>` | Generate code + tests from a spec |
 
+### Project Management
+
+| Command | Description |
+|---|---|
+| `sw init <name> --path <path>` | Register a project (name + directory) in the DB |
+| `sw use <name>` | Switch the active project |
+| `sw projects` | List all registered projects (marks active) |
+| `sw remove <name>` | Unregister a project (files stay on disk) |
+| `sw update <name> path <path>` | Update a project's root path |
+| `sw scan` | Auto-generate missing `context.yaml` files |
+
+### Validation Configuration
+
+| Command | Description |
+|---|---|
+| `sw config set <rule> --warn/--fail/--enabled` | Set a per-project rule override |
+| `sw config get <rule>` | Show the current override for a rule |
+| `sw config list` | List all overrides for the active project |
+| `sw config reset <rule>` | Remove an override (revert to defaults) |
+
 ## Validation Rules
 
-### Spec Rules (S01–S10)
+### Spec Rules (S01–S11)
 
-| Rule | Name | What it checks |
-|---|---|---|
-| S01 | One-Sentence Test | Purpose is focused (low conjunction count) |
-| S02 | Single Test Setup | No complex multi-environment setup |
-| S05 | Day Test | Complexity ≤ 1 day of work |
-| S06 | Concrete Example | Contract has code examples |
-| S08 | Ambiguity Test | No weasel words (should, might, etc.) |
-| S09 | Error Path | Error handling is specified |
-| S10 | Done Definition | Verifiable completion criteria exist |
+| Rule | Name | What it checks | Configurable |
+|---|---|---|---|
+| S01 | One-Sentence Test | Purpose is focused (low conjunction count) | ✅ warn/fail conjunctions, max_h2 |
+| S02 | Single Test Setup | No complex multi-environment setup | — |
+| S03 | Stranger Test | External references and undefined terms | ✅ warn/fail threshold |
+| S04 | Dependency Direction | Cross-reference direction + dead-link detection | ✅ warn/fail threshold |
+| S05 | Day Test | Complexity ≤ 1 day of work | ✅ warn/fail threshold |
+| S06 | Concrete Example | Contract has code examples | — |
+| S07 | Test-First | Contract testability scoring | ✅ warn/fail score |
+| S08 | Ambiguity Test | No weasel words (should, might, etc.) | ✅ warn/fail threshold |
+| S09 | Error Path | Error handling is specified | — |
+| S10 | Done Definition | Verifiable completion criteria exist | — |
+| S11 | Terminology | Inconsistent casing + undefined domain terms | ✅ warn/fail threshold |
 
 ### Code Rules (C01–C08)
 
@@ -109,27 +135,28 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 ## Project Structure
 
 ```
+~/.specweaver/
+    specweaver.db               # SQLite: projects, LLM profiles, active state
+
 ├── src/specweaver/
-│   ├── cli.py              # Typer CLI (sw command)
-│   ├── config/             # Settings, YAML config
-│   ├── context/            # Context providers (HITL)
-│   ├── drafting/           # Interactive spec drafter
-│   ├── implementation/     # Code generator
-│   ├── llm/                # Gemini adapter, models, errors
-│   ├── loom/               # Dev environment interaction layer
-│   │   ├── atoms/          # Engine-level building blocks
-│   │   │   └── git/        # Git atom (checkpoint, integrate, publish)
-│   │   ├── commons/        # Shared infrastructure (executors)
-│   │   │   └── git/        # GitExecutor, EngineGitExecutor
-│   │   └── tools/          # Agent-facing tools
-│   │       └── git/        # Git tool (intents, interfaces, roles)
-│   ├── project/            # Scaffold, discovery
-│   ├── review/             # AI reviewer
-│   └── validation/         # Rules engine (S01-S10, C01-C08)
-├── tests/
-│   ├── unit/               # 506 unit tests
-│   └── e2e/                # 17 E2E lifecycle tests
-├── docs/                   # Architecture & methodology docs
+│   ├── cli.py                  # Typer CLI (sw command)
+│   ├── config/                 # SQLite database, settings, migrations
+│   ├── context/                # Context providers (HITL, inferrer)
+│   ├── drafting/               # Interactive spec drafter
+│   ├── implementation/         # Code generator
+│   ├── llm/                    # Gemini adapter, models, errors
+│   ├── loom/                   # Dev environment interaction layer
+│   │   ├── atoms/              # Engine-level building blocks
+│   │   │   └── git/            # Git atom (checkpoint, integrate, publish)
+│   │   ├── commons/            # Shared infrastructure (executors)
+│   │   │   └── git/            # GitExecutor, EngineGitExecutor
+│   │   └── tools/              # Agent-facing tools
+│   │       └── git/            # Git tool (intents, interfaces, roles)
+│   ├── project/                # Scaffold, discovery
+│   ├── review/                 # AI reviewer
+│   └── validation/             # Rules engine (S01-S11, C01-C08)
+├── tests/                      # 1109 tests (unit, integration, E2E)
+├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
 
@@ -212,9 +239,10 @@ uv run pytest --cov=specweaver --cov-report=term-missing
 |---|---|
 | Language | Python ≥ 3.11 |
 | Package manager | uv |
-| CLI framework | Typer |
+| CLI framework | Typer + Rich |
 | LLM SDK | google-genai (Gemini) |
-| Config | ruamel.yaml + Pydantic |
+| Config store | SQLite (WAL mode) + Pydantic |
+| Legacy config | ruamel.yaml (migration only) |
 | Testing | pytest + pytest-asyncio |
 | Linting | Ruff |
 

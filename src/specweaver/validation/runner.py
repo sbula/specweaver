@@ -12,14 +12,58 @@ from specweaver.validation.models import RuleResult, Status
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.config.settings import ValidationSettings
     from specweaver.validation.models import Rule
 
 
-def get_spec_rules(*, include_llm: bool = False) -> list[Rule]:
+# Mapping: rule_id → constructor kwarg names for threshold-bearing rules
+_THRESHOLD_PARAMS: dict[str, dict[str, str]] = {
+    "S01": {"warn_threshold": "warn_conjunctions", "fail_threshold": "fail_conjunctions"},
+    "S03": {"warn_threshold": "warn_threshold", "fail_threshold": "fail_threshold"},
+    "S04": {"warn_threshold": "warn_threshold", "fail_threshold": "fail_threshold"},
+    "S05": {"warn_threshold": "warn_threshold", "fail_threshold": "fail_threshold"},
+    "S07": {"warn_threshold": "warn_score", "fail_threshold": "fail_score"},
+    "S08": {"warn_threshold": "warn_threshold", "fail_threshold": "fail_threshold"},
+    "S11": {"warn_threshold": "warn_threshold", "fail_threshold": "fail_threshold"},
+    "C04": {"fail_threshold": "threshold"},
+}
+
+
+def _build_rule_kwargs(
+    rule_id: str,
+    settings: ValidationSettings | None,
+) -> dict[str, float]:
+    """Build constructor kwargs for a rule based on settings overrides."""
+    if settings is None:
+        return {}
+
+    override = settings.get_override(rule_id)
+    if override is None:
+        return {}
+
+    param_map = _THRESHOLD_PARAMS.get(rule_id, {})
+    kwargs: dict[str, float] = {}
+
+    if override.warn_threshold is not None and "warn_threshold" in param_map:
+        kwargs[param_map["warn_threshold"]] = override.warn_threshold
+    if override.fail_threshold is not None and "fail_threshold" in param_map:
+        kwargs[param_map["fail_threshold"]] = override.fail_threshold
+
+    return kwargs
+
+
+def get_spec_rules(
+    *,
+    include_llm: bool = False,
+    settings: ValidationSettings | None = None,
+    run_all: bool = False,
+) -> list[Rule]:
     """Get all registered spec validation rules.
 
     Args:
         include_llm: If False, skip rules that require an LLM adapter.
+        settings: Per-project validation overrides (thresholds, enable/disable).
+        run_all: If True, ignore the enabled flag in settings (run everything).
 
     Returns:
         List of Rule instances, ordered by rule_id.
@@ -36,19 +80,27 @@ def get_spec_rules(*, include_llm: bool = False) -> list[Rule]:
     from specweaver.validation.rules.spec.s10_done_definition import DoneDefinitionRule
     from specweaver.validation.rules.spec.s11_terminology import TerminologyRule
 
-    all_rules: list[Rule] = [
-        OneSentenceRule(),
-        SingleSetupRule(),
-        StrangerTestRule(),
-        DependencyDirectionRule(),
-        DayTestRule(),
-        ConcreteExampleRule(),
-        TestFirstRule(),
-        AmbiguityRule(),
-        ErrorPathRule(),
-        DoneDefinitionRule(),
-        TerminologyRule(),
+    rule_classes: list[tuple[str, type]] = [
+        ("S01", OneSentenceRule),
+        ("S02", SingleSetupRule),
+        ("S03", StrangerTestRule),
+        ("S04", DependencyDirectionRule),
+        ("S05", DayTestRule),
+        ("S06", ConcreteExampleRule),
+        ("S07", TestFirstRule),
+        ("S08", AmbiguityRule),
+        ("S09", ErrorPathRule),
+        ("S10", DoneDefinitionRule),
+        ("S11", TerminologyRule),
     ]
+
+    all_rules: list[Rule] = []
+    for rule_id, cls in rule_classes:
+        # Skip disabled rules (unless run_all)
+        if not run_all and settings and not settings.is_enabled(rule_id):
+            continue
+        kwargs = _build_rule_kwargs(rule_id, settings)
+        all_rules.append(cls(**kwargs))
 
     if include_llm:
         return all_rules
@@ -56,12 +108,19 @@ def get_spec_rules(*, include_llm: bool = False) -> list[Rule]:
     return [r for r in all_rules if not r.requires_llm]
 
 
-def get_code_rules(*, include_subprocess: bool = True) -> list[Rule]:
+def get_code_rules(
+    *,
+    include_subprocess: bool = True,
+    settings: ValidationSettings | None = None,
+    run_all: bool = False,
+) -> list[Rule]:
     """Get all registered code validation rules.
 
     Args:
         include_subprocess: If False, skip rules that run subprocesses
             (C03 Tests Pass, C04 Coverage). Useful for unit tests.
+        settings: Per-project validation overrides (thresholds, enable/disable).
+        run_all: If True, ignore the enabled flag in settings.
 
     Returns:
         List of Rule instances, ordered by rule_id.
@@ -75,19 +134,31 @@ def get_code_rules(*, include_subprocess: bool = True) -> list[Rule]:
     from specweaver.validation.rules.code.c07_no_orphan_todo import NoOrphanTodoRule
     from specweaver.validation.rules.code.c08_type_hints import TypeHintsRule
 
-    all_rules: list[Rule] = [
-        SyntaxValidRule(),
-        TestsExistRule(),
-        ImportDirectionRule(),
-        NoBareExceptRule(),
-        NoOrphanTodoRule(),
-        TypeHintsRule(),
+    rule_classes: list[tuple[str, type]] = [
+        ("C01", SyntaxValidRule),
+        ("C02", TestsExistRule),
+        ("C05", ImportDirectionRule),
+        ("C06", NoBareExceptRule),
+        ("C07", NoOrphanTodoRule),
+        ("C08", TypeHintsRule),
     ]
 
     if include_subprocess:
-        all_rules[2:2] = [TestsPassRule(), CoverageRule()]
+        # Insert C03, C04 at position 2 (after C02)
+        rule_classes[2:2] = [
+            ("C03", TestsPassRule),
+            ("C04", CoverageRule),
+        ]
+
+    all_rules: list[Rule] = []
+    for rule_id, cls in rule_classes:
+        if not run_all and settings and not settings.is_enabled(rule_id):
+            continue
+        kwargs = _build_rule_kwargs(rule_id, settings)
+        all_rules.append(cls(**kwargs))
 
     return all_rules
+
 
 
 def run_rules(

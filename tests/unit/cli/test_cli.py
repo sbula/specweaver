@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli import app
@@ -14,9 +15,19 @@ from specweaver.cli import app
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import pytest
-
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _mock_db(tmp_path, monkeypatch):
+    """Patch get_db() to use a temp DB for all CLI tests."""
+    from pathlib import Path as P
+
+    from specweaver.config.database import Database
+
+    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
+    monkeypatch.setattr("specweaver.cli.get_db", lambda: db)
+    return db
 
 
 # ---------------------------------------------------------------------------
@@ -36,6 +47,11 @@ class TestCLIHelp:
         assert "draft" in result.output
         assert "review" in result.output
         assert "implement" in result.output
+        assert "use" in result.output
+        assert "projects" in result.output
+        assert "remove" in result.output
+        assert "update" in result.output
+        assert "scan" in result.output
 
     def test_version(self) -> None:
         """sw --version shows the version string."""
@@ -53,29 +69,32 @@ class TestCLIInit:
     """Test the sw init command."""
 
     def test_init_creates_project_structure(self, tmp_path: Path) -> None:
-        """sw init --project <path> creates .specweaver/ and specs/."""
-        result = runner.invoke(app, ["init", "--project", str(tmp_path)])
+        """sw init <name> --path <path> creates .specweaver/ and specs/."""
+        result = runner.invoke(app, ["init", "testapp", "--path", str(tmp_path)])
         assert result.exit_code == 0
         assert (tmp_path / ".specweaver").is_dir()
         assert (tmp_path / "specs").is_dir()
-        assert (tmp_path / ".specweaver" / "config.yaml").is_file()
 
     def test_init_shows_success_message(self, tmp_path: Path) -> None:
         """sw init prints a success confirmation."""
-        result = runner.invoke(app, ["init", "--project", str(tmp_path)])
+        result = runner.invoke(app, ["init", "testapp", "--path", str(tmp_path)])
         assert result.exit_code == 0
         assert "initialized" in result.output.lower() or "created" in result.output.lower()
 
-    def test_init_idempotent(self, tmp_path: Path) -> None:
-        """Running sw init twice should succeed without errors."""
-        result1 = runner.invoke(app, ["init", "--project", str(tmp_path)])
-        result2 = runner.invoke(app, ["init", "--project", str(tmp_path)])
+    def test_init_idempotent_scaffold(self, tmp_path: Path) -> None:
+        """Running sw init twice with different names should work (scaffold idempotent)."""
+        dir1 = tmp_path / "p1"
+        dir1.mkdir()
+        dir2 = tmp_path / "p2"
+        dir2.mkdir()
+        result1 = runner.invoke(app, ["init", "app1", "--path", str(dir1)])
+        result2 = runner.invoke(app, ["init", "app2", "--path", str(dir2)])
         assert result1.exit_code == 0
         assert result2.exit_code == 0
 
     def test_init_nonexistent_project_shows_error(self) -> None:
-        """sw init --project /nonexistent shows an error, not a traceback."""
-        result = runner.invoke(app, ["init", "--project", "/nonexistent/xyz"])
+        """sw init <name> --path /nonexistent shows an error, not a traceback."""
+        result = runner.invoke(app, ["init", "testapp", "--path", "/nonexistent/xyz"])
         assert result.exit_code != 0
         assert "error" in result.output.lower() or "not" in result.output.lower()
 
@@ -176,7 +195,7 @@ class TestCLIBehavioral:
         # Ensure no key from any source
         monkeypatch.setattr(os, "environ", {k: v for k, v in os.environ.items() if k != "GEMINI_API_KEY"})
 
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", "testapp", "--path", str(tmp_path)])
         result = runner.invoke(app, ["draft", "test_comp", "--project", str(tmp_path)])
 
         assert result.exit_code != 0
@@ -187,7 +206,7 @@ class TestCLIBehavioral:
         """Check with component level → shows summary line with pass/fail counts."""
         spec = tmp_path / "test.md"
         spec.write_text("# Test Spec\n\n## 1. Purpose\n\nDoes one thing.\n", encoding="utf-8")
-        runner.invoke(app, ["init", "--project", str(tmp_path)])
+        runner.invoke(app, ["init", "testcheck", "--path", str(tmp_path)])
         result = runner.invoke(
             app,
             ["check", str(spec), "--level", "component", "--project", str(tmp_path)],

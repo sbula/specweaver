@@ -30,15 +30,10 @@ class TestScaffoldProject:
         scaffold_project(tmp_path)
         assert (tmp_path / "specs").is_dir()
 
-    def test_creates_default_config_yaml(self, tmp_path: Path) -> None:
-        """scaffold_project creates .specweaver/config.yaml with defaults."""
+    def test_specweaver_dir_is_marker_only(self, tmp_path: Path) -> None:
+        """scaffold_project creates .specweaver/ as marker-only (no config.yaml)."""
         scaffold_project(tmp_path)
-        config_path = tmp_path / ".specweaver" / "config.yaml"
-        assert config_path.is_file()
-        yaml = YAML()
-        data = yaml.load(config_path)
-        assert "llm" in data
-        assert data["llm"]["model"] is not None
+        assert not (tmp_path / ".specweaver" / "config.yaml").exists()
 
     def test_creates_templates_dir_with_component_spec(self, tmp_path: Path) -> None:
         """scaffold_project creates .specweaver/templates/ with component_spec.md."""
@@ -74,7 +69,6 @@ class TestScaffoldProject:
         assert result.project_path == tmp_path
         assert result.specweaver_dir == tmp_path / ".specweaver"
         assert result.specs_dir == tmp_path / "specs"
-        assert result.config_file == tmp_path / ".specweaver" / "config.yaml"
         assert result.context_file == tmp_path / "context.yaml"
 
 
@@ -91,17 +85,15 @@ class TestScaffoldIdempotency:
         scaffold_project(tmp_path)
         scaffold_project(tmp_path)  # should not raise
 
-    def test_does_not_overwrite_existing_config(self, tmp_path: Path) -> None:
-        """If .specweaver/config.yaml already exists with custom content, don't overwrite."""
-        sw_dir = tmp_path / ".specweaver"
-        sw_dir.mkdir()
-        config_path = sw_dir / "config.yaml"
-        config_path.write_text("# custom config\nllm:\n  model: my-custom-model\n")
+    def test_does_not_overwrite_existing_context(self, tmp_path: Path) -> None:
+        """If context.yaml already exists with custom content, don't overwrite."""
+        context_path = tmp_path / "context.yaml"
+        context_path.write_text("# custom context\nname: my-app\nlevel: system\n")
 
         scaffold_project(tmp_path)
 
-        content = config_path.read_text()
-        assert "my-custom-model" in content  # preserved, not overwritten
+        content = context_path.read_text()
+        assert "my-app" in content  # preserved, not overwritten
 
     def test_does_not_overwrite_existing_context_yaml(self, tmp_path: Path) -> None:
         """If context.yaml already exists, don't overwrite it."""
@@ -126,12 +118,12 @@ class TestScaffoldIdempotency:
 
     def test_partial_existing_structure(self, tmp_path: Path) -> None:
         """Scaffold fills in missing parts of partially existing structure."""
-        # Only .specweaver/ exists, but no specs/ or config.yaml
+        # Only .specweaver/ exists, but no specs/ or templates
         (tmp_path / ".specweaver").mkdir()
         scaffold_project(tmp_path)
 
         assert (tmp_path / "specs").is_dir()
-        assert (tmp_path / ".specweaver" / "config.yaml").is_file()
+        assert (tmp_path / ".specweaver" / "templates" / "component_spec.md").is_file()
 
 
 # ---------------------------------------------------------------------------
@@ -154,11 +146,12 @@ class TestScaffoldEdgeCases:
         assert existing.exists()
         assert existing.read_text() == "# Existing spec\n"
 
-    def test_config_yaml_has_comments(self, tmp_path: Path) -> None:
-        """Default config.yaml should have explanatory comments."""
+    def test_template_has_sections(self, tmp_path: Path) -> None:
+        """Default template should have standard spec sections."""
         scaffold_project(tmp_path)
-        content = (tmp_path / ".specweaver" / "config.yaml").read_text()
-        assert "#" in content  # has at least one comment
+        content = (tmp_path / ".specweaver" / "templates" / "component_spec.md").read_text()
+        assert "Purpose" in content
+        assert "Contract" in content
 
     def test_nonexistent_project_path_raises(self) -> None:
         """Trying to scaffold a nonexistent directory raises FileNotFoundError."""
@@ -190,17 +183,12 @@ class TestScaffoldBehavioral:
         second = scaffold_project(tmp_path)
         assert len(second.created) == 0
 
-    def test_config_yaml_contains_no_secrets(self, tmp_path: Path) -> None:
-        """Security: generated config.yaml must NOT contain API key values."""
+    def test_marker_dir_has_no_config(self, tmp_path: Path) -> None:
+        """Security: .specweaver/ should NOT contain any config (config in DB)."""
         scaffold_project(tmp_path)
-        config_content = (tmp_path / ".specweaver" / "config.yaml").read_text(
-            encoding="utf-8",
-        )
-
-        # Config should reference env var, not contain actual keys
-        assert "api_key" not in config_content.lower() or "GEMINI_API_KEY" in config_content
-        # Must not contain any placeholder secret patterns
-        assert "sk-" not in config_content
-        assert "AIza" not in config_content
+        sw_dir = tmp_path / ".specweaver"
+        # Only templates dir should exist inside .specweaver/
+        children = [p.name for p in sw_dir.iterdir()]
+        assert "config.yaml" not in children
 
 

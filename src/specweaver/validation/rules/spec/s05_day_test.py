@@ -28,6 +28,14 @@ _WEIGHT_CODE_BLOCKS = 0.15
 class DayTestRule(Rule):
     """Detect specs that are too complex for a single implementation session."""
 
+    def __init__(
+        self,
+        warn_threshold: float = _WARN_THRESHOLD,
+        fail_threshold: float = _FAIL_THRESHOLD,
+    ) -> None:
+        self._warn_threshold = warn_threshold
+        self._fail_threshold = fail_threshold
+
     @property
     def rule_id(self) -> str:
         return "S05"
@@ -60,17 +68,17 @@ class DayTestRule(Rule):
         findings = [
             Finding(
                 message=f"Complexity score: {score:.1f} ({detail})",
-                severity=Severity.ERROR if score > _FAIL_THRESHOLD else Severity.WARNING,
+                severity=Severity.ERROR if score > self._fail_threshold else Severity.WARNING,
                 suggestion="Consider splitting into smaller component specs."
-                if score > _WARN_THRESHOLD
+                if score > self._warn_threshold
                 else None,
             )
         ]
 
-        if score > _FAIL_THRESHOLD:
-            return self._fail(f"Complexity score {score:.1f} exceeds {_FAIL_THRESHOLD}", findings)
+        if score > self._fail_threshold:
+            return self._fail(f"Complexity score {score:.1f} exceeds {self._fail_threshold}", findings)
 
-        if score > _WARN_THRESHOLD:
+        if score > self._warn_threshold:
             return self._warn(f"Complexity score {score:.1f} is borderline", findings)
 
         return self._pass(f"Complexity score: {score:.1f}")

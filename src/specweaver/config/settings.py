@@ -3,11 +3,13 @@
 
 """SpecWeaver configuration loading.
 
-Settings are loaded from multiple sources with the following priority:
-1. Environment variables (GEMINI_API_KEY, etc.)
-2. .env file (auto-loaded by Pydantic BaseSettings)
-3. .specweaver/config.yaml (project-specific, non-secrets only)
-4. Built-in defaults
+Settings are loaded from:
+1. SQLite database at ~/.specweaver/specweaver.db (project config, LLM profiles)
+2. Environment variables (GEMINI_API_KEY — secrets never in DB)
+3. Built-in defaults (when no DB profile is linked)
+
+Legacy support: .specweaver/config.yaml in a project can be migrated
+into the DB via migrate_legacy_config().
 """
 
 from __future__ import annotations
@@ -15,11 +17,10 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel, ValidationError
-from ruamel.yaml import YAML, YAMLError
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from specweaver.config.database import Database
 
 
 class LLMSettings(BaseModel):
@@ -32,51 +33,174 @@ class LLMSettings(BaseModel):
     api_key: str = ""
 
 
+class RuleOverride(BaseModel):
+    """Per-rule validation override for a project.
+
+    Any field left as None means "use the rule's built-in default".
+    """
+
+    rule_id: str
+    enabled: bool = True
+    warn_threshold: float | None = None
+    fail_threshold: float | None = None
+
+
+class ValidationSettings(BaseModel):
+    """Container for all validation overrides for a project."""
+
+    overrides: dict[str, RuleOverride] = {}
+
+    def get_override(self, rule_id: str) -> RuleOverride | None:
+        """Get the override for a specific rule, or None if not set."""
+        return self.overrides.get(rule_id)
+
+    def is_enabled(self, rule_id: str) -> bool:
+        """Check if a rule is enabled. Defaults to True if no override."""
+        override = self.get_override(rule_id)
+        return override.enabled if override else True
+
+
 class SpecWeaverSettings(BaseModel):
     """Root settings model for SpecWeaver."""
 
     llm: LLMSettings = LLMSettings()
 
 
-def load_settings(project_path: Path) -> SpecWeaverSettings:
-    """Load SpecWeaver settings from config.yaml + env vars.
+def load_settings(
+    db: Database,
+    project_name: str,
+    *,
+    llm_role: str = "review",
+) -> SpecWeaverSettings:
+    """Load settings for a project from the database.
 
     Args:
-        project_path: Root directory of the target project.
+        db: Database instance.
+        project_name: Name of the project to load config for.
+        llm_role: Which LLM profile role to use (default: "review").
 
     Returns:
-        Fully resolved settings with defaults for missing values.
+        Fully resolved settings with API key from environment.
 
     Raises:
-        ValueError: If config.yaml exists but is malformed or contains
-            invalid values.
+        ValueError: If project is not registered.
     """
-    config_file = project_path / ".specweaver" / "config.yaml"
-    raw: dict = {}  # type: ignore[type-arg]
+    proj = db.get_project(project_name)
+    if not proj:
+        msg = f"Project '{project_name}' not found"
+        raise ValueError(msg)
 
-    if config_file.is_file():
-        try:
-            yaml = YAML()
-            loaded = yaml.load(config_file)
-            if isinstance(loaded, dict):
-                raw = loaded
-            # None/null YAML → use empty dict (defaults)
-        except YAMLError as exc:
-            msg = f"Failed to parse .specweaver/config.yaml: {exc}"
-            raise ValueError(msg) from exc
+    # Resolve LLM profile for the requested role
+    profile = db.get_project_profile(project_name, llm_role)
 
-    # Build nested settings from YAML data
-    llm_raw = raw.get("llm", {})
+    if profile:
+        llm = LLMSettings(
+            model=profile["model"],
+            temperature=profile["temperature"],
+            max_output_tokens=profile["max_output_tokens"],
+            response_format=profile["response_format"],
+            api_key=os.environ.get("GEMINI_API_KEY", ""),
+        )
+    else:
+        # No profile linked for this role — use defaults
+        llm = LLMSettings(api_key=os.environ.get("GEMINI_API_KEY", ""))
+
+    return SpecWeaverSettings(llm=llm)
+
+
+def load_settings_for_active(
+    db: Database,
+    *,
+    llm_role: str = "review",
+) -> SpecWeaverSettings:
+    """Load settings for the currently active project.
+
+    Args:
+        db: Database instance.
+        llm_role: Which LLM profile role to use.
+
+    Returns:
+        Fully resolved settings.
+
+    Raises:
+        ValueError: If no project is active.
+    """
+    active = db.get_active_project()
+    if not active:
+        msg = "No active project. Run 'sw init <name> --path <path>' first."
+        raise ValueError(msg)
+    return load_settings(db, active, llm_role=llm_role)
+
+
+def migrate_legacy_config(
+    db: Database,
+    project_name: str,
+    project_path: str,
+) -> bool:
+    """Migrate a legacy .specweaver/config.yaml into the database.
+
+    Reads the YAML, creates a project-specific LLM profile from the
+    values, registers the project, and links the profile for all roles.
+
+    Args:
+        db: Database instance.
+        project_name: Name to register the project as.
+        project_path: Root directory of the project.
+
+    Returns:
+        True if migration was performed, False if no config.yaml found.
+
+    Raises:
+        ValueError: If project name already exists in DB.
+    """
+    from pathlib import Path
+
+    from ruamel.yaml import YAML, YAMLError
+
+    config_file = Path(project_path) / ".specweaver" / "config.yaml"
+    if not config_file.is_file():
+        return False
+
+    # Check if project already exists (before parsing)
+    existing = db.get_project(project_name)
+    if existing:
+        msg = f"Project '{project_name}' already exists"
+        raise ValueError(msg)
+
+    # Parse legacy YAML
+    yaml = YAML()
+    try:
+        data = yaml.load(config_file)
+    except YAMLError:
+        data = {}
+
+    if not isinstance(data, dict):
+        data = {}
+
+    llm_raw = data.get("llm", {})
     if not isinstance(llm_raw, dict):
         llm_raw = {}
 
-    # Overlay env vars for secrets (API key)
-    api_key = os.environ.get("GEMINI_API_KEY", "")
+    # Register project
+    db.register_project(project_name, project_path)
 
-    try:
-        llm = LLMSettings(api_key=api_key, **llm_raw)
-    except ValidationError as exc:
-        msg = f"Invalid values in .specweaver/config.yaml: {exc}"
-        raise ValueError(msg) from exc
+    # Create a project-specific profile from legacy values
+    model = llm_raw.get("model", "gemini-2.5-flash")
+    temperature = llm_raw.get("temperature", 0.7)
+    max_tokens = llm_raw.get("max_output_tokens", 4096)
+    resp_format = llm_raw.get("response_format", "text")
 
-    return SpecWeaverSettings(llm=llm)
+    profile_id = db.create_llm_profile(
+        name="legacy-import",
+        is_global=False,
+        model=model,
+        temperature=temperature,
+        max_output_tokens=max_tokens,
+        response_format=resp_format,
+    )
+
+    # Link this profile for all standard roles
+    for role in ("review", "draft", "search"):
+        db.link_project_profile(project_name, role, profile_id)
+
+    return True
