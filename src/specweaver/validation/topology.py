@@ -28,6 +28,8 @@ class OperationalMetadata:
     max_latency_ms: int | None = None
     data_freshness: str | None = None  # realtime | near-realtime | batch | static
     reliability_target: float | None = None
+    async_ready: bool = False
+    concurrency_model: str | None = None  # asyncio | threading | process | none
 
 
 @dataclass
@@ -142,6 +144,8 @@ class TopologyGraph:
                     max_latency_ms=op_data.get("max_latency_ms"),
                     data_freshness=op_data.get("data_freshness"),
                     reliability_target=op_data.get("reliability_target"),
+                    async_ready=op_data.get("async_ready", False),
+                    concurrency_model=op_data.get("concurrency_model"),
                 )
 
             node = TopologyNode(

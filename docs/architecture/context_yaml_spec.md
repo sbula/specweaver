@@ -142,6 +142,8 @@ operational:                          # OPTIONAL — runtime/SLA characteristics
   max_latency_ms: 200                 #   SLA warranty: max acceptable P99 latency
   data_freshness: batch               #   realtime | near-realtime | batch | static
   reliability_target: 0.999           #   Target availability (0.0-1.0)
+  async_ready: true                   #   Does this module support async/await?
+  concurrency_model: asyncio          #   asyncio | threading | process | none
 ```
 
 ### Required fields
@@ -184,6 +186,8 @@ The `operational` section captures runtime and SLA characteristics of a boundary
 | `max_latency_ms` | `int` | *(none)* | SLA warranty: maximum acceptable P99 latency in milliseconds |
 | `data_freshness` | `enum` | *(none)* | Data recency requirement. Values: `realtime`, `near-realtime`, `batch`, `static` |
 | `reliability_target` | `float` | *(none)* | Target availability as a decimal (e.g., `0.999` = 99.9% uptime) |
+| `async_ready` | `bool` | `false` | Does this module support `async/await`? Used by the flow engine to decide parallel execution |
+| `concurrency_model` | `enum` | `none` | Concurrency strategy. Values: `asyncio`, `threading`, `process`, `none` |
 
 > [!NOTE]
 > These fields are optional and only relevant for service/module boundaries with runtime behavior. Pure library or contract boundaries typically omit this section. Projects should define which fields are required for their domain in the system-level `context.yaml`.
@@ -195,6 +199,8 @@ The `operational` section captures runtime and SLA characteristics of a boundary
 - `max_latency_ms` — **inherited with tightening**. A child can set a stricter (lower) value but cannot relax the parent's constraint.
 - `data_freshness` — **not inherited**. Each module declares its own data recency needs.
 - `reliability_target` — **inherited with tightening**. A child can increase but not decrease the parent's target.
+- `async_ready` — **not inherited**. Each module explicitly declares async support. A parent being async-ready does not imply children are.
+- `concurrency_model` — **not inherited**. Each module declares its own concurrency strategy.
 
 ---
 
