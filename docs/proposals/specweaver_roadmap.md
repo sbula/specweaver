@@ -205,34 +205,87 @@
 
 **Plan**: Introduce `async/await` in the flow engine (Step 11). The LLM adapter, file I/O, and subprocess calls become async. Independent pipeline steps run concurrently via `asyncio.gather()`. File writes use atomic-write patterns or `filelock`. No fundamental redesign required — the existing architecture doesn't block parallelism.
 
-#### SQLite for Runtime State
+#### SQLite as Central Config Store
 
-**Decision**: Human-edited config stays in YAML (git-diffable, PR-reviewable). Computed/runtime state goes to SQLite.
+**Decision**: All configuration lives in a SQLite database at `~/.specweaver/specweaver.db` — **outside any project directory**. This prevents agents from modifying their own guardrails.
 
 | Data | Storage | Rationale |
 |---|---|---|
-| Project config, validation overrides | `.specweaver/config.yaml` | Human-edited, version-controlled |
-| `context.yaml` files | Co-located YAML | Locality principle, part of source tree |
+| Project registry | **SQLite** (Step 8a) | Multi-project support, `sw use <project>` |
+| Per-project config (LLM, thresholds) | **SQLite** (Step 8a) | Not in project dir — agents can't touch it |
+| Validation rule overrides | **SQLite** (Step 8b) | Per-project thresholds, enable/disable |
+| `context.yaml` files | Co-located YAML | Structural metadata, agent-readable (not writable) |
 | Flow/pipeline definitions | YAML templates | Declarative, reviewable, shareable |
 | Pipeline execution state, audit log | **SQLite** (Step 11) | Transactional, supports resume, rollback |
 | Topology/analysis cache | **SQLite** (Step 11) | Computed data, can rebuild, fast queries |
 | Domain brain | **Qdrant** (Phase 5) | Vector search, graph queries |
 
-SQLite runs in WAL mode for concurrency. Single `.specweaver/state.db` file. Zero external dependencies (ships with Python).
+SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` file. Zero external dependencies (ships with Python).
+
+**Project directory changes**: `.specweaver/` in the project becomes a **marker only** — no config files inside. The project is identified in the DB by its registered name.
+
+```
+~/.specweaver/                         ← SpecWeaver home (global, outside projects)
+    specweaver.db                      ← SQLite: projects, config, rules, state
+
+/projects/my-app/                      ← actual project
+    .specweaver/                       ← marker directory (empty, signals "managed project")
+    context.yaml                       ← boundary defs (structural, readable by agents)
+    src/...
+```
+
+#### Project Identity & Switching
+
+- **Project name as ID**: unique, enforced at registration. Format: `^[a-z0-9][a-z0-9_-]*$` (lowercase, hyphens, underscores, no spaces/special chars)
+- **`sw use <project>`**: switch active project. If name unknown → interactive setup dialog
+- **Active project**: tracked in DB (last-used project auto-selected on CLI start)
 
 ---
 
-### Step 8: Per-Layer Rule Configuration ⏳ NEXT
+### Step 8a: Project Registry & Config Store ⏳ NEXT
 
-> **Goal**: Configurable thresholds per rule via `.specweaver/config.yaml`. Different projects or layers can tune warning/failure thresholds without code changes.
+> **Goal**: SQLite database at `~/.specweaver/` for multi-project management. Projects registered by name, config stored outside project directory (agents cannot modify guardrails).
 
-- [ ] `src/specweaver/config/settings.py` — add `ValidationSettings` model
-  - [ ] Per-rule threshold overrides: `spec_rules: {"S08": {"warn_count": 3}}`
-  - [ ] Per-rule enable/disable: `spec_rules: {"S11": {"enabled": false}}`
+- [ ] `src/specweaver/config/database.py` — SQLite setup + schema
+  - [ ] `projects` table: `name` (PK), `root_path`, `created_at`, `last_used_at`
+  - [ ] `project_config` table: `project_name` (FK), `key`, `value` (JSON)
+  - [ ] WAL mode, `~/.specweaver/specweaver.db`
+  - [ ] Schema migration support (version table for future upgrades)
+- [ ] `src/specweaver/config/settings.py` — rewrite `load_settings()` to read from DB
+  - [ ] `register_project(name, root_path)` — insert project, validate name format
+  - [ ] `get_active_project()` / `set_active_project(name)`
+  - [ ] `get_project_config(name)` → `SpecWeaverSettings`
+  - [ ] Migration: read legacy `.specweaver/config.yaml` → import into DB on first use
+- [ ] `sw use <project>` CLI command
+  - [ ] Known project → switch active project, confirm
+  - [ ] Unknown project → interactive setup dialog (path, language, etc.)
+- [ ] `sw projects` CLI command — list registered projects, show active
+- [ ] `.specweaver/` in project dir becomes marker-only (no config.yaml inside)
+- [ ] Tests: DB creation, project CRUD, name validation, active project switching
+- [ ] **Runnable**: `sw use my-app` registers and switches to a project; `sw projects` lists it
+
+**Estimated effort**: 2 sessions.
+
+---
+
+### Step 8b: Per-Rule Validation Configuration
+
+> **Goal**: Configurable thresholds per validation rule, stored in the project config DB. Different projects can tune warning/failure thresholds and enable/disable rules without code changes.
+
+- [ ] `project_config` table entries for validation overrides
+  - [ ] Per-rule threshold overrides: `{"S08": {"warn_threshold": 5}}`
+  - [ ] Per-rule enable/disable: `{"S11": {"enabled": false}}`
+- [ ] `src/specweaver/config/settings.py` — add `RuleOverride`, `ValidationSettings` models
 - [ ] `src/specweaver/validation/runner.py` — accept `ValidationSettings`, apply overrides
-- [ ] Scaffold: `sw init` generates default validation config section in `config.yaml`
-- [ ] Tests: settings loading, override application, disabled rules
-- [ ] **Runnable**: `sw check` respects config overrides
+  - [ ] Inject thresholds into rules at construction
+  - [ ] Skip disabled rules
+- [ ] 6 rules with hardcoded thresholds updated to accept constructor overrides:
+  - [ ] S01, S03, S04, S05, S08 (spec rules), C04 (code rule — coverage)
+- [ ] `sw check` loads settings from DB, passes to runner
+- [ ] Tests: override application, disabled rules, default behavior unchanged, invalid rule ID
+- [ ] **Runnable**: `sw check` respects per-project config overrides from DB
+
+**Depends on**: Step 8a (Config Store).
 
 **Estimated effort**: 1 session.
 
@@ -402,6 +455,7 @@ Order will be based on value and dependencies. Likely sequence:
 | **4.6** | Verification gates (mutation testing, assertion density) | `future_capabilities_reference.md` §13, §14 |
 | **4.7** | Blast radius / locality enforcement | `future_capabilities_reference.md` §16 |
 | **4.8** | Containerized deployment (Podman) | `mvp_feature_definition.md` |
+| **4.9** | **Web UI + server mode** | _(new)_ — SpecWeaver as a daemon with REST/WebSocket API and browser-based UI for remote operation (tablet/mobile). Enables directing SpecWeaver from any device while it runs on a home/cloud server. |
 
 ---
 
