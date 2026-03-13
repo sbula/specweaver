@@ -34,3 +34,8 @@ exposes:
 constraints:
   - "Non-whitelisted intents must be invisible (not just blocked) at the interface level"
   - "Each interface delegates to GitTool — no direct executor calls from interfaces"
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

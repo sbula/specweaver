@@ -24,3 +24,8 @@ exposes:
   - GeminiAdapter
   - LLMResponse
   - LLMError
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

@@ -32,3 +32,8 @@ constraints:
   - "GitExecutor must never execute commands not in its whitelist"
   - "EngineGitExecutor is for internal engine use only — never exposed to agents"
   - "All subprocess calls must have timeouts"
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

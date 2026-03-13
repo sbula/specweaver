@@ -18,3 +18,8 @@ forbids:
 exposes:
   - discover_project_root
   - scaffold_project
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

@@ -25,3 +25,8 @@ exposes:
   - ValidationRunner
   - ValidationResult
   - RuleSeverity
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

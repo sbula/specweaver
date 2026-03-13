@@ -24,3 +24,8 @@ exposes:
 
 constraints:
   - "Must never import from tools/ or atoms/ — dependency flows upward only"
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

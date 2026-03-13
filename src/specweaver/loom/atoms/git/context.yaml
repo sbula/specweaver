@@ -26,3 +26,8 @@ exposes:
 constraints:
   - "Must use EngineGitExecutor, not GitExecutor"
   - "Must not expose any methods directly to agents"
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

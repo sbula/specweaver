@@ -16,3 +16,8 @@ forbids:
 exposes:
   - ContextProvider
   - HITLProvider
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none
