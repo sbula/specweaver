@@ -147,7 +147,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── config/                 # SQLite database, settings, migrations
 │   ├── context/                # Context providers (HITL, inferrer, analyzers)
 │   ├── drafting/               # Interactive spec drafter
-│   ├── flow/                   # Pipeline models & parser (Step 10)
+│   ├── flow/                   # Pipeline engine: models, parser, runner, state, handlers, store
 │   ├── graph/                  # TopologyGraph, dependency selectors
 │   ├── implementation/         # Code generator
 │   ├── llm/                    # Gemini adapter, models, errors
@@ -165,7 +165,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── project/                # Scaffold, discovery
 │   ├── review/                 # AI reviewer
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1394 tests (unit, integration, E2E)
+├── tests/                      # 1479 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

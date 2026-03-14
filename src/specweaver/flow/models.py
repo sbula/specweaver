@@ -201,9 +201,7 @@ class PipelineDefinition(BaseModel):
 
             # Gate loop_back validation
             if step.gate is not None and step.gate.on_fail == OnFailAction.LOOP_BACK:
-                errors.extend(
-                    _validate_loop_back(step.name, step.gate, name_to_index, i)
-                )
+                errors.extend(_validate_loop_back(step.name, step.gate, name_to_index, i))
 
         return errors
 
@@ -223,10 +221,7 @@ def _validate_loop_back(
         return [f"Step '{step_name}' has on_fail=loop_back but no loop_target"]
 
     if gate.loop_target not in name_to_index:
-        return [
-            f"Step '{step_name}' has loop_target='{gate.loop_target}' "
-            f"which does not exist"
-        ]
+        return [f"Step '{step_name}' has loop_target='{gate.loop_target}' which does not exist"]
 
     if name_to_index[gate.loop_target] > current_index:
         return [

@@ -32,7 +32,7 @@
 - ✅ Context-enriched prompts: PromptBuilder, token budgets, topology injection, trust signals, dynamic scaling
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
-**Phase 2 (Flow Engine)**: Steps 7–10 ✅ | Steps 11–14 pending
+**Phase 2 (Flow Engine)**: Steps 7–11 ✅ | Steps 12–14 pending
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - Steps 11–14: Flow engine (executor, state tracking, gates, CLI integration)

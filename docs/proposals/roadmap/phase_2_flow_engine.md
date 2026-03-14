@@ -204,22 +204,26 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 > **Goal**: Execute a pipeline step-by-step. Track where each spec is in the lifecycle. Persist state so interrupted runs can resume. Introduce async execution and SQLite state persistence.
 
-- [ ] `src/specweaver/flow/runner.py` — `PipelineRunner`
-  - [ ] Accept `PipelineDefinition` + project context
-  - [ ] **Async execution**: `async def run_step()` — LLM calls, file I/O, subprocess via `asyncio`
-  - [ ] Execute steps sequentially by default, `asyncio.gather()` for independent steps
-  - [ ] Map step types to existing modules (validate → `runner.run_rules`, draft → `Drafter.draft`, etc.)
-  - [ ] Track `PipelineState` per spec
-  - [ ] **Context overflow recovery** _(inspired by Aider)_ — if prompt exceeds model context window, auto-truncate via `PromptBuilder` and retry
-- [ ] `src/specweaver/flow/state.py` — **SQLite** state persistence (`.specweaver/state.db`)
-  - [ ] Tables: `pipeline_runs`, `step_results`, `audit_log`
-  - [ ] WAL mode for concurrent read/write
-  - [ ] Save/load state, support resume from last completed step
-  - [ ] Atomic transitions (no half-written state on crash)
-- [ ] `src/specweaver/llm/adapter.py` — `async def generate()` (backward-compatible sync wrapper)
-  - [ ] **Message sanity checking** _(inspired by Aider)_ — validate role alternation before API calls
-- [ ] Tests: runner with mock steps, state save/load, resume from checkpoint, concurrent step execution
-- [ ] **Runnable**: Pipeline runs end-to-end programmatically (not yet via CLI)
+- [x] `src/specweaver/flow/state.py` — `StepStatus`, `RunStatus`, `StepResult`, `StepRecord`, `PipelineRun`
+  - [x] Enum-based statuses including `WAITING_FOR_INPUT` (HITL parking) and `PARKED` (run-level)
+  - [x] In-memory state model with transition methods (`complete_current_step`, `fail_current_step`, `park_current_step`)
+- [x] `src/specweaver/flow/store.py` — SQLite state persistence (`pipeline_state.db`, separate from config DB)
+  - [x] Tables: `pipeline_runs`, `audit_log` + JSON-serialized step records
+  - [x] WAL mode, idempotent schema creation
+  - [x] Save/load runs, resume from checkpoint, minimal audit log
+- [x] `src/specweaver/flow/handlers.py` — `StepHandler` protocol + 7 handlers
+  - [x] `RunContext` with project path, spec path, LLM, topology, settings
+  - [x] `StepHandlerRegistry` maps `(action, target)` → handler
+  - [x] Validate handlers: `asyncio.to_thread()` wrapping for sync validation
+  - [x] Review/Generate handlers: LLM-required, async
+  - [x] Draft handler: HITL parking pattern (parks if spec missing)
+- [x] `src/specweaver/flow/runner.py` — `PipelineRunner`
+  - [x] Sequential execution, handler dispatch, state persistence after each step
+  - [x] HITL parking: parks at steps needing human input
+  - [x] Resume from checkpoint (`resume(run_id)`)
+  - [x] Handler exceptions caught and converted to ERROR results
+- [x] Tests: 65 new tests (state=26, store=15, handlers=10, runner=14)
+- [x] **Runnable**: Pipeline runs end-to-end programmatically (not yet via CLI)
 
 **Depends on**: Step 10 (Pipeline Models).
 

@@ -1,0 +1,245 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+"""Tests for pipeline state store — SQLite persistence."""
+
+from __future__ import annotations
+
+import uuid
+from typing import TYPE_CHECKING
+
+import pytest
+
+from specweaver.flow.state import (
+    PipelineRun,
+    RunStatus,
+    StepRecord,
+    StepResult,
+    StepStatus,
+)
+from specweaver.flow.store import StateStore
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_run(
+    *,
+    run_id: str | None = None,
+    pipeline_name: str = "test_pipeline",
+    project_name: str = "test_project",
+    status: RunStatus = RunStatus.NOT_STARTED,
+    step_names: list[str] | None = None,
+) -> PipelineRun:
+    if step_names is None:
+        step_names = ["validate_spec", "review_spec"]
+    return PipelineRun(
+        run_id=run_id or str(uuid.uuid4()),
+        pipeline_name=pipeline_name,
+        project_name=project_name,
+        spec_path="specs/test_spec.md",
+        status=status,
+        current_step=0,
+        step_records=[StepRecord(step_name=name, status=StepStatus.PENDING) for name in step_names],
+        started_at="2026-03-14T18:00:00Z",
+        updated_at="2026-03-14T18:00:00Z",
+    )
+
+
+@pytest.fixture()
+def store(tmp_path: Path) -> StateStore:
+    """Create a StateStore with a temp DB."""
+    return StateStore(tmp_path / "pipeline_state.db")
+
+
+# ---------------------------------------------------------------------------
+# Schema creation
+# ---------------------------------------------------------------------------
+
+
+class TestStoreSchema:
+    """Tests for store initialization and schema."""
+
+    def test_creates_db_file(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "test.db"
+        assert not db_path.exists()
+        StateStore(db_path)
+        assert db_path.exists()
+
+    def test_idempotent_creation(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "test.db"
+        StateStore(db_path)
+        StateStore(db_path)  # second call should not raise
+
+    def test_wal_mode(self, store: StateStore) -> None:
+        conn = store.connect()
+        mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
+        conn.close()
+        assert mode == "wal"
+
+
+# ---------------------------------------------------------------------------
+# Save / load pipeline runs
+# ---------------------------------------------------------------------------
+
+
+class TestSaveLoadRun:
+    """Tests for saving and loading pipeline runs."""
+
+    def test_save_and_load(self, store: StateStore) -> None:
+        run = _make_run(run_id="run-001")
+        store.save_run(run)
+        loaded = store.load_run("run-001")
+        assert loaded is not None
+        assert loaded.run_id == "run-001"
+        assert loaded.pipeline_name == "test_pipeline"
+        assert loaded.status == RunStatus.NOT_STARTED
+        assert len(loaded.step_records) == 2
+
+    def test_load_nonexistent(self, store: StateStore) -> None:
+        assert store.load_run("does-not-exist") is None
+
+    def test_save_overwrites_existing(self, store: StateStore) -> None:
+        run = _make_run(run_id="run-002")
+        store.save_run(run)
+        run.status = RunStatus.RUNNING
+        run.current_step = 1
+        store.save_run(run)
+        loaded = store.load_run("run-002")
+        assert loaded is not None
+        assert loaded.status == RunStatus.RUNNING
+        assert loaded.current_step == 1
+
+    def test_save_with_step_results(self, store: StateStore) -> None:
+        run = _make_run(run_id="run-003")
+        result = StepResult(
+            status=StepStatus.PASSED,
+            output={"rule_count": 11, "all_passed": True},
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.complete_current_step(result)
+        store.save_run(run)
+        loaded = store.load_run("run-003")
+        assert loaded is not None
+        assert loaded.step_records[0].status == StepStatus.PASSED
+        assert loaded.step_records[0].result is not None
+        assert loaded.step_records[0].result.output["rule_count"] == 11
+
+    def test_get_latest_run(self, store: StateStore) -> None:
+        run1 = _make_run(run_id="run-old")
+        run1.updated_at = "2026-03-14T17:00:00Z"
+        store.save_run(run1)
+
+        run2 = _make_run(run_id="run-new")
+        run2.updated_at = "2026-03-14T19:00:00Z"
+        store.save_run(run2)
+
+        latest = store.get_latest_run("test_project", "test_pipeline")
+        assert latest is not None
+        assert latest.run_id == "run-new"
+
+    def test_get_latest_run_no_match(self, store: StateStore) -> None:
+        assert store.get_latest_run("no_project", "no_pipeline") is None
+
+
+# ---------------------------------------------------------------------------
+# Audit log
+# ---------------------------------------------------------------------------
+
+
+class TestAuditLog:
+    """Tests for the audit log."""
+
+    def test_log_event(self, store: StateStore) -> None:
+        run = _make_run(run_id="run-audit")
+        store.save_run(run)
+        store.log_event("run-audit", "step_started", step_name="validate_spec")
+        store.log_event("run-audit", "step_completed", step_name="validate_spec")
+
+        events = store.get_audit_log("run-audit")
+        assert len(events) == 2
+        assert events[0]["event"] == "step_started"
+        assert events[1]["event"] == "step_completed"
+
+    def test_log_event_with_details(self, store: StateStore) -> None:
+        run = _make_run(run_id="run-detail")
+        store.save_run(run)
+        store.log_event(
+            "run-detail",
+            "run_parked",
+            step_name="draft_spec",
+            details="Waiting for user to run 'sw draft'",
+        )
+        events = store.get_audit_log("run-detail")
+        assert len(events) == 1
+        assert events[0]["details"] == "Waiting for user to run 'sw draft'"
+
+    def test_audit_log_empty(self, store: StateStore) -> None:
+        events = store.get_audit_log("nonexistent")
+        assert events == []
+
+
+# ---------------------------------------------------------------------------
+# Resume support
+# ---------------------------------------------------------------------------
+
+
+class TestResume:
+    """Tests for resume-from-checkpoint pattern."""
+
+    def test_resume_parked_run(self, store: StateStore) -> None:
+        run = _make_run(run_id="run-parked", status=RunStatus.RUNNING)
+        park_result = StepResult(
+            status=StepStatus.WAITING_FOR_INPUT,
+            output={"message": "Please draft the spec"},
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:00Z",
+        )
+        run.park_current_step(park_result)
+        store.save_run(run)
+
+        loaded = store.load_run("run-parked")
+        assert loaded is not None
+        assert loaded.status == RunStatus.PARKED
+        assert loaded.current_step == 0
+        assert loaded.step_records[0].status == StepStatus.WAITING_FOR_INPUT
+
+    def test_resume_failed_run(self, store: StateStore) -> None:
+        run = _make_run(run_id="run-failed", status=RunStatus.RUNNING)
+        fail_result = StepResult(
+            status=StepStatus.FAILED,
+            error_message="3 rules failed",
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.fail_current_step(fail_result)
+        store.save_run(run)
+
+        loaded = store.load_run("run-failed")
+        assert loaded is not None
+        assert loaded.status == RunStatus.FAILED
+        assert loaded.current_step == 0
+
+    def test_completed_run_persists(self, store: StateStore) -> None:
+        run = _make_run(
+            run_id="run-done",
+            status=RunStatus.RUNNING,
+            step_names=["s1"],
+        )
+        result = StepResult(
+            status=StepStatus.PASSED,
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.complete_current_step(result)
+        assert run.status == RunStatus.COMPLETED
+        store.save_run(run)
+
+        loaded = store.load_run("run-done")
+        assert loaded is not None
+        assert loaded.status == RunStatus.COMPLETED
