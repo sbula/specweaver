@@ -246,3 +246,68 @@ class TestPydanticModels:
             llm=LLMSettings(model="gemini-2.5-pro", temperature=0.3)
         )
         assert s.llm.model == "gemini-2.5-pro"
+
+
+# ---------------------------------------------------------------------------
+# Legacy migration — edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestLegacyMigrationEdgeCases:
+    """Edge cases for migrate_legacy_config."""
+
+    def test_migrate_invalid_yaml(self, db, tmp_path: Path):
+        """config.yaml with invalid YAML → project still registered (data=defaults)."""
+        from specweaver.config.settings import load_settings, migrate_legacy_config
+
+        project_dir = tmp_path / "bad-yaml"
+        project_dir.mkdir()
+        sw_dir = project_dir / ".specweaver"
+        sw_dir.mkdir()
+        (sw_dir / "config.yaml").write_text(
+            "this is {{{ not: valid yaml ;;;",
+            encoding="utf-8",
+        )
+        result = migrate_legacy_config(db, "bad-yaml", str(project_dir))
+        assert result is True
+        # Project is registered, with default LLM settings
+        settings = load_settings(db, "bad-yaml")
+        assert settings.llm.model == "gemini-2.5-flash"
+
+    def test_migrate_non_dict_llm_section(self, db, tmp_path: Path):
+        """config.yaml where llm is a string → treated as empty dict."""
+        from specweaver.config.settings import load_settings, migrate_legacy_config
+
+        project_dir = tmp_path / "string-llm"
+        project_dir.mkdir()
+        sw_dir = project_dir / ".specweaver"
+        sw_dir.mkdir()
+        (sw_dir / "config.yaml").write_text(
+            "llm: 'invalid'\n",
+            encoding="utf-8",
+        )
+        result = migrate_legacy_config(db, "string-llm", str(project_dir))
+        assert result is True
+        settings = load_settings(db, "string-llm")
+        assert settings.llm.model == "gemini-2.5-flash"
+
+    def test_migrate_extra_unknown_keys(self, db, tmp_path: Path):
+        """config.yaml with extra unknown keys → silently ignored."""
+        from specweaver.config.settings import load_settings, migrate_legacy_config
+
+        project_dir = tmp_path / "extra-keys"
+        project_dir.mkdir()
+        sw_dir = project_dir / ".specweaver"
+        sw_dir.mkdir()
+        (sw_dir / "config.yaml").write_text(
+            "llm:\n  model: gemini-2.5-pro\n  temperature: 0.4\n"
+            "unknown_section:\n  foo: bar\n"
+            "extra_list:\n  - one\n  - two\n",
+            encoding="utf-8",
+        )
+        result = migrate_legacy_config(db, "extra-keys", str(project_dir))
+        assert result is True
+        settings = load_settings(db, "extra-keys")
+        assert settings.llm.model == "gemini-2.5-pro"
+        assert settings.llm.temperature == pytest.approx(0.4)
+

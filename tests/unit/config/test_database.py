@@ -544,3 +544,58 @@ class TestSchemaV2Migration:
             ).fetchone()
         assert version[0] == 2
 
+
+# ---------------------------------------------------------------------------
+# Validation Override UPSERT edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestValidationOverrideUpsert:
+    """Edge cases for set_validation_override partial-update logic."""
+
+    def test_load_validation_settings_no_overrides(self, db, tmp_path: Path):
+        """Project with zero overrides returns empty ValidationSettings."""
+        db.register_project("clean", str(tmp_path / "clean"))
+        settings = db.load_validation_settings("clean")
+        assert settings.overrides == {}
+
+    def test_set_and_load_override(self, db, tmp_path: Path):
+        """Set an override, then load it back."""
+        db.register_project("proj", str(tmp_path / "proj"))
+        db.set_validation_override(
+            "proj", "S01",
+            enabled=True, warn_threshold=5.0, fail_threshold=3.0,
+        )
+        settings = db.load_validation_settings("proj")
+        assert "S01" in settings.overrides
+        assert settings.overrides["S01"].warn_threshold == 5.0
+        assert settings.overrides["S01"].fail_threshold == 3.0
+
+    def test_partial_update_preserves_existing(self, db, tmp_path: Path):
+        """Updating only warn_threshold should preserve fail_threshold."""
+        db.register_project("proj", str(tmp_path / "proj"))
+        db.set_validation_override(
+            "proj", "S02",
+            enabled=True, warn_threshold=8.0, fail_threshold=5.0,
+        )
+        # Update only warn_threshold
+        db.set_validation_override("proj", "S02", warn_threshold=6.0)
+        settings = db.load_validation_settings("proj")
+        override = settings.overrides["S02"]
+        assert override.warn_threshold == 6.0
+        assert override.fail_threshold == 5.0  # preserved
+
+    def test_disable_rule(self, db, tmp_path: Path):
+        """Can disable a rule via override."""
+        db.register_project("proj", str(tmp_path / "proj"))
+        db.set_validation_override("proj", "S03", enabled=False)
+        settings = db.load_validation_settings("proj")
+        assert settings.overrides["S03"].enabled is False
+
+    def test_is_enabled_defaults_true(self, db, tmp_path: Path):
+        """Rules without overrides default to enabled."""
+        db.register_project("proj", str(tmp_path / "proj"))
+        settings = db.load_validation_settings("proj")
+        assert settings.is_enabled("S99") is True
+
+

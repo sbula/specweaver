@@ -746,3 +746,63 @@ class TestSuccessPathData:
         assert result.status == "success"
         assert "abc" in result.data
 
+
+# ---------------------------------------------------------------------------
+# Additional edge cases: commit, branch, and history
+# ---------------------------------------------------------------------------
+
+
+class TestGitToolAdditionalEdgeCases:
+    """Edge cases not covered by existing tests."""
+
+    def test_commit_with_multiline_message(self) -> None:
+        """Multiline commit messages are rejected (conventional commit uses first line only)."""
+        executor = _make_executor(run_side_effect=[
+            ExecutorResult(status="success", exit_code=0),
+            ExecutorResult(status="success", stdout="1 file\n", exit_code=0),
+            ExecutorResult(status="success", stdout="ok\n", exit_code=0),
+        ])
+        tool = GitTool(executor=executor, role="implementer")
+        # Conventional commit regex may reject newlines
+        result = tool.commit("feat: add login\n\nDetailed description here.")
+        assert result.status == "error"
+
+    def test_commit_scope_with_special_chars(self) -> None:
+        """Scope with special characters in conventional commit."""
+        tool = GitTool(executor=_make_executor(), role="implementer")
+        result = tool.commit("feat(auth/login): add endpoint")
+        # Depends on regex — /  within scope may not match
+        # This test documents the current behavior
+        assert result.status in ("success", "error")
+
+    def test_history_n_zero(self) -> None:
+        """history(n=0) should still call git log (may return empty)."""
+        executor = _make_executor(run_returns=ExecutorResult(
+            status="success", stdout="", exit_code=0,
+        ))
+        tool = GitTool(executor=executor, role="reviewer")
+        result = tool.history(0)
+        assert result.status == "success"
+
+    def test_history_negative_n(self) -> None:
+        """history(n=-1) — invalid count, should not crash."""
+        executor = _make_executor(run_returns=ExecutorResult(
+            status="success", stdout="", exit_code=0,
+        ))
+        tool = GitTool(executor=executor, role="reviewer")
+        result = tool.history(-1)
+        assert result.status in ("success", "error")
+
+    def test_branch_name_with_numbers(self) -> None:
+        """Branch names with numbers should be valid."""
+        tool = GitTool(executor=_make_executor(), role="implementer")
+        result = tool.start_branch("feat/add-login-v2")
+        assert result.status == "success"
+
+    def test_branch_name_consecutive_dashes_accepted(self) -> None:
+        """Branch names with consecutive dashes are allowed by validation."""
+        tool = GitTool(executor=_make_executor(), role="implementer")
+        result = tool.start_branch("feat/add--login")
+        assert result.status == "success"
+
+

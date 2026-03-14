@@ -534,3 +534,66 @@ class TestBuildRuleKwargsExtraParams:
         from specweaver.validation.runner import _build_rule_kwargs
 
         assert _build_rule_kwargs("S01", None) == {}
+
+
+# ---------------------------------------------------------------------------
+# CLI --set override edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestCheckSetOverrideEdgeCases:
+    """Additional edge cases for --set override parsing."""
+
+    def test_set_threshold_scientific_notation(self, tmp_path) -> None:
+        """--set with scientific notation value (e.g., 5.5e2) → accepted."""
+        spec = tmp_path / "s.md"
+        spec.write_text("## 1. Purpose\nDo X.\n", encoding="utf-8")
+        runner.invoke(app, ["init", "proj", "--path", str(tmp_path)])
+        result = runner.invoke(
+            app,
+            ["check", str(spec), "--level", "component", "--set", "S08.fail_threshold=5.5e2"],
+        )
+        # Scientific notation should parse as float(5.5e2) = 550.0
+        assert "Invalid threshold value" not in result.output
+
+    def test_set_empty_value_shows_error(self, tmp_path) -> None:
+        """--set S08.fail_threshold= (empty value) → error."""
+        spec = tmp_path / "s.md"
+        spec.write_text("## 1. Purpose\nDo X.\n", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            ["check", str(spec), "--set", "S08.fail_threshold="],
+        )
+        assert result.exit_code == 1
+
+    def test_set_enabled_case_insensitive(self, tmp_path) -> None:
+        """--set S08.enabled=FALSE should work (case insensitive)."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("## 1. Purpose\nDo X.\n", encoding="utf-8")
+        runner.invoke(app, ["init", "proj", "--path", str(tmp_path)])
+        result = runner.invoke(
+            app,
+            ["check", str(spec), "--level", "component", "--set", "S08.enabled=FALSE"],
+        )
+        # S08 should be disabled regardless of case
+        assert "S08" not in result.output
+
+    def test_set_multiple_overrides(self, tmp_path) -> None:
+        """Multiple --set flags on the same command."""
+        spec = tmp_path / "spec.md"
+        spec.write_text(
+            "## 1. Purpose\nDo X.\n\n## 2. Contract\nShould work.\n",
+            encoding="utf-8",
+        )
+        runner.invoke(app, ["init", "proj", "--path", str(tmp_path)])
+        result = runner.invoke(
+            app,
+            [
+                "check", str(spec), "--level", "component",
+                "--set", "S08.enabled=false",
+                "--set", "S01.enabled=false",
+            ],
+        )
+        assert "S08" not in result.output
+        assert "S01" not in result.output
+

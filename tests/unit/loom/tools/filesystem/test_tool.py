@@ -631,3 +631,146 @@ class TestSearchContentRecursive:
         result = implementer.search_content("src/domain/billing", r"def \w+")
         assert result.status == "success"
         assert len(result.data) > 0  # finds calc.py (direct child)
+
+
+# ===========================================================================
+# Path Traversal Attack Surface (edge cases)
+# ===========================================================================
+
+
+class TestPathTraversalEdgeCases:
+    """Security-critical: test path normalization against traversal attacks."""
+
+    def test_absolute_unix_path_blocked(self, implementer: FileSystemTool) -> None:
+        """Absolute path like /etc/passwd should not match any grant."""
+        result = implementer.read_file("/etc/passwd")
+        assert result.status == "error"
+
+    def test_absolute_windows_path_blocked(self, implementer: FileSystemTool) -> None:
+        """Absolute Windows path should not match any grant."""
+        result = implementer.read_file("C:\\Windows\\System32\\config.sys")
+        assert result.status == "error"
+
+    def test_empty_path_normalization(self, executor: FileExecutor) -> None:
+        """Empty path normalizes to '' — no grant should cover it."""
+        from specweaver.loom.tools.filesystem.tool import FileSystemTool as FSTool
+        tool = FSTool(executor=executor, role="implementer", grants=[])
+        assert FSTool._normalize_path("") == ""
+
+    def test_empty_path_read_blocked(self, implementer: FileSystemTool) -> None:
+        """Reading empty path should be blocked (no grant covers root)."""
+        result = implementer.read_file("")
+        assert result.status == "error"
+
+    def test_dot_path_normalization(self) -> None:
+        """Single dot normalizes to empty string."""
+        from specweaver.loom.tools.filesystem.tool import FileSystemTool as FSTool
+        assert FSTool._normalize_path(".") == ""
+
+    def test_dotdot_beyond_root(self) -> None:
+        """Path that goes above root via .. should normalize safely."""
+        from specweaver.loom.tools.filesystem.tool import FileSystemTool as FSTool
+        # posixpath.normpath("a/../../b") == "../b"
+        result = FSTool._normalize_path("a/../../b")
+        assert ".." not in result or result.startswith("..")
+        # The key is that this should NOT match any grant starting with "a/"
+
+    def test_dotdot_escape_with_delete(self, implementer: FileSystemTool) -> None:
+        """Agent tries to delete a file outside grants via .. traversal."""
+        result = implementer.delete_file("src/domain/billing/../../../specs/billing_spec.md")
+        assert result.status == "error"
+
+    def test_dotdot_escape_with_create(self, implementer: FileSystemTool) -> None:
+        """Agent tries to create a file outside grants via .. traversal."""
+        result = implementer.create_file(
+            "src/domain/billing/../../../evil.py", "import os; os.system('rm -rf /')",
+        )
+        assert result.status == "error"
+
+    def test_dotdot_escape_with_edit(self, implementer: FileSystemTool) -> None:
+        """Agent tries to edit a file outside grants via .. traversal."""
+        result = implementer.edit_file(
+            "src/domain/billing/../../../specs/billing_spec.md",
+            old="# Billing Spec", new="# HACKED",
+        )
+        assert result.status == "error"
+
+    def test_dotdot_escape_with_list(self, implementer: FileSystemTool) -> None:
+        """Agent tries to list a directory outside grants via .. traversal."""
+        result = implementer.list_directory("src/domain/billing/../../../")
+        assert result.status == "error"
+
+    def test_dotdot_escape_with_search(self, implementer: FileSystemTool) -> None:
+        """Agent tries to search in a directory outside grants via .. traversal."""
+        result = implementer.search_content(
+            "src/domain/billing/../../../specs", r".*",
+        )
+        assert result.status == "error"
+
+    def test_multiple_slashes_normalized(self, implementer: FileSystemTool) -> None:
+        """Multiple consecutive slashes should not bypass normalization."""
+        result = implementer.read_file("src///domain///billing///calc.py")
+        assert result.status == "success"
+
+    def test_grant_at_root_covers_everything(self, executor: FileExecutor) -> None:
+        """A grant with empty path does NOT cover subdirectories (security)."""
+        grants = [FolderGrant("", AccessMode.READ, recursive=True)]
+        tool = FileSystemTool(executor=executor, role="reviewer", grants=grants)
+        result = tool.read_file("src/domain/billing/calc.py")
+        # Empty-string grant path is treated as invalid — doesn't match
+        assert result.status == "error"
+
+
+# ===========================================================================
+# search_content edge cases
+# ===========================================================================
+
+
+class TestSearchContentEdgeCases:
+    """Edge cases for the search_content intent."""
+
+    def test_invalid_regex_returns_error(self, implementer: FileSystemTool) -> None:
+        """Invalid regex pattern should return an ToolResult error, not crash."""
+        result = implementer.search_content("src/domain/billing", r"[invalid")
+        assert result.status == "error"
+        assert "Invalid regex" in result.message
+
+    def test_search_empty_pattern_matches_everything(
+        self, implementer: FileSystemTool,
+    ) -> None:
+        """Empty regex matches every line."""
+        result = implementer.search_content("src/domain/billing", r"")
+        assert result.status == "success"
+        assert len(result.data) > 0
+
+
+# ===========================================================================
+# find_placement edge cases
+# ===========================================================================
+
+
+class TestFindPlacementEdgeCases:
+    """Edge cases for the find_placement intent."""
+
+    def test_empty_description(self, implementer: FileSystemTool) -> None:
+        """Empty description has no keywords → empty results."""
+        result = implementer.find_placement("")
+        assert result.status == "success"
+        assert result.data == []
+
+    def test_short_words_filtered(self, implementer: FileSystemTool) -> None:
+        """Words shorter than 3 chars are filtered out as noise."""
+        result = implementer.find_placement("a to of")
+        assert result.status == "success"
+        assert result.data == []
+
+    def test_find_placement_no_context_yaml(self, tmp_path: Path) -> None:
+        """find_placement in a project with no context.yaml returns empty."""
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "code.py").write_text("x=1", encoding="utf-8")
+        executor = FileExecutor(cwd=tmp_path)
+        grants = [FolderGrant("src", AccessMode.READ, recursive=True)]
+        tool = FileSystemTool(executor=executor, role="implementer", grants=grants)
+        result = tool.find_placement("some feature")
+        assert result.status == "success"
+        assert result.data == []

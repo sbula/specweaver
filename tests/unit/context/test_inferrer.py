@@ -193,3 +193,49 @@ class TestInferrerEdgeCases:
         assert result.was_generated is True
         assert "TODO" in result.node.purpose
 
+
+class TestInferrerAdditionalEdgeCases:
+    """Additional edge cases for ContextInferrer."""
+
+    def test_unknown_parent_level_defaults_to_module(
+        self, tmp_path: Path,
+    ) -> None:
+        """Unknown parent_level falls back to 'module'."""
+        inferrer = ContextInferrer()
+        pkg = tmp_path / "unknown_parent"
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text('"""Some module."""\n')
+        (pkg / "code.py").write_text("x = 1\n")
+        result = inferrer.infer_and_write(pkg, parent_level="cosmic")
+        assert result.was_generated is True
+        assert result.node.level == "module"
+
+    def test_init_with_syntax_error(
+        self, tmp_path: Path,
+    ) -> None:
+        """__init__.py with syntax error → purpose fallback to TODO."""
+        inferrer = ContextInferrer()
+        pkg = tmp_path / "bad_init"
+        pkg.mkdir()
+        (pkg / "__init__.py").write_text("def broken(:\n")
+        (pkg / "code.py").write_text("x = 1\n")
+        result = inferrer.infer_and_write(pkg)
+        assert result.was_generated is True
+        assert "TODO" in result.node.purpose
+
+    def test_hidden_directory_skipped(
+        self, tmp_path: Path,
+    ) -> None:
+        """Directories starting with . should not be inferred."""
+        inferrer = ContextInferrer()
+        hidden = tmp_path / ".hidden"
+        hidden.mkdir()
+        (hidden / "__init__.py").write_text('"""Hidden."""\n')
+        (hidden / "code.py").write_text("x = 1\n")
+        # ContextInferrer itself doesn't skip hidden dirs — that's
+        # TopologyGraph's responsibility. But infer_and_write should
+        # still work normally if called on it.
+        result = inferrer.infer_and_write(hidden)
+        assert result.was_generated is True
+
+

@@ -610,6 +610,125 @@ class TestReviewerParseResponse:
 
 
 # ---------------------------------------------------------------------------
+# Reviewer._parse_response — robustness edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestReviewerParseResponseRobustness:
+    """Robustness tests for LLM response parsing (unpredictable LLM output)."""
+
+    def test_completely_empty_response(self) -> None:
+        """Empty string response → DENIED (conservative), no findings."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response("")
+        assert result.verdict == ReviewVerdict.DENIED
+        assert len(result.findings) == 0
+        assert result.raw_response == ""
+
+    def test_whitespace_only_response(self) -> None:
+        """Whitespace-only → DENIED, no findings."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response("   \n\n\t  ")
+        assert result.verdict == ReviewVerdict.DENIED
+        assert len(result.findings) == 0
+
+    def test_multiple_verdict_lines_uses_first(self) -> None:
+        """If LLM outputs multiple VERDICT lines, first one wins."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "VERDICT: ACCEPTED\n"
+            "- Everything looks good\n"
+            "VERDICT: DENIED\n"  # LLM contradicts itself
+            "Actually, I changed my mind.",
+        )
+        # Both ACCEPTED and DENIED are present in uppercase text
+        # The actual code checks for both — ACCEPTED is checked first
+        assert result.verdict == ReviewVerdict.ACCEPTED
+
+    def test_verdict_case_insensitive(self) -> None:
+        """verdict: accepted (lowercase) should still be detected."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response("verdict: accepted\nOK.")
+        assert result.verdict == ReviewVerdict.ACCEPTED
+
+    def test_verdict_mixed_case(self) -> None:
+        """Verdict: Denied (mixed) should be detected."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response("Verdict: Denied\n- Bad spec.")
+        assert result.verdict == ReviewVerdict.DENIED
+
+    def test_findings_with_nested_dashes(self) -> None:
+        """Findings line containing sub-dashes should extract full message."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "VERDICT: DENIED\n"
+            "- Missing error handling - no try/except blocks\n"
+            "- Function name is non-descriptive",
+        )
+        assert len(result.findings) == 2
+        # Full content after "- " preserved, including internal dashes
+        assert "no try/except blocks" in result.findings[0].message
+
+    def test_unicode_findings(self) -> None:
+        """Unicode characters in findings should be preserved."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "VERDICT: DENIED\n"
+            "- Spëcification fehlt Klarheit\n"
+            "- 日本語のテスト\n"
+            "Zusammenfassung: Mangelhaft.",
+        )
+        assert len(result.findings) == 2
+        assert "Spëcification" in result.findings[0].message
+        assert "日本語" in result.findings[1].message
+
+    def test_summary_is_last_non_finding_line(self) -> None:
+        """Summary should be the last non-empty, non-VERDICT, non-finding line."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "VERDICT: ACCEPTED\n"
+            "Some preamble text.\n"
+            "- A finding\n"
+            "Overall conclusion here.",
+        )
+        assert result.summary == "Overall conclusion here."
+
+    def test_only_findings_no_summary(self) -> None:
+        """Response with only VERDICT + findings and no summary text."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "VERDICT: DENIED\n"
+            "- Issue one\n"
+            "- Issue two",
+        )
+        assert result.verdict == ReviewVerdict.DENIED
+        assert len(result.findings) == 2
+        # Summary might be empty or a finding-like string
+
+    def test_verdict_embedded_in_prose_still_detected(self) -> None:
+        """VERDICT: ACCEPTED embedded in a prose paragraph still matches."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "After careful review, I believe VERDICT: ACCEPTED is appropriate.\n"
+            "- Good structure\n"
+            "Well done.",
+        )
+        assert result.verdict == ReviewVerdict.ACCEPTED
+
+    def test_finding_with_leading_whitespace(self) -> None:
+        """Finding lines with leading spaces before '- ' should still parse."""
+        reviewer = Reviewer(llm=_make_mock_llm(""))
+        result = reviewer._parse_response(
+            "VERDICT: DENIED\n"
+            "  - Indented finding\n"
+            "Regular text.",
+        )
+        # Lines are stripped before checking for "- "
+        assert len(result.findings) == 1
+        assert result.findings[0].message == "Indented finding"
+
+
+# ---------------------------------------------------------------------------
 # Drafter — all sections skipped
 # ---------------------------------------------------------------------------
 
@@ -632,5 +751,4 @@ class TestDrafterAllSkipped:
         assert result.exists()
         content = result.read_text(encoding="utf-8")
         assert content.count("TODO") >= 5  # one per skipped section
-
 

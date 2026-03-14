@@ -653,3 +653,106 @@ class TestFormatContextSummary:
         assert ctx.constraints == ["no-io"]
 
 
+# ---------------------------------------------------------------------------
+# Auto-infer edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestAutoInferEdgeCases:
+    """Edge cases for auto_infer=True behavior."""
+
+    def test_auto_infer_skips_hidden_directories(self, tmp_path: Path) -> None:
+        """Hidden directories (.git, .env, etc.) should be skipped."""
+        _write_context(tmp_path / "known", name="known")
+        # Create a hidden directory with Python code
+        git_dir = tmp_path / ".git"
+        git_dir.mkdir()
+        (git_dir / "__init__.py").write_text('"""Should not be inferred."""\n')
+        (git_dir / "hook.py").write_text("x = 1\n")
+        # Another hidden dir
+        env_dir = tmp_path / ".env"
+        env_dir.mkdir()
+        (env_dir / "__init__.py").write_text('"""Environment."""\n')
+
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        # Hidden dirs should NOT appear as inferred modules
+        assert ".git" not in graph.nodes
+        assert ".env" not in graph.nodes
+
+    def test_auto_infer_all_dirs_already_have_context(self, tmp_path: Path) -> None:
+        """When all directories have context.yaml, no inference needed."""
+        _write_context(tmp_path / "a", name="a")
+        _write_context(tmp_path / "b", name="b")
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        assert set(graph.nodes.keys()) == {"a", "b"}
+        # No auto-infer warnings (only auto-infer produces inferred warnings)
+        infer_warnings = [w for w in graph.warnings if "infer" in w.lower()]
+        assert len(infer_warnings) == 0
+
+    def test_auto_infer_mixed_manual_and_inferred(self, tmp_path: Path) -> None:
+        """Mix of manual context.yaml + inferred modules merge correctly."""
+        _write_context(tmp_path / "manual", name="manual", consumes=["inferred"])
+        # inferred dir: Python code but no context.yaml
+        inferred_dir = tmp_path / "inferred"
+        inferred_dir.mkdir()
+        (inferred_dir / "__init__.py").write_text('"""Inferred module."""\n')
+        (inferred_dir / "code.py").write_text("def helper(): pass\n")
+
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        assert "manual" in graph.nodes
+        assert "inferred" in graph.nodes
+        # The consumes edge should be resolved
+        assert graph.consumers_of("inferred") == {"manual"}
+
+    def test_auto_infer_dir_without_python_skipped(self, tmp_path: Path) -> None:
+        """Directories without Python files should not be inferred."""
+        _write_context(tmp_path / "known", name="known")
+        # Create dir with non-Python files only
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        (docs_dir / "readme.md").write_text("# Documentation\n")
+
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        assert "docs" not in graph.nodes
+
+
+# ---------------------------------------------------------------------------
+# Operational warnings - additional boundary cases
+# ---------------------------------------------------------------------------
+
+
+class TestOperationalWarningsBoundary:
+    """Boundary cases for operational SLA checks."""
+
+    def test_dependency_with_none_operational(self, tmp_path: Path) -> None:
+        """Consumer has operational, dependency has none — no crash."""
+        _write_context(
+            tmp_path / "consumer",
+            name="consumer",
+            consumes=["provider"],
+            operational={"latency_critical": True, "max_latency_ms": 50},
+        )
+        _write_context(tmp_path / "provider", name="provider")  # no operational
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        # Should not crash; no warnings or at most non-latency warnings
+        warnings = graph.operational_warnings("consumer")
+        assert isinstance(warnings, list)
+
+    def test_neither_has_operational(self, tmp_path: Path) -> None:
+        """Neither consumer nor dependency has operational — no warnings."""
+        _write_context(
+            tmp_path / "a",
+            name="a",
+            consumes=["b"],
+        )
+        _write_context(tmp_path / "b", name="b")
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        assert graph.operational_warnings("a") == []
+
+    def test_unknown_module_operational_warnings(self, tmp_path: Path) -> None:
+        """operational_warnings for a nonexistent module — empty or no crash."""
+        _write_context(tmp_path / "a", name="a")
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        result = graph.operational_warnings("nonexistent")
+        assert isinstance(result, list)
+
