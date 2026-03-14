@@ -42,6 +42,18 @@ Ideas adopted into SpecWeaver's roadmap (Step 9, Phase 3):
 - **Tiered file exclusion** (Phase 3.9) — 3-tier system: binary extensions, default patterns (`.git`, `__pycache__`), per-project overrides + `.specweaverignore`
 - **File watcher** (Phase 3.10) — auto-re-validate specs on disk change
 
+### Aider — AI Pair Programming Architecture
+
+[Aider](https://github.com/Aider-AI/aider) by **Paul Gauthier** is the leading open-source AI pair programming tool. Analyzed in March 2026 for prompt engineering, context management, and resilience patterns.
+
+Patterns adopted or planned for SpecWeaver:
+- **RepoMap with PageRank ranking** → Adaptation for spec topology context selection (9c): rank which specs are most relevant to the current context using dependency graph analysis, similar to Aider's symbol-based file ranking
+- **Tiered context with trust signals** → PromptBuilder's `<file>` tags will include trust/role annotations (e.g., "reference-only" vs. "target for review"), inspired by Aider's `files_content_prefix` patterns
+- **System reminder at end** → `.add_reminder()` method to re-state critical output format rules at the bottom of prompts, mitigating "lost in the middle" attention decay
+- **Dynamic budget scaling** → When context is light, allocate more token budget to topology/context; when many files present, compress context — inspired by Aider's `map_mul_no_files` multiplier
+- **Lint-fix reflection loop** → Step 12 (audit/quality gates): after code generation, run linter/tests → feed errors back to LLM for auto-fix → re-validate, with `max_reflections` cap. Directly from Aider's `reflected_message` + linter integration
+- **Context overflow recovery** → Graceful handling when prompt exceeds model context window — auto-truncate and retry rather than failing. Inspired by Aider's `ContextWindowExceededError` handling
+
 ### Technology Decisions
 
 | Component | Choice | Rationale |

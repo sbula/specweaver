@@ -351,11 +351,15 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
   - [ ] `ConstraintOnlySelector` — constraint violations only (for `sw check --strict`)
   - [ ] Placeholder: `ImpactWeightedSelector` stub (Phase 4)
 - [ ] `topology.py` — new methods: `neighbors_within(module, depth)`, `modules_sharing_constraints(module)`, `format_context_summary(modules)`
+- [ ] `prompt_builder.py` enhancements _(inspired by Aider)_
+  - [ ] `add_file(..., role="reference"|"target")` — trust signals in `<file>` tags (ref files marked "read-only, do not modify")
+  - [ ] `.add_reminder(text)` — re-state output format rules at bottom of prompt (mitigates "lost in the middle" effect)
+  - [ ] Dynamic budget scaling: allocate surplus budget to context when main content is small
 - [ ] `cli.py` — wire topology + selectors into `draft`, `review`, `implement`
   - [ ] Load `TopologyGraph.from_project()` if active project has `context.yaml`
   - [ ] Command selects appropriate `ContextSelector`
   - [ ] Graceful fallback: no `context.yaml` → proceed without topology (no error)
-- [ ] Tests: each selector on diamond/chain/isolated graphs, empty graph edge case, format_context_summary
+- [ ] Tests: each selector on diamond/chain/isolated graphs, empty graph edge case, format_context_summary, trust signals, reminder tag
 - [ ] **Runnable**: `sw review spec.md` shows topology context + token estimate
 
 **Depends on**: Step 7 (Topology Graph) for 9c only. 9a and 9b are independent.
@@ -394,13 +398,15 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
   - [ ] Execute steps sequentially by default, `asyncio.gather()` for independent steps
   - [ ] Map step types to existing modules (validate → `runner.run_rules`, draft → `Drafter.draft`, etc.)
   - [ ] Track `PipelineState` per spec
+  - [ ] **Context overflow recovery** _(inspired by Aider)_ — if prompt exceeds model context window, auto-truncate via `PromptBuilder` and retry rather than failing
 - [ ] `src/specweaver/flow/state.py` — **SQLite** state persistence (`.specweaver/state.db`)
   - [ ] Tables: `pipeline_runs`, `step_results`, `audit_log`
   - [ ] WAL mode for concurrent read/write
   - [ ] Save/load state, support resume from last completed step
   - [ ] Atomic transitions (no half-written state on crash)
 - [ ] `src/specweaver/llm/adapter.py` — `async def generate()` (backward-compatible sync wrapper)
-- [ ] Tests: runner with mock steps, state save/load, resume from checkpoint, concurrent step execution
+  - [ ] **Message sanity checking** _(inspired by Aider)_ — validate role alternation before API calls
+- [ ] Tests: runner with mock steps, state save/load, resume from checkpoint, concurrent step execution, context overflow recovery
 - [ ] **Runnable**: Pipeline runs end-to-end programmatically (not yet via CLI)
 
 **Depends on**: Step 10 (Pipeline Models). Uses existing modules: `validation/runner`, `drafting/drafter`, `review/reviewer`, `implementation/generator`.
@@ -421,8 +427,9 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
   - [ ] On gate failure: retry step, escalate, or abort (configurable)
   - [ ] Feedback loop: e.g., review DENIED → re-run draft with review findings injected
   - [ ] Max retry count per step
-- [ ] Tests: gate logic, retry counts, feedback injection, abort conditions
-- [ ] **Runnable**: Pipeline pauses at HITL gates, retries failed steps
+  - [ ] **Lint-fix reflection loop** _(inspired by Aider)_ — after code generation, run linter/tests → feed errors back to LLM → re-generate → re-validate, with `max_reflections` cap
+- [ ] Tests: gate logic, retry counts, feedback injection, abort conditions, lint-fix reflection loop
+- [ ] **Runnable**: Pipeline pauses at HITL gates, retries failed steps, auto-fixes lint errors
 
 **Depends on**: Step 11 (Runner).
 
