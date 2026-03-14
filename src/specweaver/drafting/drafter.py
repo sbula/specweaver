@@ -24,10 +24,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.context.provider import ContextProvider
+    from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
 
 # The 5 sections of a component spec and their guiding questions
-SPEC_SECTIONS: list[dict[str, str]] = [
+SPEC_SECTIONS: list[dict[str, str | bool]] = [
     {
         "name": "Purpose",
         "heading": "## 1. Purpose",
@@ -55,6 +56,7 @@ SPEC_SECTIONS: list[dict[str, str]] = [
             "and at least one concrete input -> output example "
             "in a Python code block."
         ),
+        "inject_topology": True,
     },
     {
         "name": "Protocol",
@@ -96,6 +98,7 @@ SPEC_SECTIONS: list[dict[str, str]] = [
             "section as a table (Concern | Owned By) listing "
             "what is explicitly out of scope for this component."
         ),
+        "inject_topology": True,
     },
 ]
 
@@ -150,12 +153,19 @@ class Drafter:
         self._context = context_provider
         self._config = config or GenerationConfig(model="gemini-2.5-flash")
 
-    async def draft(self, name: str, output_dir: Path) -> Path:
+    async def draft(
+        self,
+        name: str,
+        output_dir: Path,
+        *,
+        topology_contexts: list[TopologyContext] | None = None,
+    ) -> Path:
         """Draft a component spec interactively.
 
         Args:
             name: Component name (e.g., "greet_service").
             output_dir: Directory to write the spec file to (typically specs/).
+            topology_contexts: Optional topology context from the project graph.
 
         Returns:
             Path to the generated spec file.
@@ -175,12 +185,19 @@ class Drafter:
                 # User skipped — use a placeholder
                 content = f"*TODO: Fill in {section_def['name']} section.*"
             else:
+                # Decide whether to inject topology for this section
+                section_topology = (
+                    topology_contexts
+                    if section_def.get("inject_topology")
+                    else None
+                )
                 # Generate content with LLM
                 content = await self._generate_section(
                     name=name,
                     section_name=section_def["name"],
                     section_prompt=section_def["prompt"],
                     user_input=user_input,
+                    topology_contexts=section_topology,
                 )
 
             sections.append(
@@ -211,6 +228,8 @@ class Drafter:
         section_name: str,
         section_prompt: str,
         user_input: str,
+        *,
+        topology_contexts: list[TopologyContext] | None = None,
     ) -> str:
         """Generate content for a single spec section using the LLM."""
         from specweaver.llm.prompt_builder import PromptBuilder
@@ -221,12 +240,14 @@ class Drafter:
             section_prompt=section_prompt,
         )
 
-        prompt = (
+        builder = (
             PromptBuilder()
             .add_instructions(instructions)
             .add_context(user_input, "user_context")
-            .build()
         )
+        if topology_contexts:
+            builder.add_topology(topology_contexts)
+        prompt = builder.build()
 
         messages = [
             Message(role=Role.USER, content=prompt),

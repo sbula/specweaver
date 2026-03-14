@@ -17,6 +17,7 @@ from specweaver.llm.models import GenerationConfig, Message, Role
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
 
 # Instruction constants — extracted for reuse and testability
@@ -66,24 +67,33 @@ class Generator:
             temperature=0.2,  # Low temperature for deterministic code
         )
 
-    async def generate_code(self, spec_path: Path, output_path: Path) -> Path:
+    async def generate_code(
+        self,
+        spec_path: Path,
+        output_path: Path,
+        *,
+        topology_contexts: list[TopologyContext] | None = None,
+    ) -> Path:
         """Generate implementation code from a spec.
 
         Args:
             spec_path: Path to the validated spec file.
             output_path: Path to write the generated code to.
+            topology_contexts: Optional topology context from the project graph.
 
         Returns:
             Path to the generated code file.
         """
         from specweaver.llm.prompt_builder import PromptBuilder
 
-        prompt = (
+        builder = (
             PromptBuilder()
             .add_instructions(CODE_GEN_INSTRUCTIONS)
-            .add_file(spec_path, priority=1)
-            .build()
+            .add_file(spec_path, priority=1, role="reference")
         )
+        if topology_contexts:
+            builder.add_topology(topology_contexts)
+        prompt = builder.build()
 
         messages = [
             Message(
@@ -100,24 +110,33 @@ class Generator:
         output_path.write_text(code, encoding="utf-8")
         return output_path
 
-    async def generate_tests(self, spec_path: Path, output_path: Path) -> Path:
+    async def generate_tests(
+        self,
+        spec_path: Path,
+        output_path: Path,
+        *,
+        topology_contexts: list[TopologyContext] | None = None,
+    ) -> Path:
         """Generate test file from a spec.
 
         Args:
             spec_path: Path to the validated spec file.
             output_path: Path to write the generated test file to.
+            topology_contexts: Optional topology context from the project graph.
 
         Returns:
             Path to the generated test file.
         """
         from specweaver.llm.prompt_builder import PromptBuilder
 
-        prompt = (
+        builder = (
             PromptBuilder()
             .add_instructions(TEST_GEN_INSTRUCTIONS)
-            .add_file(spec_path, priority=1)
-            .build()
+            .add_file(spec_path, priority=1, role="reference")
         )
+        if topology_contexts:
+            builder.add_topology(topology_contexts)
+        prompt = builder.build()
 
         messages = [
             Message(

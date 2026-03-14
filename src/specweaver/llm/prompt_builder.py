@@ -113,6 +113,7 @@ class PromptBuilder:
         self._budget = budget
         self._adapter = adapter
         self._scale = max(0.1, min(budget_scale_factor, 2.0))  # clamp to [0.1, 2.0]
+        self._auto_scale = budget_scale_factor == 1.0  # auto-scale when default
         self._blocks: list[_ContentBlock] = []
 
     # ------------------------------------------------------------------
@@ -268,9 +269,45 @@ class PromptBuilder:
         blocks = list(self._blocks)
 
         if self._budget is not None:
+            if self._auto_scale:
+                self._compute_auto_scale(blocks)
             blocks = self._apply_truncation(blocks)
 
         return self._render(blocks)
+
+    # ------------------------------------------------------------------
+    # Auto budget scaling
+    # ------------------------------------------------------------------
+
+    def _compute_auto_scale(self, blocks: list[_ContentBlock]) -> None:
+        """Auto-adjust ``_scale`` based on content-to-budget ratio.
+
+        When main content (instructions + files + context) is small
+        relative to the budget, topology gets more room.  When content
+        is large, topology is compressed.  This mirrors Aider's
+        approach of dynamically sizing the repo map.
+
+        Thresholds:
+        - Non-topology < 25% of budget → scale up to 1.5
+        - Non-topology > 75% of budget → scale down to 0.5
+        - Otherwise → keep at 1.0
+        """
+        assert self._budget is not None
+
+        has_topology = any(b.kind == "topology" for b in blocks)
+        if not has_topology:
+            return  # No topology to scale, keep default
+
+        non_topology_tokens = sum(
+            b.tokens for b in blocks if b.kind != "topology"
+        )
+        ratio = non_topology_tokens / max(self._budget.limit, 1)
+
+        if ratio < 0.25:
+            self._scale = 1.5  # Lots of room → expand topology
+        elif ratio > 0.75:
+            self._scale = 0.5  # Tight budget → compress topology
+        # else: keep at 1.0
 
     # ------------------------------------------------------------------
     # Token estimation

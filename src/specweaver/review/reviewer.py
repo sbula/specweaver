@@ -19,6 +19,7 @@ from specweaver.llm.models import GenerationConfig, Message, Role
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
 
 
@@ -95,44 +96,61 @@ class Reviewer:
             temperature=0.3,  # Lower temperature for more consistent reviews
         )
 
-    async def review_spec(self, spec_path: Path) -> ReviewResult:
+    async def review_spec(
+        self,
+        spec_path: Path,
+        *,
+        topology_contexts: list[TopologyContext] | None = None,
+    ) -> ReviewResult:
         """Review a spec file for quality and completeness.
 
         Args:
             spec_path: Path to the spec markdown file.
+            topology_contexts: Optional topology context from the project graph.
 
         Returns:
             ReviewResult with verdict and findings.
         """
         from specweaver.llm.prompt_builder import PromptBuilder
 
-        prompt = (
+        builder = (
             PromptBuilder()
             .add_instructions(SPEC_REVIEW_INSTRUCTIONS)
-            .add_file(spec_path, priority=1)
-            .build()
+            .add_file(spec_path, priority=1, role="target")
         )
+        if topology_contexts:
+            builder.add_topology(topology_contexts)
+        prompt = builder.build()
         return await self._execute_review(prompt)
 
-    async def review_code(self, code_path: Path, spec_path: Path) -> ReviewResult:
+    async def review_code(
+        self,
+        code_path: Path,
+        spec_path: Path,
+        *,
+        topology_contexts: list[TopologyContext] | None = None,
+    ) -> ReviewResult:
         """Review generated code against its source spec.
 
         Args:
             code_path: Path to the generated code file.
             spec_path: Path to the source spec file.
+            topology_contexts: Optional topology context from the project graph.
 
         Returns:
             ReviewResult with verdict and findings.
         """
         from specweaver.llm.prompt_builder import PromptBuilder
 
-        prompt = (
+        builder = (
             PromptBuilder()
             .add_instructions(CODE_REVIEW_INSTRUCTIONS)
-            .add_file(spec_path, priority=1, label="specification")
-            .add_file(code_path, priority=2, label="generated_code")
-            .build()
+            .add_file(spec_path, priority=1, label="specification", role="reference")
+            .add_file(code_path, priority=2, label="generated_code", role="target")
         )
+        if topology_contexts:
+            builder.add_topology(topology_contexts)
+        prompt = builder.build()
         return await self._execute_review(prompt)
 
     async def _execute_review(self, prompt: str) -> ReviewResult:

@@ -198,6 +198,71 @@ def _load_topology(project_path: Path) -> TopologyGraph | None:
     return graph
 
 
+# Selector name → class mapping (configurable via --selector)
+_SELECTOR_MAP: dict[str, type] = {}
+
+
+def _get_selector_map() -> dict[str, type]:
+    """Lazily populate and return the selector name→class mapping."""
+    if not _SELECTOR_MAP:
+        from specweaver.graph.selectors import (
+            ConstraintOnlySelector,
+            DirectNeighborSelector,
+            ImpactWeightedSelector,
+            NHopConstraintSelector,
+        )
+
+        _SELECTOR_MAP.update({
+            "direct": DirectNeighborSelector,
+            "nhop": NHopConstraintSelector,
+            "constraint": ConstraintOnlySelector,
+            "impact": ImpactWeightedSelector,
+        })
+    return _SELECTOR_MAP
+
+
+def _select_topology_contexts(
+    graph: TopologyGraph | None,
+    module_name: str,
+    *,
+    selector_name: str = "direct",
+) -> list | None:
+    """Run a selector and return topology contexts, or None.
+
+    Args:
+        graph: The topology graph (None = no topology).
+        module_name: Target module name (typically derived from spec/file stem).
+        selector_name: One of 'direct', 'nhop', 'constraint', 'impact'.
+
+    Returns:
+        List of TopologyContext, or None if no graph or no related modules.
+    """
+    if graph is None:
+        return None
+
+    selector_map = _get_selector_map()
+    selector_cls = selector_map.get(selector_name)
+    if selector_cls is None:
+        console.print(
+            f"[yellow]Warning:[/yellow] Unknown selector '{selector_name}', "
+            "falling back to 'direct'.",
+        )
+        from specweaver.graph.selectors import DirectNeighborSelector
+
+        selector_cls = DirectNeighborSelector
+
+    selector = selector_cls()
+    related = selector.select(graph, module_name)
+    if not related:
+        return None
+
+    contexts = graph.format_context_summary(module_name, related)
+    console.print(
+        f"[dim]Topology: {len(contexts)} related module(s) "
+        f"via {selector_name} selector.[/dim]",
+    )
+    return contexts
+
 @app.callback()
 def main(
     version: bool = typer.Option(
@@ -642,6 +707,11 @@ def draft(
         "-p",
         help="Path to the target project directory.",
     ),
+    selector: str = typer.Option(
+        "direct",
+        "--selector",
+        help="Topology selector: direct, nhop, constraint, impact.",
+    ),
 ) -> None:
     """Interactively draft a new component spec with LLM assistance."""
     try:
@@ -671,19 +741,18 @@ def draft(
 
     # Load topology context for the new component (best-effort)
     topo_graph = _load_topology(project_path)
+    topo_contexts = _select_topology_contexts(
+        topo_graph, name, selector_name=selector,
+    )
 
     console.print(
         f"\n[bold]Drafting spec for[/bold] [cyan]{name}[/cyan]\n"
         "[dim]Answer questions below. Press Enter to skip.[/dim]\n",
     )
 
-    result_path = asyncio.run(drafter.draft(name, specs_dir))
-
-    if topo_graph and topo_graph.nodes:
-        console.print(
-            f"[dim]Topology context available ({len(topo_graph.nodes)} modules) "
-            "— will be used in future prompt enhancements.[/dim]",
-        )
+    result_path = asyncio.run(
+        drafter.draft(name, specs_dir, topology_contexts=topo_contexts),
+    )
 
     console.print(f"\n[green]Spec drafted:[/green] {result_path}")
     console.print("[dim]Run 'sw check' to validate the drafted spec.[/dim]")
@@ -711,6 +780,11 @@ def review(
         "-s",
         help="Path to the source spec (required for code review).",
     ),
+    selector: str = typer.Option(
+        "nhop",
+        "--selector",
+        help="Topology selector: direct, nhop, constraint, impact.",
+    ),
 ) -> None:
     """Submit a spec or code file for LLM-based review.
 
@@ -737,21 +811,15 @@ def review(
 
     # Load topology context for the review target
     topo_graph = _load_topology(project_path)
-    if topo_graph:
-        module_name = target_path.stem.removesuffix("_spec")
-        from specweaver.graph.selectors import DirectNeighborSelector
-
-        related = DirectNeighborSelector().select(topo_graph, module_name)
-        if related:
-            contexts = topo_graph.format_context_summary(module_name, related)
-            console.print(
-                f"[dim]Topology: {len(contexts)} related modules loaded for review context.[/dim]",
-            )
+    module_name = target_path.stem.removesuffix("_spec")
+    topo_contexts = _select_topology_contexts(
+        topo_graph, module_name, selector_name=selector,
+    )
 
     console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
     console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
 
-    result = _execute_review(reviewer, target_path, spec)
+    result = _execute_review(reviewer, target_path, spec, topo_contexts)
     _display_review_result(result)
 
 
@@ -759,6 +827,7 @@ def _execute_review(
     reviewer: object,
     target_path: Path,
     spec: str | None,
+    topology_contexts: list | None = None,
 ) -> object:
     """Run the appropriate review (spec or code)."""
     if spec:
@@ -766,8 +835,14 @@ def _execute_review(
         if not spec_path.exists():
             console.print(f"[red]Error:[/red] Spec not found: {spec}")
             raise typer.Exit(code=1)
-        return asyncio.run(reviewer.review_code(target_path, spec_path))
-    return asyncio.run(reviewer.review_spec(target_path))
+        return asyncio.run(
+            reviewer.review_code(
+                target_path, spec_path, topology_contexts=topology_contexts,
+            ),
+        )
+    return asyncio.run(
+        reviewer.review_spec(target_path, topology_contexts=topology_contexts),
+    )
 
 
 def _display_review_result(result: object) -> None:
@@ -809,6 +884,11 @@ def implement(
         "-p",
         help="Path to the target project directory.",
     ),
+    selector: str = typer.Option(
+        "direct",
+        "--selector",
+        help="Topology selector: direct, nhop, constraint, impact.",
+    ),
 ) -> None:
     """Generate code + tests from a validated, reviewed spec.
 
@@ -836,16 +916,10 @@ def implement(
 
     # Load topology context for the implementation target
     topo_graph = _load_topology(project_path)
-    if topo_graph:
-        module_name = spec_path.stem.removesuffix("_spec")
-        from specweaver.graph.selectors import DirectNeighborSelector
-
-        related = DirectNeighborSelector().select(topo_graph, module_name)
-        if related:
-            contexts = topo_graph.format_context_summary(module_name, related)
-            console.print(
-                f"[dim]Topology: {len(contexts)} related modules loaded for implementation context.[/dim]",
-            )
+    module_name = spec_path.stem.removesuffix("_spec")
+    topo_contexts = _select_topology_contexts(
+        topo_graph, module_name, selector_name=selector,
+    )
 
     # Derive output paths from spec name
     # e.g., "greet_service_spec.md" -> "greet_service.py"
@@ -866,12 +940,20 @@ def implement(
 
     # Generate code
     console.print("[dim]Generating implementation code...[/dim]")
-    asyncio.run(generator.generate_code(spec_path, code_path))
+    asyncio.run(
+        generator.generate_code(
+            spec_path, code_path, topology_contexts=topo_contexts,
+        ),
+    )
     console.print(f"  [green]✓[/green] {code_path}")
 
     # Generate tests
     console.print("[dim]Generating test file...[/dim]")
-    asyncio.run(generator.generate_tests(spec_path, test_path))
+    asyncio.run(
+        generator.generate_tests(
+            spec_path, test_path, topology_contexts=topo_contexts,
+        ),
+    )
     console.print(f"  [green]✓[/green] {test_path}")
 
     console.print(
