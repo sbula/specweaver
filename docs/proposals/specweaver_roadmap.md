@@ -28,7 +28,7 @@
 - ✅ Validation config: `sw config set/get/list/reset`, `--strict`, `--set` CLI overrides
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
-**Phase 2 (Flow Engine)**: Steps 7–8b ✅ | Steps 9a–9b ✅ | Steps 9c–14 pending
+**Phase 2 (Flow Engine)**: Steps 7–8b ✅ | Steps 9a–9b ✅ | Step 9c ~70% | Steps 10–14 pending
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - Step 9: Token budgeting, PromptBuilder, topology context injection
@@ -38,7 +38,7 @@
 
 ## Phase 1: MVP — Prove the Concept
 
-> **Goal**: A runnable CLI that demonstrates the Core Loop end-to-end. Static validation works. LLM integration works (at least for one feature). You can `sw validate spec` a real spec and get real results.
+> **Goal**: A runnable CLI that demonstrates the Core Loop end-to-end. Static validation works. LLM integration works (at least for one feature). You can `sw check` a real spec and get real results.
 
 ### Step 1: Project Scaffold + CLI Shell
 
@@ -71,7 +71,7 @@
 
 ### Step 2: Validation Engine + First Spec Rules ✅ COMPLETED
 
-> **Goal**: `sw validate spec path/to/spec.md` runs rules and reports results. This is the highest-leverage MVP feature — it proves the core concept without LLM cost.
+> **Goal**: `sw check path/to/spec.md` runs rules and reports results. This is the highest-leverage MVP feature — it proves the core concept without LLM cost.
 
 - [x] `src/specweaver/validation/models.py` — Rule, RuleResult, Finding interfaces
 - [x] `src/specweaver/validation/runner.py` — runs all rules, collects results
@@ -179,7 +179,7 @@
 - [x] `src/specweaver/context/inferrer.py` — `ContextInferrer`
   - [x] Auto-generates `context.yaml` for dirs missing one (with `AUTO-GENERATED` header + warnings)
   - [x] Level inference from parent, graceful skip for empty dirs / existing files
-- [x] `src/specweaver/validation/topology.py` — `TopologyNode`, `OperationalMetadata`, `TopologyGraph`
+- [x] `src/specweaver/graph/topology.py` — `TopologyNode`, `OperationalMetadata`, `TopologyGraph`
   - [x] `TopologyGraph.from_project(root)` — scan for `context.yaml`, parse, build adjacency lists
   - [x] `consumers_of(module)` — direct reverse lookup
   - [x] `dependencies_of(module)` — transitive forward traversal
@@ -191,7 +191,7 @@
 - [x] Tests (76 total):
   - [x] `tests/unit/context/test_analyzers.py` — 26 tests (core + edge cases: syntax errors, `__pycache__`, multi-line docstrings)
   - [x] `tests/unit/context/test_inferrer.py` — 15 tests (core + edge cases: idempotency, level inference, no-docstring TODO)
-  - [x] `tests/unit/validation/test_topology.py` — 35 tests (core + edge cases: malformed YAML, self-reference, duplicate names, cyclic traversal)
+  - [x] `tests/unit/graph/test_topology.py` — 35 tests (core + edge cases: malformed YAML, self-reference, duplicate names, cyclic traversal)
 - [x] Test restructure: `tests/unit/` reorganized to mirror `src/specweaver/` packages (7 subdirs + rules/spec/ + rules/code/)
 
 **Estimated effort**: 1 session. ✅ Completed.
@@ -344,22 +344,22 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 - [x] Tests: prompt assembly, truncation, tag structure, language detection, priority ordering, edge cases (+49 tests, total 1193)
 
 #### 9c: Topology Context Injection + Context Selectors
-- [ ] `src/specweaver/context/selectors.py` — **Strategy pattern** for context selection
-  - [ ] `ContextSelector` ABC — `select(graph, target) -> set[str]`
-  - [ ] `DirectNeighborSelector` — direct consumers + deps only (for `sw draft`)
-  - [ ] `NHopConstraintSelector(n_hops=1)` — N-hop UNION constraint-sharing modules (default for `sw review`, `sw implement`)
-  - [ ] `ConstraintOnlySelector` — constraint violations only (for `sw check --strict`)
-  - [ ] Placeholder: `ImpactWeightedSelector` stub (Phase 4)
-- [ ] `topology.py` — new methods: `neighbors_within(module, depth)`, `modules_sharing_constraints(module)`, `format_context_summary(modules)`
-- [ ] `prompt_builder.py` enhancements _(inspired by Aider)_
+- [x] `src/specweaver/graph/selectors.py` — **Strategy pattern** for context selection
+  - [x] `ContextSelector` ABC — `select(graph, target) -> set[str]`
+  - [x] `DirectNeighborSelector` — direct consumers + deps only (for `sw draft`)
+  - [x] `NHopConstraintSelector(depth=2)` — N-hop UNION constraint-sharing modules (default for `sw review`, `sw implement`)
+  - [x] `ConstraintOnlySelector` — constraint violations only (for `sw check --strict`)
+  - [x] `ImpactWeightedSelector` — 2-hop neighbours + transitive impact set (stub, falls back to union)
+- [x] `graph/topology.py` — new methods: `neighbors_within(module, depth)`, `modules_sharing_constraints(module)`, `format_context_summary(module, related)`
+- [x] `prompt_builder.py` — `.add_reminder(text)` — re-state output format rules at bottom of prompt
+- [ ] `prompt_builder.py` enhancements _(remaining)_
   - [ ] `add_file(..., role="reference"|"target")` — trust signals in `<file>` tags (ref files marked "read-only, do not modify")
-  - [ ] `.add_reminder(text)` — re-state output format rules at bottom of prompt (mitigates "lost in the middle" effect)
   - [ ] Dynamic budget scaling: allocate surplus budget to context when main content is small
 - [ ] `cli.py` — wire topology + selectors into `draft`, `review`, `implement`
   - [ ] Load `TopologyGraph.from_project()` if active project has `context.yaml`
   - [ ] Command selects appropriate `ContextSelector`
   - [ ] Graceful fallback: no `context.yaml` → proceed without topology (no error)
-- [ ] Tests: each selector on diamond/chain/isolated graphs, empty graph edge case, format_context_summary, trust signals, reminder tag
+- [x] Tests: each selector on diamond/chain/isolated graphs, empty graph edge case, ABC enforcement (20 tests in `tests/unit/graph/test_selectors.py`)
 - [ ] **Runnable**: `sw review spec.md` shows topology context + token estimate
 
 **Depends on**: Step 7 (Topology Graph) for 9c only. 9a and 9b are independent.
@@ -550,7 +550,7 @@ Order will be based on value and dependencies. Likely sequence:
 > **Goal**: SpecWeaver is used on a real project that isn't SpecWeaver itself.
 
 - [ ] Identify a target project (e.g., the automatic trading system — 20 microservices, multi-tenant, multi-strategy)
-- [ ] Run the full workflow: `sw init` → `sw draft` → `sw validate spec` → `sw implement` → `sw validate code` → `sw review code`
+- [ ] Run the full workflow: `sw init` → `sw draft` → `sw check` → `sw implement` → `sw check --level code` → `sw review code`
 - [ ] Document the experience: what worked, what didn't, what's missing
 - [ ] **Milestone**: SpecWeaver is **useful** on real-world projects.
 
@@ -578,10 +578,10 @@ Phase 6: External             ████████                         (
 
 **MVP is PROVEN when you can:**
 1. ✅ `sw init my-app --path .` registers and scaffolds the project
-2. ✅ `sw validate spec some_spec.md` reports PASS/FAIL with findings
+2. ✅ `sw check some_spec.md` reports PASS/FAIL with findings
 3. ✅ `sw draft greet_service` produces a real spec via HITL interaction
 4. ✅ `sw implement greet_service_spec.md` generates code + tests
-5. ✅ `sw validate code greet_service.py` checks syntax, tests, coverage
+5. ✅ `sw check --level code greet_service.py` checks syntax, tests, coverage
 6. ✅ `sw review code greet_service.py` provides LLM semantic judgment
 
 **Product is USEFUL when additionally:**
