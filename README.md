@@ -15,7 +15,8 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with findings
 - **Code generation** — Generate implementation + test files from a validated spec
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
-- **Role-based git access** — LLM agents get MCP-like interfaces restricted to their role (implementer, reviewer, debugger, drafter)
+- **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
+- **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
 
 ## Quickstart
 
@@ -143,28 +144,91 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 ├── src/specweaver/
 │   ├── cli.py                  # Typer CLI (sw command)
 │   ├── config/                 # SQLite database, settings, migrations
-│   ├── context/                # Context providers (HITL, inferrer)
+│   ├── context/                # Context providers (HITL, inferrer, analyzers)
 │   ├── drafting/               # Interactive spec drafter
+│   ├── graph/                  # TopologyGraph, dependency selectors
 │   ├── implementation/         # Code generator
 │   ├── llm/                    # Gemini adapter, models, errors
 │   ├── loom/                   # Dev environment interaction layer
 │   │   ├── atoms/              # Engine-level building blocks
+│   │   │   ├── filesystem/     # Filesystem atom (engine-level)
 │   │   │   └── git/            # Git atom (checkpoint, integrate, publish)
 │   │   ├── commons/            # Shared infrastructure (executors)
+│   │   │   ├── filesystem/     # FileExecutor
 │   │   │   └── git/            # GitExecutor, EngineGitExecutor
 │   │   └── tools/              # Agent-facing tools
+│   │       ├── filesystem/     # Filesystem tool (grants, roles, intents)
 │   │       └── git/            # Git tool (intents, interfaces, roles)
 │   ├── project/                # Scaffold, discovery
 │   ├── review/                 # AI reviewer
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1193 tests (unit, integration, E2E)
+├── tests/                      # 1312 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
 
+## Context & Topology
+
+Every module in a SpecWeaver project can have a `context.yaml` boundary manifest — a structured file that declares the module's identity, dependencies, and architectural constraints.
+
+```yaml
+# src/billing/context.yaml
+name: billing
+level: module
+purpose: Calculate invoice totals and apply discounts.
+archetype: pure-logic
+consumes: [pricing, customers]
+constraints: [no-direct-db, stateless]
+```
+
+**TopologyGraph** builds a project-wide dependency graph from all `context.yaml` files:
+
+```python
+from specweaver.graph.topology import TopologyGraph
+
+graph = TopologyGraph.from_project(project_path, auto_infer=True)
+graph.dependencies_of("billing")     # → {"pricing", "customers"}
+graph.impact_of("pricing")           # → {"billing"} (who would break)
+graph.operational_warnings("billing") # → latency SLA mismatches
+```
+
+- **Auto-infer** (`sw scan`): generates `context.yaml` for Python packages that lack one, using docstrings, imports, and heuristics
+- **Operational warnings**: detects SLA mismatches (e.g., a 50ms-latency module depending on a 500ms dependency)
+- **Constraint sharing**: finds modules with overlapping constraints for cross-cutting concern analysis
+
+See [context_yaml_spec.md](docs/architecture/context_yaml_spec.md) for the full specification.
+
 ## Agent Tools
 
 SpecWeaver provides role-restricted tools for LLM agents, inspired by the [flowManager](https://github.com/sbula/flowManager) atoms & tools architecture.
+
+### FileSystemTool
+
+Grant-based file access for agents. Each agent receives a set of `FolderGrant` objects that define which directories it can read, write, or execute — with path traversal prevention built in.
+
+```python
+from specweaver.loom.tools.filesystem.tool import FileSystemTool, FolderGrant, AccessMode
+
+grants = [FolderGrant("src/billing", AccessMode.WRITE, recursive=True)]
+tool = FileSystemTool(executor=executor, role="implementer", grants=grants)
+
+tool.read_file("src/billing/calc.py")           # ✅ within grant
+tool.create_file("src/billing/utils.py", code)  # ✅ write access
+tool.read_file("src/auth/secrets.py")           # ❌ outside grant
+tool.read_file("src/billing/../../etc/passwd")  # ❌ path traversal blocked
+```
+
+| Intent | Description |
+|---|---|
+| `read_file` | Read file contents (with line range support) |
+| `create_file` | Create a new file |
+| `edit_file` | Replace a specific section of a file |
+| `delete_file` | Remove a file |
+| `list_directory` | List directory contents |
+| `search_content` | Regex search across files |
+| `find_placement` | Suggest where to place new code (uses `context.yaml`) |
+
+**Security:** All paths are normalized via `posixpath.normpath`, absolute paths are rejected, and `..` traversal beyond grant boundaries returns an error.
 
 ### GitTool
 
