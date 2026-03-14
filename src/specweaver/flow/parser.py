@@ -15,8 +15,8 @@ from __future__ import annotations
 import importlib.resources
 from typing import TYPE_CHECKING
 
-from ruamel.yaml import YAML
 from pydantic import ValidationError
+from ruamel.yaml import YAML
 
 from specweaver.flow.models import PipelineDefinition
 
@@ -101,8 +101,5 @@ def _resolve_path(path: Path) -> Path:
     except (FileNotFoundError, TypeError, ModuleNotFoundError):
         pass
 
-    msg = (
-        f"Pipeline not found: '{path}'. "
-        f"Checked: {path}, {with_suffix}, bundled templates."
-    )
+    msg = f"Pipeline not found: '{path}'. Checked: {path}, {with_suffix}, bundled templates."
     raise FileNotFoundError(msg)

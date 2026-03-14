@@ -19,7 +19,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -183,12 +182,11 @@ class PipelineDefinition(BaseModel):
             return errors
 
         # Duplicate names
-        names = [s.name for s in self.steps]
         seen: set[str] = set()
-        for name in names:
-            if name in seen:
-                errors.append(f"Duplicate step name: '{name}'")
-            seen.add(name)
+        for step in self.steps:
+            if step.name in seen:
+                errors.append(f"Duplicate step name: '{step.name}'")
+            seen.add(step.name)
 
         # Build name→index map for loop_target validation
         name_to_index = {s.name: i for i, s in enumerate(self.steps)}
@@ -201,21 +199,39 @@ class PipelineDefinition(BaseModel):
                     f"{step.action}+{step.target}"
                 )
 
-            # Gate validation
+            # Gate loop_back validation
             if step.gate is not None and step.gate.on_fail == OnFailAction.LOOP_BACK:
-                if step.gate.loop_target is None:
-                    errors.append(
-                        f"Step '{step.name}' has on_fail=loop_back but no loop_target"
-                    )
-                elif step.gate.loop_target not in name_to_index:
-                    errors.append(
-                        f"Step '{step.name}' has loop_target='{step.gate.loop_target}' "
-                        f"which does not exist"
-                    )
-                elif name_to_index[step.gate.loop_target] > i:
-                    errors.append(
-                        f"Step '{step.name}' has a forward loop to "
-                        f"'{step.gate.loop_target}' (loops must go backward)"
-                    )
+                errors.extend(
+                    _validate_loop_back(step.name, step.gate, name_to_index, i)
+                )
 
         return errors
+
+
+def _validate_loop_back(
+    step_name: str,
+    gate: GateDefinition,
+    name_to_index: dict[str, int],
+    current_index: int,
+) -> list[str]:
+    """Validate a loop_back gate's target reference.
+
+    Returns:
+        List of error messages (empty if valid).
+    """
+    if gate.loop_target is None:
+        return [f"Step '{step_name}' has on_fail=loop_back but no loop_target"]
+
+    if gate.loop_target not in name_to_index:
+        return [
+            f"Step '{step_name}' has loop_target='{gate.loop_target}' "
+            f"which does not exist"
+        ]
+
+    if name_to_index[gate.loop_target] > current_index:
+        return [
+            f"Step '{step_name}' has a forward loop to "
+            f"'{gate.loop_target}' (loops must go backward)"
+        ]
+
+    return []

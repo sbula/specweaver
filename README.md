@@ -14,6 +14,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Static validation** — 19 built-in rules (11 spec + 8 code) catch issues before review
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with findings
 - **Code generation** — Generate implementation + test files from a validated spec
+- **Pipeline definitions** — YAML-defined workflows with configurable gates, retries, and feedback loops
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
 - **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
@@ -146,6 +147,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── config/                 # SQLite database, settings, migrations
 │   ├── context/                # Context providers (HITL, inferrer, analyzers)
 │   ├── drafting/               # Interactive spec drafter
+│   ├── flow/                   # Pipeline models & parser (Step 10)
 │   ├── graph/                  # TopologyGraph, dependency selectors
 │   ├── implementation/         # Code generator
 │   ├── llm/                    # Gemini adapter, models, errors
@@ -159,10 +161,11 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   │   └── tools/              # Agent-facing tools
 │   │       ├── filesystem/     # Filesystem tool (grants, roles, intents)
 │   │       └── git/            # Git tool (intents, interfaces, roles)
+│   ├── pipelines/              # Bundled pipeline templates (YAML)
 │   ├── project/                # Scaffold, discovery
 │   ├── review/                 # AI reviewer
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1312 tests (unit, integration, E2E)
+├── tests/                      # 1394 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

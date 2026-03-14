@@ -13,12 +13,10 @@ import pytest
 from specweaver.flow.models import (
     GateCondition,
     OnFailAction,
-    PipelineDefinition,
     StepAction,
     StepTarget,
 )
-from specweaver.flow.parser import load_pipeline, list_bundled_pipelines
-
+from specweaver.flow.parser import list_bundled_pipelines, load_pipeline
 
 # ---------------------------------------------------------------------------
 # load_pipeline — from file path
@@ -30,13 +28,15 @@ class TestLoadPipeline:
 
     def test_load_minimal_yaml(self, tmp_path: Path) -> None:
         yaml_file = tmp_path / "simple.yaml"
-        yaml_file.write_text(dedent("""\
+        yaml_file.write_text(
+            dedent("""\
             name: simple
             steps:
               - name: check_spec
                 action: validate
                 target: spec
-        """))
+        """)
+        )
         p = load_pipeline(yaml_file)
         assert p.name == "simple"
         assert len(p.steps) == 1
@@ -45,7 +45,8 @@ class TestLoadPipeline:
 
     def test_load_with_gates(self, tmp_path: Path) -> None:
         yaml_file = tmp_path / "gated.yaml"
-        yaml_file.write_text(dedent("""\
+        yaml_file.write_text(
+            dedent("""\
             name: gated
             description: "Pipeline with gates"
             version: "2.0"
@@ -66,7 +67,8 @@ class TestLoadPipeline:
                   on_fail: loop_back
                   loop_target: check_spec
                   max_retries: 5
-        """))
+        """)
+        )
         p = load_pipeline(yaml_file)
         assert p.name == "gated"
         assert p.description == "Pipeline with gates"
@@ -82,7 +84,8 @@ class TestLoadPipeline:
 
     def test_load_with_params(self, tmp_path: Path) -> None:
         yaml_file = tmp_path / "params.yaml"
-        yaml_file.write_text(dedent("""\
+        yaml_file.write_text(
+            dedent("""\
             name: params_test
             steps:
               - name: strict_check
@@ -91,7 +94,8 @@ class TestLoadPipeline:
                 params:
                   strict: true
                   include_llm: false
-        """))
+        """)
+        )
         p = load_pipeline(yaml_file)
         assert p.steps[0].params["strict"] is True
         assert p.steps[0].params["include_llm"] is False
@@ -108,36 +112,42 @@ class TestLoadPipeline:
 
     def test_load_missing_required_field(self, tmp_path: Path) -> None:
         yaml_file = tmp_path / "no_name.yaml"
-        yaml_file.write_text(dedent("""\
+        yaml_file.write_text(
+            dedent("""\
             steps:
               - name: s1
                 action: validate
                 target: spec
-        """))
+        """)
+        )
         with pytest.raises(ValueError):
             load_pipeline(yaml_file)
 
     def test_load_invalid_action(self, tmp_path: Path) -> None:
         yaml_file = tmp_path / "bad_action.yaml"
-        yaml_file.write_text(dedent("""\
+        yaml_file.write_text(
+            dedent("""\
             name: bad
             steps:
               - name: s1
                 action: explode
                 target: spec
-        """))
+        """)
+        )
         with pytest.raises(ValueError):
             load_pipeline(yaml_file)
 
     def test_load_invalid_target(self, tmp_path: Path) -> None:
         yaml_file = tmp_path / "bad_target.yaml"
-        yaml_file.write_text(dedent("""\
+        yaml_file.write_text(
+            dedent("""\
             name: bad
             steps:
               - name: s1
                 action: validate
                 target: database
-        """))
+        """)
+        )
         with pytest.raises(ValueError):
             load_pipeline(yaml_file)
 
@@ -156,11 +166,11 @@ class TestBundledTemplates:
         assert "validate_only" in names
 
     def test_load_new_feature_template(self) -> None:
-        names = list_bundled_pipelines()
-        # Find the path for new_feature
         p = load_pipeline(Path("new_feature"))
         assert p.name == "new_feature"
-        assert len(p.steps) >= 6  # at least: draft, validate, review, gen code, gen tests, validate code
+        assert (
+            len(p.steps) >= 6
+        )  # at least: draft, validate, review, gen code, gen tests, validate code
 
         # Check step actions cover the core loop
         actions = [(s.action, s.target) for s in p.steps]

@@ -19,7 +19,6 @@ from specweaver.flow.models import (
     StepTarget,
 )
 
-
 # ---------------------------------------------------------------------------
 # StepAction enum
 # ---------------------------------------------------------------------------
@@ -78,9 +77,7 @@ class TestValidStepCombinations:
             (StepAction.GENERATE, StepTarget.TESTS),
         ],
     )
-    def test_valid_combination(
-        self, action: StepAction, target: StepTarget
-    ) -> None:
+    def test_valid_combination(self, action: StepAction, target: StepTarget) -> None:
         assert (action, target) in VALID_STEP_COMBINATIONS
 
     @pytest.mark.parametrize(
@@ -93,9 +90,7 @@ class TestValidStepCombinations:
             (StepAction.VALIDATE, StepTarget.TESTS),
         ],
     )
-    def test_invalid_combination(
-        self, action: StepAction, target: StepTarget
-    ) -> None:
+    def test_invalid_combination(self, action: StepAction, target: StepTarget) -> None:
         assert (action, target) not in VALID_STEP_COMBINATIONS
 
 

@@ -178,20 +178,20 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 > **Goal**: Define what a pipeline IS — YAML schema, step model (action + target), gate definitions, parser. No execution yet, just the data model and parsing.
 
-- [ ] `src/specweaver/flow/models.py` — pipeline data model (blueprint only, no runtime state)
-  - [ ] `StepAction` enum — draft, validate, review, generate, run_tests
-  - [ ] `StepTarget` enum — spec, code, tests (future: ui)
-  - [ ] `VALID_STEP_COMBINATIONS` — allowed action × target pairs
-  - [ ] `PipelineStep` — name, action, target, params (free-form dict), gate, description
-  - [ ] `GateDefinition` — gate type (auto, hitl), condition (all_passed/accepted/completed), on_fail (abort/retry/loop_back/continue), loop_target, max_retries
-  - [ ] `PipelineDefinition` — name, description, version, steps list, `from_yaml()`, `validate_flow()`
-- [ ] `src/specweaver/flow/parser.py` — `load_pipeline(path)` → `PipelineDefinition`
-- [ ] Bundled pipeline templates in `src/specweaver/pipelines/`:
-  - [ ] `new_feature.yaml` — draft spec → validate spec → review spec → generate code → generate tests → run tests → validate code → review code
-  - [ ] `validate_only.yaml` — validate spec only (no LLM)
-- [ ] Parse-time validation: duplicate step names, invalid action+target combos, bad loop_target refs, forward loops
-- [ ] Tests: model construction, enums, validation, parser, template loading (~30-40 tests)
-- [ ] **Runnable**: `PipelineDefinition.from_yaml("new_feature.yaml")` returns a valid model
+- [x] `src/specweaver/flow/models.py` — pipeline data model (blueprint only, no runtime state)
+  - [x] `StepAction` enum — draft, validate, review, generate
+  - [x] `StepTarget` enum — spec, code, tests (future: ui)
+  - [x] `VALID_STEP_COMBINATIONS` — 7 allowed action × target pairs
+  - [x] `PipelineStep` — name, action, target, params (free-form dict), gate, description
+  - [x] `GateDefinition` — gate type (auto, hitl), condition (all_passed/accepted/completed), on_fail (abort/retry/loop_back/continue), loop_target, max_retries
+  - [x] `PipelineDefinition` — name, description, version, steps list, `get_step()`, `validate_flow()`
+- [x] `src/specweaver/flow/parser.py` — `load_pipeline(path)` → `PipelineDefinition`, `list_bundled_pipelines()`
+- [x] Bundled pipeline templates in `src/specweaver/pipelines/`:
+  - [x] `new_feature.yaml` — draft spec → validate spec → review spec → generate code → generate tests → validate code → review code
+  - [x] `validate_only.yaml` — validate spec only (no LLM)
+- [x] Parse-time validation: duplicate step names, invalid action+target combos, bad loop_target refs, forward loops
+- [x] Tests: 54 tests — model construction, enums, validation, parser, template loading
+- [x] **Runnable**: `load_pipeline(Path("new_feature"))` returns a valid model
 
 > [!NOTE]
 > **Pipeline storage**: Step 10 loads pipelines from file paths only. Per-project pipeline storage (SQLite `pipelines` table, CRUD via CLI) is deferred. The model is storage-agnostic — the caller resolves which file to load.
