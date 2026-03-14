@@ -29,7 +29,7 @@ def py_dir(tmp_path: Path) -> Path:
     (pkg / "__init__.py").write_text('"""Price feed adapter for Binance WebSocket."""\n')
     (pkg / "client.py").write_text(
         'from specweaver.config.settings import load_settings\n'
-        'from specweaver.llm.gemini_adapter import GeminiAdapter\n'
+        'from specweaver.llm.adapters.gemini import GeminiAdapter\n'
         'import requests\n'
         '\n'
         'class PriceFeedClient:\n'
@@ -162,7 +162,7 @@ class TestPythonAnalyzerImports:
     def test_extracts_imports(self, py_dir: Path) -> None:
         imports = PythonAnalyzer().extract_imports(py_dir)
         assert "specweaver.config.settings" in imports
-        assert "specweaver.llm.gemini_adapter" in imports
+        assert "specweaver.llm.adapters.gemini" in imports
         assert "requests" in imports
 
     def test_no_duplicates(self, py_dir: Path) -> None:

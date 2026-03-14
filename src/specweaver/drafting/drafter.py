@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.context.provider import ContextProvider
-    from specweaver.llm.adapter import LLMAdapter
+    from specweaver.llm.adapters.base import LLMAdapter
 
 # The 5 sections of a component spec and their guiding questions
 SPEC_SECTIONS: list[dict[str, str]] = [

@@ -14,7 +14,7 @@ optionally auto-infer one using ContextInferrer.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path  # noqa: TC003 — used at runtime in from_project() and dataclass fields
 
 from ruamel.yaml import YAML
 
@@ -121,7 +121,7 @@ class TopologyGraph:
         for ctx_file in sorted(project_root.rglob("context.yaml")):
             try:
                 data = yaml.load(ctx_file)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 warnings.append(f"Failed to parse {ctx_file}: {exc}")
                 continue
 

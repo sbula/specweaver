@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from google import genai
 from google.genai import types
 
-from specweaver.llm.adapter import LLMAdapter
+from specweaver.llm.adapters.base import LLMAdapter
 from specweaver.llm.errors import (
     AuthenticationError,
     ContentFilterError,

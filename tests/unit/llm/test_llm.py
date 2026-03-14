@@ -17,7 +17,7 @@ from specweaver.llm.errors import (
     ModelNotFoundError,
     RateLimitError,
 )
-from specweaver.llm.gemini_adapter import GeminiAdapter, _messages_to_gemini
+from specweaver.llm.adapters.gemini import GeminiAdapter, _messages_to_gemini
 from specweaver.llm.models import (
     GenerationConfig,
     LLMResponse,

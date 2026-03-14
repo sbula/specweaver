@@ -5,17 +5,14 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 
 import pytest
 from ruamel.yaml import YAML
 
-from specweaver.validation.topology import (
-    OperationalMetadata,
+from specweaver.graph.topology import (
     TopologyGraph,
-    TopologyNode,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

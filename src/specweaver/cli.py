@@ -144,7 +144,7 @@ def _require_llm_adapter(project_path: Path, *, llm_role: str = "draft") -> tupl
     Returns (settings, adapter, gen_config) or raises typer.Exit.
     """
     from specweaver.config.settings import load_settings_for_active
-    from specweaver.llm.gemini_adapter import GeminiAdapter
+    from specweaver.llm.adapters.gemini import GeminiAdapter
     from specweaver.llm.models import GenerationConfig
 
     db = get_db()

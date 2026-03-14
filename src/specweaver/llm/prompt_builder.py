@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.llm.adapter import LLMAdapter
+    from specweaver.llm.adapters.base import LLMAdapter
     from specweaver.llm.models import TokenBudget
 
 # ---------------------------------------------------------------------------

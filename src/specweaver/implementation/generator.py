@@ -17,7 +17,7 @@ from specweaver.llm.models import GenerationConfig, Message, Role
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.llm.adapter import LLMAdapter
+    from specweaver.llm.adapters.base import LLMAdapter
 
 # Instruction constants — extracted for reuse and testability
 CODE_GEN_INSTRUCTIONS = """\
