@@ -181,6 +181,26 @@ class GeminiAdapter(LLMAdapter):
             finish_reason=finish_reason,
         )
 
+    async def count_tokens(
+        self,
+        text: str,
+        model: str,
+    ) -> int:
+        """Count tokens using the Gemini API's native tokenizer.
+
+        This is a free API call — it doesn't consume generation quota.
+        """
+        client = self._get_client()
+        try:
+            response = await client.aio.models.count_tokens(
+                model=model,
+                contents=text,
+            )
+            return response.total_tokens  # type: ignore[return-value]
+        except Exception as exc:
+            self._handle_error(exc)
+            return self.estimate_tokens(text)  # pragma: no cover
+
     def _handle_error(self, exc: Exception) -> LLMResponse:
         """Convert Gemini SDK exceptions to SpecWeaver LLM errors."""
         exc_str = str(exc).lower()

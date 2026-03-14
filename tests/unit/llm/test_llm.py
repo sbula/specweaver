@@ -413,3 +413,131 @@ class TestGeminiAdapterBehavioral:
         assert system is None
         assert contents == []
 
+
+# ---------------------------------------------------------------------------
+# TokenBudget tests
+# ---------------------------------------------------------------------------
+
+
+class TestTokenBudget:
+    """Test TokenBudget lifecycle tracking."""
+
+    def test_defaults(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget()
+        assert budget.limit == 128_000
+        assert budget.used == 0
+        assert budget.remaining == 128_000
+        assert budget.exceeded is False
+        assert budget.warning is False
+
+    def test_add_tokens(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=1000)
+        budget.add(300)
+        assert budget.used == 300
+        assert budget.remaining == 700
+
+    def test_exceeded(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=100)
+        budget.add(150)
+        assert budget.exceeded is True
+        assert budget.remaining == 0
+
+    def test_warning_at_80_pct(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=1000)
+        budget.add(800)
+        assert budget.warning is False  # exactly 80% is not > 80%
+        budget.add(1)
+        assert budget.warning is True
+
+    def test_usage_pct(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=200)
+        budget.add(50)
+        assert budget.usage_pct == pytest.approx(25.0)
+
+    def test_summary_format(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=128_000)
+        budget.add(12_400)
+        summary = budget.summary()
+        assert "12,400" in summary
+        assert "128,000" in summary
+        assert "9.7%" in summary
+
+    def test_custom_limit(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=1_048_576)
+        assert budget.limit == 1_048_576
+        assert budget.remaining == 1_048_576
+
+
+# ---------------------------------------------------------------------------
+# estimate_tokens / count_tokens tests
+# ---------------------------------------------------------------------------
+
+
+class TestTokenCounting:
+    """Test LLMAdapter.estimate_tokens and GeminiAdapter.count_tokens."""
+
+    def test_estimate_tokens_heuristic(self) -> None:
+        """Default estimate_tokens uses len // 4."""
+        adapter = GeminiAdapter(api_key="test-key")
+        # 100 characters → ~25 tokens
+        text = "a" * 100
+        assert adapter.estimate_tokens(text) == 25
+
+    def test_estimate_tokens_empty(self) -> None:
+        adapter = GeminiAdapter(api_key="test-key")
+        assert adapter.estimate_tokens("") == 0
+
+    def test_estimate_tokens_short(self) -> None:
+        adapter = GeminiAdapter(api_key="test-key")
+        assert adapter.estimate_tokens("hi") == 0  # 2 // 4 = 0
+
+    @pytest.mark.asyncio
+    async def test_count_tokens_with_mock(self) -> None:
+        """count_tokens uses Gemini's native API."""
+        adapter = GeminiAdapter(api_key="fake-key")
+
+        mock_response = MagicMock()
+        mock_response.total_tokens = 42
+
+        mock_client = MagicMock()
+        mock_client.aio.models.count_tokens = AsyncMock(return_value=mock_response)
+        adapter._client = mock_client
+
+        result = await adapter.count_tokens("Hello, world!", "gemini-2.5-flash")
+        assert result == 42
+
+        # Verify correct API call
+        mock_client.aio.models.count_tokens.assert_called_once_with(
+            model="gemini-2.5-flash",
+            contents="Hello, world!",
+        )
+
+    @pytest.mark.asyncio
+    async def test_count_tokens_auth_error(self) -> None:
+        """count_tokens with 401 error raises AuthenticationError."""
+        adapter = GeminiAdapter(api_key="bad-key")
+
+        mock_client = MagicMock()
+        mock_client.aio.models.count_tokens = AsyncMock(
+            side_effect=Exception("401 Unauthorized: invalid API key"),
+        )
+        adapter._client = mock_client
+
+        with pytest.raises(AuthenticationError):
+            await adapter.count_tokens("test", "gemini-2.5-flash")
+
+

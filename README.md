@@ -78,6 +78,8 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw draft <name>` | Interactively draft a component spec |
 | `sw check <file> --level component` | Validate a spec against S01–S11 rules |
 | `sw check <file> --level code` | Validate code against C01–C08 rules |
+| `sw check --strict` | Treat warnings as failures (exit code 1) |
+| `sw check --set RULE.FIELD=VALUE` | One-off threshold override (e.g. `S08.fail_threshold=5`) |
 | `sw review <file>` | AI-powered spec or code review |
 | `sw implement <spec>` | Generate code + tests from a spec |
 
@@ -155,7 +157,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── project/                # Scaffold, discovery
 │   ├── review/                 # AI reviewer
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1109 tests (unit, integration, E2E)
+├── tests/                      # 1144 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

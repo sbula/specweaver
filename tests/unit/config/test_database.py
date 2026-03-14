@@ -65,13 +65,13 @@ class TestSchemaCreation:
             tables = {r[0] for r in rows}
         assert expected.issubset(tables)
 
-    def test_schema_version_is_one(self, db):
-        """Initial schema version is 1."""
+    def test_schema_version_is_latest(self, db):
+        """Schema version is 2 after v2 migration."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 1
+            assert row[0] == 2
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""
@@ -472,3 +472,76 @@ class TestEdgeCases:
         before = datetime.fromisoformat(proj_before["last_used_at"])
         after = datetime.fromisoformat(proj_after["last_used_at"])
         assert after >= before
+
+
+# ---------------------------------------------------------------------------
+# Schema v2 migration — context_limit
+# ---------------------------------------------------------------------------
+
+
+class TestSchemaV2Migration:
+    """Test the v1→v2 schema migration (context_limit column)."""
+
+    def test_context_limit_column_exists(self, db):
+        """context_limit column is present after migration."""
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT context_limit FROM llm_profiles WHERE name='review'"
+            ).fetchone()
+        assert row is not None
+
+    def test_context_limit_default_value(self, db):
+        """Default context_limit is 128000."""
+        with db.connect() as conn:
+            rows = conn.execute(
+                "SELECT context_limit FROM llm_profiles"
+            ).fetchall()
+        for row in rows:
+            assert row[0] == 128_000
+
+    def test_v1_to_v2_upgrade(self, db_path: Path):
+        """Simulate a v1 DB and verify v2 migration applies correctly."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import Database, _SCHEMA_V1
+
+        # Create a v1-only DB manually (without v2 migration)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) VALUES (1, '2026-01-01T00:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO llm_profiles "
+            "(name, is_global, model, temperature, max_output_tokens, response_format) "
+            "VALUES ('review', 1, 'gemini-2.5-flash', 0.3, 4096, 'text')"
+        )
+        conn.commit()
+        conn.close()
+
+        # Now open with Database — should apply v2 migration
+        db = Database(db_path)
+        with db.connect() as conn2:
+            row = conn2.execute(
+                "SELECT context_limit FROM llm_profiles WHERE name='review'"
+            ).fetchone()
+            version = conn2.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+
+        assert row[0] == 128_000  # default from ALTER TABLE
+        assert version[0] == 2
+
+    def test_idempotent_v2_migration(self, db_path: Path):
+        """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
+        from specweaver.config.database import Database
+
+        Database(db_path)
+        db2 = Database(db_path)  # should not raise
+        with db2.connect() as conn:
+            version = conn.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+        assert version[0] == 2
+

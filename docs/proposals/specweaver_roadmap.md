@@ -10,7 +10,7 @@
 
 ---
 
-## Current State (updated 2026-03-10)
+## Current State (updated 2026-03-14)
 
 **What exists:**
 - ✅ Repo: `sbula/specweaver` — fresh, clean
@@ -18,12 +18,21 @@
 - ✅ Decision log: Python, Typer CLI, Gemini API, deployment isolation
 - ✅ Project scaffold: `pyproject.toml`, CLI shell, `sw init`
 - ✅ Loom layer: Filesystem tools, atoms, and interfaces (**183 tests**, fully linted + type-checked)
-- ❌ Validation engine, LLM adapter, drafting, review, implementation — not started
+- ✅ Validation engine: 19 rules (S01-S11, C01-C08), configurable thresholds, per-project overrides
+- ✅ LLM adapter: Gemini API adapter with interface abstraction
+- ✅ Spec drafting: Interactive `sw draft` with HITL context
+- ✅ Spec/Code review: LLM-powered `sw review` with ACCEPTED/DENIED verdicts
+- ✅ Code generation: `sw implement` generates code + tests from spec
+- ✅ Topology graph: In-memory dep graph, impact analysis, cycle detection, auto-infer
+- ✅ Project registry: SQLite config store, multi-project, `sw use/projects/remove/update`
+- ✅ Validation config: `sw config set/get/list/reset`, `--strict`, `--set` CLI overrides
 
-**What we're building** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
-- A CLI tool (`sw`) that operates ON projects, not within them
-- Core loop: Draft → Validate Spec → Review Spec → Implement → Validate Code → Review Code
-- 7 features (F1–F7), ~25 Python files, ~2500–4000 LOC
+**Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
+**Phase 2 (Flow Engine)**: Steps 7–8b ✅ | Step 9a ✅ | Steps 9b–14 pending
+
+**What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
+- Step 9: Token budgeting, PromptBuilder, topology context injection
+- Steps 10–14: Flow engine (pipeline models, executor, audit, HITL gates)
 
 ---
 
@@ -274,7 +283,7 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 ---
 
-### Step 8b: Per-Rule Validation Configuration ⏳ IN PROGRESS
+### Step 8b: Per-Rule Validation Configuration ✅ DONE
 
 > **Goal**: Configurable thresholds per validation rule, stored in the project config DB. Different projects can tune warning/failure thresholds and enable/disable rules without code changes.
 
@@ -287,33 +296,71 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
   - [x] S01 (`warn_conjunctions`, `fail_conjunctions`, `max_h2`), S03, S04, S05, S08, S11 (spec rules), S07 (`warn_score`, `fail_score`)
   - [x] C04 (coverage — already configurable, verified)
 - [x] CLI: `sw config set/get/list/reset` commands
-- [ ] Wire `sw check` to load overrides from DB for the active project
-- [ ] Add `--strict` flag to `sw check`
-- [x] Tests: 76 tests covering override application, disabled rules, default behavior, edge cases (boundary values, upsert semantics, inverted thresholds, zero thresholds, multi-disable, run_all+threshold interaction)
-- [x] **1109 tests passing, 0 regressions, 0 new lint issues**
+- [x] Wire `sw check` to load overrides from DB for the active project
+- [x] Add `--strict` flag to `sw check` (WARNs → exit code 1)
+- [x] Add `--set` CLI override for one-off threshold changes (cascade: defaults → DB → CLI)
+- [x] Tests: 88 tests covering override application, disabled rules, edge cases, DB wiring, CLI flags
+- [x] **1128 tests passing, 0 regressions, 0 new lint issues**
 
 **Depends on**: Step 8a (Config Store). ✅
 
-**Estimated effort**: 1 session. ~80% done — remaining: wire `sw check`, `--strict` flag.
+**Completed**: March 2026.
 
 ---
 
 ### Step 9: Context-Enriched Prompts
 
-> **Goal**: Draft and review agents receive topology context (consumers, constraints, operational metadata) so they ask better questions and catch cross-module issues.
+> **Goal**: All LLM-calling commands (`sw draft`, `sw review`, `sw implement`) use structured, token-aware, topology-enriched prompts via a shared `PromptBuilder`.
 
-- [ ] `src/specweaver/drafting/drafter.py` — accept optional `TopologyGraph`
-  - [ ] Build "System Context" block for LLM prompt (consumers, deps, constraints)
-- [ ] `src/specweaver/review/reviewer.py` — accept optional `TopologyGraph`
-  - [ ] Add "Impact Context" block to review prompt (affected modules, constraint checks)
-- [ ] `src/specweaver/cli.py` — load `TopologyGraph.from_project()` in `draft` and `review` commands
+**Design decisions** (brainstormed 2026-03-14):
+
+| # | Decision |
+|---|---|
+| 1 | `PromptBuilder` owns full prompt including instructions (commands pass instruction text) |
+| 2 | All 3 LLM commands use `PromptBuilder` (draft, review, implement) |
+| 3 | `context_limit` added to `llm_profiles` table (schema v2 migration) |
+| 4 | Hybrid truncation: priority-ordered + proportional redistribution. Instructions = priority 0 (never truncated) |
+| 5 | Strategy pattern for topology context selection — ABC + concrete selectors, extensible |
+| 6 | Store token counts per-file (quick win for analytics / status) |
+
+#### 9a: Token Budget Awareness _(inspired by PasteMax)_
+- [x] `llm/adapter.py` — add `count_tokens(text, model)` (abstract) + `estimate_tokens(text)` (default `len // 4`)
+- [x] `llm/gemini_adapter.py` — implement `count_tokens()` via native `client.models.count_tokens()`
+- [x] `llm/models.py` — add `TokenBudget` dataclass (used/limit/remaining, warn at >80%)
+- [x] Schema migration v1→v2: add `context_limit` column to `llm_profiles` (default 128000)
+- [ ] `sw review` / `sw draft` / `sw implement` — print token estimate before LLM call (9b/9c)
+- [x] Tests: token counting, estimate fallback, budget tracking, schema migration (+16 tests, total 1144)
+
+#### 9b: Structured Prompt Formatting _(inspired by PasteMax)_
+- [ ] `src/specweaver/llm/prompt_builder.py` — `PromptBuilder` class
+  - [ ] `.add_spec(path, priority=1)` / `.add_code(path, priority=2)` / `.add_context(text, label, priority=3)`
+  - [ ] `.add_instructions(text)` — priority 0, never truncated
+  - [ ] `.build() -> str` — assembles XML-tagged prompt (`<file_map>`, `<file_contents>`, `<system_context>`, `<user_instructions>`)
+  - [ ] Per-file language detection for syntax-highlighted code fencing
+  - [ ] Hybrid truncation: priority-ordered + proportional redistribution on underflow
+- [ ] Refactor `reviewer.py` — extract review criteria into instruction constants, use `PromptBuilder`
+- [ ] Refactor `drafter.py` — use `PromptBuilder` for LLM calls (keep Jinja2 for final file rendering)
+- [ ] Refactor `generator.py` — use `PromptBuilder` for implementation prompts
+- [ ] Tests: prompt assembly, truncation, tag structure, language detection, priority ordering
+
+#### 9c: Topology Context Injection + Context Selectors
+- [ ] `src/specweaver/context/selectors.py` — **Strategy pattern** for context selection
+  - [ ] `ContextSelector` ABC — `select(graph, target) -> set[str]`
+  - [ ] `DirectNeighborSelector` — direct consumers + deps only (for `sw draft`)
+  - [ ] `NHopConstraintSelector(n_hops=1)` — N-hop UNION constraint-sharing modules (default for `sw review`, `sw implement`)
+  - [ ] `ConstraintOnlySelector` — constraint violations only (for `sw check --strict`)
+  - [ ] Placeholder: `ImpactWeightedSelector` stub (Phase 4)
+- [ ] `topology.py` — new methods: `neighbors_within(module, depth)`, `modules_sharing_constraints(module)`, `format_context_summary(modules)`
+- [ ] `cli.py` — wire topology + selectors into `draft`, `review`, `implement`
+  - [ ] Load `TopologyGraph.from_project()` if active project has `context.yaml`
+  - [ ] Command selects appropriate `ContextSelector`
   - [ ] Graceful fallback: no `context.yaml` → proceed without topology (no error)
-- [ ] Tests: prompt content assertions, fallback behavior
-- [ ] **Runnable**: `sw draft my_module` shows topology context in LLM interaction
+- [ ] Tests: each selector on diamond/chain/isolated graphs, empty graph edge case, format_context_summary
+- [ ] **Runnable**: `sw review spec.md` shows topology context + token estimate
 
-**Depends on**: Step 7 (Topology Graph).
+**Depends on**: Step 7 (Topology Graph) for 9c only. 9a and 9b are independent.
 
-**Estimated effort**: 1 session.
+**Estimated effort**: 2.5 sessions (9a: 0.5, 9b: 1, 9c: 1).
 
 ---
 
@@ -433,11 +480,14 @@ Order will be based on value and dependencies. Likely sequence:
 |:---|:---|:---|:---|
 | **3.1** | Feature Spec layer (L2 decomposition) | `lifecycle_layers.md` | Enables multi-layer workflows |
 | **3.2** | Domain profiles for threshold calibration | `future_capabilities_reference.md` §19 | Quick win — just config |
-| **3.3** | Additional context providers (FileSearch, WebSearch) | `mvp_feature_definition.md` | Enhances drafting and review quality |
-| **3.4** | Multi-model LLM support (model routing per task) | `future_capabilities_reference.md` §9, §15 | Cross-model shadow review |
-| **3.5** | Spec-to-code traceability | `future_capabilities_reference.md` §17 | Bidirectional linking |
-| **3.6** | Automated spec decomposition | `future_capabilities_reference.md` §18 | Agent proposes, HITL approves |
-| **3.7** | Constitution enforcement | `constitution_template.md` | Project-wide constraint checking |
+| **3.3** | Custom rule paths (project-specific validators) | _(deferred from Step 8b)_ | `custom_rule_paths` table + dynamic loader; enables domain-specific rules (D01+) without core changes |
+| **3.4** | Additional context providers (FileSearch, WebSearch) | `mvp_feature_definition.md` | Enhances drafting and review quality |
+| **3.5** | Multi-model LLM support (dynamic routing) | `future_capabilities_reference.md` §9, §15 | Route prompts to best model per task by result/cost ratio (Gemini, Claude, Qwen, Mistral, OpenAI); interface already abstracted |
+| **3.6** | Spec-to-code traceability | `future_capabilities_reference.md` §17 | Bidirectional linking |
+| **3.7** | Automated spec decomposition | `future_capabilities_reference.md` §18 | Agent proposes, HITL approves |
+| **3.8** | Constitution enforcement | `constitution_template.md` | Project-wide constraint checking |
+| **3.9** | Smart scan exclusions (tiered) | _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore` |
+| **3.10** | File watcher (`sw watch`) | _(inspired by PasteMax)_ | Auto-re-validate specs on disk change; DX polish for iterative authoring |
 
 **Process for each feature**:
 1. Write an isolation proposal (what, inputs, outputs, interfaces, scope)

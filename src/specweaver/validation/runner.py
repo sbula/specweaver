@@ -18,7 +18,11 @@ if TYPE_CHECKING:
 
 # Mapping: rule_id → constructor kwarg names for threshold-bearing rules
 _THRESHOLD_PARAMS: dict[str, dict[str, str]] = {
-    "S01": {"warn_threshold": "warn_conjunctions", "fail_threshold": "fail_conjunctions"},
+    "S01": {
+        "warn_threshold": "warn_conjunctions",
+        "fail_threshold": "fail_conjunctions",
+        "extra:max_h2": "max_h2",
+    },
     "S03": {"warn_threshold": "warn_threshold", "fail_threshold": "fail_threshold"},
     "S04": {"warn_threshold": "warn_threshold", "fail_threshold": "fail_threshold"},
     "S05": {"warn_threshold": "warn_threshold", "fail_threshold": "fail_threshold"},
@@ -33,7 +37,12 @@ def _build_rule_kwargs(
     rule_id: str,
     settings: ValidationSettings | None,
 ) -> dict[str, float]:
-    """Build constructor kwargs for a rule based on settings overrides."""
+    """Build constructor kwargs for a rule based on settings overrides.
+
+    Handles three sources of overrides:
+    - ``warn_threshold`` / ``fail_threshold`` from the standard fields
+    - ``extra_params`` from ``RuleOverride.extra_params`` (e.g. ``max_h2``)
+    """
     if settings is None:
         return {}
 
@@ -48,6 +57,13 @@ def _build_rule_kwargs(
         kwargs[param_map["warn_threshold"]] = override.warn_threshold
     if override.fail_threshold is not None and "fail_threshold" in param_map:
         kwargs[param_map["fail_threshold"]] = override.fail_threshold
+
+    # Map extra_params via "extra:<key>" entries in _THRESHOLD_PARAMS
+    for map_key, constructor_arg in param_map.items():
+        if map_key.startswith("extra:"):
+            extra_key = map_key.removeprefix("extra:")
+            if extra_key in override.extra_params:
+                kwargs[constructor_arg] = override.extra_params[extra_key]
 
     return kwargs
 

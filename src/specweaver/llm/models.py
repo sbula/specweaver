@@ -59,3 +59,47 @@ class LLMResponse(BaseModel):
     model: str
     usage: TokenUsage = Field(default_factory=TokenUsage)
     finish_reason: str = "stop"  # "stop", "max_tokens", "error"
+
+
+class TokenBudget(BaseModel):
+    """Tracks token budget lifecycle for prompt assembly.
+
+    Use ``add()`` to record consumed tokens and check ``exceeded``
+    before sending to the LLM.
+    """
+
+    limit: int = Field(default=128_000, gt=0)
+    used: int = Field(default=0, ge=0)
+
+    @property
+    def remaining(self) -> int:
+        """Tokens still available within the budget."""
+        return max(0, self.limit - self.used)
+
+    @property
+    def exceeded(self) -> bool:
+        """True if used tokens exceed the budget limit."""
+        return self.used > self.limit
+
+    @property
+    def usage_pct(self) -> float:
+        """Budget usage as a percentage (0.0-100.0+)."""
+        if self.limit == 0:
+            return 100.0
+        return (self.used / self.limit) * 100
+
+    @property
+    def warning(self) -> bool:
+        """True if usage exceeds 80% of the budget."""
+        return self.usage_pct > 80.0
+
+    def add(self, tokens: int) -> None:
+        """Record consumed tokens."""
+        self.used += tokens
+
+    def summary(self) -> str:
+        """Human-readable budget summary for CLI display.
+
+        Example: ``12,400 / 128,000 (9.7%)``
+        """
+        return f"{self.used:,} / {self.limit:,} ({self.usage_pct:.1f}%)"

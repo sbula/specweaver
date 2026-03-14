@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -74,10 +75,14 @@ CREATE TABLE IF NOT EXISTS schema_version (
 """
 
 _DEFAULT_PROFILES = [
-    ("review", 1, "gemini-2.5-flash", 0.3, 4096, "text"),
-    ("draft", 1, "gemini-2.5-flash", 0.7, 4096, "text"),
-    ("search", 1, "gemini-2.5-flash", 0.1, 4096, "text"),
+    ("review", 1, "gemini-2.5-flash", 0.3, 4096, "text", 128_000),
+    ("draft", 1, "gemini-2.5-flash", 0.7, 4096, "text", 128_000),
+    ("search", 1, "gemini-2.5-flash", 0.1, 4096, "text", 128_000),
 ]
+
+_SCHEMA_V2 = """\
+ALTER TABLE llm_profiles ADD COLUMN context_limit INTEGER NOT NULL DEFAULT 128000;
+"""
 
 
 class Database:
@@ -106,7 +111,7 @@ class Database:
     # ------------------------------------------------------------------
 
     def _ensure_schema(self) -> None:
-        """Create tables and seed defaults if needed. Idempotent."""
+        """Create tables and apply migrations. Idempotent."""
         with self.connect() as conn:
             conn.executescript(_SCHEMA_V1)
 
@@ -120,6 +125,20 @@ class Database:
                     (1, _now_iso()),
                 )
 
+            # Apply v2 migration before seeding (profiles need context_limit)
+            current_version = conn.execute(
+                "SELECT MAX(version) FROM schema_version",
+            ).fetchone()[0] or 0
+
+            if current_version < 2:
+                with suppress(Exception):
+                    conn.executescript(_SCHEMA_V2)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (2, _now_iso()),
+                )
+
             # Seed default LLM profiles if empty
             profile_count = conn.execute(
                 "SELECT COUNT(*) FROM llm_profiles",
@@ -127,8 +146,9 @@ class Database:
             if profile_count == 0:
                 conn.executemany(
                     "INSERT INTO llm_profiles "
-                    "(name, is_global, model, temperature, max_output_tokens, response_format) "
-                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    "(name, is_global, model, temperature, "
+                    "max_output_tokens, response_format, context_limit) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
                     _DEFAULT_PROFILES,
                 )
 

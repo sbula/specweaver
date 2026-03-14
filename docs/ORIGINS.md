@@ -32,6 +32,16 @@ SpecWeaver's `context.yaml` boundary manifest builds on CCS's foundation:
 
 See [context_yaml_spec.md](architecture/context_yaml_spec.md) for the full specification.
 
+### PasteMax — Token Budgeting & Prompt Formatting
+
+[PasteMax](https://github.com/kleneway/pastemax) by **kleneway** is an open-source desktop tool for selecting repository files and preparing them as LLM context, with per-file token counting and model context limit awareness.
+
+Ideas adopted into SpecWeaver's roadmap (Step 9, Phase 3):
+- **Token budget awareness** (Step 9a) — estimating tokens before LLM calls using `tiktoken` with `len(text) // 4` fallback; warning when approaching model context limits
+- **Structured prompt formatting** (Step 9b) — XML-tagged prompt assembly (`<file_map>`, `<file_contents>`, `<user_instructions>`) with per-file language detection; `PromptBuilder` pattern
+- **Tiered file exclusion** (Phase 3.9) — 3-tier system: binary extensions, default patterns (`.git`, `__pycache__`), per-project overrides + `.specweaverignore`
+- **File watcher** (Phase 3.10) — auto-re-validate specs on disk change
+
 ### Technology Decisions
 
 | Component | Choice | Rationale |

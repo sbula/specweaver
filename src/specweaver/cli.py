@@ -33,6 +33,7 @@ from specweaver.project.discovery import resolve_project_path
 from specweaver.project.scaffold import scaffold_project
 
 if TYPE_CHECKING:
+    from specweaver.config.settings import ValidationSettings
     from specweaver.validation.models import RuleResult
 
 app = typer.Typer(
@@ -110,8 +111,13 @@ def _display_results(
                     console.print(f"    [dim]-> {f.suggestion}[/dim]")
 
 
-def _print_summary(results: list[RuleResult]) -> None:
-    """Print pass/fail summary and raise Exit(1) on failures."""
+def _print_summary(results: list[RuleResult], *, strict: bool = False) -> None:
+    """Print pass/fail summary and raise Exit(1) on failures.
+
+    Args:
+        results: Validation results to summarize.
+        strict: If True, WARNs also cause exit code 1.
+    """
     from specweaver.validation.models import Status
 
     fail_count = sum(1 for r in results if r.status == Status.FAIL)
@@ -126,6 +132,8 @@ def _print_summary(results: list[RuleResult]) -> None:
         console.print(
             f"\n[yellow]PASSED with warnings[/yellow]: {warn_count} warning(s)",
         )
+        if strict:
+            raise typer.Exit(code=1)
     else:
         console.print("\n[green]ALL PASSED[/green]")
 
@@ -445,6 +453,83 @@ def scan() -> None:
 # ---------------------------------------------------------------------------
 
 
+def _load_check_settings(
+    set_overrides: list[str] | None,
+) -> "ValidationSettings | None":
+    """Load ValidationSettings from DB + CLI --set overrides.
+
+    Cascade: code defaults → project DB overrides → --set CLI flags.
+    Returns None if no active project and no --set flags.
+    """
+    from specweaver.config.settings import RuleOverride, ValidationSettings
+
+    settings: ValidationSettings | None = None
+
+    # 1. Try loading from DB for the active project
+    db = get_db()
+    active = db.get_active_project()
+    if active:
+        try:
+            settings = db.load_validation_settings(active)
+        except ValueError:
+            pass  # project not found — proceed without DB overrides
+
+    # 2. Apply --set CLI overrides on top
+    if set_overrides:
+        if settings is None:
+            settings = ValidationSettings()
+
+        for item in set_overrides:
+            # Format: RULE.FIELD=VALUE  (e.g. S08.fail_threshold=5)
+            if "=" not in item or "." not in item.split("=", 1)[0]:
+                console.print(
+                    f"[red]Error:[/red] Invalid --set format: '{item}'. "
+                    "Expected RULE.FIELD=VALUE (e.g. S08.fail_threshold=5).",
+                )
+                raise typer.Exit(code=1)
+
+            key, value = item.split("=", 1)
+            rule_id, field = key.rsplit(".", 1)
+            rule_id = rule_id.upper()
+
+            # Get or create override for this rule
+            existing = settings.overrides.get(rule_id)
+            if existing is None:
+                existing = RuleOverride(rule_id=rule_id)
+                settings.overrides[rule_id] = existing
+
+            if field == "enabled":
+                settings.overrides[rule_id] = existing.model_copy(
+                    update={"enabled": value.lower() in ("true", "1", "yes")},
+                )
+            elif field in ("warn_threshold", "fail_threshold"):
+                try:
+                    settings.overrides[rule_id] = existing.model_copy(
+                        update={field: float(value)},
+                    )
+                except ValueError:
+                    console.print(
+                        f"[red]Error:[/red] Invalid threshold value: '{value}'. "
+                        "Must be a number.",
+                    )
+                    raise typer.Exit(code=1)
+            else:
+                # Route to extra_params (e.g. S01.max_h2=5)
+                try:
+                    new_extra = {**existing.extra_params, field: float(value)}
+                    settings.overrides[rule_id] = existing.model_copy(
+                        update={"extra_params": new_extra},
+                    )
+                except ValueError:
+                    console.print(
+                        f"[red]Error:[/red] Invalid value for '{field}': '{value}'. "
+                        "Must be a number.",
+                    )
+                    raise typer.Exit(code=1) from None
+
+    return settings
+
+
 @app.command()
 def check(
     target: str = typer.Argument(
@@ -462,12 +547,24 @@ def check(
         "-p",
         help="Path to the target project directory.",
     ),
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Treat warnings as failures (exit code 1).",
+    ),
+    set_overrides: list[str] | None = typer.Option(
+        None,
+        "--set",
+        help="One-off override: RULE.FIELD=VALUE (e.g. S08.fail_threshold=5).",
+    ),
 ) -> None:
     """Run validation rules against a spec or code file.
 
     Uses --level to determine which rule set to apply:
-    - component: Spec validation rules S01-S10
+    - component: Spec validation rules S01-S11
     - code: Code validation rules C01-C08
+
+    Override cascade: code defaults → project DB overrides → --set flags.
     """
     from specweaver.validation.runner import (
         get_code_rules,
@@ -480,18 +577,21 @@ def check(
         console.print(f"[red]Error:[/red] File not found: {target}")
         raise typer.Exit(code=1)
 
+    # Load settings: DB overrides for active project (if any)
+    settings = _load_check_settings(set_overrides)
+
     content = target_path.read_text(encoding="utf-8")
 
     if level == "component":
-        rules = get_spec_rules(include_llm=False)
+        rules = get_spec_rules(include_llm=False, settings=settings)
         results = run_rules(rules, content, target_path)
         _display_results(results, f"Spec Validation: {target_path.name}")
-        _print_summary(results)
+        _print_summary(results, strict=strict)
     elif level == "code":
-        rules = get_code_rules(include_subprocess=False)
+        rules = get_code_rules(include_subprocess=False, settings=settings)
         results = run_rules(rules, content, target_path)
         _display_results(results, f"Code Validation: {target_path.name}")
-        _print_summary(results)
+        _print_summary(results, strict=strict)
     else:
         console.print(
             f"[red]Error:[/red] Unknown level '{level}'. Use 'component' or 'code'.",

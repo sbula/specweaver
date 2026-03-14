@@ -85,3 +85,40 @@ class LLMAdapter(ABC):
             True if the adapter has valid credentials and can make requests.
         """
         ...
+
+    @abstractmethod
+    async def count_tokens(
+        self,
+        text: str,
+        model: str,
+    ) -> int:
+        """Count tokens using the provider's native tokenizer.
+
+        This makes a (typically free) API call to get the exact token count
+        for the given text and model.
+
+        Args:
+            text: The text to count tokens for.
+            model: The model name (tokenizers differ per model).
+
+        Returns:
+            Exact token count from the provider.
+
+        Raises:
+            LLMError: If the provider call fails.
+        """
+        ...
+
+    def estimate_tokens(self, text: str) -> int:
+        """Fast offline token estimate. No API call.
+
+        Default heuristic: ``len(text) // 4`` (~25% error margin).
+        Concrete adapters may override with provider-specific heuristics.
+
+        Args:
+            text: The text to estimate tokens for.
+
+        Returns:
+            Approximate token count.
+        """
+        return len(text) // 4

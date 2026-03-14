@@ -37,12 +37,15 @@ class RuleOverride(BaseModel):
     """Per-rule validation override for a project.
 
     Any field left as None means "use the rule's built-in default".
+    ``extra_params`` holds rule-specific parameters that don't fit the
+    standard warn/fail pattern (e.g. S01's ``max_h2``).
     """
 
     rule_id: str
     enabled: bool = True
     warn_threshold: float | None = None
     fail_threshold: float | None = None
+    extra_params: dict[str, float] = {}
 
 
 class ValidationSettings(BaseModel):
