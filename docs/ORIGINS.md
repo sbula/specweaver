@@ -53,6 +53,9 @@ Patterns adopted or planned for SpecWeaver:
 - **Dynamic budget scaling** → When context is light, allocate more token budget to topology/context; when many files present, compress context — inspired by Aider's `map_mul_no_files` multiplier
 - **Lint-fix reflection loop** → Step 12 (audit/quality gates): after code generation, run linter/tests → feed errors back to LLM for auto-fix → re-validate, with `max_reflections` cap. Directly from Aider's `reflected_message` + linter integration
 - **Context overflow recovery** → Graceful handling when prompt exceeds model context window — auto-truncate and retry rather than failing. Inspired by Aider's `ContextWindowExceededError` handling
+- **Auto spec-mention detection** → Scan LLM responses for spec/file names mentioned, auto-pull into context for follow-up calls. Inspired by Aider's `check_for_file_mentions()` (Phase 3.5)
+- **Project metadata injection** → Inject project name, archetype, language target, date into system prompts. Inspired by Aider's `get_platform_info()` (Phase 3.7)
+- **Conversation summarization** → Compress old multi-turn messages when context fills up, keeping recent turns + summary. Inspired by Aider's `summarize_end()` (Phase 4.6)
 
 ### Technology Decisions
 

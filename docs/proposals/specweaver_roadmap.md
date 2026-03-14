@@ -489,12 +489,14 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.2** | Domain profiles for threshold calibration | `future_capabilities_reference.md` §19 | Quick win — just config |
 | **3.3** | Custom rule paths (project-specific validators) | _(deferred from Step 8b)_ | `custom_rule_paths` table + dynamic loader; enables domain-specific rules (D01+) without core changes |
 | **3.4** | Additional context providers (FileSearch, WebSearch) | `mvp_feature_definition.md` | Enhances drafting and review quality |
-| **3.5** | Multi-model LLM support (dynamic routing) | `future_capabilities_reference.md` §9, §15 | Route prompts to best model per task by result/cost ratio (Gemini, Claude, Qwen, Mistral, OpenAI); interface already abstracted |
-| **3.6** | Spec-to-code traceability | `future_capabilities_reference.md` §17 | Bidirectional linking |
-| **3.7** | Automated spec decomposition | `future_capabilities_reference.md` §18 | Agent proposes, HITL approves |
-| **3.8** | Constitution enforcement | `constitution_template.md` | Project-wide constraint checking |
-| **3.9** | Smart scan exclusions (tiered) | _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore` |
-| **3.10** | File watcher (`sw watch`) | _(inspired by PasteMax)_ | Auto-re-validate specs on disk change; DX polish for iterative authoring |
+| **3.5** | Auto spec-mention detection _(inspired by Aider)_ | _(new)_ | Scan LLM responses for spec/file names → auto-pull into context for follow-up calls; reduces manual context management |
+| **3.6** | Multi-model LLM support (dynamic routing) | `future_capabilities_reference.md` §9, §15 | Route prompts to best model per task by result/cost ratio (Gemini, Claude, Qwen, Mistral, OpenAI); interface already abstracted |
+| **3.7** | Project metadata injection _(inspired by Aider)_ | _(new)_ | Inject project name, archetype, language target, date, active config into system prompt; similar to Aider's `get_platform_info()` |
+| **3.8** | Spec-to-code traceability | `future_capabilities_reference.md` §17 | Bidirectional linking |
+| **3.9** | Automated spec decomposition | `future_capabilities_reference.md` §18 | Agent proposes, HITL approves |
+| **3.10** | Constitution enforcement | `constitution_template.md` | Project-wide constraint checking |
+| **3.11** | Smart scan exclusions (tiered) | _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore` |
+| **3.12** | File watcher (`sw watch`) | _(inspired by PasteMax)_ | Auto-re-validate specs on disk change; DX polish for iterative authoring |
 
 **Process for each feature**:
 1. Write an isolation proposal (what, inputs, outputs, interfaces, scope)
@@ -516,10 +518,11 @@ Order will be based on value and dependencies. Likely sequence:
 | **4.3** | RAG context provider + rich Qdrant payloads | `rag_architecture.md` §1/§5, [Domain Brain proposal](domain_brain_hybrid_rag.md) Phase C |
 | **4.4** | Tiered access rights (zero-trust knowledge) | `future_capabilities_reference.md` §1 |
 | **4.5** | Agent isolation patterns (multi-agent review) | `future_capabilities_reference.md` §6 |
-| **4.6** | Verification gates (mutation testing, assertion density) | `future_capabilities_reference.md` §13, §14 |
-| **4.7** | Blast radius / locality enforcement | `future_capabilities_reference.md` §16 |
-| **4.8** | Containerized deployment (Podman) | `mvp_feature_definition.md` |
-| **4.9** | **Web UI + server mode** | _(new)_ — SpecWeaver as a daemon with REST/WebSocket API and browser-based UI for remote operation (tablet/mobile). Enables directing SpecWeaver from any device while it runs on a home/cloud server. |
+| **4.6** | Conversation summarization _(inspired by Aider)_ | _(new)_ — Compress old multi-turn drafting/review messages when context fills up; keep recent turns + summary of history. Enables long sessions without manual context reset. |
+| **4.7** | Verification gates (mutation testing, assertion density) | `future_capabilities_reference.md` §13, §14 |
+| **4.8** | Blast radius / locality enforcement | `future_capabilities_reference.md` §16 |
+| **4.9** | Containerized deployment (Podman) | `mvp_feature_definition.md` |
+| **4.10** | **Web UI + server mode** | _(new)_ — SpecWeaver as a daemon with REST/WebSocket API and browser-based UI for remote operation (tablet/mobile). Enables directing SpecWeaver from any device while it runs on a home/cloud server. |
 
 ---
 
