@@ -21,7 +21,6 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
-    from pathlib import Path as P
 
     from specweaver.config.database import Database
 

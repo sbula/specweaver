@@ -11,10 +11,8 @@ import pytest
 
 from specweaver.context.analyzers import (
     AnalyzerFactory,
-    LanguageAnalyzer,
     PythonAnalyzer,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

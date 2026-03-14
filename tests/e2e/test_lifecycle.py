@@ -12,7 +12,6 @@ The LLM is mocked so this test is deterministic, free, and CI-friendly.
 
 from __future__ import annotations
 
-import functools
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
@@ -33,7 +32,7 @@ _proj_counter = 0
 
 def _unique_name(prefix: str = "test") -> str:
     """Generate unique project names to avoid DB collisions."""
-    global _proj_counter  # noqa: PLW0603
+    global _proj_counter
     _proj_counter += 1
     return f"{prefix}-{_proj_counter}"
 

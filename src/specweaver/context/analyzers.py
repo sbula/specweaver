@@ -17,6 +17,7 @@ from __future__ import annotations
 import ast
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import ClassVar
 
 # Known standard library top-level modules (subset for heuristic).
 # Used to distinguish external vs internal imports.
@@ -157,9 +158,8 @@ class PythonAnalyzer(LanguageAnalyzer):
                 continue
 
             for node in ast.iter_child_nodes(tree):
-                if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
-                    if not node.name.startswith("_"):
-                        symbols.add(node.name)
+                if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and not node.name.startswith("_"):
+                    symbols.add(node.name)
 
         return sorted(symbols)
 
@@ -191,8 +191,7 @@ class PythonAnalyzer(LanguageAnalyzer):
         for node in ast.iter_child_nodes(tree):
             if isinstance(node, ast.Assign):
                 for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == "__all__":
-                        if isinstance(node.value, (ast.List, ast.Tuple)):
+                    if isinstance(target, ast.Name) and target.id == "__all__" and isinstance(node.value, (ast.List, ast.Tuple)):
                             return [
                                 elt.value
                                 for elt in node.value.elts
@@ -208,7 +207,7 @@ class AnalyzerFactory:
     creating new LanguageAnalyzer subclasses and registering them here.
     """
 
-    _analyzers: list[LanguageAnalyzer] = [
+    _analyzers: ClassVar[list[LanguageAnalyzer]] = [
         PythonAnalyzer(),
         # Future: JavaAnalyzer(), KotlinAnalyzer(), RustAnalyzer(),
         # TypeScriptAnalyzer(), CppAnalyzer(), SqlAnalyzer()

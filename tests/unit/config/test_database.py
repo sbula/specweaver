@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -151,7 +150,7 @@ class TestProjectNameValidation:
         ("möbius", "non-ascii"),
     ])
     def test_invalid_names(self, db, name: str, reason: str):
-        with pytest.raises(ValueError, match="[Ii]nvalid project name"):
+        with pytest.raises(ValueError, match=r"[Ii]nvalid project name"):
             db.register_project(name, "/tmp/proj")
 
 
@@ -326,7 +325,7 @@ class TestProjectLLMLinks:
     def test_linked_profile_data_accessible(self, db, tmp_path: Path):
         db.register_project("myapp", str(tmp_path))
         links = db.get_project_llm_links("myapp")
-        review_link = next(l for l in links if l["role"] == "review")
+        review_link = next(lnk for lnk in links if lnk["role"] == "review")
         profile = db.get_llm_profile(review_link["profile_id"])
         assert profile["name"] == "review"
         assert profile["temperature"] == pytest.approx(0.3)
@@ -342,12 +341,12 @@ class TestProjectLLMLinks:
         )
         db.link_project_profile("myapp", "review", custom_id)
         links = db.get_project_llm_links("myapp")
-        review_link = next(l for l in links if l["role"] == "review")
+        review_link = next(lnk for lnk in links if lnk["role"] == "review")
         assert review_link["profile_id"] == custom_id
 
     def test_link_project_to_nonexistent_profile_raises(self, db, tmp_path: Path):
         db.register_project("myapp", str(tmp_path))
-        with pytest.raises(ValueError, match="[Pp]rofile.*not found"):
+        with pytest.raises(ValueError, match=r"[Pp]rofile.*not found"):
             db.link_project_profile("myapp", "review", 9999)
 
     def test_link_nonexistent_project_raises(self, db):
@@ -437,7 +436,7 @@ class TestEdgeCases:
 
     def test_sql_injection_in_name(self, db):
         """SQL injection attempts in project name are rejected by validation."""
-        with pytest.raises(ValueError, match="[Ii]nvalid project name"):
+        with pytest.raises(ValueError, match=r"[Ii]nvalid project name"):
             db.register_project("'; DROP TABLE projects; --", "/tmp/x")
 
     def test_sql_injection_in_path(self, db, tmp_path: Path):
@@ -503,7 +502,7 @@ class TestSchemaV2Migration:
         """Simulate a v1 DB and verify v2 migration applies correctly."""
         import sqlite3 as _sqlite3
 
-        from specweaver.config.database import Database, _SCHEMA_V1
+        from specweaver.config.database import _SCHEMA_V1, Database
 
         # Create a v1-only DB manually (without v2 migration)
         db_path.parent.mkdir(parents=True, exist_ok=True)

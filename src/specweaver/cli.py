@@ -459,7 +459,7 @@ def scan() -> None:
             rel = subdir.relative_to(project_path)
             console.print(f"  [yellow]⚠[/yellow] {rel}/ — AUTO-GENERATED (review recommended)")
             generated += 1
-        except Exception:  # noqa: BLE001
+        except Exception:
             rel = subdir.relative_to(project_path)
             console.print(f"  [red]✗[/red] {rel}/ — failed to infer")
 
@@ -476,7 +476,7 @@ def scan() -> None:
 
 def _load_check_settings(
     set_overrides: list[str] | None,
-) -> "ValidationSettings | None":
+) -> ValidationSettings | None:
     """Load ValidationSettings from DB + CLI --set overrides.
 
     Cascade: code defaults → project DB overrides → --set CLI flags.
@@ -490,10 +490,10 @@ def _load_check_settings(
     db = get_db()
     active = db.get_active_project()
     if active:
-        try:
+        import contextlib
+
+        with contextlib.suppress(ValueError):
             settings = db.load_validation_settings(active)
-        except ValueError:
-            pass  # project not found — proceed without DB overrides
 
     # 2. Apply --set CLI overrides on top
     if set_overrides:
@@ -533,7 +533,7 @@ def _load_check_settings(
                         f"[red]Error:[/red] Invalid threshold value: '{value}'. "
                         "Must be a number.",
                     )
-                    raise typer.Exit(code=1)
+                    raise typer.Exit(code=1) from None
             else:
                 # Route to extra_params (e.g. S01.max_h2=5)
                 try:

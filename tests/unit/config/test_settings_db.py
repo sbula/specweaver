@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
@@ -142,7 +141,7 @@ class TestLoadActiveProject:
     def test_load_no_active_raises(self, db):
         from specweaver.config.settings import load_settings_for_active
 
-        with pytest.raises(ValueError, match="[Nn]o active project"):
+        with pytest.raises(ValueError, match=r"[Nn]o active project"):
             load_settings_for_active(db)
 
 

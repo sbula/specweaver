@@ -110,7 +110,7 @@ class TestRunnerSettingsEdgeCases:
         rules_none = get_spec_rules(settings=None)
         rules_empty = get_spec_rules(settings=ValidationSettings())
         assert len(rules_none) == len(rules_empty)
-        for r1, r2 in zip(rules_none, rules_empty):
+        for r1, r2 in zip(rules_none, rules_empty, strict=True):
             assert r1.rule_id == r2.rule_id
 
     def test_multiple_rules_disabled(self):

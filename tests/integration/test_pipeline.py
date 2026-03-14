@@ -9,7 +9,6 @@ adapter to avoid real API calls.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -17,9 +16,6 @@ from typer.testing import CliRunner
 
 from specweaver.cli import app
 from specweaver.llm.models import LLMResponse
-
-if TYPE_CHECKING:
-    pass
 
 runner = CliRunner()
 

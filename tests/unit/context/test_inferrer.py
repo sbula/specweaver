@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from ruamel.yaml import YAML
 
-from specweaver.context.inferrer import ContextInferrer, InferenceResult
+from specweaver.context.inferrer import ContextInferrer
 
 
 @pytest.fixture()

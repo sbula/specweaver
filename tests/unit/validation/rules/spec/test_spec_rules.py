@@ -1220,7 +1220,7 @@ Later, the `user_name` field is validated.
 class TestS04DeadLinks:
     """S04 extension: dead link detection when spec_path is provided."""
 
-    def test_existing_link_no_warning(self, tmp_path: "Path") -> None:
+    def test_existing_link_no_warning(self, tmp_path: Path) -> None:
         """A link to an existing file should not produce a dead-link finding."""
         target = tmp_path / "auth_spec.md"
         target.write_text("# Auth Spec", encoding="utf-8")
@@ -1233,7 +1233,7 @@ class TestS04DeadLinks:
                               or "not found" in f.message.lower()]
         assert len(dead_link_findings) == 0
 
-    def test_missing_link_warns(self, tmp_path: "Path") -> None:
+    def test_missing_link_warns(self, tmp_path: Path) -> None:
         """A link to a non-existent file should produce a dead-link warning."""
         spec_file = tmp_path / "my_spec.md"
         spec_text = "See [missing](missing_spec.md) for details.\n"
@@ -1253,7 +1253,7 @@ class TestS04DeadLinks:
                               or "not found" in f.message.lower()]
         assert len(dead_link_findings) == 0
 
-    def test_multiple_dead_links(self, tmp_path: "Path") -> None:
+    def test_multiple_dead_links(self, tmp_path: Path) -> None:
         """Multiple dead links should each produce a finding."""
         spec_file = tmp_path / "my_spec.md"
         spec_text = (
@@ -1268,7 +1268,7 @@ class TestS04DeadLinks:
                               or "not found" in f.message.lower()]
         assert len(dead_link_findings) == 3
 
-    def test_mixed_existing_and_dead_links(self, tmp_path: "Path") -> None:
+    def test_mixed_existing_and_dead_links(self, tmp_path: Path) -> None:
         """Only non-existent links should produce dead-link findings."""
         (tmp_path / "auth_spec.md").write_text("# Auth", encoding="utf-8")
         spec_file = tmp_path / "my_spec.md"
