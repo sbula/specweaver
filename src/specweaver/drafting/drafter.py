@@ -99,19 +99,15 @@ SPEC_SECTIONS: list[dict[str, str]] = [
     },
 ]
 
-# Template for the LLM prompt when generating section content
-_SECTION_PROMPT_TEMPLATE = Template("""\
-You are a technical specification writer. You are helping draft a component spec for "{{ name }}".
-
-Section: {{ section_name }}
-{{ section_prompt }}
-
-The user provided this context:
-{{ user_input }}
-
-Write ONLY the content for this section. Do not include the heading.
-Use markdown formatting. Be concrete and specific, not vague.
-""")
+# Instruction template for per-section LLM calls
+_SECTION_INSTRUCTION_TEMPLATE = (
+    'You are a technical specification writer. You are helping draft a '
+    'component spec for "{name}".\n\n'
+    'Section: {section_name}\n'
+    '{section_prompt}\n\n'
+    'Write ONLY the content for this section. Do not include the heading.\n'
+    'Use markdown formatting. Be concrete and specific, not vague.'
+)
 
 # Template for the final spec file
 _SPEC_FILE_TEMPLATE = Template("""\
@@ -217,11 +213,19 @@ class Drafter:
         user_input: str,
     ) -> str:
         """Generate content for a single spec section using the LLM."""
-        prompt = _SECTION_PROMPT_TEMPLATE.render(
+        from specweaver.llm.prompt_builder import PromptBuilder
+
+        instructions = _SECTION_INSTRUCTION_TEMPLATE.format(
             name=name,
             section_name=section_name,
             section_prompt=section_prompt,
-            user_input=user_input,
+        )
+
+        prompt = (
+            PromptBuilder()
+            .add_instructions(instructions)
+            .add_context(user_input, "user_context")
+            .build()
         )
 
         messages = [

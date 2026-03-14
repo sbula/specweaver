@@ -157,7 +157,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── project/                # Scaffold, discovery
 │   ├── review/                 # AI reviewer
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1144 tests (unit, integration, E2E)
+├── tests/                      # 1193 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

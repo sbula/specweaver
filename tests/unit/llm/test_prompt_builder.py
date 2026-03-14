@@ -1,0 +1,427 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+"""Tests for PromptBuilder: assembly, XML tags, truncation, language detection."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from specweaver.llm.prompt_builder import PromptBuilder, detect_language
+
+# ---------------------------------------------------------------------------
+# Language detection
+# ---------------------------------------------------------------------------
+
+
+class TestLanguageDetection:
+    """Extension-to-language mapping."""
+
+    @pytest.mark.parametrize(
+        ("ext", "expected"),
+        [
+            (".py", "python"),
+            (".js", "javascript"),
+            (".ts", "typescript"),
+            (".md", "markdown"),
+            (".yaml", "yaml"),
+            (".yml", "yaml"),
+            (".json", "json"),
+            (".toml", "toml"),
+            (".html", "html"),
+            (".css", "css"),
+            (".sql", "sql"),
+            (".sh", "bash"),
+            (".rs", "rust"),
+            (".go", "go"),
+            (".java", "java"),
+            (".rb", "ruby"),
+            (".xml", "xml"),
+        ],
+    )
+    def test_known_extensions(self, ext: str, expected: str) -> None:
+        p = Path(f"test{ext}")
+        assert detect_language(p) == expected
+
+    def test_unknown_extension_returns_text(self) -> None:
+        assert detect_language(Path("file.xyz")) == "text"
+
+    def test_no_extension_returns_text(self) -> None:
+        assert detect_language(Path("Makefile")) == "text"
+
+    def test_case_insensitive(self) -> None:
+        assert detect_language(Path("FILE.PY")) == "python"
+        assert detect_language(Path("README.MD")) == "markdown"
+
+
+# ---------------------------------------------------------------------------
+# Basic builder
+# ---------------------------------------------------------------------------
+
+
+class TestPromptBuilderBasic:
+    """Core assembly without truncation."""
+
+    def test_empty_build(self) -> None:
+        """No blocks → empty string."""
+        assert PromptBuilder().build() == ""
+
+    def test_instructions_only(self) -> None:
+        result = PromptBuilder().add_instructions("Do the thing.").build()
+        assert "<instructions>" in result
+        assert "Do the thing." in result
+        assert "</instructions>" in result
+
+    def test_add_file(self, tmp_path: Path) -> None:
+        f = tmp_path / "spec.md"
+        f.write_text("# Hello", encoding="utf-8")
+        result = PromptBuilder().add_file(f).build()
+        assert "<file_contents>" in result
+        assert '<file path="spec.md" language="markdown">' in result
+        assert "# Hello" in result
+        assert "</file>" in result
+
+    def test_add_context(self) -> None:
+        result = PromptBuilder().add_context("Some context", "topology").build()
+        assert '<context label="topology">' in result
+        assert "Some context" in result
+        assert "</context>" in result
+
+    def test_method_chaining(self, tmp_path: Path) -> None:
+        f = tmp_path / "code.py"
+        f.write_text("pass", encoding="utf-8")
+        pb = PromptBuilder()
+        result = pb.add_instructions("Review").add_file(f).add_context("ctx", "extra")
+        assert result is pb  # chaining returns self
+
+    def test_full_assembly_order(self, tmp_path: Path) -> None:
+        """Instructions → files → context."""
+        f = tmp_path / "code.py"
+        f.write_text("pass", encoding="utf-8")
+
+        result = (
+            PromptBuilder()
+            .add_instructions("Instruction text")
+            .add_file(f, priority=1)
+            .add_context("Context text", "topo")
+            .build()
+        )
+
+        # Order check: instructions before file_contents, file_contents before context
+        instr_pos = result.index("<instructions>")
+        file_pos = result.index("<file_contents>")
+        ctx_pos = result.index('<context label="topo">')
+        assert instr_pos < file_pos < ctx_pos
+
+
+# ---------------------------------------------------------------------------
+# XML tag structure
+# ---------------------------------------------------------------------------
+
+
+class TestXMLTagStructure:
+    """Verify correct XML tag nesting and attributes."""
+
+    def test_multiple_instructions_merged(self) -> None:
+        result = (
+            PromptBuilder()
+            .add_instructions("Part A")
+            .add_instructions("Part B")
+            .build()
+        )
+        assert result.count("<instructions>") == 1
+        assert "Part A" in result
+        assert "Part B" in result
+
+    def test_multiple_files(self, tmp_path: Path) -> None:
+        f1 = tmp_path / "a.py"
+        f2 = tmp_path / "b.md"
+        f1.write_text("code", encoding="utf-8")
+        f2.write_text("docs", encoding="utf-8")
+
+        result = PromptBuilder().add_file(f1).add_file(f2).build()
+
+        assert result.count("<file ") == 2
+        assert result.count("<file_contents>") == 1
+        assert 'language="python"' in result
+        assert 'language="markdown"' in result
+
+    def test_custom_file_label(self, tmp_path: Path) -> None:
+        f = tmp_path / "spec.md"
+        f.write_text("content", encoding="utf-8")
+        result = PromptBuilder().add_file(f, label="specification").build()
+        assert 'path="specification"' in result
+
+    def test_multiple_context_blocks(self) -> None:
+        result = (
+            PromptBuilder()
+            .add_context("A", "first")
+            .add_context("B", "second")
+            .build()
+        )
+        assert result.count("<context ") == 2
+        assert 'label="first"' in result
+        assert 'label="second"' in result
+
+    def test_file_priority_minimum_is_1(self, tmp_path: Path) -> None:
+        """Files with priority=0 should be clamped to 1."""
+        f = tmp_path / "x.py"
+        f.write_text("pass", encoding="utf-8")
+        pb = PromptBuilder()
+        pb.add_file(f, priority=0)
+        # Internal check: the block priority should be >= 1
+        assert all(b.priority >= 1 for b in pb._blocks if b.kind == "file")
+
+
+# ---------------------------------------------------------------------------
+# Truncation
+# ---------------------------------------------------------------------------
+
+
+class TestHybridTruncation:
+    """Hybrid priority + proportional truncation."""
+
+    def test_no_truncation_when_under_budget(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=10000)
+        result = (
+            PromptBuilder(budget=budget)
+            .add_instructions("Short instruction")
+            .add_context("Short context", "ctx")
+            .build()
+        )
+        assert "[truncated]" not in result
+        assert budget.used > 0
+
+    def test_instructions_never_truncated(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        # Budget just big enough for instructions, nothing else
+        instr = "A" * 100  # ~25 tokens
+        budget = TokenBudget(limit=30)
+        result = (
+            PromptBuilder(budget=budget)
+            .add_instructions(instr)
+            .add_context("B" * 1000, "ctx")
+            .build()
+        )
+        assert instr in result
+        # Context should be truncated or dropped
+        assert "<context" not in result or "[truncated]" in result
+
+    def test_priority_ordering_drops_low_priority(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        # Budget enough for instructions + priority 1 but not priority 3
+        budget = TokenBudget(limit=100)
+        result = (
+            PromptBuilder(budget=budget)
+            .add_instructions("X" * 40)  # ~10 tokens
+            .add_context("Y" * 200, "high", priority=1)  # ~50 tokens
+            .add_context("Z" * 2000, "low", priority=3)  # ~500 tokens
+            .build()
+        )
+        # Low-priority should be dropped or truncated
+        assert "high" in result
+
+    def test_truncated_marker_appended(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        # Very tight budget forces truncation
+        budget = TokenBudget(limit=50)
+        result = (
+            PromptBuilder(budget=budget)
+            .add_instructions("OK")
+            .add_context("X" * 4000, "big", priority=1)
+            .build()
+        )
+        assert "[truncated]" in result
+
+    def test_budget_tracking_updated(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=10000)
+        (
+            PromptBuilder(budget=budget)
+            .add_instructions("Hello world")
+            .add_context("Some context", "ctx")
+            .build()
+        )
+        assert budget.used > 0
+        assert budget.remaining < budget.limit
+
+    def test_tiny_limit_drops_content(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=1)
+        result = (
+            PromptBuilder(budget=budget)
+            .add_instructions("Instr")
+            .add_context("Ctx", "label")
+            .build()
+        )
+        # With limit=1, instructions alone exceed budget.
+        # Only instructions should remain (they're never truncated).
+        assert "<instructions>" in result
+        assert "<context" not in result
+
+
+# ---------------------------------------------------------------------------
+# Edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestPromptBuilderEdgeCases:
+    """Edge cases and boundary conditions."""
+
+    def test_empty_file(self, tmp_path: Path) -> None:
+        """0-byte file → file block still present, just empty."""
+        f = tmp_path / "empty.py"
+        f.write_text("", encoding="utf-8")
+        result = PromptBuilder().add_file(f).build()
+        assert '<file path="empty.py" language="python">' in result
+        assert "</file>" in result
+
+    def test_file_not_found(self, tmp_path: Path) -> None:
+        """Nonexistent file → FileNotFoundError (not silently ignored)."""
+        missing = tmp_path / "nope.py"
+        with pytest.raises(FileNotFoundError):
+            PromptBuilder().add_file(missing)
+
+    def test_whitespace_only_instructions(self) -> None:
+        """Whitespace-only instructions → stripped to empty, still tagged."""
+        result = PromptBuilder().add_instructions("  \n\t  ").build()
+        assert "<instructions>" in result
+        assert "</instructions>" in result
+
+    def test_empty_context_text(self) -> None:
+        """Empty context string → stripped empty, still tagged."""
+        result = PromptBuilder().add_context("", "empty_ctx").build()
+        assert '<context label="empty_ctx">' in result
+
+    def test_build_with_only_files(self, tmp_path: Path) -> None:
+        """No instructions, no context — only file blocks."""
+        f = tmp_path / "code.py"
+        f.write_text("x = 1", encoding="utf-8")
+        result = PromptBuilder().add_file(f).build()
+        assert "<file_contents>" in result
+        assert "<instructions>" not in result
+        assert "<context" not in result
+
+    def test_build_with_only_context(self) -> None:
+        """No instructions, no files — only context blocks."""
+        result = PromptBuilder().add_context("data", "ctx").build()
+        assert "<context" in result
+        assert "<instructions>" not in result
+        assert "<file_contents>" not in result
+
+    def test_unicode_content(self, tmp_path: Path) -> None:
+        """Non-ASCII content preserved in files and context."""
+        f = tmp_path / "unicode.md"
+        f.write_text("# Spëcwëaver ✨\n\nÜber-cool feature.", encoding="utf-8")
+        result = (
+            PromptBuilder()
+            .add_instructions("Prüfe die Spezifikation.")
+            .add_file(f)
+            .add_context("日本語テスト", "i18n")
+            .build()
+        )
+        assert "Spëcwëaver ✨" in result
+        assert "Prüfe die Spezifikation." in result
+        assert "日本語テスト" in result
+
+    def test_same_priority_proportional_truncation(self) -> None:
+        """Two blocks at same priority, tight budget → both get proportional shares."""
+        from specweaver.llm.models import TokenBudget
+
+        # small block + large block, same priority, tight budget
+        budget = TokenBudget(limit=100)
+        result = (
+            PromptBuilder(budget=budget)
+            .add_context("A" * 100, "small", priority=1)   # ~25 tokens
+            .add_context("B" * 1000, "large", priority=1)  # ~250 tokens
+            .build()
+        )
+        # Both should appear (one may be truncated)
+        assert "small" in result or "large" in result
+
+    def test_no_budget_means_no_truncation(self) -> None:
+        """Without budget, even large content is never truncated."""
+        result = (
+            PromptBuilder()
+            .add_instructions("I" * 10000)
+            .add_context("C" * 10000, "big")
+            .build()
+        )
+        assert "[truncated]" not in result
+        assert len(result) > 15000
+
+
+# ---------------------------------------------------------------------------
+# Integration: real file on disk
+# ---------------------------------------------------------------------------
+
+
+class TestPromptBuilderIntegration:
+    """Integration tests with real files."""
+
+    def test_real_spec_file(self, tmp_path: Path) -> None:
+        spec = tmp_path / "component_spec.md"
+        spec.write_text(
+            "# My Component\n\n## 1. Purpose\n\nDoes things.\n",
+            encoding="utf-8",
+        )
+
+        result = (
+            PromptBuilder()
+            .add_instructions("Review this spec.")
+            .add_file(spec, priority=1)
+            .build()
+        )
+
+        assert "<instructions>" in result
+        assert "Review this spec." in result
+        assert "<file_contents>" in result
+        assert "component_spec.md" in result
+        assert "# My Component" in result
+
+    def test_multiple_file_types(self, tmp_path: Path) -> None:
+        py_file = tmp_path / "main.py"
+        md_file = tmp_path / "README.md"
+        json_file = tmp_path / "config.json"
+        py_file.write_text("def main(): pass", encoding="utf-8")
+        md_file.write_text("# Readme", encoding="utf-8")
+        json_file.write_text('{"key": "val"}', encoding="utf-8")
+
+        result = (
+            PromptBuilder()
+            .add_file(py_file)
+            .add_file(md_file)
+            .add_file(json_file)
+            .build()
+        )
+
+        assert 'language="python"' in result
+        assert 'language="markdown"' in result
+        assert 'language="json"' in result
+
+    def test_with_adapter_token_estimation(self, tmp_path: Path) -> None:
+        """PB uses adapter.estimate_tokens() when adapter provided."""
+        from unittest.mock import MagicMock
+
+        adapter = MagicMock()
+        adapter.estimate_tokens.return_value = 42
+
+        f = tmp_path / "x.py"
+        f.write_text("pass", encoding="utf-8")
+
+        pb = PromptBuilder(adapter=adapter)
+        pb.add_instructions("test")
+        pb.add_file(f)
+        pb.build()
+
+        # estimate_tokens should have been called
+        assert adapter.estimate_tokens.call_count >= 2

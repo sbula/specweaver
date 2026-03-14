@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from jinja2 import Template
-
 from specweaver.llm.models import GenerationConfig, Message, Role
 
 if TYPE_CHECKING:
@@ -21,13 +19,9 @@ if TYPE_CHECKING:
 
     from specweaver.llm.adapter import LLMAdapter
 
-_CODE_GEN_PROMPT = Template("""\
+# Instruction constants — extracted for reuse and testability
+CODE_GEN_INSTRUCTIONS = """\
 You are a Python code generator. You are implementing a component from its specification.
-
-## Specification:
-```markdown
-{{ spec_content }}
-```
 
 ## Requirements:
 1. Implement ALL functions/classes described in the Contract section.
@@ -40,16 +34,10 @@ You are a Python code generator. You are implementing a component from its speci
 ## Output:
 Produce ONLY valid Python code. No markdown fences, no explanation.
 Start with imports, then data models, then the main implementation.
-Include a module docstring.
-""")
+Include a module docstring."""
 
-_TEST_GEN_PROMPT = Template("""\
+TEST_GEN_INSTRUCTIONS = """\
 You are a Python test generator. You are writing tests for a component from its specification.
-
-## Specification:
-```markdown
-{{ spec_content }}
-```
 
 ## Requirements:
 1. Write tests using pytest.
@@ -61,8 +49,7 @@ You are a Python test generator. You are writing tests for a component from its 
 
 ## Output:
 Produce ONLY valid Python code. No markdown fences, no explanation.
-Start with imports, then test classes with test methods.
-""")
+Start with imports, then test classes with test methods."""
 
 
 class Generator:
@@ -89,8 +76,14 @@ class Generator:
         Returns:
             Path to the generated code file.
         """
-        spec_content = spec_path.read_text(encoding="utf-8")
-        prompt = _CODE_GEN_PROMPT.render(spec_content=spec_content)
+        from specweaver.llm.prompt_builder import PromptBuilder
+
+        prompt = (
+            PromptBuilder()
+            .add_instructions(CODE_GEN_INSTRUCTIONS)
+            .add_file(spec_path, priority=1)
+            .build()
+        )
 
         messages = [
             Message(
@@ -117,8 +110,14 @@ class Generator:
         Returns:
             Path to the generated test file.
         """
-        spec_content = spec_path.read_text(encoding="utf-8")
-        prompt = _TEST_GEN_PROMPT.render(spec_content=spec_content)
+        from specweaver.llm.prompt_builder import PromptBuilder
+
+        prompt = (
+            PromptBuilder()
+            .add_instructions(TEST_GEN_INSTRUCTIONS)
+            .add_file(spec_path, priority=1)
+            .build()
+        )
 
         messages = [
             Message(

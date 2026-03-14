@@ -28,7 +28,7 @@
 - ✅ Validation config: `sw config set/get/list/reset`, `--strict`, `--set` CLI overrides
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
-**Phase 2 (Flow Engine)**: Steps 7–8b ✅ | Step 9a ✅ | Steps 9b–14 pending
+**Phase 2 (Flow Engine)**: Steps 7–8b ✅ | Steps 9a–9b ✅ | Steps 9c–14 pending
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - Step 9: Token budgeting, PromptBuilder, topology context injection
@@ -332,16 +332,16 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 - [x] Tests: token counting, estimate fallback, budget tracking, schema migration (+16 tests, total 1144)
 
 #### 9b: Structured Prompt Formatting _(inspired by PasteMax)_
-- [ ] `src/specweaver/llm/prompt_builder.py` — `PromptBuilder` class
-  - [ ] `.add_spec(path, priority=1)` / `.add_code(path, priority=2)` / `.add_context(text, label, priority=3)`
-  - [ ] `.add_instructions(text)` — priority 0, never truncated
-  - [ ] `.build() -> str` — assembles XML-tagged prompt (`<file_map>`, `<file_contents>`, `<system_context>`, `<user_instructions>`)
-  - [ ] Per-file language detection for syntax-highlighted code fencing
-  - [ ] Hybrid truncation: priority-ordered + proportional redistribution on underflow
-- [ ] Refactor `reviewer.py` — extract review criteria into instruction constants, use `PromptBuilder`
-- [ ] Refactor `drafter.py` — use `PromptBuilder` for LLM calls (keep Jinja2 for final file rendering)
-- [ ] Refactor `generator.py` — use `PromptBuilder` for implementation prompts
-- [ ] Tests: prompt assembly, truncation, tag structure, language detection, priority ordering
+- [x] `src/specweaver/llm/prompt_builder.py` — `PromptBuilder` class
+  - [x] `.add_file(path, priority)` / `.add_context(text, label, priority)` — flexible content API
+  - [x] `.add_instructions(text)` — priority 0, never truncated
+  - [x] `.build() -> str` — assembles XML-tagged prompt (`<instructions>`, `<file_contents>`, `<context>`)
+  - [x] Per-file language detection via `detect_language()` (extension → language map)
+  - [x] Hybrid truncation: priority-ordered + proportional redistribution on underflow
+- [x] Refactor `reviewer.py` — extract `SPEC_REVIEW_INSTRUCTIONS` / `CODE_REVIEW_INSTRUCTIONS`, use `PromptBuilder`
+- [x] Refactor `drafter.py` — use `PromptBuilder` for LLM calls (keep Jinja2 for final file rendering)
+- [x] Refactor `generator.py` — remove Jinja2, extract `CODE_GEN_INSTRUCTIONS` / `TEST_GEN_INSTRUCTIONS`, use `PromptBuilder`
+- [x] Tests: prompt assembly, truncation, tag structure, language detection, priority ordering, edge cases (+49 tests, total 1193)
 
 #### 9c: Topology Context Injection + Context Selectors
 - [ ] `src/specweaver/context/selectors.py` — **Strategy pattern** for context selection

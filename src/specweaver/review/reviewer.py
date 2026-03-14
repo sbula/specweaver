@@ -48,15 +48,10 @@ class ReviewResult(BaseModel):
     raw_response: str = ""
 
 
-# Prompt for spec review
-_SPEC_REVIEW_PROMPT = """\
+# Instruction constants — extracted for reuse and testability
+SPEC_REVIEW_INSTRUCTIONS = """\
 You are a senior software architect reviewing a component specification.
 Your job is to evaluate whether this spec is CLEAR, COMPLETE, and IMPLEMENTABLE.
-
-## Spec Content:
-```
-{spec_content}
-```
 
 ## Review Criteria:
 1. **Clarity**: Is every term defined? Are there ambiguous statements?
@@ -68,22 +63,10 @@ Your job is to evaluate whether this spec is CLEAR, COMPLETE, and IMPLEMENTABLE.
 ## Output Format:
 Start your response with either "VERDICT: ACCEPTED" or "VERDICT: DENIED".
 Then list your findings, each on a new line starting with "- ".
-End with a one-line summary.
-"""
+End with a one-line summary."""
 
-# Prompt for code review
-_CODE_REVIEW_PROMPT = """\
+CODE_REVIEW_INSTRUCTIONS = """\
 You are a senior software engineer reviewing generated code against its source specification.
-
-## Specification:
-```
-{spec_content}
-```
-
-## Generated Code:
-```
-{code_content}
-```
 
 ## Review Criteria:
 1. **Spec Compliance**: Does the code implement what the spec describes?
@@ -95,8 +78,7 @@ You are a senior software engineer reviewing generated code against its source s
 ## Output Format:
 Start your response with either "VERDICT: ACCEPTED" or "VERDICT: DENIED".
 Then list your findings, each on a new line starting with "- ".
-End with a one-line summary.
-"""
+End with a one-line summary."""
 
 
 class Reviewer:
@@ -122,8 +104,14 @@ class Reviewer:
         Returns:
             ReviewResult with verdict and findings.
         """
-        spec_content = spec_path.read_text(encoding="utf-8")
-        prompt = _SPEC_REVIEW_PROMPT.format(spec_content=spec_content)
+        from specweaver.llm.prompt_builder import PromptBuilder
+
+        prompt = (
+            PromptBuilder()
+            .add_instructions(SPEC_REVIEW_INSTRUCTIONS)
+            .add_file(spec_path, priority=1)
+            .build()
+        )
         return await self._execute_review(prompt)
 
     async def review_code(self, code_path: Path, spec_path: Path) -> ReviewResult:
@@ -136,11 +124,14 @@ class Reviewer:
         Returns:
             ReviewResult with verdict and findings.
         """
-        spec_content = spec_path.read_text(encoding="utf-8")
-        code_content = code_path.read_text(encoding="utf-8")
-        prompt = _CODE_REVIEW_PROMPT.format(
-            spec_content=spec_content,
-            code_content=code_content,
+        from specweaver.llm.prompt_builder import PromptBuilder
+
+        prompt = (
+            PromptBuilder()
+            .add_instructions(CODE_REVIEW_INSTRUCTIONS)
+            .add_file(spec_path, priority=1, label="specification")
+            .add_file(code_path, priority=2, label="generated_code")
+            .build()
         )
         return await self._execute_review(prompt)
 
