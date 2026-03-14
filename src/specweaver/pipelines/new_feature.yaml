@@ -1,0 +1,68 @@
+# New Feature Pipeline — Full Core Loop
+# draft spec → validate spec → review spec → generate code → generate tests
+# → validate code → review code
+
+name: new_feature
+description: >
+  Full spec-first workflow: draft a spec, validate and review it,
+  then generate code and tests, validate and review the code.
+version: "1.0"
+
+steps:
+  - name: draft_spec
+    action: draft
+    target: spec
+    description: "Co-author a spec with HITL interaction"
+    gate:
+      type: hitl
+      condition: completed
+
+  - name: validate_spec
+    action: validate
+    target: spec
+    description: "Run spec validation rules (S01-S11)"
+    gate:
+      type: auto
+      condition: all_passed
+      on_fail: abort
+
+  - name: review_spec
+    action: review
+    target: spec
+    description: "LLM semantic review of the spec"
+    gate:
+      type: auto
+      condition: accepted
+      on_fail: loop_back
+      loop_target: draft_spec
+      max_retries: 3
+
+  - name: generate_code
+    action: generate
+    target: code
+    description: "Generate implementation from spec"
+
+  - name: generate_tests
+    action: generate
+    target: tests
+    description: "Generate test file from spec"
+
+  - name: validate_code
+    action: validate
+    target: code
+    description: "Run code validation rules (C01-C08)"
+    gate:
+      type: auto
+      condition: all_passed
+      on_fail: abort
+
+  - name: review_code
+    action: review
+    target: code
+    description: "LLM semantic review of code against spec"
+    gate:
+      type: auto
+      condition: accepted
+      on_fail: loop_back
+      loop_target: generate_code
+      max_retries: 2

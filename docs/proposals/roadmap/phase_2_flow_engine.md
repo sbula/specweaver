@@ -176,19 +176,25 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 ## Step 10: Flow Engine — Pipeline Models & Definition Format
 
-> **Goal**: Define what a pipeline IS — YAML schema, step types, parameter model. No execution yet, just the data model and parsing.
+> **Goal**: Define what a pipeline IS — YAML schema, step model (action + target), gate definitions, parser. No execution yet, just the data model and parsing.
 
-- [ ] `src/specweaver/flow/models.py` — pipeline data model
-  - [ ] `PipelineDefinition` — name, description, list of `PipelineStep`
-  - [ ] `PipelineStep` — step type enum (validate_spec, draft, review_spec, implement, validate_code, review_code), parameters, gates
-  - [ ] `GateDefinition` — gate type (auto, hitl), condition (pass/warn/fail), on_fail action
-  - [ ] `PipelineState` — lifecycle position per spec (pending → drafted → validated → reviewed → implemented ...)
-- [ ] `src/specweaver/flow/parser.py` — load pipeline YAML, validate against schema, return `PipelineDefinition`
-- [ ] Bundled pipeline templates:
-  - [ ] `new_feature.yaml` — draft → check spec → review spec → implement → check code → review code
-  - [ ] `validate_only.yaml` — check spec (simple, no LLM)
-- [ ] Tests: parsing valid/invalid YAML, model validation, step enum coverage
+- [ ] `src/specweaver/flow/models.py` — pipeline data model (blueprint only, no runtime state)
+  - [ ] `StepAction` enum — draft, validate, review, generate, run_tests
+  - [ ] `StepTarget` enum — spec, code, tests (future: ui)
+  - [ ] `VALID_STEP_COMBINATIONS` — allowed action × target pairs
+  - [ ] `PipelineStep` — name, action, target, params (free-form dict), gate, description
+  - [ ] `GateDefinition` — gate type (auto, hitl), condition (all_passed/accepted/completed), on_fail (abort/retry/loop_back/continue), loop_target, max_retries
+  - [ ] `PipelineDefinition` — name, description, version, steps list, `from_yaml()`, `validate_flow()`
+- [ ] `src/specweaver/flow/parser.py` — `load_pipeline(path)` → `PipelineDefinition`
+- [ ] Bundled pipeline templates in `src/specweaver/pipelines/`:
+  - [ ] `new_feature.yaml` — draft spec → validate spec → review spec → generate code → generate tests → run tests → validate code → review code
+  - [ ] `validate_only.yaml` — validate spec only (no LLM)
+- [ ] Parse-time validation: duplicate step names, invalid action+target combos, bad loop_target refs, forward loops
+- [ ] Tests: model construction, enums, validation, parser, template loading (~30-40 tests)
 - [ ] **Runnable**: `PipelineDefinition.from_yaml("new_feature.yaml")` returns a valid model
+
+> [!NOTE]
+> **Pipeline storage**: Step 10 loads pipelines from file paths only. Per-project pipeline storage (SQLite `pipelines` table, CRUD via CLI) is deferred. The model is storage-agnostic — the caller resolves which file to load.
 
 **Estimated effort**: 1–2 sessions.
 
@@ -223,20 +229,25 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 ## Step 12: Flow Engine — Gates, Retry & Feedback Loops
 
-> **Goal**: Configurable gates (auto-pass, HITL approval), retry on failure, feedback loops (re-draft after failed review).
+> **Goal**: Configurable gates (auto-pass, HITL approval), retry on failure, feedback loops (re-draft after failed review). Agent test runner tool for autonomous test execution.
 
+- [ ] `src/specweaver/loom/tools/test_runner/` — **agent test runner tool** (crucial for autonomous agent loop)
+  - [ ] Run tests without HITL interaction: `pytest` subprocess with structured output capture
+  - [ ] `--kind` parameter: unit, integration, e2e
+  - [ ] `--target` parameter: module/service/file scope
+  - [ ] Returns: pass/fail count, failure details, coverage (reuses C03/C04 internals)
 - [ ] `src/specweaver/flow/gates.py` — gate implementations (auto, HITL, validation)
 - [ ] `src/specweaver/flow/runner.py` — extend with gate + retry logic
   - [ ] On gate failure: retry step, escalate, or abort (configurable)
   - [ ] Feedback loop: e.g., review DENIED → re-run draft with review findings injected
   - [ ] Max retry count per step
-  - [ ] **Lint-fix reflection loop** _(inspired by Aider)_ — run linter/tests → feed errors back to LLM → re-generate, with `max_reflections` cap
-- [ ] Tests: gate logic, retry counts, feedback injection, abort conditions
+  - [ ] **Lint-fix reflection loop** _(inspired by Aider)_ — run linter/tests (via test runner tool) → feed errors back to LLM → re-generate, with `max_reflections` cap
+- [ ] Tests: gate logic, retry counts, feedback injection, abort conditions, test runner tool
 - [ ] **Runnable**: Pipeline pauses at HITL gates, retries failed steps, auto-fixes lint errors
 
 **Depends on**: Step 11 (Runner).
 
-**Estimated effort**: 1–2 sessions.
+**Estimated effort**: 2–3 sessions.
 
 ---
 

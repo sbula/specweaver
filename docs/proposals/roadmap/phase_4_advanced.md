@@ -14,4 +14,4 @@
 | **4.7** | Verification gates (mutation testing, assertion density) | `future_capabilities_reference.md` §13, §14 |
 | **4.8** | Blast radius / locality enforcement | `future_capabilities_reference.md` §16 |
 | **4.9** | Containerized deployment (Podman) | `mvp_feature_definition.md` |
-| **4.10** | **Web UI + server mode** | _(new)_ — SpecWeaver as a daemon with REST/WebSocket API and browser-based UI for remote operation (tablet/mobile). Enables directing SpecWeaver from any device while it runs on a home/cloud server. |
+| **4.10** | **Web UI + server mode** | _(new)_ — SpecWeaver as a daemon with REST/WebSocket API and browser-based UI for remote operation (tablet/mobile). Enables directing SpecWeaver from any device while it runs on a home/cloud server. Includes **per-project pipeline storage** (layer 2): SQLite `pipelines` table, CRUD via `sw pipeline` CLI + REST API, resolution order: project DB > bundled YAML. See Step 10 note. |

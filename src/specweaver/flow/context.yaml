@@ -1,0 +1,35 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: flow
+level: module
+purpose: >
+  Pipeline models, parsing, and execution for the SpecWeaver flow engine.
+
+description: |
+  Defines the data model for pipelines (PipelineDefinition, PipelineStep,
+  GateDefinition) and provides YAML parsing. Pipelines are sequences of
+  action+target steps with configurable gates for flow control.
+  Execution and state management are handled by the runner (Step 11).
+
+archetype: pure-logic
+
+consumes: []
+
+forbids:
+  - specweaver/loom/*
+  - specweaver/llm
+  - specweaver/drafting
+  - specweaver/implementation
+  - specweaver/review
+  - specweaver/validation
+
+exposes:
+  - PipelineDefinition
+  - PipelineStep
+  - GateDefinition
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

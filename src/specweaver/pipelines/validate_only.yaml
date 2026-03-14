@@ -1,0 +1,18 @@
+# Validate Only Pipeline — Quick Spec Check
+# Single step: run spec validation rules (no LLM calls)
+
+name: validate_only
+description: >
+  Quick validation: run spec rules only (S01-S11). No LLM calls.
+  Useful for CI or quick checks.
+version: "1.0"
+
+steps:
+  - name: validate_spec
+    action: validate
+    target: spec
+    description: "Run spec validation rules (S01-S11)"
+    gate:
+      type: auto
+      condition: all_passed
+      on_fail: abort
