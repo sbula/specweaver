@@ -34,6 +34,7 @@ from specweaver.project.scaffold import scaffold_project
 
 if TYPE_CHECKING:
     from specweaver.config.settings import ValidationSettings
+    from specweaver.graph.topology import TopologyGraph
     from specweaver.validation.models import RuleResult
 
 app = typer.Typer(
@@ -175,6 +176,26 @@ def _require_llm_adapter(project_path: Path, *, llm_role: str = "draft") -> tupl
     )
 
     return settings, adapter, gen_config
+
+
+def _load_topology(project_path: Path) -> TopologyGraph | None:
+    """Try to load the project's topology graph from context.yaml files.
+
+    Returns ``None`` (with a dim console note) if no context.yaml files
+    are found — this keeps all LLM commands usable without context.
+    """
+    from specweaver.graph.topology import TopologyGraph
+
+    graph = TopologyGraph.from_project(project_path, auto_infer=False)
+    if not graph.nodes:
+        console.print(
+            "[dim]No context.yaml files found — topology context disabled.[/dim]",
+        )
+        return None
+    console.print(
+        f"[dim]Loaded topology: {len(graph.nodes)} modules.[/dim]",
+    )
+    return graph
 
 
 @app.callback()
@@ -642,12 +663,21 @@ def draft(
         config=gen_config,
     )
 
+    # Load topology context for the new component (best-effort)
+    topo_graph = _load_topology(project_path)
+
     console.print(
         f"\n[bold]Drafting spec for[/bold] [cyan]{name}[/cyan]\n"
         "[dim]Answer questions below. Press Enter to skip.[/dim]\n",
     )
 
     result_path = asyncio.run(drafter.draft(name, specs_dir))
+
+    if topo_graph and topo_graph.nodes:
+        console.print(
+            f"[dim]Topology context available ({len(topo_graph.nodes)} modules) "
+            "— will be used in future prompt enhancements.[/dim]",
+        )
 
     console.print(f"\n[green]Spec drafted:[/green] {result_path}")
     console.print("[dim]Run 'sw check' to validate the drafted spec.[/dim]")
@@ -698,6 +728,19 @@ def review(
     gen_config.temperature = 0.3  # Lower for reviews
 
     reviewer = Reviewer(llm=adapter, config=gen_config)
+
+    # Load topology context for the review target
+    topo_graph = _load_topology(project_path)
+    if topo_graph:
+        module_name = target_path.stem.removesuffix("_spec")
+        from specweaver.graph.selectors import DirectNeighborSelector
+
+        related = DirectNeighborSelector().select(topo_graph, module_name)
+        if related:
+            contexts = topo_graph.format_context_summary(module_name, related)
+            console.print(
+                f"[dim]Topology: {len(contexts)} related modules loaded for review context.[/dim]",
+            )
 
     console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
     console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
@@ -784,6 +827,19 @@ def implement(
     gen_config.temperature = 0.2  # Low temperature for code
 
     generator = Generator(llm=adapter, config=gen_config)
+
+    # Load topology context for the implementation target
+    topo_graph = _load_topology(project_path)
+    if topo_graph:
+        module_name = spec_path.stem.removesuffix("_spec")
+        from specweaver.graph.selectors import DirectNeighborSelector
+
+        related = DirectNeighborSelector().select(topo_graph, module_name)
+        if related:
+            contexts = topo_graph.format_context_summary(module_name, related)
+            console.print(
+                f"[dim]Topology: {len(contexts)} related modules loaded for implementation context.[/dim]",
+            )
 
     # Derive output paths from spec name
     # e.g., "greet_service_spec.md" -> "greet_service.py"
