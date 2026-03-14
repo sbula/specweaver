@@ -297,42 +297,7 @@ class FileSystemAtom(Atom):
 
         for ctx_file in self._cwd.rglob("context.yaml"):
             rel_path = str(ctx_file.relative_to(self._cwd)).replace("\\", "/")
-            try:
-                data = yaml.load(ctx_file)
-            except Exception as exc:
-                errors.append(f"{rel_path}: YAML parse error: {exc}")
-                continue
-
-            if data is None:
-                errors.append(f"{rel_path}: Empty file")
-                continue
-
-            # Required fields
-            if "name" not in data:
-                errors.append(f"{rel_path}: Missing required field 'name'")
-            if "level" not in data:
-                errors.append(f"{rel_path}: Missing required field 'level'")
-
-            # Duplicate name check
-            name = data.get("name", "")
-            if name and name in names:
-                errors.append(
-                    f"{rel_path}: Duplicate name '{name}' (also at {names[name]})",
-                )
-            elif name:
-                names[name] = rel_path
-
-            # Consumes reference check
-            consumes = data.get("consumes", [])
-            if isinstance(consumes, list):
-                for dep_path in consumes:
-                    dep_dir = self._cwd / dep_path
-                    dep_ctx = dep_dir / "context.yaml"
-                    if not dep_dir.is_dir() or not dep_ctx.is_file():
-                        errors.append(
-                            f"{rel_path}: Consumes '{dep_path}' but no "
-                            f"context.yaml found at {dep_path}/context.yaml",
-                        )
+            self._validate_single_boundary(yaml, ctx_file, rel_path, names, errors)
 
         if errors:
             return AtomResult(
@@ -346,3 +311,50 @@ class FileSystemAtom(Atom):
             message="All boundaries valid.",
             exports={"errors": [], "valid": True},
         )
+
+    def _validate_single_boundary(
+        self,
+        yaml: YAML,
+        ctx_file: Path,
+        rel_path: str,
+        names: dict[str, str],
+        errors: list[str],
+    ) -> None:
+        """Validate a single context.yaml file, appending errors to the list."""
+        try:
+            data = yaml.load(ctx_file)
+        except Exception as exc:
+            errors.append(f"{rel_path}: YAML parse error: {exc}")
+            return
+
+        if data is None:
+            errors.append(f"{rel_path}: Empty file")
+            return
+
+        # Required fields
+        if "name" not in data:
+            errors.append(f"{rel_path}: Missing required field 'name'")
+        if "level" not in data:
+            errors.append(f"{rel_path}: Missing required field 'level'")
+
+        # Duplicate name check
+        name = data.get("name", "")
+        if name and name in names:
+            errors.append(
+                f"{rel_path}: Duplicate name '{name}' (also at {names[name]})",
+            )
+        elif name:
+            names[name] = rel_path
+
+        # Consumes reference check
+        consumes = data.get("consumes", [])
+        if isinstance(consumes, list):
+            for dep_path in consumes:
+                dep_dir = self._cwd / dep_path
+                dep_ctx = dep_dir / "context.yaml"
+                if not dep_dir.is_dir() or not dep_ctx.is_file():
+                    errors.append(
+                        f"{rel_path}: Consumes '{dep_path}' but no "
+                        f"context.yaml found at {dep_path}/context.yaml",
+                    )
+

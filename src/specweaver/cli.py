@@ -474,6 +474,58 @@ def scan() -> None:
 # ---------------------------------------------------------------------------
 
 
+def _apply_override(
+    settings: ValidationSettings,
+    item: str,
+) -> None:
+    """Parse and apply a single RULE.FIELD=VALUE override, or exit on error."""
+    from specweaver.config.settings import RuleOverride
+
+    if "=" not in item or "." not in item.split("=", 1)[0]:
+        console.print(
+            f"[red]Error:[/red] Invalid --set format: '{item}'. "
+            "Expected RULE.FIELD=VALUE (e.g. S08.fail_threshold=5).",
+        )
+        raise typer.Exit(code=1)
+
+    key, value = item.split("=", 1)
+    rule_id, field = key.rsplit(".", 1)
+    rule_id = rule_id.upper()
+
+    existing = settings.overrides.get(rule_id)
+    if existing is None:
+        existing = RuleOverride(rule_id=rule_id)
+        settings.overrides[rule_id] = existing
+
+    if field == "enabled":
+        settings.overrides[rule_id] = existing.model_copy(
+            update={"enabled": value.lower() in ("true", "1", "yes")},
+        )
+    elif field in ("warn_threshold", "fail_threshold"):
+        try:
+            settings.overrides[rule_id] = existing.model_copy(
+                update={field: float(value)},
+            )
+        except ValueError:
+            console.print(
+                f"[red]Error:[/red] Invalid threshold value: '{value}'. "
+                "Must be a number.",
+            )
+            raise typer.Exit(code=1) from None
+    else:
+        try:
+            new_extra = {**existing.extra_params, field: float(value)}
+            settings.overrides[rule_id] = existing.model_copy(
+                update={"extra_params": new_extra},
+            )
+        except ValueError:
+            console.print(
+                f"[red]Error:[/red] Invalid value for '{field}': '{value}'. "
+                "Must be a number.",
+            )
+            raise typer.Exit(code=1) from None
+
+
 def _load_check_settings(
     set_overrides: list[str] | None,
 ) -> ValidationSettings | None:
@@ -482,7 +534,7 @@ def _load_check_settings(
     Cascade: code defaults → project DB overrides → --set CLI flags.
     Returns None if no active project and no --set flags.
     """
-    from specweaver.config.settings import RuleOverride, ValidationSettings
+    from specweaver.config.settings import ValidationSettings
 
     settings: ValidationSettings | None = None
 
@@ -499,54 +551,8 @@ def _load_check_settings(
     if set_overrides:
         if settings is None:
             settings = ValidationSettings()
-
         for item in set_overrides:
-            # Format: RULE.FIELD=VALUE  (e.g. S08.fail_threshold=5)
-            if "=" not in item or "." not in item.split("=", 1)[0]:
-                console.print(
-                    f"[red]Error:[/red] Invalid --set format: '{item}'. "
-                    "Expected RULE.FIELD=VALUE (e.g. S08.fail_threshold=5).",
-                )
-                raise typer.Exit(code=1)
-
-            key, value = item.split("=", 1)
-            rule_id, field = key.rsplit(".", 1)
-            rule_id = rule_id.upper()
-
-            # Get or create override for this rule
-            existing = settings.overrides.get(rule_id)
-            if existing is None:
-                existing = RuleOverride(rule_id=rule_id)
-                settings.overrides[rule_id] = existing
-
-            if field == "enabled":
-                settings.overrides[rule_id] = existing.model_copy(
-                    update={"enabled": value.lower() in ("true", "1", "yes")},
-                )
-            elif field in ("warn_threshold", "fail_threshold"):
-                try:
-                    settings.overrides[rule_id] = existing.model_copy(
-                        update={field: float(value)},
-                    )
-                except ValueError:
-                    console.print(
-                        f"[red]Error:[/red] Invalid threshold value: '{value}'. "
-                        "Must be a number.",
-                    )
-                    raise typer.Exit(code=1) from None
-            else:
-                # Route to extra_params (e.g. S01.max_h2=5)
-                try:
-                    new_extra = {**existing.extra_params, field: float(value)}
-                    settings.overrides[rule_id] = existing.model_copy(
-                        update={"extra_params": new_extra},
-                    )
-                except ValueError:
-                    console.print(
-                        f"[red]Error:[/red] Invalid value for '{field}': '{value}'. "
-                        "Must be a number.",
-                    )
-                    raise typer.Exit(code=1) from None
+            _apply_override(settings, item)
 
     return settings
 

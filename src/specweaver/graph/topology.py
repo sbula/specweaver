@@ -63,6 +63,24 @@ class TopologyContext:
     constraints: list[str] = field(default_factory=list)
 
 
+def _pop_scc(root: str, stack: list[str], on_stack: set[str]) -> list[str]:
+    """Pop a strongly connected component off the Tarjan stack."""
+    scc: list[str] = []
+    while True:
+        w = stack.pop()
+        on_stack.discard(w)
+        scc.append(w)
+        if w == root:
+            break
+    return scc
+
+
+def _is_cycle(scc: list[str], forward: dict[str, set[str]]) -> bool:
+    """Return True if the SCC represents a real cycle (size>1 or self-loop)."""
+    if len(scc) > 1:
+        return True
+    return len(scc) == 1 and scc[0] in forward.get(scc[0], set())
+
 class TopologyGraph:
     """In-memory directed graph built from context.yaml files.
 
@@ -260,18 +278,9 @@ class TopologyGraph:
                     lowlinks[v] = min(lowlinks[v], indices[w])
 
             if lowlinks[v] == indices[v]:
-                scc: list[str] = []
-                while True:
-                    w = stack.pop()
-                    on_stack.discard(w)
-                    scc.append(w)
-                    if w == v:
-                        break
-                if len(scc) > 1:
+                scc = _pop_scc(v, stack, on_stack)
+                if _is_cycle(scc, self._forward):
                     result.append(sorted(scc))
-                elif len(scc) == 1 and scc[0] in self._forward.get(scc[0], set()):
-                    # Self-referencing node — also a cycle
-                    result.append(scc)
 
         for node_name in self._nodes:
             if node_name not in indices:

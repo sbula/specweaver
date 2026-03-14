@@ -83,64 +83,13 @@ class TestFirstRule(Rule):
                 )],
             )
 
-        findings: list[Finding] = []
-
-        # 1. Check for code blocks in Contract
-        code_blocks = contract.count("```")
-        has_code = code_blocks >= 2  # at least one complete block
-
-        # 2. Check for assertion/requirement patterns
-        assertion_count = 0
-        for pattern in _ASSERTION_PATTERNS:
-            matches = re.findall(pattern, contract)
-            assertion_count += len(matches)
-
-        # 3. Check for concrete values
-        concrete_values = _CONCRETE_VALUE_RE.findall(contract)
-
-        # 4. Check for input/output example patterns
-        has_io_examples = bool(re.search(
-            r"(?:input|output|example|given|when|then|returns?)\s*:",
-            contract,
-            re.IGNORECASE,
-        ))
-
-        if not has_code:
-            findings.append(
-                Finding(
-                    message="No code blocks in Contract section",
-                    severity=Severity.WARNING,
-                    suggestion="Add interface definitions or examples as fenced code blocks.",
-                )
-            )
-
-        if assertion_count == 0:
-            findings.append(
-                Finding(
-                    message="No testable assertions found (MUST, SHALL, raises, returns)",
-                    severity=Severity.WARNING,
-                    suggestion="Use RFC 2119 keywords (MUST, SHALL) to make requirements testable.",
-                )
-            )
-
-        if not concrete_values:
-            findings.append(
-                Finding(
-                    message="No concrete values found (strings, numbers, booleans)",
-                    severity=Severity.WARNING,
-                    suggestion="Include specific inputs and expected outputs.",
-                )
-            )
+        has_code, assertion_count, has_concrete, has_io = _analyse_contract(contract)
+        findings = _collect_findings(has_code, assertion_count, has_concrete)
 
         # Score: how testable is this contract?
-        testability_score = 0
-        if has_code:
-            testability_score += 3
-        testability_score += min(assertion_count, 5)  # cap at 5
-        if concrete_values:
-            testability_score += 2
-        if has_io_examples:
-            testability_score += 2
+        testability_score = _testability_score(
+            has_code, assertion_count, has_concrete, has_io,
+        )
 
         if testability_score < self._fail_score:
             return self._fail(
@@ -159,6 +108,79 @@ class TestFirstRule(Rule):
         return self._pass(
             f"Contract testability score: {testability_score}/12"
         )
+
+
+def _analyse_contract(
+    contract: str,
+) -> tuple[bool, int, bool, bool]:
+    """Analyse a contract section and return (has_code, assertion_count, has_concrete, has_io)."""
+    code_blocks = contract.count("```")
+    has_code = code_blocks >= 2  # at least one complete block
+
+    assertion_count = 0
+    for pattern in _ASSERTION_PATTERNS:
+        assertion_count += len(re.findall(pattern, contract))
+
+    has_concrete = bool(_CONCRETE_VALUE_RE.findall(contract))
+
+    has_io = bool(re.search(
+        r"(?:input|output|example|given|when|then|returns?)\s*:",
+        contract,
+        re.IGNORECASE,
+    ))
+
+    return has_code, assertion_count, has_concrete, has_io
+
+
+def _collect_findings(
+    has_code: bool, assertion_count: int, has_concrete: bool,
+) -> list[Finding]:
+    """Build the list of findings from contract analysis results."""
+    findings: list[Finding] = []
+
+    if not has_code:
+        findings.append(
+            Finding(
+                message="No code blocks in Contract section",
+                severity=Severity.WARNING,
+                suggestion="Add interface definitions or examples as fenced code blocks.",
+            )
+        )
+
+    if assertion_count == 0:
+        findings.append(
+            Finding(
+                message="No testable assertions found (MUST, SHALL, raises, returns)",
+                severity=Severity.WARNING,
+                suggestion="Use RFC 2119 keywords (MUST, SHALL) to make requirements testable.",
+            )
+        )
+
+    if not has_concrete:
+        findings.append(
+            Finding(
+                message="No concrete values found (strings, numbers, booleans)",
+                severity=Severity.WARNING,
+                suggestion="Include specific inputs and expected outputs.",
+            )
+        )
+
+    return findings
+
+
+def _testability_score(
+    has_code: bool, assertion_count: int, has_concrete: bool, has_io: bool,
+) -> int:
+    """Compute testability score (0-12) from contract analysis results."""
+    score = 0
+    if has_code:
+        score += 3
+    score += min(assertion_count, 5)  # cap at 5
+    if has_concrete:
+        score += 2
+    if has_io:
+        score += 2
+    return score
 
 
 def _extract_contract(text: str) -> str | None:
