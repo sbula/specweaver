@@ -243,3 +243,61 @@ class TestResume:
         loaded = store.load_run("run-done")
         assert loaded is not None
         assert loaded.status == RunStatus.COMPLETED
+
+
+# ---------------------------------------------------------------------------
+# Additional edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestStoreEdgeCases:
+    """Additional edge case tests for the store."""
+
+    def test_multiple_runs_different_pipelines(self, store: StateStore) -> None:
+        """Multiple runs for same project, different pipelines."""
+        run1 = _make_run(run_id="run-pipe1", pipeline_name="pipeline_a")
+        run2 = _make_run(run_id="run-pipe2", pipeline_name="pipeline_b")
+        store.save_run(run1)
+        store.save_run(run2)
+
+        latest_a = store.get_latest_run("test_project", "pipeline_a")
+        latest_b = store.get_latest_run("test_project", "pipeline_b")
+        assert latest_a is not None
+        assert latest_a.run_id == "run-pipe1"
+        assert latest_b is not None
+        assert latest_b.run_id == "run-pipe2"
+
+    def test_large_nested_output_roundtrip(self, store: StateStore) -> None:
+        """Step result with deeply nested output serializes correctly."""
+        run = _make_run(run_id="run-nested")
+        result = StepResult(
+            status=StepStatus.PASSED,
+            output={
+                "rules": [{"id": f"S{i:02d}", "status": "pass", "findings": []} for i in range(15)],
+                "metadata": {"nested": {"deep": {"value": 42}}},
+            },
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.complete_current_step(result)
+        store.save_run(run)
+
+        loaded = store.load_run("run-nested")
+        assert loaded is not None
+        assert len(loaded.step_records[0].result.output["rules"]) == 15
+        assert loaded.step_records[0].result.output["metadata"]["nested"]["deep"]["value"] == 42
+
+    def test_schema_version_persisted(self, store: StateStore) -> None:
+        """Schema version table should have exactly one entry."""
+        conn = store.connect()
+        row = conn.execute("SELECT version FROM state_schema_version").fetchone()
+        conn.close()
+        assert row is not None
+        assert row[0] == 1
+
+    def test_foreign_keys_enabled(self, store: StateStore) -> None:
+        """Foreign key constraints should be active."""
+        conn = store.connect()
+        fk = conn.execute("PRAGMA foreign_keys").fetchone()[0]
+        conn.close()
+        assert fk == 1

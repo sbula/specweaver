@@ -10,8 +10,10 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.flow.handlers import (
+    DraftSpecHandler,
     GenerateCodeHandler,
     GenerateTestsHandler,
+    ReviewCodeHandler,
     ReviewSpecHandler,
     RunContext,
     StepHandlerRegistry,
@@ -193,6 +195,80 @@ class TestGenerateTestsHandler:
         )
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
         handler = GenerateTestsHandler()
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.ERROR
+        assert "llm" in result.error_message.lower()
+
+
+# ---------------------------------------------------------------------------
+# DraftSpecHandler
+# ---------------------------------------------------------------------------
+
+
+class TestDraftSpecHandler:
+    """Tests for the draft+spec handler (HITL parking)."""
+
+    @pytest.mark.asyncio
+    async def test_draft_spec_exists_passes(self, tmp_path: Path) -> None:
+        """If spec already exists, draft step passes immediately."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Already drafted\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec)
+        step = PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC)
+        handler = DraftSpecHandler()
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+
+    @pytest.mark.asyncio
+    async def test_draft_spec_missing_parks(self, tmp_path: Path) -> None:
+        """If spec doesn't exist, draft step parks for HITL input."""
+        spec = tmp_path / "nonexistent_spec.md"
+        ctx = RunContext(project_path=tmp_path, spec_path=spec)
+        step = PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC)
+        handler = DraftSpecHandler()
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.WAITING_FOR_INPUT
+        assert "sw draft" in result.output["message"]
+
+
+# ---------------------------------------------------------------------------
+# Registry edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestRegistryEdgeCases:
+    """Additional registry tests."""
+
+    def test_custom_handler_override(self) -> None:
+        """Custom handler replaces the default for a given action+target."""
+        registry = StepHandlerRegistry()
+        original = registry.get(StepAction.VALIDATE, StepTarget.SPEC)
+
+        class CustomHandler:
+            async def execute(self, step, context):
+                pass
+
+        custom = CustomHandler()
+        registry.register(StepAction.VALIDATE, StepTarget.SPEC, custom)
+        assert registry.get(StepAction.VALIDATE, StepTarget.SPEC) is custom
+        assert registry.get(StepAction.VALIDATE, StepTarget.SPEC) is not original
+
+
+# ---------------------------------------------------------------------------
+# ReviewCodeHandler
+# ---------------------------------------------------------------------------
+
+
+class TestReviewCodeHandler:
+    """Tests for the review+code handler."""
+
+    @pytest.mark.asyncio
+    async def test_review_code_no_llm(self, tmp_path: Path) -> None:
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec)
+        step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)
+        handler = ReviewCodeHandler()
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.ERROR
         assert "llm" in result.error_message.lower()

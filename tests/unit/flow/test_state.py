@@ -290,3 +290,49 @@ class TestPipelineRun:
         run.mark_step_running()
         assert run.step_records[0].status == StepStatus.RUNNING
         assert run.status == RunStatus.RUNNING
+
+    # -- Edge cases: transitions at end of steps --
+
+    def test_complete_at_end_is_noop(self) -> None:
+        """complete_current_step when past last step should not crash."""
+        run = _make_run(current_step=2, step_names=["s1", "s2"])
+        result = StepResult(
+            status=StepStatus.PASSED,
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.complete_current_step(result)
+        assert run.current_step == 2  # unchanged
+
+    def test_fail_at_end_is_noop(self) -> None:
+        """fail_current_step when past last step should not crash."""
+        run = _make_run(current_step=2, step_names=["s1", "s2"])
+        result = StepResult(
+            status=StepStatus.FAILED,
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.fail_current_step(result)
+        # Status should NOT be changed to FAILED (no step to fail)
+        assert run.status == RunStatus.NOT_STARTED
+
+    def test_park_at_end_is_noop(self) -> None:
+        """park_current_step when past last step should not crash."""
+        run = _make_run(current_step=2, step_names=["s1", "s2"])
+        result = StepResult(
+            status=StepStatus.WAITING_FOR_INPUT,
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:00Z",
+        )
+        run.park_current_step(result)
+        assert run.status == RunStatus.NOT_STARTED
+
+    def test_mark_running_at_end_is_noop(self) -> None:
+        """mark_step_running when past last step should not crash."""
+        run = _make_run(current_step=2, step_names=["s1", "s2"])
+        run.mark_step_running()
+        assert run.status == RunStatus.NOT_STARTED
+
+    def test_not_started_is_not_terminal(self) -> None:
+        run = _make_run(status=RunStatus.NOT_STARTED)
+        assert run.is_terminal is False

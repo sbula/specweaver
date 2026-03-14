@@ -299,3 +299,71 @@ class TestPipelineRunnerEdgeCases:
         runner = PipelineRunner(pipeline, ctx, registry=registry)
         result = await runner.run()
         assert result.status == RunStatus.FAILED
+
+    @pytest.mark.asyncio
+    async def test_mid_pipeline_failure(self, tmp_path: Path) -> None:
+        """First step passes, second step fails — run stops at step 1."""
+        steps = [
+            PipelineStep(name="s_pass", action=StepAction.VALIDATE, target=StepTarget.SPEC),
+            PipelineStep(name="s_fail", action=StepAction.REVIEW, target=StepTarget.SPEC),
+        ]
+        pipeline = PipelineDefinition(name="mid_fail", steps=steps)
+        ctx = _make_context(tmp_path)
+
+        registry = StepHandlerRegistry()
+        registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
+        registry.register(StepAction.REVIEW, StepTarget.SPEC, FailHandler())
+
+        runner = PipelineRunner(pipeline, ctx, registry=registry)
+        result = await runner.run()
+        assert result.status == RunStatus.FAILED
+        assert result.current_step == 1
+        assert result.step_records[0].status == StepStatus.PASSED
+        assert result.step_records[1].status == StepStatus.FAILED
+
+    @pytest.mark.asyncio
+    async def test_resume_without_store_raises(self, tmp_path: Path) -> None:
+        """Resuming without a store configured should raise ValueError."""
+        pipeline = _make_pipeline()
+        ctx = _make_context(tmp_path)
+        runner = PipelineRunner(pipeline, ctx)  # no store
+        with pytest.raises(ValueError, match="no store"):
+            await runner.resume("some-id")
+
+    @pytest.mark.asyncio
+    async def test_run_without_store_no_crash(self, tmp_path: Path) -> None:
+        """Running without store configured should work fine (no persistence)."""
+        pipeline = _make_pipeline(step_count=2)
+        ctx = _make_context(tmp_path)
+        registry = _make_registry(PassHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry)  # no store
+
+        result = await runner.run()
+        assert result.status == RunStatus.COMPLETED
+
+    @pytest.mark.asyncio
+    async def test_parked_run_audit_events(self, tmp_path: Path) -> None:
+        """Parked run should have run_started, step_started, run_parked events."""
+        store = StateStore(tmp_path / "state.db")
+        pipeline = _make_pipeline(step_count=1)
+        ctx = _make_context(tmp_path)
+        registry = _make_registry(ParkHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry, store=store)
+
+        result = await runner.run()
+        events = store.get_audit_log(result.run_id)
+        event_types = [e["event"] for e in events]
+        assert "run_started" in event_types
+        assert "step_started" in event_types
+        assert "run_parked" in event_types
+
+    @pytest.mark.asyncio
+    async def test_error_message_preserved_in_step(self, tmp_path: Path) -> None:
+        """Handler exception message should be captured in step result."""
+        pipeline = _make_pipeline(step_count=1)
+        ctx = _make_context(tmp_path)
+        registry = _make_registry(ErrorHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry)
+
+        result = await runner.run()
+        assert "Something exploded" in result.step_records[0].result.error_message
