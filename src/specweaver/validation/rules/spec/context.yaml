@@ -1,0 +1,41 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: spec
+level: sub-module
+purpose: >
+  Spec validation rules (S01-S11) from the 10-test battery for specification quality.
+
+description: |
+  Contains rules that validate spec quality: one-sentence purpose (S01),
+  single test setup (S02), stranger test (S03), dependency direction (S04),
+  day test (S05), concrete example (S06), test-first (S07), ambiguity (S08),
+  error path (S09), done definition (S10), and terminology consistency (S11).
+
+archetype: pure-logic
+
+consumes:
+  - specweaver/validation
+
+forbids:
+  - specweaver/loom/*
+  - specweaver/llm
+  - specweaver/drafting
+
+exposes:
+  - OneSentenceRule
+  - SingleSetupRule
+  - StrangerTestRule
+  - DependencyDirectionRule
+  - DayTestRule
+  - ConcreteExampleRule
+  - TestFirstRule
+  - AmbiguityRule
+  - ErrorPathRule
+  - DoneDefinitionRule
+  - TerminologyRule
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

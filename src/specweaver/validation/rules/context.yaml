@@ -1,0 +1,32 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: rules
+level: sub-module
+purpose: >
+  Validation rule implementations organized by target type (spec and code).
+
+description: |
+  Container package for all validation rules. Rules are organized into
+  sub-packages by target: spec rules (S01-S11) for specification quality
+  and code rules (C01-C08) for generated code quality. Each rule implements
+  the Rule base class from the parent validation module.
+
+archetype: pure-logic
+
+consumes:
+  - specweaver/validation
+
+forbids:
+  - specweaver/loom/*
+  - specweaver/llm
+  - specweaver/drafting
+
+exposes:
+  - spec/*
+  - code/*
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

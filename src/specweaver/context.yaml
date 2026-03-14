@@ -24,6 +24,7 @@ exposes:
   - validation
   - config
   - llm
+  - graph
   - project
   - implementation
   - context

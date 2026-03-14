@@ -1,0 +1,30 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: adapters
+level: sub-module
+purpose: >
+  Concrete LLM provider adapters implementing the base adapter interface.
+
+description: |
+  Contains provider-specific adapter implementations (currently GeminiAdapter).
+  Each adapter translates the provider-agnostic LLMAdapter contract into
+  provider-specific API calls, error handling, and response parsing.
+
+archetype: adapter
+
+consumes:
+  - specweaver/llm
+
+forbids:
+  - specweaver/loom/*
+  - specweaver/validation
+  - specweaver/drafting
+
+exposes:
+  - GeminiAdapter
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

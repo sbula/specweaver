@@ -1,0 +1,37 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: code
+level: sub-module
+purpose: >
+  Code validation rules (C01-C08) for static analysis of generated code.
+
+description: |
+  Contains rules that validate generated code quality: syntax validity (C01),
+  test existence (C02), test pass (C03), coverage (C04), import direction (C05),
+  no bare except (C06), no orphan TODO (C07), and type hints (C08).
+
+archetype: pure-logic
+
+consumes:
+  - specweaver/validation
+
+forbids:
+  - specweaver/loom/*
+  - specweaver/llm
+  - specweaver/drafting
+
+exposes:
+  - SyntaxValidRule
+  - TestsExistRule
+  - TestsPassRule
+  - CoverageRule
+  - ImportDirectionRule
+  - NoBareExceptRule
+  - NoOrphanTodoRule
+  - TypeHintsRule
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none
