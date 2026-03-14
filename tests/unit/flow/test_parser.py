@@ -202,3 +202,80 @@ class TestBundledTemplates:
         p = load_pipeline(Path("validate_only"))
         errors = p.validate_flow()
         assert errors == []
+
+
+# ---------------------------------------------------------------------------
+# Parser edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestParserEdgeCases:
+    """Edge case tests for the YAML parser."""
+
+    def test_load_empty_yaml_file(self, tmp_path: Path) -> None:
+        """Empty YAML file should raise ValueError (not a dict)."""
+        yaml_file = tmp_path / "empty.yaml"
+        yaml_file.write_text("")
+        with pytest.raises(ValueError, match="mapping"):
+            load_pipeline(yaml_file)
+
+    def test_load_yaml_with_only_comments(self, tmp_path: Path) -> None:
+        """YAML file with only comments → null → ValueError."""
+        yaml_file = tmp_path / "comments.yaml"
+        yaml_file.write_text("# just a comment\n# nothing here\n")
+        with pytest.raises(ValueError, match="mapping"):
+            load_pipeline(yaml_file)
+
+    def test_load_yaml_list_not_mapping(self, tmp_path: Path) -> None:
+        """YAML file containing a list (not a mapping) → ValueError."""
+        yaml_file = tmp_path / "list.yaml"
+        yaml_file.write_text("- item1\n- item2\n")
+        with pytest.raises(ValueError, match="mapping"):
+            load_pipeline(yaml_file)
+
+    def test_load_by_name_without_suffix(self, tmp_path: Path) -> None:
+        """Loading by name (no .yaml) where <name>.yaml exists on disk."""
+        yaml_file = tmp_path / "custom.yaml"
+        yaml_file.write_text(
+            dedent("""\
+            name: custom
+            steps:
+              - name: s1
+                action: validate
+                target: spec
+        """)
+        )
+        p = load_pipeline(tmp_path / "custom")
+        assert p.name == "custom"
+
+    def test_load_with_extra_fields_ignored(self, tmp_path: Path) -> None:
+        """Extra fields in YAML should not cause errors (forward compat)."""
+        yaml_file = tmp_path / "extra.yaml"
+        yaml_file.write_text(
+            dedent("""\
+            name: extra
+            future_field: some_value
+            steps:
+              - name: s1
+                action: validate
+                target: spec
+                unknown_field: ignored
+        """)
+        )
+        # Pydantic by default ignores extra fields — verify this works
+        p = load_pipeline(yaml_file)
+        assert p.name == "extra"
+
+    def test_load_step_missing_action(self, tmp_path: Path) -> None:
+        """Step without an action field → ValueError."""
+        yaml_file = tmp_path / "no_action.yaml"
+        yaml_file.write_text(
+            dedent("""\
+            name: bad
+            steps:
+              - name: s1
+                target: spec
+        """)
+        )
+        with pytest.raises(ValueError):
+            load_pipeline(yaml_file)

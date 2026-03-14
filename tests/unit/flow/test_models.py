@@ -363,3 +363,198 @@ class TestPipelineDefinition:
         p2 = PipelineDefinition.model_validate(data)
         assert p2.name == p.name
         assert len(p2.steps) == len(p.steps)
+
+    def test_validate_flow_multiple_errors_accumulated(self) -> None:
+        """validate_flow collects ALL errors, not just the first one."""
+        steps = [
+            PipelineStep(name="s1", action=StepAction.DRAFT, target=StepTarget.CODE),
+            PipelineStep(name="s1", action=StepAction.GENERATE, target=StepTarget.SPEC),
+        ]
+        p = PipelineDefinition(name="multi_err", steps=steps)
+        errors = p.validate_flow()
+        # Should have: 1 duplicate + 2 invalid combos = 3 errors
+        assert len(errors) >= 3
+
+    def test_validate_flow_non_loop_back_with_loop_target_is_ok(self) -> None:
+        """loop_target on a non-loop_back gate is ignored (no error)."""
+        steps = [
+            PipelineStep(
+                name="s1",
+                action=StepAction.VALIDATE,
+                target=StepTarget.SPEC,
+                gate=GateDefinition(
+                    on_fail=OnFailAction.ABORT,
+                    loop_target="nonexistent",  # should be ignored
+                ),
+            ),
+        ]
+        p = PipelineDefinition(name="ignore_loop", steps=steps)
+        errors = p.validate_flow()
+        assert errors == []
+
+    def test_validate_flow_retry_gate_is_valid(self) -> None:
+        """on_fail=retry doesn't need a loop_target."""
+        steps = [
+            PipelineStep(
+                name="s1",
+                action=StepAction.VALIDATE,
+                target=StepTarget.SPEC,
+                gate=GateDefinition(on_fail=OnFailAction.RETRY),
+            ),
+        ]
+        p = PipelineDefinition(name="retry", steps=steps)
+        errors = p.validate_flow()
+        assert errors == []
+
+    def test_validate_flow_continue_gate_is_valid(self) -> None:
+        """on_fail=continue doesn't need a loop_target."""
+        steps = [
+            PipelineStep(
+                name="s1",
+                action=StepAction.VALIDATE,
+                target=StepTarget.SPEC,
+                gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
+            ),
+        ]
+        p = PipelineDefinition(name="cont", steps=steps)
+        errors = p.validate_flow()
+        assert errors == []
+
+    def test_validate_flow_single_step_pipeline(self) -> None:
+        """A single-step pipeline is valid."""
+        steps = [
+            PipelineStep(name="s1", action=StepAction.VALIDATE, target=StepTarget.SPEC),
+        ]
+        p = PipelineDefinition(name="single", steps=steps)
+        errors = p.validate_flow()
+        assert errors == []
+
+    def test_validate_flow_full_core_loop(self) -> None:
+        """The full 7-step core loop validates cleanly."""
+        steps = [
+            PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC),
+            PipelineStep(
+                name="val_spec",
+                action=StepAction.VALIDATE,
+                target=StepTarget.SPEC,
+                gate=GateDefinition(condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.ABORT),
+            ),
+            PipelineStep(
+                name="rev_spec",
+                action=StepAction.REVIEW,
+                target=StepTarget.SPEC,
+                gate=GateDefinition(
+                    condition=GateCondition.ACCEPTED,
+                    on_fail=OnFailAction.LOOP_BACK,
+                    loop_target="draft",
+                ),
+            ),
+            PipelineStep(name="gen_code", action=StepAction.GENERATE, target=StepTarget.CODE),
+            PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS),
+            PipelineStep(
+                name="val_code",
+                action=StepAction.VALIDATE,
+                target=StepTarget.CODE,
+                gate=GateDefinition(condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.ABORT),
+            ),
+            PipelineStep(
+                name="rev_code",
+                action=StepAction.REVIEW,
+                target=StepTarget.CODE,
+                gate=GateDefinition(
+                    condition=GateCondition.ACCEPTED,
+                    on_fail=OnFailAction.LOOP_BACK,
+                    loop_target="gen_code",
+                ),
+            ),
+        ]
+        p = PipelineDefinition(name="core_loop", steps=steps)
+        errors = p.validate_flow()
+        assert errors == []
+
+    def test_validate_flow_triple_duplicate(self) -> None:
+        """Three steps with the same name → two duplicate errors."""
+        steps = [
+            PipelineStep(name="dup", action=StepAction.VALIDATE, target=StepTarget.SPEC),
+            PipelineStep(name="dup", action=StepAction.VALIDATE, target=StepTarget.SPEC),
+            PipelineStep(name="dup", action=StepAction.VALIDATE, target=StepTarget.SPEC),
+        ]
+        p = PipelineDefinition(name="triple", steps=steps)
+        errors = p.validate_flow()
+        dup_errors = [e for e in errors if "duplicate" in e.lower()]
+        assert len(dup_errors) == 2
+
+    def test_serialization_roundtrip_with_gate(self) -> None:
+        """Model with gates survives serialization roundtrip."""
+        steps = [
+            PipelineStep(
+                name="s1",
+                action=StepAction.REVIEW,
+                target=StepTarget.SPEC,
+                gate=GateDefinition(
+                    type=GateType.HITL,
+                    condition=GateCondition.ACCEPTED,
+                    on_fail=OnFailAction.LOOP_BACK,
+                    loop_target="s1",
+                    max_retries=5,
+                ),
+                params={"key": "value"},
+                description="A gated step",
+            ),
+        ]
+        p = PipelineDefinition(name="gated", steps=steps, version="2.0")
+        data = p.model_dump()
+        p2 = PipelineDefinition.model_validate(data)
+        assert p2.steps[0].gate is not None
+        assert p2.steps[0].gate.loop_target == "s1"
+        assert p2.steps[0].gate.max_retries == 5
+        assert p2.steps[0].params == {"key": "value"}
+        assert p2.version == "2.0"
+
+
+class TestGateDefinitionEdgeCases:
+    """Edge case tests for GateDefinition."""
+
+    def test_negative_max_retries_rejected(self) -> None:
+        """max_retries < 0 should fail validation."""
+        with pytest.raises(ValueError):
+            GateDefinition(max_retries=-1)
+
+    def test_max_retries_zero_is_valid(self) -> None:
+        """max_retries=0 means 'never retry' — should be valid."""
+        gate = GateDefinition(max_retries=0)
+        assert gate.max_retries == 0
+
+
+class TestPipelineStepEdgeCases:
+    """Edge case tests for PipelineStep."""
+
+    def test_empty_step_name(self) -> None:
+        """Empty string name — model accepts it, validate_flow should catch it."""
+        step = PipelineStep(name="", action=StepAction.VALIDATE, target=StepTarget.SPEC)
+        assert step.name == ""
+
+    def test_whitespace_step_name(self) -> None:
+        """Whitespace-only name — model accepts it (could be validated later)."""
+        step = PipelineStep(name="  ", action=StepAction.VALIDATE, target=StepTarget.SPEC)
+        assert step.name == "  "
+
+    def test_params_with_nested_dict(self) -> None:
+        """Params can contain nested structures."""
+        step = PipelineStep(
+            name="s1",
+            action=StepAction.VALIDATE,
+            target=StepTarget.SPEC,
+            params={"config": {"nested": True, "depth": 2}},
+        )
+        assert step.params["config"]["nested"] is True
+
+    def test_params_with_list_value(self) -> None:
+        """Params can contain list values."""
+        step = PipelineStep(
+            name="s1",
+            action=StepAction.VALIDATE,
+            target=StepTarget.SPEC,
+            params={"rules": ["S01", "S02", "S03"]},
+        )
+        assert len(step.params["rules"]) == 3
