@@ -7,7 +7,7 @@ SpecWeaver evolved from the **FlowManager** project, a configuration-driven work
 - **Original repository**: [github.com/sbula/flowManager](https://github.com/sbula/flowManager)
 - **Evolution**: FlowManager → SpecWeaver (March 2026)
 - **What changed**: FlowManager focused on JSON workflow execution. SpecWeaver refocuses on the full specification-driven development lifecycle: spec drafting, validation, review, code generation, and quality assurance.
-- **What was preserved**: The methodology framework (10-test battery, fractal decomposition, lifecycle layers), architectural analysis, and design decisions were carried forward. Valuable implementation knowledge was extracted into `docs/analysis/legacy_extraction.md` before the old codebase was retired.
+- **What was preserved**: The methodology framework (10-test battery, fractal decomposition, lifecycle layers), architectural analysis, and design decisions were carried forward. Valuable implementation knowledge was extracted into [flowmanager_legacy_reference.md](analysis/flowmanager_legacy_reference.md) before the old codebase was retired.
 
 ## Acknowledgements
 
@@ -57,11 +57,4 @@ Patterns adopted or planned for SpecWeaver:
 - **Project metadata injection** → Inject project name, archetype, language target, date into system prompts. Inspired by Aider's `get_platform_info()` (Phase 3.7)
 - **Conversation summarization** → Compress old multi-turn messages when context fills up, keeping recent turns + summary. Inspired by Aider's `summarize_end()` (Phase 4.6)
 
-### Technology Decisions
-
-| Component | Choice | Rationale |
-|-----------|--------|-----------|
-| **Language** | Python 3.11+ | AI integration, ecosystem, rapid iteration |
-| **CLI** | Typer | Modern, type-hint-based, built on Click, "FastAPI of CLIs" |
-| **LLM** | Google Gemini API | User's existing subscription, strong Python SDK |
-| **Generated Code** | Python (MVP) | Same ecosystem, simplifies testing |
+For current technology choices, see the [Tech Stack](../README.md#tech-stack) section in the README.

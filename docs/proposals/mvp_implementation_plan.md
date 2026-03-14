@@ -1,5 +1,6 @@
 # SpecWeaver MVP — Implementation Roadmap
 
+> **Status**: 📜 HISTORICAL — This document reflects the original implementation plan from March 2026. The actual codebase has evolved significantly. For current architecture, see [README.md](../../README.md).
 > **Date**: 2026-03-08 (updated 2026-03-10 — loom layer implemented)
 > **Purpose**: Technical implementation plan for the SpecWeaver MVP. Covers source reuse from flowManager, framework decisions, architecture decisions, module-by-module build plan, and verification strategy.
 

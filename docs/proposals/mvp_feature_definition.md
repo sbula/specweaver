@@ -1,6 +1,6 @@
 # SpecWeaver MVP — Feature Definition
 
-> **Status**: PROPOSAL — Requires HITL approval before implementation.
+> **Status**: 📜 HISTORICAL — This document reflects the original design from March 2026. The actual implementation has diverged (e.g., SQLite config, `sw check` commands, loom/graph modules). For current architecture, see [README.md](../../README.md).
 > **Date**: 2026-03-08
 > **Decisions**: Python for generated code ✅, L2 skipped ✅, Deployment isolation ✅, Per-layer rule config ✅, Typer CLI ✅, Gemini API ✅
 > **Related**:
@@ -88,22 +88,9 @@ Interactive session. Agent and HITL co-author a Component Spec.
 
 Automated rules against a spec file. Uniform rule interface — all rules run, results collected, caller decides next action.
 
-| ID | Rule | Method | Draft Implementation |
-|----|------|--------|---------------------|
-| S01 | One-Sentence | Static | Conjunction count in Purpose |
-| S02 | Single Test Setup | Static | H2/H3 section count |
-| S03 | Stranger | LLM | Summarization from Purpose alone |
-| S04 | Dependency Direction | Static | Cross-ref direction scan + dead-link detection (traceability) |
-| S05 | Day Test | Static | Word/section count heuristic |
-| S06 | Concrete Example | Static | Code block presence in Contract |
-| S07 | Test-First | LLM | Test generation from Contract alone |
-| S08 | Ambiguity | Static | Weasel word scan |
-| S09 | Error Path | Static | Error/failure keyword search |
-| S10 | Done Definition | Static | Verification section check |
-| S11 | Terminology Consistency | Static | Inconsistent casing + undefined domain term detection |
-
-All rules are DRAFT implementations with `# DRAFT` markers. Uniform interface ensures independent upgrades.
-
+See [Validation Rules](../../README.md#validation-rules) in the README for the current spec rule list (S01-S11).
+
+All rules are DRAFT implementations
 ### F4: Spec Review (`sw review spec`)
 
 LLM semantic evaluation of a spec that passed validation. Assesses meaning, not structure. Output: ACCEPTED or DENIED with findings. Same review module as F7, different prompts.
@@ -122,16 +109,7 @@ Reads validated+reviewed spec, generates code + tests:
 
 Same rule interface as F3, different rules:
 
-| ID | Rule | Method | Draft Implementation |
-|----|------|--------|---------------------|
-| C01 | Syntax Valid | Static | Import check |
-| C02 | Tests Exist | Static | Test file presence |
-| C03 | Tests Pass | Static | Pytest execution |
-| C04 | Coverage | Static | Coverage ≥ 70% |
-| C05 | Import Direction | Static | Upward import scan |
-| C06 | No Bare Except | Static | AST scan |
-| C07 | No Orphan TODO | Static | TODO/FIXME grep |
-| C08 | Type Hints | Static | AST annotation check |
+See [Code Rules](../../README.md#code-rules-c01c08) in the README for the current code rule list (C01-C08).
 
 ### F7: Code Review (`sw review code`)
 
