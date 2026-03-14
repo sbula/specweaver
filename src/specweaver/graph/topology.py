@@ -48,6 +48,21 @@ class TopologyNode:
     yaml_path: Path | None = None
 
 
+@dataclass(frozen=True)
+class TopologyContext:
+    """Structured context about a module for prompt injection.
+
+    Produced by TopologyGraph.format_context_summary() and consumed
+    by PromptBuilder.add_topology().
+    """
+
+    name: str
+    purpose: str
+    archetype: str
+    relationship: str  # e.g. "direct dependency", "2-hop consumer"
+    constraints: list[str] = field(default_factory=list)
+
+
 class TopologyGraph:
     """In-memory directed graph built from context.yaml files.
 
@@ -315,6 +330,94 @@ class TopologyGraph:
                 )
 
         return warnings
+
+    # -- Neighbourhood & constraint queries -----------------------------
+
+    def neighbors_within(self, module: str, depth: int = 1) -> set[str]:
+        """Return modules within *depth* hops (forward + reverse).
+
+        depth=1 gives direct dependencies + consumers.
+        depth=2 adds their neighbours, etc.
+        """
+        if depth < 1:
+            return set()
+
+        visited: set[str] = set()
+        frontier = {module}
+
+        for _ in range(depth):
+            next_frontier: set[str] = set()
+            for node in frontier:
+                fwd = self._forward.get(node, set())
+                rev = self._reverse.get(node, set())
+                next_frontier |= (fwd | rev) - visited - {module}
+            visited |= next_frontier
+            frontier = next_frontier
+            if not frontier:
+                break
+
+        return visited
+
+    def modules_sharing_constraints(self, module: str) -> set[str]:
+        """Return modules that share at least one constraint with *module*."""
+        node = self._nodes.get(module)
+        if node is None or not node.constraints:
+            return set()
+
+        my_constraints = set(node.constraints)
+        result: set[str] = set()
+        for name, other in self._nodes.items():
+            if name == module:
+                continue
+            if my_constraints & set(other.constraints):
+                result.add(name)
+        return result
+
+    def format_context_summary(
+        self,
+        module: str,
+        related: set[str],
+    ) -> list[TopologyContext]:
+        """Build structured context for a set of related modules.
+
+        Args:
+            module: The target module (used to determine relationship labels).
+            related: Module names to include in the summary.
+
+        Returns:
+            List of TopologyContext, one per related module that exists
+            in the graph. Unknown modules are silently skipped.
+        """
+        direct_deps = self._forward.get(module, set())
+        direct_consumers = self._reverse.get(module, set())
+        contexts: list[TopologyContext] = []
+
+        for name in sorted(related):
+            node = self._nodes.get(name)
+            if node is None:
+                continue
+
+            # Determine relationship label
+            if name in direct_deps and name in direct_consumers:
+                relationship = "mutual dependency"
+            elif name in direct_deps:
+                relationship = "direct dependency"
+            elif name in direct_consumers:
+                relationship = "direct consumer"
+            else:
+                relationship = "transitive neighbour"
+
+            contexts.append(
+                TopologyContext(
+                    name=name,
+                    purpose=node.purpose,
+                    archetype=node.archetype,
+                    relationship=relationship,
+                    constraints=list(node.constraints),
+                )
+            )
+
+        return contexts
 
     # -- Internal helpers ----------------------------------------------
 

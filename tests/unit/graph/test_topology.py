@@ -11,6 +11,7 @@ import pytest
 from ruamel.yaml import YAML
 
 from specweaver.graph.topology import (
+    TopologyContext,
     TopologyGraph,
 )
 
@@ -448,4 +449,207 @@ class TestEdgeCases:
         impact = graph.impact_of("a")
         assert "b" in impact
         assert "c" in impact
+
+
+# ---------------------------------------------------------------------------
+# neighbors_within tests
+# ---------------------------------------------------------------------------
+
+
+class TestNeighborsWithin:
+    """Test N-hop neighbourhood query."""
+
+    def test_depth_1_linear(self, linear_chain: Path) -> None:
+        """A->B->C: depth=1 from B gives {A, C}."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        assert graph.neighbors_within("b", depth=1) == {"a", "c"}
+
+    def test_depth_1_root(self, linear_chain: Path) -> None:
+        """A->B->C: depth=1 from A gives {B} (no reverse for root)."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        assert graph.neighbors_within("a", depth=1) == {"b"}
+
+    def test_depth_1_leaf(self, linear_chain: Path) -> None:
+        """A->B->C: depth=1 from C gives {B} (consumer only)."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        assert graph.neighbors_within("c", depth=1) == {"b"}
+
+    def test_depth_2_linear(self, linear_chain: Path) -> None:
+        """A->B->C: depth=2 from A gives {B, C}."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        assert graph.neighbors_within("a", depth=2) == {"b", "c"}
+
+    def test_depth_2_from_leaf(self, linear_chain: Path) -> None:
+        """A->B->C: depth=2 from C gives {A, B}."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        assert graph.neighbors_within("c", depth=2) == {"a", "b"}
+
+    def test_diamond_depth_1(self, diamond: Path) -> None:
+        """Diamond A->B,C; B,C->D: depth=1 from A gives {B, C}."""
+        graph = TopologyGraph.from_project(diamond, auto_infer=False)
+        assert graph.neighbors_within("a", depth=1) == {"b", "c"}
+
+    def test_diamond_depth_2(self, diamond: Path) -> None:
+        """Diamond: depth=2 from A gives {B, C, D}."""
+        graph = TopologyGraph.from_project(diamond, auto_infer=False)
+        assert graph.neighbors_within("a", depth=2) == {"b", "c", "d"}
+
+    def test_depth_0_returns_empty(self, linear_chain: Path) -> None:
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        assert graph.neighbors_within("a", depth=0) == set()
+
+    def test_unknown_module_returns_empty(self, single_node: Path) -> None:
+        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        assert graph.neighbors_within("nonexistent", depth=1) == set()
+
+    def test_isolated_node(self, single_node: Path) -> None:
+        """Single node with no edges returns empty."""
+        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        assert graph.neighbors_within("alpha", depth=1) == set()
+
+    def test_cycle_depth_1(self, cycle_ab: Path) -> None:
+        """A->B->A: depth=1 from A gives {B}."""
+        graph = TopologyGraph.from_project(cycle_ab, auto_infer=False)
+        assert graph.neighbors_within("a", depth=1) == {"b"}
+
+    def test_large_depth_saturates(self, linear_chain: Path) -> None:
+        """depth=100 on a 3-node chain returns all others."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        assert graph.neighbors_within("b", depth=100) == {"a", "c"}
+
+
+# ---------------------------------------------------------------------------
+# modules_sharing_constraints tests
+# ---------------------------------------------------------------------------
+
+
+class TestModulesSharingConstraints:
+    """Test constraint overlap detection."""
+
+    def test_shared_constraint(self, tmp_path: Path) -> None:
+        """Two modules with overlapping constraint lists."""
+        _write_context(
+            tmp_path / "a", name="a",
+            constraints=["no-blocking", "stateless"],
+        )
+        _write_context(
+            tmp_path / "b", name="b",
+            constraints=["stateless", "idempotent"],
+        )
+        _write_context(
+            tmp_path / "c", name="c",
+            constraints=["idempotent"],
+        )
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        assert graph.modules_sharing_constraints("a") == {"b"}
+
+    def test_no_shared_constraints(self, with_constraints: Path) -> None:
+        """api and engine have different constraints."""
+        graph = TopologyGraph.from_project(with_constraints, auto_infer=False)
+        assert graph.modules_sharing_constraints("api") == set()
+
+    def test_no_constraints_returns_empty(self, single_node: Path) -> None:
+        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        assert graph.modules_sharing_constraints("alpha") == set()
+
+    def test_unknown_module_returns_empty(self, single_node: Path) -> None:
+        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        assert graph.modules_sharing_constraints("nonexistent") == set()
+
+    def test_multiple_shared(self, tmp_path: Path) -> None:
+        """Module shares constraints with multiple others."""
+        _write_context(tmp_path / "x", name="x", constraints=["auth-required"])
+        _write_context(tmp_path / "y", name="y", constraints=["auth-required"])
+        _write_context(tmp_path / "z", name="z", constraints=["auth-required"])
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        assert graph.modules_sharing_constraints("x") == {"y", "z"}
+
+
+# ---------------------------------------------------------------------------
+# format_context_summary tests
+# ---------------------------------------------------------------------------
+
+
+class TestFormatContextSummary:
+    """Test structured context assembly."""
+
+    def test_direct_dependency_label(self, linear_chain: Path) -> None:
+        """A consumes B: relationship = 'direct dependency'."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        contexts = graph.format_context_summary("a", {"b"})
+        assert len(contexts) == 1
+        assert contexts[0].name == "b"
+        assert contexts[0].relationship == "direct dependency"
+
+    def test_direct_consumer_label(self, linear_chain: Path) -> None:
+        """B is consumed by A: from B's view, A is 'direct consumer'."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        contexts = graph.format_context_summary("b", {"a"})
+        assert len(contexts) == 1
+        assert contexts[0].relationship == "direct consumer"
+
+    def test_transitive_label(self, linear_chain: Path) -> None:
+        """A->B->C: C is not direct from A, so 'transitive neighbour'."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        contexts = graph.format_context_summary("a", {"c"})
+        assert len(contexts) == 1
+        assert contexts[0].relationship == "transitive neighbour"
+
+    def test_mutual_dependency_label(self, cycle_ab: Path) -> None:
+        """A->B and B->A: mutual dependency."""
+        graph = TopologyGraph.from_project(cycle_ab, auto_infer=False)
+        contexts = graph.format_context_summary("a", {"b"})
+        assert len(contexts) == 1
+        assert contexts[0].relationship == "mutual dependency"
+
+    def test_includes_purpose_and_archetype(self, tmp_path: Path) -> None:
+        _write_context(
+            tmp_path / "svc", name="svc",
+            purpose="Auth service.", archetype="adapter",
+            constraints=["no-direct-db"],
+        )
+        _write_context(tmp_path / "cli", name="cli", consumes=["svc"])
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        contexts = graph.format_context_summary("cli", {"svc"})
+        assert len(contexts) == 1
+        ctx = contexts[0]
+        assert ctx.purpose == "Auth service."
+        assert ctx.archetype == "adapter"
+        assert ctx.constraints == ["no-direct-db"]
+
+    def test_unknown_module_skipped(self, single_node: Path) -> None:
+        """Unknown modules in the related set are silently skipped."""
+        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        assert graph.format_context_summary("alpha", {"ghost"}) == []
+
+    def test_empty_related_set(self, linear_chain: Path) -> None:
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        assert graph.format_context_summary("a", set()) == []
+
+    def test_sorted_output(self, diamond: Path) -> None:
+        """Output is sorted alphabetically by module name."""
+        graph = TopologyGraph.from_project(diamond, auto_infer=False)
+        contexts = graph.format_context_summary("a", {"d", "c", "b"})
+        names = [c.name for c in contexts]
+        assert names == ["b", "c", "d"]
+
+    def test_topology_context_is_frozen(self, linear_chain: Path) -> None:
+        """TopologyContext should be immutable (frozen dataclass)."""
+        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        contexts = graph.format_context_summary("a", {"b"})
+        with pytest.raises(AttributeError):
+            contexts[0].name = "changed"  # type: ignore[misc]
+
+    def test_topology_context_dataclass_fields(self) -> None:
+        """Verify TopologyContext can be constructed directly."""
+        ctx = TopologyContext(
+            name="mod",
+            purpose="Does things.",
+            archetype="pure-logic",
+            relationship="direct dependency",
+            constraints=["no-io"],
+        )
+        assert ctx.name == "mod"
+        assert ctx.constraints == ["no-io"]
+
 
