@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
     from specweaver.llm.models import TokenBudget
 
@@ -79,9 +80,10 @@ class _ContentBlock:
     text: str
     priority: int  # 0 = instructions (never truncated), lower = higher priority
     label: str = ""
-    kind: str = "context"  # "instructions", "file", "context"
+    kind: str = "context"  # "instructions", "file", "context", "topology", "reminder"
     language: str = "text"
     file_path: str = ""
+    role: str = ""  # trust signal: "reference" | "target" | ""
     tokens: int = 0
     truncated: bool = False
 
@@ -105,9 +107,12 @@ class PromptBuilder:
         self,
         budget: TokenBudget | None = None,
         adapter: LLMAdapter | None = None,
+        *,
+        budget_scale_factor: float = 1.0,
     ) -> None:
         self._budget = budget
         self._adapter = adapter
+        self._scale = max(0.1, min(budget_scale_factor, 2.0))  # clamp to [0.1, 2.0]
         self._blocks: list[_ContentBlock] = []
 
     # ------------------------------------------------------------------
@@ -136,6 +141,7 @@ class PromptBuilder:
         *,
         priority: int = 2,
         label: str = "",
+        role: str = "",
     ) -> PromptBuilder:
         """Read a file and add it as a ``<file>`` block.
 
@@ -143,6 +149,8 @@ class PromptBuilder:
             path: Path to the file to read.
             priority: Truncation priority (lower = kept first).  Default 2.
             label: Optional human label.  Defaults to the file name.
+            role: Trust signal — ``"reference"`` (read-only context) or
+                ``"target"`` (file being reviewed/generated).  Empty = no signal.
         """
         content = path.read_text(encoding="utf-8")
         lang = detect_language(path)
@@ -154,6 +162,7 @@ class PromptBuilder:
                 label=label or path.name,
                 language=lang,
                 file_path=str(path),
+                role=role,
                 tokens=self._count(content),
             ),
         )
@@ -179,6 +188,58 @@ class PromptBuilder:
                 priority=max(1, priority),
                 kind="context",
                 label=label,
+                tokens=self._count(text),
+            ),
+        )
+        return self
+
+    def add_topology(
+        self,
+        contexts: list[TopologyContext],
+        *,
+        priority: int = 2,
+    ) -> PromptBuilder:
+        """Add topology context rendered as ``<topology>`` XML.
+
+        Args:
+            contexts: List of ``TopologyContext`` from
+                ``TopologyGraph.format_context_summary()``.
+            priority: Truncation priority.  Default 2.
+        """
+        if not contexts:
+            return self
+
+        lines: list[str] = []
+        for ctx in contexts:
+            constraints_str = ", ".join(ctx.constraints) if ctx.constraints else "none"
+            lines.append(
+                f"  - {ctx.name} ({ctx.relationship}): "
+                f"{ctx.purpose} [archetype={ctx.archetype}, "
+                f"constraints={constraints_str}]"
+            )
+        text = "\n".join(lines)
+        self._blocks.append(
+            _ContentBlock(
+                text=text,
+                priority=max(1, priority),
+                kind="topology",
+                label="topology",
+                tokens=self._count(text),
+            ),
+        )
+        return self
+
+    def add_reminder(self, text: str) -> PromptBuilder:
+        """Add a reminder block rendered at the bottom of the prompt.
+
+        Reminders are placed after all other content to reinforce
+        critical instructions.  Priority 0 — never truncated.
+        """
+        self._blocks.append(
+            _ContentBlock(
+                text=text.strip(),
+                priority=0,
+                kind="reminder",
                 tokens=self._count(text),
             ),
         )
@@ -230,6 +291,8 @@ class PromptBuilder:
         assert self._budget is not None
 
         limit = self._budget.limit
+        # Apply dynamic scaling
+        limit = int(limit * self._scale)
         if limit <= 0:
             return blocks
 
@@ -340,12 +403,22 @@ class PromptBuilder:
             instr_text = "\n\n".join(b.text for b in instructions)
             parts.append(f"<instructions>\n{instr_text}\n</instructions>")
 
+        # Topology (before files — gives structural context)
+        topology = [b for b in blocks if b.kind == "topology"]
+        for topo in topology:
+            marker = "\n[truncated]" if topo.truncated else ""
+            parts.append(
+                f"<topology>\n{topo.text}{marker}\n</topology>",
+            )
+
         # Files
         files = [b for b in blocks if b.kind == "file"]
         if files:
             file_parts: list[str] = []
             for f in files:
                 attrs = f'path="{f.label}" language="{f.language}"'
+                if f.role:
+                    attrs += f' role="{f.role}"'
                 marker = "\n[truncated]" if f.truncated else ""
                 file_parts.append(
                     f"<file {attrs}>\n{f.text}{marker}\n</file>",
@@ -360,5 +433,11 @@ class PromptBuilder:
             parts.append(
                 f'<context label="{ctx.label}">\n{ctx.text}{marker}\n</context>',
             )
+
+        # Reminders at the very end
+        reminders = [b for b in blocks if b.kind == "reminder"]
+        if reminders:
+            reminder_text = "\n\n".join(b.text for b in reminders)
+            parts.append(f"<reminder>\n{reminder_text}\n</reminder>")
 
         return "\n\n".join(parts)

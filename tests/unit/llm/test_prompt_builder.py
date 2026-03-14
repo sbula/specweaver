@@ -425,3 +425,213 @@ class TestPromptBuilderIntegration:
 
         # estimate_tokens should have been called
         assert adapter.estimate_tokens.call_count >= 2
+
+
+# ---------------------------------------------------------------------------
+# Trust signals (role parameter)
+# ---------------------------------------------------------------------------
+
+
+class TestFileRole:
+    """Test role parameter on add_file for trust signals."""
+
+    def test_role_reference_rendered(self, tmp_path: Path) -> None:
+        f = tmp_path / "ref.py"
+        f.write_text("x = 1", encoding="utf-8")
+        result = PromptBuilder().add_file(f, role="reference").build()
+        assert 'role="reference"' in result
+
+    def test_role_target_rendered(self, tmp_path: Path) -> None:
+        f = tmp_path / "target.py"
+        f.write_text("y = 2", encoding="utf-8")
+        result = PromptBuilder().add_file(f, role="target").build()
+        assert 'role="target"' in result
+
+    def test_no_role_no_attribute(self, tmp_path: Path) -> None:
+        f = tmp_path / "plain.py"
+        f.write_text("z = 3", encoding="utf-8")
+        result = PromptBuilder().add_file(f).build()
+        assert "role=" not in result
+
+
+# ---------------------------------------------------------------------------
+# Reminders
+# ---------------------------------------------------------------------------
+
+
+class TestReminder:
+    """Test bottom-of-prompt reminder blocks."""
+
+    def test_reminder_rendered_at_bottom(self, tmp_path: Path) -> None:
+        f = tmp_path / "code.py"
+        f.write_text("pass", encoding="utf-8")
+        result = (
+            PromptBuilder()
+            .add_instructions("Instruction")
+            .add_file(f)
+            .add_reminder("Don't forget this!")
+            .build()
+        )
+        assert "<reminder>" in result
+        assert "Don't forget this!" in result
+        # Reminder should be after all other content
+        instr_pos = result.index("<instructions>")
+        file_pos = result.index("<file_contents>")
+        reminder_pos = result.index("<reminder>")
+        assert instr_pos < file_pos < reminder_pos
+
+    def test_multiple_reminders_merged(self) -> None:
+        result = (
+            PromptBuilder()
+            .add_reminder("First")
+            .add_reminder("Second")
+            .build()
+        )
+        assert result.count("<reminder>") == 1
+        assert "First" in result
+        assert "Second" in result
+
+    def test_reminder_chaining(self) -> None:
+        pb = PromptBuilder()
+        ret = pb.add_reminder("test")
+        assert ret is pb
+
+    def test_reminder_not_truncated(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=50)
+        result = (
+            PromptBuilder(budget=budget)
+            .add_instructions("Short")
+            .add_reminder("This reminder must survive")
+            .build()
+        )
+        assert "This reminder must survive" in result
+
+
+# ---------------------------------------------------------------------------
+# Topology blocks
+# ---------------------------------------------------------------------------
+
+
+class TestAddTopology:
+    """Test topology context rendering."""
+
+    def test_topology_renders_xml(self) -> None:
+        from specweaver.graph.topology import TopologyContext
+
+        contexts = [
+            TopologyContext(
+                name="auth",
+                purpose="Authentication service.",
+                archetype="adapter",
+                relationship="direct dependency",
+                constraints=["no-blocking"],
+            ),
+        ]
+        result = PromptBuilder().add_topology(contexts).build()
+        assert "<topology>" in result
+        assert "auth (direct dependency)" in result
+        assert "Authentication service." in result
+        assert "archetype=adapter" in result
+        assert "constraints=no-blocking" in result
+        assert "</topology>" in result
+
+    def test_topology_before_files(self, tmp_path: Path) -> None:
+        from specweaver.graph.topology import TopologyContext
+
+        f = tmp_path / "x.py"
+        f.write_text("pass", encoding="utf-8")
+        ctx = [
+            TopologyContext(
+                name="svc",
+                purpose="A service.",
+                archetype="pure-logic",
+                relationship="direct consumer",
+            ),
+        ]
+        result = (
+            PromptBuilder()
+            .add_instructions("Review")
+            .add_topology(ctx)
+            .add_file(f)
+            .build()
+        )
+        topo_pos = result.index("<topology>")
+        file_pos = result.index("<file_contents>")
+        assert topo_pos < file_pos
+
+    def test_topology_no_constraints_renders_none(self) -> None:
+        from specweaver.graph.topology import TopologyContext
+
+        ctx = [
+            TopologyContext(
+                name="mod",
+                purpose="A module.",
+                archetype="pure-logic",
+                relationship="transitive neighbour",
+            ),
+        ]
+        result = PromptBuilder().add_topology(ctx).build()
+        assert "constraints=none" in result
+
+    def test_empty_contexts_no_block(self) -> None:
+        result = PromptBuilder().add_topology([]).build()
+        assert "<topology>" not in result
+        assert result == ""
+
+    def test_topology_chaining(self) -> None:
+        from specweaver.graph.topology import TopologyContext
+
+        pb = PromptBuilder()
+        ret = pb.add_topology([
+            TopologyContext(
+                name="x", purpose="", archetype="", relationship="",
+            ),
+        ])
+        assert ret is pb
+
+
+# ---------------------------------------------------------------------------
+# Dynamic budget scaling
+# ---------------------------------------------------------------------------
+
+
+class TestBudgetScaling:
+    """Test budget_scale_factor parameter."""
+
+    def test_scale_down_halves_budget(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=1000)
+        result = (
+            PromptBuilder(budget=budget, budget_scale_factor=0.5)
+            .add_instructions("I" * 40)   # ~10 tokens
+            .add_context("X" * 4000, "big", priority=1)  # ~1000 tokens
+            .build()
+        )
+        # Effective budget is 500 → big context should be truncated
+        assert "[truncated]" in result
+
+    def test_scale_1_no_change(self) -> None:
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=10000)
+        result = (
+            PromptBuilder(budget=budget, budget_scale_factor=1.0)
+            .add_instructions("Hello")
+            .add_context("Small", "ctx")
+            .build()
+        )
+        assert "[truncated]" not in result
+
+    def test_scale_clamped_to_min(self) -> None:
+        """Scale below 0.1 is clamped to 0.1."""
+        pb = PromptBuilder(budget_scale_factor=0.0)
+        assert pb._scale == 0.1
+
+    def test_scale_clamped_to_max(self) -> None:
+        """Scale above 2.0 is clamped to 2.0."""
+        pb = PromptBuilder(budget_scale_factor=5.0)
+        assert pb._scale == 2.0
+
