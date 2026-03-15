@@ -8,7 +8,8 @@ Guide to the documentation structure. Start with the [README](../README.md) for 
 
 | Document | Status | Description |
 |----------|:------:|-------------|
-| [Developer Guide](developer_guide.html) | ✅ | **Start here** — architecture overview, diagrams, onboarding (open in browser) |
+| [Quick-Start Guide](quickstart.md) | ✅ | From `sw init` to a completed pipeline run in 5 minutes |
+| [Developer Guide](developer_guide.html) | ✅ | Architecture overview, diagrams, onboarding (open in browser) |
 
 ## Architecture & Methodology
 

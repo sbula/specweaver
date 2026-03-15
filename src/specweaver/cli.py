@@ -230,12 +230,12 @@ def _load_topology(project_path: Path) -> TopologyGraph | None:
     return graph
 
 
-# Selector name → class mapping (configurable via --selector)
+# Selector name -> class mapping (configurable via --selector)
 _SELECTOR_MAP: dict[str, type] = {}
 
 
 def _get_selector_map() -> dict[str, type]:
-    """Lazily populate and return the selector name→class mapping."""
+    """Lazily populate and return the selector name->class mapping."""
     if not _SELECTOR_MAP:
         from specweaver.graph.selectors import (
             ConstraintOnlySelector,
@@ -492,7 +492,7 @@ def update(
             console.print(f"[red]Error:[/red] {exc}")
             raise typer.Exit(code=1) from exc
         console.print(
-            f"[green]Updated[/green] project [bold]{name}[/bold] path → {value}",
+            f"[green]Updated[/green] project [bold]{name}[/bold] path -> {value}",
         )
     else:
         console.print(f"[red]Error:[/red] Unknown field '{field}'. Supported: path")
@@ -628,7 +628,7 @@ def _load_check_settings(
 ) -> ValidationSettings | None:
     """Load ValidationSettings from DB + CLI --set overrides.
 
-    Cascade: code defaults → project DB overrides → --set CLI flags.
+    Cascade: code defaults -> project DB overrides -> --set CLI flags.
     Returns None if no active project and no --set flags.
     """
     from specweaver.config.settings import ValidationSettings
@@ -688,7 +688,7 @@ def check(
     - component: Spec validation rules S01-S11
     - code: Code validation rules C01-C08
 
-    Override cascade: code defaults → project DB overrides → --set flags.
+    Override cascade: code defaults -> project DB overrides -> --set flags.
     """
     from specweaver.validation.runner import (
         get_code_rules,

@@ -104,6 +104,8 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw config get <rule>` | Show the current override for a rule |
 | `sw config list` | List all overrides for the active project |
 | `sw config reset <rule>` | Remove an override (revert to defaults) |
+| `sw config set-log-level <level>` | Set the log level for the active project |
+| `sw config get-log-level` | Show current log level and log file path |
 
 ### Pipeline Execution
 
@@ -155,6 +157,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 
 ├── src/specweaver/
 │   ├── cli.py                  # Typer CLI (sw command)
+│   ├── logging.py              # Logging setup (RotatingFileHandler, per-project logs)
 │   ├── config/                 # SQLite database, settings, migrations
 │   ├── context/                # Context providers (HITL, inferrer, analyzers)
 │   ├── drafting/               # Interactive spec drafter
@@ -176,7 +179,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── project/                # Scaffold, discovery
 │   ├── review/                 # AI reviewer
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1650+ tests (unit, integration, E2E)
+├── tests/                      # 1696+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

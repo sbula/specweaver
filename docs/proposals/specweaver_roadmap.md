@@ -58,7 +58,7 @@ A runnable CLI that demonstrates the Core Loop end-to-end. Static validation wor
 
 Agents use tools; the flow engine orchestrates atoms and subflows. MVP individual steps become composable. Agent has topology awareness. Ready for external use.
 
-**Steps**: 7 (Topology ✅) → 8a (Config Store ✅) → 8b (Validation Config ✅) → 9 (Context-Enriched Prompts ✅) → 10 (Pipeline Models ✅) → 11 (Runner ✅) → 12 (Gates/Retry ✅) → 13a (CLI `sw run` ✅) → 13b (Logging ✅) → 14 (Docs)
+**Steps**: 7 (Topology ✅) → 8a (Config Store ✅) → 8b (Validation Config ✅) → 9 (Context-Enriched Prompts ✅) → 10 (Pipeline Models ✅) → 11 (Runner ✅) → 12 (Gates/Retry ✅) → 13a (CLI `sw run` ✅) → 13b (Logging ✅) → 14 (Docs ✅)
 
 ---
 
