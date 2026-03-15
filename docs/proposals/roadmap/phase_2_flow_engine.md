@@ -327,23 +327,23 @@ The spec/module argument is **different per pipeline type**:
 
 ### Tasks
 
-- [ ] `src/specweaver/logging.py` — **NEW**: logging setup module
-  - [ ] `setup_logging(project_name, level)` — configure `RotatingFileHandler` at `~/.specweaver/logs/<project>/specweaver.log`
-  - [ ] Default level: `DEBUG` to file, `WARNING` to console (stderr)
-  - [ ] Log format: `[2026-03-15 12:04:31] [DEBUG] [module.name] Message`
-  - [ ] Pipeline run events logged with `run_id` for traceability
-- [ ] `src/specweaver/config/database.py` or `settings.py` — log level configurable per-project in DB
-- [ ] Add `logger = logging.getLogger(__name__)` to all major modules:
-  - [ ] `flow/runner.py`, `flow/handlers.py`, `flow/gates.py`
-  - [ ] `validation/runner.py`
-  - [ ] `llm/adapter.py`, `llm/adapters/gemini_adapter.py`
-  - [ ] `context/inferrer.py`, `graph/topology.py`
-  - [ ] `loom/commons/test_runner/python.py`
-  - [ ] `cli.py`
-- [ ] Wire `setup_logging()` into CLI startup (called before any command runs)
-- [ ] `sw config set log_level <level>` — update log level for active project
-- [ ] Tests: log file creation, rotation, level filtering, per-project isolation
-- [ ] **Runnable**: `sw run validate_only spec.md` writes detailed log to `~/.specweaver/logs/<project>/specweaver.log`
+- [x] `src/specweaver/logging.py` — **NEW**: logging setup module (completed 2026-03-15)
+  - [x] `setup_logging(project_name, level)` — configure `RotatingFileHandler` at `~/.specweaver/logs/<project>/specweaver.log`
+  - [x] Default level: `DEBUG` to file, `WARNING` to console (stderr)
+  - [x] Log format: `[2026-03-15 12:04:31] [DEBUG   ] [module.name] Message`
+  - [x] Pipeline run events logged with `run_id` for traceability
+- [x] `src/specweaver/config/database.py` — V3 migration: `log_level` column on `projects` table + `get_log_level()`/`set_log_level()`
+- [x] Add `logger = logging.getLogger(__name__)` to all major modules:
+  - [x] `flow/runner.py`, `flow/handlers.py`, `flow/gates.py`, `flow/store.py`
+  - [x] `validation/runner.py`
+  - [x] `llm/adapters/gemini.py`
+  - [x] `context/inferrer.py`, `graph/topology.py`
+  - [x] `loom/commons/test_runner/python.py`
+  - [x] `cli.py`
+- [x] Wire `setup_logging()` into CLI startup (`@app.callback()` — called before any command runs)
+- [x] `sw config set-log-level <level>` / `sw config get-log-level` — update/show log level for active project
+- [x] Tests: 18 logging tests + 9 V3 migration tests = 27 new tests (1696 total)
+- [x] **Runnable**: `sw run validate_only spec.md` writes detailed log to `~/.specweaver/logs/<project>/specweaver.log`
 
 **Depends on**: Step 13a (CLI commands must exist to test logging).
 

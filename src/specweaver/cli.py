@@ -20,6 +20,7 @@ Commands:
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -53,6 +54,8 @@ app.add_typer(config_app, name="config")
 
 console = Console()
 
+logger = logging.getLogger(__name__)
+
 # Status display mapping (shared across check command)
 _STATUS_STYLE = {
     "pass": "[green]PASS[/green]",
@@ -73,6 +76,35 @@ def _version_callback(value: bool) -> None:
     if value:
         console.print(f"SpecWeaver v{__version__}")
         raise typer.Exit()
+
+
+@app.callback()
+def _app_callback(
+    *,
+    version: bool | None = typer.Option(
+        None,
+        "--version",
+        "-V",
+        help="Show version and exit.",
+        callback=_version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """SpecWeaver — Specification-driven development lifecycle tool."""
+    from specweaver.logging import setup_logging
+
+    db = get_db()
+    active = db.get_active_project()
+    if active:
+        try:
+            level = db.get_log_level(active)
+        except (ValueError, Exception):
+            level = "DEBUG"
+    else:
+        level = "DEBUG"
+
+    setup_logging(project_name=active, level=level)
+    logger.debug("CLI invoked — active project: %s", active or "(none)")
 
 
 def _display_results(
@@ -1097,6 +1129,48 @@ def config_reset(
     console.print(
         f"[green]✓[/green] Override removed for [bold]{rule_upper}[/bold] "
         f"on project [bold]{name}[/bold] (using defaults).",
+    )
+
+
+@config_app.command("set-log-level")
+def config_set_log_level(
+    level: str = typer.Argument(
+        help="Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
+    ),
+) -> None:
+    """Set the log level for the active project."""
+    name = _require_active_project()
+    db = get_db()
+    try:
+        db.set_log_level(name, level)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        f"[green]✓[/green] Log level set to [bold]{level.upper()}[/bold] "
+        f"for project [bold]{name}[/bold].",
+    )
+    logger.info("Log level changed to %s for project %s", level.upper(), name)
+
+
+@config_app.command("get-log-level")
+def config_get_log_level() -> None:
+    """Show the current log level for the active project."""
+    name = _require_active_project()
+    db = get_db()
+    try:
+        level = db.get_log_level(name)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    from specweaver.logging import get_log_path
+
+    log_path = get_log_path(name)
+    console.print(
+        f"Log level for [bold]{name}[/bold]: [cyan]{level}[/cyan]\n"
+        f"Log file: [dim]{log_path}[/dim]",
     )
 
 

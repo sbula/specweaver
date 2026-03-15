@@ -84,6 +84,10 @@ _SCHEMA_V2 = """\
 ALTER TABLE llm_profiles ADD COLUMN context_limit INTEGER NOT NULL DEFAULT 128000;
 """
 
+_SCHEMA_V3 = """\
+ALTER TABLE projects ADD COLUMN log_level TEXT NOT NULL DEFAULT 'DEBUG';
+"""
+
 
 class Database:
     """SpecWeaver SQLite configuration database.
@@ -137,6 +141,15 @@ class Database:
                     "INSERT OR REPLACE INTO schema_version "
                     "(version, applied_at) VALUES (?, ?)",
                     (2, _now_iso()),
+                )
+
+            if current_version < 3:
+                with suppress(Exception):
+                    conn.executescript(_SCHEMA_V3)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (3, _now_iso()),
                 )
 
             # Seed default LLM profiles if empty
@@ -313,6 +326,62 @@ class Database:
             conn.execute(
                 "UPDATE projects SET last_used_at = ? WHERE name = ?",
                 (_now_iso(), name),
+            )
+
+    # ------------------------------------------------------------------
+    # Logging configuration
+    # ------------------------------------------------------------------
+
+    _VALID_LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
+
+    def get_log_level(self, project_name: str) -> str:
+        """Get the log level for a project.
+
+        Returns "DEBUG" if the project has no explicit setting.
+
+        Raises:
+            ValueError: If project not found.
+        """
+        with self.connect() as conn:
+            row = conn.execute(
+                "SELECT log_level FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not row:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+            return row["log_level"]
+
+    def set_log_level(self, project_name: str, level: str) -> None:
+        """Set the log level for a project.
+
+        Args:
+            project_name: Name of the registered project.
+            level: One of DEBUG, INFO, WARNING, ERROR, CRITICAL.
+
+        Raises:
+            ValueError: If project not found or level is invalid.
+        """
+        level_upper = level.upper()
+        if level_upper not in self._VALID_LOG_LEVELS:
+            msg = (
+                f"Invalid log level '{level}'. "
+                f"Must be one of: {', '.join(sorted(self._VALID_LOG_LEVELS))}"
+            )
+            raise ValueError(msg)
+
+        with self.connect() as conn:
+            existing = conn.execute(
+                "SELECT name FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not existing:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+
+            conn.execute(
+                "UPDATE projects SET log_level = ? WHERE name = ?",
+                (level_upper, project_name),
             )
 
     # ------------------------------------------------------------------

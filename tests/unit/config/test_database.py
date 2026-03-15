@@ -65,12 +65,12 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 2 after v2 migration."""
+        """Schema version is 3 after v3 migration."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 2
+            assert row[0] == 3
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""
@@ -530,7 +530,7 @@ class TestSchemaV2Migration:
             ).fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 2
+        assert version[0] == 3  # both V2 and V3 applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -542,7 +542,7 @@ class TestSchemaV2Migration:
             version = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 2
+        assert version[0] == 3  # both V2 and V3 applied
 
 
 # ---------------------------------------------------------------------------
@@ -599,3 +599,85 @@ class TestValidationOverrideUpsert:
         assert settings.is_enabled("S99") is True
 
 
+# ---------------------------------------------------------------------------
+# Schema v3 migration — log_level column
+# ---------------------------------------------------------------------------
+
+
+class TestSchemaV3Migration:
+    """Test the v2→v3 schema migration (log_level column on projects)."""
+
+    def test_log_level_column_exists(self, db, tmp_path: Path):
+        """log_level column is present after migration."""
+        db.register_project("myapp", str(tmp_path))
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT log_level FROM projects WHERE name='myapp'"
+            ).fetchone()
+        assert row is not None
+
+    def test_log_level_default_is_debug(self, db, tmp_path: Path):
+        """Default log_level is DEBUG."""
+        db.register_project("myapp", str(tmp_path))
+        assert db.get_log_level("myapp") == "DEBUG"
+
+    def test_get_log_level_nonexistent_project_raises(self, db):
+        with pytest.raises(ValueError, match="not found"):
+            db.get_log_level("nonexistent")
+
+    def test_set_log_level(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_log_level("myapp", "WARNING")
+        assert db.get_log_level("myapp") == "WARNING"
+
+    def test_set_log_level_case_insensitive(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_log_level("myapp", "info")
+        assert db.get_log_level("myapp") == "INFO"
+
+    def test_set_log_level_invalid_raises(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        with pytest.raises(ValueError, match="Invalid log level"):
+            db.set_log_level("myapp", "VERBOSE")
+
+    def test_set_log_level_nonexistent_project_raises(self, db):
+        with pytest.raises(ValueError, match="not found"):
+            db.set_log_level("nonexistent", "DEBUG")
+
+    def test_all_valid_levels(self, db, tmp_path: Path):
+        """All 5 standard levels can be set and retrieved."""
+        db.register_project("myapp", str(tmp_path))
+        for level in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+            db.set_log_level("myapp", level)
+            assert db.get_log_level("myapp") == level
+
+    def test_v2_to_v3_upgrade(self, db_path: Path):
+        """Simulate a v2 DB and verify v3 migration applies correctly."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import _SCHEMA_V1, _SCHEMA_V2, Database
+
+        # Create a v2-only DB manually
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) "
+            "VALUES (2, '2026-01-01T00:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO projects (name, root_path, created_at, last_used_at) "
+            "VALUES ('legacy', '/tmp/legacy', '2026-01-01', '2026-01-01')"
+        )
+        conn.commit()
+        conn.close()
+
+        # Open with Database — should apply v3 migration
+        db = Database(db_path)
+        assert db.get_log_level("legacy") == "DEBUG"  # default from ALTER
+        with db.connect() as conn2:
+            version = conn2.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+        assert version[0] == 3

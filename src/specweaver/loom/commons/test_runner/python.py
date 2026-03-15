@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import logging
 import re
 import subprocess
 import time
@@ -28,6 +29,8 @@ from specweaver.loom.commons.test_runner.interface import (
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +109,10 @@ class PythonTestRunner(TestRunnerInterface):
         coverage_threshold: int = 70,
     ) -> TestRunResult:
         """Run pytest with the given parameters."""
+        logger.debug(
+            "PythonTestRunner.run_tests: target=%s kind=%s scope=%s timeout=%d coverage=%s",
+            target, kind, scope, timeout, coverage,
+        )
         cmd = ["python", "-m", "pytest", target, "--tb=short", "-q"]
 
         # Add marker filter
@@ -131,6 +138,7 @@ class PythonTestRunner(TestRunnerInterface):
             )
         except subprocess.TimeoutExpired:
             elapsed = time.monotonic() - start
+            logger.warning("PythonTestRunner: pytest timed out after %ds (target=%s)", timeout, target)
             return TestRunResult(
                 passed=0, failed=0, errors=1, skipped=0, total=1,
                 failures=[TestFailure(
@@ -142,6 +150,10 @@ class PythonTestRunner(TestRunnerInterface):
 
         elapsed = time.monotonic() - start
         parsed = _parse_pytest_output(proc.stdout)
+        logger.info(
+            "PythonTestRunner: tests complete — passed=%d failed=%d errors=%d skipped=%d (%.2fs)",
+            parsed["passed"], parsed["failed"], parsed["errors"], parsed["skipped"], elapsed,
+        )
 
         return TestRunResult(
             passed=parsed["passed"],
@@ -160,6 +172,7 @@ class PythonTestRunner(TestRunnerInterface):
         fix: bool = False,
     ) -> LintRunResult:
         """Run ruff linter with optional auto-fix."""
+        logger.debug("PythonTestRunner.run_linter: target=%s fix=%s", target, fix)
         fixed_count = 0
 
         # If fix=True, run ruff format first, then ruff check --fix
@@ -197,6 +210,7 @@ class PythonTestRunner(TestRunnerInterface):
                 cwd=str(self._cwd),
             )
         except subprocess.TimeoutExpired:
+            logger.warning("PythonTestRunner: ruff linting timed out (target=%s)", target)
             return LintRunResult(error_count=0, fixable_count=0, fixed_count=0, errors=[])
 
         return self._build_lint_result(proc.stdout, fixed_count)
@@ -258,6 +272,7 @@ class PythonTestRunner(TestRunnerInterface):
                 cwd=str(self._cwd),
             )
         except subprocess.TimeoutExpired:
+            logger.warning("PythonTestRunner: complexity check timed out (target=%s)", target)
             return ComplexityRunResult(
                 violation_count=0,
                 max_complexity=max_complexity,

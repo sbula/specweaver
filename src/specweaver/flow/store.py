@@ -14,6 +14,7 @@ for idempotent schema creation.
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,6 +26,8 @@ from specweaver.flow.state import (
     StepResult,
     StepStatus,
 )
+
+logger = logging.getLogger(__name__)
 
 _STATE_SCHEMA_V1 = """\
 CREATE TABLE IF NOT EXISTS pipeline_runs (
@@ -93,6 +96,7 @@ class StateStore:
                     "INSERT INTO state_schema_version (version, applied_at) VALUES (?, ?)",
                     (1, _now_iso()),
                 )
+                logger.debug("StateStore: created schema v1 at '%s'", self._db_path)
 
     # ------------------------------------------------------------------
     # Pipeline runs
@@ -104,6 +108,10 @@ class StateStore:
         Uses UPSERT semantics — creates the row if it doesn't exist,
         replaces it if it does. Step records are serialized as JSON.
         """
+        logger.debug(
+            "StateStore.save_run: run_id=%s status=%s step=%d/%d",
+            run.run_id, run.status.value, run.current_step, len(run.step_records),
+        )
         records_json = json.dumps(
             [r.model_dump() for r in run.step_records],
             default=str,
@@ -135,7 +143,9 @@ class StateStore:
                 (run_id,),
             ).fetchone()
             if row is None:
+                logger.debug("StateStore.load_run: run_id=%s not found", run_id)
                 return None
+            logger.debug("StateStore.load_run: loaded run_id=%s status=%s", run_id, row['status'])
             return _row_to_run(row)
 
     def get_latest_run(

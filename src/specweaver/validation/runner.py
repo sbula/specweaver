@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.validation.models import RuleResult, Status
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
 
     from specweaver.config.settings import ValidationSettings
     from specweaver.validation.models import Rule
+
+logger = logging.getLogger(__name__)
 
 
 # Mapping: rule_id → constructor kwarg names for threshold-bearing rules
@@ -111,12 +114,18 @@ def get_spec_rules(
     ]
 
     all_rules: list[Rule] = []
+    skipped: list[str] = []
     for rule_id, cls in rule_classes:
         # Skip disabled rules (unless run_all)
         if not run_all and settings and not settings.is_enabled(rule_id):
+            skipped.append(rule_id)
             continue
         kwargs = _build_rule_kwargs(rule_id, settings)
         all_rules.append(cls(**kwargs))
+
+    if skipped:
+        logger.debug("get_spec_rules: skipped disabled rules: %s", ', '.join(skipped))
+    logger.debug("get_spec_rules: loaded %d spec rules (include_llm=%s)", len(all_rules), include_llm)
 
     if include_llm:
         return all_rules
@@ -167,11 +176,17 @@ def get_code_rules(
         ]
 
     all_rules: list[Rule] = []
+    skipped: list[str] = []
     for rule_id, cls in rule_classes:
         if not run_all and settings and not settings.is_enabled(rule_id):
+            skipped.append(rule_id)
             continue
         kwargs = _build_rule_kwargs(rule_id, settings)
         all_rules.append(cls(**kwargs))
+
+    if skipped:
+        logger.debug("get_code_rules: skipped disabled rules: %s", ', '.join(skipped))
+    logger.debug("get_code_rules: loaded %d code rules (include_subprocess=%s)", len(all_rules), include_subprocess)
 
     return all_rules
 
@@ -194,11 +209,13 @@ def run_rules(
         If a rule raises an exception, its result is FAIL with the error message.
     """
     results: list[RuleResult] = []
+    logger.debug("run_rules: executing %d rules", len(rules))
 
     for rule in rules:
         try:
             result = rule.check(spec_text, spec_path)
         except Exception as exc:
+            logger.exception("run_rules: rule '%s' (%s) crashed", rule.rule_id, rule.name)
             result = RuleResult(
                 rule_id=rule.rule_id,
                 rule_name=rule.name,
@@ -207,6 +224,11 @@ def run_rules(
             )
         results.append(result)
 
+    failed = sum(1 for r in results if r.status == Status.FAIL)
+    logger.info(
+        "run_rules: %d rules executed — %d passed, %d failed",
+        len(results), len(results) - failed, failed,
+    )
     return results
 
 

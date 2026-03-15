@@ -13,10 +13,13 @@ optionally auto-infer one using ContextInferrer.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path  # noqa: TC003 — used at runtime in from_project() and dataclass fields
 
 from ruamel.yaml import YAML
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -150,20 +153,24 @@ class TopologyGraph:
         yaml = YAML()
         nodes: dict[str, TopologyNode] = {}
         warnings: list[str] = []
+        logger.debug("TopologyGraph.from_project: scanning '%s' (auto_infer=%s)", project_root, auto_infer)
 
         for ctx_file in sorted(project_root.rglob("context.yaml")):
             try:
                 data = yaml.load(ctx_file)
             except Exception as exc:
+                logger.warning("TopologyGraph: failed to parse '%s': %s", ctx_file, exc)
                 warnings.append(f"Failed to parse {ctx_file}: {exc}")
                 continue
 
             if data is None:
+                logger.warning("TopologyGraph: empty context.yaml at '%s'", ctx_file)
                 warnings.append(f"Empty context.yaml at {ctx_file}")
                 continue
 
             name = data.get("name", "")
             if not name:
+                logger.warning("TopologyGraph: missing 'name' in '%s'", ctx_file)
                 warnings.append(f"Missing 'name' in {ctx_file}")
                 continue
 
@@ -198,6 +205,10 @@ class TopologyGraph:
         if auto_infer:
             cls._auto_infer_missing(project_root, nodes, warnings)
 
+        logger.info(
+            "TopologyGraph: built graph with %d nodes, %d warnings",
+            len(nodes), len(warnings),
+        )
         return cls(nodes, warnings)
 
     @staticmethod

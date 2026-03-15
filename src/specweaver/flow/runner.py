@@ -17,6 +17,7 @@ coupling the runner to any UI framework.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
@@ -34,6 +35,8 @@ from specweaver.flow.state import (
 if TYPE_CHECKING:
     from specweaver.flow.models import PipelineDefinition, PipelineStep
     from specweaver.flow.store import StateStore
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +127,11 @@ class PipelineRunner:
             started_at=now,
             updated_at=now,
         )
+        logger.info(
+            "Starting pipeline '%s' run_id=%s (%d steps, project=%s, spec=%s)",
+            self._pipeline.name, run.run_id, len(run.step_records),
+            self._context.project_path.name, self._context.spec_path.name,
+        )
         return await self._execute_loop(run)
 
     async def resume(self, run_id: str) -> PipelineRun:
@@ -142,13 +150,19 @@ class PipelineRunner:
         """
         if self._store is None:
             msg = "Cannot resume: no store configured"
+            logger.error(msg)
             raise ValueError(msg)
 
         run = self._store.load_run(run_id)
         if run is None:
             msg = f"Run '{run_id}' not found"
+            logger.error(msg)
             raise ValueError(msg)
 
+        logger.info(
+            "Resuming run_id=%s pipeline='%s' from step %d/%d",
+            run_id, run.pipeline_name, run.current_step, len(run.step_records),
+        )
         # Reset from terminal/parked state to running
         run.status = RunStatus.RUNNING
         return await self._execute_loop(run)
@@ -163,6 +177,7 @@ class PipelineRunner:
 
         # Empty pipeline → immediately complete
         if not run.step_records:
+            logger.warning("Pipeline '%s' run_id=%s has no steps — completing immediately", run.pipeline_name, run.run_id)
             run.status = RunStatus.COMPLETED
             self._persist(run)
             self._log(run, "run_completed")
@@ -185,11 +200,14 @@ class PipelineRunner:
             # Look up handler
             handler = self._registry.get(step_def.action, step_def.target)
             if handler is None:
+                error_msg = f"No handler registered for {step_def.action.value}+{step_def.target.value}"
+                logger.error(
+                    "[run_id=%s] Step %d/%d '%s': %s",
+                    run.run_id, step_idx + 1, total, step_def.name, error_msg,
+                )
                 error_result = StepResult(
                     status=StepStatus.ERROR,
-                    error_message=(
-                        f"No handler registered for {step_def.action.value}+{step_def.target.value}"
-                    ),
+                    error_message=error_msg,
                     started_at=_now_iso(),
                     completed_at=_now_iso(),
                 )
@@ -207,6 +225,12 @@ class PipelineRunner:
             run.mark_step_running()
             self._persist(run)
             self._log(run, "step_started", step_def.name)
+            logger.info(
+                "[run_id=%s] Step %d/%d '%s' (%s+%s) — executing via %s",
+                run.run_id, step_idx + 1, total, step_def.name,
+                step_def.action.value, step_def.target.value,
+                type(handler).__name__,
+            )
             self._emit(
                 "step_started", step_idx=step_idx, step_name=step_def.name,
                 step_def=step_def, total_steps=total,
@@ -215,6 +239,10 @@ class PipelineRunner:
             try:
                 result = await handler.execute(step_def, self._context)
             except Exception as exc:
+                logger.exception(
+                    "[run_id=%s] Step '%s' raised unhandled exception",
+                    run.run_id, step_def.name,
+                )
                 result = StepResult(
                     status=StepStatus.ERROR,
                     error_message=str(exc),
@@ -224,6 +252,10 @@ class PipelineRunner:
 
             # Process result: WAITING_FOR_INPUT always parks
             if result.status == StepStatus.WAITING_FOR_INPUT:
+                logger.info(
+                    "[run_id=%s] Step '%s' waiting for user input — parking run",
+                    run.run_id, step_def.name,
+                )
                 run.park_current_step(result)
                 self._persist(run)
                 self._log(run, "run_parked", step_def.name)
@@ -237,8 +269,16 @@ class PipelineRunner:
             # Gate evaluation ------------------------------------------------
             gate = step_def.gate
             if gate is not None:
+                logger.debug(
+                    "[run_id=%s] Evaluating gate on step '%s' (type=%s, condition=%s)",
+                    run.run_id, step_def.name, gate.type.value, gate.condition.value,
+                )
                 verdict = self._gate_evaluator.evaluate(
                     gate, result, step_def, run, attempts,
+                )
+                logger.info(
+                    "[run_id=%s] Gate verdict for step '%s': %s (result_status=%s)",
+                    run.run_id, step_def.name, verdict, result.status.value,
                 )
                 self._emit(
                     "gate_result", step_idx=step_idx, step_name=step_def.name,
@@ -247,11 +287,13 @@ class PipelineRunner:
                 )
                 # Handle side effects (persistence, logging, feedback)
                 if verdict == "park":
+                    logger.info("[run_id=%s] HITL gate on '%s' — parking for human review", run.run_id, step_def.name)
                     self._persist(run)
                     self._log(run, "gate_hitl_park", step_def.name)
                     self._emit("run_parked", run=run, step_name=step_def.name)
                     return run
                 if verdict == "stop":
+                    logger.error("[run_id=%s] Gate on '%s' failed — stopping pipeline", run.run_id, step_def.name)
                     self._persist(run)
                     self._log(run, "step_failed", step_def.name)
                     self._emit(
@@ -261,10 +303,12 @@ class PipelineRunner:
                     self._emit("run_failed", run=run)
                     return run
                 if verdict == "retry":
+                    logger.info("[run_id=%s] Retrying step '%s' (attempt %d)", run.run_id, step_def.name, attempts.get(run.current_step, 0))
                     self._persist(run)
                     self._log(run, "step_retry", step_def.name)
                     continue  # re-execute same step
                 if verdict == "loop_back":
+                    logger.info("[run_id=%s] Looping back from '%s' to '%s'", run.run_id, step_def.name, gate.loop_target or '?')
                     # Inject feedback into context
                     self._gate_evaluator.inject_feedback(
                         self._context,
@@ -280,6 +324,11 @@ class PipelineRunner:
             else:
                 # No gate: fail on error/failure (backwards compat)
                 if result.status in (StepStatus.FAILED, StepStatus.ERROR):
+                    logger.error(
+                        "[run_id=%s] Step '%s' %s: %s",
+                        run.run_id, step_def.name, result.status.value,
+                        result.error_message or 'no error message',
+                    )
                     run.fail_current_step(result)
                     self._persist(run)
                     self._log(run, "step_failed", step_def.name)
@@ -291,6 +340,10 @@ class PipelineRunner:
                     return run
 
             # Success — advance
+            logger.debug(
+                "[run_id=%s] Step '%s' completed with status=%s",
+                run.run_id, step_def.name, result.status.value,
+            )
             run.complete_current_step(result)
             run.updated_at = _now_iso()
             self._persist(run)
@@ -301,6 +354,10 @@ class PipelineRunner:
             )
 
         # All steps done
+        logger.info(
+            "Pipeline '%s' run_id=%s completed successfully (%d steps)",
+            run.pipeline_name, run.run_id, total,
+        )
         self._log(run, "run_completed")
         self._emit("run_completed", run=run)
         return run

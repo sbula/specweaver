@@ -8,6 +8,7 @@ Uses the `google-genai` SDK (GA since May 2025).
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -32,6 +33,8 @@ from specweaver.llm.models import (
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+
+logger = logging.getLogger(__name__)
 
 
 def _messages_to_gemini(
@@ -103,6 +106,10 @@ class GeminiAdapter(LLMAdapter):
         """Generate a response using the Gemini API."""
         client = self._get_client()
         system_instruction, contents = _messages_to_gemini(messages)
+        logger.debug(
+            "GeminiAdapter.generate: model=%s temp=%.2f max_tokens=%d messages=%d",
+            config.model, config.temperature, config.max_output_tokens, len(messages),
+        )
 
         gen_config = types.GenerateContentConfig(
             temperature=config.temperature,
@@ -118,6 +125,7 @@ class GeminiAdapter(LLMAdapter):
                 config=gen_config,
             )
         except Exception as exc:
+            logger.error("GeminiAdapter.generate: API call failed — %s", exc)
             return self._handle_error(exc)
 
         return self._parse_response(response, config.model)
@@ -130,6 +138,7 @@ class GeminiAdapter(LLMAdapter):
         """Generate a streaming response using the Gemini API."""
         client = self._get_client()
         system_instruction, contents = _messages_to_gemini(messages)
+        logger.debug("GeminiAdapter.generate_stream: model=%s", config.model)
 
         gen_config = types.GenerateContentConfig(
             temperature=config.temperature,
@@ -146,6 +155,7 @@ class GeminiAdapter(LLMAdapter):
                 if chunk.text:
                     yield chunk.text
         except Exception as exc:
+            logger.error("GeminiAdapter.generate_stream: streaming failed — %s", exc)
             self._handle_error(exc)
 
     def _parse_response(self, response: Any, model: str) -> LLMResponse:
@@ -161,6 +171,10 @@ class GeminiAdapter(LLMAdapter):
                 completion_tokens=getattr(meta, "candidates_token_count", 0) or 0,
                 total_tokens=getattr(meta, "total_token_count", 0) or 0,
             )
+            logger.debug(
+                "GeminiAdapter: tokens used — prompt=%d completion=%d total=%d",
+                usage.prompt_tokens, usage.completion_tokens, usage.total_tokens,
+            )
 
         # Determine finish reason
         finish_reason = "stop"
@@ -171,9 +185,12 @@ class GeminiAdapter(LLMAdapter):
                 fr_str = str(fr).lower()
                 if "safety" in fr_str or "block" in fr_str:
                     finish_reason = "content_filter"
+                    logger.warning("GeminiAdapter: response blocked by content filter (model=%s)", model)
                 elif "max" in fr_str or "length" in fr_str:
                     finish_reason = "max_tokens"
+                    logger.warning("GeminiAdapter: response truncated at max_tokens (model=%s)", model)
 
+        logger.info("GeminiAdapter.generate: model=%s finish=%s chars=%d", model, finish_reason, len(text))
         return LLMResponse(
             text=text,
             model=model,
@@ -206,15 +223,20 @@ class GeminiAdapter(LLMAdapter):
         exc_str = str(exc).lower()
 
         if "401" in exc_str or "api key" in exc_str or "unauthorized" in exc_str:
+            logger.error("GeminiAdapter: authentication failed — check GEMINI_API_KEY")
             raise AuthenticationError(str(exc), provider="gemini") from exc
 
         if "429" in exc_str or "rate limit" in exc_str or "quota" in exc_str:
+            logger.warning("GeminiAdapter: rate limit / quota exceeded")
             raise RateLimitError(str(exc), provider="gemini") from exc
 
         if "404" in exc_str or "not found" in exc_str or "model" in exc_str:
+            logger.error("GeminiAdapter: model not found")
             raise ModelNotFoundError(str(exc), provider="gemini") from exc
 
         if "safety" in exc_str or "blocked" in exc_str:
+            logger.warning("GeminiAdapter: content blocked by safety filter")
             raise ContentFilterError(str(exc), provider="gemini") from exc
 
+        logger.error("GeminiAdapter: unclassified generation error — %s", exc)
         raise GenerationError(str(exc), provider="gemini") from exc

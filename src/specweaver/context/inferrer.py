@@ -10,6 +10,7 @@ and writes a best-effort context.yaml with an AUTO-GENERATED header.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path  # noqa: TC003 — used at runtime, not just type hints
@@ -17,6 +18,8 @@ from pathlib import Path  # noqa: TC003 — used at runtime, not just type hints
 from ruamel.yaml import YAML
 
 from specweaver.context.analyzers import AnalyzerFactory
+
+logger = logging.getLogger(__name__)
 
 # Level inference: given a parent's level, what level should the child be?
 _CHILD_LEVEL: dict[str, str] = {
@@ -80,11 +83,13 @@ class ContextInferrer:
         # Skip if context.yaml already exists
         ctx_file = directory / "context.yaml"
         if ctx_file.is_file():
+            logger.debug("ContextInferrer: skipping '%s' — context.yaml already exists", directory.name)
             return InferenceResult(node=None, was_generated=False)
 
         # Skip if no analyzable source files
         analyzer = AnalyzerFactory.for_directory(directory)
         if analyzer is None:
+            logger.debug("ContextInferrer: skipping '%s' — no analyzable source files", directory.name)
             return InferenceResult(node=None, was_generated=False)
 
         # Extract what we can
@@ -123,11 +128,17 @@ class ContextInferrer:
 
         # Write to disk
         ctx_file.write_text(content, encoding="utf-8")
+        logger.info(
+            "ContextInferrer: generated context.yaml for '%s' (level=%s, archetype=%s, exports=%d)",
+            name, level, archetype, len(exposes),
+        )
 
         warnings = [
             f"Auto-generated context.yaml for '{name}' at {ctx_file}. "
             "Please review — constraints and operational fields are missing.",
         ]
+        for w in warnings:
+            logger.warning(w)
 
         return InferenceResult(
             node=node,

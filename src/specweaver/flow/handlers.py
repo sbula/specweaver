@@ -15,6 +15,7 @@ avoid blocking the event loop.
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from pathlib import Path  # noqa: TC003 — Pydantic needs Path at runtime
 from typing import Any, Protocol, runtime_checkable
@@ -24,6 +25,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from specweaver.flow.models import PipelineStep, StepAction, StepTarget
 from specweaver.flow.state import StepResult, StepStatus
 from specweaver.validation.models import Status as RuleStatus
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # RunContext — everything a handler needs
@@ -95,7 +98,9 @@ class ValidateSpecHandler:
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
+        logger.debug("ValidateSpecHandler: validating spec '%s'", context.spec_path.name)
         if not context.spec_path.exists():
+            logger.error("ValidateSpecHandler: spec file not found: %s", context.spec_path)
             return _error_result(
                 f"Spec file not found: {context.spec_path}",
                 started,
@@ -109,6 +114,10 @@ class ValidateSpecHandler:
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
+            logger.info(
+                "ValidateSpecHandler: %d rules executed, %d passed, %d failed",
+                len(results), len(results) - len(failed), len(failed),
+            )
             return StepResult(
                 status=StepStatus.PASSED if all_passed else StepStatus.FAILED,
                 output={
@@ -125,6 +134,7 @@ class ValidateSpecHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
+            logger.exception("ValidateSpecHandler: unhandled exception during spec validation")
             return _error_result(str(exc), started)
 
     def _run_validation(
@@ -145,14 +155,17 @@ class ValidateCodeHandler:
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
+        logger.debug("ValidateCodeHandler: looking for code to validate")
 
         code_path = self._find_code_path(step, context)
         if code_path is None or not code_path.exists():
+            logger.warning("ValidateCodeHandler: no code file found to validate")
             return _error_result(
                 "No code file found to validate",
                 started,
             )
 
+        logger.debug("ValidateCodeHandler: validating code file '%s'", code_path.name)
         try:
             results = await asyncio.to_thread(
                 self._run_validation,
@@ -162,6 +175,10 @@ class ValidateCodeHandler:
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
+            logger.info(
+                "ValidateCodeHandler: %d rules executed, %d passed, %d failed (code=%s)",
+                len(results), len(results) - len(failed), len(failed), code_path.name,
+            )
             return StepResult(
                 status=StepStatus.PASSED if all_passed else StepStatus.FAILED,
                 output={
@@ -177,6 +194,7 @@ class ValidateCodeHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
+            logger.exception("ValidateCodeHandler: unhandled exception during code validation")
             return _error_result(str(exc), started)
 
     def _find_code_path(self, step: PipelineStep, context: RunContext) -> Path | None:
@@ -212,8 +230,10 @@ class ReviewSpecHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
         if context.llm is None:
+            logger.error("ReviewSpecHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for review steps", started)
 
+        logger.debug("ReviewSpecHandler: reviewing spec '%s'", context.spec_path.name)
         try:
             from specweaver.review.reviewer import Reviewer
 
@@ -221,6 +241,10 @@ class ReviewSpecHandler:
             result = await reviewer.review_spec(
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
+            )
+            logger.info(
+                "ReviewSpecHandler: verdict=%s, findings=%d",
+                result.verdict.value, len(result.findings),
             )
             return StepResult(
                 status=StepStatus.PASSED
@@ -235,6 +259,7 @@ class ReviewSpecHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
+            logger.exception("ReviewSpecHandler: unhandled exception during spec review")
             return _error_result(str(exc), started)
 
 
@@ -244,6 +269,7 @@ class ReviewCodeHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
         if context.llm is None:
+            logger.error("ReviewCodeHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for review steps", started)
 
         try:
@@ -251,13 +277,19 @@ class ReviewCodeHandler:
 
             code_path = self._find_code_path(context)
             if code_path is None:
+                logger.warning("ReviewCodeHandler: no code file found for review")
                 return _error_result("No code file found for review", started)
 
+            logger.debug("ReviewCodeHandler: reviewing code '%s' against spec '%s'", code_path.name, context.spec_path.name)
             reviewer = Reviewer(context.llm)
             result = await reviewer.review_code(
                 code_path,
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
+            )
+            logger.info(
+                "ReviewCodeHandler: verdict=%s, findings=%d",
+                result.verdict.value, len(result.findings),
             )
             return StepResult(
                 status=StepStatus.PASSED
@@ -272,6 +304,7 @@ class ReviewCodeHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
+            logger.exception("ReviewCodeHandler: unhandled exception during code review")
             return _error_result(str(exc), started)
 
     def _find_code_path(self, context: RunContext) -> Path | None:
@@ -293,6 +326,7 @@ class GenerateCodeHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
         if context.llm is None:
+            logger.error("GenerateCodeHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for generate steps", started)
 
         try:
@@ -301,12 +335,14 @@ class GenerateCodeHandler:
             generator = Generator(context.llm)
             output_dir = context.output_dir or context.project_path / "src"
             output_path = output_dir / f"{context.spec_path.stem.replace('_spec', '')}.py"
+            logger.debug("GenerateCodeHandler: generating code to '%s' from spec '%s'", output_path, context.spec_path.name)
 
             generated = await generator.generate_code(
                 context.spec_path,
                 output_path,
                 topology_contexts=([context.topology] if context.topology else None),
             )
+            logger.info("GenerateCodeHandler: code generated at '%s'", generated)
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"generated_path": str(generated)},
@@ -314,6 +350,7 @@ class GenerateCodeHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
+            logger.exception("GenerateCodeHandler: unhandled exception during code generation")
             return _error_result(str(exc), started)
 
 
@@ -323,6 +360,7 @@ class GenerateTestsHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
         if context.llm is None:
+            logger.error("GenerateTestsHandler: LLM adapter required but not configured")
             return _error_result("LLM adapter required for generate steps", started)
 
         try:
@@ -331,12 +369,14 @@ class GenerateTestsHandler:
             generator = Generator(context.llm)
             output_dir = context.output_dir or context.project_path / "tests"
             output_path = output_dir / f"test_{context.spec_path.stem.replace('_spec', '')}.py"
+            logger.debug("GenerateTestsHandler: generating tests to '%s' from spec '%s'", output_path, context.spec_path.name)
 
             generated = await generator.generate_tests(
                 context.spec_path,
                 output_path,
                 topology_contexts=([context.topology] if context.topology else None),
             )
+            logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"generated_path": str(generated)},
@@ -344,6 +384,7 @@ class GenerateTestsHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
+            logger.exception("GenerateTestsHandler: unhandled exception during test generation")
             return _error_result(str(exc), started)
 
 
@@ -360,6 +401,7 @@ class DraftSpecHandler:
 
         # If spec already exists, consider the draft step pre-completed
         if context.spec_path.exists():
+            logger.debug("DraftSpecHandler: spec already exists at '%s' — skipping", context.spec_path)
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"message": f"Spec already exists: {context.spec_path}"},
@@ -368,6 +410,7 @@ class DraftSpecHandler:
             )
 
         # Spec doesn't exist — park and tell the user
+        logger.info("DraftSpecHandler: spec not found at '%s' — parking for user input", context.spec_path)
         return StepResult(
             status=StepStatus.WAITING_FOR_INPUT,
             output={
@@ -400,12 +443,15 @@ class ValidateTestsHandler:
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
+        target = step.params.get("target", "tests/")
+        kind = step.params.get("kind", "unit")
+        logger.debug("ValidateTestsHandler: running %s tests in '%s'", kind, target)
 
         atom = self._get_atom(context)
         result = atom.run({
             "intent": "run_tests",
-            "target": step.params.get("target", "tests/"),
-            "kind": step.params.get("kind", "unit"),
+            "target": target,
+            "kind": kind,
             "scope": step.params.get("scope", ""),
             "timeout": step.params.get("timeout", 120),
             "coverage": step.params.get("coverage", False),
@@ -413,6 +459,7 @@ class ValidateTestsHandler:
         })
 
         if result.status.value == "SUCCESS":
+            logger.info("ValidateTestsHandler: tests PASSED (kind=%s, target=%s)", kind, target)
             return StepResult(
                 status=StepStatus.PASSED,
                 output=result.exports,
@@ -420,6 +467,10 @@ class ValidateTestsHandler:
                 completed_at=_now_iso(),
             )
 
+        logger.warning(
+            "ValidateTestsHandler: tests FAILED (kind=%s, target=%s): %s",
+            kind, target, result.message,
+        )
         return StepResult(
             status=StepStatus.FAILED,
             output=result.exports,
@@ -457,6 +508,7 @@ class LintFixHandler:
         started = _now_iso()
         max_reflections: int = step.params.get("max_reflections", 3)
         target: str = step.params.get("target", "src/")
+        logger.debug("LintFixHandler: starting lint-fix loop (target=%s, max_reflections=%d)", target, max_reflections)
 
         atom = self._get_atom(context)
         reflections_used = 0
@@ -465,9 +517,11 @@ class LintFixHandler:
         # Initial lint
         lint_result = atom.run({"intent": "run_linter", "target": target})
         last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
+        logger.debug("LintFixHandler: initial lint found %d errors", last_error_count)
 
         # Clean on first run → done
         if last_error_count == 0:
+            logger.info("LintFixHandler: code is clean — no lint errors")
             return StepResult(
                 status=StepStatus.PASSED,
                 output={
@@ -480,6 +534,7 @@ class LintFixHandler:
             )
 
         # Phase 1: Try ruff auto-fix first (cheaper than LLM)
+        logger.info("LintFixHandler: attempting ruff auto-fix on %d errors", last_error_count)
         atom.run({
             "intent": "run_linter",
             "target": target,
@@ -491,8 +546,10 @@ class LintFixHandler:
             lint_result.exports.get("error_count", 0)
             if lint_result.exports else 0
         )
+        logger.debug("LintFixHandler: after auto-fix, %d errors remain", last_error_count)
 
         if last_error_count == 0:
+            logger.info("LintFixHandler: all errors resolved by ruff auto-fix")
             return StepResult(
                 status=StepStatus.PASSED,
                 output={
@@ -535,12 +592,14 @@ class LintFixHandler:
 
             # Ask LLM to fix
             try:
+                logger.debug("LintFixHandler: LLM reflection %d/%d on '%s'", reflections_used + 1, max_reflections, code_files[0].name)
                 await self._llm_fix(
                     context.llm,
                     code_files[0],
                     lint_result.exports.get("errors", []) if lint_result.exports else [],
                 )
             except Exception as exc:
+                logger.exception("LintFixHandler: LLM fix failed on reflection %d", reflections_used + 1)
                 return StepResult(
                     status=StepStatus.ERROR,
                     error_message=str(exc),
@@ -573,6 +632,10 @@ class LintFixHandler:
                 )
 
         # Exhausted
+        logger.warning(
+            "LintFixHandler: exhausted after %d reflections, %d errors remain",
+            reflections_used, last_error_count,
+        )
         return StepResult(
             status=StepStatus.FAILED,
             output={
