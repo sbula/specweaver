@@ -1,0 +1,40 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: test-runner-commons
+level: module
+purpose: >
+  Language-agnostic test runner interface and Python implementation for test execution, linting, and complexity checks.
+
+description: |
+  Defines the TestRunnerInterface ABC with abstract methods for run_tests,
+  run_linter, and run_complexity. Result dataclasses (TestRunResult, LintRunResult,
+  ComplexityRunResult) provide structured output. PythonTestRunner implements
+  the interface using pytest and ruff subprocesses.
+
+archetype: adapter
+
+consumes: []
+
+forbids:
+  - specweaver/loom/tools/*
+  - specweaver/loom/atoms/*
+
+exposes:
+  - TestRunnerInterface
+  - PythonTestRunner
+  - TestRunResult
+  - TestFailure
+  - LintRunResult
+  - LintError
+  - ComplexityRunResult
+  - ComplexityViolation
+
+constraints:
+  - "All subprocess calls must have timeouts"
+  - "PythonTestRunner must not modify source files unless fix=True is passed"
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

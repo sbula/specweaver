@@ -7,9 +7,10 @@ purpose: >
   Engine-internal workflow operations with unrestricted access for orchestration.
 
 description: |
-  Atoms represent git (and future filesystem) operations within the engine's
-  workflow. Unlike tools, atoms are not agent-facing and use EngineGitExecutor
-  which bypasses the blocked-always list for operations like push, merge, and pull.
+  Atoms represent engine-internal workflow operations (git, filesystem,
+  test runner). Unlike tools, atoms are not agent-facing and can bypass
+  agent restrictions. Includes git operations (EngineGitExecutor) and
+  test execution/linting/complexity checking (TestRunnerAtom).
 
 archetype: orchestrator
 
@@ -21,6 +22,7 @@ forbids:
 
 exposes:
   - git
+  - test_runner
 
 # -- Operational Metadata --------------------------------------------------
 operational:

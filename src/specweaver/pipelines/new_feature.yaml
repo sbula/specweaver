@@ -47,6 +47,20 @@ steps:
     target: tests
     description: "Generate test file from spec"
 
+  - name: run_tests
+    action: validate
+    target: tests
+    description: "Run generated tests via pytest"
+    params:
+      kind: unit
+      coverage: true
+    gate:
+      type: auto
+      condition: all_passed
+      on_fail: loop_back
+      loop_target: generate_code
+      max_retries: 2
+
   - name: validate_code
     action: validate
     target: code

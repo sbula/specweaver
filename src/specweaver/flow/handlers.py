@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path  # noqa: TC003 — Pydantic needs Path at runtime
 from typing import Any, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from specweaver.flow.models import PipelineStep, StepAction, StepTarget
 from specweaver.flow.state import StepResult, StepStatus
@@ -52,6 +52,7 @@ class RunContext(BaseModel):
     topology: Any = None  # TopologyContext | None
     settings: Any = None  # ValidationSettings | None
     output_dir: Path | None = None
+    feedback: dict[str, Any] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -381,6 +382,253 @@ class DraftSpecHandler:
 
 
 # ---------------------------------------------------------------------------
+# Validate tests handler
+# ---------------------------------------------------------------------------
+
+
+class ValidateTestsHandler:
+    """Runs tests via the TestRunnerAtom.
+
+    Step params (optional):
+        target: str — test directory (default: "tests/").
+        kind: str — "unit", "integration", "e2e" (default: "unit").
+        scope: str — module/service filter (default: "").
+        timeout: int — seconds (default: 120).
+        coverage: bool — measure coverage (default: False).
+        coverage_threshold: int — minimum % (default: 70).
+    """
+
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        started = _now_iso()
+
+        atom = self._get_atom(context)
+        result = atom.run({
+            "intent": "run_tests",
+            "target": step.params.get("target", "tests/"),
+            "kind": step.params.get("kind", "unit"),
+            "scope": step.params.get("scope", ""),
+            "timeout": step.params.get("timeout", 120),
+            "coverage": step.params.get("coverage", False),
+            "coverage_threshold": step.params.get("coverage_threshold", 70),
+        })
+
+        if result.status.value == "SUCCESS":
+            return StepResult(
+                status=StepStatus.PASSED,
+                output=result.exports,
+                started_at=started,
+                completed_at=_now_iso(),
+            )
+
+        return StepResult(
+            status=StepStatus.FAILED,
+            output=result.exports,
+            error_message=result.message,
+            started_at=started,
+            completed_at=_now_iso(),
+        )
+
+    def _get_atom(self, context: RunContext):
+        """Lazily create a TestRunnerAtom for the project."""
+        from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+        return TestRunnerAtom(cwd=context.project_path)
+
+
+# ---------------------------------------------------------------------------
+# Lint-fix reflection loop
+# ---------------------------------------------------------------------------
+
+
+class LintFixHandler:
+    """Handler for lint_fix+code — lint-fix reflection loop.
+
+    Runs the linter on generated code. If errors are found, feeds them
+    to the LLM to generate fixes, then re-lints. Repeats up to
+    ``max_reflections`` times (from ``step.params``).
+
+    Inspired by Aider's ``max_reflections`` pattern.
+
+    Step params:
+        target: str — file or directory to lint (default: "src/").
+        max_reflections: int — max fix cycles (default: 3).
+    """
+
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        started = _now_iso()
+        max_reflections: int = step.params.get("max_reflections", 3)
+        target: str = step.params.get("target", "src/")
+
+        atom = self._get_atom(context)
+        reflections_used = 0
+        last_error_count = 0
+
+        # Initial lint
+        lint_result = atom.run({"intent": "run_linter", "target": target})
+        last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
+
+        # Clean on first run → done
+        if last_error_count == 0:
+            return StepResult(
+                status=StepStatus.PASSED,
+                output={
+                    "reflections_used": 0,
+                    "lint_errors_remaining": 0,
+                    "auto_fixed": False,
+                },
+                started_at=started,
+                completed_at=_now_iso(),
+            )
+
+        # Phase 1: Try ruff auto-fix first (cheaper than LLM)
+        atom.run({
+            "intent": "run_linter",
+            "target": target,
+            "fix": True,
+        })
+        # Re-lint to see what remains after auto-fix
+        lint_result = atom.run({"intent": "run_linter", "target": target})
+        last_error_count = (
+            lint_result.exports.get("error_count", 0)
+            if lint_result.exports else 0
+        )
+
+        if last_error_count == 0:
+            return StepResult(
+                status=StepStatus.PASSED,
+                output={
+                    "reflections_used": 0,
+                    "lint_errors_remaining": 0,
+                    "auto_fixed": True,
+                },
+                started_at=started,
+                completed_at=_now_iso(),
+            )
+
+        # Phase 2: LLM reflection loop for remaining errors
+        for _ in range(max_reflections):
+            # No LLM → can't fix
+            if context.llm is None:
+                return StepResult(
+                    status=StepStatus.FAILED,
+                    error_message="Lint errors found but no LLM configured for auto-fix",
+                    output={
+                        "reflections_used": reflections_used,
+                        "lint_errors_remaining": last_error_count,
+                    },
+                    started_at=started,
+                    completed_at=_now_iso(),
+                )
+
+            # Find code to fix
+            code_files = self._find_code_files(context)
+            if not code_files:
+                return StepResult(
+                    status=StepStatus.FAILED,
+                    error_message="No code files found to fix",
+                    output={
+                        "reflections_used": reflections_used,
+                        "lint_errors_remaining": last_error_count,
+                    },
+                    started_at=started,
+                    completed_at=_now_iso(),
+                )
+
+            # Ask LLM to fix
+            try:
+                await self._llm_fix(
+                    context.llm,
+                    code_files[0],
+                    lint_result.exports.get("errors", []) if lint_result.exports else [],
+                )
+            except Exception as exc:
+                return StepResult(
+                    status=StepStatus.ERROR,
+                    error_message=str(exc),
+                    output={
+                        "reflections_used": reflections_used,
+                        "lint_errors_remaining": last_error_count,
+                    },
+                    started_at=started,
+                    completed_at=_now_iso(),
+                )
+
+            reflections_used += 1
+
+            # Re-lint
+            lint_result = atom.run({"intent": "run_linter", "target": target})
+            last_error_count = (
+                lint_result.exports.get("error_count", 0)
+                if lint_result.exports else 0
+            )
+
+            if last_error_count == 0:
+                return StepResult(
+                    status=StepStatus.PASSED,
+                    output={
+                        "reflections_used": reflections_used,
+                        "lint_errors_remaining": 0,
+                    },
+                    started_at=started,
+                    completed_at=_now_iso(),
+                )
+
+        # Exhausted
+        return StepResult(
+            status=StepStatus.FAILED,
+            output={
+                "reflections_used": reflections_used,
+                "lint_errors_remaining": last_error_count,
+            },
+            error_message=f"Lint-fix exhausted after {reflections_used} reflections, "
+                          f"{last_error_count} errors remain",
+            started_at=started,
+            completed_at=_now_iso(),
+        )
+
+    def _get_atom(self, context: RunContext):
+        """Lazily create a TestRunnerAtom for the project."""
+        from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+        return TestRunnerAtom(cwd=context.project_path)
+
+    def _find_code_files(self, context: RunContext) -> list[Path]:
+        """Find Python files in the output directory."""
+        if context.output_dir and context.output_dir.exists():
+            return list(context.output_dir.glob("*.py"))
+        return []
+
+    async def _llm_fix(
+        self,
+        llm: Any,
+        code_path: Path,
+        lint_errors: list[dict],
+    ) -> None:
+        """Ask the LLM to fix lint errors in the given file."""
+        code = code_path.read_text(encoding="utf-8")
+        error_summary = "\n".join(
+            f"- {e.get('file', '?')}:{e.get('line', '?')} [{e.get('code', '?')}] {e.get('message', '')}"
+            for e in lint_errors
+        )
+
+        prompt = (
+            f"Fix the following lint errors in this Python file.\n\n"
+            f"## Lint Errors\n{error_summary}\n\n"
+            f"## Current Code\n```python\n{code}\n```\n\n"
+            f"Return ONLY the fixed Python code, no explanations."
+        )
+
+        response = await llm.generate(prompt)
+
+        fixed_code = response.text.strip()
+        # Strip markdown fences if present
+        if fixed_code.startswith("```"):
+            lines = fixed_code.split("\n")
+            lines = [line for line in lines if not line.startswith("```")]
+            fixed_code = "\n".join(lines)
+
+        code_path.write_text(fixed_code + "\n", encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 
@@ -388,7 +636,7 @@ class DraftSpecHandler:
 class StepHandlerRegistry:
     """Maps (action, target) pairs to handler instances.
 
-    Pre-populates with all 7 valid step combinations.
+    Pre-populates with all valid step combinations.
     """
 
     def __init__(self) -> None:
@@ -396,10 +644,12 @@ class StepHandlerRegistry:
             (StepAction.DRAFT, StepTarget.SPEC): DraftSpecHandler(),
             (StepAction.VALIDATE, StepTarget.SPEC): ValidateSpecHandler(),
             (StepAction.VALIDATE, StepTarget.CODE): ValidateCodeHandler(),
+            (StepAction.VALIDATE, StepTarget.TESTS): ValidateTestsHandler(),
             (StepAction.REVIEW, StepTarget.SPEC): ReviewSpecHandler(),
             (StepAction.REVIEW, StepTarget.CODE): ReviewCodeHandler(),
             (StepAction.GENERATE, StepTarget.CODE): GenerateCodeHandler(),
             (StepAction.GENERATE, StepTarget.TESTS): GenerateTestsHandler(),
+            (StepAction.LINT_FIX, StepTarget.CODE): LintFixHandler(),
         }
 
     def get(
@@ -418,3 +668,4 @@ class StepHandlerRegistry:
     ) -> None:
         """Register a custom handler (for testing or extensions)."""
         self._handlers[(action, target)] = handler
+

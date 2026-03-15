@@ -60,6 +60,7 @@ select = [
     "SIM", # flake8-simplify
     "TCH", # flake8-type-checking
     "RUF", # ruff-specific rules
+    "C90", # mccabe complexity
 ]
 ignore = [
     "E501",  # line length handled by formatter
@@ -67,6 +68,9 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["specweaver"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
 
 [tool.mypy]
 python_version = "3.11"

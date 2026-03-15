@@ -644,7 +644,7 @@ def check(
         "--strict",
         help="Treat warnings as failures (exit code 1).",
     ),
-    set_overrides: list[str] | None = typer.Option(
+    set_overrides: list[str] | None = typer.Option(  # noqa: B008
         None,
         "--set",
         help="One-off override: RULE.FIELD=VALUE (e.g. S08.fail_threshold=5).",

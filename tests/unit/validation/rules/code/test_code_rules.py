@@ -485,12 +485,12 @@ class TestCLICodeCheck:
 
 
 # ---------------------------------------------------------------------------
-# C03: Tests Pass — subprocess mock tests
+# C03: Tests Pass — PythonTestRunner mock tests
 # ---------------------------------------------------------------------------
 
 
 class TestC03TestsPass:
-    """C03 runs pytest and checks results (all subprocess-mocked)."""
+    """C03 runs pytest via PythonTestRunner and checks results."""
 
     def test_skip_when_no_path(self) -> None:
         """Should SKIP when no spec_path is provided."""
@@ -525,13 +525,13 @@ class TestC03TestsPass:
         assert result.status == Status.SKIP
         assert "test_mymod" in result.message
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
     def test_pass_when_tests_succeed(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Should PASS when pytest returns exit code 0."""
+        """Should PASS when PythonTestRunner.run_tests reports no failures."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -544,24 +544,23 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout="1 passed",
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=3, failed=0, errors=0, skipped=0, total=3,
         )
 
         rule = TestsPassRule()
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.PASS
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
     def test_fail_when_tests_fail(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Should FAIL when pytest returns non-zero exit code."""
+        """Should FAIL when PythonTestRunner.run_tests reports failures."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -574,11 +573,11 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout="FAILED test_bad - assert False",
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestFailure, TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=0, failed=1, errors=0, skipped=0, total=1,
+            failures=[TestFailure(nodeid="test_bad", message="assert False")],
         )
 
         rule = TestsPassRule()
@@ -586,13 +585,13 @@ class TestC03TestsPass:
         assert result.status == Status.FAIL
         assert len(result.findings) > 0
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
     def test_fail_when_tests_timeout(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Should FAIL with timeout message when pytest times out."""
+        """Should FAIL with timeout message when PythonTestRunner times out."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -602,23 +601,21 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.side_effect = subprocess.TimeoutExpired(
-            cmd="pytest",
-            timeout=60,
-        )
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.side_effect = TimeoutError("Timed out")
 
         rule = TestsPassRule()
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.FAIL
         assert "timed out" in result.message.lower()
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
     def test_fail_output_truncated(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Long output should be truncated to last 500 chars."""
+        """Long failure messages should be truncated to last 500 chars."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -628,12 +625,12 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        long_output = "x" * 1000
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout=long_output,
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestFailure, TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        long_message = "x" * 1000
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=0, failed=1, errors=0, skipped=0, total=1,
+            failures=[TestFailure(nodeid="test_x", message=long_message)],
         )
 
         rule = TestsPassRule()
@@ -642,13 +639,13 @@ class TestC03TestsPass:
         # Output is truncated to 500 chars
         assert len(result.findings[0].message) <= 500
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.subprocess.run")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
     def test_fail_no_output(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Should handle empty pytest output gracefully."""
+        """Should handle empty failure list gracefully."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -658,11 +655,11 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=1,
-            stdout="",
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=0, failed=1, errors=0, skipped=0, total=1,
+            failures=[],  # no failure details
         )
 
         rule = TestsPassRule()
@@ -672,12 +669,12 @@ class TestC03TestsPass:
 
 
 # ---------------------------------------------------------------------------
-# C04: Coverage — subprocess mock tests
+# C04: Coverage — PythonTestRunner mock tests
 # ---------------------------------------------------------------------------
 
 
 class TestC04Coverage:
-    """C04 runs pytest --cov and checks coverage (all subprocess-mocked)."""
+    """C04 runs pytest --cov via PythonTestRunner and checks coverage."""
 
     def test_skip_when_no_path(self) -> None:
         """Should SKIP when no spec_path is provided."""
@@ -685,10 +682,10 @@ class TestC04Coverage:
         result = rule.check("code content", spec_path=None)
         assert result.status == Status.SKIP
 
-    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
     def test_pass_when_above_threshold(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         """Should PASS when coverage is above the threshold."""
@@ -696,11 +693,11 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout="TOTAL     100       5    95%",
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=5, failed=0, errors=0, skipped=0, total=5,
+            coverage_pct=95.0,
         )
 
         rule = CoverageRule(threshold=70)
@@ -708,10 +705,10 @@ class TestC04Coverage:
         assert result.status == Status.PASS
         assert "95%" in result.message
 
-    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
     def test_fail_when_below_threshold(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         """Should FAIL when coverage is below the threshold."""
@@ -719,11 +716,11 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout="TOTAL      50      30    40%",
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=5, failed=0, errors=0, skipped=0, total=5,
+            coverage_pct=40.0,
         )
 
         rule = CoverageRule(threshold=70)
@@ -732,22 +729,22 @@ class TestC04Coverage:
         assert "40%" in result.message
         assert len(result.findings) > 0
 
-    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
     def test_warn_when_output_unparseable(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Should WARN when coverage output can't be parsed."""
+        """Should WARN when coverage output can't be parsed (coverage_pct=None)."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout="some unexpected output",
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=0, failed=0, errors=0, skipped=0, total=0,
+            coverage_pct=None,
         )
 
         rule = CoverageRule()
@@ -755,10 +752,10 @@ class TestC04Coverage:
         assert result.status == Status.WARN
         assert "unparseable" in result.message.lower() or "parse" in result.message.lower()
 
-    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
     def test_fail_when_timeout(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         """Should FAIL when coverage check times out."""
@@ -766,20 +763,18 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.side_effect = subprocess.TimeoutExpired(
-            cmd="pytest",
-            timeout=120,
-        )
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.side_effect = TimeoutError("Timed out")
 
         rule = CoverageRule()
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.FAIL
         assert "timed out" in result.message.lower()
 
-    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
     def test_pass_at_exact_threshold(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         """Should PASS when coverage equals the threshold exactly."""
@@ -787,21 +782,21 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout="TOTAL     100      30    70%",
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=5, failed=0, errors=0, skipped=0, total=5,
+            coverage_pct=70.0,
         )
 
         rule = CoverageRule(threshold=70)
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.PASS
 
-    @patch("specweaver.validation.rules.code.c04_coverage.subprocess.run")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
     def test_fail_one_below_threshold(
         self,
-        mock_run: MagicMock,
+        mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
         """Should FAIL when coverage is 1% below threshold."""
@@ -809,11 +804,11 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout="TOTAL     100      31    69%",
-            stderr="",
+        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        mock_runner = mock_runner_cls.return_value
+        mock_runner.run_tests.return_value = TestRunResult(
+            passed=5, failed=0, errors=0, skipped=0, total=5,
+            coverage_pct=69.0,
         )
 
         rule = CoverageRule(threshold=70)

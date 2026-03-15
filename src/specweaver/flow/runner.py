@@ -7,8 +7,8 @@ Walks through a ``PipelineDefinition`` step-by-step, dispatching each
 step to the appropriate handler via the ``StepHandlerRegistry``. State
 is persisted to SQLite after each step so interrupted runs can resume.
 
-Gates, retries, and feedback loops are **not** implemented here — those
-are Step 12 concerns. On failure, the runner stops at the failed step.
+Supports gates (AUTO/HITL), retry on failure, loop-back to earlier
+steps, and feedback injection into the RunContext for prompt enrichment.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from specweaver.flow.gates import GateEvaluator
 from specweaver.flow.handlers import RunContext, StepHandlerRegistry
 from specweaver.flow.state import (
     PipelineRun,
@@ -67,6 +68,7 @@ class PipelineRunner:
         self._context = context
         self._registry = registry or StepHandlerRegistry()
         self._store = store
+        self._gate_evaluator = GateEvaluator(pipeline)
 
     async def run(self) -> PipelineRun:
         """Execute the pipeline from the beginning.
@@ -119,7 +121,7 @@ class PipelineRunner:
     # Core execution loop
     # ------------------------------------------------------------------
 
-    async def _execute_loop(self, run: PipelineRun) -> PipelineRun:
+    async def _execute_loop(self, run: PipelineRun) -> PipelineRun:  # noqa: C901
         """Walk through steps starting from current_step."""
         # Empty pipeline → immediately complete
         if not run.step_records:
@@ -132,8 +134,13 @@ class PipelineRunner:
         self._persist(run)
         self._log(run, "run_started")
 
+        # Per-step attempt counters for retry tracking
+        attempts: dict[int, int] = {}
+
         while run.current_step < len(run.step_records):
-            step_def = self._pipeline.steps[run.current_step]
+            step_idx = run.current_step
+            step_def = self._pipeline.steps[step_idx]
+            attempts.setdefault(step_idx, 0)
 
             # Look up handler
             handler = self._registry.get(step_def.action, step_def.target)
@@ -166,18 +173,53 @@ class PipelineRunner:
                     completed_at=_now_iso(),
                 )
 
-            # Process result
+            # Process result: WAITING_FOR_INPUT always parks
             if result.status == StepStatus.WAITING_FOR_INPUT:
                 run.park_current_step(result)
                 self._persist(run)
                 self._log(run, "run_parked", step_def.name)
                 return run
 
-            if result.status in (StepStatus.FAILED, StepStatus.ERROR):
-                run.fail_current_step(result)
-                self._persist(run)
-                self._log(run, "step_failed", step_def.name)
-                return run
+            # Gate evaluation ------------------------------------------------
+            gate = step_def.gate
+            if gate is not None:
+                # Inject feedback for loop-back before evaluating
+                verdict = self._gate_evaluator.evaluate(
+                    gate, result, step_def, run, attempts,
+                )
+                # Handle side effects (persistence, logging, feedback)
+                if verdict == "park":
+                    self._persist(run)
+                    self._log(run, "gate_hitl_park", step_def.name)
+                    return run
+                if verdict == "stop":
+                    self._persist(run)
+                    self._log(run, "step_failed", step_def.name)
+                    return run
+                if verdict == "retry":
+                    self._persist(run)
+                    self._log(run, "step_retry", step_def.name)
+                    continue  # re-execute same step
+                if verdict == "loop_back":
+                    # Inject feedback into context
+                    self._gate_evaluator.inject_feedback(
+                        self._context,
+                        step_def.name,
+                        gate.loop_target or "",
+                        result,
+                    )
+                    self._persist(run)
+                    self._log(run, "step_loop_back", step_def.name)
+                    continue  # current_step was moved
+                # verdict == "advance" → fall through
+                self._log(run, "gate_passed", step_def.name)
+            else:
+                # No gate: fail on error/failure (backwards compat)
+                if result.status in (StepStatus.FAILED, StepStatus.ERROR):
+                    run.fail_current_step(result)
+                    self._persist(run)
+                    self._log(run, "step_failed", step_def.name)
+                    return run
 
             # Success — advance
             run.complete_current_step(result)
@@ -185,9 +227,11 @@ class PipelineRunner:
             self._persist(run)
             self._log(run, "step_completed", step_def.name)
 
-        # All steps done — run should be COMPLETED (set by complete_current_step)
+        # All steps done
         self._log(run, "run_completed")
         return run
+
+
 
     # ------------------------------------------------------------------
     # Persistence helpers

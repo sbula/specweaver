@@ -1,6 +1,6 @@
 # Phase 2: Flow Engine & Stabilize
 
-> **Status**: Steps 7–8b ✅ | Steps 9a–9b ✅ | Step 9c ✅ | Steps 10–14 pending
+> **Status**: Steps 7–12 ✅ | Steps 13–14 pending
 > **Goal**: Agents use tools; the flow engine orchestrates atoms and subflows, whitelisting which tools agents can use at each pipeline step. MVP individual steps become composable. Agent has topology awareness. Ready for external use.
 
 ---
@@ -174,7 +174,7 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 ---
 
-## Step 10: Flow Engine — Pipeline Models & Definition Format
+## Step 10: Flow Engine — Pipeline Models & Definition Format ✅
 
 > **Goal**: Define what a pipeline IS — YAML schema, step model (action + target), gate definitions, parser. No execution yet, just the data model and parsing.
 
@@ -196,11 +196,11 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 > [!NOTE]
 > **Pipeline storage**: Step 10 loads pipelines from file paths only. Per-project pipeline storage (SQLite `pipelines` table, CRUD via CLI) is deferred. The model is storage-agnostic — the caller resolves which file to load.
 
-**Estimated effort**: 1–2 sessions.
+**Estimated effort**: 1–2 sessions. ✅ Completed March 2026.
 
 ---
 
-## Step 11: Flow Engine — Runner & State Tracking
+## Step 11: Flow Engine — Runner & State Tracking ✅
 
 > **Goal**: Execute a pipeline step-by-step. Track where each spec is in the lifecycle. Persist state so interrupted runs can resume. Introduce async execution and SQLite state persistence.
 
@@ -227,31 +227,43 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 **Depends on**: Step 10 (Pipeline Models).
 
-**Estimated effort**: 2–3 sessions.
+**Estimated effort**: 2–3 sessions. ✅ Completed March 2026.
 
 ---
 
-## Step 12: Flow Engine — Gates, Retry & Feedback Loops
+## Step 12: Flow Engine — Gates, Retry & Feedback Loops ✅
 
-> **Goal**: Configurable gates (auto-pass, HITL approval), retry on failure, feedback loops (re-draft after failed review). Agent test runner tool for autonomous test execution.
+> **Goal**: Configurable gates (auto-pass, HITL approval), retry on failure, feedback loops (re-draft after failed review). Test runner as **atom + tool** for use by both the flow engine and agents.
 
-- [ ] `src/specweaver/loom/tools/test_runner/` — **agent test runner tool** (crucial for autonomous agent loop)
-  - [ ] Run tests without HITL interaction: `pytest` subprocess with structured output capture
-  - [ ] `--kind` parameter: unit, integration, e2e
-  - [ ] `--target` parameter: module/service/file scope
-  - [ ] Returns: pass/fail count, failure details, coverage (reuses C03/C04 internals)
-- [ ] `src/specweaver/flow/gates.py` — gate implementations (auto, HITL, validation)
-- [ ] `src/specweaver/flow/runner.py` — extend with gate + retry logic
-  - [ ] On gate failure: retry step, escalate, or abort (configurable)
-  - [ ] Feedback loop: e.g., review DENIED → re-run draft with review findings injected
-  - [ ] Max retry count per step
-  - [ ] **Lint-fix reflection loop** _(inspired by Aider)_ — run linter/tests (via test runner tool) → feed errors back to LLM → re-generate, with `max_reflections` cap
-- [ ] Tests: gate logic, retry counts, feedback injection, abort conditions, test runner tool
-- [ ] **Runnable**: Pipeline pauses at HITL gates, retries failed steps, auto-fixes lint errors
+- [x] `src/specweaver/loom/atoms/test_runner/` — **test runner atom** (engine-level building block)
+  - [x] Run `pytest` subprocess with structured output capture (JSON `--tb=short`)
+  - [x] `--kind` parameter: unit, integration, e2e
+  - [x] `--target` parameter: module/service/file scope
+  - [x] Returns: pass/fail count, failure details, coverage metrics
+  - [x] Reuses C03/C04 validation internals where applicable
+  - [x] Used by `ValidateCodeHandler` and gate logic inside the flow
+  - [x] `run_complexity` intent — McCabe complexity checks via ruff C90
+- [x] `src/specweaver/loom/tools/test_runner/` — **agent test runner tool** (agent-facing interface)
+  - [x] Wraps the atom with role-based grant checks and intent validation
+  - [x] Agents can invoke for autonomous test execution (lint-fix loop, CI checks)
+  - [x] Structured output: pass/fail summary, formatted failure messages
+  - [x] `run_complexity` method with role-gating (implementer + reviewer)
+- [x] `src/specweaver/flow/gates.py` — gate implementations (auto, HITL, validation)
+- [x] `src/specweaver/flow/runner.py` — extend with gate + retry logic
+  - [x] On gate failure: retry step, escalate, or abort (configurable)
+  - [x] Feedback loop: e.g., review DENIED → re-run draft with review findings injected
+  - [x] Max retry count per step
+  - [x] **Lint-fix reflection loop** _(inspired by Aider)_ — ruff auto-fix first, then LLM reflection loop with `max_reflections` cap
+- [x] Tests: gate logic, retry counts, feedback injection, abort conditions, test runner atom + tool
+- [x] Integration tests: 54 tests across 5 files (flow engine, loom stack, lint-fix, scan-infer, config cascade)
+  - [x] Shared sample project fixture (`tests/fixtures/sample_project/`) with clean, broken, and inference-ready modules
+  - [x] Shared conftest.py (`tests/integration/conftest.py`) with `sample_project` and `sample_db` fixtures
+- [x] **Runnable**: Pipeline pauses at HITL gates, retries failed steps, auto-fixes lint errors
+- [x] **1622 tests passing, 0 regressions**
 
 **Depends on**: Step 11 (Runner).
 
-**Estimated effort**: 2–3 sessions.
+**Estimated effort**: 2–3 sessions. ✅ Completed 2026-03-15.
 
 ---
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from io import StringIO
-from pathlib import Path
+from pathlib import Path  # noqa: TC003 — used at runtime, not just type hints
 
 from ruamel.yaml import YAML
 

@@ -4,7 +4,7 @@
 name: commons
 level: meta-module
 purpose: >
-  Shared infrastructure used by both tools and atoms — executors, base classes, utilities.
+  Shared infrastructure used by both tools and atoms — executors, interfaces, base classes.
 
 description: |
   Commons sits at the bottom of the loom dependency tree. Both tools/ and atoms/
@@ -21,6 +21,7 @@ forbids:
 
 exposes:
   - git
+  - test_runner
 
 constraints:
   - "Must never import from tools/ or atoms/ — dependency flows upward only"

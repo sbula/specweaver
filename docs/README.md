@@ -4,6 +4,12 @@ Guide to the documentation structure. Start with the [README](../README.md) for 
 
 **Status legend**: ✅ Current | 📋 Proposal | 📜 Historical | ❓ Draft (needs discussion)
 
+## Getting Started
+
+| Document | Status | Description |
+|----------|:------:|-------------|
+| [Developer Guide](developer_guide.html) | ✅ | **Start here** — architecture overview, diagrams, onboarding (open in browser) |
+
 ## Architecture & Methodology
 
 | Document | Status | Description |

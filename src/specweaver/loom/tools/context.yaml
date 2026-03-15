@@ -7,7 +7,7 @@ purpose: >
   Agent-facing capability providers with role-based access control.
 
 description: |
-  Tools expose git (and future filesystem) operations to agents through
+  Tools expose git, filesystem, and test runner operations to agents through
   role-specific interfaces. Each interface physically hides methods not
   whitelisted for the agent's role, saving tokens and preventing misuse.
 
@@ -21,6 +21,7 @@ forbids:
 
 exposes:
   - git
+  - test_runner
 
 # -- Operational Metadata --------------------------------------------------
 operational:

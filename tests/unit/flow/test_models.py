@@ -34,7 +34,7 @@ class TestStepAction:
         assert StepAction.GENERATE == "generate"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 4
+        assert len(StepAction) == 5
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 7
+        assert len(VALID_STEP_COMBINATIONS) == 9
 
     @pytest.mark.parametrize(
         ("action", "target"),
@@ -71,10 +71,12 @@ class TestValidStepCombinations:
             (StepAction.DRAFT, StepTarget.SPEC),
             (StepAction.VALIDATE, StepTarget.SPEC),
             (StepAction.VALIDATE, StepTarget.CODE),
+            (StepAction.VALIDATE, StepTarget.TESTS),
             (StepAction.REVIEW, StepTarget.SPEC),
             (StepAction.REVIEW, StepTarget.CODE),
             (StepAction.GENERATE, StepTarget.CODE),
             (StepAction.GENERATE, StepTarget.TESTS),
+            (StepAction.LINT_FIX, StepTarget.CODE),
         ],
     )
     def test_valid_combination(self, action: StepAction, target: StepTarget) -> None:
@@ -87,7 +89,6 @@ class TestValidStepCombinations:
             (StepAction.DRAFT, StepTarget.TESTS),
             (StepAction.GENERATE, StepTarget.SPEC),
             (StepAction.REVIEW, StepTarget.TESTS),
-            (StepAction.VALIDATE, StepTarget.TESTS),
         ],
     )
     def test_invalid_combination(self, action: StepAction, target: StepTarget) -> None:

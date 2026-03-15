@@ -1,14 +1,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""C04: Coverage — checks that test coverage meets the threshold."""
+"""C04: Coverage — checks that test coverage meets the threshold.
+
+Delegates pytest+coverage execution to the shared PythonTestRunner
+from the commons layer, eliminating duplicate subprocess handling.
+"""
 
 from __future__ import annotations
 
-import re
-import subprocess
 from typing import TYPE_CHECKING
 
+from specweaver.loom.commons.test_runner.python import PythonTestRunner
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
 if TYPE_CHECKING:
@@ -42,50 +45,42 @@ class CoverageRule(Rule):
                 break
             project_root = project_root.parent
 
+        # Delegate to PythonTestRunner
+        runner = PythonTestRunner(cwd=project_root)
         try:
-            result = subprocess.run(
-                [
-                    "python",
-                    "-m",
-                    "pytest",
-                    "--cov",
-                    str(spec_path),
-                    "--cov-report",
-                    "term",
-                    "-q",
-                    "--tb=no",
-                ],
-                capture_output=True,
-                text=True,
+            result = runner.run_tests(
+                target=str(spec_path),
+                kind="",  # no marker filter
                 timeout=120,
-                cwd=str(project_root),
+                coverage=True,
+                coverage_threshold=self._threshold,
             )
-        except subprocess.TimeoutExpired:
+        except TimeoutError:
             return self._fail(
                 "Coverage check timed out",
                 [Finding(message="Coverage check timed out after 120s", severity=Severity.ERROR)],
             )
 
-        # Parse coverage from output (look for "TOTAL ... XX%")
-        match = re.search(r"TOTAL\s+\d+\s+\d+\s+(\d+)%", result.stdout)
-        if not match:
+        coverage = result.coverage_pct
+
+        if coverage is None:
             return self._warn(
                 "Could not parse coverage from output",
                 [Finding(message="Coverage output unparseable", severity=Severity.WARNING)],
             )
 
-        coverage = int(match.group(1))
+        coverage_int = int(coverage)
 
-        if coverage < self._threshold:
+        if coverage_int < self._threshold:
             return self._fail(
-                f"Coverage {coverage}% below threshold {self._threshold}%",
+                f"Coverage {coverage_int}% below threshold {self._threshold}%",
                 [
                     Finding(
-                        message=f"Coverage: {coverage}% (threshold: {self._threshold}%)",
+                        message=f"Coverage: {coverage_int}% (threshold: {self._threshold}%)",
                         severity=Severity.ERROR,
                         suggestion=f"Add tests to reach at least {self._threshold}% coverage.",
                     )
                 ],
             )
 
-        return self._pass(f"Coverage: {coverage}% (threshold: {self._threshold}%)")
+        return self._pass(f"Coverage: {coverage_int}% (threshold: {self._threshold}%)")

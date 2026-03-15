@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import ast
 from abc import ABC, abstractmethod
-from pathlib import Path
+from pathlib import Path  # noqa: TC003 — used at runtime, not just type hints
 from typing import ClassVar
 
 # Known standard library top-level modules (subset for heuristic).

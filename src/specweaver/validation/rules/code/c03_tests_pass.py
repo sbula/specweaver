@@ -1,13 +1,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""C03: Tests Pass — runs pytest on the test file and checks results."""
+"""C03: Tests Pass — runs pytest on the test file and checks results.
+
+Delegates pytest execution to the shared PythonTestRunner from the
+commons layer, eliminating duplicate subprocess handling.
+"""
 
 from __future__ import annotations
 
-import subprocess
 from typing import TYPE_CHECKING
 
+from specweaver.loom.commons.test_runner.python import PythonTestRunner
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
 if TYPE_CHECKING:
@@ -50,28 +54,37 @@ class TestsPassRule(Rule):
 
         test_file = matches[0]
 
+        # Delegate to PythonTestRunner
+        runner = PythonTestRunner(cwd=project_root)
         try:
-            result = subprocess.run(
-                ["python", "-m", "pytest", str(test_file), "-q", "--tb=line"],
-                capture_output=True,
-                text=True,
+            result = runner.run_tests(
+                target=str(test_file.relative_to(project_root)),
+                kind="",  # no marker filter
                 timeout=60,
-                cwd=str(project_root),
             )
-        except subprocess.TimeoutExpired:
+        except TimeoutError:
             return self._fail(
                 "Tests timed out after 60 seconds",
                 [Finding(message="Test execution timed out", severity=Severity.ERROR)],
             )
 
-        if result.returncode == 0:
+        if result.failed == 0 and result.errors == 0:
             return self._pass(f"All tests in {test_file.name} passed")
+
+        # Build failure message from structured results
+        failure_msgs = [f.message for f in result.failures]
+        if failure_msgs:
+            message = "; ".join(failure_msgs)
+            # Truncate to 500 chars for consistency
+            message = message[-500:]
+        else:
+            message = "No output"
 
         return self._fail(
             "Tests failed",
             [
                 Finding(
-                    message=result.stdout[-500:] if result.stdout else "No output",
+                    message=message,
                     severity=Severity.ERROR,
                     suggestion="Fix failing tests before proceeding.",
                 )

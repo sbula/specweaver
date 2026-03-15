@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpecWeaver — Developer Guide</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #1a1a2e; --surface: #16213e; --card: #0f3460;
+    --accent: #e94560; --accent2: #533483; --text: #eee; --muted: #aab;
+    --border: rgba(255,255,255,.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7;
+    max-width: 1100px; margin: 0 auto; padding: 2rem 2.5rem 6rem;
+  }
+  h1 { font-size: 2.4rem; margin: 1rem 0 .5rem; background: linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  h2 { font-size: 1.6rem; margin: 3rem 0 1rem; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: .4rem; }
+  h3 { font-size: 1.2rem; margin: 2rem 0 .6rem; color: #cdf; }
+  h4 { font-size: 1rem; margin: 1.5rem 0 .4rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  p, li { margin-bottom: .6rem; }
+  ul, ol { padding-left: 1.4rem; }
+  a { color: var(--accent); }
+  code { background: rgba(255,255,255,.07); padding: .15em .4em; border-radius: 4px; font-size: .9em; font-family: 'Cascadia Code','Fira Code', monospace; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1rem 0; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th { background: var(--card); padding: .6rem .8rem; text-align: left; font-weight: 600; border: 1px solid var(--border); }
+  td { padding: .5rem .8rem; border: 1px solid var(--border); }
+  tr:nth-child(even) { background: rgba(255,255,255,.02); }
+  .diagram-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0;
+    box-shadow: 0 4px 24px rgba(0,0,0,.3);
+  }
+  .diagram-card h3 { margin-top: 0; }
+  .diagram-card .mermaid { margin: 1rem 0; }
+  .callout {
+    border-left: 4px solid var(--accent); background: rgba(233,69,96,.08);
+    padding: .8rem 1.2rem; border-radius: 0 8px 8px 0; margin: 1rem 0;
+  }
+  .callout-info { border-left-color: #4fc3f7; background: rgba(79,195,247,.08); }
+  .callout strong { color: var(--accent); }
+  .callout-info strong { color: #4fc3f7; }
+  .toc { background: var(--surface); border-radius: 12px; padding: 1.5rem 2rem; margin: 2rem 0; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ol { counter-reset: toc; list-style: none; padding-left: 0; }
+  .toc li { counter-increment: toc; padding: .3rem 0; }
+  .toc li::before { content: counter(toc) ". "; color: var(--accent); font-weight: 600; }
+  .tag { display: inline-block; font-size: .75rem; padding: .1em .5em; border-radius: 4px; font-weight: 600; }
+  .tag-engine { background: #1b5e20; color: #a5d6a7; }
+  .tag-agent  { background: #0d47a1; color: #90caf9; }
+  .tag-shared { background: #4a148c; color: #ce93d8; }
+</style>
+</head>
+<body>
+
+<h1>SpecWeaver Developer Guide</h1>
+<p style="color:var(--muted);margin-bottom:2rem;">
+  Audience: Human engineers onboarding to the project or reviewing AI-agent work.<br>
+  Goal: Understand the architecture, locate code, and confidently review changes.
+</p>
+
+<nav class="toc">
+  <strong style="font-size:1.1rem;">Contents</strong>
+  <ol>
+    <li><a href="#overview">Project Overview</a></li>
+    <li><a href="#architecture">Architecture &amp; Layer Diagram</a></li>
+    <li><a href="#loom">The Loom Layer (Atoms / Tools / Commons)</a></li>
+    <li><a href="#flow">Flow Engine &amp; Pipeline Execution</a></li>
+    <li><a href="#gates">Gate Evaluation, Retry &amp; Loop-Back</a></li>
+    <li><a href="#validation">Validation System</a></li>
+    <li><a href="#review">LLM Review System</a></li>
+    <li><a href="#pipeline-yaml">Pipeline Configuration (YAML)</a></li>
+    <li><a href="#state">State Model &amp; Persistence</a></li>
+    <li><a href="#testing">Testing Strategy</a></li>
+    <li><a href="#decisions">Key Design Decisions</a></li>
+    <li><a href="#checklist">Review Checklist</a></li>
+  </ol>
+</nav>
+
+<!-- ================================================================== -->
+<h2 id="overview">1. Project Overview</h2>
+
+<p>SpecWeaver is a <strong>specification-first development lifecycle tool</strong>. AI agents draft specifications that are validated, reviewed, and then used to generate code and tests — all orchestrated by a pipeline engine with quality gates.</p>
+
+<pre><code>pip install -e ".[dev]"       # Install with dev dependencies
+sw validate spec.md           # Validate a specification
+sw run new_feature spec.md    # Run the full pipeline
+python -m pytest -m unit -q   # Run unit tests</code></pre>
+
+<h3>Package Map</h3>
+<table>
+  <tr><th>Package</th><th>Purpose</th></tr>
+  <tr><td><code>cli.py</code></td><td>Typer CLI — entry point for all commands</td></tr>
+  <tr><td><code>config/</code></td><td>Project configuration, validation settings, database</td></tr>
+  <tr><td><code>context/</code></td><td>Topology/dependency context for LLM prompts</td></tr>
+  <tr><td><code>drafting/</code></td><td>Spec co-authoring with HITL interaction</td></tr>
+  <tr><td><code>flow/</code></td><td>★ Pipeline engine (runner, gates, state, handlers)</td></tr>
+  <tr><td><code>graph/</code></td><td>Project dependency graph (import analysis)</td></tr>
+  <tr><td><code>implementation/</code></td><td>Code generation from specs</td></tr>
+  <tr><td><code>llm/</code></td><td>LLM adapter layer (Gemini, etc.)</td></tr>
+  <tr><td><code>loom/</code></td><td>★ Interaction layer — atoms, tools, commons</td></tr>
+  <tr><td><code>pipelines/</code></td><td>YAML pipeline definitions</td></tr>
+  <tr><td><code>project/</code></td><td>Project scaffolding and detection</td></tr>
+  <tr><td><code>review/</code></td><td>LLM-powered spec and code review</td></tr>
+  <tr><td><code>validation/</code></td><td>Rule-based validation (S01–S11, C01–C08)</td></tr>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="architecture">2. Architecture &amp; Layer Diagram</h2>
+
+<div class="diagram-card">
+  <h3>High-Level Architecture</h3>
+  <p>SpecWeaver follows a strict layer separation: CLI → Orchestration → Handlers → Core Engines → Loom.</p>
+  <pre class="mermaid">
+graph TB
+    subgraph "User Interface"
+        CLI["CLI (sw)"]
+    end
+
+    subgraph "Orchestration"
+        PIPE["Pipeline Defs<br/>(YAML)"]
+        RUNNER["Pipeline Runner"]
+        STATE["Run State"]
+        STORE["State Store<br/>(SQLite)"]
+    end
+
+    subgraph "Handler Layer"
+        REG["StepHandlerRegistry"]
+        DS["DraftSpec"]
+        VS["ValidateSpec"]
+        VC["ValidateCode"]
+        VT["ValidateTests"]
+        RS["ReviewSpec"]
+        RC["ReviewCode"]
+        GC["GenerateCode"]
+        GT["GenerateTests"]
+    end
+
+    subgraph "Core Engines"
+        VAL["Validation<br/>Engine"]
+        REV["Review<br/>Engine"]
+        DRA["Drafting<br/>Engine"]
+        IMP["Implementation<br/>Engine"]
+        LLM["LLM Adapter<br/>(Gemini)"]
+    end
+
+    subgraph "Loom (Environment Interaction)"
+        ATOMS["Atoms"]
+        TOOLS["Tools"]
+        COMMONS["Commons"]
+    end
+
+    CLI --> RUNNER
+    CLI --> PIPE
+    RUNNER --> STATE
+    RUNNER --> STORE
+    RUNNER --> REG
+    REG --> DS & VS & VC & VT & RS & RC & GC & GT
+    VS & VC --> VAL
+    RS & RC --> REV
+    DS --> DRA
+    GC & GT --> IMP
+    VT --> ATOMS
+    REV & IMP & DRA --> LLM
+    ATOMS --> COMMONS
+    TOOLS --> COMMONS
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Data Flow: Spec-First Lifecycle</h3>
+  <p>The complete lifecycle from spec authoring to validated code.</p>
+  <pre class="mermaid">
+flowchart LR
+    A["📝 Draft Spec<br/>(HITL + LLM)"] --> B["✅ Validate Spec<br/>(S01–S11)"]
+    B --> C["🔍 Review Spec<br/>(LLM Semantic)"]
+    C -->|DENIED| A
+    C -->|ACCEPTED| D["⚙️ Generate Code"]
+    D --> E["🧪 Generate Tests"]
+    E --> F["🏃 Run Tests<br/>(pytest)"]
+    F -->|FAILED| D
+    F -->|PASSED| G["✅ Validate Code<br/>(C01–C08)"]
+    G --> H["🔍 Review Code<br/>(LLM vs Spec)"]
+    H -->|DENIED| D
+    H -->|ACCEPTED| I["✅ Done"]
+  </pre>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="loom">3. The Loom Layer</h2>
+
+<p>The <strong>Loom</strong> is SpecWeaver's interaction layer with the development environment (git, filesystem, test runners). It has three sub-layers with strict import rules.</p>
+
+<div class="diagram-card">
+  <h3>Loom Structure &amp; Import Rules</h3>
+  <pre class="mermaid">
+graph TB
+    subgraph "Pipeline Engine"
+        ENGINE["PipelineRunner /<br/>StepHandlers"]
+    end
+
+    subgraph "AI Agents"
+        AGENT["Agent<br/>(implementer, reviewer)"]
+    end
+
+    subgraph loom["loom/"]
+        subgraph atoms["atoms/ (engine-facing)"]
+            direction TB
+            A_GIT["GitAtom"]
+            A_FS["FileSystemAtom"]
+            A_TR["TestRunnerAtom"]
+        end
+        subgraph tools["tools/ (agent-facing)"]
+            direction TB
+            T_GIT["GitTool"]
+            T_FS["FileSystemTool"]
+            T_TR["TestRunnerTool"]
+        end
+        subgraph commons["commons/ (shared)"]
+            direction TB
+            C_GIT["GitExecutor"]
+            C_FS["FileSystemExecutor"]
+            C_TR["TestRunnerInterface<br/>PythonTestRunner"]
+        end
+    end
+
+    ENGINE --> atoms
+    AGENT --> tools
+    A_GIT --> C_GIT
+    A_FS --> C_FS
+    A_TR --> C_TR
+    T_GIT --> C_GIT
+    T_FS --> C_FS
+    T_TR --> C_TR
+
+    tools -.-x|"❌ NEVER"| atoms
+    atoms -.-x|"❌ NEVER"| tools
+  </pre>
+</div>
+
+<div class="callout">
+  <strong>Critical Rule:</strong> Atoms and Tools NEVER import from each other.
+  Shared code (ABCs, executors, result types) lives in <code>commons/</code>.
+</div>
+
+<div class="diagram-card">
+  <h3>Test Runner: 4-Layer Architecture</h3>
+  <p>Shows how the TestRunner flows from pipeline handler to subprocess execution.</p>
+  <pre class="mermaid">
+flowchart TB
+    subgraph "Handler Layer"
+        VTH["ValidateTestsHandler"]
+    end
+    subgraph "Atom Layer"
+        TRA["TestRunnerAtom<br/>(intent dispatch)"]
+    end
+    subgraph "Commons Layer"
+        TRI["TestRunnerInterface<br/>(ABC)"]
+        PTR["PythonTestRunner<br/>(subprocess)"]
+    end
+    subgraph "External"
+        PYTEST["pytest"]
+        RUFF["ruff"]
+    end
+
+    VTH -->|"run({'intent':'run_tests'})"| TRA
+    TRA -->|"_resolve_runner('python')"| PTR
+    PTR -.->|implements| TRI
+    PTR -->|"subprocess.run()"| PYTEST
+    PTR -->|"subprocess.run()"| RUFF
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Tool Role Gating</h3>
+  <p>Agents receive a role-specific interface — they physically cannot call methods that don't exist.</p>
+  <pre class="mermaid">
+flowchart LR
+    subgraph "Factory"
+        F["create_test_runner_interface(role, cwd)"]
+    end
+    subgraph "Implementer"
+        I_TEST["run_tests()"]
+        I_LINT["run_linter(fix=True)"]
+    end
+    subgraph "Reviewer"
+        R_TEST["run_tests()"]
+        R_LINT["run_linter(fix=False)"]
+    end
+
+    F -->|"role=implementer"| I_TEST & I_LINT
+    F -->|"role=reviewer"| R_TEST & R_LINT
+    F -->|"role=drafter"| X["❌ ValueError"]
+  </pre>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="flow">4. Flow Engine &amp; Pipeline Execution</h2>
+
+<div class="diagram-card">
+  <h3>Pipeline Runner Execution Loop</h3>
+  <p>The complete step-by-step execution loop in <code>runner.py</code>.</p>
+  <pre class="mermaid">
+flowchart TD
+    START(["Pipeline.run()"]) --> INIT["Create PipelineRun<br/>status=NOT_STARTED"]
+    INIT --> EMPTY{"Steps<br/>empty?"}
+    EMPTY -->|Yes| DONE_EMPTY(["COMPLETED"])
+    EMPTY -->|No| RUNNING["status=RUNNING<br/>persist + log"]
+    RUNNING --> LOOP{"current_step<br/>< total?"}
+    LOOP -->|No| ALL_DONE(["COMPLETED ✅"])
+    LOOP -->|Yes| LOOKUP["Lookup handler<br/>registry.get(action, target)"]
+    LOOKUP --> FOUND{"Handler<br/>found?"}
+    FOUND -->|No| NO_HANDLER(["FAILED ❌<br/>No handler for action+target"])
+    FOUND -->|Yes| MARK["mark_step_running()<br/>persist + log"]
+    MARK --> EXEC["await handler.execute(step, context)"]
+    EXEC --> EXCEPT{"Exception?"}
+    EXCEPT -->|Yes| ERR_RESULT["StepResult(ERROR)"]
+    EXCEPT -->|No| CHECK_WAIT{"WAITING_FOR<br/>_INPUT?"}
+    ERR_RESULT --> CHECK_WAIT
+    CHECK_WAIT -->|Yes| PARK(["PARKED 🅿️<br/>Human must resume"])
+    CHECK_WAIT -->|No| HAS_GATE{"Has gate?"}
+    HAS_GATE -->|No| SIMPLE{"PASSED?"}
+    SIMPLE -->|No| FAIL_SIMPLE(["FAILED ❌"])
+    SIMPLE -->|Yes| ADVANCE
+    HAS_GATE -->|Yes| GATE_EVAL["_evaluate_gate()"]
+    GATE_EVAL --> ADVANCE["complete_current_step()<br/>current_step += 1<br/>persist + log"]
+    ADVANCE --> LOOP
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>State Machine: Run Status Transitions</h3>
+  <pre class="mermaid">
+stateDiagram-v2
+    [*] --> NOT_STARTED : PipelineRunner.run()
+    NOT_STARTED --> RUNNING : Begin execution
+    RUNNING --> COMPLETED : All steps pass
+    RUNNING --> FAILED : Step fails / gate aborts
+    RUNNING --> PARKED : HITL gate / WAITING_FOR_INPUT
+    PARKED --> RUNNING : PipelineRunner.resume()
+    COMPLETED --> [*]
+    FAILED --> [*]
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>State Machine: Step Status Transitions</h3>
+  <pre class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING : StepRecord created
+    PENDING --> RUNNING : mark_step_running()
+    RUNNING --> PASSED : Handler returns success
+    RUNNING --> FAILED : Handler returns failure
+    RUNNING --> ERROR : Handler raises exception
+    RUNNING --> WAITING_FOR_INPUT : HITL / draft handler
+    PASSED --> [*]
+    FAILED --> PENDING : Gate RETRY or LOOP_BACK
+    ERROR --> [*]
+    WAITING_FOR_INPUT --> PENDING : Resume
+  </pre>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="gates">5. Gate Evaluation, Retry &amp; Loop-Back</h2>
+
+<div class="diagram-card">
+  <h3>Gate Evaluation Decision Tree</h3>
+  <p>Gates sit after steps and control flow progression. This is the full decision tree inside <code>_evaluate_gate()</code>.</p>
+  <pre class="mermaid">
+flowchart TD
+    A["Step Result"] --> B{"Gate Type?"}
+    B -->|HITL| C["🅿️ PARK<br/>park_current_step()<br/>Human must resume"]
+    B -->|AUTO| D{"Condition<br/>met?"}
+    D -->|Yes| E["✅ ADVANCE<br/>Proceed to next step"]
+    D -->|No| F{"on_fail<br/>action?"}
+    F -->|ABORT| G["❌ STOP<br/>fail_current_step()<br/>RunStatus.FAILED"]
+    F -->|CONTINUE| E
+    F -->|RETRY| H{"attempts ≤<br/>max_retries?"}
+    H -->|Yes| I["🔄 RETRY<br/>Reset step to PENDING<br/>Re-execute same step"]
+    H -->|No| G
+    F -->|LOOP_BACK| J{"loops ≤<br/>max_retries?"}
+    J -->|Yes| K["↩️ LOOP BACK<br/>1. _inject_feedback()<br/>2. Reset target step<br/>3. current_step = target_idx"]
+    J -->|No| G
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Gate Condition Evaluation</h3>
+  <p>Inside <code>_gate_passes()</code> — what each condition checks.</p>
+  <pre class="mermaid">
+flowchart LR
+    subgraph "ALL_PASSED"
+        AP["result.status<br/>== PASSED"]
+    end
+    subgraph "ACCEPTED"
+        ACC["result.output<br/>['verdict'] == 'accepted'"]
+    end
+    subgraph "COMPLETED"
+        COMP["result.status<br/>not in {FAILED, ERROR}"]
+    end
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Feedback Injection Flow</h3>
+  <p>When LOOP_BACK fires, findings from the failed step are injected into <code>RunContext.feedback</code> for the next attempt.</p>
+  <pre class="mermaid">
+sequenceDiagram
+    participant Runner
+    participant Gate
+    participant Context as RunContext
+    participant Handler as Target Handler
+
+    Runner->>Gate: evaluate(review_code result)
+    Gate-->>Runner: LOOP_BACK → generate_code
+    Runner->>Context: feedback["generate_code"] = {<br/>  from_step: "review_code",<br/>  findings: {verdict, issues...}<br/>}
+    Runner->>Runner: current_step = generate_code index
+    Runner->>Handler: execute(step, context)
+    Note over Handler: Can read context.feedback<br/>to improve output
+  </pre>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="validation">6. Validation System</h2>
+
+<div class="diagram-card">
+  <h3>Validation Architecture</h3>
+  <p>Two rule families. Each rule is a standalone class extending the <code>Rule</code> ABC. The runner loads, filters, and executes them.</p>
+  <pre class="mermaid">
+flowchart TD
+    subgraph "CLI / Handler"
+        CALL["validate(spec_path, settings)"]
+    end
+
+    subgraph "Validation Runner"
+        GR["get_spec_rules() / get_code_rules()"]
+        FILTER["Filter by settings:<br/>- enabled/disabled<br/>- requires_llm<br/>- requires_subprocess"]
+        BUILD["_build_rule_kwargs()<br/>Apply threshold overrides"]
+        RUN["run_rules(rules, text, path)"]
+        COUNT["count_by_status() / all_passed()"]
+    end
+
+    subgraph "Rule ABC"
+        RULE["Rule"]
+        CHECK["check(text, path) → RuleResult"]
+        PASS["_pass() / _fail() / _warn() / _skip()"]
+    end
+
+    subgraph "Result Model"
+        RR["RuleResult"]
+        FIND["Finding"]
+        STAT["Status: PASS | FAIL | WARN | SKIP"]
+    end
+
+    CALL --> GR
+    GR --> FILTER --> BUILD --> RUN
+    RUN --> COUNT
+    RUN --> RULE
+    RULE --> CHECK --> PASS
+    CHECK --> RR
+    RR --> FIND
+    RR --> STAT
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Spec Validation Rules (S01–S11)</h3>
+  <pre class="mermaid">
+flowchart LR
+    subgraph "Structure Tests"
+        S01["S01 One-Sentence<br/>Clear summary?"]
+        S02["S02 Single Setup<br/>No redundant sections?"]
+        S03["S03 Stranger Test<br/>Understandable?"]
+        S04["S04 Dependency Dir<br/>Correct references?"]
+        S05["S05 Day Test<br/>Implementable scope?"]
+    end
+    subgraph "Completeness Tests"
+        S06["S06 Concrete Example<br/>Has examples?"]
+        S07["S07 Test First<br/>Criteria defined?"]
+        S08["S08 Ambiguity<br/>No vague language?"]
+        S09["S09 Error Path<br/>Errors covered?"]
+        S10["S10 Done Definition<br/>Clear DoD?"]
+    end
+    subgraph "Consistency"
+        S11["S11 Terminology<br/>Consistent terms?"]
+    end
+
+    SPEC["spec.md"] --> S01 & S02 & S03 & S04 & S05
+    SPEC --> S06 & S07 & S08 & S09 & S10
+    SPEC --> S11
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Code Validation Rules (C01–C08)</h3>
+  <pre class="mermaid">
+flowchart LR
+    subgraph "Syntax & Structure"
+        C01["C01 Syntax Valid<br/>Parses without errors"]
+        C02["C02 Tests Exist<br/>Test files present"]
+        C05["C05 Import Direction<br/>No circular imports"]
+    end
+    subgraph "Runtime Checks"
+        C03["C03 Tests Pass<br/>pytest succeeds"]
+        C04["C04 Coverage<br/>Meets threshold (70–90%)"]
+    end
+    subgraph "Quality Checks"
+        C06["C06 No Bare Except<br/>No except: pass"]
+        C07["C07 No Orphan TODO<br/>No untracked TODOs"]
+        C08["C08 Type Hints<br/>Functions annotated"]
+    end
+
+    CODE["module.py"] --> C01 & C02 & C05
+    CODE --> C03 & C04
+    CODE --> C06 & C07 & C08
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Validation Settings &amp; Override Flow</h3>
+  <pre class="mermaid">
+flowchart LR
+    A["specweaver.yaml<br/>(project config)"] --> B["ValidationSettings"]
+    C["CLI --set S08.fail_threshold=5"] --> B
+    B --> D["get_override(rule_id)"]
+    D --> E["RuleOverride"]
+    E --> F["warn_threshold<br/>fail_threshold<br/>enabled<br/>extra_params"]
+    F --> G["_build_rule_kwargs()"]
+    G --> H["Rule(**kwargs)"]
+  </pre>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="review">7. LLM Review System</h2>
+
+<div class="diagram-card">
+  <h3>Review Process Flow</h3>
+  <p>The <code>Reviewer</code> sends structured prompts to the LLM and parses ACCEPTED/DENIED verdicts with findings.</p>
+  <pre class="mermaid">
+flowchart TD
+    subgraph "Input"
+        SPEC["Spec file"]
+        CODE["Code file"]
+        TOPO["TopologyContext<br/>(dependencies)"]
+    end
+
+    subgraph "Prompt Construction"
+        PB["PromptBuilder"]
+        INST["Instructions<br/>(5 review criteria)"]
+        FILES["add_file(priority, role)"]
+    end
+
+    subgraph "LLM Interaction"
+        MSG["Messages:<br/>SYSTEM + USER"]
+        LLM["LLMAdapter.generate()"]
+    end
+
+    subgraph "Response Parsing"
+        PARSE["_parse_response()"]
+        VERDICT{"VERDICT line?"}
+        FINDINGS["Extract '- ' lines"]
+        SUMMARY["Last non-finding line"]
+    end
+
+    subgraph "Result"
+        RR["ReviewResult"]
+        ACC["✅ ACCEPTED"]
+        DEN["❌ DENIED"]
+        ERR["⚠️ ERROR"]
+    end
+
+    SPEC --> PB
+    CODE --> PB
+    TOPO --> PB
+    INST --> PB
+    PB --> FILES --> MSG --> LLM
+
+    LLM --> PARSE
+    PARSE --> VERDICT
+    VERDICT -->|"VERDICT: ACCEPTED"| ACC
+    VERDICT -->|"VERDICT: DENIED"| DEN
+    VERDICT -->|"No verdict"| DEN
+    LLM -->|Exception| ERR
+
+    PARSE --> FINDINGS --> RR
+    PARSE --> SUMMARY --> RR
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Spec Review vs Code Review</h3>
+  <pre class="mermaid">
+flowchart LR
+    subgraph "Spec Review (F4)"
+        SR_IN["spec.md<br/>(role: target)"]
+        SR_CR["Criteria:<br/>Clarity, Completeness,<br/>Implementability,<br/>Testability, SRP"]
+    end
+    subgraph "Code Review (F7)"
+        CR_IN["module.py (target)<br/>spec.md (reference)"]
+        CR_CR["Criteria:<br/>Spec Compliance,<br/>Contract Match,<br/>Error Handling,<br/>No Hallucination,<br/>Test Coverage"]
+    end
+
+    SR_IN --> REV["Reviewer"]
+    SR_CR --> REV
+    CR_IN --> REV
+    CR_CR --> REV
+    REV --> RES["ReviewResult<br/>{verdict, findings, summary}"]
+  </pre>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="pipeline-yaml">8. Pipeline Configuration (YAML)</h2>
+
+<div class="diagram-card">
+  <h3>Pipeline Definition Model</h3>
+  <pre class="mermaid">
+classDiagram
+    class PipelineDefinition {
+        +name: str
+        +description: str
+        +version: str
+        +steps: list~PipelineStep~
+        +max_total_loops: int = 20
+        +get_step(name) PipelineStep
+        +validate_flow() list~str~
+    }
+    class PipelineStep {
+        +name: str
+        +action: StepAction
+        +target: StepTarget
+        +params: dict
+        +gate: GateDefinition?
+        +description: str
+    }
+    class GateDefinition {
+        +type: GateType
+        +condition: GateCondition
+        +on_fail: OnFailAction
+        +loop_target: str?
+        +max_retries: int = 3
+        +max_retries_hitl: int = 5
+    }
+    class StepAction {
+        <<enumeration>>
+        DRAFT
+        VALIDATE
+        REVIEW
+        GENERATE
+    }
+    class StepTarget {
+        <<enumeration>>
+        SPEC
+        CODE
+        TESTS
+    }
+
+    PipelineDefinition "1" o-- "*" PipelineStep
+    PipelineStep "1" o-- "0..1" GateDefinition
+    PipelineStep --> StepAction
+    PipelineStep --> StepTarget
+  </pre>
+</div>
+
+<h4>Valid Action + Target Combinations</h4>
+<table>
+  <tr><th>Action</th><th>spec</th><th>code</th><th>tests</th></tr>
+  <tr><td><code>draft</code></td><td>✅</td><td>—</td><td>—</td></tr>
+  <tr><td><code>validate</code></td><td>✅</td><td>✅</td><td>✅</td></tr>
+  <tr><td><code>review</code></td><td>✅</td><td>✅</td><td>—</td></tr>
+  <tr><td><code>generate</code></td><td>—</td><td>✅</td><td>✅</td></tr>
+</table>
+
+<div class="diagram-card">
+  <h3>new_feature.yaml Pipeline (8 steps)</h3>
+  <pre class="mermaid">
+flowchart LR
+    A["1. draft_spec<br/>🅿️ HITL gate"] --> B["2. validate_spec<br/>🚫 AUTO gate<br/>all_passed → abort"]
+    B --> C["3. review_spec<br/>↩️ AUTO gate<br/>accepted → loop_back(1)"]
+    C --> D["4. generate_code"]
+    D --> E["5. generate_tests"]
+    E --> F["6. run_tests<br/>↩️ AUTO gate<br/>all_passed → loop_back(4)"]
+    F --> G["7. validate_code<br/>🚫 AUTO gate<br/>all_passed → abort"]
+    G --> H["8. review_code<br/>↩️ AUTO gate<br/>accepted → loop_back(4)"]
+  </pre>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="state">9. State Model &amp; Persistence</h2>
+
+<div class="diagram-card">
+  <h3>State Object Model</h3>
+  <pre class="mermaid">
+classDiagram
+    class PipelineRun {
+        +run_id: str
+        +pipeline_name: str
+        +project_name: str
+        +spec_path: str
+        +status: RunStatus
+        +current_step: int
+        +step_records: list~StepRecord~
+        +started_at: str
+        +updated_at: str
+        +mark_step_running()
+        +complete_current_step(result)
+        +fail_current_step(result)
+        +park_current_step(result)
+    }
+    class StepRecord {
+        +step_name: str
+        +status: StepStatus
+        +result: StepResult?
+        +attempt: int
+    }
+    class StepResult {
+        +status: StepStatus
+        +output: dict
+        +error_message: str?
+        +started_at: str
+        +completed_at: str
+    }
+    class RunContext {
+        +project_path: Path
+        +spec_path: Path
+        +llm: LLMAdapter?
+        +settings: ValidationSettings?
+        +output_dir: Path?
+        +feedback: dict
+    }
+
+    PipelineRun "1" o-- "*" StepRecord
+    StepRecord "1" o-- "0..1" StepResult
+    PipelineRun ..> RunContext : "used by runner"
+  </pre>
+</div>
+
+<div class="callout callout-info">
+  <strong>Persistence:</strong> <code>StateStore</code> saves <code>PipelineRun</code> to SQLite after <em>every</em> step.
+  This means interrupted runs can resume with <code>sw run --resume &lt;run_id&gt;</code>.
+  The store also logs audit events (step_started, step_completed, gate_failed, etc.).
+</div>
+
+<!-- ================================================================== -->
+<h2 id="testing">10. Testing Strategy</h2>
+
+<pre><code>tests/
+├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~1560 tests)
+├── integration/   # Cross-module (real file I/O, real ruff)     (54 tests)
+├── e2e/           # Full pipeline runs
+└── fixtures/      # Shared test data
+    ├── good_spec.md / bad_spec_*.md   # Spec fixtures
+    └── sample_project/                # Shared integration test project
+        ├── pyproject.toml             # Minimal ruff config
+        ├── specs/calculator.md        # Valid spec
+        └── src/
+            ├── greeter/               # Clean module (passes all checks)
+            ├── broken/                # Lint errors + high complexity
+            └── no_context/            # No context.yaml (for inference)</code></pre>
+
+<pre><code>python -m pytest -q                   # Everything (1622 tests)
+python -m pytest tests/unit/ -q       # Unit tests only (~1560)
+python -m pytest tests/integration/ -q  # Integration tests (54)
+python -m pytest --cov src/ -q        # With coverage
+python -m ruff check src/ tests/      # Lint</code></pre>
+
+<h4>Integration Test Files</h4>
+<table>
+  <tr><th>File</th><th>Tests</th><th>Coverage</th></tr>
+  <tr><td><code>test_flow_engine.py</code></td><td>10</td><td>Pipeline completion, gates (retry/abort/HITL/loop-back), resume</td></tr>
+  <tr><td><code>test_loom_stack.py</code></td><td>10</td><td>Real ruff lint/fix/complexity, atom→tool stack, role gating</td></tr>
+  <tr><td><code>test_lint_fix_real.py</code></td><td>4</td><td>LintFixHandler auto-fix, clean fast-path, no-LLM fallback</td></tr>
+  <tr><td><code>test_scan_and_infer.py</code></td><td>10</td><td>Context inference, public symbols, archetype detection</td></tr>
+  <tr><td><code>test_config_cascade.py</code></td><td>7</td><td>DB overrides, CLI cascade, isolation, reset</td></tr>
+  <tr><td><code>test_pipeline.py</code></td><td>13</td><td>End-to-end CLI flows (init, check, implement, review)</td></tr>
+</table>
+
+<div class="callout callout-info">
+  <strong>Coverage Target:</strong> 70–90% — enforced by code rule C04.<br>
+  <strong>Conventions:</strong> Use <code>pytest.mark.asyncio</code> for async handlers.
+  Mock external I/O (subprocess, filesystem, LLM) at the boundary.
+  Use <code>tmp_path</code> fixture for file-based tests.
+  Integration tests use the shared <code>sample_project</code> fixture from <code>conftest.py</code>.
+</div>
+
+<!-- ================================================================== -->
+<h2 id="decisions">11. Key Design Decisions</h2>
+
+<table>
+  <tr><th>Decision</th><th>Rationale</th></tr>
+  <tr><td>Spec-first pipeline</td><td>Specs validated before code → catches issues at design time, not runtime</td></tr>
+  <tr><td>YAML pipeline definitions</td><td>Non-code configuration → easy to add new workflows without touching Python</td></tr>
+  <tr><td>Atom / Tool separation</td><td>Engine and agents have different security boundaries → principle of least privilege</td></tr>
+  <tr><td>Commons shared layer</td><td>Prevents cross-layer imports → atoms and tools stay independently testable</td></tr>
+  <tr><td>Language-agnostic interfaces</td><td><code>TestRunnerInterface</code> ABC → future Go, Rust, TypeScript support</td></tr>
+  <tr><td>Role-based tool gating</td><td>Implementer gets <code>fix=True</code>, reviewer gets read-only → agents can't exceed authority</td></tr>
+  <tr><td>Gate-based flow control</td><td>Retry, loop-back, HITL parking → pipelines are self-healing</td></tr>
+  <tr><td>Feedback injection</td><td>Failed step findings enriched into next attempt's context → agents learn from mistakes</td></tr>
+  <tr><td>JSON state persistence</td><td>Runs survive process restarts → <code>sw run --resume</code> continues from last step</td></tr>
+  <tr><td>Standalone rule classes</td><td>S01–S11 and C01–C08 are each one class → easy to add, test, and disable individually</td></tr>
+  <tr><td>Configurable thresholds</td><td>Per-project overrides via <code>specweaver.yaml</code> or <code>--set</code> CLI flag → no code changes needed</td></tr>
+</table>
+
+<!-- ================================================================== -->
+<h2 id="checklist">12. Review Checklist</h2>
+
+<p>When reviewing agent-generated changes, focus on these areas:</p>
+
+<table>
+  <tr><th>Change Type</th><th>What to Verify</th></tr>
+  <tr><td>New handler</td><td>Registered in <code>StepHandlerRegistry</code>? Added to <code>VALID_STEP_COMBINATIONS</code>? Tests cover pass/fail?</td></tr>
+  <tr><td>New atom</td><td>Extends <code>Atom</code> ABC? Returns <code>AtomResult</code>? Intent-based dispatch? Uses commons for shared code?</td></tr>
+  <tr><td>New tool</td><td>Role gating correct? No direct atom imports? Uses commons?</td></tr>
+  <tr><td>Pipeline YAML</td><td>Valid action+target combo? Gate conditions make sense? <code>loop_target</code> step exists?</td></tr>
+  <tr><td>Validation rule</td><td>Standalone class extending <code>Rule</code>? Returns <code>RuleResult</code>? Tests cover pass/fail/edge? Added to runner's list?</td></tr>
+  <tr><td>Import changes</td><td>No atoms ↔ tools imports? Shared code in commons? Uses <code>TYPE_CHECKING</code> for type-only imports?</td></tr>
+  <tr><td>Model changes</td><td>Tests for <code>test_combination_count</code> updated? <code>validate_flow()</code> still passes?</td></tr>
+  <tr><td>Gate changes</td><td>Retry count correct? <code>max_retries</code> reasonable? Loop target is valid step name?</td></tr>
+</table>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1f2020',
+      primaryTextColor: '#ccc',
+      primaryBorderColor: '#ccc',
+      lineColor: 'lightgrey',
+      secondaryColor: '#16213e',
+      tertiaryColor: '#0f3460',
+      noteBkgColor: '#16213e',
+      noteTextColor: '#eee',
+    },
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+    sequence: { useMaxWidth: true },
+  });
+</script>
+
+</body>
+</html>

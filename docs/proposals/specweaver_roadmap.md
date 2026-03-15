@@ -1,6 +1,6 @@
 # SpecWeaver Roadmap
 
-> **Date**: 2026-03-08 | **Updated**: 2026-03-14
+> **Date**: 2026-03-08 | **Updated**: 2026-03-15
 > **Status**: ACTIVE
 > **Context**: Step-by-step plan for SpecWeaver development. Fresh start from scratch, informed by [flowManager](https://github.com/sbula/flowManager) learnings. MVP-first approach: prove the concept, then expand feature by feature.
 
@@ -13,7 +13,7 @@
 
 ---
 
-## Current State (updated 2026-03-14)
+## Current State (updated 2026-03-15)
 
 **What exists:**
 - ✅ Repo: `sbula/specweaver` — fresh, clean
@@ -30,12 +30,15 @@
 - ✅ Project registry: SQLite config store, multi-project, `sw use/projects/remove/update`
 - ✅ Validation config: `sw config set/get/list/reset`, `--strict`, `--set` CLI overrides
 - ✅ Context-enriched prompts: PromptBuilder, token budgets, topology injection, trust signals, dynamic scaling
+- ✅ Flow engine: Pipeline models, runner, state tracking, gates, retry, loop-back, HITL parking
+- ✅ Loom test runner: Atom + tool with role gating, lint-fix reflection loop
+- ✅ Integration test suite: 54 tests across 5 files with shared sample project fixture
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
-**Phase 2 (Flow Engine)**: Steps 7–11 ✅ | Steps 12–14 pending
+**Phase 2 (Flow Engine)**: Steps 7–12 ✅ | Steps 13–14 pending
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
-- Steps 11–14: Flow engine (executor, state tracking, gates, CLI integration)
+- Steps 13–14: CLI polish (`sw run` command) and documentation
 
 ---
 
@@ -53,7 +56,7 @@ A runnable CLI that demonstrates the Core Loop end-to-end. Static validation wor
 
 Agents use tools; the flow engine orchestrates atoms and subflows. MVP individual steps become composable. Agent has topology awareness. Ready for external use.
 
-**Steps**: 7 (Topology ✅) → 8a (Config Store ✅) → 8b (Validation Config ✅) → 9 (Context-Enriched Prompts ✅) → 10 (Pipeline Models) → 11 (Runner) → 12 (Gates/Retry) → 13 (CLI Polish) → 14 (Docs)
+**Steps**: 7 (Topology ✅) → 8a (Config Store ✅) → 8b (Validation Config ✅) → 9 (Context-Enriched Prompts ✅) → 10 (Pipeline Models ✅) → 11 (Runner ✅) → 12 (Gates/Retry ✅) → 13 (CLI Polish) → 14 (Docs)
 
 ---
 
@@ -91,7 +94,7 @@ SpecWeaver is used on a real project that isn't SpecWeaver itself (e.g., the aut
 
 ```
 Phase 1: MVP (Steps 1-6)     ████████████████████████████     (~8-12 sessions)  [Steps 1-5 ✅, Step 6 ⏸]
-Phase 2: Flow Engine (7-14)   ████████████████████████████████ (~10-14 sessions) [Steps 7-9 ✅]
+Phase 2: Flow Engine (7-14)   ████████████████████████████████ (~10-14 sessions) [Steps 7-12 ✅]
 Phase 3: Feature Expansion    ████████████████████████████████ (~open-ended, feature by feature)
 Phase 4: Advanced             ████████████████████████████████ (~open-ended)
 Phase 5: Domain Brain         ████████████████             (~when in-memory graph proves insufficient)

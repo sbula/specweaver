@@ -31,6 +31,7 @@ class StepAction(enum.StrEnum):
     VALIDATE = "validate"
     REVIEW = "review"
     GENERATE = "generate"
+    LINT_FIX = "lint_fix"
 
 
 class StepTarget(enum.StrEnum):
@@ -75,10 +76,12 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.DRAFT, StepTarget.SPEC),
         (StepAction.VALIDATE, StepTarget.SPEC),
         (StepAction.VALIDATE, StepTarget.CODE),
+        (StepAction.VALIDATE, StepTarget.TESTS),
         (StepAction.REVIEW, StepTarget.SPEC),
         (StepAction.REVIEW, StepTarget.CODE),
         (StepAction.GENERATE, StepTarget.CODE),
         (StepAction.GENERATE, StepTarget.TESTS),
+        (StepAction.LINT_FIX, StepTarget.CODE),
     }
 )
 
@@ -104,6 +107,7 @@ class GateDefinition(BaseModel):
     on_fail: OnFailAction = OnFailAction.ABORT
     loop_target: str | None = None
     max_retries: int = Field(default=3, ge=0)
+    max_retries_hitl: int = Field(default=5, ge=0)
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +157,7 @@ class PipelineDefinition(BaseModel):
     description: str = ""
     version: str = "1.0"
     steps: list[PipelineStep]
+    max_total_loops: int = Field(default=20, ge=0)
 
     def get_step(self, name: str) -> PipelineStep | None:
         """Find a step by name, or None if not found."""

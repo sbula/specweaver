@@ -4,32 +4,37 @@
 name: flow
 level: module
 purpose: >
-  Pipeline models, parsing, and execution for the SpecWeaver flow engine.
+  Pipeline models, parsing, execution, gates, and feedback loops for the SpecWeaver flow engine.
 
 description: |
   Defines the data model for pipelines (PipelineDefinition, PipelineStep,
-  GateDefinition) and provides YAML parsing. Pipelines are sequences of
-  action+target steps with configurable gates for flow control.
-  Execution and state management are handled by the runner (Step 11).
+  GateDefinition, StepAction, StepTarget) and provides YAML parsing.
+  Includes step handlers (validate, review, draft, implement, test, lint-fix),
+  gate logic (auto/HITL/validation), state management, and the pipeline runner
+  with retry and feedback loop support.
 
-archetype: pure-logic
+archetype: orchestrator
 
-consumes: []
+consumes:
+  - specweaver/loom/atoms/test_runner
+  - specweaver/loom/commons/test_runner
 
 forbids:
-  - specweaver/loom/*
-  - specweaver/llm
+  - specweaver/loom/tools/*
   - specweaver/drafting
-  - specweaver/implementation
-  - specweaver/review
-  - specweaver/validation
+  - specweaver/context
 
 exposes:
   - PipelineDefinition
   - PipelineStep
   - GateDefinition
+  - StepAction
+  - StepTarget
+  - StepHandlerRegistry
+  - LintFixHandler
+  - PipelineRunner
 
 # -- Operational Metadata --------------------------------------------------
 operational:
-  async_ready: false
+  async_ready: true
   concurrency_model: none
