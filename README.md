@@ -105,6 +105,17 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw config list` | List all overrides for the active project |
 | `sw config reset <rule>` | Remove an override (revert to defaults) |
 
+### Pipeline Execution
+
+| Command | Description |
+|---|---|
+| `sw run <pipeline> <spec_or_module>` | Execute a pipeline against a spec file or module |
+| `sw run <pipeline> <spec> --verbose` | Show detailed handler output + tracebacks |
+| `sw run <pipeline> <spec> --json` | Output NDJSON event stream (machine-readable) |
+| `sw resume` | Resume the latest parked/failed pipeline run |
+| `sw resume <run_id>` | Resume a specific run by ID |
+| `sw pipelines` | List available pipeline templates |
+
 ## Validation Rules
 
 ### Spec Rules (S01–S11)
@@ -165,7 +176,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── project/                # Scaffold, discovery
 │   ├── review/                 # AI reviewer
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1497 tests (unit, integration, E2E)
+├── tests/                      # 1650+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

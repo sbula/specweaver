@@ -8,11 +8,8 @@ from __future__ import annotations
 import io
 import json
 
-import pytest
-
 from specweaver.flow.display import JsonPipelineDisplay, RichPipelineDisplay, _StepState
 from specweaver.flow.state import StepResult, StepStatus
-
 
 # ---------------------------------------------------------------------------
 # _StepState tests
@@ -233,3 +230,137 @@ class TestCLIPipelines:
         assert result.exit_code == 0
         assert "new_feature" in result.output
         assert "validate_only" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Edge case tests: _resolve_spec_path
+# ---------------------------------------------------------------------------
+
+
+class TestResolveSpecPath:
+    """Tests for the spec argument resolution logic."""
+
+    def test_existing_file_returned_directly(self, tmp_path) -> None:
+        from specweaver.cli import _resolve_spec_path
+        spec = tmp_path / "my_spec.md"
+        spec.write_text("# Test")
+        result = _resolve_spec_path("validate_only", str(spec), tmp_path)
+        assert result == spec
+
+    def test_new_feature_derives_from_module_name(self, tmp_path) -> None:
+        from specweaver.cli import _resolve_spec_path
+        result = _resolve_spec_path("new_feature", "greet_service", tmp_path)
+        assert result == tmp_path / "specs" / "greet_service_spec.md"
+
+    def test_relative_path_to_project(self, tmp_path) -> None:
+        from specweaver.cli import _resolve_spec_path
+        relative = tmp_path / "specs" / "calc.md"
+        relative.parent.mkdir(parents=True, exist_ok=True)
+        relative.write_text("# Calc")
+        result = _resolve_spec_path("validate_only", "specs/calc.md", tmp_path)
+        assert result == relative
+
+    def test_nonexistent_falls_back_to_literal(self, tmp_path) -> None:
+        from specweaver.cli import _resolve_spec_path
+        result = _resolve_spec_path("validate_only", "does_not_exist.md", tmp_path)
+        from pathlib import Path
+        assert result == Path("does_not_exist.md")
+
+
+# ---------------------------------------------------------------------------
+# Edge case tests: Display backends
+# ---------------------------------------------------------------------------
+
+
+class TestDisplayEdgeCases:
+    """Additional edge case tests for display backends."""
+
+    def test_rich_render_returns_table(self) -> None:
+        from rich.table import Table
+        display = RichPipelineDisplay()
+        display.start("test_pipe", [("step_0", "Desc")])
+        table = display._render()
+        assert isinstance(table, Table)
+        display.stop()
+
+    def test_rich_double_stop_no_crash(self) -> None:
+        display = RichPipelineDisplay()
+        display.start("test_pipe", [("step_0", "")])
+        display.stop()
+        display.stop()  # second stop should be safe
+
+    def test_json_unknown_event(self) -> None:
+        buf = io.StringIO()
+        display = JsonPipelineDisplay(output=buf)
+        display("totally_unknown", custom_key="custom_value")
+        data = json.loads(buf.getvalue().strip())
+        assert data["event"] == "totally_unknown"
+
+    def test_rich_gate_advance_no_note(self) -> None:
+        """Gate verdict 'advance' should not add a note."""
+        display = RichPipelineDisplay()
+        display.start("test_pipe", [("step_0", "")])
+        display("gate_result", step_idx=0, step_name="step_0", verdict="advance")
+        assert display._steps[0].note == ""
+        display.stop()
+
+    def test_rich_gate_park_sets_note(self) -> None:
+        display = RichPipelineDisplay()
+        display.start("test_pipe", [("step_0", "")])
+        display("gate_result", step_idx=0, step_name="step_0", verdict="park")
+        assert "HITL" in display._steps[0].note
+        display.stop()
+
+    def test_rich_gate_loop_back_sets_note(self) -> None:
+        display = RichPipelineDisplay()
+        display.start("test_pipe", [("step_0", "")])
+        display("gate_result", step_idx=0, step_name="step_0", verdict="loop_back")
+        assert "loop back" in display._steps[0].note
+        display.stop()
+
+    def test_json_verdict_included(self) -> None:
+        buf = io.StringIO()
+        display = JsonPipelineDisplay(output=buf)
+        display("gate_result", step_idx=0, verdict="retry")
+        data = json.loads(buf.getvalue().strip())
+        assert data["verdict"] == "retry"
+
+
+# ---------------------------------------------------------------------------
+# Edge case tests: CLI
+# ---------------------------------------------------------------------------
+
+
+class TestCLIRunEdgeCases:
+    """Edge case tests for sw run and sw resume CLI commands."""
+
+    def test_run_help_shows_examples(self) -> None:
+        from typer.testing import CliRunner
+
+        from specweaver.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["run", "--help"])
+        assert result.exit_code == 0
+        assert "pipeline" in result.output.lower()
+        assert "spec" in result.output.lower()
+
+    def test_resume_help(self) -> None:
+        from typer.testing import CliRunner
+
+        from specweaver.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["resume", "--help"])
+        assert result.exit_code == 0
+        assert "resume" in result.output.lower()
+
+    def test_create_display_json(self) -> None:
+        from specweaver.cli import _create_display
+        display = _create_display(use_json=True)
+        assert isinstance(display, JsonPipelineDisplay)
+
+    def test_create_display_rich(self) -> None:
+        from specweaver.cli import _create_display
+        display = _create_display(use_json=False, verbose=True)
+        assert isinstance(display, RichPipelineDisplay)

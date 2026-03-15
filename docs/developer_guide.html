@@ -366,6 +366,46 @@ stateDiagram-v2
   </pre>
 </div>
 
+<h3>CLI Pipeline Commands</h3>
+<p>Three commands expose the flow engine to users:</p>
+
+<table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td><code>sw run &lt;pipeline&gt; &lt;spec_or_module&gt;</code></td><td>Execute a pipeline against a spec file or module name</td></tr>
+  <tr><td><code>sw resume [run_id]</code></td><td>Resume the latest (or specific) parked/failed run</td></tr>
+  <tr><td><code>sw pipelines</code></td><td>List available pipeline templates</td></tr>
+</table>
+
+<h4>Key flags</h4>
+<table>
+  <tr><th>Flag</th><th>Effect</th></tr>
+  <tr><td><code>--verbose / -v</code></td><td>Show detailed handler output + full tracebacks on error</td></tr>
+  <tr><td><code>--json</code></td><td>Output NDJSON event stream (machine-readable, pipe to <code>jq</code>)</td></tr>
+  <tr><td><code>--project / -p</code></td><td>Specify project directory explicitly</td></tr>
+  <tr><td><code>--selector</code></td><td>Topology selector: direct, nhop, constraint, impact</td></tr>
+</table>
+
+<h4>Display Backends</h4>
+<p>The runner communicates progress via an <code>on_event</code> callback, with two display backends:</p>
+<ul>
+  <li><strong>RichPipelineDisplay</strong> (default) — Live step list with ✅/❌/⠋/🅿️ checkmarks, elapsed time, gate annotations. Uses <code>rich.live.Live</code>.</li>
+  <li><strong>JsonPipelineDisplay</strong> (<code>--json</code>) — Writes one JSON object per event to stdout (NDJSON). No Rich formatting.</li>
+</ul>
+
+<h4>Error Handling</h4>
+<ul>
+  <li><strong>Default</strong>: Friendly one-liner (<code>[red]Error:[/red] message</code>) + "Run with --verbose" hint</li>
+  <li><strong>--verbose</strong>: Full traceback printed below the error message</li>
+  <li><strong>KeyboardInterrupt</strong>: State saved to disk, resume instructions printed</li>
+</ul>
+
+<h4>Spec Argument Resolution</h4>
+<p>The <code>spec_or_module</code> argument is resolved differently per pipeline type:</p>
+<ul>
+  <li><code>validate_only</code>: Treated as a file path (must exist)</li>
+  <li><code>new_feature</code>: Treated as a module name, auto-derives <code>specs/&lt;name&gt;_spec.md</code></li>
+</ul>
+
 <!-- ================================================================== -->
 <h2 id="gates">5. Gate Evaluation, Retry &amp; Loop-Back</h2>
 

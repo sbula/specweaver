@@ -167,7 +167,7 @@ class TestRunnerEventCallback:
 
         await runner.run()
 
-        started = [e for e in collector.events if e["event"] == "step_started"][0]
+        started = next(e for e in collector.events if e["event"] == "step_started")
         assert started["step_idx"] == 0
         assert started["step_name"] == "step_0"
         assert started["total_steps"] == 1
@@ -183,7 +183,7 @@ class TestRunnerEventCallback:
 
         await runner.run()
 
-        completed = [e for e in collector.events if e["event"] == "step_completed"][0]
+        completed = next(e for e in collector.events if e["event"] == "step_completed")
         assert completed["result"].status == StepStatus.PASSED
 
     @pytest.mark.asyncio
@@ -197,7 +197,7 @@ class TestRunnerEventCallback:
 
         result = await runner.run()
 
-        completed = [e for e in collector.events if e["event"] == "run_completed"][0]
+        completed = next(e for e in collector.events if e["event"] == "run_completed")
         assert completed["run"].run_id == result.run_id
 
     @pytest.mark.asyncio
