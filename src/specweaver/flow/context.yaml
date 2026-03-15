@@ -33,6 +33,9 @@ exposes:
   - StepHandlerRegistry
   - LintFixHandler
   - PipelineRunner
+  - RunnerEventCallback
+  - RichPipelineDisplay
+  - JsonPipelineDisplay
 
 # -- Operational Metadata --------------------------------------------------
 operational:

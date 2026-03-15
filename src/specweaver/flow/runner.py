@@ -9,13 +9,17 @@ is persisted to SQLite after each step so interrupted runs can resume.
 
 Supports gates (AUTO/HITL), retry on failure, loop-back to earlier
 steps, and feedback injection into the RunContext for prompt enrichment.
+
+Progress reporting is done via an optional ``on_event`` callback,
+allowing the CLI layer to display step-by-step progress without
+coupling the runner to any UI framework.
 """
 
 from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from specweaver.flow.gates import GateEvaluator
 from specweaver.flow.handlers import RunContext, StepHandlerRegistry
@@ -28,8 +32,36 @@ from specweaver.flow.state import (
 )
 
 if TYPE_CHECKING:
-    from specweaver.flow.models import PipelineDefinition
+    from specweaver.flow.models import PipelineDefinition, PipelineStep
     from specweaver.flow.store import StateStore
+
+
+# ---------------------------------------------------------------------------
+# Event callback protocol (prepared for future typed emitter)
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class RunnerEventCallback(Protocol):
+    """Protocol for runner event callbacks.
+
+    Prepared for future upgrade to a typed event emitter class.
+    For now, the simple ``on_event`` callable satisfies this protocol.
+    """
+
+    def __call__(
+        self,
+        event: str,
+        *,
+        step_idx: int | None = None,
+        step_name: str | None = None,
+        step_def: PipelineStep | None = None,
+        total_steps: int | None = None,
+        result: StepResult | None = None,
+        run: PipelineRun | None = None,
+        verdict: str | None = None,
+        **kwargs: Any,
+    ) -> None: ...
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +86,8 @@ class PipelineRunner:
         context: Run context with project paths, LLM, settings, etc.
         registry: Handler registry (default: all built-in handlers).
         store: Optional state store for persistence and resume.
+        on_event: Optional callback for progress reporting. Called with
+            event name and keyword arguments describing the event.
     """
 
     def __init__(
@@ -63,11 +97,13 @@ class PipelineRunner:
         *,
         registry: StepHandlerRegistry | None = None,
         store: StateStore | None = None,
+        on_event: RunnerEventCallback | None = None,
     ) -> None:
         self._pipeline = pipeline
         self._context = context
         self._registry = registry or StepHandlerRegistry()
         self._store = store
+        self._on_event = on_event
         self._gate_evaluator = GateEvaluator(pipeline)
 
     async def run(self) -> PipelineRun:
@@ -123,16 +159,20 @@ class PipelineRunner:
 
     async def _execute_loop(self, run: PipelineRun) -> PipelineRun:  # noqa: C901
         """Walk through steps starting from current_step."""
+        total = len(run.step_records)
+
         # Empty pipeline → immediately complete
         if not run.step_records:
             run.status = RunStatus.COMPLETED
             self._persist(run)
             self._log(run, "run_completed")
+            self._emit("run_completed", run=run)
             return run
 
         run.status = RunStatus.RUNNING
         self._persist(run)
         self._log(run, "run_started")
+        self._emit("run_started", run=run, total_steps=total)
 
         # Per-step attempt counters for retry tracking
         attempts: dict[int, int] = {}
@@ -156,12 +196,21 @@ class PipelineRunner:
                 run.fail_current_step(error_result)
                 self._persist(run)
                 self._log(run, "step_failed", step_def.name)
+                self._emit(
+                    "step_failed", step_idx=step_idx, step_name=step_def.name,
+                    step_def=step_def, total_steps=total, result=error_result,
+                )
+                self._emit("run_failed", run=run)
                 return run
 
             # Execute step
             run.mark_step_running()
             self._persist(run)
             self._log(run, "step_started", step_def.name)
+            self._emit(
+                "step_started", step_idx=step_idx, step_name=step_def.name,
+                step_def=step_def, total_steps=total,
+            )
 
             try:
                 result = await handler.execute(step_def, self._context)
@@ -178,23 +227,38 @@ class PipelineRunner:
                 run.park_current_step(result)
                 self._persist(run)
                 self._log(run, "run_parked", step_def.name)
+                self._emit(
+                    "step_parked", step_idx=step_idx, step_name=step_def.name,
+                    step_def=step_def, total_steps=total, result=result,
+                )
+                self._emit("run_parked", run=run, step_name=step_def.name)
                 return run
 
             # Gate evaluation ------------------------------------------------
             gate = step_def.gate
             if gate is not None:
-                # Inject feedback for loop-back before evaluating
                 verdict = self._gate_evaluator.evaluate(
                     gate, result, step_def, run, attempts,
+                )
+                self._emit(
+                    "gate_result", step_idx=step_idx, step_name=step_def.name,
+                    step_def=step_def, total_steps=total, result=result,
+                    verdict=verdict,
                 )
                 # Handle side effects (persistence, logging, feedback)
                 if verdict == "park":
                     self._persist(run)
                     self._log(run, "gate_hitl_park", step_def.name)
+                    self._emit("run_parked", run=run, step_name=step_def.name)
                     return run
                 if verdict == "stop":
                     self._persist(run)
                     self._log(run, "step_failed", step_def.name)
+                    self._emit(
+                        "step_failed", step_idx=step_idx, step_name=step_def.name,
+                        step_def=step_def, total_steps=total, result=result,
+                    )
+                    self._emit("run_failed", run=run)
                     return run
                 if verdict == "retry":
                     self._persist(run)
@@ -219,6 +283,11 @@ class PipelineRunner:
                     run.fail_current_step(result)
                     self._persist(run)
                     self._log(run, "step_failed", step_def.name)
+                    self._emit(
+                        "step_failed", step_idx=step_idx, step_name=step_def.name,
+                        step_def=step_def, total_steps=total, result=result,
+                    )
+                    self._emit("run_failed", run=run)
                     return run
 
             # Success — advance
@@ -226,12 +295,15 @@ class PipelineRunner:
             run.updated_at = _now_iso()
             self._persist(run)
             self._log(run, "step_completed", step_def.name)
+            self._emit(
+                "step_completed", step_idx=step_idx, step_name=step_def.name,
+                step_def=step_def, total_steps=total, result=result,
+            )
 
         # All steps done
         self._log(run, "run_completed")
+        self._emit("run_completed", run=run)
         return run
-
-
 
     # ------------------------------------------------------------------
     # Persistence helpers
@@ -256,3 +328,8 @@ class PipelineRunner:
                 event,
                 step_name=step_name,
             )
+
+    def _emit(self, event: str, **kwargs: Any) -> None:
+        """Fire a progress event to the callback, if configured."""
+        if self._on_event is not None:
+            self._on_event(event, **kwargs)
