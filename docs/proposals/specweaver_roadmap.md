@@ -35,10 +35,12 @@
 - ✅ Integration test suite: 54 tests across 5 files with shared sample project fixture
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
-**Phase 2 (Flow Engine)**: Steps 7–12 ✅ | Steps 13–14 pending
+**Phase 2 (Flow Engine)**: Steps 7–12 ✅ | Steps 13a–14 pending
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
-- Steps 13–14: CLI polish (`sw run` command) and documentation
+- Step 13a: CLI `sw run` command with Rich progress display, `--verbose`/`--json` output
+- Step 13b: Logging infrastructure (per-project log files, configurable level)
+- Step 14: Documentation & Phase 2 milestone
 
 ---
 
@@ -56,7 +58,7 @@ A runnable CLI that demonstrates the Core Loop end-to-end. Static validation wor
 
 Agents use tools; the flow engine orchestrates atoms and subflows. MVP individual steps become composable. Agent has topology awareness. Ready for external use.
 
-**Steps**: 7 (Topology ✅) → 8a (Config Store ✅) → 8b (Validation Config ✅) → 9 (Context-Enriched Prompts ✅) → 10 (Pipeline Models ✅) → 11 (Runner ✅) → 12 (Gates/Retry ✅) → 13 (CLI Polish) → 14 (Docs)
+**Steps**: 7 (Topology ✅) → 8a (Config Store ✅) → 8b (Validation Config ✅) → 9 (Context-Enriched Prompts ✅) → 10 (Pipeline Models ✅) → 11 (Runner ✅) → 12 (Gates/Retry ✅) → 13a (CLI `sw run`) → 13b (Logging) → 14 (Docs)
 
 ---
 

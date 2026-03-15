@@ -267,19 +267,85 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 ---
 
-## Step 13: CLI Polish & Error Handling
+## Step 13a: CLI `sw run` & Error Handling
 
-> **Goal**: `sw run` command to invoke pipelines from CLI. Proper error handling, colored progress, `--verbose` / `--json` output modes.
+> **Goal**: `sw run` command to invoke pipelines from CLI. Rich step-by-step progress. `--verbose` / `--json` output. Robust error handling with friendly one-liners (detail in log file, see 13b).
 
-- [ ] `sw run` CLI command — load pipeline YAML, run through `PipelineRunner`
-  - [ ] `sw run new_feature my_module`, `sw run --resume`
-  - [ ] `--verbose` and `--json` flags
-- [ ] Progress indicators: Rich spinners/progress bars during LLM calls
-- [ ] Error handling: graceful LLM failures, network retries, clear messages
-- [ ] Tests: CLI integration tests, error scenarios
-- [ ] **Runnable**: `sw run new_feature greet_service` runs the full pipeline
+### Design Decisions (approved 2026-03-15)
+
+| # | Decision | Choice |
+|---|----------|--------|
+| 1 | Runner progress reporting | **Callback function** `on_event: Callable` on `PipelineRunner.__init__()`. Prepare interface for future switch to typed event emitter. |
+| 2 | Output format flags | **Two separate flags**: `--verbose` (more detail), `--json` (structured NDJSON, no Rich) |
+| 3 | Progress display style | **Step list with live checkmarks**: `✅ 1. validate_spec (1.1s)` / `⠋ 2. review_spec ...` |
+| 4 | HITL gate interaction | **Park + print resume instructions** (MVP). Inline HITL deferred. |
+| 5 | `--resume` scope | **Both**: `sw run --resume <run_id>` (explicit) and `sw run --resume` (auto-detect latest) |
+| 6 | Error handling | **Friendly one-liner** on console. Full traceback in **log file** (see Step 13b). `--verbose` adds traceback to console too. |
+| 7 | State store location | **`~/.specweaver/pipeline_state.db`** — co-located with config DB, outside project. |
+
+### Spec Argument
+
+The spec/module argument is **different per pipeline type**:
+- `sw run validate_only spec.md` — requires path to existing spec file
+- `sw run new_feature greet_service` — takes module name, spec path auto-derived (`specs/greet_service_spec.md`)
+
+### Tasks
+
+- [ ] `src/specweaver/flow/runner.py` — add `on_event` callback, fire events at lifecycle points
+  - [ ] Events: `step_started`, `step_completed`, `step_failed`, `gate_result`, `run_completed`, `run_failed`, `run_parked`
+- [ ] `src/specweaver/flow/display.py` — **NEW**: progress display backends
+  - [ ] `RichPipelineDisplay` — step list with ✅/❌/⠋ checkmarks, elapsed time, gate annotations
+  - [ ] `JsonPipelineDisplay` — NDJSON event stream to stdout, no Rich
+  - [ ] Both implement same callback interface
+- [ ] `src/specweaver/cli.py` — add commands:
+  - [ ] `sw run <pipeline> <spec_or_module>` — load pipeline, build RunContext, run through PipelineRunner
+  - [ ] `sw run --resume [run_id]` — resume parked/failed run (auto-detect latest if no ID)
+  - [ ] `sw pipelines` — list available pipeline templates
+  - [ ] `--verbose`, `--json`, `--selector`, `--project` flags
+- [ ] Error handling: wrap `asyncio.run()` with try/except, friendly messages for FileNotFoundError / ValueError / LLM failures / KeyboardInterrupt (save state + print resume instructions)
+- [ ] Tests: runner callback, display backends, CLI integration tests
+- [ ] **Runnable**: `sw run validate_only specs/calculator.md` shows step list ✅
 
 **Depends on**: Steps 11-12 (Flow Engine Runner + Gates).
+
+**Estimated effort**: 2–3 sessions.
+
+---
+
+## Step 13b: Logging Infrastructure
+
+> **Goal**: Structured file-based logging across all SpecWeaver modules. Errors, warnings, and debug info go to per-project log files. Console shows only friendly one-liners; log file has full detail.
+
+### Design Decisions (approved 2026-03-15)
+
+| # | Decision | Choice |
+|---|----------|--------|
+| 1 | Log location | **`~/.specweaver/logs/<projectName>/specweaver.log`** — per-project, outside project directory |
+| 2 | Log level | **Configurable**, `DEBUG` as default |
+| 3 | Rotation | `RotatingFileHandler` (5 MB max, 3 backups) |
+| 4 | Module scope | **All modules** — flow engine, handlers, validation, LLM, loom, CLI |
+
+### Tasks
+
+- [ ] `src/specweaver/logging.py` — **NEW**: logging setup module
+  - [ ] `setup_logging(project_name, level)` — configure `RotatingFileHandler` at `~/.specweaver/logs/<project>/specweaver.log`
+  - [ ] Default level: `DEBUG` to file, `WARNING` to console (stderr)
+  - [ ] Log format: `[2026-03-15 12:04:31] [DEBUG] [module.name] Message`
+  - [ ] Pipeline run events logged with `run_id` for traceability
+- [ ] `src/specweaver/config/database.py` or `settings.py` — log level configurable per-project in DB
+- [ ] Add `logger = logging.getLogger(__name__)` to all major modules:
+  - [ ] `flow/runner.py`, `flow/handlers.py`, `flow/gates.py`
+  - [ ] `validation/runner.py`
+  - [ ] `llm/adapter.py`, `llm/adapters/gemini_adapter.py`
+  - [ ] `context/inferrer.py`, `graph/topology.py`
+  - [ ] `loom/commons/test_runner/python.py`
+  - [ ] `cli.py`
+- [ ] Wire `setup_logging()` into CLI startup (called before any command runs)
+- [ ] `sw config set log_level <level>` — update log level for active project
+- [ ] Tests: log file creation, rotation, level filtering, per-project isolation
+- [ ] **Runnable**: `sw run validate_only spec.md` writes detailed log to `~/.specweaver/logs/<project>/specweaver.log`
+
+**Depends on**: Step 13a (CLI commands must exist to test logging).
 
 **Estimated effort**: 1–2 sessions.
 
