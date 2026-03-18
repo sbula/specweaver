@@ -40,8 +40,10 @@
 **Phase 3 (Features)**: Feature 3.1 ✅
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
-- Feature 3.2: Domain profiles for threshold calibration
-- Feature 3.3: Custom rule paths (project-specific validators)
+- Feature 3.2: Constitution as first-class artifact _(Spec Kit, DMZ)_
+- Feature 3.3: Domain profiles for threshold calibration
+- Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_
+- Feature 3.7: Pipeline visualization _(CrewAI)_
 
 ---
 
@@ -67,7 +69,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Domain Profiles) → 3.3 (Custom Rules) → 3.4 (Context Providers) → 3.5 (Spec-Mention) → 3.6 (Multi-Model) → 3.6a (Cost Tracking) → 3.7 (Metadata Injection) → 3.8–3.12
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution) → 3.3 (Domain Profiles) → 3.4 (Custom Rules) → 3.5 (Auto-Discover Standards) → 3.6 (Plan Phase) → 3.7 (Pipeline Viz) → 3.8–3.19
 
 ---
 
@@ -81,9 +83,9 @@ Features from `future_capabilities_reference.md` that require significant engine
 
 ### [Phase 5: Domain Brain — Hybrid Graph + Vector RAG](roadmap/phase_5_domain_brain.md)
 
-Persistent domain knowledge system: cross-service impact analysis, SLA-aware spec authoring, automated architectural consistency. Extends the in-memory topology graph (Phase 2) into a persistent, event-driven knowledge graph.
+Persistent domain knowledge system: cross-service impact analysis, SLA-aware spec authoring, automated architectural consistency. Extends the in-memory topology graph (Phase 2) into a persistent, event-driven knowledge graph. Enhanced with hierarchical memory scoping, composite scoring (semantic + recency + importance), and LLM-powered memory consolidation (keep/update/delete/insert_new). _(informed by [CrewAI](https://github.com/crewAIInc/crewAI) memory architecture)_
 
-**Features**: 5.1 (Persistent Graph) → 5.2 (EDKG) → 5.3 (GC) → 5.4 (Hybrid RAG) → 5.5 (Provenance) → 5.6 (Socratic Drafting)
+**Features**: 5.1 (Persistent Graph) → 5.2 (EDKG) → 5.3 (GC) → 5.4 (Hybrid RAG + Composite Scoring) → 5.5 (Provenance) → 5.6 (Socratic Drafting) → 5.7 (Memory Consolidation)
 
 ---
 

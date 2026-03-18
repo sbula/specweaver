@@ -1,4 +1,4 @@
-# Scenario Testing — Independent Verification (Phase 3.13)
+# Scenario Testing — Independent Verification (Phase 3.17)
 
 > **Status**: 📋 Proposal
 > **Depends on**: Phase 2 Steps 11–12 (runner + gates), Phase 3.8 (traceability)
