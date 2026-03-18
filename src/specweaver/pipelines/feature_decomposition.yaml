@@ -1,0 +1,38 @@
+# Feature Decomposition Pipeline
+# draft feature spec → validate at feature thresholds → decompose → HITL review
+
+name: feature_decomposition
+description: >
+  Draft Feature Spec, validate at feature thresholds,
+  decompose into component changes (or sub-features), HITL review.
+version: "1.0"
+
+steps:
+  - name: draft_feature
+    action: draft
+    target: feature
+    description: "Co-author Feature Spec with HITL"
+    gate:
+      type: hitl
+      condition: completed
+
+  - name: validate_feature
+    action: validate
+    target: feature
+    params:
+      kind: feature
+    description: "Run spec rules with feature-level thresholds"
+    gate:
+      type: auto
+      condition: all_passed
+      on_fail: loop_back
+      loop_target: draft_feature
+      max_retries: 3
+
+  - name: decompose
+    action: decompose
+    target: feature
+    description: "Decompose into component changes or sub-features"
+    gate:
+      type: hitl
+      condition: completed

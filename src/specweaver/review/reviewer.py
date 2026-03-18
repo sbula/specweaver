@@ -10,6 +10,7 @@ Used for both spec review (F4) and code review (F7) with different prompts.
 from __future__ import annotations
 
 import enum
+import re as _re
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
@@ -38,7 +39,8 @@ class ReviewFinding(BaseModel):
     message: str = ""
     severity: str = "info"
     suggestion: str = ""
-
+    confidence: int = 0
+    below_threshold: bool = False
 
 class ReviewResult(BaseModel):
     """Result of an LLM review."""
@@ -47,6 +49,11 @@ class ReviewResult(BaseModel):
     summary: str = ""
     findings: list[ReviewFinding] = Field(default_factory=list)
     raw_response: str = ""
+
+    @property
+    def above_threshold_findings(self) -> list[ReviewFinding]:
+        """Return only findings that are at or above the confidence threshold."""
+        return [f for f in self.findings if not f.below_threshold]
 
 
 # Instruction constants — extracted for reuse and testability
@@ -64,6 +71,7 @@ Your job is to evaluate whether this spec is CLEAR, COMPLETE, and IMPLEMENTABLE.
 ## Output Format:
 Start your response with either "VERDICT: ACCEPTED" or "VERDICT: DENIED".
 Then list your findings, each on a new line starting with "- ".
+For each finding, append a confidence score: [confidence: N] where N is 0-100.
 End with a one-line summary."""
 
 CODE_REVIEW_INSTRUCTIONS = """\
@@ -79,6 +87,7 @@ You are a senior software engineer reviewing generated code against its source s
 ## Output Format:
 Start your response with either "VERDICT: ACCEPTED" or "VERDICT: DENIED".
 Then list your findings, each on a new line starting with "- ".
+For each finding, append a confidence score: [confidence: N] where N is 0-100.
 End with a one-line summary."""
 
 
@@ -89,12 +98,14 @@ class Reviewer:
         self,
         llm: LLMAdapter,
         config: GenerationConfig | None = None,
+        confidence_threshold: int = 80,
     ) -> None:
         self._llm = llm
         self._config = config or GenerationConfig(
             model="gemini-2.5-flash",
             temperature=0.3,  # Lower temperature for more consistent reviews
         )
+        self._confidence_threshold = confidence_threshold
 
     async def review_spec(
         self,
@@ -196,7 +207,17 @@ class Reviewer:
         for line in lines:
             line = line.strip()
             if line.startswith("- "):
-                findings.append(ReviewFinding(message=line[2:].strip()))
+                message = line[2:].strip()
+                confidence = self._extract_confidence(message)
+                # Strip the confidence tag from the message
+                message = _re.sub(r'\s*\[confidence:\s*\d+\]', '', message).strip()
+                findings.append(
+                    ReviewFinding(
+                        message=message,
+                        confidence=confidence,
+                        below_threshold=confidence < self._confidence_threshold,
+                    )
+                )
             elif line and not line.startswith("VERDICT"):
                 summary_line = line  # Last non-empty, non-finding line = summary
 
@@ -206,3 +227,9 @@ class Reviewer:
             findings=findings,
             raw_response=raw,
         )
+
+    @staticmethod
+    def _extract_confidence(text: str) -> int:
+        """Extract confidence score from [confidence: N] tag in text."""
+        match = _re.search(r'\[confidence:\s*(\d+)\]', text)
+        return int(match.group(1)) if match else 0

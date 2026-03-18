@@ -39,9 +39,11 @@ class StrangerTestRule(Rule):
         self,
         warn_threshold: int = _WARN_THRESHOLD,
         fail_threshold: int = _FAIL_THRESHOLD,
+        mode: str | None = None,
     ) -> None:
         self._warn_threshold = warn_threshold
         self._fail_threshold = fail_threshold
+        self._mode = mode
 
     @property
     def rule_id(self) -> str:
@@ -57,7 +59,69 @@ class StrangerTestRule(Rule):
         return False
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
-        """Static heuristic: count external links and undefined terms."""
+        if self._mode == "abstraction_leak":
+            return self._check_abstraction_leaks(spec_text)
+        return self._check_external_refs(spec_text, spec_path)
+
+    def _check_abstraction_leaks(self, spec_text: str) -> RuleResult:
+        """Feature mode: flag implementation-level detail in business-level spec."""
+        cleaned = _strip_code_blocks(spec_text)
+        findings: list[Finding] = []
+
+        # 1. File paths (contain / or \ with file extensions)
+        for match in re.finditer(r'[\w./\\]+\.(?:py|ts|js|java|go|rs|yaml|json|toml)\b', cleaned):
+            line_num = _find_line(spec_text, match.group())
+            findings.append(
+                Finding(
+                    message=f"Abstraction leak: file path '{match.group()}'",
+                    line=line_num,
+                    severity=Severity.WARNING,
+                    suggestion="Feature Specs should reference services/modules, not file paths.",
+                )
+            )
+
+        # 2. Class.method references (e.g. `TaxCalculator.calculate()`)
+        for match in re.finditer(r'`([A-Z][a-zA-Z]+\.[a-z_][a-zA-Z_]*\(\))`', cleaned):
+            line_num = _find_line(spec_text, match.group(1))
+            findings.append(
+                Finding(
+                    message=f"Abstraction leak: class.method '{match.group(1)}'",
+                    line=line_num,
+                    severity=Severity.WARNING,
+                    suggestion="Feature Specs should describe behavior, not specific method calls.",
+                )
+            )
+
+        # 3. Dotted import paths (3+ segments, e.g. specweaver.validation.runner)
+        for match in re.finditer(r'`([a-z][a-z_]*(?:\.[a-z][a-z_]*){2,})`', cleaned):
+            line_num = _find_line(spec_text, match.group(1))
+            findings.append(
+                Finding(
+                    message=f"Abstraction leak: import path '{match.group(1)}'",
+                    line=line_num,
+                    severity=Severity.WARNING,
+                    suggestion="Feature Specs should reference modules by name, not import paths.",
+                )
+            )
+
+        if len(findings) > self._fail_threshold:
+            return self._fail(
+                f"{len(findings)} abstraction leaks found. "
+                "Feature Spec contains implementation-level detail.",
+                findings,
+            )
+
+        if len(findings) > 0:
+            return self._warn(
+                f"{len(findings)} abstraction leak(s) found. "
+                "Consider using service/module names instead.",
+                findings,
+            )
+
+        return self._pass("No abstraction leaks detected")
+
+    def _check_external_refs(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
+        """Component mode (default): count external links and undefined terms."""
         # Strip code blocks to avoid false positives
         cleaned = _strip_code_blocks(spec_text)
 
@@ -81,7 +145,6 @@ class StrangerTestRule(Rule):
             )
 
         # 2. Count undefined backtick terms
-        # A "defined" term appears in a header or is preceded by a definition pattern
         all_terms = set(_UNDEFINED_TERM_RE.findall(cleaned))
         defined_terms = _get_defined_terms(spec_text)
         undefined = all_terms - defined_terms

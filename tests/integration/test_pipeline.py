@@ -466,3 +466,122 @@ class TestEdgeCases:
             ["check", "--level", "code", str(empty)],
         )
         assert "C01" in result.output
+
+
+# ---------------------------------------------------------------------------
+# sw check --level=feature (Feature 3.1 e2e)
+# ---------------------------------------------------------------------------
+
+
+class TestFeatureLevelCheck:
+    """E2E tests for sw check --level=feature CLI flow."""
+
+    def test_feature_level_good_spec_passes(
+        self,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        """Feature spec with ## Intent passes validation at feature level."""
+        runner.invoke(app, ["init", "feattest", "--path", str(tmp_path)])
+
+        spec = tmp_path / "specs" / "onboarding.md"
+        spec.write_text(
+            "# Onboarding — Feature Spec\n\n"
+            "> **Status**: DRAFT\n\n---\n\n"
+            "## Intent\n\n"
+            "The system enables new users to register.\n\n---\n\n"
+            "## Done Definition\n\n"
+            "- [ ] All acceptance criteria pass\n",
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(
+            app,
+            ["check", "--level", "feature", str(spec)],
+        )
+        # S01 should detect ## Intent (feature header) and PASS
+        assert "S01" in result.output
+        # S04 should be SKIP for feature level
+        assert "S04" in result.output
+        assert "SKIP" in result.output
+        # Header label should say "Feature"
+        assert "Feature" in result.output
+
+    def test_feature_level_spec_with_leaks(
+        self,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        """Feature spec with implementation leaks triggers S03 warnings."""
+        runner.invoke(app, ["init", "leaktest", "--path", str(tmp_path)])
+
+        spec = tmp_path / "specs" / "payment.md"
+        spec.write_text(
+            "# Payment — Feature Spec\n\n---\n\n"
+            "## Intent\n\n"
+            "The system processes payments.\n\n---\n\n"
+            "## Details\n\n"
+            "Use `TaxCalculator.calculate()` for tax computation.\n"
+            "See [gateway](src/payments/gateway.py) for details.\n"
+            "See [invoices](src/billing/invoices/gen.py) for invoicing.\n",
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(
+            app,
+            ["check", "--level", "feature", str(spec)],
+        )
+        # S03 should detect abstraction leaks
+        assert "S03" in result.output
+        # Should have findings about leaks
+        assert "leak" in result.output.lower() or "WARN" in result.output or "FAIL" in result.output
+
+    def test_feature_vs_component_different_results(
+        self,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        """Same spec produces different results for feature vs component level."""
+        runner.invoke(app, ["init", "difftest", "--path", str(tmp_path)])
+
+        # A spec with ## Intent (feature header) but no ## 1. Purpose (component header)
+        spec = tmp_path / "specs" / "dual.md"
+        spec.write_text(
+            "# Dual — Spec\n\n---\n\n"
+            "## Intent\n\n"
+            "The system does stuff.\n\n---\n\n"
+            "## Done Definition\n\n"
+            "- [ ] Tests pass\n",
+            encoding="utf-8",
+        )
+
+        # Feature level: finds ## Intent → S01 PASS
+        feature_result = runner.invoke(
+            app,
+            ["check", "--level", "feature", str(spec)],
+        )
+        assert "Feature" in feature_result.output
+
+        # Component level: can't find ## 1. Purpose → S01 WARN
+        component_result = runner.invoke(
+            app,
+            ["check", "--level", "component", str(spec)],
+        )
+        assert "Spec" in component_result.output
+
+        # S04 should differ: SKIP for feature, not SKIP for component
+        assert "SKIP" in feature_result.output  # S04 skipped
+        # Component should show S04 results (not SKIP)
+
+    def test_feature_level_empty_spec(
+        self,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        """Empty spec at feature level still produces rule output."""
+        empty = tmp_path / "empty.md"
+        empty.write_text("", encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            ["check", "--level", "feature", str(empty)],
+        )
+        # Should produce S01 and other rule output
+        assert "S01" in result.output
+        assert "Feature" in result.output

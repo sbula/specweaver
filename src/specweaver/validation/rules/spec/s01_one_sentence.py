@@ -13,6 +13,8 @@ from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.validation.spec_kind import SpecKind
+
 # Conjunctions that signal multiple responsibilities in Purpose section
 _CONJUNCTIONS = [
     "and also",
@@ -43,10 +45,21 @@ class OneSentenceRule(Rule):
         warn_conjunctions: int = 0,
         fail_conjunctions: int = 2,
         max_h2: int = 8,
+        kind: SpecKind | None = None,
+        header_pattern: re.Pattern[str] | None = None,
     ) -> None:
         self._warn_conjunctions = warn_conjunctions
         self._fail_conjunctions = fail_conjunctions
         self._max_h2 = max_h2
+        self._kind = kind
+        # Auto-resolve header pattern from kind if not explicitly set
+        if header_pattern is not None:
+            self._header_pattern = header_pattern
+        elif kind is not None:
+            from specweaver.validation.spec_kind import _HEADER_PATTERNS
+            self._header_pattern = _HEADER_PATTERNS.get(kind)
+        else:
+            self._header_pattern = None
 
     @property
     def rule_id(self) -> str:
@@ -57,15 +70,17 @@ class OneSentenceRule(Rule):
         return "One-Sentence Test"
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
-        purpose = _extract_purpose(spec_text)
+        purpose = self._extract_purpose(spec_text)
         findings: list[Finding] = []
 
         if not purpose:
+            header_name = "## Intent" if self._kind == "feature" else "## 1. Purpose"
             return self._warn(
-                "No Purpose section found",
+                f"No {header_name} section found",
                 [
                     Finding(
-                        message="Could not find '## 1. Purpose' section", severity=Severity.WARNING
+                        message=f"Could not find '{header_name}' section",
+                        severity=Severity.WARNING,
                     )
                 ],
             )
@@ -116,4 +131,16 @@ class OneSentenceRule(Rule):
             )
 
         return self._pass(f"Purpose is focused (conjunctions: {conjunction_count}, H2: {h2_count})")
+
+    def _extract_purpose(self, spec_text: str) -> str:
+        """Extract purpose/intent section using the appropriate header pattern."""
+        if self._header_pattern is not None:
+            match = self._header_pattern.search(spec_text)
+        else:
+            match = re.search(
+                r"##\s*1\.?\s*Purpose\b(.*?)(?=\n##\s|\Z)",
+                spec_text,
+                re.DOTALL | re.IGNORECASE,
+            )
+        return match.group(1).strip() if match else ""
 

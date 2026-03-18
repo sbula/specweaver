@@ -2,6 +2,8 @@
 
 Get from zero to a completed pipeline run in under 5 minutes.
 
+SpecWeaver supports two spec levels: **feature specs** (cross-cutting features) and **component specs** (isolated implementable units). This guide shows both.
+
 ## Prerequisites
 
 - Python >= 3.11
@@ -74,6 +76,25 @@ Result: 11 passed, 0 warnings, 0 failed
 
 Use `--strict` to treat warnings as failures, or `--set S08.fail_threshold=5` for one-off threshold overrides.
 
+## 5b. Validate at Feature Level (Optional)
+
+If you're working on a feature spec (cross-cutting feature with `## Intent` instead of `## 1. Purpose`):
+
+```bash
+sw check specs/onboarding.md --level feature --project ./my-project
+```
+
+Feature-level validation differs from component-level:
+
+| Rule | Component Level | Feature Level |
+|------|----------------|---------------|
+| S01 | Looks for `## 1. Purpose` | Looks for `## Intent` |
+| S03 | Counts external references | Detects abstraction leaks (file paths, class.method refs) |
+| S04 | Validates dependency direction | Skipped (N/A for features) |
+| S05/S08 | Standard thresholds | Lenient thresholds |
+
+The override cascade: code defaults → kind presets → project DB overrides → `--set` flags.
+
 ## 6. Review the Spec with AI
 
 ```bash
@@ -121,12 +142,17 @@ sw pipelines
 # Run a full pipeline
 sw run new_feature greet_service --project ./my-project
 
+# Run the feature decomposition pipeline
+sw run feature_decomposition specs/onboarding.md --project ./my-project
+
 # Run with verbose output
 sw run validate_only specs/calculator.md --verbose
 
 # Machine-readable output
 sw run validate_only specs/calculator.md --json
 ```
+
+The `feature_decomposition` pipeline runs: **draft feature** → **validate at feature level** → **decompose into components**. HITL gates pause for human approval between steps.
 
 If a pipeline pauses (e.g. waiting for human review), resume it:
 

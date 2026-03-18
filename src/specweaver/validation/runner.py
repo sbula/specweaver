@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
     from specweaver.config.settings import ValidationSettings
     from specweaver.validation.models import Rule
+    from specweaver.validation.spec_kind import SpecKind
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ def get_spec_rules(
     include_llm: bool = False,
     settings: ValidationSettings | None = None,
     run_all: bool = False,
+    kind: SpecKind | None = None,
 ) -> list[Rule]:
     """Get all registered spec validation rules.
 
@@ -83,6 +85,8 @@ def get_spec_rules(
         include_llm: If False, skip rules that require an LLM adapter.
         settings: Per-project validation overrides (thresholds, enable/disable).
         run_all: If True, ignore the enabled flag in settings (run everything).
+        kind: Spec kind (feature/component). If set, kind-specific presets
+            are applied as a base layer below settings overrides.
 
     Returns:
         List of Rule instances, ordered by rule_id.
@@ -121,7 +125,15 @@ def get_spec_rules(
             skipped.append(rule_id)
             continue
         kwargs = _build_rule_kwargs(rule_id, settings)
-        all_rules.append(cls(**kwargs))
+        # Merge kind presets (base layer) underneath settings overrides
+        if kind is not None:
+            from specweaver.validation.spec_kind import get_presets
+            presets = get_presets(rule_id, kind)
+            # Presets provide base; settings overrides already in kwargs win
+            merged = {**presets, **kwargs}
+        else:
+            merged = kwargs
+        all_rules.append(cls(**merged))
 
     if skipped:
         logger.debug("get_spec_rules: skipped disabled rules: %s", ', '.join(skipped))

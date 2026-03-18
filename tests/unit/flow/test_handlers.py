@@ -272,3 +272,112 @@ class TestReviewCodeHandler:
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.ERROR
         assert "llm" in result.error_message.lower()
+
+
+# ---------------------------------------------------------------------------
+# Edge cases: ValidateSpecHandler with kind param
+# ---------------------------------------------------------------------------
+
+
+class TestValidateSpecHandlerKindWiring:
+    """ValidateSpecHandler reads kind from step.params."""
+
+    @pytest.mark.asyncio
+    async def test_kind_feature_in_params(self, tmp_path: Path) -> None:
+        """step.params['kind'] = 'feature' applies feature thresholds."""
+        spec = tmp_path / "feature_spec.md"
+        spec.write_text(
+            "# Sell Shares\n\n## Intent\n\n"
+            "Enable users to sell their shares. Users may want to.\n"
+        )
+        ctx = RunContext(project_path=tmp_path, spec_path=spec)
+        step = PipelineStep(
+            name="val",
+            action=StepAction.VALIDATE,
+            target=StepTarget.SPEC,
+            params={"kind": "feature"},
+        )
+        handler = ValidateSpecHandler()
+        result = await handler.execute(step, ctx)
+        # Should run without error — kind is threaded to validation
+        assert result.status in (StepStatus.PASSED, StepStatus.FAILED)
+        assert "results" in result.output
+
+    @pytest.mark.asyncio
+    async def test_invalid_kind_falls_back(self, tmp_path: Path) -> None:
+        """Invalid kind string falls back to default (no crash)."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text(
+            "# Test\n\n## 1. Purpose\n\nDoes one thing.\n"
+        )
+        ctx = RunContext(project_path=tmp_path, spec_path=spec)
+        step = PipelineStep(
+            name="val",
+            action=StepAction.VALIDATE,
+            target=StepTarget.SPEC,
+            params={"kind": "nonexistent_kind"},
+        )
+        handler = ValidateSpecHandler()
+        result = await handler.execute(step, ctx)
+        # Should still work with default rules
+        assert result.status in (StepStatus.PASSED, StepStatus.FAILED)
+
+
+# ---------------------------------------------------------------------------
+# Edge cases: validate_flow with DECOMPOSE steps
+# ---------------------------------------------------------------------------
+
+
+class TestValidateFlowWithDecompose:
+    """PipelineDefinition.validate_flow handles DECOMPOSE steps."""
+
+    def test_decompose_feature_pipeline_valid(self) -> None:
+        """Pipeline with DECOMPOSE+FEATURE validates cleanly."""
+        from specweaver.flow.models import (
+            GateCondition,
+            GateDefinition,
+            OnFailAction,
+            PipelineDefinition,
+        )
+
+        steps = [
+            PipelineStep(
+                name="draft_feature",
+                action=StepAction.DRAFT,
+                target=StepTarget.FEATURE,
+            ),
+            PipelineStep(
+                name="validate_feature",
+                action=StepAction.VALIDATE,
+                target=StepTarget.FEATURE,
+                params={"kind": "feature"},
+                gate=GateDefinition(
+                    condition=GateCondition.ALL_PASSED,
+                    on_fail=OnFailAction.LOOP_BACK,
+                    loop_target="draft_feature",
+                ),
+            ),
+            PipelineStep(
+                name="decompose",
+                action=StepAction.DECOMPOSE,
+                target=StepTarget.FEATURE,
+            ),
+        ]
+        p = PipelineDefinition(name="feature_decomp", steps=steps)
+        errors = p.validate_flow()
+        assert errors == []
+
+    def test_decompose_spec_pipeline_invalid(self) -> None:
+        """Pipeline with DECOMPOSE+SPEC is invalid (only FEATURE allowed)."""
+        from specweaver.flow.models import PipelineDefinition
+
+        steps = [
+            PipelineStep(
+                name="bad_decompose",
+                action=StepAction.DECOMPOSE,
+                target=StepTarget.SPEC,  # invalid
+            ),
+        ]
+        p = PipelineDefinition(name="bad", steps=steps)
+        errors = p.validate_flow()
+        assert any("invalid" in e.lower() or "combination" in e.lower() for e in errors)

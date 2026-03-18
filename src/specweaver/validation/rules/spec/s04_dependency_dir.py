@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from specweaver.validation.models import Finding, Rule, RuleResult, Severity
+from specweaver.validation.models import Finding, Rule, RuleResult, Severity, Status
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -41,9 +41,11 @@ class DependencyDirectionRule(Rule):
         self,
         warn_threshold: int = _WARN_THRESHOLD,
         fail_threshold: int = _FAIL_THRESHOLD,
+        skip: bool = False,
     ) -> None:
         self._warn_threshold = warn_threshold
         self._fail_threshold = fail_threshold
+        self._skip = skip
 
     @property
     def rule_id(self) -> str:
@@ -54,6 +56,13 @@ class DependencyDirectionRule(Rule):
         return "Dependency Direction"
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
+        if self._skip:
+            return RuleResult(
+                rule_id=self.rule_id,
+                rule_name=self.name,
+                status=Status.SKIP,
+                message="Skipped — not applicable for Feature Specs",
+            )
         # Strip code blocks to avoid false positives
         cleaned = _strip_code_blocks(spec_text)
 

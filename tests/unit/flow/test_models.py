@@ -32,9 +32,10 @@ class TestStepAction:
         assert StepAction.VALIDATE == "validate"
         assert StepAction.REVIEW == "review"
         assert StepAction.GENERATE == "generate"
+        assert StepAction.DECOMPOSE == "decompose"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 5
+        assert len(StepAction) == 6
 
 
 # ---------------------------------------------------------------------------
@@ -49,9 +50,10 @@ class TestStepTarget:
         assert StepTarget.SPEC == "spec"
         assert StepTarget.CODE == "code"
         assert StepTarget.TESTS == "tests"
+        assert StepTarget.FEATURE == "feature"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 3
+        assert len(StepTarget) == 4
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +65,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 9
+        assert len(VALID_STEP_COMBINATIONS) == 12
 
     @pytest.mark.parametrize(
         ("action", "target"),
@@ -77,6 +79,10 @@ class TestValidStepCombinations:
             (StepAction.GENERATE, StepTarget.CODE),
             (StepAction.GENERATE, StepTarget.TESTS),
             (StepAction.LINT_FIX, StepTarget.CODE),
+            # Feature decomposition combos
+            (StepAction.DRAFT, StepTarget.FEATURE),
+            (StepAction.VALIDATE, StepTarget.FEATURE),
+            (StepAction.DECOMPOSE, StepTarget.FEATURE),
         ],
     )
     def test_valid_combination(self, action: StepAction, target: StepTarget) -> None:
@@ -89,6 +95,8 @@ class TestValidStepCombinations:
             (StepAction.DRAFT, StepTarget.TESTS),
             (StepAction.GENERATE, StepTarget.SPEC),
             (StepAction.REVIEW, StepTarget.TESTS),
+            (StepAction.DECOMPOSE, StepTarget.SPEC),   # only feature can be decomposed
+            (StepAction.DECOMPOSE, StepTarget.CODE),
         ],
     )
     def test_invalid_combination(self, action: StepAction, target: StepTarget) -> None:

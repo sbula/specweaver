@@ -77,6 +77,7 @@ docs/update-readme
 
 - **TDD**: Write tests before implementation when possible
 - **Structure mirrors source**: `src/specweaver/config/database.py` → `tests/unit/config/test_database.py`
+- **Three test layers**: `tests/unit/` (isolated), `tests/integration/` (cross-component), `tests/e2e/` (full lifecycle)
 - **Descriptive names**: `test_empty_grant_does_not_match_files`, not `test_case_1`
 - **Docstrings**: Every test should have a one-line docstring explaining the scenario
 

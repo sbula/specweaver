@@ -32,6 +32,7 @@ class StepAction(enum.StrEnum):
     REVIEW = "review"
     GENERATE = "generate"
     LINT_FIX = "lint_fix"
+    DECOMPOSE = "decompose"
 
 
 class StepTarget(enum.StrEnum):
@@ -40,7 +41,7 @@ class StepTarget(enum.StrEnum):
     SPEC = "spec"
     CODE = "code"
     TESTS = "tests"
-    # Future: UI = "ui"
+    FEATURE = "feature"
 
 
 class GateType(enum.StrEnum):
@@ -82,6 +83,10 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.GENERATE, StepTarget.CODE),
         (StepAction.GENERATE, StepTarget.TESTS),
         (StepAction.LINT_FIX, StepTarget.CODE),
+        # Feature decomposition pipeline combos
+        (StepAction.DRAFT, StepTarget.FEATURE),
+        (StepAction.VALIDATE, StepTarget.FEATURE),
+        (StepAction.DECOMPOSE, StepTarget.FEATURE),
     }
 )
 

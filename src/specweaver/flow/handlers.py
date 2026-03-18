@@ -106,11 +106,15 @@ class ValidateSpecHandler:
                 started,
             )
 
+        # Resolve spec kind from step params (feature vs component)
+        kind_str = step.params.get("kind")
+
         try:
             results = await asyncio.to_thread(
                 self._run_validation,
                 context.spec_path,
                 context.settings,
+                kind_str=kind_str,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -141,11 +145,21 @@ class ValidateSpecHandler:
         self,
         spec_path: Path,
         settings: Any,
+        *,
+        kind_str: str | None = None,
     ) -> list:
         """Run spec validation rules (called in thread)."""
         from specweaver.validation.runner import get_spec_rules, run_rules
 
-        rules = get_spec_rules(include_llm=False, settings=settings)
+        kind = None
+        if kind_str:
+            from specweaver.validation.spec_kind import SpecKind
+            try:
+                kind = SpecKind(kind_str)
+            except ValueError:
+                logger.warning("ValidateSpecHandler: unknown kind '%s', using default", kind_str)
+
+        rules = get_spec_rules(include_llm=False, settings=settings, kind=kind)
         content = spec_path.read_text(encoding="utf-8")
         return run_rules(rules, content)
 

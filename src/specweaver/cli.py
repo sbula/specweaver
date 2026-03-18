@@ -663,7 +663,7 @@ def check(
         "component",
         "--level",
         "-l",
-        help="Validation level: component (spec) or code.",
+        help="Validation level: feature (spec, feature thresholds), component (spec, default thresholds), or code.",
     ),
     project: str | None = typer.Option(
         None,
@@ -685,10 +685,11 @@ def check(
     """Run validation rules against a spec or code file.
 
     Uses --level to determine which rule set to apply:
-    - component: Spec validation rules S01-S11
+    - feature: Spec validation rules S01-S11 with feature-level thresholds
+    - component: Spec validation rules S01-S11 with component-level thresholds (default)
     - code: Code validation rules C01-C08
 
-    Override cascade: code defaults -> project DB overrides -> --set flags.
+    Override cascade: code defaults -> kind presets -> project DB overrides -> --set flags.
     """
     from specweaver.validation.runner import (
         get_code_rules,
@@ -706,10 +707,14 @@ def check(
 
     content = target_path.read_text(encoding="utf-8")
 
-    if level == "component":
-        rules = get_spec_rules(include_llm=False, settings=settings)
+    if level in ("component", "feature"):
+        from specweaver.validation.spec_kind import SpecKind
+
+        kind = SpecKind.FEATURE if level == "feature" else SpecKind.COMPONENT
+        rules = get_spec_rules(include_llm=False, settings=settings, kind=kind)
         results = run_rules(rules, content, target_path)
-        _display_results(results, f"Spec Validation: {target_path.name}")
+        label = "Feature" if level == "feature" else "Spec"
+        _display_results(results, f"{label} Validation: {target_path.name}")
         _print_summary(results, strict=strict)
     elif level == "code":
         rules = get_code_rules(include_subprocess=False, settings=settings)
@@ -718,7 +723,7 @@ def check(
         _print_summary(results, strict=strict)
     else:
         console.print(
-            f"[red]Error:[/red] Unknown level '{level}'. Use 'component' or 'code'.",
+            f"[red]Error:[/red] Unknown level '{level}'. Use 'feature', 'component', or 'code'.",
         )
         raise typer.Exit(code=1)
 

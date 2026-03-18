@@ -1,6 +1,6 @@
 # SpecWeaver Roadmap
 
-> **Date**: 2026-03-08 | **Updated**: 2026-03-15
+> **Date**: 2026-03-08 | **Updated**: 2026-03-18
 > **Status**: ACTIVE
 > **Context**: Step-by-step plan for SpecWeaver development. Fresh start from scratch, informed by [flowManager](https://github.com/sbula/flowManager) learnings. MVP-first approach: prove the concept, then expand feature by feature.
 
@@ -33,14 +33,15 @@
 - ✅ Flow engine: Pipeline models, runner, state tracking, gates, retry, loop-back, HITL parking
 - ✅ Loom test runner: Atom + tool with role gating, lint-fix reflection loop
 - ✅ Integration test suite: 54 tests across 5 files with shared sample project fixture
+- ✅ Feature 3.1: Kind-aware validation (`--level feature`), feature drafting, decomposition pipeline, confidence-scored review
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
-**Phase 2 (Flow Engine)**: Steps 7–12 ✅ | Steps 13a–14 pending
+**Phase 2 (Flow Engine)**: Steps 7–14 ✅
+**Phase 3 (Features)**: Feature 3.1 ✅
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
-- Step 13a: CLI `sw run` command with Rich progress display, `--verbose`/`--json` output
-- Step 13b: Logging infrastructure (per-project log files, configurable level)
-- Step 14: Documentation & Phase 2 milestone
+- Feature 3.2: Domain profiles for threshold calibration
+- Feature 3.3: Custom rule paths (project-specific validators)
 
 ---
 
@@ -66,7 +67,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition) → 3.2 (Domain Profiles) → 3.3 (Custom Rules) → 3.4 (Context Providers) → 3.5 (Spec-Mention) → 3.6 (Multi-Model) → 3.6a (Cost Tracking) → 3.7 (Metadata Injection) → 3.8–3.12
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Domain Profiles) → 3.3 (Custom Rules) → 3.4 (Context Providers) → 3.5 (Spec-Mention) → 3.6 (Multi-Model) → 3.6a (Cost Tracking) → 3.7 (Metadata Injection) → 3.8–3.12
 
 ---
 

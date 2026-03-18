@@ -11,8 +11,10 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 ## Features
 
 - **Interactive spec drafting** — Co-author specs with an LLM, section by section
-- **Static validation** — 19 built-in rules (11 spec + 8 code) catch issues before review
-- **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with findings
+- **Feature-level validation** — Two-level spec model: feature specs (Intent, Value Proposition) and component specs (Purpose, Contract, Protocol, Policy, Boundaries) with kind-aware thresholds
+- **Static validation** — 19 built-in rules (11 spec + 8 code) with configurable thresholds that adapt to spec kind
+- **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with confidence-scored findings
+- **Feature decomposition** — Draft feature specs and decompose them into component-level work items via pipeline
 - **Code generation** — Generate implementation + test files from a validated spec
 - **Pipeline definitions** — YAML-defined workflows with configurable gates, retries, and feedback loops
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
@@ -54,8 +56,11 @@ sw init my-app --path ./my-project
 # 2. Draft a spec interactively
 sw draft greet_service --project ./my-project
 
-# 3. Validate the spec
+# 3. Validate the spec (component level — default)
 sw check specs/greet_service_spec.md --level component --project ./my-project
+
+# 3b. Validate a feature spec (feature level — lenient thresholds)
+sw check specs/onboarding.md --level feature --project ./my-project
 
 # 4. Review the spec with AI
 sw review specs/greet_service_spec.md --project ./my-project
@@ -78,11 +83,12 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 |---|---|
 | `sw init <name>` | Register project in DB + scaffold dirs and templates |
 | `sw draft <name>` | Interactively draft a component spec |
-| `sw check <file> --level component` | Validate a spec against S01–S11 rules |
+| `sw check <file> --level feature` | Validate a feature spec against S01–S11 with feature-level thresholds |
+| `sw check <file> --level component` | Validate a component spec against S01–S11 with component-level thresholds |
 | `sw check <file> --level code` | Validate code against C01–C08 rules |
 | `sw check --strict` | Treat warnings as failures (exit code 1) |
 | `sw check --set RULE.FIELD=VALUE` | One-off threshold override (e.g. `S08.fail_threshold=5`) |
-| `sw review <file>` | AI-powered spec or code review |
+| `sw review <file>` | AI-powered spec or code review (confidence-scored findings) |
 | `sw implement <spec>` | Generate code + tests from a spec |
 
 ### Project Management
@@ -124,14 +130,14 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 
 | Rule | Name | What it checks | Configurable |
 |---|---|---|---|
-| S01 | One-Sentence Test | Purpose is focused (low conjunction count) | ✅ warn/fail conjunctions, max_h2 |
+| S01 | One-Sentence Test | Purpose/Intent is focused (low conjunction count) | ✅ warn/fail conjunctions, max_h2, header pattern (kind-aware) |
 | S02 | Single Test Setup | No complex multi-environment setup | — |
-| S03 | Stranger Test | External references and undefined terms | ✅ warn/fail threshold |
-| S04 | Dependency Direction | Cross-reference direction + dead-link detection | ✅ warn/fail threshold |
-| S05 | Day Test | Complexity ≤ 1 day of work | ✅ warn/fail threshold |
+| S03 | Stranger Test | External references / abstraction leaks (kind-aware) | ✅ warn/fail threshold, mode (external_ref / abstraction_leak) |
+| S04 | Dependency Direction | Cross-reference direction + dead-link detection | ✅ warn/fail threshold (skip for feature specs) |
+| S05 | Day Test | Complexity ≤ 1 day of work | ✅ warn/fail threshold (kind-aware) |
 | S06 | Concrete Example | Contract has code examples | — |
 | S07 | Test-First | Contract testability scoring | ✅ warn/fail score |
-| S08 | Ambiguity Test | No weasel words (should, might, etc.) | ✅ warn/fail threshold |
+| S08 | Ambiguity Test | No weasel words (should, might, etc.) | ✅ warn/fail threshold (kind-aware) |
 | S09 | Error Path | Error handling is specified | — |
 | S10 | Done Definition | Verifiable completion criteria exist | — |
 | S11 | Terminology | Inconsistent casing + undefined domain terms | ✅ warn/fail threshold |
@@ -179,7 +185,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── project/                # Scaffold, discovery
 │   ├── review/                 # AI reviewer
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1696+ tests (unit, integration, E2E)
+├── tests/                      # 1886+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
