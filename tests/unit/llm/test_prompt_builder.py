@@ -635,3 +635,140 @@ class TestBudgetScaling:
         pb = PromptBuilder(budget_scale_factor=5.0)
         assert pb._scale == 2.0
 
+
+# ---------------------------------------------------------------------------
+# Constitution blocks
+# ---------------------------------------------------------------------------
+
+
+class TestAddConstitution:
+    """Test constitution content rendering."""
+
+    def test_constitution_renders_after_instructions(self) -> None:
+        """Constitution renders after instructions, before topology."""
+        from specweaver.graph.topology import TopologyContext
+
+        ctx = [
+            TopologyContext(
+                name="svc", purpose="A service.",
+                archetype="pure-logic", relationship="direct dependency",
+            ),
+        ]
+        result = (
+            PromptBuilder()
+            .add_instructions("Instruction text")
+            .add_constitution("Constitution text")
+            .add_topology(ctx)
+            .build()
+        )
+
+        instr_pos = result.index("<instructions>")
+        const_pos = result.index("<constitution>")
+        topo_pos = result.index("<topology>")
+        assert instr_pos < const_pos < topo_pos
+
+    def test_constitution_renders_before_files(self, tmp_path: Path) -> None:
+        """Constitution renders before file contents."""
+        f = tmp_path / "code.py"
+        f.write_text("pass", encoding="utf-8")
+        result = (
+            PromptBuilder()
+            .add_constitution("Constitution text")
+            .add_file(f)
+            .build()
+        )
+
+        const_pos = result.index("<constitution>")
+        file_pos = result.index("<file_contents>")
+        assert const_pos < file_pos
+
+    def test_preamble_included(self) -> None:
+        """Fixed preamble is prepended to constitution content."""
+        result = (
+            PromptBuilder()
+            .add_constitution("My rules here.")
+            .build()
+        )
+        assert "non-negotiable" in result.lower()
+        assert "constitution wins" in result.lower()
+        assert "My rules here." in result
+
+    def test_constitution_tags(self) -> None:
+        """Constitution is wrapped in <constitution> tags."""
+        result = PromptBuilder().add_constitution("Rules").build()
+        assert "<constitution>" in result
+        assert "</constitution>" in result
+
+    def test_chaining(self) -> None:
+        """add_constitution returns self for chaining."""
+        pb = PromptBuilder()
+        ret = pb.add_constitution("Rules")
+        assert ret is pb
+
+    def test_no_constitution_no_tag(self) -> None:
+        """Without add_constitution, no <constitution> tag in output."""
+        result = PromptBuilder().add_instructions("Instr").build()
+        assert "<constitution>" not in result
+
+    def test_not_truncated_under_budget(self) -> None:
+        """Constitution (priority 0) is never truncated."""
+        from specweaver.llm.models import TokenBudget
+
+        budget = TokenBudget(limit=50)
+        constitution_text = "X" * 100  # ~25 tokens
+        result = (
+            PromptBuilder(budget=budget)
+            .add_instructions("Short")
+            .add_constitution(constitution_text)
+            .add_context("Y" * 2000, "big", priority=1)
+            .build()
+        )
+        assert constitution_text in result
+
+    def test_content_stripped(self) -> None:
+        """Constitution content is stripped of leading/trailing whitespace."""
+        result = PromptBuilder().add_constitution("  \n Rules \n  ").build()
+        # Content should be stripped (preamble + stripped content)
+        assert "<constitution>" in result
+        assert "Rules" in result
+
+    def test_empty_string_produces_preamble_only(self) -> None:
+        """add_constitution('') still produces preamble in tags."""
+        result = PromptBuilder().add_constitution("").build()
+        assert "<constitution>" in result
+        assert "non-negotiable" in result.lower()
+
+    def test_duplicate_add_constitution(self) -> None:
+        """Calling add_constitution twice renders both in the block."""
+        result = (
+            PromptBuilder()
+            .add_constitution("Rule A")
+            .add_constitution("Rule B")
+            .build()
+        )
+        # Both are joined inside a single <constitution> tag
+        start = result.index("<constitution>")
+        end = result.index("</constitution>")
+        block = result[start:end]
+        assert "Rule A" in block
+        assert "Rule B" in block
+
+    def test_constitution_before_context_blocks(self) -> None:
+        """Constitution renders before context blocks."""
+        result = (
+            PromptBuilder()
+            .add_constitution("Constitution text")
+            .add_context("Context text", "label")
+            .build()
+        )
+        const_pos = result.index("<constitution>")
+        ctx_pos = result.index("<context ")
+        assert const_pos < ctx_pos
+
+    def test_xml_in_constitution_not_interpreted(self) -> None:
+        """XML-like content in constitution is not interpreted as tags."""
+        xml_content = "<rule>No <b>bold</b></rule>"
+        result = PromptBuilder().add_constitution(xml_content).build()
+        # Content should be inside constitution, verbatim
+        assert xml_content in result
+

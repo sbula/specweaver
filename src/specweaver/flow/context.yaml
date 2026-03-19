@@ -33,6 +33,7 @@ exposes:
   - StepHandlerRegistry
   - LintFixHandler
   - PipelineRunner
+  - RunContext
   - RunnerEventCallback
   - RichPipelineDisplay
   - JsonPipelineDisplay

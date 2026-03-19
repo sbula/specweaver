@@ -16,6 +16,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with confidence-scored findings
 - **Feature decomposition** — Draft feature specs and decompose them into component-level work items via pipeline
 - **Code generation** — Generate implementation + test files from a validated spec
+- **Constitution support** — Project-wide `CONSTITUTION.md` with coding principles, testing standards, and UX guidelines injected into every LLM call (review, implement, pipeline). Walk-up resolution, configurable size limits, CLI management
 - **Pipeline definitions** — YAML-defined workflows with configurable gates, retries, and feedback loops
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
 - **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
@@ -112,6 +113,17 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw config reset <rule>` | Remove an override (revert to defaults) |
 | `sw config set-log-level <level>` | Set the log level for the active project |
 | `sw config get-log-level` | Show current log level and log file path |
+| `sw config set-constitution-max-size <N>` | Set maximum constitution file size (bytes) |
+| `sw config get-constitution-max-size` | Show current constitution size limit |
+
+### Constitution Management
+
+| Command | Description |
+|---|---|
+| `sw constitution show` | Display the current CONSTITUTION.md content |
+| `sw constitution check` | Validate constitution against size limits |
+| `sw constitution init` | Create a fresh CONSTITUTION.md template |
+| `sw constitution init --force` | Overwrite an existing CONSTITUTION.md |
 
 ### Pipeline Execution
 
@@ -182,10 +194,10 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   │       ├── filesystem/     # Filesystem tool (grants, roles, intents)
 │   │       └── git/            # Git tool (intents, interfaces, roles)
 │   ├── pipelines/              # Bundled pipeline templates (YAML)
-│   ├── project/                # Scaffold, discovery
-│   ├── review/                 # AI reviewer
+│   ├── project/                # Scaffold, discovery, constitution loader
+│   ├── review/                 # AI reviewer (constitution-aware)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1886+ tests (unit, integration, E2E)
+├── tests/                      # 1974+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

@@ -75,6 +75,7 @@
     <li><a href="#gates">Gate Evaluation, Retry &amp; Loop-Back</a></li>
     <li><a href="#validation">Validation System</a></li>
     <li><a href="#review">LLM Review System</a></li>
+    <li><a href="#constitution">Constitution Support</a></li>
     <li><a href="#pipeline-yaml">Pipeline Configuration (YAML)</a></li>
     <li><a href="#state">State Model &amp; Persistence</a></li>
     <li><a href="#testing">Testing Strategy</a></li>
@@ -106,7 +107,7 @@ python -m pytest -m unit -q   # Run unit tests</code></pre>
   <tr><td><code>llm/</code></td><td>LLM adapter layer (Gemini, etc.)</td></tr>
   <tr><td><code>loom/</code></td><td>★ Interaction layer — atoms, tools, commons</td></tr>
   <tr><td><code>pipelines/</code></td><td>YAML pipeline definitions</td></tr>
-  <tr><td><code>project/</code></td><td>Project scaffolding and detection</td></tr>
+  <tr><td><code>project/</code></td><td>Project scaffolding, detection, and constitution loader</td></tr>
   <tr><td><code>review/</code></td><td>LLM-powered spec and code review</td></tr>
   <tr><td><code>validation/</code></td><td>Rule-based validation (S01–S11, C01–C08)</td></tr>
 </table>
@@ -596,6 +597,7 @@ flowchart TD
         PB["PromptBuilder"]
         INST["Instructions<br/>(5 review criteria)"]
         FILES["add_file(priority, role)"]
+        CONST["add_constitution()<br/>(project rules)"]
     end
 
     subgraph "LLM Interaction"
@@ -621,6 +623,7 @@ flowchart TD
     CODE --> PB
     TOPO --> PB
     INST --> PB
+    CONST --> PB
     PB --> FILES --> MSG --> LLM
 
     LLM --> PARSE
@@ -654,6 +657,56 @@ flowchart LR
     CR_CR --> REV
     REV --> RES["ReviewResult<br/>{verdict, findings, summary}"]
   </pre>
+</div>
+
+<!-- ================================================================== -->
+<h2 id="constitution">7b. Constitution Support</h2>
+
+<p>Every SpecWeaver project gets a <code>CONSTITUTION.md</code> file — a project-wide governing document containing coding principles, testing standards, and UX guidelines. Constitution content is automatically injected into every LLM call (review, implement, pipeline) via <code>PromptBuilder.add_constitution()</code>.</p>
+
+<div class="diagram-card">
+  <h3>Constitution Flow</h3>
+  <pre class="mermaid">
+flowchart LR
+    subgraph "Project"
+        CM["CONSTITUTION.md<br/>(project root)"]
+    end
+
+    subgraph "CLI"
+        LOAD["_load_constitution_content()<br/>walk-up resolution"]
+    end
+
+    subgraph "Prompt Construction"
+        PB["PromptBuilder"]
+        ADD["add_constitution(content)<br/>&lt;constitution&gt; tag"]
+    end
+
+    subgraph "LLM Calls"
+        REV["Review (spec + code)"]
+        IMPL["Implement (code + tests)"]
+        PIPE["Pipeline (RunContext)"]
+    end
+
+    CM --> LOAD
+    LOAD --> PB
+    PB --> ADD
+    ADD --> REV & IMPL & PIPE
+  </pre>
+</div>
+
+<h4>CLI Commands</h4>
+<table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td><code>sw constitution show</code></td><td>Display current CONSTITUTION.md content</td></tr>
+  <tr><td><code>sw constitution check</code></td><td>Validate against configured size limits</td></tr>
+  <tr><td><code>sw constitution init</code></td><td>Create/reset the CONSTITUTION.md template</td></tr>
+  <tr><td><code>sw constitution init --force</code></td><td>Overwrite existing constitution</td></tr>
+  <tr><td><code>sw config set-constitution-max-size &lt;N&gt;</code></td><td>Set max file size (bytes)</td></tr>
+  <tr><td><code>sw config get-constitution-max-size</code></td><td>Show current size limit</td></tr>
+</table>
+
+<div class="callout callout-info">
+  <strong>Walk-up resolution:</strong> The loader searches for <code>CONSTITUTION.md</code> starting from the spec's directory, walking up to the project root. This supports monorepo setups with per-module constitutions.
 </div>
 
 <!-- ================================================================== -->
@@ -786,6 +839,7 @@ classDiagram
     class RunContext {
         +project_path: Path
         +spec_path: Path
+        +constitution: str?
         +llm: LLMAdapter?
         +settings: ValidationSettings?
         +output_dir: Path?
@@ -808,9 +862,9 @@ classDiagram
 <h2 id="testing">10. Testing Strategy</h2>
 
 <pre><code>tests/
-├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~1790 tests)
-├── integration/   # Cross-module (real file I/O, real ruff)     (74 tests)
-├── e2e/           # Full pipeline runs
+├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~1870 tests)
+├── integration/   # Cross-module (real file I/O, real ruff)     (84 tests)
+├── e2e/           # Full pipeline runs (32 tests)
 └── fixtures/      # Shared test data
     ├── good_spec.md / bad_spec_*.md   # Spec fixtures
     └── sample_project/                # Shared integration test project
@@ -821,9 +875,10 @@ classDiagram
             ├── broken/                # Lint errors + high complexity
             └── no_context/            # No context.yaml (for inference)</code></pre>
 
-<pre><code>uv run pytest -q                      # Everything (1886 tests)
-uv run pytest tests/unit/ -q          # Unit tests only (~1790)
-uv run pytest tests/integration/ -q   # Integration tests (74)
+<pre><code>uv run pytest -q                      # Everything (1974 tests)
+uv run pytest tests/unit/ -q          # Unit tests only (~1870)
+uv run pytest tests/integration/ -q   # Integration tests (84)
+uv run pytest tests/e2e/ -q           # E2E lifecycle tests (32)
 uv run pytest --cov src/ -q           # With coverage
 uv run ruff check src/ tests/         # Lint</code></pre>
 
@@ -838,6 +893,7 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td><code>test_pipeline.py</code></td><td>17</td><td>End-to-end CLI flows (init, check, implement, review, <strong>--level=feature</strong>)</td></tr>
   <tr><td><code>test_feature_kind_integration.py</code></td><td>10</td><td>SpecKind presets → runner → rules: kind-aware S01/S03/S04 behaviour</td></tr>
   <tr><td><code>test_feature_pipeline_integration.py</code></td><td>6</td><td>Feature pipeline YAML → flow engine, DECOMPOSE step, ValidateSpecHandler kind wiring</td></tr>
+  <tr><td><code>test_constitution_integration.py</code></td><td>10</td><td>Constitution loader, PromptBuilder injection, size validation, walk-up resolution</td></tr>
 </table>
 
 <div class="callout callout-info">
@@ -866,6 +922,8 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td>Configurable thresholds</td><td>Per-project overrides via <code>specweaver.yaml</code> or <code>--set</code> CLI flag → no code changes needed</td></tr>
   <tr><td>Kind-aware validation</td><td><code>SpecKind</code> enum (FEATURE/COMPONENT/CODE) selects rule presets → same rules adapt behaviour per spec type</td></tr>
   <tr><td>Feature decomposition</td><td>HITL-gated pipeline: draft feature → validate at feature thresholds → decompose into components</td></tr>
+  <tr><td>Constitution injection</td><td>Project-wide <code>CONSTITUTION.md</code> injected into every LLM call → consistent coding standards enforced by AI across review + implementation</td></tr>
+  <tr><td>Constitution walk-up</td><td>Walk-up resolution from spec dir to project root → monorepo support with per-module overrides</td></tr>
 </table>
 
 <!-- ================================================================== -->
@@ -883,6 +941,7 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td>Import changes</td><td>No atoms ↔ tools imports? Shared code in commons? Uses <code>TYPE_CHECKING</code> for type-only imports?</td></tr>
   <tr><td>Model changes</td><td>Tests for <code>test_combination_count</code> updated? <code>validate_flow()</code> still passes?</td></tr>
   <tr><td>Gate changes</td><td>Retry count correct? <code>max_retries</code> reasonable? Loop target is valid step name?</td></tr>
+  <tr><td>Constitution changes</td><td>File under size limit? <code>sw constitution check</code> passes? Content actually used in prompts (check <code>_load_constitution_content</code> in CLI)?</td></tr>
 </table>
 
 <script>

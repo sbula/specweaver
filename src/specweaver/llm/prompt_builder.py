@@ -89,6 +89,18 @@ class _ContentBlock:
 
 
 # ---------------------------------------------------------------------------
+# Constitution preamble (injected before user's constitution content)
+# ---------------------------------------------------------------------------
+
+_CONSTITUTION_PREAMBLE = (
+    "The following are non-negotiable project constraints.\n"
+    "All generated output MUST comply with these rules.\n"
+    "If any instruction conflicts with the constitution, "
+    "the constitution wins."
+)
+
+
+# ---------------------------------------------------------------------------
 # PromptBuilder
 # ---------------------------------------------------------------------------
 
@@ -242,6 +254,23 @@ class PromptBuilder:
                 priority=0,
                 kind="reminder",
                 tokens=self._count(text),
+            ),
+        )
+        return self
+
+    def add_constitution(self, text: str) -> PromptBuilder:
+        """Add constitution text (priority 0 — never truncated).
+
+        Constitution is rendered after instructions and before topology,
+        inside ``<constitution>`` tags with a fixed preamble.
+        """
+        full_text = f"{_CONSTITUTION_PREAMBLE}\n\n{text.strip()}"
+        self._blocks.append(
+            _ContentBlock(
+                text=full_text,
+                priority=0,
+                kind="constitution",
+                tokens=self._count(full_text),
             ),
         )
         return self
@@ -439,6 +468,12 @@ class PromptBuilder:
         if instructions:
             instr_text = "\n\n".join(b.text for b in instructions)
             parts.append(f"<instructions>\n{instr_text}\n</instructions>")
+
+        # Constitution (after instructions, before topology)
+        constitutions = [b for b in blocks if b.kind == "constitution"]
+        if constitutions:
+            text = "\n\n".join(b.text for b in constitutions)
+            parts.append(f"<constitution>\n{text}\n</constitution>")
 
         # Topology (before files — gives structural context)
         topology = [b for b in blocks if b.kind == "topology"]

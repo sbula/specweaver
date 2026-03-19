@@ -56,6 +56,7 @@ class RunContext(BaseModel):
     settings: Any = None  # ValidationSettings | None
     output_dir: Path | None = None
     feedback: dict[str, Any] = Field(default_factory=dict)
+    constitution: str | None = None  # Pre-loaded constitution content
 
 
 # ---------------------------------------------------------------------------
@@ -255,6 +256,7 @@ class ReviewSpecHandler:
             result = await reviewer.review_spec(
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
+                constitution=context.constitution,
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
@@ -300,6 +302,7 @@ class ReviewCodeHandler:
                 code_path,
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
+                constitution=context.constitution,
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",
@@ -355,6 +358,7 @@ class GenerateCodeHandler:
                 context.spec_path,
                 output_path,
                 topology_contexts=([context.topology] if context.topology else None),
+                constitution=context.constitution,
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
             return StepResult(
@@ -389,6 +393,7 @@ class GenerateTestsHandler:
                 context.spec_path,
                 output_path,
                 topology_contexts=([context.topology] if context.topology else None),
+                constitution=context.constitution,
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
             return StepResult(

@@ -4,12 +4,15 @@
 name: llm
 level: module
 purpose: >
-  LLM provider abstraction layer with adapter pattern (currently Google Gemini).
+  LLM provider abstraction layer with adapter pattern (currently Google Gemini)
+  and structured prompt builder with token-aware truncation and constitution support.
 
 description: |
   Provides a provider-agnostic interface for LLM calls. The base adapter defines
   the contract; concrete adapters (GeminiAdapter) implement provider-specific logic.
   Error hierarchy translates provider errors into domain-specific exceptions.
+  PromptBuilder assembles structured prompts with XML-tagged blocks, supporting
+  instructions, files, context, topology, and constitution injection.
 
 archetype: adapter
 
@@ -24,6 +27,7 @@ exposes:
   - GeminiAdapter
   - LLMResponse
   - LLMError
+  - PromptBuilder
 
 # -- Operational Metadata --------------------------------------------------
 operational:

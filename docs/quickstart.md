@@ -184,6 +184,28 @@ sw remove old-project  # Unregister (files stay on disk)
 sw update my-app path /new/path  # Update project path
 ```
 
+## Constitution Management
+
+Every project gets a `CONSTITUTION.md` file (created by `sw init`). This is a project-wide governing document — coding principles, testing standards, UX guidelines — that is automatically injected into every LLM call (review, implement, pipeline).
+
+```bash
+# View the current constitution
+sw constitution show --project ./my-project
+
+# Validate constitution against size limits
+sw constitution check --project ./my-project
+
+# Reset/create a fresh constitution template
+sw constitution init --project ./my-project
+sw constitution init --force --project ./my-project  # overwrite existing
+
+# Configure max allowed size (per project)
+sw config set-constitution-max-size 16384
+sw config get-constitution-max-size
+```
+
+Edit `CONSTITUTION.md` directly to customize your project's rules. The content is sent to the LLM as context during review and implementation, ensuring AI-generated output follows your project's standards.
+
 ## Validation Overrides
 
 Customize rule thresholds per project:

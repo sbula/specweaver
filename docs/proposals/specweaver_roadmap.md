@@ -1,6 +1,6 @@
 # SpecWeaver Roadmap
 
-> **Date**: 2026-03-08 | **Updated**: 2026-03-18
+> **Date**: 2026-03-08 | **Updated**: 2026-03-19
 > **Status**: ACTIVE
 > **Context**: Step-by-step plan for SpecWeaver development. Fresh start from scratch, informed by [flowManager](https://github.com/sbula/flowManager) learnings. MVP-first approach: prove the concept, then expand feature by feature.
 
@@ -34,14 +34,15 @@
 - ✅ Loom test runner: Atom + tool with role gating, lint-fix reflection loop
 - ✅ Integration test suite: 54 tests across 5 files with shared sample project fixture
 - ✅ Feature 3.1: Kind-aware validation (`--level feature`), feature drafting, decomposition pipeline, confidence-scored review
+- ✅ Feature 3.2: Constitution as first-class artifact — `CONSTITUTION.md` injected into all LLM calls, walk-up resolution, CLI management (`sw constitution show/check/init`), configurable size limits
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
 **Phase 2 (Flow Engine)**: Steps 7–14 ✅
-**Phase 3 (Features)**: Feature 3.1 ✅
+**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
-- Feature 3.2: Constitution as first-class artifact _(Spec Kit, DMZ)_
 - Feature 3.3: Domain profiles for threshold calibration
+- Feature 3.4: Custom rule paths
 - Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_
 - Feature 3.7: Pipeline visualization _(CrewAI)_
 
@@ -69,7 +70,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution) → 3.3 (Domain Profiles) → 3.4 (Custom Rules) → 3.5 (Auto-Discover Standards) → 3.6 (Plan Phase) → 3.7 (Pipeline Viz) → 3.8–3.19
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles) → 3.4 (Custom Rules) → 3.5 (Auto-Discover Standards) → 3.6 (Plan Phase) → 3.7 (Pipeline Viz) → 3.8–3.19
 
 ---
 

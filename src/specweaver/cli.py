@@ -800,6 +800,17 @@ def draft(
 # ---------------------------------------------------------------------------
 
 
+
+def _load_constitution_content(
+    project_path: Path, spec_path: Path | None = None,
+) -> str | None:
+    """Load constitution content for the given project, or None."""
+    from specweaver.project.constitution import find_constitution
+
+    info = find_constitution(project_path, spec_path=spec_path)
+    return info.content if info else None
+
+
 @app.command()
 def review(
     target: str = typer.Argument(
@@ -856,7 +867,12 @@ def review(
     console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
     console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
 
-    result = _execute_review(reviewer, target_path, spec, topo_contexts)
+    result = _execute_review(
+        reviewer, target_path, spec, topo_contexts,
+        constitution=_load_constitution_content(
+            project_path, spec_path=target_path,
+        ),
+    )
     _display_review_result(result)
 
 
@@ -865,6 +881,8 @@ def _execute_review(
     target_path: Path,
     spec: str | None,
     topology_contexts: list | None = None,
+    *,
+    constitution: str | None = None,
 ) -> object:
     """Run the appropriate review (spec or code)."""
     if spec:
@@ -874,11 +892,17 @@ def _execute_review(
             raise typer.Exit(code=1)
         return asyncio.run(
             reviewer.review_code(
-                target_path, spec_path, topology_contexts=topology_contexts,
+                target_path, spec_path,
+                topology_contexts=topology_contexts,
+                constitution=constitution,
             ),
         )
     return asyncio.run(
-        reviewer.review_spec(target_path, topology_contexts=topology_contexts),
+        reviewer.review_spec(
+            target_path,
+            topology_contexts=topology_contexts,
+            constitution=constitution,
+        ),
     )
 
 
@@ -975,11 +999,18 @@ def implement(
         f"  [dim]Tests:[/dim] {test_path}\n",
     )
 
+    # Load constitution for this project
+    constitution_content = _load_constitution_content(
+        project_path, spec_path=spec_path,
+    )
+
     # Generate code
     console.print("[dim]Generating implementation code...[/dim]")
     asyncio.run(
         generator.generate_code(
-            spec_path, code_path, topology_contexts=topo_contexts,
+            spec_path, code_path,
+            topology_contexts=topo_contexts,
+            constitution=constitution_content,
         ),
     )
     console.print(f"  [green]✓[/green] {code_path}")
@@ -988,7 +1019,9 @@ def implement(
     console.print("[dim]Generating test file...[/dim]")
     asyncio.run(
         generator.generate_tests(
-            spec_path, test_path, topology_contexts=topo_contexts,
+            spec_path, test_path,
+            topology_contexts=topo_contexts,
+            constitution=constitution_content,
         ),
     )
     console.print(f"  [green]✓[/green] {test_path}")
@@ -1176,6 +1209,177 @@ def config_get_log_level() -> None:
     console.print(
         f"Log level for [bold]{name}[/bold]: [cyan]{level}[/cyan]\n"
         f"Log file: [dim]{log_path}[/dim]",
+    )
+
+
+@config_app.command("set-constitution-max-size")
+def config_set_constitution_max_size(
+    size: int = typer.Argument(
+        help="Maximum constitution file size in bytes. Must be positive.",
+    ),
+) -> None:
+    """Set the maximum allowed CONSTITUTION.md size for the active project."""
+    name = _require_active_project()
+    db = get_db()
+    try:
+        db.set_constitution_max_size(name, size)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        f"[green]\u2713[/green] Constitution max size set to "
+        f"[bold]{size}[/bold] bytes for project [bold]{name}[/bold].",
+    )
+
+
+@config_app.command("get-constitution-max-size")
+def config_get_constitution_max_size() -> None:
+    """Show the current constitution max size for the active project."""
+    name = _require_active_project()
+    db = get_db()
+    try:
+        max_size = db.get_constitution_max_size(name)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        f"Constitution max size for [bold]{name}[/bold]: "
+        f"[cyan]{max_size}[/cyan] bytes",
+    )
+
+
+# ---------------------------------------------------------------------------
+# sw constitution
+# ---------------------------------------------------------------------------
+
+constitution_app = typer.Typer(
+    name="constitution",
+    help="Manage the project constitution (CONSTITUTION.md).",
+    no_args_is_help=True,
+)
+app.add_typer(constitution_app, name="constitution")
+
+
+@constitution_app.command("show")
+def constitution_show(
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Path to the target project directory.",
+    ),
+) -> None:
+    """Display the current CONSTITUTION.md content."""
+    try:
+        project_path = resolve_project_path(project)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    from specweaver.project.constitution import find_constitution
+
+    info = find_constitution(project_path)
+    if info is None:
+        console.print(
+            "[yellow]No CONSTITUTION.md found.[/yellow]\n"
+            "[dim]Run 'sw constitution init' to create one.[/dim]",
+        )
+        raise typer.Exit(code=1)
+
+    console.print(
+        f"[bold]Constitution:[/bold] {info.path}\n"
+        f"[dim]Size: {len(info.content)} bytes[/dim]\n",
+    )
+    console.print(info.content)
+
+
+@constitution_app.command("check")
+def constitution_check(
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Path to the target project directory.",
+    ),
+) -> None:
+    """Validate the constitution against size limits."""
+    try:
+        project_path = resolve_project_path(project)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    from specweaver.project.constitution import check_constitution, find_constitution
+
+    info = find_constitution(project_path)
+    if info is None:
+        console.print(
+            "[yellow]No CONSTITUTION.md found.[/yellow]\n"
+            "[dim]Run 'sw constitution init' to create one.[/dim]",
+        )
+        raise typer.Exit(code=1)
+
+    # Try to get the configured max size from DB
+    max_size_kwargs: dict = {}
+    try:
+        db = get_db()
+        active = db.get_active_project()
+        if active:
+            max_size_kwargs["max_size"] = db.get_constitution_max_size(active)
+    except Exception:
+        pass  # Fall back to default if DB unavailable
+
+    errors = check_constitution(info.path, **max_size_kwargs)
+
+    console.print(f"[bold]Constitution:[/bold] {info.path}")
+    console.print(f"[dim]Size: {len(info.content)} bytes[/dim]")
+
+    if "max_size" in max_size_kwargs:
+        console.print(f"[dim]Max allowed: {max_size_kwargs['max_size']} bytes[/dim]")
+
+    if not errors:
+        console.print("\n[green]\u2713 Constitution is within size limits.[/green]")
+    else:
+        for err in errors:
+            console.print(f"[red]\u2717[/red] {err}")
+        raise typer.Exit(code=1)
+
+
+@constitution_app.command("init")
+def constitution_init(
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Path to the target project directory.",
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f",
+        help="Overwrite existing CONSTITUTION.md.",
+    ),
+) -> None:
+    """Create or reset the CONSTITUTION.md template."""
+    try:
+        project_path = resolve_project_path(project)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    constitution_path = project_path / "CONSTITUTION.md"
+
+    if constitution_path.exists() and not force:
+        console.print(
+            "[yellow]CONSTITUTION.md already exists.[/yellow]\n"
+            "[dim]Use --force to overwrite.[/dim]",
+        )
+        raise typer.Exit(code=1)
+
+    if force and constitution_path.exists():
+        constitution_path.unlink()
+
+    from specweaver.project.constitution import generate_constitution
+
+    project_name = project_path.name.lower().replace(" ", "-")
+    result_path = generate_constitution(project_path, project_name)
+
+    console.print(
+        f"[green]\u2713[/green] Constitution created: [bold]{result_path}[/bold]",
     )
 
 
@@ -1392,6 +1596,9 @@ def _execute_run(  # noqa: C901
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
+        constitution=_load_constitution_content(
+            project_path, spec_path=spec_path,
+        ),
     )
 
     # Wire up LLM if needed (non-validate-only pipelines)
@@ -1542,6 +1749,9 @@ def resume(
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
+        constitution=_load_constitution_content(
+            project_path, spec_path=spec_path,
+        ),
     )
 
     display = _create_display(use_json=json_output, verbose=verbose)

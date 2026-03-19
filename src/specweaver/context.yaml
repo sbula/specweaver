@@ -28,6 +28,8 @@ exposes:
   - project
   - implementation
   - context
+  - flow
+  - pipelines
 
 owner: sbula
 

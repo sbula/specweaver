@@ -65,12 +65,12 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 3 after v3 migration."""
+        """Schema version is 4 after v4 migration."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 3
+            assert row[0] == 4
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""
@@ -530,7 +530,7 @@ class TestSchemaV2Migration:
             ).fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 3  # both V2 and V3 applied
+        assert version[0] == 4  # both V2 and V3 and V4 applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -542,7 +542,7 @@ class TestSchemaV2Migration:
             version = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 3  # both V2 and V3 applied
+        assert version[0] == 4  # both V2 and V3 and V4 applied
 
 
 # ---------------------------------------------------------------------------
@@ -680,4 +680,122 @@ class TestSchemaV3Migration:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 3
+        assert version[0] == 4  # v3 and v4 both applied
+
+
+# ---------------------------------------------------------------------------
+# Schema v4 migration — constitution_max_size column
+# ---------------------------------------------------------------------------
+
+
+class TestSchemaV4Migration:
+    """Test the v3→v4 schema migration (constitution_max_size on projects)."""
+
+    def test_constitution_max_size_column_exists(self, db, tmp_path: Path):
+        """constitution_max_size column is present after migration."""
+        db.register_project("myapp", str(tmp_path))
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT constitution_max_size FROM projects WHERE name='myapp'"
+            ).fetchone()
+        assert row is not None
+
+    def test_constitution_max_size_default_is_5120(self, db, tmp_path: Path):
+        """Default constitution_max_size is 5120 (5 KB)."""
+        db.register_project("myapp", str(tmp_path))
+        assert db.get_constitution_max_size("myapp") == 5120
+
+    def test_get_constitution_max_size_nonexistent_raises(self, db):
+        with pytest.raises(ValueError, match="not found"):
+            db.get_constitution_max_size("nonexistent")
+
+    def test_set_constitution_max_size(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_constitution_max_size("myapp", 8192)
+        assert db.get_constitution_max_size("myapp") == 8192
+
+    def test_set_constitution_max_size_nonexistent_raises(self, db):
+        with pytest.raises(ValueError, match="not found"):
+            db.set_constitution_max_size("nonexistent", 8192)
+
+    def test_set_constitution_max_size_zero_raises(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        with pytest.raises(ValueError, match="[Ii]nvalid.*size|must be positive"):
+            db.set_constitution_max_size("myapp", 0)
+
+    def test_schema_version_is_4(self, db):
+        """Schema version is 4 after v4 migration."""
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+            assert row[0] == 4
+
+    def test_set_constitution_max_size_negative_raises(self, db, tmp_path: Path):
+        """Negative constitution_max_size is rejected."""
+        db.register_project("myapp", str(tmp_path))
+        with pytest.raises(ValueError, match="[Ii]nvalid.*size|must be positive"):
+            db.set_constitution_max_size("myapp", -100)
+
+    def test_set_constitution_max_size_to_one(self, db, tmp_path: Path):
+        """Setting constitution_max_size to 1 succeeds (minimum valid)."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_constitution_max_size("myapp", 1)
+        assert db.get_constitution_max_size("myapp") == 1
+
+    def test_constitution_max_size_persists_across_connections(self, db, tmp_path: Path):
+        """constitution_max_size value survives reconnection."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_constitution_max_size("myapp", 10240)
+
+        # Re-open database (simulates restart)
+        from specweaver.config.database import Database
+
+        db2 = Database(db._db_path)
+        assert db2.get_constitution_max_size("myapp") == 10240
+
+
+class TestSchemaV3ToV4Upgrade:
+    """Simulate opening a v3-only DB and verify v4 migration kicks in."""
+
+    @pytest.fixture()
+    def db_path(self, tmp_path: Path) -> Path:
+        return tmp_path / "upgrade_v3_v4.db"
+
+    def test_v3_to_v4_upgrade(self, db_path: Path):
+        """Simulate a v3 DB and verify v4 migration applies correctly."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import (
+            _SCHEMA_V1,
+            _SCHEMA_V2,
+            _SCHEMA_V3,
+            Database,
+        )
+
+        # Create a v3-only DB manually (no v4 migration)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.executescript(_SCHEMA_V3)
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) "
+            "VALUES (3, '2026-01-01T00:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO projects (name, root_path, created_at, last_used_at, log_level) "
+            "VALUES ('legacy', '/tmp/legacy', '2026-01-01', '2026-01-01', 'INFO')"
+        )
+        conn.commit()
+        conn.close()
+
+        # Open with Database — should apply v4 migration
+        db = Database(db_path)
+        assert db.get_constitution_max_size("legacy") == 5120  # default from ALTER
+        assert db.get_log_level("legacy") == "INFO"  # preserved from v3
+        with db.connect() as conn2:
+            version = conn2.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+        assert version[0] == 4

@@ -17,6 +17,7 @@ Tables:
 
 from __future__ import annotations
 
+import logging
 import re
 import sqlite3
 from contextlib import suppress
@@ -26,6 +27,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from specweaver.config.settings import ValidationSettings
+
+logger = logging.getLogger(__name__)
 
 _PROJECT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
@@ -86,6 +89,10 @@ ALTER TABLE llm_profiles ADD COLUMN context_limit INTEGER NOT NULL DEFAULT 12800
 
 _SCHEMA_V3 = """\
 ALTER TABLE projects ADD COLUMN log_level TEXT NOT NULL DEFAULT 'DEBUG';
+"""
+
+_SCHEMA_V4 = """\
+ALTER TABLE projects ADD COLUMN constitution_max_size INTEGER NOT NULL DEFAULT 5120;
 """
 
 
@@ -150,6 +157,18 @@ class Database:
                     "INSERT OR REPLACE INTO schema_version "
                     "(version, applied_at) VALUES (?, ?)",
                     (3, _now_iso()),
+                )
+
+            if current_version < 4:
+                with suppress(Exception):
+                    conn.executescript(_SCHEMA_V4)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (4, _now_iso()),
+                )
+                logger.info(
+                    "Database schema migrated to v4 (constitution_max_size)",
                 )
 
             # Seed default LLM profiles if empty
@@ -382,6 +401,65 @@ class Database:
             conn.execute(
                 "UPDATE projects SET log_level = ? WHERE name = ?",
                 (level_upper, project_name),
+            )
+
+    # ------------------------------------------------------------------
+    # Constitution configuration
+    # ------------------------------------------------------------------
+
+    def get_constitution_max_size(self, project_name: str) -> int:
+        """Get the constitution max size for a project (bytes).
+
+        Returns 5120 if the project has no explicit setting.
+
+        Raises:
+            ValueError: If project not found.
+        """
+        with self.connect() as conn:
+            row = conn.execute(
+                "SELECT constitution_max_size FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not row:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+            return row["constitution_max_size"]
+
+    def set_constitution_max_size(
+        self, project_name: str, max_size: int,
+    ) -> None:
+        """Set the constitution max size for a project (bytes).
+
+        Args:
+            project_name: Name of the registered project.
+            max_size: Maximum size in bytes.  Must be positive.
+
+        Raises:
+            ValueError: If project not found or size is invalid.
+        """
+        if max_size <= 0:
+            msg = (
+                f"Invalid constitution max size {max_size}. "
+                "Must be positive."
+            )
+            raise ValueError(msg)
+
+        with self.connect() as conn:
+            existing = conn.execute(
+                "SELECT name FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not existing:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+
+            conn.execute(
+                "UPDATE projects SET constitution_max_size = ? WHERE name = ?",
+                (max_size, project_name),
+            )
+            logger.debug(
+                "set_constitution_max_size: %s = %d bytes",
+                project_name, max_size,
             )
 
     # ------------------------------------------------------------------

@@ -4,7 +4,9 @@
 name: config
 level: module
 purpose: >
-  Application configuration and environment settings (Pydantic-based).
+  Application configuration (Pydantic-based settings) and multi-project
+  SQLite database for projects, LLM profiles, validation overrides,
+  and constitution size limits.
 
 archetype: pure-logic
 
@@ -14,7 +16,11 @@ forbids:
   - specweaver/loom/*
 
 exposes:
-  - Settings
+  - SpecWeaverSettings
+  - ValidationSettings
+  - LLMSettings
+  - Database
+  - load_settings
 
 # -- Operational Metadata --------------------------------------------------
 operational:

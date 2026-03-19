@@ -192,3 +192,35 @@ class TestScaffoldBehavioral:
         assert "config.yaml" not in children
 
 
+# ---------------------------------------------------------------------------
+# Scaffold — constitution integration
+# ---------------------------------------------------------------------------
+
+
+class TestScaffoldConstitution:
+    """Scaffold creates CONSTITUTION.md starter template."""
+
+    def test_creates_constitution(self, tmp_path: Path) -> None:
+        """scaffold_project creates CONSTITUTION.md at project root."""
+        scaffold_project(tmp_path)
+        assert (tmp_path / "CONSTITUTION.md").is_file()
+
+    def test_constitution_in_result(self, tmp_path: Path) -> None:
+        """ScaffoldResult includes constitution_file."""
+        result = scaffold_project(tmp_path)
+        assert result.constitution_file == tmp_path / "CONSTITUTION.md"
+
+    def test_constitution_in_created_list(self, tmp_path: Path) -> None:
+        """CONSTITUTION.md is in the created list on first run."""
+        result = scaffold_project(tmp_path)
+        assert "CONSTITUTION.md" in result.created
+
+    def test_does_not_overwrite_existing_constitution(self, tmp_path: Path) -> None:
+        """Existing CONSTITUTION.md is NOT overwritten."""
+        constitution = tmp_path / "CONSTITUTION.md"
+        constitution.write_text("# My custom constitution\n", encoding="utf-8")
+
+        result = scaffold_project(tmp_path)
+
+        assert constitution.read_text() == "# My custom constitution\n"
+        assert "CONSTITUTION.md" not in result.created

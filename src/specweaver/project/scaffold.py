@@ -12,11 +12,14 @@ Creates:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 _DEFAULT_CONTEXT_YAML = """\
@@ -128,6 +131,7 @@ class ScaffoldResult:
     specweaver_dir: Path
     specs_dir: Path
     context_file: Path
+    constitution_file: Path
     created: list[str]
 
 
@@ -183,10 +187,29 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
         tmpl_file.write_text(_DEFAULT_COMPONENT_SPEC, encoding="utf-8")
         created.append(".specweaver/templates/component_spec.md")
 
-    return ScaffoldResult(
+    # 5. CONSTITUTION.md (starter template, only if not present)
+    from specweaver.project.constitution import generate_constitution
+
+    constitution_path = project_path / "CONSTITUTION.md"
+    constitution_existed = constitution_path.exists()
+    project_name = project_path.name.lower().replace(" ", "-")
+    constitution_file = generate_constitution(project_path, project_name)
+    if not constitution_existed:
+        created.append("CONSTITUTION.md")
+
+    result = ScaffoldResult(
         project_path=project_path,
         specweaver_dir=sw_dir,
         specs_dir=specs_dir,
         context_file=context_file,
+        constitution_file=constitution_file,
         created=created,
     )
+    if created:
+        logger.info(
+            "scaffold_project: created %d item(s) in %s: %s",
+            len(created), project_path, ", ".join(created),
+        )
+    else:
+        logger.debug("scaffold_project: %s already scaffolded", project_path)
+    return result

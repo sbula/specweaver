@@ -5,6 +5,7 @@ name: review
 level: module
 purpose: >
   LLM-powered spec and code review with structured verdicts (ACCEPTED/DENIED).
+  Supports constitution injection for project-rule-aware reviews.
 
 archetype: orchestrator
 
@@ -19,6 +20,7 @@ exposes:
   - Reviewer
   - ReviewResult
   - ReviewVerdict
+  - ReviewFinding
 
 # -- Operational Metadata --------------------------------------------------
 operational:

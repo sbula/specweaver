@@ -4,7 +4,8 @@
 name: project
 level: module
 purpose: >
-  Project discovery and scaffolding (find project root, create directory structures).
+  Project discovery, scaffolding, and constitution management
+  (find project root, create directory structures, load and validate constitution files).
 
 archetype: adapter
 
@@ -16,8 +17,14 @@ forbids:
   - specweaver/llm
 
 exposes:
-  - discover_project_root
+  - resolve_project_path
   - scaffold_project
+  - ScaffoldResult
+  - find_constitution
+  - find_all_constitutions
+  - check_constitution
+  - generate_constitution
+  - ConstitutionInfo
 
 # -- Operational Metadata --------------------------------------------------
 operational:

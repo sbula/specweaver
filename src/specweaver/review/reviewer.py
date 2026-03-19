@@ -10,6 +10,7 @@ Used for both spec review (F4) and code review (F7) with different prompts.
 from __future__ import annotations
 
 import enum
+import logging
 import re as _re
 from typing import TYPE_CHECKING
 
@@ -22,6 +23,8 @@ if TYPE_CHECKING:
 
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class ReviewVerdict(enum.StrEnum):
@@ -112,12 +115,14 @@ class Reviewer:
         spec_path: Path,
         *,
         topology_contexts: list[TopologyContext] | None = None,
+        constitution: str | None = None,
     ) -> ReviewResult:
         """Review a spec file for quality and completeness.
 
         Args:
             spec_path: Path to the spec markdown file.
             topology_contexts: Optional topology context from the project graph.
+            constitution: Optional constitution content to inject.
 
         Returns:
             ReviewResult with verdict and findings.
@@ -129,9 +134,13 @@ class Reviewer:
             .add_instructions(SPEC_REVIEW_INSTRUCTIONS)
             .add_file(spec_path, priority=1, role="target")
         )
+        if constitution:
+            builder.add_constitution(constitution)
+            logger.debug("review_spec: constitution injected (%d chars)", len(constitution))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()
+        logger.info("review_spec: reviewing %s", spec_path)
         return await self._execute_review(prompt)
 
     async def review_code(
@@ -140,6 +149,7 @@ class Reviewer:
         spec_path: Path,
         *,
         topology_contexts: list[TopologyContext] | None = None,
+        constitution: str | None = None,
     ) -> ReviewResult:
         """Review generated code against its source spec.
 
@@ -147,6 +157,7 @@ class Reviewer:
             code_path: Path to the generated code file.
             spec_path: Path to the source spec file.
             topology_contexts: Optional topology context from the project graph.
+            constitution: Optional constitution content to inject.
 
         Returns:
             ReviewResult with verdict and findings.
@@ -159,9 +170,13 @@ class Reviewer:
             .add_file(spec_path, priority=1, label="specification", role="reference")
             .add_file(code_path, priority=2, label="generated_code", role="target")
         )
+        if constitution:
+            builder.add_constitution(constitution)
+            logger.debug("review_code: constitution injected (%d chars)", len(constitution))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()
+        logger.info("review_code: reviewing %s against %s", code_path, spec_path)
         return await self._execute_review(prompt)
 
     async def _execute_review(self, prompt: str) -> ReviewResult:
@@ -177,13 +192,19 @@ class Reviewer:
         try:
             response = await self._llm.generate(messages, self._config)
         except Exception as exc:
+            logger.warning("Review LLM call failed: %s", exc)
             return ReviewResult(
                 verdict=ReviewVerdict.ERROR,
                 summary=f"Review failed: {exc}",
                 raw_response="",
             )
 
-        return self._parse_response(response.text)
+        result = self._parse_response(response.text)
+        logger.info(
+            "Review result: verdict=%s, findings=%d",
+            result.verdict, len(result.findings),
+        )
+        return result
 
     def _parse_response(self, text: str) -> ReviewResult:
         """Parse LLM response into a ReviewResult."""

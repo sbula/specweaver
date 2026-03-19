@@ -10,6 +10,7 @@ Reads a validated component spec and generates:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.llm.models import GenerationConfig, Message, Role
@@ -19,6 +20,8 @@ if TYPE_CHECKING:
 
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
+
+logger = logging.getLogger(__name__)
 
 # Instruction constants — extracted for reuse and testability
 CODE_GEN_INSTRUCTIONS = """\
@@ -73,6 +76,7 @@ class Generator:
         output_path: Path,
         *,
         topology_contexts: list[TopologyContext] | None = None,
+        constitution: str | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -80,6 +84,7 @@ class Generator:
             spec_path: Path to the validated spec file.
             output_path: Path to write the generated code to.
             topology_contexts: Optional topology context from the project graph.
+            constitution: Optional constitution content to inject.
 
         Returns:
             Path to the generated code file.
@@ -91,6 +96,9 @@ class Generator:
             .add_instructions(CODE_GEN_INSTRUCTIONS)
             .add_file(spec_path, priority=1, role="reference")
         )
+        if constitution:
+            builder.add_constitution(constitution)
+            logger.debug("generate_code: constitution injected (%d chars)", len(constitution))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()
@@ -103,11 +111,13 @@ class Generator:
             Message(role=Role.USER, content=prompt),
         ]
 
+        logger.info("generate_code: generating from %s", spec_path)
         response = await self._llm.generate(messages, self._config)
         code = self._clean_code_output(response.text)
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(code, encoding="utf-8")
+        logger.info("generate_code: wrote %d bytes to %s", len(code), output_path)
         return output_path
 
     async def generate_tests(
@@ -116,6 +126,7 @@ class Generator:
         output_path: Path,
         *,
         topology_contexts: list[TopologyContext] | None = None,
+        constitution: str | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -123,6 +134,7 @@ class Generator:
             spec_path: Path to the validated spec file.
             output_path: Path to write the generated test file to.
             topology_contexts: Optional topology context from the project graph.
+            constitution: Optional constitution content to inject.
 
         Returns:
             Path to the generated test file.
@@ -134,6 +146,9 @@ class Generator:
             .add_instructions(TEST_GEN_INSTRUCTIONS)
             .add_file(spec_path, priority=1, role="reference")
         )
+        if constitution:
+            builder.add_constitution(constitution)
+            logger.debug("generate_tests: constitution injected (%d chars)", len(constitution))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()
@@ -149,11 +164,13 @@ class Generator:
             Message(role=Role.USER, content=prompt),
         ]
 
+        logger.info("generate_tests: generating from %s", spec_path)
         response = await self._llm.generate(messages, self._config)
         code = self._clean_code_output(response.text)
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(code, encoding="utf-8")
+        logger.info("generate_tests: wrote %d bytes to %s", len(code), output_path)
         return output_path
 
     @staticmethod

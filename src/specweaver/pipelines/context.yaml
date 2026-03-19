@@ -1,0 +1,29 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: pipelines
+level: module
+purpose: >
+  YAML-based pipeline definitions for SpecWeaver workflows
+  (feature decomposition, new feature, validation-only).
+
+description: |
+  Contains declarative pipeline YAML files used by the flow engine.
+  Each pipeline defines steps, gates, and feedback loops for different
+  development workflows. Not a Python module — only data files.
+
+archetype: data
+
+consumes: []
+
+forbids: []
+
+exposes:
+  - feature_decomposition.yaml
+  - new_feature.yaml
+  - validate_only.yaml
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

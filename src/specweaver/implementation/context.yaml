@@ -4,7 +4,8 @@
 name: implementation
 level: module
 purpose: >
-  Code generation from approved component specs.
+  Code and test generation from approved component specs.
+  Supports constitution injection for project-rule-aware generation.
 
 archetype: orchestrator
 
