@@ -1,0 +1,13 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+# Library profile -- stricter on ambiguity and terminology.
+name: validation_spec_library
+extends: validation_spec_default
+override:
+  s05_day_test:
+    params: { warn_threshold: 20, fail_threshold: 40 }
+  s08_ambiguity:
+    params: { warn_threshold: 2, fail_threshold: 5 }
+  s11_terminology:
+    params: { warn_threshold: 2, fail_threshold: 4 }

@@ -1,0 +1,13 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+# ML-model profile -- relaxed size, strict terminology.
+name: validation_spec_ml_model
+extends: validation_spec_default
+override:
+  s05_day_test:
+    params: { warn_threshold: 50, fail_threshold: 100 }
+  s11_terminology:
+    params: { warn_threshold: 2, fail_threshold: 4 }
+  s08_ambiguity:
+    params: { warn_threshold: 2, fail_threshold: 5 }

@@ -1,0 +1,66 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+# Default spec validation pipeline — all 11 built-in rules.
+# Ordered cheap-to-expensive for fail-fast behavior.
+#
+# This pipeline is the single source of truth for which spec
+# rules run and their default configuration. Projects can override
+# it by placing validation_spec.yaml in .specweaver/pipelines/.
+
+name: validation_spec_default
+description: >
+  Default spec validation — all 11 built-in rules.
+  Ordered cheap-to-expensive for fail-fast behavior.
+version: "1.0"
+
+steps:
+  # --- Structural rules (cheapest first) ---
+  - name: s01_one_sentence
+    rule: S01
+    params:
+      warn_conjunctions: 1
+      fail_conjunctions: 2
+      max_h2: 8
+
+  - name: s02_single_setup
+    rule: S02
+
+  - name: s06_concrete_example
+    rule: S06
+
+  - name: s09_error_path
+    rule: S09
+
+  - name: s10_done_definition
+    rule: S10
+
+  # --- Dependency & size rules ---
+  - name: s04_dependency_dir
+    rule: S04
+
+  - name: s05_day_test
+    rule: S05
+    params:
+      warn_threshold: 30
+      fail_threshold: 60
+
+  # --- Text analysis rules (more expensive) ---
+  - name: s08_ambiguity
+    rule: S08
+    params:
+      warn_threshold: 3
+      fail_threshold: 8
+
+  - name: s11_terminology
+    rule: S11
+
+  - name: s03_stranger
+    rule: S03
+    params:
+      warn_threshold: 5
+      fail_threshold: 8
+
+  # --- Most expensive: scoring rules ---
+  - name: s07_test_first
+    rule: S07

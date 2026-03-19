@@ -1,0 +1,11 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+# Web-app profile -- relaxed size thresholds, stricter concrete examples.
+name: validation_spec_web_app
+extends: validation_spec_default
+override:
+  s05_day_test:
+    params: { warn_threshold: 40, fail_threshold: 80 }
+  s03_stranger:
+    params: { warn_threshold: 6, fail_threshold: 10 }

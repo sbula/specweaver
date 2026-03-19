@@ -1,0 +1,40 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+# Default code validation pipeline — all 8 built-in rules.
+# Ordered: static analysis first, subprocess rules last.
+
+name: validation_code_default
+description: >
+  Default code validation — all 8 built-in rules.
+  Static analysis rules first, subprocess rules (test/coverage) last.
+version: "1.0"
+
+steps:
+  # --- Static analysis (no subprocess) ---
+  - name: c01_syntax_valid
+    rule: C01
+
+  - name: c02_tests_exist
+    rule: C02
+
+  - name: c05_import_direction
+    rule: C05
+
+  - name: c06_no_bare_except
+    rule: C06
+
+  - name: c07_no_orphan_todo
+    rule: C07
+
+  - name: c08_type_hints
+    rule: C08
+
+  # --- Subprocess rules (slower) ---
+  - name: c03_tests_pass
+    rule: C03
+
+  - name: c04_coverage
+    rule: C04
+    params:
+      threshold: 70
