@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 def resolve_pipeline(
     pipeline: ValidationPipeline,
     base_loader: Callable[[str], ValidationPipeline],
+    *,
+    _seen: set[str] | None = None,
 ) -> ValidationPipeline:
     """Resolve a pipeline's inheritance into a flat step list.
 
@@ -39,6 +41,7 @@ def resolve_pipeline(
         pipeline: The pipeline to resolve (may have extends/override/remove/add).
         base_loader: Callable that loads a base pipeline by name.
             Raises FileNotFoundError if the base is not found.
+        _seen: Internal set tracking visited pipelines to detect circular extends.
 
     Returns:
         A new ValidationPipeline with all inheritance resolved --
@@ -46,12 +49,27 @@ def resolve_pipeline(
 
     Raises:
         FileNotFoundError: If the base pipeline is not found.
-        ValueError: If override/remove/add references a nonexistent step name.
+        ValueError: If override/remove/add references a nonexistent step name,
+            or if a circular extends chain is detected.
     """
     if pipeline.extends is None:
         return pipeline
 
+    # Circular extends guard
+    if _seen is None:
+        _seen = set()
+    if pipeline.name in _seen:
+        chain = " -> ".join(_seen) + f" -> {pipeline.name}"
+        msg = f"Circular extends detected: {chain}"
+        raise ValueError(msg)
+    _seen.add(pipeline.name)
+
     base = base_loader(pipeline.extends)
+
+    # If the base also has extends, resolve it recursively
+    if base.extends is not None:
+        base = resolve_pipeline(base, base_loader, _seen=_seen)
+
     logger.debug(
         "Resolving pipeline '%s' from base '%s' (%d base steps)",
         pipeline.name, pipeline.extends, len(base.steps),

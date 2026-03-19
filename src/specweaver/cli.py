@@ -709,7 +709,13 @@ def check(
         console.print(f"[red]Error:[/red] File not found: {target}")
         raise typer.Exit(code=1)
 
-    content = target_path.read_text(encoding="utf-8")
+    try:
+        content = target_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        console.print(
+            f"[red]Error:[/red] Cannot read '{target}': file is not valid UTF-8 text.",
+        )
+        raise typer.Exit(code=1) from None
     project_dir = Path(project) if project else None
 
     # Resolve pipeline name from --pipeline or --level

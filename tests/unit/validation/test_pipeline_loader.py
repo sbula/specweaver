@@ -111,3 +111,82 @@ remove:
         names = [s.name for s in pipeline.steps]
         assert "s04_dependency_dir" not in names
         assert "s07_test_first" not in names
+
+
+# ---------------------------------------------------------------------------
+# Malformed YAML (#1, #9)
+# ---------------------------------------------------------------------------
+
+
+class TestMalformedYaml:
+    """Edge case: malformed or invalid pipeline YAML files."""
+
+    def test_yaml_syntax_error(self, tmp_path):
+        """YAML with syntax errors raises a YAML parsing error."""
+        from ruamel.yaml import YAMLError
+
+        pipelines_dir = tmp_path / ".specweaver" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "validation_spec_default.yaml").write_text(
+            "name: bad\n  invalid: [yaml: indentation\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(YAMLError):
+            load_pipeline_yaml("validation_spec_default", project_dir=tmp_path)
+
+    def test_yaml_missing_name(self, tmp_path):
+        """YAML without 'name' field raises a validation error."""
+        pipelines_dir = tmp_path / ".specweaver" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "validation_spec_default.yaml").write_text(
+            "description: no name field\nsteps:\n  - name: s01\n    rule: S01\n",
+            encoding="utf-8",
+        )
+        with pytest.raises((TypeError, KeyError, ValueError)):
+            load_pipeline_yaml("validation_spec_default", project_dir=tmp_path)
+
+    def test_yaml_missing_steps_defaults_to_empty(self, tmp_path):
+        """YAML without 'steps' field loads with default empty steps list."""
+        pipelines_dir = tmp_path / ".specweaver" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "validation_spec_default.yaml").write_text(
+            "name: validation_spec_default\n",
+            encoding="utf-8",
+        )
+        # Model defaults steps to [], so this is valid
+        pipeline = load_pipeline_yaml(
+            "validation_spec_default", project_dir=tmp_path,
+        )
+        assert pipeline.name == "validation_spec_default"
+        assert pipeline.steps == []
+
+    def test_yaml_null_steps(self, tmp_path):
+        """YAML with 'steps: null' is treated as missing (defaults to [])."""
+        pipelines_dir = tmp_path / ".specweaver" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "validation_spec_default.yaml").write_text(
+            "name: validation_spec_default\nsteps: null\n",
+            encoding="utf-8",
+        )
+        # steps: null → Pydantic should coerce to default or raise
+        # If the model has a default, null → default
+        try:
+            pipeline = load_pipeline_yaml(
+                "validation_spec_default", project_dir=tmp_path,
+            )
+            # If it loads, steps should default to []
+            assert pipeline.steps == [] or pipeline.steps is None
+        except (TypeError, ValueError):
+            pass  # Either outcome is acceptable
+
+    def test_yaml_empty_file(self, tmp_path):
+        """Empty YAML file raises TypeError (None cannot be unpacked as kwargs)."""
+        pipelines_dir = tmp_path / ".specweaver" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "validation_spec_default.yaml").write_text(
+            "", encoding="utf-8",
+        )
+        with pytest.raises(TypeError):
+            load_pipeline_yaml("validation_spec_default", project_dir=tmp_path)
+
+

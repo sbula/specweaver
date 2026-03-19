@@ -286,3 +286,141 @@ class TestCombined:
         s05 = resolved.get_step("s05")
         assert s05.params["warn_threshold"] == 80
         assert s05.params["fail_threshold"] == 60  # unchanged from base
+
+
+# ---------------------------------------------------------------------------
+# Circular extends detection (#5)
+# ---------------------------------------------------------------------------
+
+
+class TestCircularExtends:
+    """Edge case: circular extends chains must be detected."""
+
+    def test_direct_self_reference(self):
+        """Pipeline that extends itself raises ValueError."""
+        pipeline = ValidationPipeline(
+            name="self_ref",
+            steps=[],
+            extends="self_ref",
+        )
+
+        def _loader(name: str) -> ValidationPipeline:
+            if name == "self_ref":
+                return pipeline
+            msg = f"Not found: {name}"
+            raise FileNotFoundError(msg)
+
+        with pytest.raises(ValueError, match="Circular extends"):
+            resolve_pipeline(pipeline, _loader)
+
+    def test_indirect_circular_chain(self):
+        """A extends B extends A raises ValueError."""
+        pipeline_a = ValidationPipeline(
+            name="pipeline_a", steps=[], extends="pipeline_b",
+        )
+        pipeline_b = ValidationPipeline(
+            name="pipeline_b", steps=[], extends="pipeline_a",
+        )
+
+        def _loader(name: str) -> ValidationPipeline:
+            if name == "pipeline_a":
+                return pipeline_a
+            if name == "pipeline_b":
+                return pipeline_b
+            msg = f"Not found: {name}"
+            raise FileNotFoundError(msg)
+
+        with pytest.raises(ValueError, match="Circular extends"):
+            resolve_pipeline(pipeline_a, _loader)
+
+    def test_three_level_circular(self):
+        """A extends B extends C extends A raises ValueError."""
+        a = ValidationPipeline(name="a", steps=[], extends="b")
+        b = ValidationPipeline(name="b", steps=[], extends="c")
+        c = ValidationPipeline(name="c", steps=[], extends="a")
+
+        pipelines = {"a": a, "b": b, "c": c}
+
+        def _loader(name: str) -> ValidationPipeline:
+            if name in pipelines:
+                return pipelines[name]
+            msg = f"Not found: {name}"
+            raise FileNotFoundError(msg)
+
+        with pytest.raises(ValueError, match="Circular extends"):
+            resolve_pipeline(a, _loader)
+
+    def test_deep_non_circular_chain_works(self):
+        """Non-circular multi-level chain resolves correctly."""
+        grandparent = ValidationPipeline(
+            name="grandparent",
+            steps=[ValidationStep(name="s01", rule="S01")],
+        )
+        parent = ValidationPipeline(
+            name="parent", steps=[], extends="grandparent",
+        )
+        child = ValidationPipeline(
+            name="child", steps=[], extends="parent",
+        )
+
+        pipelines = {"grandparent": grandparent, "parent": parent}
+
+        def _loader(name: str) -> ValidationPipeline:
+            if name in pipelines:
+                return pipelines[name]
+            msg = f"Not found: {name}"
+            raise FileNotFoundError(msg)
+
+        resolved = resolve_pipeline(child, _loader)
+        assert len(resolved.steps) == 1
+        assert resolved.steps[0].rule == "S01"
+
+
+# ---------------------------------------------------------------------------
+# Duplicate step names (#8)
+# ---------------------------------------------------------------------------
+
+
+class TestDuplicateStepNames:
+    """Edge case: duplicate step names in a pipeline."""
+
+    def test_get_step_returns_first_match(self):
+        """get_step() returns the first step with the given name."""
+        pipeline = ValidationPipeline(
+            name="dup",
+            steps=[
+                ValidationStep(name="s01", rule="S01", params={"warn": 1}),
+                ValidationStep(name="s01", rule="S01", params={"warn": 99}),
+            ],
+        )
+        step = pipeline.get_step("s01")
+        assert step is not None
+        assert step.params["warn"] == 1  # first match
+
+    def test_override_applies_to_first_match(self):
+        """Override on duplicate name applies to the first occurrence."""
+        base = ValidationPipeline(
+            name="base",
+            steps=[
+                ValidationStep(name="s01", rule="S01", params={"warn": 1}),
+                ValidationStep(name="dup", rule="S02", params={"x": 1}),
+                ValidationStep(name="dup", rule="S03", params={"x": 2}),
+            ],
+        )
+        child = ValidationPipeline(
+            name="child",
+            steps=[],
+            extends="base",
+            override={"dup": {"params": {"x": 99}}},
+        )
+
+        def _loader(name: str) -> ValidationPipeline:
+            return base
+
+        resolved = resolve_pipeline(child, _loader)
+        # First "dup" gets override, second keeps original
+        dups = [s for s in resolved.steps if s.name == "dup"]
+        assert len(dups) == 2
+        assert dups[0].params["x"] == 99
+        assert dups[1].params["x"] == 2
+

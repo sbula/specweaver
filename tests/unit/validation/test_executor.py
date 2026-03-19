@@ -200,3 +200,21 @@ class TestExecuteValidationPipeline:
         results = execute_validation_pipeline(pipeline, "hello", registry=test_registry)
         assert results[0].rule_id == "T02"
         assert results[1].rule_id == "T01"
+
+    def test_invalid_constructor_params_handled(self, test_registry):
+        """Invalid constructor kwargs produce FAIL result, don't stop pipeline."""
+        pipeline = ValidationPipeline(
+            name="test",
+            steps=[
+                # T03 (_ThresholdRule) expects 'threshold', not 'bogus_param'
+                ValidationStep(name="t03", rule="T03", params={"bogus_param": 42}),
+                ValidationStep(name="t01", rule="T01"),
+            ],
+        )
+        results = execute_validation_pipeline(pipeline, "hello", registry=test_registry)
+        assert len(results) == 2
+        assert results[0].status == Status.FAIL
+        assert "instantiate" in results[0].message.lower() or "T03" in results[0].message
+        # Second rule still runs
+        assert results[1].status == Status.PASS
+

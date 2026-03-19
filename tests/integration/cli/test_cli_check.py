@@ -262,6 +262,50 @@ class TestEdgeCases:
         )
         assert "C01" in result.output
 
+    def test_pipeline_overrides_level(
+        self,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        """--pipeline takes priority when both --pipeline and --level given (#6)."""
+        spec = tmp_path / "spec.md"
+        spec.write_text(
+            "# Test — Component Spec\n\n"
+            "> **Status**: DRAFT\n\n---\n\n"
+            "## 1. Purpose\n\nTest.\n\n---\n\n"
+            "## Done Definition\n\n- [ ] Tests pass\n",
+            encoding="utf-8",
+        )
+
+        # --level component would use validation_spec_default (11 rules, has S04)
+        # --pipeline validation_spec_feature should override (10 rules, no S04)
+        result = runner.invoke(
+            app,
+            [
+                "check",
+                "--level", "component",
+                "--pipeline", "validation_spec_feature",
+                str(spec),
+            ],
+        )
+        assert result.exit_code in (0, 1)
+        # Pipeline should be feature (no S04)
+        assert "S04" not in result.output
+
+    def test_non_utf8_binary_file(
+        self,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        """Binary (non-UTF8) file should fail with a friendly error (#7)."""
+        binary = tmp_path / "binary.md"
+        binary.write_bytes(b"\x80\x81\x82\xff\xfe\xfd")
+
+        result = runner.invoke(
+            app,
+            ["check", "--level", "component", str(binary)],
+        )
+        assert result.exit_code == 1
+        assert "not valid utf-8" in result.output.lower()
+
 
 # ---------------------------------------------------------------------------
 # sw check --level=feature (Feature 3.1 e2e)

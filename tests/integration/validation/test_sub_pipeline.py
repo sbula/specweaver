@@ -286,6 +286,46 @@ class TestApplySettingsIntegration:
         assert all(r.rule_id != "S04" for r in results)
         assert len(results) == 10  # 11 - S04
 
+    def test_override_for_rule_not_in_pipeline(self) -> None:
+        """Override for a rule not in the pipeline is silently ignored (#2)."""
+        from specweaver.config.settings import RuleOverride, ValidationSettings
+        from specweaver.validation.executor import apply_settings_to_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        original_count = len(pipeline.steps)
+
+        settings = ValidationSettings(
+            overrides={"Z99": RuleOverride(
+                rule_id="Z99", warn_threshold=5, fail_threshold=10,
+            )},
+        )
+        modified = apply_settings_to_pipeline(pipeline, settings)
+        # Pipeline unchanged — Z99 override silently ignored
+        assert len(modified.steps) == original_count
+
+    def test_all_rules_disabled_produces_empty_pipeline(self) -> None:
+        """Disabling all rules results in an empty pipeline (#10)."""
+        from specweaver.config.settings import RuleOverride, ValidationSettings
+        from specweaver.validation.executor import (
+            apply_settings_to_pipeline,
+            execute_validation_pipeline,
+        )
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        overrides = {}
+        for step in pipeline.steps:
+            overrides[step.rule] = RuleOverride(rule_id=step.rule, enabled=False)
+
+        settings = ValidationSettings(overrides=overrides)
+        modified = apply_settings_to_pipeline(pipeline, settings)
+        assert len(modified.steps) == 0
+
+        # Executing an empty pipeline returns empty results
+        results = execute_validation_pipeline(modified, "anything")
+        assert results == []
+
 
 # ---------------------------------------------------------------------------
 # Project-local pipeline override
