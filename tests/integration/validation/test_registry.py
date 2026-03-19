@@ -7,10 +7,14 @@ are auto-registered correctly and the runner still produces correct results.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, ClassVar
+
 import pytest
 
 from specweaver.validation.models import Rule
-from specweaver.validation.registry import RuleRegistry
+
+if TYPE_CHECKING:
+    from specweaver.validation.registry import RuleRegistry
 
 # ---------------------------------------------------------------------------
 # Fresh registry helpers
@@ -40,11 +44,11 @@ def _populated_registry() -> RuleRegistry:
 class TestBuiltInRegistration:
     """Verify all 19 built-in rules are registered."""
 
-    EXPECTED_SPEC_IDS = [
+    EXPECTED_SPEC_IDS: ClassVar[list[str]] = [
         "S01", "S02", "S03", "S04", "S05", "S06",
         "S07", "S08", "S09", "S10", "S11",
     ]
-    EXPECTED_CODE_IDS = [
+    EXPECTED_CODE_IDS: ClassVar[list[str]] = [
         "C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08",
     ]
 

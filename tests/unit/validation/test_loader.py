@@ -9,12 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from specweaver.validation.loader import load_rules_from_directory
-from specweaver.validation.models import Rule, RuleResult, Status
 from specweaver.validation.registry import RuleRegistry
-
 
 # ---------------------------------------------------------------------------
 # Test fixtures using tmp_path

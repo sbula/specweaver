@@ -14,9 +14,7 @@ constitution lifecycle across multiple modules.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-
-import pytest
+from typing import TYPE_CHECKING
 
 from specweaver.project.constitution import (
     CONSTITUTION_FILENAME,
@@ -27,6 +25,11 @@ from specweaver.project.constitution import (
     generate_constitution,
 )
 from specweaver.project.scaffold import scaffold_project
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
 
 
 class TestScaffoldConstitutionIntegration:

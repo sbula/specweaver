@@ -9,12 +9,15 @@ runner: code defaults → kind presets → DB overrides (from profile) → merge
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from specweaver.config.database import Database
 from specweaver.config.profiles import PROFILES
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.fixture()

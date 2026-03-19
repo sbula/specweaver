@@ -9,12 +9,14 @@ replacing hardcoded imports in runner.py.
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.validation.models import Rule, RuleResult, Status
+from specweaver.validation.models import Rule, RuleResult
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Test helper: minimal Rule subclass for registry tests

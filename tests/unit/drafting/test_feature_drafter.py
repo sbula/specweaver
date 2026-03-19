@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
 import pytest
@@ -15,6 +15,9 @@ from specweaver.drafting.feature_drafter import (
     FEATURE_SECTIONS,
     FeatureDrafter,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Section definitions

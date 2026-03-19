@@ -5,14 +5,14 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-import pytest
-
-from specweaver.loom.atoms.base import AtomResult, AtomStatus
+from specweaver.loom.atoms.base import AtomStatus
 from specweaver.loom.atoms.rule_atom import RuleAtom
-from specweaver.validation.models import Rule, RuleResult, Status
+from specweaver.validation.models import Rule, RuleResult
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Test helpers

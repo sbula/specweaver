@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -14,6 +14,8 @@ from specweaver.validation.models import Rule, RuleResult, Status
 from specweaver.validation.pipeline import ValidationPipeline, ValidationStep
 from specweaver.validation.registry import RuleRegistry
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Test rules

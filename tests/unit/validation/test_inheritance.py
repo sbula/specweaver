@@ -11,9 +11,8 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.validation.pipeline import ValidationPipeline, ValidationStep
 from specweaver.validation.inheritance import resolve_pipeline
-
+from specweaver.validation.pipeline import ValidationPipeline, ValidationStep
 
 # ---------------------------------------------------------------------------
 # Fixtures

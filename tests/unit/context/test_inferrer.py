@@ -5,12 +5,15 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from ruamel.yaml import YAML
 
 from specweaver.context.inferrer import ContextInferrer
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.fixture()

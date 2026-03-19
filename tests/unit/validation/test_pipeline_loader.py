@@ -9,13 +9,9 @@ defaults, project-local overrides, and explicit paths.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
-from specweaver.validation.pipeline import ValidationPipeline
 from specweaver.validation.pipeline_loader import load_pipeline_yaml
-
 
 # ---------------------------------------------------------------------------
 # Load from packaged defaults
