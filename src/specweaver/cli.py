@@ -1250,6 +1250,125 @@ def config_get_constitution_max_size() -> None:
     )
 
 
+# -- Domain profile commands ------------------------------------------------
+
+
+@config_app.command("profiles")
+def config_profiles() -> None:
+    """List all available domain profiles."""
+    from specweaver.config.profiles import list_profiles
+
+    profiles = list_profiles()
+
+    table = Table(title="Available Domain Profiles")
+    table.add_column("Name", style="cyan", no_wrap=True)
+    table.add_column("Description")
+    table.add_column("Overrides", justify="right")
+
+    for p in profiles:
+        table.add_row(p.name, p.description, str(len(p.overrides)))
+
+    console.print(table)
+
+
+@config_app.command("show-profile")
+def config_show_profile(
+    profile_name: str = typer.Argument(help="Profile name to preview."),
+) -> None:
+    """Show the overrides a domain profile would apply."""
+    from specweaver.config.profiles import get_profile
+
+    profile = get_profile(profile_name)
+    if profile is None:
+        console.print(
+            f"[red]Error:[/red] Unknown profile '{profile_name}'. "
+            "Use 'sw config profiles' to list available profiles.",
+        )
+        raise typer.Exit(code=1)
+
+    table = Table(title=f"Profile: {profile.name} -- {profile.description}")
+    table.add_column("Rule", style="cyan")
+    table.add_column("Warn", justify="right")
+    table.add_column("Fail", justify="right")
+
+    for rule_id, override in sorted(profile.overrides.items()):
+        warn_str = str(override.warn_threshold) if override.warn_threshold is not None else "-"
+        fail_str = str(override.fail_threshold) if override.fail_threshold is not None else "-"
+        table.add_row(rule_id, warn_str, fail_str)
+
+    console.print(table)
+    console.print(
+        "\n[dim]Rules not listed use code defaults.[/dim]",
+    )
+
+
+@config_app.command("set-profile")
+def config_set_profile(
+    profile_name: str = typer.Argument(help="Profile name to apply."),
+) -> None:
+    """Apply a domain profile to the active project.
+
+    This clears all existing validation overrides and replaces them
+    with the profile's preset values.
+    """
+    name = _require_active_project()
+    db = get_db()
+    try:
+        db.set_domain_profile(name, profile_name)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    from specweaver.config.profiles import get_profile
+
+    profile = get_profile(profile_name)
+    count = len(profile.overrides) if profile else 0
+    console.print(
+        f"[green]\u2713[/green] Profile [bold]{profile_name}[/bold] applied to "
+        f"project [bold]{name}[/bold] ({count} rule overrides set).",
+    )
+
+
+@config_app.command("get-profile")
+def config_get_profile() -> None:
+    """Show the active domain profile for the current project."""
+    name = _require_active_project()
+    db = get_db()
+    try:
+        profile_name = db.get_domain_profile(name)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if profile_name:
+        console.print(
+            f"Active profile for [bold]{name}[/bold]: "
+            f"[cyan]{profile_name}[/cyan]",
+        )
+    else:
+        console.print(
+            f"[dim]No domain profile set for [bold]{name}[/bold] "
+            f"(using defaults).[/dim]",
+        )
+
+
+@config_app.command("reset-profile")
+def config_reset_profile() -> None:
+    """Clear the domain profile and all validation overrides."""
+    name = _require_active_project()
+    db = get_db()
+    try:
+        db.clear_domain_profile(name)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        f"[green]\u2713[/green] Profile and all overrides cleared "
+        f"for project [bold]{name}[/bold].",
+    )
+
+
 # ---------------------------------------------------------------------------
 # sw constitution
 # ---------------------------------------------------------------------------

@@ -95,6 +95,10 @@ _SCHEMA_V4 = """\
 ALTER TABLE projects ADD COLUMN constitution_max_size INTEGER NOT NULL DEFAULT 5120;
 """
 
+_SCHEMA_V5 = """\
+ALTER TABLE projects ADD COLUMN domain_profile TEXT DEFAULT NULL;
+"""
+
 
 class Database:
     """SpecWeaver SQLite configuration database.
@@ -169,6 +173,18 @@ class Database:
                 )
                 logger.info(
                     "Database schema migrated to v4 (constitution_max_size)",
+                )
+
+            if current_version < 5:
+                with suppress(Exception):
+                    conn.executescript(_SCHEMA_V5)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (5, _now_iso()),
+                )
+                logger.info(
+                    "Database schema migrated to v5 (domain_profile)",
                 )
 
             # Seed default LLM profiles if empty
@@ -719,6 +735,121 @@ class Database:
                 fail_threshold=row["fail_threshold"],
             )
         return ValidationSettings(overrides=overrides)
+
+    # ------------------------------------------------------------------
+    # Domain Profiles (Feature 3.3)
+    # ------------------------------------------------------------------
+
+    def get_domain_profile(self, project_name: str) -> str | None:
+        """Get the active domain profile name for a project.
+
+        Args:
+            project_name: Must be a registered project.
+
+        Returns:
+            Profile name, or None if no profile is active.
+
+        Raises:
+            ValueError: If project is not registered.
+        """
+        proj = self.get_project(project_name)
+        if not proj:
+            msg = f"Project '{project_name}' not found"
+            raise ValueError(msg)
+        return proj.get("domain_profile")
+
+    def set_domain_profile(
+        self,
+        project_name: str,
+        profile_name: str,
+    ) -> None:
+        """Apply a domain profile to a project.
+
+        This:
+        1. Validates the profile name exists in the built-in registry
+        2. Clears all existing validation overrides for the project
+        3. Writes the profile's overrides to the DB
+        4. Stores the profile name
+
+        Args:
+            project_name: Must be a registered project.
+            profile_name: Name of a built-in profile (e.g. 'web-app').
+
+        Raises:
+            ValueError: If project not found or profile name unknown.
+        """
+        from specweaver.config.profiles import get_profile
+
+        proj = self.get_project(project_name)
+        if not proj:
+            msg = f"Project '{project_name}' not found"
+            raise ValueError(msg)
+
+        profile = get_profile(profile_name)
+        if profile is None:
+            msg = (
+                f"Unknown profile '{profile_name}'. "
+                "Use 'sw config profiles' to see available profiles."
+            )
+            raise ValueError(msg)
+
+        # 1. Clear existing overrides
+        with self.connect() as conn:
+            conn.execute(
+                "DELETE FROM validation_overrides WHERE project_name = ?",
+                (project_name,),
+            )
+
+        # 2. Write profile overrides
+        for rule_id, override in profile.overrides.items():
+            self.set_validation_override(
+                project_name,
+                rule_id,
+                enabled=override.enabled if not override.enabled else None,
+                warn_threshold=override.warn_threshold,
+                fail_threshold=override.fail_threshold,
+            )
+
+        # 3. Store profile name
+        with self.connect() as conn:
+            conn.execute(
+                "UPDATE projects SET domain_profile = ? WHERE name = ?",
+                (profile_name, project_name),
+            )
+
+        logger.info(
+            "Applied domain profile '%s' to project '%s' (%d overrides)",
+            profile_name, project_name, len(profile.overrides),
+        )
+
+    def clear_domain_profile(self, project_name: str) -> None:
+        """Clear the domain profile and all validation overrides.
+
+        Args:
+            project_name: Must be a registered project.
+
+        Raises:
+            ValueError: If project is not registered.
+        """
+        proj = self.get_project(project_name)
+        if not proj:
+            msg = f"Project '{project_name}' not found"
+            raise ValueError(msg)
+
+        with self.connect() as conn:
+            conn.execute(
+                "DELETE FROM validation_overrides WHERE project_name = ?",
+                (project_name,),
+            )
+            conn.execute(
+                "UPDATE projects SET domain_profile = NULL WHERE name = ?",
+                (project_name,),
+            )
+
+        logger.info(
+            "Cleared domain profile and overrides for project '%s'",
+            project_name,
+        )
 
 
 # ---------------------------------------------------------------------------

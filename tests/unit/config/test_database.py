@@ -65,12 +65,12 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 4 after v4 migration."""
+        """Schema version is 5 after v5 migration."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 4
+            assert row[0] == 5
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""
@@ -530,7 +530,7 @@ class TestSchemaV2Migration:
             ).fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 4  # both V2 and V3 and V4 applied
+        assert version[0] == 5  # V2, V3, V4, V5 all applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -542,7 +542,7 @@ class TestSchemaV2Migration:
             version = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 4  # both V2 and V3 and V4 applied
+        assert version[0] == 5  # V2, V3, V4, V5 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -680,7 +680,7 @@ class TestSchemaV3Migration:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 4  # v3 and v4 both applied
+        assert version[0] == 5  # v3, v4, v5 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -724,12 +724,12 @@ class TestSchemaV4Migration:
             db.set_constitution_max_size("myapp", 0)
 
     def test_schema_version_is_4(self, db):
-        """Schema version is 4 after v4 migration."""
+        """Schema version is at least 4 after v4 migration (v5 also applied)."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 4
+            assert row[0] >= 4
 
     def test_set_constitution_max_size_negative_raises(self, db, tmp_path: Path):
         """Negative constitution_max_size is rejected."""
@@ -798,4 +798,156 @@ class TestSchemaV3ToV4Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 4
+        assert version[0] == 5  # v4 and v5 both applied
+
+
+# ===========================================================================
+# Domain Profile Methods (Feature 3.3)
+# ===========================================================================
+
+
+class TestDomainProfile:
+    """Tests for domain profile storage and application."""
+
+    def test_get_domain_profile_default_is_none(self, db, tmp_path: Path):
+        """New project has no domain profile set."""
+        db.register_project("myapp", str(tmp_path))
+        assert db.get_domain_profile("myapp") is None
+
+    def test_set_and_get_domain_profile(self, db, tmp_path: Path):
+        """Setting a profile stores the name."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "web-app")
+        assert db.get_domain_profile("myapp") == "web-app"
+
+    def test_set_domain_profile_overwrites_previous(self, db, tmp_path: Path):
+        """Setting a new profile replaces the previous one."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "web-app")
+        db.set_domain_profile("myapp", "library")
+        assert db.get_domain_profile("myapp") == "library"
+
+    def test_clear_domain_profile(self, db, tmp_path: Path):
+        """Clearing the profile resets to None."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "web-app")
+        db.clear_domain_profile("myapp")
+        assert db.get_domain_profile("myapp") is None
+
+    def test_set_domain_profile_clears_existing_overrides(self, db, tmp_path: Path):
+        """Setting a profile clears all existing validation overrides."""
+        db.register_project("myapp", str(tmp_path))
+        # Set some overrides manually
+        db.set_validation_override("myapp", "S08", warn_threshold=99, fail_threshold=99)
+        db.set_validation_override("myapp", "C04", fail_threshold=99)
+        assert len(db.get_validation_overrides("myapp")) == 2
+
+        # Apply profile — should clear old overrides
+        db.set_domain_profile("myapp", "web-app")
+        overrides = db.get_validation_overrides("myapp")
+        # Should have the profile's overrides, not the old ones
+        rule_ids = {o["rule_id"] for o in overrides}
+        assert "S08" in rule_ids  # web-app has S08
+        assert "C04" in rule_ids  # web-app has C04
+        # But values should be from profile, not our old 99s
+        s08 = next(o for o in overrides if o["rule_id"] == "S08")
+        assert s08["warn_threshold"] == 3  # web-app S08 warn
+        assert s08["fail_threshold"] == 8  # web-app S08 fail
+
+    def test_set_domain_profile_writes_profile_overrides(self, db, tmp_path: Path):
+        """Setting a profile writes all override values from the profile."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "library")
+        overrides = db.get_validation_overrides("myapp")
+        rule_ids = {o["rule_id"] for o in overrides}
+        # Library profile has: S03, S05, S07, S08, S11, C04
+        assert rule_ids == {"S03", "S05", "S07", "S08", "S11", "C04"}
+
+    def test_clear_domain_profile_clears_overrides(self, db, tmp_path: Path):
+        """Clearing a profile also clears all validation overrides."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "web-app")
+        assert len(db.get_validation_overrides("myapp")) > 0
+
+        db.clear_domain_profile("myapp")
+        assert db.get_validation_overrides("myapp") == []
+
+    def test_set_domain_profile_unknown_raises(self, db, tmp_path: Path):
+        """Setting an unknown profile name raises ValueError."""
+        db.register_project("myapp", str(tmp_path))
+        with pytest.raises(ValueError, match=r"[Uu]nknown.*profile"):
+            db.set_domain_profile("myapp", "quantum-computing")
+
+    def test_set_domain_profile_unregistered_project_raises(self, db):
+        """Setting a profile on an unregistered project raises ValueError."""
+        with pytest.raises(ValueError, match=r"not found"):
+            db.set_domain_profile("nonexistent", "web-app")
+
+    def test_domain_profile_persists_across_connections(self, db, tmp_path: Path):
+        """domain_profile value survives reconnection."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "data-pipeline")
+
+        from specweaver.config.database import Database
+
+        db2 = Database(db._db_path)
+        assert db2.get_domain_profile("myapp") == "data-pipeline"
+
+    def test_schema_version_is_5(self, db):
+        """Schema version is 5 after v5 migration."""
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+            assert row[0] == 5
+
+
+class TestSchemaV4ToV5Upgrade:
+    """Simulate opening a v4-only DB and verify v5 migration kicks in."""
+
+    @pytest.fixture()
+    def db_path(self, tmp_path: Path) -> Path:
+        return tmp_path / "upgrade_v4_v5.db"
+
+    def test_v4_to_v5_upgrade(self, db_path: Path):
+        """Simulate a v4 DB and verify v5 migration applies correctly."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import (
+            _SCHEMA_V1,
+            _SCHEMA_V2,
+            _SCHEMA_V3,
+            _SCHEMA_V4,
+            Database,
+        )
+
+        # Create a v4-only DB manually (no v5 migration)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.executescript(_SCHEMA_V3)
+        conn.executescript(_SCHEMA_V4)
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) "
+            "VALUES (4, '2026-01-01T00:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO projects (name, root_path, created_at, last_used_at, "
+            "log_level, constitution_max_size) "
+            "VALUES ('legacy', '/tmp/legacy', '2026-01-01', '2026-01-01', "
+            "'INFO', 5120)"
+        )
+        conn.commit()
+        conn.close()
+
+        # Open with Database — should apply v5 migration
+        db = Database(db_path)
+        assert db.get_domain_profile("legacy") is None  # default
+        assert db.get_constitution_max_size("legacy") == 5120  # preserved
+        with db.connect() as conn2:
+            version = conn2.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+        assert version[0] == 5
+
