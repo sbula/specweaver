@@ -676,6 +676,11 @@ def check(
         "--strict",
         help="Treat warnings as failures (exit code 1).",
     ),
+    pipeline: str | None = typer.Option(
+        None,
+        "--pipeline",
+        help="Name of the validation pipeline to use (e.g. validation_spec_library).",
+    ),
     set_overrides: list[str] | None = typer.Option(  # noqa: B008
         None,
         "--set",
@@ -689,43 +694,111 @@ def check(
     - component: Spec validation rules S01-S11 with component-level thresholds (default)
     - code: Code validation rules C01-C08
 
-    Override cascade: code defaults -> kind presets -> project DB overrides -> --set flags.
+    Use --pipeline to choose a specific validation pipeline by name.
+
+    Override cascade: pipeline YAML defaults -> project DB overrides -> --set flags.
     """
-    from specweaver.validation.runner import (
-        get_code_rules,
-        get_spec_rules,
-        run_rules,
-    )
+    # Trigger auto-registration of built-in rules
+    import specweaver.validation.rules.code
+    import specweaver.validation.rules.spec  # noqa: F401
+    from specweaver.validation.executor import execute_validation_pipeline
+    from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
     target_path = Path(target)
     if not target_path.exists():
         console.print(f"[red]Error:[/red] File not found: {target}")
         raise typer.Exit(code=1)
 
-    # Load settings: DB overrides for active project (if any)
-    settings = _load_check_settings(set_overrides)
-
     content = target_path.read_text(encoding="utf-8")
+    project_dir = Path(project) if project else None
 
-    if level in ("component", "feature"):
-        from specweaver.validation.spec_kind import SpecKind
-
-        kind = SpecKind.FEATURE if level == "feature" else SpecKind.COMPONENT
-        rules = get_spec_rules(include_llm=False, settings=settings, kind=kind)
-        results = run_rules(rules, content, target_path)
-        label = "Feature" if level == "feature" else "Spec"
-        _display_results(results, f"{label} Validation: {target_path.name}")
-        _print_summary(results, strict=strict)
+    # Resolve pipeline name from --pipeline or --level
+    if pipeline:
+        pipeline_name = pipeline
+    elif level == "component":
+        pipeline_name = "validation_spec_default"
+    elif level == "feature":
+        pipeline_name = "validation_spec_feature"
     elif level == "code":
-        rules = get_code_rules(include_subprocess=False, settings=settings)
-        results = run_rules(rules, content, target_path)
-        _display_results(results, f"Code Validation: {target_path.name}")
-        _print_summary(results, strict=strict)
+        pipeline_name = "validation_code_default"
     else:
         console.print(
             f"[red]Error:[/red] Unknown level '{level}'. Use 'feature', 'component', or 'code'.",
         )
         raise typer.Exit(code=1)
+
+    try:
+        resolved = load_pipeline_yaml(pipeline_name, project_dir=project_dir)
+    except FileNotFoundError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    # Apply --set / DB overrides to pipeline step params
+    settings = _load_check_settings(set_overrides)
+    if settings is not None:
+        from specweaver.validation.executor import apply_settings_to_pipeline
+        resolved = apply_settings_to_pipeline(resolved, settings)
+
+    results = execute_validation_pipeline(resolved, content, target_path)
+
+    label = pipeline_name if pipeline else ("Feature" if level == "feature" else ("Code" if level == "code" else "Spec"))
+    _display_results(results, f"{label} Validation: {target_path.name}")
+    _print_summary(results, strict=strict)
+
+# ---------------------------------------------------------------------------
+# sw list-rules
+# ---------------------------------------------------------------------------
+
+
+@app.command("list-rules")
+def list_rules(
+    pipeline: str | None = typer.Option(
+        None,
+        "--pipeline",
+        help="Show rules for a specific pipeline only.",
+    ),
+    project: str | None = typer.Option(
+        None,
+        "--project",
+        "-p",
+        help="Path to the target project directory (for project pipelines).",
+    ),
+) -> None:
+    """List all validation rules, grouped by pipeline in execution order."""
+    # Trigger auto-registration
+    import specweaver.validation.rules.code
+    import specweaver.validation.rules.spec  # noqa: F401
+    from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
+    project_dir = Path(project) if project else None
+
+    # Determine which pipelines to show
+    if pipeline:
+        pipeline_names = [pipeline]
+    else:
+        pipeline_names = ["validation_spec_default", "validation_code_default"]
+
+    for pname in pipeline_names:
+        try:
+            resolved = load_pipeline_yaml(pname, project_dir=project_dir)
+        except FileNotFoundError:
+            console.print(f"[yellow]Pipeline '{pname}' not found, skipping.[/yellow]")
+            continue
+
+        console.print(f"\n[bold cyan]{resolved.name}[/bold cyan]", highlight=False)
+        if resolved.description:
+            console.print(f"  [dim]{resolved.description.strip()}[/dim]")
+        console.print()
+
+        for i, step in enumerate(resolved.steps, 1):
+            params_str = ""
+            if step.params:
+                params_str = "  " + " ".join(
+                    f"[dim]{k}={v}[/dim]" for k, v in step.params.items()
+                )
+            console.print(f"  {i:>2}. [green]{step.rule}[/green]  {step.name}{params_str}")
+
+        console.print(f"\n  [dim]{len(resolved.steps)} rules total[/dim]")
 
 
 # ---------------------------------------------------------------------------

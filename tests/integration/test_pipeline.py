@@ -500,9 +500,8 @@ class TestFeatureLevelCheck:
         )
         # S01 should detect ## Intent (feature header) and PASS
         assert "S01" in result.output
-        # S04 should be SKIP for feature level
-        assert "S04" in result.output
-        assert "SKIP" in result.output
+        # S04 should NOT be in output (removed from feature pipeline)
+        assert "S04" not in result.output
         # Header label should say "Feature"
         assert "Feature" in result.output
 
@@ -566,9 +565,9 @@ class TestFeatureLevelCheck:
         )
         assert "Spec" in component_result.output
 
-        # S04 should differ: SKIP for feature, not SKIP for component
-        assert "SKIP" in feature_result.output  # S04 skipped
-        # Component should show S04 results (not SKIP)
+        # S04 should not appear in feature output (removed from pipeline)
+        assert "S04" not in feature_result.output
+        # Component should show S04 results (S04 is in default pipeline)
 
     def test_feature_level_empty_spec(
         self,

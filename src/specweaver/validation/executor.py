@@ -113,3 +113,60 @@ def execute_validation_pipeline(
         pipeline.name, len(results), len(results) - failed, failed,
     )
     return results
+
+
+def apply_settings_to_pipeline(
+    pipeline: ValidationPipeline,
+    settings: object | None,
+) -> ValidationPipeline:
+    """Apply ValidationSettings overrides onto a pipeline.
+
+    Bridges the old settings system (thresholds, enabled/disabled) with
+    the validation sub-pipeline architecture.
+
+    - Disabled rules: their steps are removed from the pipeline.
+    - Threshold overrides: merged into step.params.
+
+    Args:
+        pipeline: A resolved ValidationPipeline.
+        settings: A ValidationSettings instance or None.
+
+    Returns:
+        A new ValidationPipeline with settings applied.
+    """
+    if settings is None:
+        return pipeline
+
+    from specweaver.validation.pipeline import ValidationPipeline as _Pipeline
+    from specweaver.validation.pipeline import ValidationStep
+    from specweaver.validation.runner import _build_rule_kwargs
+
+    new_steps: list[ValidationStep] = []
+    for step in pipeline.steps:
+        # Check if rule is disabled
+        if not settings.is_enabled(step.rule):
+            logger.debug(
+                "apply_settings_to_pipeline: rule '%s' disabled by settings, removing",
+                step.rule,
+            )
+            continue
+
+        # Merge threshold/extra_params overrides into step.params
+        kwargs = _build_rule_kwargs(step.rule, settings)
+        if kwargs:
+            merged = {**step.params, **kwargs}
+            step = ValidationStep(
+                name=step.name,
+                rule=step.rule,
+                params=merged,
+                path=step.path,
+            )
+
+        new_steps.append(step)
+
+    return _Pipeline(
+        name=pipeline.name,
+        description=pipeline.description,
+        version=pipeline.version,
+        steps=new_steps,
+    )

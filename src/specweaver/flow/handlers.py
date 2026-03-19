@@ -149,20 +149,20 @@ class ValidateSpecHandler:
         *,
         kind_str: str | None = None,
     ) -> list:
-        """Run spec validation rules (called in thread)."""
-        from specweaver.validation.runner import get_spec_rules, run_rules
+        """Run spec validation via sub-pipeline (called in thread)."""
+        # Trigger auto-registration of built-in rules
+        import specweaver.validation.rules.spec  # noqa: F401
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
-        kind = None
-        if kind_str:
-            from specweaver.validation.spec_kind import SpecKind
-            try:
-                kind = SpecKind(kind_str)
-            except ValueError:
-                logger.warning("ValidateSpecHandler: unknown kind '%s', using default", kind_str)
+        # Map kind to pipeline name
+        pipeline_name = "validation_spec_default"
+        if kind_str == "feature":
+            pipeline_name = "validation_spec_feature"
 
-        rules = get_spec_rules(include_llm=False, settings=settings, kind=kind)
+        pipeline = load_pipeline_yaml(pipeline_name)
         content = spec_path.read_text(encoding="utf-8")
-        return run_rules(rules, content)
+        return execute_validation_pipeline(pipeline, content, spec_path)
 
 
 class ValidateCodeHandler:
@@ -226,12 +226,15 @@ class ValidateCodeHandler:
         spec_path: Path,
         settings: Any,
     ) -> list:
-        """Run code validation rules (called in thread)."""
-        from specweaver.validation.runner import get_code_rules, run_rules
+        """Run code validation via sub-pipeline (called in thread)."""
+        # Trigger auto-registration of built-in rules
+        import specweaver.validation.rules.code  # noqa: F401
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
-        rules = get_code_rules(include_subprocess=False, settings=settings)
+        pipeline = load_pipeline_yaml("validation_code_default")
         content = code_path.read_text(encoding="utf-8")
-        return run_rules(rules, content, spec_path=spec_path)
+        return execute_validation_pipeline(pipeline, content, spec_path)
 
 
 # ---------------------------------------------------------------------------

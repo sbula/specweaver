@@ -198,7 +198,11 @@ class TestValidateSpecHandlerKindIntegration:
     """ValidateSpecHandler reads kind from step.params and threads it to runner."""
 
     def test_handler_with_kind_feature_skips_s04(self, sample_project: Path) -> None:
-        """ValidateSpecHandler with kind=feature skips S04 (dependency direction)."""
+        """ValidateSpecHandler with kind=feature excludes S04 (dependency direction).
+
+        With the sub-pipeline architecture, feature pipeline removes S04
+        entirely rather than marking it as skipped.
+        """
         spec = sample_project / "specs" / "feature.md"
         spec.parent.mkdir(parents=True, exist_ok=True)
         spec.write_text(_FEATURE_SPEC, encoding="utf-8")
@@ -215,14 +219,13 @@ class TestValidateSpecHandlerKindIntegration:
         result = asyncio.run(handler.execute(step, ctx))
 
         assert result.status == StepStatus.PASSED or result.status == StepStatus.FAILED
-        # Check that S04 was SKIP in the output
+        # S04 should NOT be in results (removed from feature pipeline)
         if result.output and "results" in result.output:
             s04 = next(
                 (r for r in result.output["results"] if r["rule_id"] == "S04"),
                 None,
             )
-            assert s04 is not None, "S04 should be in results"
-            assert s04["status"] == "skip", f"S04 should be skip, got {s04['status']}"
+            assert s04 is None, "S04 should not be in feature pipeline results"
 
     def test_handler_without_kind_runs_component_defaults(self, sample_project: Path) -> None:
         """ValidateSpecHandler without kind param uses component defaults."""
