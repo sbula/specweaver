@@ -11,11 +11,10 @@ from unittest.mock import AsyncMock
 import pytest
 
 from specweaver.drafting.feature_drafter import (
+    _FEATURE_SPEC_TEMPLATE,
     FEATURE_SECTIONS,
     FeatureDrafter,
-    _FEATURE_SPEC_TEMPLATE,
 )
-
 
 # ---------------------------------------------------------------------------
 # Section definitions

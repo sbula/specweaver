@@ -720,7 +720,7 @@ class TestSchemaV4Migration:
 
     def test_set_constitution_max_size_zero_raises(self, db, tmp_path: Path):
         db.register_project("myapp", str(tmp_path))
-        with pytest.raises(ValueError, match="[Ii]nvalid.*size|must be positive"):
+        with pytest.raises(ValueError, match=r"[Ii]nvalid.*size|must be positive"):
             db.set_constitution_max_size("myapp", 0)
 
     def test_schema_version_is_4(self, db):
@@ -734,7 +734,7 @@ class TestSchemaV4Migration:
     def test_set_constitution_max_size_negative_raises(self, db, tmp_path: Path):
         """Negative constitution_max_size is rejected."""
         db.register_project("myapp", str(tmp_path))
-        with pytest.raises(ValueError, match="[Ii]nvalid.*size|must be positive"):
+        with pytest.raises(ValueError, match=r"[Ii]nvalid.*size|must be positive"):
             db.set_constitution_max_size("myapp", -100)
 
     def test_set_constitution_max_size_to_one(self, db, tmp_path: Path):

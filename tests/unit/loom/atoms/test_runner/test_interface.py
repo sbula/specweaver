@@ -223,7 +223,7 @@ class TestPythonTestRunnerTests:
         mock_result.stderr = ""
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
-            result = runner.run_tests(target="tests/", kind="e2e")
+            _ = runner.run_tests(target="tests/", kind="e2e")
 
         call_args = mock_run.call_args[0][0]
         assert "-m" in call_args

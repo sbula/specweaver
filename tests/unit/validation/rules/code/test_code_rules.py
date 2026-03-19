@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import subprocess
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 

@@ -9,11 +9,8 @@ S04 (skip for FEATURE), S05 (thresholds), S08 (thresholds).
 
 from __future__ import annotations
 
-import pytest
-
 from specweaver.validation.models import Status
 from specweaver.validation.spec_kind import SpecKind
-
 
 # ---------------------------------------------------------------------------
 # S01: One-Sentence Test — kind-aware header and thresholds

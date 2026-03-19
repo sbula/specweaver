@@ -12,7 +12,6 @@ from ruamel.yaml import YAML
 
 from specweaver.flow.models import PipelineDefinition
 
-
 PIPELINES_DIR = Path(__file__).resolve().parents[3] / "src" / "specweaver" / "pipelines"
 
 

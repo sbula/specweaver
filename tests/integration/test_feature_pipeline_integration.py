@@ -33,7 +33,6 @@ from specweaver.flow.runner import PipelineRunner
 from specweaver.flow.state import RunStatus, StepResult, StepStatus
 from specweaver.flow.store import StateStore
 
-
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------

@@ -1028,7 +1028,7 @@ class TestConstitutionE2E:
     )
 
     def _init_project_with_constitution(
-        self, tmp_path: "Path", constitution_content: str | None = None,
+        self, tmp_path: Path, constitution_content: str | None = None,
     ) -> None:
         """Helper: init project and optionally overwrite constitution."""
         result = runner.invoke(
@@ -1058,7 +1058,7 @@ class TestConstitutionE2E:
         )
 
     def test_review_spec_includes_constitution_in_prompt(
-        self, tmp_path: "Path",
+        self, tmp_path: Path,
     ) -> None:
         """sw review sends constitution content to the LLM prompt."""
         self._init_project_with_constitution(
@@ -1085,7 +1085,7 @@ class TestConstitutionE2E:
         )
 
     def test_review_code_includes_constitution_in_prompt(
-        self, tmp_path: "Path",
+        self, tmp_path: Path,
     ) -> None:
         """sw review --spec sends constitution content to the LLM prompt."""
         self._init_project_with_constitution(
@@ -1122,7 +1122,7 @@ class TestConstitutionE2E:
         )
 
     def test_implement_includes_constitution_in_prompt(
-        self, tmp_path: "Path",
+        self, tmp_path: Path,
     ) -> None:
         """sw implement sends constitution to both code and test gen prompts."""
         self._init_project_with_constitution(
@@ -1149,7 +1149,7 @@ class TestConstitutionE2E:
         )
 
     def test_custom_constitution_overrides_default(
-        self, tmp_path: "Path",
+        self, tmp_path: Path,
     ) -> None:
         """Custom CONSTITUTION.md content replaces the default template."""
         self._init_project_with_constitution(tmp_path)  # default
@@ -1175,7 +1175,7 @@ class TestConstitutionE2E:
         assert "UNIQUE_MARKER_FOR_TEST_VERIFICATION" in all_prompts
 
     def test_no_constitution_file_means_no_injection(
-        self, tmp_path: "Path",
+        self, tmp_path: Path,
     ) -> None:
         """When CONSTITUTION.md is removed, no constitution appears in prompt."""
         self._init_project_with_constitution(tmp_path)
@@ -1205,7 +1205,7 @@ class TestConstitutionE2E:
 class TestConstitutionCLI:
     """E2E tests for sw constitution show/check/init commands."""
 
-    def test_constitution_show_displays_content(self, tmp_path: "Path") -> None:
+    def test_constitution_show_displays_content(self, tmp_path: Path) -> None:
         """sw constitution show prints the constitution file content."""
         runner.invoke(app, ["init", _unique_name("cshow"), "--path", str(tmp_path)])
         (tmp_path / "CONSTITUTION.md").write_text(
@@ -1219,7 +1219,7 @@ class TestConstitutionCLI:
         assert "My Rules" in result.output
         assert "Rule 1" in result.output
 
-    def test_constitution_show_no_file(self, tmp_path: "Path") -> None:
+    def test_constitution_show_no_file(self, tmp_path: Path) -> None:
         """sw constitution show errors when no CONSTITUTION.md exists."""
         runner.invoke(app, ["init", _unique_name("cshownf"), "--path", str(tmp_path)])
         (tmp_path / "CONSTITUTION.md").unlink(missing_ok=True)
@@ -1230,7 +1230,7 @@ class TestConstitutionCLI:
         assert result.exit_code == 1
         assert "No CONSTITUTION.md found" in result.output
 
-    def test_constitution_check_pass(self, tmp_path: "Path") -> None:
+    def test_constitution_check_pass(self, tmp_path: Path) -> None:
         """sw constitution check passes for a small constitution file."""
         runner.invoke(app, ["init", _unique_name("cchk"), "--path", str(tmp_path)])
 
@@ -1241,7 +1241,7 @@ class TestConstitutionCLI:
         assert "within size limits" in result.output
 
     def test_constitution_check_fail_oversize(
-        self, tmp_path: "Path", _mock_db,
+        self, tmp_path: Path, _mock_db,
     ) -> None:
         """sw constitution check fails when file exceeds DB-configured limit."""
         name = _unique_name("cchkfail")
@@ -1262,7 +1262,7 @@ class TestConstitutionCLI:
         assert result.exit_code == 1
         assert "exceeds" in result.output.lower() or "\u2717" in result.output
 
-    def test_constitution_check_no_file(self, tmp_path: "Path") -> None:
+    def test_constitution_check_no_file(self, tmp_path: Path) -> None:
         """sw constitution check errors when no CONSTITUTION.md exists."""
         runner.invoke(app, ["init", _unique_name("cchknf"), "--path", str(tmp_path)])
         (tmp_path / "CONSTITUTION.md").unlink(missing_ok=True)
@@ -1273,7 +1273,7 @@ class TestConstitutionCLI:
         assert result.exit_code == 1
         assert "No CONSTITUTION.md found" in result.output
 
-    def test_constitution_init_creates_file(self, tmp_path: "Path") -> None:
+    def test_constitution_init_creates_file(self, tmp_path: Path) -> None:
         """sw constitution init creates CONSTITUTION.md."""
         runner.invoke(app, ["init", _unique_name("cinit"), "--path", str(tmp_path)])
         # Delete the one created by sw init
@@ -1287,7 +1287,7 @@ class TestConstitutionCLI:
         assert (tmp_path / "CONSTITUTION.md").exists()
         assert "created" in result.output.lower() or "\u2713" in result.output
 
-    def test_constitution_init_refuses_overwrite(self, tmp_path: "Path") -> None:
+    def test_constitution_init_refuses_overwrite(self, tmp_path: Path) -> None:
         """sw constitution init refuses to overwrite without --force."""
         runner.invoke(app, ["init", _unique_name("cinitno"), "--path", str(tmp_path)])
         assert (tmp_path / "CONSTITUTION.md").exists()
@@ -1298,7 +1298,7 @@ class TestConstitutionCLI:
         assert result.exit_code == 1
         assert "already exists" in result.output
 
-    def test_constitution_init_force_overwrites(self, tmp_path: "Path") -> None:
+    def test_constitution_init_force_overwrites(self, tmp_path: Path) -> None:
         """sw constitution init --force overwrites existing file."""
         runner.invoke(app, ["init", _unique_name("cinitf"), "--path", str(tmp_path)])
         (tmp_path / "CONSTITUTION.md").write_text(
@@ -1314,7 +1314,7 @@ class TestConstitutionCLI:
         assert "OLD CONTENT" not in content
 
     def test_config_set_get_constitution_max_size(
-        self, tmp_path: "Path", _mock_db,
+        self, tmp_path: Path, _mock_db,
     ) -> None:
         """sw config set/get-constitution-max-size round-trip."""
         name = _unique_name("cmaxsz")
@@ -1332,7 +1332,7 @@ class TestConstitutionCLI:
         assert "8192" in result.output
 
     def test_config_set_constitution_max_size_invalid(
-        self, tmp_path: "Path", _mock_db,
+        self, tmp_path: Path, _mock_db,
     ) -> None:
         """sw config set-constitution-max-size rejects negative values."""
         name = _unique_name("cmaxbad")

@@ -15,12 +15,11 @@ from __future__ import annotations
 import pytest
 
 from specweaver.review.reviewer import (
+    Reviewer,
     ReviewFinding,
     ReviewResult,
     ReviewVerdict,
-    Reviewer,
 )
-
 
 # ---------------------------------------------------------------------------
 # ReviewFinding model — confidence field

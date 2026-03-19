@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from specweaver.graph.topology import TopologyContext
-from specweaver.llm.models import GenerationConfig, LLMResponse
+from specweaver.llm.models import LLMResponse
 
 if TYPE_CHECKING:
     from pathlib import Path

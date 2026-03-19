@@ -654,7 +654,7 @@ class TestPathTraversalEdgeCases:
     def test_empty_path_normalization(self, executor: FileExecutor) -> None:
         """Empty path normalizes to '' — no grant should cover it."""
         from specweaver.loom.tools.filesystem.tool import FileSystemTool as FSTool
-        tool = FSTool(executor=executor, role="implementer", grants=[])
+        _ = FSTool(executor=executor, role="implementer", grants=[])
         assert FSTool._normalize_path("") == ""
 
     def test_empty_path_read_blocked(self, implementer: FileSystemTool) -> None:

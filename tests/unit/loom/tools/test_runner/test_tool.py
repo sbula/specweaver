@@ -11,16 +11,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from specweaver.loom.atoms.base import AtomResult, AtomStatus
-from specweaver.loom.tools.test_runner.tool import (
-    ROLE_INTENTS,
-    TestRunnerTool,
-    TestRunnerToolError,
-    ToolResult,
-)
 from specweaver.loom.tools.test_runner.interfaces import (
     ImplementerTestInterface,
     ReviewerTestInterface,
     create_test_runner_interface,
+)
+from specweaver.loom.tools.test_runner.tool import (
+    ROLE_INTENTS,
+    TestRunnerTool,
+    TestRunnerToolError,
 )
 
 if TYPE_CHECKING:

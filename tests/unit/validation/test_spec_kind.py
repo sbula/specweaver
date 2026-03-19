@@ -9,7 +9,6 @@ import pytest
 
 from specweaver.validation.spec_kind import SpecKind, get_presets
 
-
 # ---------------------------------------------------------------------------
 # SpecKind enum
 # ---------------------------------------------------------------------------

@@ -10,10 +10,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.loom.atoms.base import AtomResult, AtomStatus
 from specweaver.flow.handlers import RunContext, ValidateTestsHandler
 from specweaver.flow.models import PipelineStep, StepAction, StepTarget
 from specweaver.flow.state import StepStatus
+from specweaver.loom.atoms.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:
     from pathlib import Path

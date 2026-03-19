@@ -10,12 +10,9 @@ No mocking — exercises the real preset → rule constructor → check path.
 
 from __future__ import annotations
 
-import pytest
-
 from specweaver.validation.models import Status
 from specweaver.validation.runner import get_spec_rules, run_rules
 from specweaver.validation.spec_kind import SpecKind
-
 
 # ---------------------------------------------------------------------------
 # Fixture specs
@@ -186,7 +183,7 @@ class TestRunnerKindIntegration:
         results = run_rules(rules, _COMPONENT_SPEC)
 
         s04 = next(r for r in results if r.rule_id == "S04")
-        assert s04.status != Status.SKIP, f"S04 should not be SKIP for component kind"
+        assert s04.status != Status.SKIP, "S04 should not be SKIP for component kind"
 
     def test_feature_kind_enables_s03_abstraction_leak_mode(self) -> None:
         """S03 with kind=FEATURE detects abstraction leaks (file paths, method refs)."""

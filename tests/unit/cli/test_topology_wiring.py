@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from specweaver.cli import _get_selector_map, _select_topology_contexts
 
 
