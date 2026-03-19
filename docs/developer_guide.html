@@ -74,6 +74,7 @@
     <li><a href="#flow">Flow Engine &amp; Pipeline Execution</a></li>
     <li><a href="#gates">Gate Evaluation, Retry &amp; Loop-Back</a></li>
     <li><a href="#validation">Validation System</a></li>
+    <li><a href="#val-pipeline">Validation Sub-Pipeline (Rules-as-Pipeline)</a></li>
     <li><a href="#review">LLM Review System</a></li>
     <li><a href="#constitution">Constitution Support</a></li>
     <li><a href="#profiles">Domain Profiles</a></li>
@@ -110,7 +111,7 @@ python -m pytest -m unit -q   # Run unit tests</code></pre>
   <tr><td><code>pipelines/</code></td><td>YAML pipeline definitions</td></tr>
   <tr><td><code>project/</code></td><td>Project scaffolding, detection, and constitution loader</td></tr>
   <tr><td><code>review/</code></td><td>LLM-powered spec and code review</td></tr>
-  <tr><td><code>validation/</code></td><td>Rule-based validation (S01–S11, C01–C08)</td></tr>
+  <tr><td><code>validation/</code></td><td>Rule-based validation (S01–S11, C01–C08) + YAML sub-pipeline engine</td></tr>
 </table>
 
 <!-- ================================================================== -->
@@ -581,6 +582,77 @@ flowchart LR
 </div>
 
 <!-- ================================================================== -->
+<h2 id="val-pipeline">6b. Validation Sub-Pipeline (Rules-as-Pipeline)</h2>
+
+<p>Instead of a hardcoded rule list, validation rules are organized into <strong>YAML-defined sub-pipelines</strong> with proper inheritance. Each handler (ValidateSpecHandler, ValidateCodeHandler) loads and executes a named pipeline.</p>
+
+<div class="diagram-card">
+  <h3>Sub-Pipeline Architecture</h3>
+  <pre class="mermaid">
+flowchart TD
+    subgraph "CLI / Handler"
+        CHECK["sw check file.md<br/>--pipeline NAME<br/>--level LEVEL"]
+    end
+
+    subgraph "Pipeline Loader"
+        RESOLVE["load_pipeline_yaml(name)<br/>1. project-local .specweaver/pipelines/<br/>2. packaged defaults"]
+        INHERIT["resolve_pipeline()<br/>extends / override / remove / add"]
+    end
+
+    subgraph "Executor"
+        SETTINGS["apply_settings_to_pipeline()<br/>DB overrides + CLI --set"]
+        EXEC["execute_validation_pipeline()"]
+    end
+
+    subgraph "Registry + Rules"
+        REG["RuleRegistry<br/>(built-in S01-S11, C01-C08, custom D01+)"]
+        RULE["Rule.check() &rarr; RuleResult"]
+    end
+
+    CHECK --> RESOLVE --> INHERIT
+    INHERIT --> SETTINGS --> EXEC
+    EXEC --> REG --> RULE
+  </pre>
+</div>
+
+<div class="diagram-card">
+  <h3>Pipeline YAML Inheritance Model</h3>
+  <p>Child pipelines can extend a base, then override params, remove steps, or add new steps at specific positions.</p>
+  <pre class="mermaid">
+flowchart LR
+    BASE["validation_spec_default<br/>(11 steps: S01-S11)"] --> FEAT["validation_spec_feature<br/>extends: default<br/>remove: [s04_dependency_dir]<br/>(10 steps)"]
+    BASE --> LIB["validation_spec_library<br/>extends: default<br/>override: s05 thresholds<br/>(11 steps, stricter)"]
+    BASE --> WEB["validation_spec_web_app<br/>extends: default<br/>override: s08 thresholds<br/>(11 steps)"]
+    BASE --> ML["validation_spec_ml_model<br/>extends: default<br/>override: lenient thresholds<br/>(11 steps)"]
+  </pre>
+</div>
+
+<h4>Key Files</h4>
+<table>
+  <tr><th>File</th><th>Purpose</th></tr>
+  <tr><td><code>validation/pipeline.py</code></td><td><code>ValidationStep</code> / <code>ValidationPipeline</code> Pydantic models</td></tr>
+  <tr><td><code>validation/inheritance.py</code></td><td>extends/override/remove/add resolution + circular-extends guard</td></tr>
+  <tr><td><code>validation/pipeline_loader.py</code></td><td>Load YAML → resolve inheritance → return flat pipeline</td></tr>
+  <tr><td><code>validation/executor.py</code></td><td><code>execute_validation_pipeline()</code>, <code>apply_settings_to_pipeline()</code></td></tr>
+  <tr><td><code>validation/registry.py</code></td><td><code>RuleRegistry</code> — built-in + custom rule lookup</td></tr>
+  <tr><td><code>validation/loader.py</code></td><td>Custom D-prefix rule loader from external directories</td></tr>
+  <tr><td><code>loom/atoms/rule_atom.py</code></td><td><code>RuleAtom</code> — adapts Rule ABC to Atom interface</td></tr>
+  <tr><td><code>pipelines/*.yaml</code></td><td>8 pipeline YAMLs (2 defaults + feature + 5 profiles)</td></tr>
+</table>
+
+<h4>CLI Commands</h4>
+<table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td><code>sw check --pipeline NAME</code></td><td>Use a specific validation pipeline (overrides --level)</td></tr>
+  <tr><td><code>sw list-rules</code></td><td>Show all validation rules grouped by pipeline</td></tr>
+  <tr><td><code>sw list-rules --pipeline NAME</code></td><td>Show rules for a specific pipeline</td></tr>
+</table>
+
+<div class="callout callout-info">
+  <strong>Project-local overrides:</strong> Place YAML files in <code>.specweaver/pipelines/</code> to override packaged pipelines. Use <code>extends</code> to inherit from defaults and customize only what you need.
+</div>
+
+<!-- ================================================================== -->
 <h2 id="review">7. LLM Review System</h2>
 
 <div class="diagram-card">
@@ -929,9 +1001,16 @@ classDiagram
 <h2 id="testing">10. Testing Strategy</h2>
 
 <pre><code>tests/
-├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~1880 tests)
-├── integration/   # Cross-module (real file I/O, real ruff)     (96 tests)
-├── e2e/           # Full pipeline runs (44 tests)
+├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~1960 tests)
+├── integration/   # Cross-module (real file I/O, real ruff)     (176 tests)
+│   ├── cli/       # CLI command integration (check, implement, list-rules)
+│   ├── config/    # Config cascade, profiles
+│   ├── context/   # Context inference, scan
+│   ├── flow/      # Flow engine, lint-fix
+│   ├── loom/      # Loom stack, tools
+│   ├── validation/  # Sub-pipeline, registry, feature-kind
+│   └── constitution/ # Constitution loader
+├── e2e/           # Full pipeline runs (45 tests)
 └── fixtures/      # Shared test data
     ├── good_spec.md / bad_spec_*.md   # Spec fixtures
     └── sample_project/                # Shared integration test project
@@ -942,10 +1021,10 @@ classDiagram
             ├── broken/                # Lint errors + high complexity
             └── no_context/            # No context.yaml (for inference)</code></pre>
 
-<pre><code>uv run pytest -q                      # Everything (2038+ tests)
-uv run pytest tests/unit/ -q          # Unit tests only (~1880)
-uv run pytest tests/integration/ -q   # Integration tests (96)
-uv run pytest tests/e2e/ -q           # E2E lifecycle tests (44)
+<pre><code>uv run pytest -q                      # Everything (2181+ tests)
+uv run pytest tests/unit/ -q          # Unit tests only (~1960)
+uv run pytest tests/integration/ -q   # Integration tests (176)
+uv run pytest tests/e2e/ -q           # E2E lifecycle tests (45)
 uv run pytest --cov src/ -q           # With coverage
 uv run ruff check src/ tests/         # Lint</code></pre>
 
@@ -1014,6 +1093,7 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td>Gate changes</td><td>Retry count correct? <code>max_retries</code> reasonable? Loop target is valid step name?</td></tr>
   <tr><td>Constitution changes</td><td>File under size limit? <code>sw constitution check</code> passes? Content actually used in prompts (check <code>_load_constitution_content</code> in CLI)?</td></tr>
   <tr><td>Profile changes</td><td>Profile names match PROFILES dict keys? All rule_ids valid (S01-S11, C01-C08)? <code>set-profile</code> clears old overrides? Override cascade regression test passes?</td></tr>
+  <tr><td>Validation pipeline</td><td>YAML extends valid base? No circular extends? <code>override</code>/<code>remove</code>/<code>add</code> reference existing step names? Custom rules use D-prefix? <code>sw list-rules</code> shows correctly?</td></tr>
 </table>
 
 <script>
