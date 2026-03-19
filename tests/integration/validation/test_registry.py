@@ -12,7 +12,6 @@ import pytest
 from specweaver.validation.models import Rule
 from specweaver.validation.registry import RuleRegistry
 
-
 # ---------------------------------------------------------------------------
 # Fresh registry helpers
 # ---------------------------------------------------------------------------
@@ -25,11 +24,10 @@ def _populated_registry() -> RuleRegistry:
     already have rules from other test modules. Instead, we verify that
     importing the packages registers into the global registry.
     """
-    from specweaver.validation.registry import get_registry
-
     # Trigger auto-registration (idempotent — already imported in many tests)
-    import specweaver.validation.rules.code  # noqa: F401
+    import specweaver.validation.rules.code
     import specweaver.validation.rules.spec  # noqa: F401
+    from specweaver.validation.registry import get_registry
 
     return get_registry()
 
