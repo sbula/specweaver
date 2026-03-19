@@ -76,6 +76,7 @@
     <li><a href="#validation">Validation System</a></li>
     <li><a href="#review">LLM Review System</a></li>
     <li><a href="#constitution">Constitution Support</a></li>
+    <li><a href="#profiles">Domain Profiles</a></li>
     <li><a href="#pipeline-yaml">Pipeline Configuration (YAML)</a></li>
     <li><a href="#state">State Model &amp; Persistence</a></li>
     <li><a href="#testing">Testing Strategy</a></li>
@@ -98,7 +99,7 @@ python -m pytest -m unit -q   # Run unit tests</code></pre>
 <table>
   <tr><th>Package</th><th>Purpose</th></tr>
   <tr><td><code>cli.py</code></td><td>Typer CLI — entry point for all commands</td></tr>
-  <tr><td><code>config/</code></td><td>Project configuration, validation settings, database</td></tr>
+  <tr><td><code>config/</code></td><td>Project configuration, validation settings, database, domain profiles</td></tr>
   <tr><td><code>context/</code></td><td>Topology/dependency context for LLM prompts</td></tr>
   <tr><td><code>drafting/</code></td><td>Spec co-authoring with HITL interaction</td></tr>
   <tr><td><code>flow/</code></td><td>★ Pipeline engine (runner, gates, state, handlers)</td></tr>
@@ -710,6 +711,72 @@ flowchart LR
 </div>
 
 <!-- ================================================================== -->
+<h2 id="profiles">7c. Domain Profiles</h2>
+
+<p>Domain profiles are <strong>named preset bundles</strong> of validation rule overrides. Instead of manually setting 10+ thresholds with <code>sw config set</code> commands, users apply a single profile that bulk-writes all overrides at once. Profiles are hardcoded Python dicts in <code>config/profiles.py</code> (versioned with the code).</p>
+
+<div class="callout callout-info">
+  <strong>Override Cascade:</strong> Code defaults → SpecKind presets → <strong>DB overrides (from profile)</strong> → CLI <code>--set</code> flags. Profiles write to the DB override layer, so individual <code>sw config set</code> commands still work on top.
+</div>
+
+<div class="diagram-card">
+  <h3>Profile Application Flow</h3>
+  <pre class="mermaid">
+flowchart LR
+    subgraph "Profiles Registry"
+        REG["PROFILES dict<br/>(5 built-in profiles)"]
+    end
+
+    subgraph "CLI"
+        CMD["sw config set-profile<br/>NAME"]
+    end
+
+    subgraph "Database"
+        CLR["1. DELETE all<br/>validation_overrides"]
+        WRT["2. INSERT profile<br/>overrides"]
+        NAME["3. UPDATE projects<br/>domain_profile = NAME"]
+    end
+
+    subgraph "Validation"
+        LOAD["load_validation_settings()"]
+        RULES["get_spec_rules()"]
+    end
+
+    CMD --> REG
+    REG --> CLR --> WRT --> NAME
+    LOAD --> RULES
+  </pre>
+</div>
+
+<h4>Built-in Profiles</h4>
+<table>
+  <tr><th>Profile</th><th>Description</th><th>Key Overrides</th></tr>
+  <tr><td><code>web-app</code></td><td>Balanced thresholds for web applications</td><td>S03, S05, S08, C04</td></tr>
+  <tr><td><code>data-pipeline</code></td><td>Lenient on complexity for ETL/batch</td><td>S03, S05, S08, C04</td></tr>
+  <tr><td><code>library</code></td><td>Strict thresholds for public SDKs</td><td>S03, S05, S07, S08, S11, C04</td></tr>
+  <tr><td><code>microservice</code></td><td>Tuned for service boundaries</td><td>S03, S05, S08, C04</td></tr>
+  <tr><td><code>ml-model</code></td><td>Very lenient for research-style specs</td><td>S03, S05, S07, S08, S11, C04</td></tr>
+</table>
+
+<h4>CLI Commands</h4>
+<table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td><code>sw config profiles</code></td><td>List all available domain profiles</td></tr>
+  <tr><td><code>sw config show-profile NAME</code></td><td>Preview a profile's overrides</td></tr>
+  <tr><td><code>sw config set-profile NAME</code></td><td>Apply a profile (clears existing overrides)</td></tr>
+  <tr><td><code>sw config get-profile</code></td><td>Show the active profile for the current project</td></tr>
+  <tr><td><code>sw config reset-profile</code></td><td>Clear profile and all validation overrides</td></tr>
+</table>
+
+<h4>Implementation Details</h4>
+<table>
+  <tr><th>File</th><th>Purpose</th></tr>
+  <tr><td><code>config/profiles.py</code></td><td><code>DomainProfile</code> frozen dataclass, <code>PROFILES</code> registry, <code>get_profile()</code>/<code>list_profiles()</code> API</td></tr>
+  <tr><td><code>config/database.py</code></td><td>Schema v5 migration (<code>domain_profile</code> column), <code>set_domain_profile()</code>/<code>get_domain_profile()</code>/<code>clear_domain_profile()</code></td></tr>
+  <tr><td><code>cli.py</code></td><td>5 <code>config_app</code> commands (profiles, show-profile, set-profile, get-profile, reset-profile)</td></tr>
+</table>
+
+<!-- ================================================================== -->
 <h2 id="pipeline-yaml">8. Pipeline Configuration (YAML)</h2>
 
 <div class="diagram-card">
@@ -862,9 +929,9 @@ classDiagram
 <h2 id="testing">10. Testing Strategy</h2>
 
 <pre><code>tests/
-├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~1870 tests)
-├── integration/   # Cross-module (real file I/O, real ruff)     (84 tests)
-├── e2e/           # Full pipeline runs (32 tests)
+├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~1880 tests)
+├── integration/   # Cross-module (real file I/O, real ruff)     (96 tests)
+├── e2e/           # Full pipeline runs (44 tests)
 └── fixtures/      # Shared test data
     ├── good_spec.md / bad_spec_*.md   # Spec fixtures
     └── sample_project/                # Shared integration test project
@@ -875,10 +942,10 @@ classDiagram
             ├── broken/                # Lint errors + high complexity
             └── no_context/            # No context.yaml (for inference)</code></pre>
 
-<pre><code>uv run pytest -q                      # Everything (1974 tests)
-uv run pytest tests/unit/ -q          # Unit tests only (~1870)
-uv run pytest tests/integration/ -q   # Integration tests (84)
-uv run pytest tests/e2e/ -q           # E2E lifecycle tests (32)
+<pre><code>uv run pytest -q                      # Everything (2038+ tests)
+uv run pytest tests/unit/ -q          # Unit tests only (~1880)
+uv run pytest tests/integration/ -q   # Integration tests (96)
+uv run pytest tests/e2e/ -q           # E2E lifecycle tests (44)
 uv run pytest --cov src/ -q           # With coverage
 uv run ruff check src/ tests/         # Lint</code></pre>
 
@@ -894,6 +961,7 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td><code>test_feature_kind_integration.py</code></td><td>10</td><td>SpecKind presets → runner → rules: kind-aware S01/S03/S04 behaviour</td></tr>
   <tr><td><code>test_feature_pipeline_integration.py</code></td><td>6</td><td>Feature pipeline YAML → flow engine, DECOMPOSE step, ValidateSpecHandler kind wiring</td></tr>
   <tr><td><code>test_constitution_integration.py</code></td><td>10</td><td>Constitution loader, PromptBuilder injection, size validation, walk-up resolution</td></tr>
+  <tr><td><code>test_profile_cascade.py</code></td><td>12</td><td>Profile → ValidationSettings → runner cascade, SpecKind interaction, project isolation, disabled rules</td></tr>
 </table>
 
 <div class="callout callout-info">
@@ -924,6 +992,9 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td>Feature decomposition</td><td>HITL-gated pipeline: draft feature → validate at feature thresholds → decompose into components</td></tr>
   <tr><td>Constitution injection</td><td>Project-wide <code>CONSTITUTION.md</code> injected into every LLM call → consistent coding standards enforced by AI across review + implementation</td></tr>
   <tr><td>Constitution walk-up</td><td>Walk-up resolution from spec dir to project root → monorepo support with per-module overrides</td></tr>
+  <tr><td>Domain profiles as bulk-write</td><td>Profiles write to the existing DB override layer (not a new cascade layer) → <code>sw config set</code> still works on top, override resolution unchanged</td></tr>
+  <tr><td>Hardcoded profile dicts</td><td>Profiles are Python dicts in <code>profiles.py</code> → versioned with code, quick-win over YAML/DB-stored profiles (deferred to 3.3b)</td></tr>
+  <tr><td>set-profile overwrites</td><td>Applying a profile DELETEs all existing overrides first → predictable state, no leftover rules from previous profile</td></tr>
 </table>
 
 <!-- ================================================================== -->
@@ -942,6 +1013,7 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td>Model changes</td><td>Tests for <code>test_combination_count</code> updated? <code>validate_flow()</code> still passes?</td></tr>
   <tr><td>Gate changes</td><td>Retry count correct? <code>max_retries</code> reasonable? Loop target is valid step name?</td></tr>
   <tr><td>Constitution changes</td><td>File under size limit? <code>sw constitution check</code> passes? Content actually used in prompts (check <code>_load_constitution_content</code> in CLI)?</td></tr>
+  <tr><td>Profile changes</td><td>Profile names match PROFILES dict keys? All rule_ids valid (S01-S11, C01-C08)? <code>set-profile</code> clears old overrides? Override cascade regression test passes?</td></tr>
 </table>
 
 <script>

@@ -893,6 +893,30 @@ class TestDomainProfile:
         db2 = Database(db._db_path)
         assert db2.get_domain_profile("myapp") == "data-pipeline"
 
+    def test_get_domain_profile_unregistered_raises(self, db):
+        """Getting profile on unregistered project raises ValueError."""
+        with pytest.raises(ValueError, match=r"not found"):
+            db.get_domain_profile("nonexistent")
+
+    def test_clear_domain_profile_unregistered_raises(self, db):
+        """Clearing profile on unregistered project raises ValueError."""
+        with pytest.raises(ValueError, match=r"not found"):
+            db.clear_domain_profile("nonexistent")
+
+    def test_clear_domain_profile_idempotent(self, db, tmp_path: Path):
+        """Clearing when no profile is set is idempotent (no error)."""
+        db.register_project("myapp", str(tmp_path))
+        db.clear_domain_profile("myapp")  # should not raise
+        assert db.get_domain_profile("myapp") is None
+
+    def test_set_domain_profile_case_insensitive(self, db, tmp_path: Path):
+        """Profile name lookup is case-insensitive; stored as lowercase."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "WEB-APP")
+        # The profile is found case-insensitively
+        overrides = db.get_validation_overrides("myapp")
+        assert len(overrides) > 0
+
     def test_schema_version_is_5(self, db):
         """Schema version is 5 after v5 migration."""
         with db.connect() as conn:

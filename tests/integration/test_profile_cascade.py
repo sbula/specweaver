@@ -137,3 +137,76 @@ class TestProfileCascade:
         assert db.get_domain_profile("myapp") == "ml-model"
         db.clear_domain_profile("myapp")
         assert db.get_domain_profile("myapp") is None
+
+
+class TestProfileEdgeCases:
+    """Critical edge cases for profile interactions."""
+
+    def test_profile_plus_spec_kind_cascade(
+        self, db: Database, tmp_path: Path,
+    ) -> None:
+        """Profile overrides and SpecKind presets merge correctly.
+
+        Cascade: code defaults → kind presets → DB overrides (profile).
+        Profile should win over kind presets for the same rule.
+        """
+        from specweaver.validation.runner import get_spec_rules
+        from specweaver.validation.spec_kind import SpecKind
+
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "data-pipeline")
+
+        settings = db.load_validation_settings("myapp")
+        # Run with kind=FEATURE (which has its own S05 presets)
+        rules = get_spec_rules(settings=settings, kind=SpecKind.FEATURE)
+
+        # S05: kind=FEATURE preset has warn=60, fail=100
+        # data-pipeline profile has warn=50, fail=80
+        # Profile (DB override) should win over kind preset
+        s05 = next(r for r in rules if r.rule_id == "S05")
+        assert s05._warn_threshold == 50  # profile wins
+        assert s05._fail_threshold == 80  # profile wins
+
+    def test_disabled_rule_on_top_of_profile(
+        self, db: Database, tmp_path: Path,
+    ) -> None:
+        """Disabling a rule after applying profile is respected."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "web-app")
+
+        # Disable S08 (which the profile set)
+        db.set_validation_override("myapp", "S08", enabled=False)
+
+        settings = db.load_validation_settings("myapp")
+        assert not settings.is_enabled("S08")
+
+    def test_profile_doesnt_bleed_across_projects(
+        self, db: Database, tmp_path: Path,
+    ) -> None:
+        """Profile on project A doesn't affect project B."""
+        path_a = tmp_path / "a"
+        path_b = tmp_path / "b"
+        path_a.mkdir()
+        path_b.mkdir()
+        db.register_project("app-a", str(path_a))
+        db.register_project("app-b", str(path_b))
+
+        db.set_domain_profile("app-a", "library")
+
+        # app-b should have no overrides
+        settings_b = db.load_validation_settings("app-b")
+        assert settings_b.overrides == {}
+        assert db.get_domain_profile("app-b") is None
+
+    def test_config_list_shows_profile_overrides(
+        self, db: Database, tmp_path: Path,
+    ) -> None:
+        """After set-profile, get_validation_overrides returns all profile rules."""
+        db.register_project("myapp", str(tmp_path))
+        db.set_domain_profile("myapp", "ml-model")
+
+        overrides = db.get_validation_overrides("myapp")
+        rule_ids = {o["rule_id"] for o in overrides}
+        # ml-model has: S03, S05, S07, S08, S11, C04
+        assert rule_ids == {"S03", "S05", "S07", "S08", "S11", "C04"}
+
