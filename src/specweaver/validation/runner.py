@@ -91,31 +91,11 @@ def get_spec_rules(
     Returns:
         List of Rule instances, ordered by rule_id.
     """
-    from specweaver.validation.rules.spec.s01_one_sentence import OneSentenceRule
-    from specweaver.validation.rules.spec.s02_single_setup import SingleSetupRule
-    from specweaver.validation.rules.spec.s03_stranger import StrangerTestRule
-    from specweaver.validation.rules.spec.s04_dependency_dir import DependencyDirectionRule
-    from specweaver.validation.rules.spec.s05_day_test import DayTestRule
-    from specweaver.validation.rules.spec.s06_concrete_example import ConcreteExampleRule
-    from specweaver.validation.rules.spec.s07_test_first import TestFirstRule
-    from specweaver.validation.rules.spec.s08_ambiguity import AmbiguityRule
-    from specweaver.validation.rules.spec.s09_error_path import ErrorPathRule
-    from specweaver.validation.rules.spec.s10_done_definition import DoneDefinitionRule
-    from specweaver.validation.rules.spec.s11_terminology import TerminologyRule
+    # Import the spec rules package to trigger auto-registration
+    import specweaver.validation.rules.spec  # noqa: F401
+    from specweaver.validation.registry import get_registry
 
-    rule_classes: list[tuple[str, type]] = [
-        ("S01", OneSentenceRule),
-        ("S02", SingleSetupRule),
-        ("S03", StrangerTestRule),
-        ("S04", DependencyDirectionRule),
-        ("S05", DayTestRule),
-        ("S06", ConcreteExampleRule),
-        ("S07", TestFirstRule),
-        ("S08", AmbiguityRule),
-        ("S09", ErrorPathRule),
-        ("S10", DoneDefinitionRule),
-        ("S11", TerminologyRule),
-    ]
+    rule_classes = get_registry().list_spec()
 
     all_rules: list[Rule] = []
     skipped: list[str] = []
@@ -162,30 +142,17 @@ def get_code_rules(
     Returns:
         List of Rule instances, ordered by rule_id.
     """
-    from specweaver.validation.rules.code.c01_syntax_valid import SyntaxValidRule
-    from specweaver.validation.rules.code.c02_tests_exist import TestsExistRule
-    from specweaver.validation.rules.code.c03_tests_pass import TestsPassRule
-    from specweaver.validation.rules.code.c04_coverage import CoverageRule
-    from specweaver.validation.rules.code.c05_import_direction import ImportDirectionRule
-    from specweaver.validation.rules.code.c06_no_bare_except import NoBareExceptRule
-    from specweaver.validation.rules.code.c07_no_orphan_todo import NoOrphanTodoRule
-    from specweaver.validation.rules.code.c08_type_hints import TypeHintsRule
+    # Import the code rules package to trigger auto-registration
+    import specweaver.validation.rules.code  # noqa: F401
+    from specweaver.validation.registry import get_registry
 
-    rule_classes: list[tuple[str, type]] = [
-        ("C01", SyntaxValidRule),
-        ("C02", TestsExistRule),
-        ("C05", ImportDirectionRule),
-        ("C06", NoBareExceptRule),
-        ("C07", NoOrphanTodoRule),
-        ("C08", TypeHintsRule),
-    ]
+    all_code = get_registry().list_code()
 
-    if include_subprocess:
-        # Insert C03, C04 at position 2 (after C02)
-        rule_classes[2:2] = [
-            ("C03", TestsPassRule),
-            ("C04", CoverageRule),
-        ]
+    if not include_subprocess:
+        # Filter out C03 (TestsPass) and C04 (Coverage) which run subprocesses
+        all_code = [(rid, cls) for rid, cls in all_code if rid not in ("C03", "C04")]
+
+    rule_classes: list[tuple[str, type]] = all_code
 
     all_rules: list[Rule] = []
     skipped: list[str] = []
