@@ -12,11 +12,12 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 
 - **Interactive spec drafting** — Co-author specs with an LLM, section by section
 - **Feature-level validation** — Two-level spec model: feature specs (Intent, Value Proposition) and component specs (Purpose, Contract, Protocol, Policy, Boundaries) with kind-aware thresholds
-- **Static validation** — 19 built-in rules (11 spec + 8 code) with configurable thresholds that adapt to spec kind
+- **Static validation** — 19 built-in rules (11 spec + 8 code) with configurable thresholds that adapt to spec kind, organized as YAML-defined sub-pipelines with inheritance
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with confidence-scored findings
 - **Feature decomposition** — Draft feature specs and decompose them into component-level work items via pipeline
 - **Code generation** — Generate implementation + test files from a validated spec
 - **Constitution support** — Project-wide `CONSTITUTION.md` with coding principles, testing standards, and UX guidelines injected into every LLM call (review, implement, pipeline). Walk-up resolution, configurable size limits, CLI management
+- **Validation pipelines** — YAML-defined rule sub-pipelines with inheritance (extends/override/remove/add), profile-specific pipelines, project-local overrides, and custom D-prefix rule support
 - **Pipeline definitions** — YAML-defined workflows with configurable gates, retries, and feedback loops
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
 - **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
@@ -87,6 +88,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw check <file> --level feature` | Validate a feature spec against S01–S11 with feature-level thresholds |
 | `sw check <file> --level component` | Validate a component spec against S01–S11 with component-level thresholds |
 | `sw check <file> --level code` | Validate code against C01–C08 rules |
+| `sw check --pipeline <name>` | Use a specific validation pipeline (overrides `--level`) |
 | `sw check --strict` | Treat warnings as failures (exit code 1) |
 | `sw check --set RULE.FIELD=VALUE` | One-off threshold override (e.g. `S08.fail_threshold=5`) |
 | `sw review <file>` | AI-powered spec or code review (confidence-scored findings) |
@@ -135,6 +137,8 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw resume` | Resume the latest parked/failed pipeline run |
 | `sw resume <run_id>` | Resume a specific run by ID |
 | `sw pipelines` | List available pipeline templates |
+| `sw list-rules` | Show all validation rules grouped by pipeline |
+| `sw list-rules --pipeline <name>` | Show rules for a specific validation pipeline |
 
 ## Validation Rules
 
@@ -197,7 +201,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── project/                # Scaffold, discovery, constitution loader
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 1974+ tests (unit, integration, E2E)
+├── tests/                      # 2181+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
