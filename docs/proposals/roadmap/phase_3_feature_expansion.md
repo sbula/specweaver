@@ -14,7 +14,8 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.2** ✅ | Constitution as first-class artifact | `constitution_template.md` | Project-wide governing doc (`CONSTITUTION.md`) injected into every LLM call. Walk-up resolution, configurable size limits, CLI management (`sw constitution show/check/init`). **Complete**: constitution loader, PromptBuilder integration, handler threading, CLI commands, 1974 tests. See [implementation plan](phase_3/feature_3_2_implementation_plan.md). _(inspired by [Spec Kit](https://github.com/github/spec-kit), [DMZ SOUL.md](https://github.com/TheMorpheus407/the-dmz))_ |
 | **3.3** ✅ | Domain profiles for threshold calibration | `future_capabilities_reference.md` §19 | Named preset bundles (5 profiles: web-app, data-pipeline, library, microservice, ml-model). `config/profiles.py`, DB v5 migration (`domain_profile` column), 5 CLI commands. Bulk-writes to DB override layer. **Complete**: 3 components, 2038 tests. See [implementation plan](phase_3/feature_3_3_implementation_plan.md). |
 | **3.4** ✅ | Custom rule paths (rules-as-pipeline architecture) | _(deferred from Step 8b)_ | Validation sub-pipeline: `ValidationPipeline` / `ValidationStep` models, YAML-defined pipelines with inheritance (extends/override/remove/add), circular-extends guard, `sw list-rules`, `--pipeline` override, custom D-prefix rule loader, `RuleAtom` adapter, profile-specific pipelines, project-local pipeline overrides, `apply_settings_to_pipeline()`. **Complete**: 10 components, 2181 tests. See [implementation plan](phase_3/feature_3_4_implementation_plan.md). |
-| **3.5** | Auto-discover standards from codebase | _(new)_ | Extend `sw scan` → extract naming conventions, patterns, error handling, test structure from existing code. Output: `standards.yaml`. Inject into `PromptBuilder.add_standards()`. Bootstrap constitution automatically. _(inspired by [Agent OS v3](https://github.com/buildermethods/agent-os))_ |
+| **3.5** | Auto-discover standards from codebase | _(new)_ | Extend `sw scan --standards` → extract naming, error handling, type hints, docstring style, test patterns, import patterns from code (Python + JS/TS). Store in DB (schema v6 `project_standards` table). Auto-inject via `PromptBuilder.add_standards()`. Bootstrap `CONSTITUTION.md` from conventions. See [implementation plan](phase_3/feature_3_5_implementation_plan.md). _(inspired by [Agent OS v3](https://github.com/buildermethods/agent-os))_ |
+| | | | ⚠️ **Post-3.5 cleanup required**: Consolidate validation override mechanisms. DB `validation_overrides` table (3.3) and validation sub-pipeline YAML inheritance (3.4) both configure per-project rule thresholds. Decide: sub-pipelines as single source of truth, or DB overrides as runtime layer on top? See discussion below. |
 | **3.6** | Explicit plan phase (Spec → Plan → Tasks) | _(new)_ | New `PLAN+SPEC` handler between validate and implement. Captures architecture decisions, tech stack choices, constraint reasoning in a structured Plan artifact before code generation. _(inspired by [Spec Kit](https://github.com/github/spec-kit))_ |
 | **3.7** | Pipeline visualization (`sw pipelines --graph`) | _(new)_ | Auto-generate Mermaid diagrams from pipeline YAML definitions. Quick win for DX — visual debugging as pipelines grow complex with fan-out (3.14). _(inspired by [CrewAI](https://github.com/crewAIInc/crewAI) `flow.plot()`)_ |
 | **3.8** | Additional context providers (FileSearch, WebSearch) | `mvp_feature_definition.md` | Enhances drafting and review quality |
@@ -60,3 +61,31 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.17i** | Arbiter agent | Third agent with full read access. On scenario test failure: determines fault (code/scenario/spec), produces filtered feedback to each pipeline. |
 | **3.17j** | Feedback loop & retry | Coding agent gets stack traces + spec references. Scenario agent gets expected vs actual + spec references. Neither sees other's code. Loop back if fixable, HITL escalation if spec ambiguity. |
 
+---
+
+## ⚠️ Post-3.5 Cleanup: Validation Override Consolidation
+
+After Feature 3.5 is complete, we must consolidate two mechanisms that both configure per-project rule behavior:
+
+| Mechanism | Feature | Where | What it does |
+|---|---|---|---|
+| `validation_overrides` table | 3.3 (Domain Profiles) | `~/.specweaver/specweaver.db` | Enable/disable rules, set warn/fail thresholds per project. Written by `sw config set-profile`. |
+| Sub-pipeline YAML inheritance | 3.4 (Rules-as-Pipeline) | `.specweaver/pipelines/*.yaml` + built-in defaults | `extends`/`override`/`remove`/`add` operations define which rules run and in what order. Profile-specific pipeline files. |
+
+**Problem**: Both mechanisms configure "which rules run with what thresholds" — creating duplication and ambiguity about which layer wins.
+
+**Options to evaluate**:
+
+1. **Sub-pipelines as single source of truth** — Remove `validation_overrides` from DB. Domain profiles become YAML pipeline definitions only. CLI commands (`sw config set-profile`) write YAML instead of DB rows.
+   - ✅ Single mechanism, YAML is human-readable, versioned in git
+   - ❌ Requires migration of existing DB overrides
+
+2. **DB overrides as runtime layer on top of YAML** — Keep both. Pipeline YAML defines the base, DB overrides apply at runtime via `apply_settings_to_pipeline()`.
+   - ✅ Clear precedence (YAML = structure, DB = runtime tuning)
+   - ❌ Two places to look, debugging harder
+
+3. **Merge into DB only** — Pipelines stored in DB, not YAML files.
+   - ❌ Loses git versioning, harder to review
+   - ❌ Against "no SpecWeaver in project folder" principle (already in DB, so OK), but YAML is more transparent
+
+**Decision required after 3.5 is complete.** Track in Feature 3.5b or a dedicated cleanup task.

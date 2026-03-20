@@ -43,7 +43,8 @@
 **Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
-- Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_
+- Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_ — [plan](roadmap/phase_3/feature_3_5_implementation_plan.md)
+- ⚠️ **Post-3.5 cleanup**: Consolidate DB `validation_overrides` (3.3) vs sub-pipeline YAML inheritance (3.4) — decide single source of truth
 - Feature 3.6: Explicit plan phase (Spec → Plan → Tasks)
 - Feature 3.7: Pipeline visualization _(CrewAI)_
 
