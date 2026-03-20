@@ -27,7 +27,7 @@ monorepo/
 |---|---|---|
 | 1 | **Storage** | DB (`project_standards` table, schema v6). Keyed by project × scope × language × category. |
 | 2 | **Scope detection** | Top-level directories with their own source code. `context.yaml` boundaries when available. |
-| 3 | **File discovery** | `git ls-files` (respects `.gitignore`). Fallback: `os.walk` with hardcoded skip patterns. |
+| 3 | **File discovery** | Priority chain: (1) `git ls-files` if `.git/` exists, (2) `.specweaverignore` always checked, (3) `os.walk` + hardcoded skip as fallback. |
 | 4 | **Language detection** | By file extension. Each `StandardsAnalyzer` declares handled extensions. |
 | 5 | **Categories** | **Dynamic per language**. Each analyzer registers its own list. |
 | 6 | **Recency** | Exponential decay on `mtime`. Variable half-life auto-computed from project age. |
@@ -52,9 +52,9 @@ monorepo/
 |---|---|
 | `config/database.py` | Schema v6 migration: `project_standards` table. CRUD methods. |
 | `context/standards_analyzer.py` | `StandardsAnalyzer` ABC, `CategoryResult`, `ScopeReport` dataclasses. |
-| `context/python_standards.py` | `PythonStandardsAnalyzer`: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns. |
+| `context/python_standards.py` | `PythonStandardsAnalyzer`: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns. Single-pass AST optimization. |
 | `context/recency.py` | `recency_weight()`, `compute_half_life()`. |
-| `llm/prompt_builder.py` | `add_standards()` method, `kind="standards"` block in `_render()` between constitution and topology. |
+| `llm/prompt_builder.py` | `add_standards()` method. Refactor `_render()` to data-driven `_RENDER_ORDER` list (no existing test breakage). |
 | `cli.py` | `sw scan --standards` (single scope, auto-store, no HITL). `sw standards show`. `sw standards clear`. |
 | `flow/handlers.py` | `standards: str | None = None` on `RunContext`. |
 
@@ -190,7 +190,21 @@ class StandardsAnalyzer(ABC):
 #### [MODIFY] [prompt_builder.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/prompt_builder.py)
 
 - New `add_standards(text)` method → `_ContentBlock(kind="standards", priority=1)`
-- In `_render()` (L462-515): add `standards` rendering between `constitution` (L473) and `topology` (L479)
+- Refactor `_render()` (L462-515) from hardcoded kind-filtering to **data-driven render order**:
+
+```python
+_RENDER_ORDER = [
+    "instructions",
+    "constitution",
+    "standards",      # NEW
+    "topology",
+    "file",
+    "context",
+    "reminder",
+]
+```
+
+This loop replaces 6 separate filter blocks. Existing tests remain green because they don't have `standards` blocks — the output is identical. Future additions (e.g., "examples" for 3.6) just append to the list.
 
 ---
 
@@ -214,24 +228,95 @@ Add `standards: str | None = None` to `RunContext` (after L59, alongside `consti
 
 ---
 
+## File Discovery Strategy
+
+```
+Priority chain:
+├── If .git/ exists:
+│   ├── Run: git ls-files --cached --others --exclude-standard
+│   │   (tracked + untracked but not ignored)
+│   ├── Also check .specweaverignore for additional excludes
+│   └── If git command fails → fall through to os.walk
+│
+└── If no .git/:
+    ├── os.walk with hardcoded skips:
+    │   .git, __pycache__, node_modules, venv, .venv,
+    │   .tox, .mypy_cache, .pytest_cache, dist, build, .eggs
+    ├── Also check .specweaverignore
+    └── Log warning: "Not a git repo — using basic file discovery."
+```
+
+`.specweaverignore` lives in project root (user-controlled config, not SpecWeaver-generated). Uses `pathspec` library for `.gitignore`-compatible pattern matching.
+
+#### [NEW] [file_discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/file_discovery.py)
+
+```python
+def discover_files(project_path: Path) -> list[Path]:
+    """Discover analyzable files using the priority chain."""
+
+def _git_ls_files(project_path: Path) -> list[Path] | None:
+    """Try git ls-files. Returns None if git unavailable or not a repo."""
+
+def _walk_with_skips(project_path: Path) -> list[Path]:
+    """Fallback: os.walk with hardcoded skip patterns."""
+
+def _apply_specweaverignore(files: list[Path], project_path: Path) -> list[Path]:
+    """Filter files through .specweaverignore patterns (pathspec library)."""
+```
+
+---
+
+## Scope Resolution Algorithm
+
+DB-backed walk-up resolution for injection:
+
+```python
+def _resolve_scope(target_path: Path, project_path: Path, known_scopes: list[str]) -> str:
+    """
+    Walk up from target_path toward project_path.
+    At each level, check if relative path matches a known scope in DB.
+    Longest-prefix match wins. If no match → '.' (root scope).
+
+    Examples:
+      target:  /proj/user-service/src/auth/login.py
+      scopes:  ['user-service', 'frontend', '.']
+      Walk up: 'user-service/src/auth' → 'user-service/src' → 'user-service' → MATCH!
+      Result:  'user-service'
+
+      target:  /proj/src/specweaver/cli.py
+      scopes:  ['user-service', 'frontend', '.']
+      Walk up: 'src/specweaver' → 'src' → no match
+      Result:  '.' (root scope)
+    """
+```
+
+Injection merges scope-specific + cross-cutting (scope=`.`) standards.
+
+---
+
 ## Remaining Implementation Concerns
 
-### ⚠️ Issues to resolve during implementation
+### ⚠️ Open (to resolve during implementation)
 
 | # | Issue | Details | When |
 |---|---|---|---|
-| 1 | **`AnalyzerFactory` pattern mismatch** | Existing `AnalyzerFactory.for_directory()` returns first match only. Standards needs ALL matching analyzers for mixed-language dirs (e.g., `.py` + `.ts` in same scope). `StandardsInferrer` should group files by extension, then match to analyzers — NOT use `AnalyzerFactory`. | 3.5a-1 |
-| 2 | **`git ls-files` subprocess** | Need graceful fallback when (a) git not installed, (b) project not a git repo. Fallback = `os.walk` with hardcoded skips (`.git`, `__pycache__`, `node_modules`, `venv`, `.venv`). | 3.5a-1 |
-| 3 | **Scope detection heuristic** | "Top-level directories with source code" is vague. What if the project structure is `src/services/user-service/`? Need recursive scope detection, not just top-level. Proposal: detect scopes from `context.yaml` locations first, fall back to first-level dirs with source files. | 3.5a-2 |
-| 4 | **`_render()` modification requires test surgery** | `_render()` has exact-match assertion tests in `test_prompt_builder.py`. Adding `<standards>` between `<constitution>` and `<topology>` will break them. Must update ALL existing render-order tests. | 3.5a-1 |
-| 5 | **How `_resolve_scope()` handles nested paths** | For `user-service/src/auth/login.py`, scope = `user-service`. But for `src/specweaver/context/analyzers.py` (no top-level service dir), scope = `.`. Need clear resolution: walk up from file, check DB for known scopes, first match wins. | 3.5a-2 |
-| 6 | **Rich interactive prompts in tests** | `StandardsReviewer` uses Rich `Prompt.ask()` for HITL. Tests need `monkeypatch` / `unittest.mock.patch` on `rich.prompt.Prompt.ask` — verify this works cross-platform (Windows terminal quirks). | 3.5a-2 |
-| 7 | **tree-sitter API version** | `tree-sitter` Python bindings changed API significantly between v0.21 and v0.23. Must verify exact API: `Language()`, `Parser()`, `tree.root_node`, `node.children`. Pin version in `pyproject.toml`. | 3.5a-3 |
-| 8 | **LLM prompt for best-practice comparison** | Need to design the exact prompt template: what goes in, what comes out, how is the response parsed? Structured output (JSON) or free-text that gets injected into HITL report? | 3.5a-3 |
-| 9 | **Token budget impact** | Standards block at priority 1 means it competes with files (priority 2) and topology (priority 2). If standards are verbose (e.g., 6 categories × 100 tokens = 600 tokens), that's fine. But for a monorepo with 5 scopes × 2 languages × 7 categories — could be 4,000+ tokens. Need max-size guard. | 3.5a-2 |
-| 10 | **Constitution bootstrap template** | Need a concrete template for the auto-generated `CONSTITUTION.md`. What sections? What format? How much comes from standards vs metadata? | 3.5a-4 |
-| 11 | **`PythonStandardsAnalyzer` complexity** | 7 categories × AST walking = potentially 7 full passes over every `.py` file. Optimization: single AST pass collecting all data, then split into categories. Critical for large projects (10K+ files). | 3.5a-1 |
-| 12 | **Windows `mtime` precision** | Windows NTFS has ~100ns `mtime` resolution but Python's `os.stat().st_mtime` returns a float that may lose precision. Shouldn't matter for our half-life scale (days), but verify. Also: `git clone` on Windows may reset all `mtime` to clone time — need testing. | 3.5a-1 |
+| 1 | **`AnalyzerFactory` pattern mismatch** | Existing `AnalyzerFactory.for_directory()` returns first match only. Standards needs ALL matching analyzers for mixed-language dirs. `StandardsInferrer` groups files by extension, matches to analyzers — does NOT use `AnalyzerFactory`. | 3.5a-1 |
+| 3 | **Scope detection heuristic** | Recursive detection, not just top-level. Detect from `context.yaml` locations first, fall back to first-level dirs with source files. | 3.5a-2 |
+| 6 | **Rich interactive prompts in tests** | `StandardsReviewer` uses Rich `Prompt.ask()`. Tests mock via `monkeypatch`. Verify cross-platform (Windows terminal). | 3.5a-2 |
+| 7 | **tree-sitter API version** | Pin exact version in `pyproject.toml`. Verify API: `Language()`, `Parser()`, node traversal. | 3.5a-3 |
+| 8 | **LLM prompt template** | Design exact prompt for best-practice comparison. Structured JSON output or free-text for HITL report. | 3.5a-3 |
+| 9 | **Token budget impact** | Multi-scope could be 4000+ tokens. Add max-size guard (e.g., 2000 token cap, prioritize scope-specific over cross-cutting). | 3.5a-2 |
+| 10 | **Constitution bootstrap template** | Concrete template for auto-generated `CONSTITUTION.md`. | 3.5a-4 |
+| 11 | **Single-pass AST optimization** | Parse each `.py` file once, collect all category data, split after. Critical for 10K+ file projects. | 3.5a-1 |
+| 12 | **Windows `mtime` after `git clone`** | May reset all mtime to clone time. Test and document limitation. | 3.5a-1 |
+
+### ✅ Resolved
+
+| # | Issue | Solution |
+|---|---|---|
+| 2 | **File discovery** | Priority chain: `git ls-files` → `.specweaverignore` → `os.walk` fallback. Uses `pathspec` library. See File Discovery Strategy above. |
+| 4 | **`_render()` test breakage** | Refactor to data-driven `_RENDER_ORDER` list. Existing tests unaffected (no standards blocks in them). |
+| 5 | **Scope resolution** | DB-backed walk-up: query known scopes once, walk up from file path, longest-prefix match. Falls back to `.` (root). See Scope Resolution Algorithm above. |
 
 ### ✅ Non-issues (verified against code)
 
@@ -242,6 +327,13 @@ Add `standards: str | None = None` to `RunContext` (after L59, alongside `consti
 | DB schema v6 | Follows existing migration pattern (v1→v5). `_SCHEMA_V6` string + `_ensure_schema()` block. |
 | Auto-injection in CLI callers | Same pattern as `_load_constitution_content()`. Add `_load_standards_content()` and call in same places. |
 | tree-sitter Windows wheels | Pre-built wheels available for Windows, no C compiler needed. |
+
+### New Dependencies
+
+| Package | Why |
+|---|---|
+| `pathspec` | `.gitignore` / `.specweaverignore` pattern matching. Well-maintained, no C extensions. |
+| `tree-sitter` + language grammars | JS/TS AST parsing (Phase 3.5a-3). Pre-built wheels. |
 
 ---
 
