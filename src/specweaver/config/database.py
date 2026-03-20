@@ -99,6 +99,20 @@ _SCHEMA_V5 = """\
 ALTER TABLE projects ADD COLUMN domain_profile TEXT DEFAULT NULL;
 """
 
+_SCHEMA_V6 = """\
+CREATE TABLE IF NOT EXISTS project_standards (
+    project_name TEXT NOT NULL REFERENCES projects(name) ON DELETE CASCADE,
+    scope        TEXT NOT NULL,
+    language     TEXT NOT NULL,
+    category     TEXT NOT NULL,
+    data         TEXT NOT NULL,
+    confidence   REAL NOT NULL,
+    confirmed_by TEXT DEFAULT NULL,
+    scanned_at   TEXT NOT NULL,
+    PRIMARY KEY (project_name, scope, language, category)
+);
+"""
+
 
 class Database:
     """SpecWeaver SQLite configuration database.
@@ -186,6 +200,19 @@ class Database:
                 logger.info(
                     "Database schema migrated to v5 (domain_profile)",
                 )
+
+            if current_version < 6:
+                with suppress(Exception):
+                    conn.executescript(_SCHEMA_V6)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (6, _now_iso()),
+                )
+                logger.info(
+                    "Database schema migrated to v6 (project_standards)",
+                )
+
 
             # Seed default LLM profiles if empty
             profile_count = conn.execute(
@@ -850,6 +877,146 @@ class Database:
             "Cleared domain profile and overrides for project '%s'",
             project_name,
         )
+
+    # ------------------------------------------------------------------
+    # Project Standards CRUD
+    # ------------------------------------------------------------------
+
+    def save_standard(
+        self,
+        project_name: str,
+        scope: str,
+        language: str,
+        category: str,
+        data: dict,
+        confidence: float,
+        *,
+        confirmed_by: str | None = None,
+    ) -> None:
+        """Save or update a coding standard (upsert).
+
+        Args:
+            project_name: Must be a registered project.
+            scope: Scope name (e.g., ``"user-service"`` or ``"."``).
+            language: Language name (e.g., ``"python"``).
+            category: Category name (e.g., ``"naming"``).
+            data: Findings as a dictionary (serialized to JSON).
+            confidence: Confidence score (0.0–1.0).
+            confirmed_by: ``"hitl"`` if user-confirmed, else None.
+        """
+        import json
+
+        with self.connect() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO project_standards "
+                "(project_name, scope, language, category, data, "
+                "confidence, confirmed_by, scanned_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    project_name,
+                    scope,
+                    language,
+                    category,
+                    json.dumps(data),
+                    confidence,
+                    confirmed_by,
+                    _now_iso(),
+                ),
+            )
+
+    def get_standards(
+        self,
+        project_name: str,
+        *,
+        scope: str | None = None,
+        language: str | None = None,
+    ) -> list[dict]:
+        """Query standards for a project, optionally filtered.
+
+        Args:
+            project_name: Project to query.
+            scope: Filter by scope (optional).
+            language: Filter by language (optional).
+
+        Returns:
+            List of dicts with keys: scope, language, category, data,
+            confidence, confirmed_by, scanned_at.
+        """
+        query = "SELECT * FROM project_standards WHERE project_name = ?"
+        params: list = [project_name]
+
+        if scope is not None:
+            query += " AND scope = ?"
+            params.append(scope)
+        if language is not None:
+            query += " AND language = ?"
+            params.append(language)
+
+        with self.connect() as conn:
+            rows = conn.execute(query, params).fetchall()
+            return [dict(row) for row in rows]
+
+    def get_standard(
+        self,
+        project_name: str,
+        scope: str,
+        language: str,
+        category: str,
+    ) -> dict | None:
+        """Get a single standard by exact key.
+
+        Returns:
+            Dict with all fields, or None if not found.
+        """
+        with self.connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM project_standards "
+                "WHERE project_name = ? AND scope = ? "
+                "AND language = ? AND category = ?",
+                (project_name, scope, language, category),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def clear_standards(
+        self,
+        project_name: str,
+        *,
+        scope: str | None = None,
+    ) -> None:
+        """Delete standards for a project, optionally scoped.
+
+        Args:
+            project_name: Project to clear.
+            scope: If provided, only delete standards for this scope.
+                If None, delete all standards for the project.
+        """
+        if scope is not None:
+            query = (
+                "DELETE FROM project_standards "
+                "WHERE project_name = ? AND scope = ?"
+            )
+            params = (project_name, scope)
+        else:
+            query = "DELETE FROM project_standards WHERE project_name = ?"
+            params = (project_name,)
+
+        with self.connect() as conn:
+            conn.execute(query, params)
+
+    def list_scopes(self, project_name: str) -> list[str]:
+        """List distinct scopes that have stored standards.
+
+        Returns:
+            Sorted list of scope names.
+        """
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT DISTINCT scope FROM project_standards "
+                "WHERE project_name = ? ORDER BY scope",
+                (project_name,),
+            ).fetchall()
+            return [row[0] for row in rows]
+
 
 
 # ---------------------------------------------------------------------------

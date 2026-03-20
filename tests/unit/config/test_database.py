@@ -68,12 +68,12 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 5 after v5 migration."""
+        """Schema version is 6 after v6 migration."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 5
+            assert row[0] == 6
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""
@@ -533,7 +533,7 @@ class TestSchemaV2Migration:
             ).fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 5  # V2, V3, V4, V5 all applied
+        assert version[0] == 6  # V2, V3, V4, V5, V6 all applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -545,7 +545,7 @@ class TestSchemaV2Migration:
             version = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 5  # V2, V3, V4, V5 all applied
+        assert version[0] == 6  # V2, V3, V4, V5, V6 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -683,7 +683,7 @@ class TestSchemaV3Migration:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 5  # v3, v4, v5 all applied
+        assert version[0] == 6  # v3, v4, v5, v6 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -801,7 +801,7 @@ class TestSchemaV3ToV4Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 5  # v4 and v5 both applied
+        assert version[0] == 6  # v4, v5, v6 all applied
 
 
 # ===========================================================================
@@ -926,7 +926,7 @@ class TestDomainProfile:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 5
+            assert row[0] == 6
 
 
 class TestSchemaV4ToV5Upgrade:
@@ -976,5 +976,5 @@ class TestSchemaV4ToV5Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 5
+        assert version[0] == 6
 
