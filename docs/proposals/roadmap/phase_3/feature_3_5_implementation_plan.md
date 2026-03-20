@@ -54,8 +54,9 @@ monorepo/
 | `context/standards_analyzer.py` | `StandardsAnalyzer` ABC, `CategoryResult`, `ScopeReport` dataclasses. |
 | `context/python_standards.py` | `PythonStandardsAnalyzer`: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns. Single-pass AST optimization. |
 | `context/recency.py` | `recency_weight()`, `compute_half_life()`. |
-| `llm/prompt_builder.py` | `add_standards()` method. Refactor `_render()` to data-driven `_RENDER_ORDER` list (no existing test breakage). |
-| `cli.py` | `sw scan --standards` (single scope, auto-store, no HITL). `sw standards show`. `sw standards clear`. |
+| `llm/prompt_builder.py` | `add_standards()` method. Insert `kind="standards"` block directly in `_render()` between constitution and topology (minimal diff, no refactor). |
+| `context/file_discovery.py` | `discover_files()`, `_git_ls_files()`, `_walk_with_skips()`, `_apply_specweaverignore()`. |
+| `cli.py` | `sw standards scan` (separate command, single scope, auto-store, no HITL). `sw standards show`. `sw standards clear`. |
 | `flow/handlers.py` | `standards: str | None = None` on `RunContext`. |
 
 **Tests**: ~80-100 unit + integration tests.
@@ -71,7 +72,7 @@ monorepo/
 |---|---|
 | `context/standards_inferrer.py` | `StandardsInferrer`: scope detection, `git ls-files`, multi-scope grouping, file-per-language grouping. |
 | `review/standards_reviewer.py` | `StandardsReviewer`: Rich structured report, per-category Accept/Edit/Reject, per-scope Accept All/Skip, re-scan diff display. |
-| `cli.py` | Interactive HITL flow in `sw scan --standards`. `sw standards show --scope X`. `sw standards scopes`. Scope resolution for auto-injection. |
+| `cli.py` | Interactive HITL flow in `sw standards scan`. `sw standards show --scope X`. `sw standards scopes`. `_load_standards_content(project_path, target_path)` (resolves project_name + scope internally). Scope resolution for auto-injection in all PromptBuilder callers. |
 | Scope resolution | `_resolve_scope(target_path, project_path)` — walk up from spec to find matching scope. Merge scope-specific + cross-cutting (scope=`.`). |
 
 **Tests**: ~40-60 tests. Multi-scope fixtures, mocked Rich prompts, re-scan diff.
@@ -190,21 +191,18 @@ class StandardsAnalyzer(ABC):
 #### [MODIFY] [prompt_builder.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/prompt_builder.py)
 
 - New `add_standards(text)` method → `_ContentBlock(kind="standards", priority=1)`
-- Refactor `_render()` (L462-515) from hardcoded kind-filtering to **data-driven render order**:
+- Insert standards rendering directly in `_render()` (L462-515) between constitution (L476) and topology (L479) — 5 lines added, no existing logic refactored:
 
 ```python
-_RENDER_ORDER = [
-    "instructions",
-    "constitution",
-    "standards",      # NEW
-    "topology",
-    "file",
-    "context",
-    "reminder",
-]
+# Standards (after constitution, before topology)
+standards = [b for b in blocks if b.kind == "standards"]
+if standards:
+    text = "\n\n".join(b.text for b in standards)
+    marker = "\n[truncated]" if any(b.truncated for b in standards) else ""
+    parts.append(f"<standards>\n{text}{marker}\n</standards>")
 ```
 
-This loop replaces 6 separate filter blocks. Existing tests remain green because they don't have `standards` blocks — the output is identical. Future additions (e.g., "examples" for 3.6) just append to the list.
+Minimal diff, no risk to existing tests. Data-driven `_RENDER_ORDER` refactoring deferred to a future cleanup.
 
 ---
 
@@ -212,11 +210,13 @@ This loop replaces 6 separate filter blocks. Existing tests remain green because
 
 #### [MODIFY] [cli.py](file:///c:/development/pitbula/specweaver/src/specweaver/cli.py)
 
-- `sw scan --standards [--compare]` — orchestrate scan → HITL → store
-- `_load_standards_content(project_name, scope)` — load from DB, format
-- Auto-injection: `_resolve_scope()` in `review()` (L921), `_execute_review()` (L958), etc.
-- `sw standards show/clear/scopes` — new subcommand group
-- Constitution bootstrap
+- `sw standards scan [--compare]` — **separate command** (not a flag on `sw scan`). Orchestrate scan → HITL → store.
+- `sw standards show [--scope X]` — Rich table grouped by scope → language → category
+- `sw standards clear [--scope X]` — scoped delete
+- `sw standards scopes` — list detected scopes
+- `_load_standards_content(project_path, target_path)` — resolves project_name from DB by matching `project_path`, resolves scope via walk-up, loads + formats for prompt
+- Auto-injection: call `_load_standards_content()` alongside `_load_constitution_content()` at all 4 call sites (L951, L1082, L1797, L1950)
+- Constitution bootstrap moved to `sw standards scan` (not `sw scan`)
 
 ---
 
@@ -315,8 +315,11 @@ Injection merges scope-specific + cross-cutting (scope=`.`) standards.
 | # | Issue | Solution |
 |---|---|---|
 | 2 | **File discovery** | Priority chain: `git ls-files` → `.specweaverignore` → `os.walk` fallback. Uses `pathspec` library. See File Discovery Strategy above. |
-| 4 | **`_render()` test breakage** | Refactor to data-driven `_RENDER_ORDER` list. Existing tests unaffected (no standards blocks in them). |
+| 4 | **`_render()` test breakage** | Insert standards block directly (5 lines) — no refactor of existing logic, no test breakage. Data-driven `_RENDER_ORDER` deferred. |
 | 5 | **Scope resolution** | DB-backed walk-up: query known scopes once, walk up from file path, longest-prefix match. Falls back to `.` (root). See Scope Resolution Algorithm above. |
+| 13 | **`_render()` per-kind logic** | Don't refactor. Insert `<standards>` block directly between constitution and topology. Each kind keeps its own rendering logic. |
+| 14 | **`project_name` at call sites** | `_load_standards_content(project_path, target_path)` resolves project_name internally from DB by matching the path. Same function resolves scope via walk-up. |
+| 15 | **Command structure** | `sw standards scan` as separate command. `sw scan` stays context.yaml-only. No coupling between the two. |
 
 ### ✅ Non-issues (verified against code)
 
