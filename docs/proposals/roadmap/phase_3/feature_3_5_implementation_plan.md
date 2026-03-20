@@ -51,16 +51,16 @@ monorepo/
 | Component | What |
 |---|---|
 | `config/database.py` | Schema v6 migration: `project_standards` table. CRUD methods. |
-| `context/standards_analyzer.py` | `StandardsAnalyzer` ABC, `CategoryResult`, `ScopeReport` dataclasses. |
-| `context/python_standards.py` | `PythonStandardsAnalyzer`: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns. Single-pass AST optimization. |
-| `context/recency.py` | `recency_weight()`, `compute_half_life()`. |
+| `standards/analyzer.py` | `StandardsAnalyzer` ABC, `CategoryResult`, `ScopeReport` dataclasses. |
+| `standards/python_analyzer.py` | `PythonStandardsAnalyzer`: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns. Single-pass AST optimization. |
+| `standards/recency.py` | `recency_weight()`, `compute_half_life()`. |
 | `llm/prompt_builder.py` | `add_standards()` method. Insert `kind="standards"` block directly in `_render()` between constitution and topology (minimal diff, no refactor). |
-| `context/file_discovery.py` | `discover_files()`, `_git_ls_files()`, `_walk_with_skips()`, `_apply_specweaverignore()`. |
+| `standards/discovery.py` | `discover_files()`, `_git_ls_files()`, `_walk_with_skips()`, `_apply_specweaverignore()`. |
 | `cli.py` | `sw standards scan` (separate command, single scope, auto-store, no HITL). `sw standards show`. `sw standards clear`. |
 | `flow/handlers.py` | `standards: str | None = None` on `RunContext`. |
 
 **Tests**: ~80-100 unit + integration tests.
-**Deliverable**: `sw scan --standards` works on SpecWeaver itself, `sw standards show` renders a Rich table, `sw review` includes `<standards>` in the prompt.
+**Deliverable**: `sw standards scan` works on SpecWeaver itself, `sw standards show` renders a Rich table, `sw review` includes `<standards>` in the prompt.
 
 ---
 
@@ -70,8 +70,8 @@ monorepo/
 
 | Component | What |
 |---|---|
-| `context/standards_inferrer.py` | `StandardsInferrer`: scope detection, `git ls-files`, multi-scope grouping, file-per-language grouping. |
-| `review/standards_reviewer.py` | `StandardsReviewer`: Rich structured report, per-category Accept/Edit/Reject, per-scope Accept All/Skip, re-scan diff display. |
+| `standards/inferrer.py` | `StandardsInferrer`: scope detection, `git ls-files`, multi-scope grouping, file-per-language grouping. |
+| `standards/reviewer.py` | `StandardsReviewer`: Rich structured report, per-category Accept/Edit/Reject, per-scope Accept All/Skip, re-scan diff display. |
 | `cli.py` | Interactive HITL flow in `sw standards scan`. `sw standards show --scope X`. `sw standards scopes`. `_load_standards_content(project_path, target_path)` (resolves project_name + scope internally). Scope resolution for auto-injection in all PromptBuilder callers. |
 | Scope resolution | `_resolve_scope(target_path, project_path)` — walk up from spec to find matching scope. Merge scope-specific + cross-cutting (scope=`.`). |
 
@@ -86,9 +86,9 @@ monorepo/
 
 | Component | What |
 |---|---|
-| `context/js_standards.py` | `JSStandardsAnalyzer`: naming, error_handling, typescript_types, jsdoc, test_patterns, import_patterns, async_patterns. Uses tree-sitter. |
+| `standards/js_analyzer.py` | `JSStandardsAnalyzer`: naming, error_handling, typescript_types, jsdoc, test_patterns, import_patterns, async_patterns. Uses tree-sitter. |
 | `pyproject.toml` | Add `tree-sitter`, `tree-sitter-javascript`, `tree-sitter-typescript` dependencies. |
-| `context/standards_inferrer.py` | Conditional LLM comparison (`compare_with_best_practices()`). Only fires for confidence < 90% or `--compare` flag. |
+| `standards/inferrer.py` | Conditional LLM comparison (`compare_with_best_practices()`). Only fires for confidence < 90% or `--compare` flag. |
 | `cli.py` | `--compare` flag. LLM enrichment in HITL report. |
 
 **Tests**: ~40-50 tests. tree-sitter fixtures, LLM mocking.
@@ -135,11 +135,12 @@ CREATE TABLE IF NOT EXISTS project_standards (
 
 Methods: `save_standard()`, `get_standards()`, `get_standard()`, `clear_standards()`, `list_scopes()`.
 
----
+### Standards Module (`standards/`)
 
-### Standards Extraction
+> **New module**: `specweaver/standards/` — self-contained orchestrator for codebase analysis.
+> Consumes `specweaver/config` (DB). Forbidden: `specweaver/loom/*`.
 
-#### [NEW] [standards_analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/standards_analyzer.py)
+#### [NEW] [analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/analyzer.py)
 
 ```python
 @dataclass
@@ -168,21 +169,23 @@ class StandardsAnalyzer(ABC):
     def extract(self, category: str, files: list[Path], half_life_days: float) -> CategoryResult: ...
 ```
 
-#### [NEW] [python_standards.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/python_standards.py)
+#### [NEW] [python_analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/python_analyzer.py)
 
 7 categories: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns, async_patterns.
 
-#### [NEW] [js_standards.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/js_standards.py)
+#### [NEW] [js_analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/js_analyzer.py)
 
 7 categories: naming, error_handling, typescript_types, jsdoc, test_patterns, import_patterns, async_patterns.
 
-#### [NEW] [standards_inferrer.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/standards_inferrer.py)
+#### [NEW] [inferrer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/inferrer.py)
 
 `scan_project()`, `detect_scopes()`, `compare_with_best_practices()`, `format_for_prompt()`, `_compute_half_life()`.
 
-#### [NEW] [recency.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/recency.py)
+#### [NEW] [recency.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/recency.py)
 
-#### [NEW] [standards_reviewer.py](file:///c:/development/pitbula/specweaver/src/specweaver/review/standards_reviewer.py)
+#### [NEW] [reviewer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/reviewer.py)
+
+#### [NEW] [discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/discovery.py)
 
 ---
 
@@ -248,7 +251,7 @@ Priority chain:
 
 `.specweaverignore` lives in project root (user-controlled config, not SpecWeaver-generated). Uses `pathspec` library for `.gitignore`-compatible pattern matching.
 
-#### [NEW] [file_discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/file_discovery.py)
+#### [NEW] [discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/discovery.py)
 
 ```python
 def discover_files(project_path: Path) -> list[Path]:
