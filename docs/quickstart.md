@@ -206,6 +206,32 @@ sw config get-constitution-max-size
 
 Edit `CONSTITUTION.md` directly to customize your project's rules. The content is sent to the LLM as context during review and implementation, ensuring AI-generated output follows your project's standards.
 
+## Standards Auto-Discovery
+
+SpecWeaver can analyze your codebase to automatically discover coding standards (naming conventions, error handling patterns, docstring styles, type hint usage, import patterns, test patterns). Discovered standards are injected into LLM prompts alongside the constitution.
+
+```bash
+# Scan the project for coding standards (with interactive HITL review)
+sw standards scan --project ./my-project
+
+# Scan without review (CI mode — auto-accepts all findings)
+sw standards scan --no-review --project ./my-project
+
+# View discovered standards
+sw standards show --project ./my-project
+
+# View scope summary (for monorepos)
+sw standards scopes --project ./my-project
+
+# Clear and re-scan
+sw standards clear --project ./my-project
+sw standards scan --project ./my-project
+```
+
+**Multi-scope support**: For monorepos, SpecWeaver detects sub-projects (2-level directory scan) and discovers standards per scope. Standards from a specific scope are prioritized over root-level standards when reviewing files in that scope.
+
+**HITL review**: By default, each discovered standard category is presented for human review. Options: **(a)ccept**, **(r)eject**, **(e)dit** (modify JSON), **(A)ccept All** (remaining in scope), **(S)kip Scope**. Use `--no-review` for CI or automated pipelines.
+
 ## Validation Overrides
 
 Customize rule thresholds per project:

@@ -21,6 +21,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Pipeline definitions** — YAML-defined workflows with configurable gates, retries, and feedback loops
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
 - **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
+- **Standards auto-discovery** — Analyze codebase to extract naming, error handling, type hints, docstring, import, and test patterns. Multi-scope support (monorepo-aware), Human-in-the-Loop review, token-capped injection into LLM prompts
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
 
 ## Quickstart
@@ -140,6 +141,19 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw list-rules` | Show all validation rules grouped by pipeline |
 | `sw list-rules --pipeline <name>` | Show rules for a specific validation pipeline |
 
+### Standards Auto-Discovery
+
+| Command | Description |
+|---|---|
+| `sw standards scan` | Scan codebase for naming, error handling, docstring, type hint, import, and test patterns |
+| `sw standards scan --no-review` | Scan without HITL review (CI-friendly) |
+| `sw standards scan --scope <name>` | Scan a single scope in a monorepo |
+| `sw standards show` | Display discovered standards |
+| `sw standards show --scope <name>` | Display standards for a specific scope |
+| `sw standards clear` | Remove all discovered standards for the active project |
+| `sw standards clear --scope <name>` | Remove standards for a specific scope |
+| `sw standards scopes` | Show scope summary table (scopes, languages, categories, scan times) |
+
 ## Validation Rules
 
 ### Spec Rules (S01–S11)
@@ -200,8 +214,9 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── pipelines/              # Bundled pipeline templates (YAML)
 │   ├── project/                # Scaffold, discovery, constitution loader
 │   ├── review/                 # AI reviewer (constitution-aware)
+│   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 2411+ tests (unit, integration, E2E)
+├── tests/                      # 2668+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
