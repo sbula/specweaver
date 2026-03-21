@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
@@ -75,6 +75,11 @@ def _find_line(text: str, needle: str) -> int | None:
 
 class TerminologyRule(Rule):
     """Detect inconsistent naming and undefined domain terms."""
+
+    PARAM_MAP: ClassVar[dict[str, str]] = {
+        "warn_threshold": "warn_threshold",
+        "fail_threshold": "fail_threshold",
+    }
 
     def __init__(
         self,
@@ -197,10 +202,16 @@ class TerminologyRule(Rule):
             line_num = _find_line(spec_text, term)
             findings.append(
                 Finding(
-                    message=f"Undefined domain term: `{term}` is not defined in any heading or code block",
+                    message=(
+                        f"Undefined domain term: `{term}` is not defined "
+                        "in any heading or code block"
+                    ),
                     line=line_num,
                     severity=Severity.WARNING,
-                    suggestion=f"Add a definition for `{term}` in a heading (### `{term}`) or code block.",
+                    suggestion=(
+                        f"Add a definition for `{term}` in a "
+                        f"heading (### `{term}`) or code block."
+                    ),
                 )
             )
 

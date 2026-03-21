@@ -133,19 +133,23 @@ class TestAnalyseContract:
 class TestTestabilityScore:
 
     def test_max_score(self) -> None:
-        score = _testability_score(has_code=True, assertion_count=10, has_concrete=True, has_io=True)
+        score = _testability_score(
+            has_code=True, assertion_count=10, has_concrete=True, has_io=True)
         assert score == 12  # 3 + 5(cap) + 2 + 2
 
     def test_zero_score(self) -> None:
-        score = _testability_score(has_code=False, assertion_count=0, has_concrete=False, has_io=False)
+        score = _testability_score(
+            has_code=False, assertion_count=0, has_concrete=False, has_io=False)
         assert score == 0
 
     def test_code_only(self) -> None:
-        score = _testability_score(has_code=True, assertion_count=0, has_concrete=False, has_io=False)
+        score = _testability_score(
+            has_code=True, assertion_count=0, has_concrete=False, has_io=False)
         assert score == 3
 
     def test_assertion_cap_at_5(self) -> None:
-        score = _testability_score(has_code=False, assertion_count=100, has_concrete=False, has_io=False)
+        score = _testability_score(
+            has_code=False, assertion_count=100, has_concrete=False, has_io=False)
         assert score == 5  # capped
 
 

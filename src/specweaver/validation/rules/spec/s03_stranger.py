@@ -13,7 +13,7 @@ In static mode, this rule SKIPS.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
@@ -34,6 +34,11 @@ _FAIL_THRESHOLD = 10
 
 class StrangerTestRule(Rule):
     """Detect specs that are not self-contained enough for a stranger to implement."""
+
+    PARAM_MAP: ClassVar[dict[str, str]] = {
+        "warn_threshold": "warn_threshold",
+        "fail_threshold": "fail_threshold",
+    }
 
     def __init__(
         self,

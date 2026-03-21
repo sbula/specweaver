@@ -19,7 +19,7 @@ import logging
 import re
 import sys
 from pathlib import Path  # noqa: TC003  -- used at runtime (is_dir, glob)
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from specweaver.validation.models import Rule
 
@@ -35,7 +35,7 @@ def load_rules_from_directory(
     directory: Path,
     *,
     registry: RuleRegistry | None = None,
-    category: str = "spec",
+    category: Literal["spec", "code"] = "spec",
 ) -> list[str]:
     """Scan a directory for .py files, discover Rule subclasses, register them.
 
@@ -75,7 +75,7 @@ def load_rules_from_paths(
     paths: list[Path],
     *,
     registry: RuleRegistry | None = None,
-    category: str = "spec",
+    category: Literal["spec", "code"] = "spec",
 ) -> list[str]:
     """Load custom rules from multiple directories.
 
@@ -96,7 +96,7 @@ def load_rules_from_paths(
 def _load_rules_from_file(
     filepath: Path,
     registry: RuleRegistry,
-    category: str,
+    category: Literal["spec", "code"],
 ) -> list[str]:
     """Load a single .py file and register any Rule subclasses found."""
     module_name = f"specweaver_custom_rules.{filepath.stem}"

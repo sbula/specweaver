@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
@@ -27,6 +27,11 @@ _WEIGHT_CODE_BLOCKS = 0.15
 
 class DayTestRule(Rule):
     """Detect specs that are too complex for a single implementation session."""
+
+    PARAM_MAP: ClassVar[dict[str, str]] = {
+        "warn_threshold": "warn_threshold",
+        "fail_threshold": "fail_threshold",
+    }
 
     def __init__(
         self,
@@ -76,7 +81,10 @@ class DayTestRule(Rule):
         ]
 
         if score > self._fail_threshold:
-            return self._fail(f"Complexity score {score:.1f} exceeds {self._fail_threshold}", findings)
+            return self._fail(
+                f"Complexity score {score:.1f} exceeds {self._fail_threshold}",
+                findings,
+            )
 
         if score > self._warn_threshold:
             return self._warn(f"Complexity score {score:.1f} is borderline", findings)

@@ -474,24 +474,27 @@ sequenceDiagram
 
 <div class="diagram-card">
   <h3>Validation Architecture</h3>
-  <p>Two rule families. Each rule is a standalone class extending the <code>Rule</code> ABC. The runner loads, filters, and executes them. Rules are <strong>kind-aware</strong>: the <code>SpecKind</code> enum (FEATURE, COMPONENT, CODE) selects presets that adjust headers, thresholds, and skip/enable behaviour.</p>
+  <p>Two rule families. Each rule is a standalone class extending the <code>Rule</code> ABC with a self-declaring <code>PARAM_MAP</code>. Rules are executed via YAML-defined sub-pipelines (not hardcoded lists). Rules are <strong>kind-aware</strong>: the <code>SpecKind</code> enum (FEATURE, COMPONENT) selects presets that adjust headers, thresholds, and skip/enable behaviour.</p>
   <pre class="mermaid">
 flowchart TD
     subgraph "CLI / Handler"
-        CALL["validate(spec_path, settings)"]
+        CALL["sw check file.md<br/>--pipeline NAME --level LEVEL"]
     end
 
-    subgraph "Validation Runner"
-        GR["get_spec_rules() / get_code_rules()"]
-        FILTER["Filter by settings:<br/>- enabled/disabled<br/>- requires_llm<br/>- requires_subprocess"]
-        BUILD["_build_rule_kwargs()<br/>Apply threshold overrides"]
-        RUN["run_rules(rules, text, path)"]
+    subgraph "Pipeline Resolution"
+        LOAD["load_pipeline_yaml()<br/>YAML + inheritance"]
+        SETTINGS["apply_settings_to_pipeline()<br/>DB overrides + CLI --set"]
+    end
+
+    subgraph "Pipeline Executor"
+        EXEC["execute_validation_pipeline()"]
         COUNT["count_by_status() / all_passed()"]
     end
 
     subgraph "Rule ABC"
         RULE["Rule"]
-        CHECK["check(text, path) → RuleResult"]
+        PMAP["PARAM_MAP: ClassVar<br/>Self-declaring params"]
+        CHECK["check(text, path) &rarr; RuleResult"]
         PASS["_pass() / _fail() / _warn() / _skip()"]
     end
 
@@ -501,10 +504,10 @@ flowchart TD
         STAT["Status: PASS | FAIL | WARN | SKIP"]
     end
 
-    CALL --> GR
-    GR --> FILTER --> BUILD --> RUN
-    RUN --> COUNT
-    RUN --> RULE
+    CALL --> LOAD --> SETTINGS --> EXEC
+    EXEC --> COUNT
+    EXEC --> RULE
+    RULE --> PMAP
     RULE --> CHECK --> PASS
     CHECK --> RR
     RR --> FIND
@@ -567,18 +570,33 @@ flowchart LR
 </div>
 
 <div class="diagram-card">
-  <h3>Validation Settings &amp; Override Flow</h3>
+  <h3>Validation Override Cascade (3 Layers)</h3>
   <pre class="mermaid">
-flowchart LR
-    A["specweaver.yaml<br/>(project config)"] --> B["ValidationSettings"]
-    C["CLI --set S08.fail_threshold=5"] --> B
-    B --> D["get_override(rule_id)"]
-    D --> E["RuleOverride"]
-    E --> F["warn_threshold<br/>fail_threshold<br/>enabled<br/>extra_params"]
-    F --> G["_build_rule_kwargs()"]
-    G --> H["Rule(**kwargs)"]
+flowchart TD
+    subgraph "Layer 1: YAML Pipeline [STRUCTURE]"
+        Y1["Base pipeline<br/>(validation_spec_default.yaml)"]
+        Y2["extends inheritance<br/>(profile or custom YAML)"]
+    end
+
+    subgraph "Layer 2: DB Overrides [RUNTIME TUNING]"
+        DB1["Per-project, per-rule<br/>sw config set RULE --warn/--fail"]
+        DB2["NOT written by set-profile<br/>(profile = YAML only)"]
+    end
+
+    subgraph "Layer 3: CLI --set [EPHEMERAL]"
+        CLI["sw check --set S08.fail_threshold=2<br/>Session-only, highest precedence"]
+    end
+
+    Y1 --> Y2 --> DB1
+    DB2 -.-x DB1
+    DB1 --> CLI
+    CLI --> EXEC["execute_validation_pipeline()"]
   </pre>
-  <p style="margin-top:.5rem;color:var(--muted);"><strong>Override cascade:</strong> code defaults → <code>SpecKind</code> presets → project DB overrides → <code>--set</code> CLI flags. Feature-level presets adjust S01 header, S03 mode, S04 skip, S05/S08 thresholds.</p>
+  <p style="margin-top:.5rem;color:var(--muted);">
+    <strong>Precedence:</strong> YAML base &lt; extends inheritance &lt; DB overrides &lt; <code>--set</code> CLI flags.<br/>
+    <strong>Feature-level:</strong> <code>--level feature</code> always uses <code>validation_spec_feature.yaml</code>, independent of active profile.<br/>
+    <strong>Self-declaring rules:</strong> Each <code>Rule</code> subclass declares <code>PARAM_MAP</code> mapping DB column names to constructor kwargs.
+  </p>
 </div>
 
 <!-- ================================================================== -->
@@ -785,67 +803,86 @@ flowchart LR
 <!-- ================================================================== -->
 <h2 id="profiles">7c. Domain Profiles</h2>
 
-<p>Domain profiles are <strong>named preset bundles</strong> of validation rule overrides. Instead of manually setting 10+ thresholds with <code>sw config set</code> commands, users apply a single profile that bulk-writes all overrides at once. Profiles are hardcoded Python dicts in <code>config/profiles.py</code> (versioned with the code).</p>
+<p>Domain profiles are <strong>named YAML pipeline configurations</strong> that tune validation thresholds for specific project types. Setting a profile <strong>selects a YAML pipeline</strong> — it does NOT write to the DB. Per-rule DB overrides (<code>sw config set</code>) are a separate, independent mechanism for runtime tuning.</p>
 
-<div class="callout callout-info">
-  <strong>Override Cascade:</strong> Code defaults → SpecKind presets → <strong>DB overrides (from profile)</strong> → CLI <code>--set</code> flags. Profiles write to the DB override layer, so individual <code>sw config set</code> commands still work on top.
+<div class="callout">
+  <strong>Clear Separation:</strong>
+  <ul>
+    <li><strong>YAML pipelines</strong> define structure — which rules run, in what order, with what base thresholds. Profiles select which YAML pipeline to use.</li>
+    <li><strong>DB overrides</strong> provide runtime tuning — per-project, per-rule enable/disable and threshold tweaks via <code>sw config set</code>.</li>
+    <li><strong>CLI <code>--set</code> flags</strong> are ephemeral, session-only overrides with the highest precedence.</li>
+  </ul>
 </div>
 
 <div class="diagram-card">
   <h3>Profile Application Flow</h3>
   <pre class="mermaid">
 flowchart LR
-    subgraph "Profiles Registry"
-        REG["PROFILES dict<br/>(5 built-in profiles)"]
-    end
-
-    subgraph "CLI"
-        CMD["sw config set-profile<br/>NAME"]
+    subgraph "Profile Selection"
+        CMD["sw config set-profile<br/>web-app"]
+        YAML["validation_spec_web_app.yaml<br/>(extends default)"]
     end
 
     subgraph "Database"
-        CLR["1. DELETE all<br/>validation_overrides"]
-        WRT["2. INSERT profile<br/>overrides"]
-        NAME["3. UPDATE projects<br/>domain_profile = NAME"]
+        NAME["Store profile name<br/>in projects.domain_profile"]
     end
 
-    subgraph "Validation"
-        LOAD["load_validation_settings()"]
-        RULES["get_spec_rules()"]
+    subgraph "At Validation Time"
+        CHECK["sw check spec.md"]
+        LOAD["Auto-select YAML:<br/>validation_spec_{profile}.yaml"]
+        APPLY["apply_settings_to_pipeline()<br/>(DB overrides on top)"]
+        EXEC["execute_validation_pipeline()"]
     end
 
-    CMD --> REG
-    REG --> CLR --> WRT --> NAME
-    LOAD --> RULES
+    CMD --> NAME
+    NAME -.-> LOAD
+    CHECK --> LOAD
+    YAML --> LOAD
+    LOAD --> APPLY --> EXEC
   </pre>
+</div>
+
+<div class="callout callout-info">
+  <strong>Custom profiles:</strong> Users can create their own profiles by placing <code>validation_spec_&lt;name&gt;.yaml</code> in <code>.specweaver/pipelines/</code>. Use <code>extends: validation_spec_default</code> to inherit from the base and customize only what you need.
 </div>
 
 <h4>Built-in Profiles</h4>
 <table>
-  <tr><th>Profile</th><th>Description</th><th>Key Overrides</th></tr>
-  <tr><td><code>web-app</code></td><td>Balanced thresholds for web applications</td><td>S03, S05, S08, C04</td></tr>
-  <tr><td><code>data-pipeline</code></td><td>Lenient on complexity for ETL/batch</td><td>S03, S05, S08, C04</td></tr>
-  <tr><td><code>library</code></td><td>Strict thresholds for public SDKs</td><td>S03, S05, S07, S08, S11, C04</td></tr>
-  <tr><td><code>microservice</code></td><td>Tuned for service boundaries</td><td>S03, S05, S08, C04</td></tr>
-  <tr><td><code>ml-model</code></td><td>Very lenient for research-style specs</td><td>S03, S05, S07, S08, S11, C04</td></tr>
+  <tr><th>Profile</th><th>YAML File</th><th>Description</th><th>Key Rules Tuned</th></tr>
+  <tr><td><code>web-app</code></td><td><code>validation_spec_web_app.yaml</code></td><td>Balanced thresholds for web applications</td><td>S03, S05</td></tr>
+  <tr><td><code>data-pipeline</code></td><td><code>validation_spec_data_pipeline.yaml</code></td><td>Lenient on complexity for ETL/batch</td><td>S03, S05, S08</td></tr>
+  <tr><td><code>library</code></td><td><code>validation_spec_library.yaml</code></td><td>Strict thresholds for public SDKs</td><td>S03, S05, S07, S08, S11</td></tr>
+  <tr><td><code>microservice</code></td><td><code>validation_spec_microservice.yaml</code></td><td>Tuned for service boundaries</td><td>S03, S05, S08</td></tr>
+  <tr><td><code>ml-model</code></td><td><code>validation_spec_ml_model.yaml</code></td><td>Very lenient for research-style specs</td><td>S03, S05, S07, S08, S11</td></tr>
 </table>
 
 <h4>CLI Commands</h4>
 <table>
   <tr><th>Command</th><th>Description</th></tr>
-  <tr><td><code>sw config profiles</code></td><td>List all available domain profiles</td></tr>
-  <tr><td><code>sw config show-profile NAME</code></td><td>Preview a profile's overrides</td></tr>
-  <tr><td><code>sw config set-profile NAME</code></td><td>Apply a profile (clears existing overrides)</td></tr>
+  <tr><td><code>sw config profiles</code></td><td>List all available domain profiles (built-in + custom)</td></tr>
+  <tr><td><code>sw config show-profile NAME</code></td><td>Preview a profile's threshold differences vs default</td></tr>
+  <tr><td><code>sw config set-profile NAME</code></td><td>Select a profile (stores name, selects YAML pipeline at check time)</td></tr>
   <tr><td><code>sw config get-profile</code></td><td>Show the active profile for the current project</td></tr>
-  <tr><td><code>sw config reset-profile</code></td><td>Clear profile and all validation overrides</td></tr>
+  <tr><td><code>sw config reset-profile</code></td><td>Clear profile selection (keeps per-rule DB overrides)</td></tr>
+</table>
+
+<h4>Pipeline Selection Precedence</h4>
+<table>
+  <tr><th>Priority</th><th>Source</th><th>Example</th></tr>
+  <tr><td>1 (highest)</td><td><code>--pipeline</code> flag</td><td><code>sw check --pipeline validation_spec_library</code></td></tr>
+  <tr><td>2</td><td><code>--level</code> flag</td><td><code>sw check --level feature</code> → always <code>validation_spec_feature.yaml</code></td></tr>
+  <tr><td>3</td><td>Active profile</td><td><code>sw config set-profile web-app</code> → <code>validation_spec_web_app.yaml</code></td></tr>
+  <tr><td>4 (lowest)</td><td>Default</td><td><code>validation_spec_default.yaml</code></td></tr>
 </table>
 
 <h4>Implementation Details</h4>
 <table>
   <tr><th>File</th><th>Purpose</th></tr>
-  <tr><td><code>config/profiles.py</code></td><td><code>DomainProfile</code> frozen dataclass, <code>PROFILES</code> registry, <code>get_profile()</code>/<code>list_profiles()</code> API</td></tr>
-  <tr><td><code>config/database.py</code></td><td>Schema v5 migration (<code>domain_profile</code> column), <code>set_domain_profile()</code>/<code>get_domain_profile()</code>/<code>clear_domain_profile()</code></td></tr>
+  <tr><td><code>config/profiles.py</code></td><td><code>list_profiles()</code> scans YAML files, <code>get_profile_description()</code> reads from YAML</td></tr>
+  <tr><td><code>config/database.py</code></td><td><code>set_domain_profile()</code> stores name only, <code>clear_domain_profile()</code> clears name only</td></tr>
   <tr><td><code>cli/config.py</code></td><td>5 <code>config_app</code> commands (profiles, show-profile, set-profile, get-profile, reset-profile)</td></tr>
+  <tr><td><code>cli/validation.py</code></td><td>Pipeline auto-selection from active profile in <code>check()</code></td></tr>
+  <tr><td><code>pipelines/*.yaml</code></td><td>8 pipeline YAMLs (3 base + 5 built-in profiles). Custom profiles in <code>.specweaver/pipelines/</code></td></tr>
 </table>
 
 <!-- ================================================================== -->

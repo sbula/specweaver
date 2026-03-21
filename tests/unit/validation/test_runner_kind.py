@@ -1,131 +1,187 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""Tests for runner kind-threading via SpecKind + get_presets."""
+"""Tests for SpecKind pipeline selection and spec_kind presets.
+
+Replaces the old test_runner_kind.py which tested via the now-removed
+``get_spec_rules(kind=...)`` legacy function.
+
+The correct pipeline-based design (Feature 3.5b) is:
+- ``--level component`` (default) → ``validation_spec_default`` pipeline
+- ``--level feature``             → ``validation_spec_feature`` pipeline
+- DB settings on top via ``apply_settings_to_pipeline``
+
+SpecKind presets (spec_kind.get_presets) are now for direct rule
+instantiation only — they are NOT applied automatically by the runner.
+These tests verify:
+1. Pipeline YAML selection by level (via _resolve_pipeline_name)
+2. Feature pipeline inherits default and removes S04
+3. SpecKind presets are still accessible for direct use
+4. Settings overrides interact correctly with the pipeline YAML params
+"""
 
 from __future__ import annotations
 
-from specweaver.validation.runner import get_spec_rules
-from specweaver.validation.spec_kind import SpecKind
-
-
-class TestRunnerKindThreading:
-    """get_spec_rules(kind=...) applies kind-specific presets to rules."""
-
-    def test_kind_none_is_default_behaviour(self) -> None:
-        """No kind → same 11 rules with default thresholds."""
-        rules = get_spec_rules()
-        assert len(rules) == 11
-
-    def test_kind_component_same_as_default(self) -> None:
-        """COMPONENT → no preset overrides, same as kind=None."""
-        rules = get_spec_rules(kind=SpecKind.COMPONENT)
-        assert len(rules) == 11
-        s08 = next(r for r in rules if r.rule_id == "S08")
-        assert s08._warn_threshold == 1  # component default
-
-    def test_kind_feature_applies_s01_header(self) -> None:
-        """FEATURE → S01 uses Intent header pattern."""
-        rules = get_spec_rules(kind=SpecKind.FEATURE)
-        s01 = next(r for r in rules if r.rule_id == "S01")
-        assert s01._kind == SpecKind.FEATURE
-        assert s01._header_pattern is not None
-
-    def test_kind_feature_applies_s01_thresholds(self) -> None:
-        """FEATURE → S01 gets warn=2, fail=4."""
-        rules = get_spec_rules(kind=SpecKind.FEATURE)
-        s01 = next(r for r in rules if r.rule_id == "S01")
-        assert s01._warn_conjunctions == 2
-        assert s01._fail_conjunctions == 4
-
-    def test_kind_feature_applies_s03_mode(self) -> None:
-        """FEATURE → S03 mode='abstraction_leak'."""
-        rules = get_spec_rules(kind=SpecKind.FEATURE)
-        s03 = next(r for r in rules if r.rule_id == "S03")
-        assert s03._mode == "abstraction_leak"
-
-    def test_kind_feature_applies_s04_skip(self) -> None:
-        """FEATURE → S04 skip=True."""
-        rules = get_spec_rules(kind=SpecKind.FEATURE)
-        s04 = next(r for r in rules if r.rule_id == "S04")
-        assert s04._skip is True
-
-    def test_kind_feature_applies_s05_thresholds(self) -> None:
-        """FEATURE → S05 gets warn=60, fail=100."""
-        rules = get_spec_rules(kind=SpecKind.FEATURE)
-        s05 = next(r for r in rules if r.rule_id == "S05")
-        assert s05._warn_threshold == 60
-        assert s05._fail_threshold == 100
-
-    def test_kind_feature_applies_s08_thresholds(self) -> None:
-        """FEATURE → S08 gets warn=2, fail=5."""
-        rules = get_spec_rules(kind=SpecKind.FEATURE)
-        s08 = next(r for r in rules if r.rule_id == "S08")
-        assert s08._warn_threshold == 2
-        assert s08._fail_threshold == 5
-
-    def test_kind_feature_unchanged_rules_unaffected(self) -> None:
-        """Rules without presets (S02, S06, S07, S09-S11) are unchanged."""
-        rules_default = get_spec_rules()
-        rules_feature = get_spec_rules(kind=SpecKind.FEATURE)
-        unchanged_ids = {"S02", "S06", "S07", "S09", "S10", "S11"}
-        for rid in unchanged_ids:
-            r_def = next(r for r in rules_default if r.rule_id == rid)
-            r_feat = next(r for r in rules_feature if r.rule_id == rid)
-            assert type(r_def) is type(r_feat)
-
-    def test_settings_override_presets(self) -> None:
-        """Settings overrides take priority over kind presets."""
-        from specweaver.config.settings import RuleOverride, ValidationSettings
-
-        settings = ValidationSettings(overrides={
-            "S08": RuleOverride(rule_id="S08", warn_threshold=99.0),
-        })
-        rules = get_spec_rules(kind=SpecKind.FEATURE, settings=settings)
-        s08 = next(r for r in rules if r.rule_id == "S08")
-        # Settings override (99) should win over kind preset (2)
-        assert s08._warn_threshold == 99
-
+from specweaver.config.settings import RuleOverride, ValidationSettings
+from specweaver.validation.executor import (
+    apply_settings_to_pipeline,
+    execute_validation_pipeline,
+)
+from specweaver.validation.pipeline_loader import load_pipeline_yaml
+from specweaver.validation.spec_kind import SpecKind, get_presets
 
 # ---------------------------------------------------------------------------
-# Edge cases
+# Pipeline YAML selection by --level
 # ---------------------------------------------------------------------------
 
 
-class TestRunnerKindEdgeCases:
-    """Edge cases for runner kind-threading."""
+class TestPipelineLevelSelection:
+    """--level selects the correct YAML pipeline name via _resolve_pipeline_name."""
 
-    def test_settings_override_s01_beats_preset(self) -> None:
-        """Settings override for S01 wins over FEATURE preset."""
-        from specweaver.config.settings import RuleOverride, ValidationSettings
+    def _load(self, name: str):
+        """Load a pipeline by name, triggering rule registration."""
+        import specweaver.validation.rules.spec  # noqa: F401
+        return load_pipeline_yaml(name)
 
-        # _THRESHOLD_PARAMS maps warn_threshold → warn_conjunctions for S01
+    def test_component_level_loads_default_pipeline(self) -> None:
+        """component level → validation_spec_default."""
+        from specweaver.cli.validation import _resolve_pipeline_name
+        assert _resolve_pipeline_name("component", None) == "validation_spec_default"
+
+    def test_feature_level_loads_feature_pipeline(self) -> None:
+        """feature level → validation_spec_feature."""
+        from specweaver.cli.validation import _resolve_pipeline_name
+        assert _resolve_pipeline_name("feature", None) == "validation_spec_feature"
+
+    def test_code_level_loads_code_pipeline(self) -> None:
+        """code level → validation_code_default."""
+        from specweaver.cli.validation import _resolve_pipeline_name
+        assert _resolve_pipeline_name("code", None) == "validation_code_default"
+
+    def test_explicit_pipeline_overrides_level(self) -> None:
+        """--pipeline always wins over --level."""
+        from specweaver.cli.validation import _resolve_pipeline_name
+        result = _resolve_pipeline_name("component", "validation_spec_library")
+        assert result == "validation_spec_library"
+
+    def test_component_pipeline_has_eleven_steps(self) -> None:
+        """Default component pipeline has 11 spec rules."""
+        pipeline = self._load("validation_spec_default")
+        assert len(pipeline.steps) == 11
+
+    def test_feature_pipeline_excludes_s04(self) -> None:
+        """Feature pipeline removes S04 (dependency direction)."""
+        pipeline = self._load("validation_spec_feature")
+        rule_ids = {s.rule for s in pipeline.steps}
+        assert "S04" not in rule_ids
+
+    def test_feature_pipeline_has_ten_steps(self) -> None:
+        """Feature pipeline has 10 steps (11 - S04 removed)."""
+        pipeline = self._load("validation_spec_feature")
+        assert len(pipeline.steps) == 10
+
+    def test_feature_pipeline_inherits_component_rules(self) -> None:
+        """Feature pipeline keeps S01, S02, S03, S08 etc."""
+        pipeline = self._load("validation_spec_feature")
+        rule_ids = {s.rule for s in pipeline.steps}
+        assert "S01" in rule_ids
+        assert "S08" in rule_ids
+
+
+# ---------------------------------------------------------------------------
+# SpecKind preset module
+# ---------------------------------------------------------------------------
+
+
+class TestSpecKindPresets:
+    """spec_kind.get_presets returns the right constructor kwargs per kind."""
+
+    def test_component_kind_returns_empty(self) -> None:
+        """COMPONENT kind → no presets (use code defaults)."""
+        assert get_presets("S08", SpecKind.COMPONENT) == {}
+
+    def test_none_kind_returns_empty(self) -> None:
+        """None kind → no presets."""
+        assert get_presets("S08", None) == {}
+
+    def test_feature_kind_s01_presets(self) -> None:
+        """FEATURE S01 → warn_conjunctions=2, fail_conjunctions=4."""
+        presets = get_presets("S01", SpecKind.FEATURE)
+        assert presets.get("warn_conjunctions") == 2
+        assert presets.get("fail_conjunctions") == 4
+        assert presets.get("kind") == SpecKind.FEATURE
+
+    def test_feature_kind_s03_mode(self) -> None:
+        """FEATURE S03 → mode='abstraction_leak'."""
+        presets = get_presets("S03", SpecKind.FEATURE)
+        assert presets.get("mode") == "abstraction_leak"
+
+    def test_feature_kind_s04_skip(self) -> None:
+        """FEATURE S04 → skip=True."""
+        presets = get_presets("S04", SpecKind.FEATURE)
+        assert presets.get("skip") is True
+
+    def test_feature_kind_s05_thresholds(self) -> None:
+        """FEATURE S05 → warn=60, fail=100."""
+        presets = get_presets("S05", SpecKind.FEATURE)
+        assert presets.get("warn_threshold") == 60
+        assert presets.get("fail_threshold") == 100
+
+    def test_feature_kind_s08_thresholds(self) -> None:
+        """FEATURE S08 → warn=2, fail=5."""
+        presets = get_presets("S08", SpecKind.FEATURE)
+        assert presets.get("warn_threshold") == 2
+        assert presets.get("fail_threshold") == 5
+
+    def test_unknown_rule_returns_empty(self) -> None:
+        """Unknown rule_id → no presets."""
+        assert get_presets("Z99", SpecKind.FEATURE) == {}
+
+    def test_s02_feature_returns_empty(self) -> None:
+        """S02 has no FEATURE presets."""
+        assert get_presets("S02", SpecKind.FEATURE) == {}
+
+
+# ---------------------------------------------------------------------------
+# Settings override on top of feature pipeline
+# ---------------------------------------------------------------------------
+
+
+class TestFeaturePipelineWithSettings:
+    """DB settings override can be layered on top of feature pipeline."""
+
+    def _load_feature(self):
+        import specweaver.validation.rules.spec  # noqa: F401
+        return load_pipeline_yaml("validation_spec_feature")
+
+    def test_settings_override_applies_to_feature_pipeline(self) -> None:
+        """Settings override works on top of feature pipeline."""
+        pipeline = self._load_feature()
         settings = ValidationSettings(overrides={
-            "S01": RuleOverride(rule_id="S01", warn_threshold=10.0),
+            "S08": RuleOverride(rule_id="S08", warn_threshold=99.0, fail_threshold=99.0),
         })
-        rules = get_spec_rules(kind=SpecKind.FEATURE, settings=settings)
-        s01 = next(r for r in rules if r.rule_id == "S01")
-        assert s01._warn_conjunctions == 10  # settings override, not kind preset 2
+        applied = apply_settings_to_pipeline(pipeline, settings)
+        s08_step = next(s for s in applied.steps if s.rule == "S08")
+        assert s08_step.params.get("warn_threshold") == 99
 
-    def test_settings_override_s05_beats_preset(self) -> None:
-        """Settings override for S05 wins over FEATURE preset."""
-        from specweaver.config.settings import RuleOverride, ValidationSettings
-
+    def test_disable_rule_in_feature_pipeline(self) -> None:
+        """Disabling a rule works in the feature pipeline too."""
+        pipeline = self._load_feature()
         settings = ValidationSettings(overrides={
-            "S05": RuleOverride(rule_id="S05", warn_threshold=99.0),
+            "S08": RuleOverride(rule_id="S08", enabled=False),
         })
-        rules = get_spec_rules(kind=SpecKind.FEATURE, settings=settings)
-        s05 = next(r for r in rules if r.rule_id == "S05")
-        assert s05._warn_threshold == 99  # settings override, not kind preset 60
+        applied = apply_settings_to_pipeline(pipeline, settings)
+        step_ids = {s.rule for s in applied.steps}
+        assert "S08" not in step_ids
+        # S04 was already removed by feature pipeline, still absent
+        assert "S04" not in step_ids
 
-    def test_kind_feature_with_include_llm_true(self) -> None:
-        """Kind presets still apply when include_llm=True."""
-        rules = get_spec_rules(kind=SpecKind.FEATURE, include_llm=True)
-        s01 = next(r for r in rules if r.rule_id == "S01")
-        assert s01._kind == SpecKind.FEATURE
-
-    def test_kind_feature_same_rule_count(self) -> None:
-        """Feature kind doesn't add or remove rules — same 11."""
-        rules_default = get_spec_rules()
-        rules_feature = get_spec_rules(kind=SpecKind.FEATURE)
-        assert len(rules_default) == len(rules_feature)
+    def test_feature_pipeline_execution_produces_results(self) -> None:
+        """Execute the feature pipeline end-to-end and get results."""
+        pipeline = self._load_feature()
+        spec = "## Intent\nThis feature allows users to export data.\n"
+        results = execute_validation_pipeline(pipeline, spec)
+        assert len(results) == len(pipeline.steps)
+        result_ids = {r.rule_id for r in results}
+        assert "S04" not in result_ids
+        assert "S01" in result_ids

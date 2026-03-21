@@ -396,3 +396,91 @@ Injection merges scope-specific + cross-cutting (scope=`.`) standards.
 uv run pytest tests/ -x -q
 uv run ruff check src/ tests/
 ```
+
+---
+
+## Phase 3.5b: Validation Override Consolidation
+
+**Goal**: Eliminate duplicated threshold definitions between `profiles.py` Python dicts and YAML pipeline files. Establish a clean, well-documented separation: YAML = structure, DB = runtime tuning.
+
+### Design Decisions
+
+| # | Decision | Choice |
+|---|----------|--------|
+| 1 | Overall approach | DB overrides as runtime layer on top of YAML |
+| 2 | Legacy functions | Remove `get_spec_rules()`/`get_code_rules()` immediately |
+| 3 | Profile mechanism | Profile just selects YAML pipeline, no DB override writes |
+| 4 | Pipeline conflict | `--pipeline` explicitly overrides profile |
+| 5 | Custom profiles | Supported via `.specweaver/pipelines/validation_spec_*.yaml` |
+| 6 | `_THRESHOLD_PARAMS` | Fix now: rules self-declare `PARAM_MAP` |
+| 7 | Feature-level + profiles | Independent — `--level feature` always uses `validation_spec_feature.yaml` |
+
+### Validation Override Cascade (The Contract)
+
+```
+Precedence: YAML base < extends < DB overrides < --set flags
+
+Layer 1: YAML Pipeline (STRUCTURE)
+├─ Which rules run, in what order, with what base params
+├─ Profile-specific tuning via extends/override/remove/add
+├─ Auto-selected via: active profile OR --pipeline flag
+└─ Files: specweaver/pipelines/validation_spec_*.yaml
+         .specweaver/pipelines/validation_spec_*.yaml (custom)
+
+Layer 2: DB Overrides (RUNTIME TUNING)
+├─ Per-project, per-rule enable/disable + threshold tweaks
+├─ Written by: sw config set <rule> --warn/--fail/--enabled
+├─ NOT written by sw config set-profile (profile = YAML only)
+└─ Storage: validation_overrides table in specweaver.db
+
+Layer 3: CLI --set Flags (EPHEMERAL)
+├─ One-off, session-only override. Highest precedence.
+└─ Example: sw check --set S08.fail_threshold=2
+```
+
+### Architecture Validation
+
+| Module | Archetype | Boundary Respected? |
+|--------|-----------|---------------------|
+| `validation/` | pure-logic, consumes `config/` | ✅ `_THRESHOLD_PARAMS` moves within module |
+| `config/` | pure-logic, leaf | ✅ `profiles.py` stays here, `database.py` simplified |
+| `cli/` | orchestrator | ✅ Profile→pipeline selection logic is CLI concern |
+| `pipelines/` | data | ✅ No code changes, YAML files only |
+
+### Sub-Phase B-1: Profiles Select YAML Pipelines
+
+| Component | What |
+|---|---|
+| `config/profiles.py` | Remove `PROFILES` dict and `DomainProfile` class. `list_profiles()` scans YAML files. `get_profile_description(name)` loads YAML description. |
+| `config/database.py` | `set_domain_profile()` simplified: only stores name, no bulk-write to `validation_overrides`. `clear_domain_profile()` only clears name, keeps per-rule tweaks. |
+| `cli/validation.py` | `check()`: auto-select `validation_spec_{profile_name}.yaml` when profile active. Precedence: `--pipeline` > `--level` > active profile > default. `--level feature` always uses `validation_spec_feature.yaml`. |
+| `cli/config.py` | `config_set_profile()` simplified. `config_show_profile()` sources from YAML. `config_reset_profile()` only clears profile name. |
+
+### Sub-Phase B-2: Remove Legacy + Self-Declaring Rules
+
+| Component | What |
+|---|---|
+| `validation/models.py` | Add `PARAM_MAP: ClassVar[dict[str, str]] = {}` to `Rule` ABC. Maps DB-column-like names to constructor kwargs. |
+| 8 configurable rules | Add `PARAM_MAP` to S01, S03, S04, S05, S07, S08, S11, C04. Each rule self-declares its param mapping. |
+| `validation/executor.py` | Move `_build_rule_kwargs` here, rewrite to use `rule_cls.PARAM_MAP` instead of hardcoded `_THRESHOLD_PARAMS`. |
+| `validation/runner.py` | Remove: `get_spec_rules()`, `get_code_rules()`, `_build_rule_kwargs()`, `_THRESHOLD_PARAMS`. Keep: `run_rules()`, `count_by_status()`, `all_passed()`. |
+| 4 test files (~45 calls) | Rewrite to use pipeline executor path instead of removed functions. |
+
+### Sub-Phase B-3: Documentation
+
+| Component | What |
+|---|---|
+| `README.md` | Add "Validation Override Cascade" section |
+| `docs/quickstart.md` | Update profile behavior documentation |
+| `validation_spec_default.yaml` | Add cascade comment block |
+| `context.yaml` (validation, pipelines) | Update descriptions |
+| `docs/test_coverage_matrix.md` | Add 3.5b test coverage rows |
+
+### Tests
+
+- **Unit** (~15): Profile YAML listing, profile-to-pipeline selection, `PARAM_MAP` self-declaration, `set_domain_profile()` simplified behavior, `clear_domain_profile()` preserves overrides
+- **Integration** (~10): `sw config set-profile` → pipeline selection, `sw check` with active profile, `--pipeline` overrides profile, `--level feature` ignores profile, DB override on top of profile pipeline
+- **Edge cases** (~5): Custom profile from `.specweaver/`, reset-profile keeps tweaks, unknown profile error, profile + `--set` combined
+
+**Verification**: `/pre-commit-test-gap` workflow (5 phases).
+

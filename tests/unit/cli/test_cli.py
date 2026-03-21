@@ -192,7 +192,10 @@ class TestCLIBehavioral:
 
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         # Ensure no key from any source
-        monkeypatch.setattr(os, "environ", {k: v for k, v in os.environ.items() if k != "GEMINI_API_KEY"})
+        monkeypatch.setattr(
+            os, "environ",
+            {k: v for k, v in os.environ.items() if k != "GEMINI_API_KEY"},
+        )
 
         runner.invoke(app, ["init", "testapp", "--path", str(tmp_path)])
         result = runner.invoke(app, ["draft", "test_comp", "--project", str(tmp_path)])
@@ -485,7 +488,8 @@ class TestBuildRuleKwargsExtraParams:
     def test_extra_params_max_h2_passed_to_s01(self) -> None:
         """extra_params with max_h2 should be included in kwargs for S01."""
         from specweaver.config.settings import RuleOverride, ValidationSettings
-        from specweaver.validation.runner import _build_rule_kwargs
+        from specweaver.validation.executor import _build_rule_kwargs
+        from specweaver.validation.rules.spec.s01_one_sentence import OneSentenceRule
 
         settings = ValidationSettings(
             overrides={
@@ -495,24 +499,26 @@ class TestBuildRuleKwargsExtraParams:
                 ),
             },
         )
-        kwargs = _build_rule_kwargs("S01", settings)
+        kwargs = _build_rule_kwargs(OneSentenceRule, settings)
         assert kwargs["max_h2"] == 3
 
     def test_extra_params_empty_leaves_defaults(self) -> None:
         """Empty extra_params should not inject anything."""
         from specweaver.config.settings import RuleOverride, ValidationSettings
-        from specweaver.validation.runner import _build_rule_kwargs
+        from specweaver.validation.executor import _build_rule_kwargs
+        from specweaver.validation.rules.spec.s01_one_sentence import OneSentenceRule
 
         settings = ValidationSettings(
             overrides={"S01": RuleOverride(rule_id="S01")},
         )
-        kwargs = _build_rule_kwargs("S01", settings)
+        kwargs = _build_rule_kwargs(OneSentenceRule, settings)
         assert "max_h2" not in kwargs
 
     def test_extra_params_combined_with_thresholds(self) -> None:
         """extra_params + standard thresholds should both appear."""
         from specweaver.config.settings import RuleOverride, ValidationSettings
-        from specweaver.validation.runner import _build_rule_kwargs
+        from specweaver.validation.executor import _build_rule_kwargs
+        from specweaver.validation.rules.spec.s01_one_sentence import OneSentenceRule
 
         settings = ValidationSettings(
             overrides={
@@ -524,16 +530,17 @@ class TestBuildRuleKwargsExtraParams:
                 ),
             },
         )
-        kwargs = _build_rule_kwargs("S01", settings)
+        kwargs = _build_rule_kwargs(OneSentenceRule, settings)
         assert kwargs["warn_conjunctions"] == 1
         assert kwargs["fail_conjunctions"] == 3
         assert kwargs["max_h2"] == 5
 
     def test_no_settings_returns_empty(self) -> None:
         """None settings should return empty kwargs."""
-        from specweaver.validation.runner import _build_rule_kwargs
+        from specweaver.validation.executor import _build_rule_kwargs
+        from specweaver.validation.rules.spec.s01_one_sentence import OneSentenceRule
 
-        assert _build_rule_kwargs("S01", None) == {}
+        assert _build_rule_kwargs(OneSentenceRule, None) == {}
 
 
 # ---------------------------------------------------------------------------

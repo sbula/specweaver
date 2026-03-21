@@ -100,6 +100,38 @@ def _load_check_settings(
     return settings
 
 
+def _resolve_pipeline_name(level: str, pipeline: str | None) -> str:
+    """Resolve the YAML pipeline name from --pipeline or --level.
+
+    Precedence: ``--pipeline`` > ``--level``.
+    Raises ``typer.Exit`` for unknown level values.
+    """
+    if pipeline:
+        return pipeline
+    if level == "component":
+        return "validation_spec_default"
+    if level == "feature":
+        return "validation_spec_feature"
+    if level == "code":
+        return "validation_code_default"
+    from specweaver.cli import _core
+    _core.console.print(
+        f"[red]Error:[/red] Unknown level '{level}'. Use 'feature', 'component', or 'code'.",
+    )
+    raise typer.Exit(code=1)
+
+
+def _build_result_label(level: str, pipeline: str | None, pipeline_name: str) -> str:
+    """Return a human-readable label for the validation result output."""
+    if pipeline:
+        return pipeline_name
+    if level == "feature":
+        return "Feature"
+    if level == "code":
+        return "Code"
+    return "Spec"
+
+
 @_core.app.command()
 def check(
     target: str = typer.Argument(
@@ -109,7 +141,10 @@ def check(
         "component",
         "--level",
         "-l",
-        help="Validation level: feature (spec, feature thresholds), component (spec, default thresholds), or code.",
+        help=(
+            "Validation level: feature (spec, feature thresholds), "
+            "component (spec, default thresholds), or code."
+        ),
     ),
     project: str | None = typer.Option(
         None,
@@ -164,20 +199,7 @@ def check(
         raise typer.Exit(code=1) from None
     project_dir = Path(project) if project else None
 
-    # Resolve pipeline name from --pipeline or --level
-    if pipeline:
-        pipeline_name = pipeline
-    elif level == "component":
-        pipeline_name = "validation_spec_default"
-    elif level == "feature":
-        pipeline_name = "validation_spec_feature"
-    elif level == "code":
-        pipeline_name = "validation_code_default"
-    else:
-        _core.console.print(
-            f"[red]Error:[/red] Unknown level '{level}'. Use 'feature', 'component', or 'code'.",
-        )
-        raise typer.Exit(code=1)
+    pipeline_name = _resolve_pipeline_name(level, pipeline)
 
     try:
         resolved = load_pipeline_yaml(pipeline_name, project_dir=project_dir)
@@ -193,7 +215,7 @@ def check(
 
     results = execute_validation_pipeline(resolved, content, target_path)
 
-    label = pipeline_name if pipeline else ("Feature" if level == "feature" else ("Code" if level == "code" else "Spec"))
+    label = _build_result_label(level, pipeline, pipeline_name)
     _display_results(results, f"{label} Validation: {target_path.name}")
     _print_summary(results, strict=strict)
 

@@ -24,7 +24,6 @@ from specweaver.validation.rules.spec.s11_terminology import TerminologyRule
 from specweaver.validation.runner import (
     all_passed,
     count_by_status,
-    get_spec_rules,
     run_rules,
 )
 
@@ -349,7 +348,9 @@ result = process(data)
 """
         result = ConcreteExampleRule().check(spec)
         assert result.status == Status.WARN
-        assert any("elsewhere" in f.message.lower() or "code" in f.message.lower() for f in result.findings)
+        assert any(
+            "elsewhere" in f.message.lower() or "code" in f.message.lower()
+            for f in result.findings)
 
     def test_no_code_blocks_and_no_examples_fails(self) -> None:
         """Contract has no code blocks and no example patterns."""
@@ -547,7 +548,9 @@ Service that handles timeouts and retries on failure.
 """
         result = ErrorPathRule().check(spec)
         assert result.status == Status.WARN
-        assert any("error keywords" in f.message.lower() or "no dedicated" in f.message.lower() for f in result.findings)
+        assert any(
+            "error keywords" in f.message.lower() or "no dedicated" in f.message.lower()
+            for f in result.findings)
 
     def test_policy_with_error_keywords_passes(self) -> None:
         """Policy section containing error keywords should pass."""
@@ -652,21 +655,39 @@ The component is complete and robust.
 
 
 class TestRunner:
-    """Test the validation runner."""
+    """Test the validation runner (pipeline executor path)."""
 
-    def test_get_spec_rules_excludes_llm(self) -> None:
-        rules = get_spec_rules(include_llm=False)
-        assert len(rules) == 11
-        assert all(not r.requires_llm for r in rules)
+    def test_spec_pipeline_has_eleven_rules(self) -> None:
+        import specweaver.validation.rules.spec  # noqa: F401
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        assert len(pipeline.steps) == 11
 
-    def test_get_spec_rules_ordered_by_id(self) -> None:
-        rules = get_spec_rules()
-        ids = [r.rule_id for r in rules]
-        assert ids == sorted(ids)
+    def test_spec_pipeline_excludes_llm_rules(self) -> None:
+        import specweaver.validation.rules.spec  # noqa: F401
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        results = execute_validation_pipeline(pipeline, "## 1. Purpose\nSimple.\n")
+        # No step should fail with 'not found in registry' (LLM rules excluded)
+        for r in results:
+            assert "not found in registry" not in r.message
+
+    def test_spec_pipeline_rules_are_present(self) -> None:
+        import specweaver.validation.rules.spec  # noqa: F401
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        ids = {s.rule for s in pipeline.steps}
+        # All S01-S11 must be present
+        expected = {f"S{i:02d}" for i in range(1, 12)}
+        assert expected == ids
 
     def test_run_rules_collects_all_results(self, good_spec: str) -> None:
-        rules = get_spec_rules()
-        results = run_rules(rules, good_spec)
+        import specweaver.validation.rules.spec  # noqa: F401
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        results = execute_validation_pipeline(pipeline, good_spec)
         assert len(results) == 11
 
     def test_run_rules_exception_handling(self) -> None:
@@ -718,9 +739,12 @@ class TestRunner:
         assert counts[Status.SKIP] == 0
 
     def test_good_spec_passes_all(self, good_spec: str) -> None:
-        """The good_spec fixture should pass all 10 rules."""
-        rules = get_spec_rules()
-        results = run_rules(rules, good_spec)
+        """The good_spec fixture should pass all 11 rules."""
+        import specweaver.validation.rules.spec  # noqa: F401
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        results = execute_validation_pipeline(pipeline, good_spec)
         for r in results:
             assert r.status in (Status.PASS, Status.WARN), (
                 f"{r.rule_id} ({r.rule_name}): {r.status.value} — {r.message}"

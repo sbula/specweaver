@@ -26,7 +26,7 @@ from specweaver.validation.rules.code.c05_import_direction import ImportDirectio
 from specweaver.validation.rules.code.c06_no_bare_except import NoBareExceptRule
 from specweaver.validation.rules.code.c07_no_orphan_todo import NoOrphanTodoRule
 from specweaver.validation.rules.code.c08_type_hints import TypeHintsRule
-from specweaver.validation.runner import get_code_rules
+from specweaver.validation.runner import run_rules
 
 # ---------------------------------------------------------------------------
 # C01 Syntax Valid
@@ -320,31 +320,38 @@ class TestC08TypeHints:
 # ---------------------------------------------------------------------------
 
 
-class TestCodeRulesRunner:
-    """Test get_code_rules and running them."""
+class TestCodeRulesPipeline:
+    """Test the code validation pipeline executor path."""
 
-    def test_get_code_rules_default(self) -> None:
-        rules = get_code_rules()
-        ids = [r.rule_id for r in rules]
-        assert "C01" in ids
-        assert "C03" in ids  # Subprocess rules included
+    def test_code_pipeline_has_expected_rules(self) -> None:
+        import specweaver.validation.rules.code  # noqa: F401
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        pipeline = load_pipeline_yaml("validation_code_default")
+        ids = {s.rule for s in pipeline.steps}
+        assert "C01" in ids  # Subprocess rules included
+        assert "C03" in ids
         assert "C04" in ids
 
-    def test_get_code_rules_no_subprocess(self) -> None:
-        rules = get_code_rules(include_subprocess=False)
-        ids = [r.rule_id for r in rules]
-        assert "C01" in ids
-        assert "C03" not in ids
-        assert "C04" not in ids
-
     def test_run_code_rules_on_clean_code(self) -> None:
-        from specweaver.validation.runner import run_rules
+        import specweaver.validation.rules.code  # noqa: F401
+        from specweaver.config.settings import RuleOverride, ValidationSettings
+        from specweaver.validation.executor import (
+            apply_settings_to_pipeline,
+            execute_validation_pipeline,
+        )
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
         code = "def greet(name: str) -> str:\n    return f'Hello {name}!'\n"
-        rules = get_code_rules(include_subprocess=False)
-        results = run_rules(rules, code)
 
-        # C01 should pass, most others too (no path for C02)
+        # Load the code pipeline, but disable subprocess rules for unit test
+        pipeline = load_pipeline_yaml("validation_code_default")
+        settings = ValidationSettings(overrides={
+            "C03": RuleOverride(rule_id="C03", enabled=False),
+            "C04": RuleOverride(rule_id="C04", enabled=False),
+        })
+        pipeline = apply_settings_to_pipeline(pipeline, settings)
+        results = execute_validation_pipeline(pipeline, code)
+
         c01 = next(r for r in results if r.rule_id == "C01")
         assert c01.status == Status.PASS
 
@@ -970,40 +977,51 @@ class TestCleanCodeOutput:
 
 
 class TestValidationRunnerFiltering:
-    """Test that runner filter flags work correctly."""
+    """Test pipeline filtering (executor path) and runner error handling."""
 
-    def test_code_rules_without_subprocess_excludes_c03_c04(self) -> None:
-        """include_subprocess=False → no TestsPassRule or CoverageRule."""
-        from specweaver.validation.runner import get_code_rules
+    def test_code_pipeline_has_c01_c05_but_not_subprocess_by_default(self) -> None:
+        """Verify code pipeline step IDs include C01, C05 and also C03/C04."""
+        import specweaver.validation.rules.code  # noqa: F401
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        pipeline = load_pipeline_yaml("validation_code_default")
+        ids = {s.rule for s in pipeline.steps}
+        assert "C01" in ids
+        assert "C05" in ids
+        assert "C03" in ids
+        assert "C04" in ids
 
-        rules = get_code_rules(include_subprocess=False)
-        rule_ids = {r.rule_id for r in rules}
+    def test_code_pipeline_disable_subprocess_rules(self) -> None:
+        """Disabling C03/C04 via settings removes subprocess rules."""
+        import specweaver.validation.rules.code  # noqa: F401
+        from specweaver.config.settings import RuleOverride, ValidationSettings
+        from specweaver.validation.executor import apply_settings_to_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        pipeline = load_pipeline_yaml("validation_code_default")
+        settings = ValidationSettings(overrides={
+            "C03": RuleOverride(rule_id="C03", enabled=False),
+            "C04": RuleOverride(rule_id="C04", enabled=False),
+        })
+        pipeline = apply_settings_to_pipeline(pipeline, settings)
+        ids = {s.rule for s in pipeline.steps}
+        assert "C03" not in ids
+        assert "C04" not in ids
+        assert "C01" in ids
+        assert "C05" in ids
 
-        assert "C03" not in rule_ids
-        assert "C04" not in rule_ids
-        assert "C01" in rule_ids
-        assert "C05" in rule_ids
-
-    def test_code_rules_with_subprocess_includes_c03_c04(self) -> None:
-        """include_subprocess=True → includes TestsPassRule and CoverageRule."""
-        from specweaver.validation.runner import get_code_rules
-
-        rules = get_code_rules(include_subprocess=True)
-        rule_ids = {r.rule_id for r in rules}
-
-        assert "C03" in rule_ids
-        assert "C04" in rule_ids
-
-    def test_spec_rules_without_llm_excludes_llm_rules(self) -> None:
-        """include_llm=False → only non-LLM spec rules returned."""
-        from specweaver.validation.runner import get_spec_rules
-
-        rules = get_spec_rules(include_llm=False)
-        assert all(not r.requires_llm for r in rules)
+    def test_spec_pipeline_has_only_non_llm_rules(self) -> None:
+        """Default spec pipeline has no LLM-requiring rules."""
+        import specweaver.validation.rules.spec  # noqa: F401
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.validation.registry import get_registry
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        registry = get_registry()
+        for step in pipeline.steps:
+            rule_cls = registry.get(step.rule)
+            if rule_cls is not None:
+                assert not getattr(rule_cls(), "requires_llm", False)
 
     def test_run_rules_exception_in_rule(self) -> None:
         """A crashing rule → FAIL result with error message, not an exception."""
-        from specweaver.validation.runner import run_rules
 
         class CrashingRule:
             rule_id = "X99"

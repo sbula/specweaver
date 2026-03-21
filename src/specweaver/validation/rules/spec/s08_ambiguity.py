@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
@@ -50,6 +50,11 @@ def _is_inside_code_block(text: str, position: int) -> bool:
 
 class AmbiguityRule(Rule):
     """Detect weasel words that leave implementation decisions unmade."""
+
+    PARAM_MAP: ClassVar[dict[str, str]] = {
+        "warn_threshold": "warn_threshold",
+        "fail_threshold": "fail_threshold",
+    }
 
     def __init__(
         self,

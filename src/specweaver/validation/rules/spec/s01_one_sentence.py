@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
@@ -40,6 +40,12 @@ def _extract_purpose(spec_text: str) -> str:
 class OneSentenceRule(Rule):
     """Detect specs that try to do too many things at once."""
 
+    PARAM_MAP: ClassVar[dict[str, str]] = {
+        "warn_threshold": "warn_conjunctions",
+        "fail_threshold": "fail_conjunctions",
+        "extra:max_h2": "max_h2",
+    }
+
     def __init__(
         self,
         warn_conjunctions: int = 0,
@@ -53,6 +59,7 @@ class OneSentenceRule(Rule):
         self._max_h2 = max_h2
         self._kind = kind
         # Auto-resolve header pattern from kind if not explicitly set
+        self._header_pattern: re.Pattern[str] | None
         if header_pattern is not None:
             self._header_pattern = header_pattern
         elif kind is not None:

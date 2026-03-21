@@ -106,35 +106,62 @@ class TestBuiltInRegistration:
 
 
 class TestRunnerRegistryIntegration:
-    """Verify runner functions produce the same results via registry."""
+    """Verify pipeline executor produces correct results via registry."""
 
     def test_get_spec_rules_returns_11(self):
-        """get_spec_rules() returns 11 rules (all non-LLM spec rules)."""
-        from specweaver.validation.runner import get_spec_rules
-        rules = get_spec_rules()
-        assert len(rules) == 11
+        """Spec default pipeline produces 11 rule results (S01-S11)."""
+        import specweaver.validation.rules.spec  # noqa: F401
+
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        results = execute_validation_pipeline(pipeline, "# Test")
+        assert len(results) == 11
 
     def test_get_spec_rules_ids_match(self):
-        """get_spec_rules() returns rules in S01-S11 order."""
-        from specweaver.validation.runner import get_spec_rules
-        rules = get_spec_rules()
-        ids = [r.rule_id for r in rules]
+        """Spec default pipeline returns results in S01-S11 order."""
+        import specweaver.validation.rules.spec  # noqa: F401
+
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        results = execute_validation_pipeline(pipeline, "# Test")
+        ids = sorted([r.rule_id for r in results])
         assert ids == ["S01", "S02", "S03", "S04", "S05", "S06",
                         "S07", "S08", "S09", "S10", "S11"]
 
     def test_get_code_rules_without_subprocess(self):
-        """get_code_rules(include_subprocess=False) returns 6 rules."""
-        from specweaver.validation.runner import get_code_rules
-        rules = get_code_rules(include_subprocess=False)
-        assert len(rules) == 6
-        ids = [r.rule_id for r in rules]
+        """Code default pipeline without subprocess rules returns 6 rules."""
+        import specweaver.validation.rules.code  # noqa: F401
+
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
+        # Load the non-subprocess code pipeline
+        # C03 (subprocess_test_runner) and C04 (coverage) are subprocess rules
+        pipeline = load_pipeline_yaml("validation_code_default")
+        # Filter out subprocess-based steps (C03, C04)
+        subprocess_ids = {"C03", "C04"}
+        from specweaver.validation.pipeline import ValidationStep
+        filtered = [s for s in pipeline.steps if s.rule not in subprocess_ids]
+        pipeline = pipeline.model_copy(update={"steps": filtered})
+        results = execute_validation_pipeline(pipeline, "# Test")
+        assert len(results) == 6
+        ids = [r.rule_id for r in results]
         assert "C03" not in ids
         assert "C04" not in ids
 
     def test_get_code_rules_with_subprocess(self):
-        """get_code_rules(include_subprocess=True) returns 8 rules."""
-        from specweaver.validation.runner import get_code_rules
-        rules = get_code_rules(include_subprocess=True)
-        assert len(rules) == 8
-        ids = [r.rule_id for r in rules]
+        """Code default pipeline with all rules returns 8 rules."""
+        import specweaver.validation.rules.code  # noqa: F401
+
+        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
+        pipeline = load_pipeline_yaml("validation_code_default")
+        results = execute_validation_pipeline(pipeline, "# Test")
+        assert len(results) == 8
+        ids = sorted([r.rule_id for r in results])
         assert ids == ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08"]

@@ -9,7 +9,7 @@ from the commons layer, eliminating duplicate subprocess handling.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.loom.commons.test_runner.python import PythonTestRunner
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
@@ -22,6 +22,10 @@ _DEFAULT_THRESHOLD = 70
 
 class CoverageRule(Rule):
     """Check that test coverage meets the configured threshold."""
+
+    PARAM_MAP: ClassVar[dict[str, str]] = {
+        "fail_threshold": "threshold",
+    }
 
     def __init__(self, threshold: int = _DEFAULT_THRESHOLD) -> None:
         self._threshold = threshold

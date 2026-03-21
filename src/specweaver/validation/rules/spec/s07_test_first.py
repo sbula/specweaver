@@ -12,7 +12,7 @@ Full LLM analysis would attempt to generate a test skeleton.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
@@ -49,6 +49,11 @@ _CONCRETE_VALUE_RE = re.compile(
 
 class TestFirstRule(Rule):
     """Check that Contract section is concrete enough to derive tests."""
+
+    PARAM_MAP: ClassVar[dict[str, str]] = {
+        "warn_threshold": "warn_score",
+        "fail_threshold": "fail_score",
+    }
 
     def __init__(
         self,

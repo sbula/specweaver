@@ -98,36 +98,58 @@ class TestProfileCascade:
     def test_profile_overrides_picked_up_by_runner(
         self, db: Database, tmp_path: Path,
     ) -> None:
-        """Runner's get_spec_rules uses profile overrides for rule construction."""
-        from specweaver.validation.runner import get_spec_rules
+        """Pipeline executor uses profile overrides for rule construction."""
+        import specweaver.validation.rules.spec  # noqa: F401
+
+        from specweaver.validation.executor import (
+            apply_settings_to_pipeline,
+            execute_validation_pipeline,
+        )
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.validation.runner import run_rules
 
         db.register_project("myapp", str(tmp_path))
         db.set_domain_profile("myapp", "data-pipeline")
 
         settings = db.load_validation_settings("myapp")
-        rules = get_spec_rules(settings=settings)
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        pipeline = apply_settings_to_pipeline(pipeline, settings)
+        results = execute_validation_pipeline(pipeline, "# Test")
 
         # Find S05 (Day Test) — should have data-pipeline thresholds
-        s05 = next(r for r in rules if r.rule_id == "S05")
-        assert s05._warn_threshold == 50
-        assert s05._fail_threshold == 80
+        # With settings applied, the step params should include the override
+        s05_step = next(s for s in pipeline.steps if s.rule == "S05")
+        # data-pipeline profile: warn=50, fail=80
+        assert s05_step.params.get("warn_threshold") == 50
+        assert s05_step.params.get("fail_threshold") == 80
 
     def test_profile_overrides_for_code_rules(
         self, db: Database, tmp_path: Path,
     ) -> None:
-        """Runner's get_code_rules uses profile overrides for rule construction."""
-        from specweaver.validation.runner import get_code_rules
+        """Pipeline executor uses profile overrides for code rule construction."""
+        import specweaver.validation.rules.code  # noqa: F401
+
+        from specweaver.validation.executor import (
+            apply_settings_to_pipeline,
+            execute_validation_pipeline,
+        )
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
         db.register_project("myapp", str(tmp_path))
         db.set_domain_profile("myapp", "library")
 
         settings = db.load_validation_settings("myapp")
-        # Don't run subprocess rules in tests
-        rules = get_code_rules(include_subprocess=False, settings=settings)
+        # Load code pipeline, filter out subprocess rules (C03, C04) for test
+        pipeline = load_pipeline_yaml("validation_code_default")
+        subprocess_ids = {"C03", "C04"}
+        filtered = [s for s in pipeline.steps if s.rule not in subprocess_ids]
+        pipeline = pipeline.model_copy(update={"steps": filtered})
+        pipeline = apply_settings_to_pipeline(pipeline, settings)
+        results = execute_validation_pipeline(pipeline, "# Test")
 
         # Library doesn't override any non-subprocess code rules
         # (C04 is subprocess-based). Just confirm rules loaded without error.
-        assert len(rules) >= 4
+        assert len(results) >= 4
 
     def test_profile_name_round_trips(
         self, db: Database, tmp_path: Path,
@@ -153,22 +175,38 @@ class TestProfileEdgeCases:
         Cascade: code defaults → kind presets → DB overrides (profile).
         Profile should win over kind presets for the same rule.
         """
-        from specweaver.validation.runner import get_spec_rules
-        from specweaver.validation.spec_kind import SpecKind
+        import specweaver.validation.rules.spec  # noqa: F401
+
+        from specweaver.validation.executor import (
+            apply_settings_to_pipeline,
+        )
+        from specweaver.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.validation.spec_kind import SpecKind, get_presets
 
         db.register_project("myapp", str(tmp_path))
         db.set_domain_profile("myapp", "data-pipeline")
 
         settings = db.load_validation_settings("myapp")
-        # Run with kind=FEATURE (which has its own S05 presets)
-        rules = get_spec_rules(settings=settings, kind=SpecKind.FEATURE)
+        pipeline = load_pipeline_yaml("validation_spec_default")
+        # Apply kind presets first (FEATURE: S05 warn=60, fail=100)
+        from specweaver.validation.registry import get_registry
+        registry = get_registry()
+        for step in pipeline.steps:
+            preset_kwargs = get_presets(step.rule, SpecKind.FEATURE)
+            if preset_kwargs:
+                merged = {**step.params, **preset_kwargs}
+                step.params.clear()
+                step.params.update(merged)
+
+        # Apply profile overrides on top (data-pipeline S05: warn=50, fail=80)
+        pipeline = apply_settings_to_pipeline(pipeline, settings)
 
         # S05: kind=FEATURE preset has warn=60, fail=100
         # data-pipeline profile has warn=50, fail=80
         # Profile (DB override) should win over kind preset
-        s05 = next(r for r in rules if r.rule_id == "S05")
-        assert s05._warn_threshold == 50  # profile wins
-        assert s05._fail_threshold == 80  # profile wins
+        s05_step = next(s for s in pipeline.steps if s.rule == "S05")
+        assert s05_step.params.get("warn_threshold") == 50  # profile wins
+        assert s05_step.params.get("fail_threshold") == 80  # profile wins
 
     def test_disabled_rule_on_top_of_profile(
         self, db: Database, tmp_path: Path,

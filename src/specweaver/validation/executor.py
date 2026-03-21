@@ -20,10 +20,93 @@ from specweaver.validation.models import RuleResult, Status
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.config.settings import ValidationSettings
     from specweaver.validation.pipeline import ValidationPipeline
     from specweaver.validation.registry import RuleRegistry
 
 logger = logging.getLogger(__name__)
+
+
+def _get_rule_id_from_cls(rule_cls: type) -> str | None:
+    """Cheaply resolve the rule_id from a rule class (no-arg instantiation)."""
+    try:
+        result = rule_cls().rule_id
+        return str(result) if result is not None else None
+    except Exception:
+        return None
+
+
+def _apply_extra_params(
+    param_map: dict[str, str],
+    extra_params: dict[str, float],
+    kwargs: dict[str, float],
+) -> None:
+    """Populate kwargs from extra_params using ``extra:<key>`` PARAM_MAP entries."""
+    for map_key, constructor_arg in param_map.items():
+        if map_key.startswith("extra:"):
+            extra_key = map_key.removeprefix("extra:")
+            if extra_key in extra_params:
+                kwargs[constructor_arg] = extra_params[extra_key]
+
+
+def _build_rule_kwargs(
+    rule_cls: type,
+    settings: ValidationSettings | None,
+) -> dict[str, float]:
+    """Build constructor kwargs for a rule using its PARAM_MAP.
+
+    Reads the rule's ``PARAM_MAP`` class attribute to translate DB-style
+    field names (``warn_threshold``, ``fail_threshold``, ``extra:<key>``)
+    into the actual constructor parameter names accepted by the rule class.
+
+    Each rule self-declares its configurable parameters via ``PARAM_MAP``
+    (defined in the ``Rule`` ABC, overridden per subclass).  Rules with no
+    configurable thresholds leave ``PARAM_MAP = {}`` — this function returns
+    ``{}`` for them without crashing.
+
+    Args:
+        rule_cls: The rule class (must subclass ``Rule`` with ``PARAM_MAP``).
+        settings: A ``ValidationSettings`` instance or None.
+
+    Returns:
+        Dict mapping constructor kwarg names to float values (ready to
+        unpack into rule_cls(**merged_params)).
+    """
+    if settings is None:
+        return {}
+
+    param_map: dict[str, str] = getattr(rule_cls, "PARAM_MAP", {})
+    if not param_map:
+        return {}
+
+    rule_id = _get_rule_id_from_cls(rule_cls)
+    if rule_id is None:
+        return {}
+
+    override = settings.get_override(rule_id)
+    if override is None:
+        return {}
+
+    kwargs: dict[str, float] = {}
+
+    if override.warn_threshold is not None and "warn_threshold" in param_map:
+        kwargs[param_map["warn_threshold"]] = override.warn_threshold
+
+    if override.fail_threshold is not None and "fail_threshold" in param_map:
+        kwargs[param_map["fail_threshold"]] = override.fail_threshold
+
+    _apply_extra_params(param_map, override.extra_params, kwargs)
+
+    return kwargs
+
+
+def _get_rule_cls_for_step(rule_id: str) -> type | None:
+    """Look up the rule class for a given rule_id from the global registry."""
+    try:
+        from specweaver.validation.registry import get_registry
+        return get_registry().get(rule_id)
+    except Exception:
+        return None
 
 
 def execute_validation_pipeline(
@@ -117,15 +200,15 @@ def execute_validation_pipeline(
 
 def apply_settings_to_pipeline(
     pipeline: ValidationPipeline,
-    settings: object | None,
+    settings: ValidationSettings | None,
 ) -> ValidationPipeline:
     """Apply ValidationSettings overrides onto a pipeline.
 
-    Bridges the old settings system (thresholds, enabled/disabled) with
+    Bridges the DB settings system (thresholds, enabled/disabled) with
     the validation sub-pipeline architecture.
 
     - Disabled rules: their steps are removed from the pipeline.
-    - Threshold overrides: merged into step.params.
+    - Threshold overrides: merged into step.params via the rule's PARAM_MAP.
 
     Args:
         pipeline: A resolved ValidationPipeline.
@@ -139,7 +222,6 @@ def apply_settings_to_pipeline(
 
     from specweaver.validation.pipeline import ValidationPipeline as _Pipeline
     from specweaver.validation.pipeline import ValidationStep
-    from specweaver.validation.runner import _build_rule_kwargs
 
     new_steps: list[ValidationStep] = []
     for step in pipeline.steps:
@@ -151,8 +233,9 @@ def apply_settings_to_pipeline(
             )
             continue
 
-        # Merge threshold/extra_params overrides into step.params
-        kwargs = _build_rule_kwargs(step.rule, settings)
+        # Merge threshold/extra_params overrides into step.params via PARAM_MAP
+        rule_cls = _get_rule_cls_for_step(step.rule)
+        kwargs = _build_rule_kwargs(rule_cls, settings) if rule_cls else {}
         if kwargs:
             merged = {**step.params, **kwargs}
             step = ValidationStep(

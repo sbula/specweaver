@@ -89,7 +89,9 @@ class TestErrorPathRule:
         rule = ErrorPathRule()
         result = rule.check(_NO_ERROR_SPEC)
         assert result.status == Status.FAIL
-        assert any("error" in f.message.lower() or "failure" in f.message.lower() for f in result.findings)
+        assert any(
+            "error" in f.message.lower() or "failure" in f.message.lower()
+            for f in result.findings)
 
     def test_keywords_without_section_warns(self) -> None:
         rule = ErrorPathRule()

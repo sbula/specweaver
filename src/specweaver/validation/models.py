@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import enum
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -56,7 +56,32 @@ class RuleResult(BaseModel):
 
 
 class Rule(ABC):
-    """Abstract base class for all validation rules."""
+    """Abstract base class for all validation rules.
+
+    Class attributes:
+        PARAM_MAP: Maps DB override field names to constructor kwarg names.
+            Key: DB column name (``"warn_threshold"`` / ``"fail_threshold"`` /
+                 ``"extra:<key>"``).  Value: constructor parameter name.
+            Subclasses override this to declare which thresholds they accept.
+            Rules with no configurable thresholds leave this empty (default).
+
+    Example for S08 (AmbiguityRule)::
+
+        PARAM_MAP: ClassVar[dict[str, str]] = {
+            "warn_threshold": "warn_threshold",
+            "fail_threshold": "fail_threshold",
+        }
+
+    Example for S01 (one-sentence has non-standard kwarg names)::
+
+        PARAM_MAP: ClassVar[dict[str, str]] = {
+            "warn_threshold": "warn_conjunctions",
+            "fail_threshold": "fail_conjunctions",
+            "extra:max_h2": "max_h2",
+        }
+    """
+
+    PARAM_MAP: ClassVar[dict[str, str]] = {}
 
     @property
     @abstractmethod

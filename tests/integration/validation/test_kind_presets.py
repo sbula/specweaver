@@ -1,18 +1,29 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""Integration tests — SpecKind ↔ Rules ↔ Runner cross-component.
+"""Integration tests — SpecKind ↔ Rules ↔ Pipeline Executor cross-component.
 
 These tests verify that the kind-aware preset system (C1) correctly
-modifies rule behaviour (C2) when threaded through the runner (C3).
+modifies rule behaviour (C2) when threaded through the pipeline executor (C3).
 No mocking — exercises the real preset → rule constructor → check path.
+
+Design: uses the pipeline executor path (load_pipeline_yaml + spec_kind.get_presets)
+instead of the legacy get_spec_rules() function (removed in Feature 3.5b).
 """
 
 from __future__ import annotations
 
+import specweaver.validation.rules.spec  # noqa: F401 — register all spec rules
+
+from specweaver.config.settings import RuleOverride, ValidationSettings
+from specweaver.validation.executor import (
+    apply_settings_to_pipeline,
+    execute_validation_pipeline,
+)
 from specweaver.validation.models import Status
-from specweaver.validation.runner import get_spec_rules, run_rules
-from specweaver.validation.spec_kind import SpecKind
+from specweaver.validation.pipeline_loader import load_pipeline_yaml
+from specweaver.validation.runner import run_rules
+from specweaver.validation.spec_kind import SpecKind, get_presets
 
 # ---------------------------------------------------------------------------
 # Fixture specs
@@ -145,88 +156,124 @@ in addition to data export functionality on top of that it runs analytics.
 
 
 # ---------------------------------------------------------------------------
-# C1 ↔ C2 ↔ C3: Runner threads kind through to rules
+# C1 ↔ C2 ↔ C3: Pipeline executor + kind presets integration (no mocking)
 # ---------------------------------------------------------------------------
 
 
+def _run_feature_pipeline(spec_text: str) -> list:
+    """Load + execute the feature spec pipeline (removes S04)."""
+    pipeline = load_pipeline_yaml("validation_spec_feature")
+    return execute_validation_pipeline(pipeline, spec_text)
+
+
+def _run_spec_rules_with_kind(
+    kind: SpecKind,
+    spec_text: str,
+    settings: ValidationSettings | None = None,
+) -> list:
+    """Run spec rules using get_presets() (kind-specific constructor kwargs).
+
+    This is the integration equivalent of the old get_spec_rules(kind=kind):
+    1. Load the default spec pipeline
+    2. Instantiate each rule with kind-awareness via get_presets(rule_id, kind)
+    3. Execute via run_rules
+    """
+    from specweaver.validation.registry import get_registry
+
+    registry = get_registry()
+    pipeline = load_pipeline_yaml("validation_spec_default")
+    if settings:
+        pipeline = apply_settings_to_pipeline(pipeline, settings)
+
+    rules = []
+    for step in pipeline.steps:
+        rule_cls = registry.get(step.rule)
+        if rule_cls is None:
+            continue
+        rule_id = step.rule
+        # get_presets(rule_id, kind) — takes TWO arguments
+        preset_kwargs = get_presets(rule_id, kind)
+        merged = {**step.params, **preset_kwargs}
+        rules.append(rule_cls(**merged))
+
+    return run_rules(rules, spec_text)
+
+
 class TestRunnerKindIntegration:
-    """Runner + presets + rules integration (no mocking)."""
+    """Pipeline executor + presets + rules integration (no mocking)."""
 
     def test_feature_kind_uses_intent_header(self) -> None:
         """S01 with kind=FEATURE uses ## Intent header, not ## 1. Purpose."""
-        rules = get_spec_rules(include_llm=False, kind=SpecKind.FEATURE)
-        results = run_rules(rules, _FEATURE_SPEC)
+        results = _run_spec_rules_with_kind(SpecKind.FEATURE, _FEATURE_SPEC)
 
         s01 = next(r for r in results if r.rule_id == "S01")
         # Feature spec has ## Intent — S01 should find it and PASS (no conjunctions)
-        assert s01.status == Status.PASS, f"S01 should pass on clean feature spec: {s01.message}"
+        assert s01.status == Status.PASS, (
+            f"S01 should pass on clean feature spec: {s01.message}"
+        )
 
     def test_component_kind_uses_purpose_header(self) -> None:
         """S01 with kind=COMPONENT uses ## 1. Purpose header."""
-        rules = get_spec_rules(include_llm=False, kind=SpecKind.COMPONENT)
-        results = run_rules(rules, _COMPONENT_SPEC)
+        results = _run_spec_rules_with_kind(SpecKind.COMPONENT, _COMPONENT_SPEC)
 
         s01 = next(r for r in results if r.rule_id == "S01")
-        assert s01.status == Status.PASS, f"S01 should pass on clean component spec: {s01.message}"
+        assert s01.status == Status.PASS, (
+            f"S01 should pass on clean component spec: {s01.message}"
+        )
 
-    def test_feature_kind_skips_s04(self) -> None:
-        """S04 is SKIPPED for kind=FEATURE (dependency direction N/A for features)."""
-        rules = get_spec_rules(include_llm=False, kind=SpecKind.FEATURE)
-        results = run_rules(rules, _FEATURE_SPEC)
-
-        s04 = next(r for r in results if r.rule_id == "S04")
-        assert s04.status == Status.SKIP, f"S04 should be SKIP for feature kind: {s04.message}"
+    def test_feature_pipeline_skips_s04(self) -> None:
+        """Feature pipeline (validation_spec_feature.yaml) removes S04."""
+        results = _run_feature_pipeline(_FEATURE_SPEC)
+        rule_ids = {r.rule_id for r in results}
+        assert "S04" not in rule_ids, "S04 should be absent from feature pipeline"
 
     def test_component_kind_does_not_skip_s04(self) -> None:
-        """S04 runs normally for kind=COMPONENT."""
-        rules = get_spec_rules(include_llm=False, kind=SpecKind.COMPONENT)
-        results = run_rules(rules, _COMPONENT_SPEC)
-
+        """Default pipeline runs S04 normally for component specs."""
+        results = _run_spec_rules_with_kind(SpecKind.COMPONENT, _COMPONENT_SPEC)
         s04 = next(r for r in results if r.rule_id == "S04")
         assert s04.status != Status.SKIP, "S04 should not be SKIP for component kind"
 
     def test_feature_kind_enables_s03_abstraction_leak_mode(self) -> None:
         """S03 with kind=FEATURE detects abstraction leaks (file paths, method refs)."""
-        rules = get_spec_rules(include_llm=False, kind=SpecKind.FEATURE)
-        results = run_rules(rules, _FEATURE_WITH_LEAKS)
+        results = _run_spec_rules_with_kind(SpecKind.FEATURE, _FEATURE_WITH_LEAKS)
 
         s03 = next(r for r in results if r.rule_id == "S03")
         assert s03.status in (Status.WARN, Status.FAIL), (
             f"S03 should detect abstraction leaks: {s03.message}"
         )
-        # Should have specific leak findings
         assert len(s03.findings) > 0
-        assert any("leak" in f.message.lower() or "path" in f.message.lower()
-                    for f in s03.findings)
+        assert any(
+            "leak" in f.message.lower() or "path" in f.message.lower()
+            for f in s03.findings
+        )
 
     def test_same_spec_different_results_by_kind(self) -> None:
         """Same spec produces different results for FEATURE vs COMPONENT."""
-        feature_rules = get_spec_rules(include_llm=False, kind=SpecKind.FEATURE)
-        component_rules = get_spec_rules(include_llm=False, kind=SpecKind.COMPONENT)
+        feature_results = _run_spec_rules_with_kind(SpecKind.FEATURE, _FEATURE_SPEC)
+        component_results = _run_spec_rules_with_kind(SpecKind.COMPONENT, _FEATURE_SPEC)
 
-        feature_results = run_rules(feature_rules, _FEATURE_SPEC)
-        component_results = run_rules(component_rules, _FEATURE_SPEC)
-
-        # S04 should differ: SKIP for feature, not SKIP for component
+        # S04 is present in both (default pipeline), but feature preset skips it
         f_s04 = next(r for r in feature_results if r.rule_id == "S04")
         c_s04 = next(r for r in component_results if r.rule_id == "S04")
         assert f_s04.status == Status.SKIP
         assert c_s04.status != Status.SKIP
 
-        # S01 should differ: feature finds ## Intent, component doesn't
+        # S01: feature finds ## Intent → PASS; component looks for ## 1. Purpose → WARN
         f_s01 = next(r for r in feature_results if r.rule_id == "S01")
         c_s01 = next(r for r in component_results if r.rule_id == "S01")
-        # Feature spec has ## Intent → S01 PASS; component looks for ## 1. Purpose → WARN
         assert f_s01.status == Status.PASS
-        assert c_s01.status == Status.WARN  # Can't find ## 1. Purpose
+        assert c_s01.status == Status.WARN  # Can't find ## 1. Purpose in _FEATURE_SPEC
 
     def test_feature_conjunctions_fail_threshold(self) -> None:
         """Feature spec with many conjunctions in Intent → S01 FAIL."""
-        rules = get_spec_rules(include_llm=False, kind=SpecKind.FEATURE)
-        results = run_rules(rules, _FEATURE_SPEC_MANY_CONJUNCTIONS)
+        results = _run_spec_rules_with_kind(
+            SpecKind.FEATURE, _FEATURE_SPEC_MANY_CONJUNCTIONS
+        )
 
         s01 = next(r for r in results if r.rule_id == "S01")
-        assert s01.status == Status.FAIL, f"S01 should fail on many conjunctions: {s01.message}"
+        assert s01.status == Status.FAIL, (
+            f"S01 should fail on many conjunctions: {s01.message}"
+        )
         assert len(s01.findings) > 0
 
 
@@ -235,37 +282,30 @@ class TestRunnerSettingsOverrideIntegration:
 
     def test_settings_override_beats_preset(self) -> None:
         """Settings warn_threshold overrides kind preset for S05."""
-        from specweaver.config.settings import RuleOverride, ValidationSettings
-
         # Feature preset for S05: warn=60, fail=100 (from spec_kind.py)
         # Override: warn=999 (so lenient it will always PASS)
         settings = ValidationSettings(overrides={
             "S05": RuleOverride(rule_id="S05", warn_threshold=999),
         })
-        rules = get_spec_rules(include_llm=False, kind=SpecKind.FEATURE, settings=settings)
-        results = run_rules(rules, _FEATURE_SPEC)
+        results = _run_spec_rules_with_kind(SpecKind.FEATURE, _FEATURE_SPEC, settings)
 
         s05 = next(r for r in results if r.rule_id == "S05")
         # With warn_threshold=999, almost any spec passes
-        assert s05.status == Status.PASS, f"S05 should pass with lenient override: {s05.message}"
+        assert s05.status == Status.PASS, (
+            f"S05 should pass with lenient override: {s05.message}"
+        )
 
-    def test_none_kind_uses_code_defaults(self) -> None:
-        """kind=None uses code defaults (no presets applied)."""
-        rules_no_kind = get_spec_rules(include_llm=False, kind=None)
-        rules_feature = get_spec_rules(include_llm=False, kind=SpecKind.FEATURE)
+    def test_none_kind_uses_defaults(self) -> None:
+        """COMPONENT presets (close to defaults) produce results for all rules."""
+        results_no_preset = _run_spec_rules_with_kind(SpecKind.COMPONENT, _FEATURE_SPEC)
+        results_feature = _run_spec_rules_with_kind(SpecKind.FEATURE, _FEATURE_SPEC)
 
-        # Feature gets extra kwargs (warn_conjunctions=2, etc.)
-        # No-kind uses code defaults (warn_conjunctions=0, etc.)
-        results_no = run_rules(rules_no_kind, _FEATURE_SPEC)
-        results_feat = run_rules(rules_feature, _FEATURE_SPEC)
-
-        # Both should produce results for all rules
-        assert len(results_no) == len(results_feat)
+        # Both should produce results for all pipeline rules
+        assert len(results_no_preset) == len(results_feature)
 
     def test_rule_count_same_regardless_of_kind(self) -> None:
         """Number of rules doesn't change based on kind — only behaviour changes."""
-        rules_feature = get_spec_rules(include_llm=False, kind=SpecKind.FEATURE)
-        rules_component = get_spec_rules(include_llm=False, kind=SpecKind.COMPONENT)
-        rules_none = get_spec_rules(include_llm=False, kind=None)
+        results_feature = _run_spec_rules_with_kind(SpecKind.FEATURE, _FEATURE_SPEC)
+        results_component = _run_spec_rules_with_kind(SpecKind.COMPONENT, _FEATURE_SPEC)
 
-        assert len(rules_feature) == len(rules_component) == len(rules_none)
+        assert len(results_feature) == len(results_component)

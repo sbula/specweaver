@@ -13,7 +13,7 @@ Static accuracy: ~90% (from spec_methodology.md §7).
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity, Status
 
@@ -27,7 +27,9 @@ _MD_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+\.md)\)")
 _SECTION_REF_RE = re.compile(r"see\s+(?:§|section\s+)\d+", re.IGNORECASE)
 
 # Pattern: backtick references to other components (e.g., `FlowEngine`)
-_COMPONENT_REF_RE = re.compile(r"`([A-Z][a-zA-Z]+(?:Service|Engine|Manager|Provider|Adapter|Handler|Store|Client))`")
+_COMPONENT_REF_RE = re.compile(  # noqa: E501
+    r"`([A-Z][a-zA-Z]+(?:Service|Engine|Manager|Provider|Adapter|Handler|Store|Client))`"
+)
 
 # Max cross-references before we warn (from spec_methodology.md §8.3)
 _WARN_THRESHOLD = 5
@@ -37,6 +39,11 @@ _FAIL_THRESHOLD = 8
 class DependencyDirectionRule(Rule):
     """Detect specs with too many cross-references to other components."""
 
+    PARAM_MAP: ClassVar[dict[str, str]] = {
+        "warn_threshold": "warn_threshold",
+        "fail_threshold": "fail_threshold",
+    }
+
     def __init__(
         self,
         warn_threshold: int = _WARN_THRESHOLD,
@@ -45,7 +52,7 @@ class DependencyDirectionRule(Rule):
     ) -> None:
         self._warn_threshold = warn_threshold
         self._fail_threshold = fail_threshold
-        self._skip = skip
+        self._should_skip = skip
 
     @property
     def rule_id(self) -> str:
@@ -56,7 +63,7 @@ class DependencyDirectionRule(Rule):
         return "Dependency Direction"
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
-        if self._skip:
+        if self._should_skip:
             return RuleResult(
                 rule_id=self.rule_id,
                 rule_name=self.name,

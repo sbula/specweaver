@@ -17,6 +17,7 @@ import importlib.resources
 import io
 import logging
 from pathlib import Path  # noqa: TC003  -- used at runtime
+from typing import Any, cast
 
 from ruamel.yaml import YAML
 
@@ -67,14 +68,15 @@ def _load_raw_yaml(
     name: str,
     *,
     project_dir: Path | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Load raw YAML dict for a pipeline by name."""
     # 1. Project-local override
     if project_dir:
         local_path = project_dir / ".specweaver" / "pipelines" / f"{name}.yaml"
         if local_path.is_file():
             logger.debug("Loading pipeline '%s' from project: %s", name, local_path)
-            return _yaml.load(io.StringIO(local_path.read_text(encoding="utf-8")))
+            text = local_path.read_text(encoding="utf-8")
+            return cast(dict[str, Any], _yaml.load(io.StringIO(text)))
 
     # 2. Packaged default
     try:
@@ -82,7 +84,7 @@ def _load_raw_yaml(
         resource = files.joinpath(f"{name}.yaml")
         text = resource.read_text(encoding="utf-8")
         logger.debug("Loading pipeline '%s' from package", name)
-        return _yaml.load(io.StringIO(text))
+        return cast(dict[str, Any], _yaml.load(io.StringIO(text)))
     except (FileNotFoundError, ModuleNotFoundError, TypeError):
         pass
 
