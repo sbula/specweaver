@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **2 866 passed** · 9 skipped · 92 source modules · 118 test files
+> **2 875 collected** · 2 866 passed · 9 skipped · 96 source modules · 124 test files
 > **Last updated**: 2026-03-22
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -25,23 +25,28 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 ## Module Inventory
 
-| Package | Files | Unit | Integ | E2E | Total |
-|---------|------:|-----:|------:|----:|------:|
-| `cli/` | 10 | 231 | 89 | 53 | 373 |
-| `config/` | 3 | 212 | 19 | — | 231 |
-| `context/` | 4 | 53 | 8 | — | 61 |
-| `drafting/` | 3 | 113 | 0 | — | 113 |
-| `flow/` | 8 | 243 | 21 | — | 264 |
-| `graph/` | 2 | — | — | — | (in context) |
-| `implementation/` | 1 | — | — | — | (in llm) |
-| `llm/` | 5 | 150 | 0 | — | 150 |
-| `loom/` | 15 | 571 | 14 | — | 585 |
-| `project/` | 3 | 77 | 0 | — | 77 |
-| `review/` | 1 | 30 | 0 | — | 30 |
-| `standards/` | 11 | 112 | 13 | 5 | 130 |
-| `validation/` | 24 | 558 | 49 | — | 607 |
-| `logging.py` | 1 | — | — | — | (in config) |
-| **Total** | **92** | **2 308** | **200** | **53** | **2 561** |
+> Counts from `pytest --collect-only` per directory. E2E tests are holistic;
+> attribution is by primary source package under test.
+> Integration subdirs: `cli/`→94, `config/`→20, `constitution/`→10 (→project), `context/`→8, `flow/`→22, `loom/`→14, `validation/`→49.
+
+| Package | Src Files | Unit | Integ | E2E | Total |
+|---------|----------:|-----:|------:|----:|------:|
+| `cli/` | 10 | 253 | 94 | 29 | 376 |
+| `config/` | 3 | 228 | 20 | 0 | 248 |
+| `context/` | 4 | 53 | 8 | 0 | 61 |
+| `drafting/` | 3 | 113 | 0 | 0 | 113 |
+| `flow/` | 8 | 263 | 22 | 9 | 294 |
+| `graph/` | 2 | 88 | 0 | 0 | 88 |
+| `implementation/` | 1 | 6 | 0 | 0 | 6 |
+| `llm/` | 5 | 150 | 0 | 0 | 150 |
+| `loom/` | 15 | 571 | 14 | 0 | 585 |
+| `project/` | 3 | 90 | 10 | 15 | 115 |
+| `review/` | 1 | 30 | 0 | 0 | 30 |
+| `standards/` | 11 | 172 | 0 | 4 | 176 |
+| `validation/` | 24 | 562 | 49 | 0 | 611 |
+| `logging.py` | 1 | 22 | 0 | 0 | 22 |
+| **Total** | **96** | **2 601** | **217** | **57** | **2 875** |
+
 
 ---
 
