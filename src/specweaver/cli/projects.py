@@ -59,6 +59,22 @@ def init(
     _core.console.print(f"  [dim]Registered:[/dim] project [bold]{name}[/bold]")
     _core.console.print(f"  [dim]Active:[/dim] {name}")
 
+    # Hint: if existing source files detected, suggest standards scan
+    source_exts = {".py", ".js", ".jsx", ".ts", ".tsx"}
+    has_source = any(
+        f.suffix in source_exts
+        for f in project_path.rglob("*")
+        if f.is_file() and not any(
+            p.startswith(".") or p == "__pycache__" or p == "node_modules"
+            for p in f.parts
+        )
+    )
+    if has_source:
+        _core.console.print(
+            "\n[dim]Existing code detected. Run [bold]sw standards scan[/bold] "
+            "to discover coding conventions.[/dim]",
+        )
+
 
 @_core.app.command()
 def use(
@@ -193,6 +209,9 @@ def scan() -> None:
         raise typer.Exit(code=1)
 
     proj = db.get_project(active)
+    if proj is None:
+        _core.console.print(f"[red]Error:[/red] Project '{active}' not found.")
+        raise typer.Exit(code=1)
     project_path = Path(proj["root_path"])
 
     if not project_path.exists():

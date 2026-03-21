@@ -105,31 +105,17 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
         class_styles: Counter = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
             nodes = walk_tree(tree)
             for node in nodes:
-                # function foo()
-                if node.type == "function_declaration":
-                    name_node = node.child_by_field_name("name")
-                    if name_node and name_node.text:
-                        style = _classify_name(name_node.text.decode("utf-8"))
+                result = self._classify_naming_node(node)
+                if result:
+                    target, style = result
+                    if target == "func":
                         func_styles[style] += w
-                        sample_size += 1
-                # const foo = () => {}
-                elif node.type == "variable_declarator":
-                    name_node = node.child_by_field_name("name")
-                    value_node = node.child_by_field_name("value")
-                    if name_node and name_node.text and value_node and value_node.type in ("arrow_function", "function", "function_expression"):
-                        style = _classify_name(name_node.text.decode("utf-8"))
-                        func_styles[style] += w
-                        sample_size += 1
-                # class Foo {}
-                elif node.type == "class_declaration":
-                    name_node = node.child_by_field_name("name")
-                    if name_node and name_node.text:
-                        style = _classify_name(name_node.text.decode("utf-8"))
+                    else:
                         class_styles[style] += w
-                        sample_size += 1
+                    sample_size += 1
 
         dominant: dict = {}
         if func_styles:
@@ -144,35 +130,36 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             sample_size=sample_size,
         )
 
+    @staticmethod
+    def _classify_naming_node(node: tree_sitter.Node) -> tuple[str, str] | None:
+        """Classify a node for naming convention. Returns (target, style) or None."""
+        if node.type == "function_declaration":
+            name_node = node.child_by_field_name("name")
+            if name_node and name_node.text:
+                return ("func", _classify_name(name_node.text.decode("utf-8")))
+        elif node.type == "variable_declarator":
+            name_node = node.child_by_field_name("name")
+            value_node = node.child_by_field_name("value")
+            if name_node and name_node.text and value_node and value_node.type in ("arrow_function", "function", "function_expression"):
+                return ("func", _classify_name(name_node.text.decode("utf-8")))
+        elif node.type == "class_declaration":
+            name_node = node.child_by_field_name("name")
+            if name_node and name_node.text:
+                return ("class", _classify_name(name_node.text.decode("utf-8")))
+        return None
+
     def _extract_error_handling(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
         styles: Counter = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
             nodes = walk_tree(tree)
             for node in nodes:
                 if node.type == "catch_clause":
-                    # Check body of catch for `instanceof` or `.name ===`
-                    body = node.child_by_field_name("body")
-                    is_specific = False
-                    if body:
-                        body_nodes = walk_tree(body) # DFS from body
-                        for bnode in body_nodes:
-                            if bnode.type == "instanceof_expression":
-                                is_specific = True
-                                break
-                            if bnode.type == "member_expression":
-                                prop = bnode.child_by_field_name("property")
-                                if prop and prop.text and prop.text.decode("utf-8") == "name":
-                                    is_specific = True
-                                    break
-
-                    if is_specific:
-                        styles["specific"] += w
-                    else:
-                        styles["bare"] += w
+                    is_specific = self._is_specific_catch(node)
+                    styles["specific" if is_specific else "bare"] += w
                     sample_size += 1
 
         dominant: dict = {}
@@ -186,13 +173,28 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             sample_size=sample_size,
         )
 
+    @staticmethod
+    def _is_specific_catch(node: tree_sitter.Node) -> bool:
+        """Check if a catch clause uses specific error type handling."""
+        body = node.child_by_field_name("body")
+        if not body:
+            return False
+        for bnode in walk_tree(body):
+            if bnode.type == "instanceof_expression":
+                return True
+            if bnode.type == "member_expression":
+                prop = bnode.child_by_field_name("property")
+                if prop and prop.text and prop.text.decode("utf-8") == "name":
+                    return True
+        return False
+
     def _extract_jsdoc(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
         total_funcs = 0
         documented = 0
 
-        for path, w, tree in parsed_files:
+        for _path, _w, tree in parsed_files:
             nodes = walk_tree(tree)
             for node in nodes:
                 if node.type in ("function_declaration", "arrow_function", "method_definition"):
@@ -229,7 +231,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
         styles: Counter = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
             nodes = walk_tree(tree)
             for node in nodes:
                 if node.type == "import_statement":
@@ -258,25 +260,13 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
         styles: Counter = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
             nodes = walk_tree(tree)
             for node in nodes:
-                if node.type == "await_expression":
-                    styles["async/await"] += w
+                pattern = self._classify_async_node(node)
+                if pattern:
+                    styles[pattern] += w
                     sample_size += 1
-                elif node.type == "function_declaration" or node.type == "arrow_function":
-                    for child in node.children:
-                        if child.type == "async":
-                            styles["async/await"] += w
-                            sample_size += 1
-                            break
-                elif node.type == "call_expression":
-                    func = node.child_by_field_name("function")
-                    if func and func.type == "member_expression":
-                        prop = func.child_by_field_name("property")
-                        if prop and prop.text and prop.text.decode("utf-8") in ("then", "catch", "finally"):
-                            styles["promises"] += w
-                            sample_size += 1
 
         dominant: dict = {}
         if styles:
@@ -288,6 +278,23 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             confidence=self._compute_confidence(styles) if styles else 0.0,
             sample_size=sample_size,
         )
+
+    @staticmethod
+    def _classify_async_node(node: tree_sitter.Node) -> str | None:
+        """Classify a node as an async pattern. Returns pattern name or None."""
+        if node.type == "await_expression":
+            return "async/await"
+        if node.type in ("function_declaration", "arrow_function"):
+            for child in node.children:
+                if child.type == "async":
+                    return "async/await"
+        elif node.type == "call_expression":
+            func = node.child_by_field_name("function")
+            if func and func.type == "member_expression":
+                prop = func.child_by_field_name("property")
+                if prop and prop.text and prop.text.decode("utf-8") in ("then", "catch", "finally"):
+                    return "promises"
+        return None
 
     def _extract_test_patterns(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]

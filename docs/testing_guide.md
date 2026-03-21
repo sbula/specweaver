@@ -78,5 +78,95 @@ pytest -k "not validate"   # Runs tests except those containing "validate"
 ## Typical Daily Workflow
 1. Write/modify a file: `src/specweaver/flow/engine.py`
 2. Run its specific unit tests: `pytest tests/unit/flow/test_engine.py`
-3. Run flow integration tests: `pytest tests/integration/flow`
-4. Once satisfied, run the entire test suite to ensure no regressions: `pytest`
+3. Run module-level integration tests: `pytest tests/integration/flow`
+4. Run linting + complexity checks: `ruff check src/specweaver/`
+5. Run type checking on modified files: `mypy src/specweaver/flow/engine.py --ignore-missing-imports`
+6. Once satisfied, run the full test suite: `pytest`
+
+## 7. Code Quality Gates
+
+### Linting & Formatting (Ruff)
+SpecWeaver uses [Ruff](https://docs.astral.sh/ruff/) for linting and import sorting. Configuration is in `pyproject.toml`.
+
+**Full project check:**
+```bash
+ruff check src/specweaver/
+```
+
+**Check specific files:**
+```bash
+ruff check src/specweaver/cli/standards.py src/specweaver/project/constitution.py
+```
+
+**Auto-fix safe issues:**
+```bash
+ruff check --fix src/specweaver/
+```
+
+**Key rules enforced:**
+| Rule | Description |
+|------|-------------|
+| C901 | Cyclomatic complexity limit ≤ 10 |
+| B007 | Unused loop variables must be prefixed with `_` |
+| I001 | Import block must be sorted |
+| TC001/TC003 | Type-only imports belong in `TYPE_CHECKING` |
+| SIM102/SIM108 | Simplifiable control flow |
+| N806 | Function-scope variables must be lowercase |
+
+### Type Checking (mypy)
+SpecWeaver uses [mypy](https://mypy.readthedocs.io/) in strict mode. Configuration is in `pyproject.toml` under `[tool.mypy]`.
+
+**Check specific files:**
+```bash
+mypy src/specweaver/project/constitution.py --ignore-missing-imports
+```
+
+> [!NOTE]
+> The `--ignore-missing-imports` flag suppresses errors for third-party packages that lack type stubs. The project itself must have full type annotations.
+
+### File Size Limits
+Keep source files under **500 lines**. If a file grows beyond this, consider refactoring into smaller modules.
+
+## 8. Module-Specific Test Examples
+
+### Standards / Constitution (Feature 3.5a-4)
+```bash
+# All constitution tests (unit)
+pytest tests/unit/project/test_constitution.py
+
+# All standards tests (unit + integration)
+pytest tests/unit/standards tests/integration/cli/test_cli_standards_integration.py
+
+# Config database tests (includes schema migrations)
+pytest tests/unit/config/test_database.py
+
+# CLI tests for constitution and config commands
+pytest tests/unit/cli/test_constitution.py tests/unit/cli/test_config.py
+```
+
+### Flow Engine
+```bash
+pytest tests/unit/flow tests/integration/flow
+```
+
+### Validation Rules
+```bash
+pytest tests/unit/validation tests/integration/validation
+```
+
+## 9. Pre-Commit Test Gap Analysis
+Before marking a feature as done, run the `/pre-commit-test-gap` workflow (`.agents/workflows/pre-commit-test-gap.md`). This workflow:
+1. Reviews every modified source file line-by-line
+2. Identifies untested branches, guards, and edge cases
+3. Produces a gap table per module
+4. Updates the [Test Coverage Matrix](test_coverage_matrix.md)
+
+## 10. Coverage Target
+The project aims for **70–90% test coverage**. This balances thorough testing with practical development speed.
+
+---
+
+**Related Documents:**
+- [Test Coverage Matrix](test_coverage_matrix.md) — per-module test story inventory
+- [Pre-Commit Test Gap Workflow](../.agents/workflows/pre-commit-test-gap.md) — automated gap analysis
+- [Architecture Completeness Tests](architecture/completeness_tests.md) — structural verification

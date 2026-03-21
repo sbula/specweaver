@@ -67,19 +67,7 @@ def detect_scopes(project_path: Path) -> list[str]:
             continue
 
         # Check L2 (sub-directories of this L1 dir)
-        l2_scopes: list[str] = []
-        try:
-            for sub in sorted(entry.iterdir()):
-                if not sub.is_dir():
-                    continue
-                sub_name = sub.name
-                if sub_name.startswith(".") or sub_name in _SKIP_DIRS:
-                    continue
-                if _has_source_files(sub):
-                    l2_scopes.append(f"{name}/{sub_name}")
-        except PermissionError:
-            logger.debug("Permission denied: %s", entry)
-            continue
+        l2_scopes = _detect_l2_scopes(entry, name)
 
         if l2_scopes:
             # L1 has sub-scopes → only sub-scopes are scopes (not L1 itself)
@@ -89,6 +77,23 @@ def detect_scopes(project_path: Path) -> list[str]:
             scopes.append(name)
 
     return sorted(scopes)
+
+
+def _detect_l2_scopes(entry: Path, parent_name: str) -> list[str]:
+    """Detect L2 sub-scopes within an L1 directory."""
+    l2_scopes: list[str] = []
+    try:
+        for sub in sorted(entry.iterdir()):
+            if not sub.is_dir():
+                continue
+            sub_name = sub.name
+            if sub_name.startswith(".") or sub_name in _SKIP_DIRS:
+                continue
+            if _has_source_files(sub):
+                l2_scopes.append(f"{parent_name}/{sub_name}")
+    except PermissionError:
+        logger.debug("Permission denied: %s", entry)
+    return l2_scopes
 
 
 def _has_source_files(directory: Path) -> bool:

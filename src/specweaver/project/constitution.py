@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -216,6 +216,98 @@ def generate_constitution(project_path: Path, project_name: str) -> Path:
     return target
 
 
+def is_unmodified_starter(path: Path) -> bool:
+    """Check whether a constitution file is the unmodified starter template.
+
+    Returns ``True`` if the file contains 5 or more ``TODO`` markers,
+    indicating it was never customized by the user.  This heuristic
+    avoids overwriting user-edited constitutions during bootstrap.
+
+    Args:
+        path: Path to the constitution file.
+
+    Returns:
+        ``True`` if the file looks like the unmodified starter template.
+    """
+    if not path.exists():
+        return False
+
+    try:
+        content = path.read_text(encoding="utf-8-sig")
+    except OSError:
+        return False
+
+    # The starter template has ~13 TODO markers.  If only a few remain,
+    # the user has likely started editing.  5 is a safe threshold.
+    min_todo_markers = 5
+    return content.count("TODO") >= min_todo_markers
+
+
+def generate_constitution_from_standards(
+    project_path: Path,
+    project_name: str,
+    standards: list[dict[str, Any]],
+    languages: list[str],
+    *,
+    force: bool = False,
+) -> Path | None:
+    """Generate a ``CONSTITUTION.md`` pre-filled from confirmed standards.
+
+    Sections 1 (Identity), 2 (Tech Stack), and 4 (Coding Standards) are
+    populated from the standards data.  Sections 3, 5-8 remain as TODO
+    placeholders requiring human judgment.
+
+    Overwrite policy:
+    - If no file exists → create.
+    - If file exists and is the unmodified starter template → auto-replace.
+    - If file exists and user-edited → skip (unless *force* is True).
+
+    Args:
+        project_path: Directory where the file will be created.
+        project_name: Project name for template substitution.
+        standards: List of standard dicts from DB (keys: scope, language,
+            category, data, confidence, confirmed_by).
+        languages: List of detected language names (e.g. ``["python", "typescript"]``).
+        force: If True, overwrite even user-edited constitutions.
+
+    Returns:
+        Path to the created/updated file, or ``None`` if skipped.
+    """
+    target = project_path / CONSTITUTION_FILENAME
+
+    if target.exists() and not force and not is_unmodified_starter(target):
+        logger.info(
+            "generate_constitution_from_standards: %s exists and is "
+            "user-edited, skipping (use force=True to overwrite)",
+            target,
+        )
+        return None
+
+    # Build tech stack rows
+    tech_rows = _build_tech_stack_rows(languages)
+
+    # Build coding standards section
+    standards_section = _build_standards_section(standards)
+
+    # Build languages display
+    languages_display = ", ".join(lang.capitalize() for lang in languages) if languages else "TODO"
+
+    content = _STANDARDS_TEMPLATE.format(
+        project_name=project_name,
+        languages=languages_display,
+        tech_stack_rows=tech_rows,
+        coding_standards=standards_section,
+    )
+
+    target.write_text(content, encoding="utf-8")
+    logger.info(
+        "Generated standards-based constitution: %s (%d bytes, %d standards)",
+        target, len(content.encode("utf-8")), len(standards),
+    )
+
+    return target
+
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
@@ -290,6 +382,73 @@ def _load_constitution(
     )
 
 
+def _build_tech_stack_rows(languages: list[str]) -> str:
+    """Build markdown table rows for the Tech Stack section."""
+    if not languages:
+        return "| Language | TODO | TODO | TODO |"
+
+    lang_info = {
+        "python": ("Python", "3.11+", "Primary language"),
+        "javascript": ("JavaScript", "ES2022+", "Frontend / Node.js"),
+        "typescript": ("TypeScript", "5.x+", "Type-safe JavaScript"),
+    }
+
+    rows: list[str] = []
+    for lang in languages:
+        info = lang_info.get(lang.lower(), (lang.capitalize(), "TODO", "TODO"))
+        rows.append(f"| Language | {info[0]} | {info[1]} | {info[2]} |")
+
+    return "\n".join(rows)
+
+
+def _build_standards_section(standards: list[dict[str, Any]]) -> str:
+    """Build markdown bullet list from confirmed standards."""
+    import json
+
+    if not standards:
+        return (
+            "- TODO: Naming conventions\n"
+            "- TODO: Error handling patterns\n"
+            "- TODO: Documentation requirements"
+        )
+
+    lines: list[str] = []
+    # Group by category
+    by_category: dict[str, list[dict[str, Any]]] = {}
+    for s in standards:
+        cat = s.get("category", "unknown")
+        by_category.setdefault(cat, []).append(s)
+
+    category_labels = {
+        "naming": "Naming Conventions",
+        "error_handling": "Error Handling",
+        "type_hints": "Type Annotations",
+        "docstrings": "Documentation Style",
+        "import_patterns": "Import Organization",
+        "test_patterns": "Testing Conventions",
+        "async_patterns": "Async Patterns",
+        "jsdoc": "JSDoc Documentation",
+        "tsdoc": "TSDoc Documentation",
+    }
+
+    for category, items in sorted(by_category.items()):
+        label = category_labels.get(category, category.replace("_", " ").title())
+        lines.append(f"### {label}")
+        lines.append("")
+        for item in items:
+            data = json.loads(item["data"]) if isinstance(item["data"], str) else item["data"]
+            scope = item.get("scope", ".")
+            lang = item.get("language", "unknown")
+            conf = item.get("confidence", 0.0)
+            prefix = f"[{scope}/{lang}]" if scope != "." else f"[{lang}]"
+            lines.append(f"**{prefix}** (confidence: {conf:.0%})")
+            for k, v in data.items():
+                lines.append(f"- {k.replace('_', ' ').title()}: `{v}`")
+            lines.append("")
+
+    return "\n".join(lines).rstrip()
+
+
 # ---------------------------------------------------------------------------
 # Starter template (~1.5 KB with TODO placeholders)
 # ---------------------------------------------------------------------------
@@ -332,6 +491,86 @@ _STARTER_TEMPLATE = """\
 - TODO: Naming conventions
 - TODO: Error handling patterns
 - TODO: Documentation requirements
+
+**Rule**: These standards apply to ALL code, whether written by a human or an agent.
+
+## 5. Security Invariants
+
+- TODO: Input validation rules
+- TODO: Secret management rules
+
+## 6. Prohibited Actions
+
+### Filesystem
+- Never modify this Constitution without HITL instruction
+- Never write secrets to tracked files
+
+### Git
+- Never `git push --force` to main/master
+
+### Project-Specific
+- TODO: Add project-specific prohibitions
+
+## 7. Key Documents Index
+
+| Document | Purpose | Path |
+|----------|---------|------|
+| Constitution | This file — non-negotiable rules | `CONSTITUTION.md` |
+| TODO | TODO | TODO |
+
+## 8. Agent Instructions
+
+**Before starting ANY work, every agent MUST:**
+1. Read this Constitution in full
+2. Read the relevant Component Spec(s)
+3. Verify that the planned work does not violate any section above
+
+**If an agent encounters a conflict between a spec and this Constitution, the Constitution wins.**
+"""
+
+
+# ---------------------------------------------------------------------------
+# Standards-enriched template (sections 1, 2, 4 pre-filled)
+# ---------------------------------------------------------------------------
+
+_STANDARDS_TEMPLATE = """\
+# {project_name} — Constitution
+
+> **Status**: ACTIVE
+> **Owner**: TODO
+> **Rule**: This file is READ-ONLY for agents. Only the owner may modify it.
+> **Last Updated**: TODO
+> **Generated from**: Auto-discovered coding standards (review and customize!)
+
+---
+
+## 1. Identity
+
+**Project**: {project_name}
+**Languages**: {languages}
+**One-Line Purpose**: TODO: What this project does, in one sentence.
+**Domain**: TODO: Industry/domain
+**Target Users**: TODO: Who uses this
+
+## 2. Tech Stack
+
+| Layer | Technology | Version | Rationale |
+|-------|-----------|---------|-----------|
+{tech_stack_rows}
+| Framework | TODO | TODO | TODO |
+| Database | TODO | TODO | TODO |
+| Testing | TODO | TODO | TODO |
+
+**Rule**: Agents MUST NOT introduce technologies not listed here without HITL approval.
+
+## 3. Architecture Principles (Non-Negotiable)
+
+1. TODO: First principle
+2. TODO: Second principle
+
+## 4. Coding Standards (Auto-Discovered)
+
+{coding_standards}
 
 **Rule**: These standards apply to ALL code, whether written by a human or an agent.
 

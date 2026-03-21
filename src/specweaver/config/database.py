@@ -113,6 +113,10 @@ CREATE TABLE IF NOT EXISTS project_standards (
 );
 """
 
+_SCHEMA_V7 = """\
+ALTER TABLE projects ADD COLUMN auto_bootstrap_constitution TEXT NOT NULL DEFAULT 'prompt';
+"""
+
 
 class Database:
     """SpecWeaver SQLite configuration database.
@@ -211,6 +215,18 @@ class Database:
                 )
                 logger.info(
                     "Database schema migrated to v6 (project_standards)",
+                )
+
+            if current_version < 7:
+                with suppress(Exception):
+                    conn.executescript(_SCHEMA_V7)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (7, _now_iso()),
+                )
+                logger.info(
+                    "Database schema migrated to v7 (auto_bootstrap_constitution)",
                 )
 
 
@@ -503,6 +519,68 @@ class Database:
             logger.debug(
                 "set_constitution_max_size: %s = %d bytes",
                 project_name, max_size,
+            )
+
+    # ------------------------------------------------------------------
+    # Auto-bootstrap constitution configuration
+    # ------------------------------------------------------------------
+
+    _VALID_BOOTSTRAP_MODES = frozenset({"off", "prompt", "auto"})
+
+    def get_auto_bootstrap(self, project_name: str) -> str:
+        """Get the auto-bootstrap mode for a project.
+
+        Returns ``"prompt"`` if the project has no explicit setting.
+
+        Raises:
+            ValueError: If project not found.
+        """
+        with self.connect() as conn:
+            row = conn.execute(
+                "SELECT auto_bootstrap_constitution FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not row:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+            return row["auto_bootstrap_constitution"]
+
+    def set_auto_bootstrap(
+        self, project_name: str, mode: str,
+    ) -> None:
+        """Set the auto-bootstrap mode for a project.
+
+        Args:
+            project_name: Name of the registered project.
+            mode: One of ``"off"``, ``"prompt"``, ``"auto"``.
+
+        Raises:
+            ValueError: If project not found or mode is invalid.
+        """
+        mode_lower = mode.lower()
+        if mode_lower not in self._VALID_BOOTSTRAP_MODES:
+            msg = (
+                f"Invalid auto-bootstrap mode '{mode}'. "
+                f"Must be one of: {', '.join(sorted(self._VALID_BOOTSTRAP_MODES))}"
+            )
+            raise ValueError(msg)
+
+        with self.connect() as conn:
+            existing = conn.execute(
+                "SELECT name FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not existing:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+
+            conn.execute(
+                "UPDATE projects SET auto_bootstrap_constitution = ? WHERE name = ?",
+                (mode_lower, project_name),
+            )
+            logger.debug(
+                "set_auto_bootstrap: %s = %s",
+                project_name, mode_lower,
             )
 
     # ------------------------------------------------------------------

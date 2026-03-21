@@ -206,6 +206,25 @@ sw config get-constitution-max-size
 
 Edit `CONSTITUTION.md` directly to customize your project's rules. The content is sent to the LLM as context during review and implementation, ensuring AI-generated output follows your project's standards.
 
+### Auto-Bootstrap from Standards
+
+After running `sw standards scan`, you can auto-generate a `CONSTITUTION.md` from the discovered coding conventions:
+
+```bash
+# Generate CONSTITUTION.md from discovered standards
+sw constitution bootstrap --project ./my-project
+
+# Force overwrite even if user has edited the constitution
+sw constitution bootstrap --force --project ./my-project
+
+# Configure auto-bootstrap behavior (off, prompt, auto)
+sw config set-auto-bootstrap prompt  # ask after each scan (default)
+sw config set-auto-bootstrap auto    # auto-generate after scan
+sw config set-auto-bootstrap off     # never auto-generate
+```
+
+The generated constitution includes a tech stack section, language-specific conventions, and coding standards extracted from your codebase.
+
 ## Standards Auto-Discovery
 
 SpecWeaver can analyze your codebase (Python, JavaScript, TypeScript) to automatically discover coding standards (naming conventions, error handling, docstrings/JSDoc/TSDoc, import patterns, test patterns, async patterns). Discovered standards are injected into LLM prompts alongside the constitution.

@@ -407,3 +407,57 @@ class TestCLIScan:
         assert result.exit_code == 0
         assert "existing" in result.output.lower() or "exists" in result.output.lower()
 
+
+# ---------------------------------------------------------------------------
+# sw init — standards scan hint
+# ---------------------------------------------------------------------------
+
+
+class TestInitStandardsScanHint:
+    """Test the 'run sw standards scan' hint after sw init."""
+
+    def test_hint_shown_with_existing_python(self, tmp_path: Path) -> None:
+        """Init with existing .py files → shows scan hint."""
+        project_dir = tmp_path / "existing-proj"
+        project_dir.mkdir()
+        (project_dir / "main.py").write_text("def main(): pass\n")
+        result = runner.invoke(
+            app, ["init", "existproj", "--path", str(project_dir)],
+        )
+        assert result.exit_code == 0
+        assert "sw standards scan" in result.output
+
+    def test_hint_shown_with_existing_typescript(self, tmp_path: Path) -> None:
+        """Init with existing .ts files → shows scan hint."""
+        project_dir = tmp_path / "ts-proj"
+        project_dir.mkdir()
+        (project_dir / "app.ts").write_text("const x = 1;\n")
+        result = runner.invoke(
+            app, ["init", "tsproj", "--path", str(project_dir)],
+        )
+        assert result.exit_code == 0
+        assert "sw standards scan" in result.output
+
+    def test_no_hint_without_source_files(self, tmp_path: Path) -> None:
+        """Init with no source files → no scan hint."""
+        project_dir = tmp_path / "empty-proj"
+        project_dir.mkdir()
+        result = runner.invoke(
+            app, ["init", "emptyproj", "--path", str(project_dir)],
+        )
+        assert result.exit_code == 0
+        assert "sw standards scan" not in result.output
+
+    def test_hint_excludes_hidden_dirs(self, tmp_path: Path) -> None:
+        """Init where only source files are in hidden dirs → no scan hint."""
+        project_dir = tmp_path / "hidden-proj"
+        project_dir.mkdir()
+        git_dir = project_dir / ".git" / "hooks"
+        git_dir.mkdir(parents=True)
+        (git_dir / "pre-commit.py").write_text("print('hook')\n")
+        result = runner.invoke(
+            app, ["init", "hiddenproj", "--path", str(project_dir)],
+        )
+        assert result.exit_code == 0
+        assert "sw standards scan" not in result.output
+

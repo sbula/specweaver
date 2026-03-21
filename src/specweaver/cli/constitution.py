@@ -74,7 +74,7 @@ def constitution_check(
         raise typer.Exit(code=1)
 
     # Try to get the configured max size from DB
-    max_size_kwargs: dict = {}
+    max_size_kwargs: dict[str, int] = {}
     try:
         db = _core.get_db()
         active = db.get_active_project()
@@ -136,4 +136,70 @@ def constitution_init(
 
     _core.console.print(
         f"[green]\u2713[/green] Constitution created: [bold]{result_path}[/bold]",
+    )
+
+
+@constitution_app.command("bootstrap")
+def constitution_bootstrap(
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Path to the target project directory.",
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f",
+        help="Overwrite even a user-edited CONSTITUTION.md.",
+    ),
+) -> None:
+    """Generate CONSTITUTION.md pre-filled from confirmed coding standards.
+
+    Loads auto-discovered standards from the database and populates
+    sections 1 (Identity), 2 (Tech Stack), and 4 (Coding Standards).
+    Sections 3, 5-8 remain as TODO placeholders for human review.
+
+    If CONSTITUTION.md already exists but is still the unmodified starter
+    template, it will be auto-replaced. User-edited constitutions
+    require --force to overwrite.
+    """
+    try:
+        project_path = resolve_project_path(project)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        _core.console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    from specweaver.project.constitution import generate_constitution_from_standards
+
+    # Load standards from DB
+    db = _core.get_db()
+    name = _core._require_active_project()
+    standards = db.get_standards(name)
+
+    if not standards:
+        _core.console.print(
+            "[yellow]No confirmed standards found.[/yellow]\n"
+            "[dim]Run 'sw standards scan' first to discover coding standards.[/dim]",
+        )
+        raise typer.Exit(code=1)
+
+    # Extract unique languages
+    languages = sorted({s["language"] for s in standards})
+
+    project_name = project_path.name.lower().replace(" ", "-")
+    result = generate_constitution_from_standards(
+        project_path, project_name, standards, languages, force=force,
+    )
+
+    if result is None:
+        _core.console.print(
+            "[yellow]CONSTITUTION.md already exists and has been edited.[/yellow]\n"
+            "[dim]Use --force to overwrite.[/dim]",
+        )
+        raise typer.Exit(code=1)
+
+    _core.console.print(
+        f"[green]\u2713[/green] Constitution bootstrapped from "
+        f"[bold]{len(standards)}[/bold] standards: [bold]{result}[/bold]",
+    )
+    _core.console.print(
+        f"  [dim]Languages: {', '.join(languages)}[/dim]\n"
+        f"  [dim]Review and customize sections marked TODO.[/dim]",
     )

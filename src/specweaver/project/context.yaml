@@ -24,6 +24,8 @@ exposes:
   - find_all_constitutions
   - check_constitution
   - generate_constitution
+  - generate_constitution_from_standards
+  - is_unmodified_starter
   - ConstitutionInfo
 
 # -- Operational Metadata --------------------------------------------------

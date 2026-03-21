@@ -565,11 +565,11 @@ class TestGateEdgeCases:
         from specweaver.flow.models import PipelineDefinition
         pipeline = PipelineDefinition(name="p", steps=[])
         evaluator = GateEvaluator(pipeline)
-        
+
         gate = GateDefinition.model_construct(condition="UNKNOWN_ENUM_VALUE", on_fail=OnFailAction.ABORT) # type: ignore
         result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
         assert evaluator.passes(gate, result) is True
-        
+
     def test_find_step_index_not_found(self, tmp_path: Path) -> None:
         from specweaver.flow.gates import GateEvaluator
         from specweaver.flow.models import PipelineDefinition
@@ -596,7 +596,7 @@ class TestGateEdgeCases:
         gate = GateDefinition(condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.LOOP_BACK, loop_target="none")
         result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
         run = PipelineRun.model_construct(pipeline_name="p", steps=[])
-        
+
         action = evaluator._handle_loop_back(gate, result, run, {0: 0})
         # because target doesn't exist, it stops
         assert action == "stop"
@@ -612,6 +612,6 @@ class TestGateEdgeCases:
         # Empty step records array, simulating record is None fetch
         run = PipelineRun.model_construct(pipeline_name="p", steps=[])
         run.step_records = []
-        
+
         action = evaluator._handle_retry(gate, result, run, {0: 0})
         assert action == "retry"

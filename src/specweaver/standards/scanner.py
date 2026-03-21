@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class StandardsScanner:
     """Orchestrates file discovery and language auto-detection for codebase standards.
-    
+
     Routes files to their respective registered analyzers based on file extension
     and aggregates the extracted results.
     """
@@ -38,11 +38,11 @@ class StandardsScanner:
 
     def scan(self, files: list[Path], half_life_days: float = 180.0) -> list[CategoryResult]:
         """Categorize files by language and execute corresponding analyzers.
-        
+
         Args:
             files: A list of paths to source files representing the system scope.
             half_life_days: Decay factor deciding the weight of old code.
-            
+
         Returns:
             A list of CategoryResult objects across all detected languages.
         """

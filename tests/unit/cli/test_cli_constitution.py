@@ -134,3 +134,112 @@ class TestConstitutionInit:
             ],
         )
         assert result.exit_code == 1
+
+
+# ---------------------------------------------------------------------------
+# constitution bootstrap
+# ---------------------------------------------------------------------------
+
+
+class TestConstitutionBootstrap:
+    """Test constitution bootstrap command."""
+
+    @pytest.fixture(autouse=True)
+    def _setup_project(self, tmp_path: Path, _mock_db):
+        """Register and activate a project with seeded standards."""
+        self.db = _mock_db
+        self.project_dir = tmp_path / "my-proj"
+        self.project_dir.mkdir()
+        _mock_db.register_project("my-proj", str(self.project_dir))
+        _mock_db.set_active_project("my-proj")
+
+    def _seed_standards(self) -> None:
+        """Insert sample standards into the DB."""
+        self.db.save_standard(
+            project_name="my-proj",
+            scope=".",
+            language="python",
+            category="naming",
+            data={"function_style": "snake_case"},
+            confidence=0.95,
+            confirmed_by="hitl",
+        )
+        self.db.save_standard(
+            project_name="my-proj",
+            scope=".",
+            language="python",
+            category="error_handling",
+            data={"pattern": "try_except_specific"},
+            confidence=0.88,
+            confirmed_by="hitl",
+        )
+
+    def test_bootstrap_happy_path(self, tmp_path: Path) -> None:
+        """bootstrap with standards → creates CONSTITUTION.md."""
+        self._seed_standards()
+        result = runner.invoke(
+            app, ["constitution", "bootstrap", "--project", str(self.project_dir)],
+        )
+        assert result.exit_code == 0
+        assert (self.project_dir / "CONSTITUTION.md").exists()
+        content = (self.project_dir / "CONSTITUTION.md").read_text()
+        assert "Auto-Discovered" in content
+
+    def test_bootstrap_no_standards_exits(self, tmp_path: Path) -> None:
+        """bootstrap with no standards → exit 1."""
+        result = runner.invoke(
+            app, ["constitution", "bootstrap", "--project", str(self.project_dir)],
+        )
+        assert result.exit_code == 1
+        assert "No confirmed standards" in result.output
+
+    def test_bootstrap_skip_user_edited(self, tmp_path: Path) -> None:
+        """bootstrap with user-edited CONSTITUTION.md → exit 1."""
+        self._seed_standards()
+        # Create a custom constitution (no TODOs → user-edited)
+        (self.project_dir / "CONSTITUTION.md").write_text(
+            "# My Custom Constitution\nAll real content here.\n",
+        )
+        result = runner.invoke(
+            app, ["constitution", "bootstrap", "--project", str(self.project_dir)],
+        )
+        assert result.exit_code == 1
+        assert "already exists" in result.output
+
+    def test_bootstrap_force_overwrites(self, tmp_path: Path) -> None:
+        """bootstrap --force → overwrites user-edited CONSTITUTION.md."""
+        self._seed_standards()
+        (self.project_dir / "CONSTITUTION.md").write_text(
+            "# My Custom Constitution\n",
+        )
+        result = runner.invoke(
+            app, [
+                "constitution", "bootstrap", "--force",
+                "--project", str(self.project_dir),
+            ],
+        )
+        assert result.exit_code == 0
+        content = (self.project_dir / "CONSTITUTION.md").read_text()
+        assert "Auto-Discovered" in content
+
+    def test_bootstrap_bad_project_path(self, tmp_path: Path) -> None:
+        """bootstrap with invalid project → exit 1."""
+        result = runner.invoke(
+            app, [
+                "constitution", "bootstrap",
+                "--project", str(tmp_path / "nonexistent"),
+            ],
+        )
+        assert result.exit_code == 1
+
+    def test_bootstrap_output_shows_count_and_languages(
+        self, tmp_path: Path,
+    ) -> None:
+        """bootstrap output mentions standard count and languages."""
+        self._seed_standards()
+        result = runner.invoke(
+            app, ["constitution", "bootstrap", "--project", str(self.project_dir)],
+        )
+        assert result.exit_code == 0
+        assert "2" in result.output  # 2 standards
+        assert "python" in result.output

@@ -7,9 +7,14 @@ This ensures proper interaction between Runner, Handlers, Gates, and Display.
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import pytest
+
+from specweaver.flow.handlers import RunContext
 from specweaver.flow.models import (
     GateCondition,
     GateDefinition,
@@ -20,8 +25,6 @@ from specweaver.flow.models import (
     StepTarget,
 )
 from specweaver.flow.runner import PipelineRunner
-from specweaver.flow.handlers import RunContext
-from specweaver.flow.state import PipelineRun, StepStatus
 from specweaver.flow.store import StateStore
 
 
@@ -39,7 +42,7 @@ async def test_complex_edge_cases_scenario(temp_store: StateStore, tmp_path: Pat
     - Parked gate
     - Persistence roundtrip with rich history
     """
-    
+
     # Create a pipeline with intentionally challenging scenarios
     pipeline = PipelineDefinition(
         name="edge_case_pipeline",
@@ -74,24 +77,24 @@ async def test_complex_edge_cases_scenario(temp_store: StateStore, tmp_path: Pat
             ),
         ],
     )
-    
+
     # We use a dummy spec path
     spec_path = tmp_path / "dummy.md"
     spec_path.write_text("# Dummy")
     context = RunContext(project_path=tmp_path, spec_path=spec_path)
     runner = PipelineRunner(pipeline, context, store=temp_store)
-    
+
     run = await runner.run()
-    
+
     # We no longer need to retrieve by run_id separately as run() returns the object
-    
-    # Since we didn't mock the inner execution perfectly, let's just make sure 
+
+    # Since we didn't mock the inner execution perfectly, let's just make sure
     # it didn't crash and recorded expected things.
     # We expect parking_step to either be not reached or PARKED/FAILED depending
     # on whether bouncing_step passed or failed validation.
-    
+
     assert str(run.status).split(".")[-1].lower() in ("completed", "parked", "failed", "aborted", "success")
-    
+
     # Ensure audit log captured the run's complexity
     audit_logs = temp_store.get_audit_log(run.run_id)
     assert len(audit_logs) > 0

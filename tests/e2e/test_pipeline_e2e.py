@@ -10,7 +10,10 @@ Only the LLM adapter is mocked.
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -23,9 +26,9 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB for all e2e tests."""
-    from specweaver.config.database import Database as DB
+    from specweaver.config.database import Database
 
-    db = DB(tmp_path / ".specweaver-test" / "specweaver.db")
+    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
     return db
 

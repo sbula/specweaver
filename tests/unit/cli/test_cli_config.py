@@ -207,3 +207,41 @@ class TestConfigProfiles:
         result = runner.invoke(app, ["config", "reset-profile"])
         assert result.exit_code == 0
         assert "cleared" in result.output.lower() or "reset" in result.output.lower()
+
+
+# ---------------------------------------------------------------------------
+# config auto-bootstrap
+# ---------------------------------------------------------------------------
+
+
+class TestConfigAutoBootstrap:
+    """Test config set-auto-bootstrap / get-auto-bootstrap commands."""
+
+    def test_set_auto_bootstrap_happy_path(self, _mock_db) -> None:
+        """set-auto-bootstrap → success."""
+        _create_project(_mock_db)
+        result = runner.invoke(app, ["config", "set-auto-bootstrap", "auto"])
+        assert result.exit_code == 0
+        assert "auto" in result.output
+
+    def test_set_auto_bootstrap_invalid_mode(self, _mock_db) -> None:
+        """set-auto-bootstrap with invalid mode → exit 1."""
+        _create_project(_mock_db)
+        result = runner.invoke(app, ["config", "set-auto-bootstrap", "always"])
+        assert result.exit_code == 1
+        assert "Error" in result.output or "Invalid" in result.output
+
+    def test_get_auto_bootstrap_happy_path(self, _mock_db) -> None:
+        """get-auto-bootstrap → shows current mode."""
+        _create_project(_mock_db)
+        runner.invoke(app, ["config", "set-auto-bootstrap", "off"])
+        result = runner.invoke(app, ["config", "get-auto-bootstrap"])
+        assert result.exit_code == 0
+        assert "off" in result.output
+
+    def test_get_auto_bootstrap_default_is_prompt(self, _mock_db) -> None:
+        """get-auto-bootstrap on fresh project → 'prompt' (default)."""
+        _create_project(_mock_db)
+        result = runner.invoke(app, ["config", "get-auto-bootstrap"])
+        assert result.exit_code == 0
+        assert "prompt" in result.output

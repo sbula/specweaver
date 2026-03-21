@@ -106,16 +106,37 @@ monorepo/
 
 ### Phase 3.5a-4: Constitution Bootstrap + Polish
 
-**Goal**: Auto-generate `CONSTITUTION.md` from confirmed standards, finalize edge cases.
+**Goal**: Auto-generate `CONSTITUTION.md` from confirmed standards, finalize edge cases, update documentation.
+
+**Resolved design decisions** (from discussion):
+
+| # | Decision | Resolution |
+|---|---|---|
+| 1 | Where to implement bootstrap | Option A — `generate_constitution_from_standards()` in `project/constitution.py`. Constitution generators stay together; standards data passed as plain `list[dict]`. |
+| 2 | Auto-trigger | **Separate step**. `sw init` prints hint for existing projects: *"Existing code detected. Run `sw standards scan` to discover conventions."* After `sw standards scan`, HITL hint: *"Run `sw constitution bootstrap` to generate CONSTITUTION.md."* |
+| 3 | Config values | `auto_bootstrap_constitution` column: `'off'` \| `'prompt'` (default) \| `'auto'`. |
+| 4 | Schema migration | v7: only `auto_bootstrap_constitution`. Skip `rescan_mode` until needed. |
+| 5 | CLI command | `sw constitution bootstrap` (grouped by output artifact, not input source). |
+| 6 | Overwrite behavior | Option B — detect unmodified starter template (check for TODO markers) and auto-replace. User-edited constitutions require `--force`. |
 
 | Component | What |
 |---|---|
-| `cli.py` | Constitution bootstrap: when `sw scan --standards` completes and no `CONSTITUTION.md` exists, generate draft from confirmed standards + project metadata (name, languages, layers). |
-| Edge cases | Empty project, single-file, all-below-threshold, project with no git, mixed languages in one scope. |
-| Documentation | Update `README.md`, roadmap, developer guide. |
+| `config/database.py` | Schema v7: `ALTER TABLE projects ADD COLUMN auto_bootstrap_constitution TEXT DEFAULT 'prompt'`. Methods: `get_auto_bootstrap()`, `set_auto_bootstrap()`. |
+| `project/constitution.py` | New `generate_constitution_from_standards(project_path, project_name, standards, languages)` → pre-fills sections 1 (Identity), 2 (Tech Stack), 4 (Coding Standards) from confirmed data. New `_STANDARDS_TEMPLATE` alongside existing `_STARTER_TEMPLATE`. Idempotent. |
+| `cli/constitution.py` | New `sw constitution bootstrap` command: loads confirmed standards from DB, calls `generate_constitution_from_standards()`, supports `--force`. |
+| `cli/standards.py` | After successful scan (line ~156): print HITL hint *"Run `sw constitution bootstrap`..."* when no `CONSTITUTION.md` exists. Respect `auto_bootstrap` config: `'auto'` → bootstrap silently, `'prompt'` → Rich prompt, `'off'` → just hint. |
+| `cli/projects.py` | After `sw init` scaffold (line ~59): if existing source files detected, print hint: *"Existing code detected. Run `sw standards scan` to discover coding conventions."* |
+| `cli/config.py` | New `sw config set-auto-bootstrap` / `sw config get-auto-bootstrap` commands. |
+| Edge cases (scan + bootstrap) | Empty project, single-file, all-below-threshold, project with no git, mixed languages in one scope — test both scan path and bootstrap path. |
+| Documentation | `README.md` (constitution bootstrap bullet + CLI table), `docs/quickstart.md` (scan→bootstrap flow), `docs/developer_guide.html` (if applicable), `docs/test_coverage_matrix.md` (new stories), `docs/proposals/roadmap/phase_3_feature_expansion.md` (mark 3.5 ✅). |
 
 **Tests**: ~20-30 tests.
-**Deliverable**: Feature 3.5a complete. All tests passing, documentation updated.
+- **Unit** (~12): `generate_constitution_from_standards()` variations (Python-only, multi-lang, empty standards, idempotent, `--force`), schema v7 migration, get/set auto_bootstrap.
+- **Integration** (~8): scan→bootstrap flow, `sw init` hint for existing project, `sw constitution bootstrap` CLI, config round-trip.
+- **Edge cases** (~8): empty project scan, single-file scan, all-below-threshold scan, no-git fallback, mixed-languages-in-scope scan, bootstrap with zero standards, bootstrap with existing `CONSTITUTION.md`, bootstrap after `--force`.
+- **Verification**: `/pre-commit-test-gap` workflow after implementation.
+
+**Deliverable**: Feature 3.5a complete. All tests passing, documentation updated, roadmap marked ✅.
 
 ---
 

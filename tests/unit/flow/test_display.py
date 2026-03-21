@@ -385,7 +385,7 @@ class TestCLIRunEdgeCases:
 
         # 1. _on_run_started with run=None
         display("run_started", run=None)
-        
+
         # 2. _on_step_failed with out-of-bounds step_idx
         display("step_failed", step_idx=999, result=None)
 

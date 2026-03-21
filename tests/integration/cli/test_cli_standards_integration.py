@@ -177,7 +177,7 @@ class TestStandardsRescan:
         r1 = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert r1.exit_code == 0
 
-        show1 = runner.invoke(app, ["standards", "show"])
+        runner.invoke(app, ["standards", "show"])
 
         # Change code style and re-scan
         src = project_dir / "src" / "module_a.py"

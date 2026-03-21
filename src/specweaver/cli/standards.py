@@ -7,11 +7,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import typer
 from rich.table import Table
 
 from specweaver.cli import _core
+
+if TYPE_CHECKING:
+    from specweaver.config.database import Database
+    from specweaver.standards.analyzer import CategoryResult
 
 standards_app = typer.Typer(
     name="standards",
@@ -48,7 +53,6 @@ def standards_scan(
     import asyncio
 
     from specweaver.llm.adapters.gemini import GeminiAdapter
-    from specweaver.standards.analyzer import CategoryResult
     from specweaver.standards.discovery import discover_files
     from specweaver.standards.enricher import StandardsEnricher
     from specweaver.standards.reviewer import StandardsReviewer
@@ -58,6 +62,9 @@ def standards_scan(
     name = _core._require_active_project()
     db = _core.get_db()
     proj = db.get_project(name)
+    if proj is None:
+        _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
+        raise typer.Exit(code=1)
     project_path = Path(proj["root_path"])
 
     if not project_path.exists():
@@ -70,10 +77,7 @@ def standards_scan(
     _core.console.print(f"  [dim]Root: {project_path}[/dim]\n")
 
     # Detect scopes
-    if scope:
-        scopes = [scope]
-    else:
-        scopes = detect_scopes(project_path)
+    scopes = [scope] if scope else detect_scopes(project_path)
 
     _core.console.print(f"  Detected [bold]{len(scopes)}[/bold] scope(s): {', '.join(scopes)}\n")
 
@@ -88,11 +92,7 @@ def standards_scan(
     scope_results: dict[str, list[CategoryResult]] = {}
 
     for s in scopes:
-        if s == ".":
-            # Root scope: all files at project root (not in any sub-scope)
-            scope_path = project_path
-        else:
-            scope_path = project_path / s
+        scope_path = project_path if s == "." else project_path / s
 
         # Filter files to this scope
         scope_files = [
@@ -119,24 +119,50 @@ def standards_scan(
         return
 
     # Load existing for re-scan diff
-    existing_by_scope: dict[str, list[dict]] = {}
+    existing_by_scope: dict[str, list[dict[str, Any]]] = {}
     for s in scope_results:
         existing_by_scope[s] = db.get_standards(name, scope=s)
 
     # HITL review
     if no_review:
-        accepted = scope_results  # Auto-accept all
+        accepted = scope_results
     else:
         reviewer = StandardsReviewer(console=_core.console)
         accepted = reviewer.review(scope_results, existing=existing_by_scope)
 
     # Save accepted standards
+    saved = _save_accepted_standards(db, name, accepted, no_review=no_review)
+
+    _core.console.print(
+        f"\n[bold]Scan complete[/bold]: {saved} standards saved "
+        f"for project [bold]{name}[/bold].",
+    )
+
+    # Bootstrap hint: if standards were saved and no constitution exists
+    # (or it's still the unmodified starter), offer to bootstrap.
+    if saved > 0:
+        _maybe_bootstrap_constitution(
+            project_path=project_path,
+            project_name=name,
+            db=db,
+            accepted=accepted,
+            no_review=no_review,
+        )
+
+
+def _save_accepted_standards(
+    db: Database,
+    project_name: str,
+    accepted: dict[str, list[CategoryResult]],
+    no_review: bool,
+) -> int:
+    """Helper to save accepted standards to the database."""
     saved = 0
     for s, results in accepted.items():
         for result in results:
             confirmed = "hitl" if not no_review else None
             db.save_standard(
-                project_name=name,
+                project_name=project_name,
                 scope=s,
                 language=result.language or "unknown",
                 category=result.category,
@@ -149,11 +175,79 @@ def standards_scan(
                 f"  [green]\u2713[/green] [{s}] {result.category}: "
                 f"confidence={result.confidence:.0%}",
             )
+    return saved
 
-    _core.console.print(
-        f"\n[bold]Scan complete[/bold]: {saved} standards saved "
-        f"for project [bold]{name}[/bold].",
+
+def _maybe_bootstrap_constitution(
+    *,
+    project_path: Path,
+    project_name: str,
+    db: Database,
+    accepted: dict[str, list[CategoryResult]],
+    no_review: bool,
+) -> None:
+    """Optionally bootstrap CONSTITUTION.md after a scan, based on config.
+
+    Respects the ``auto_bootstrap_constitution`` setting:
+    - ``auto``: bootstrap silently.
+    - ``prompt``: ask the user (unless ``--no-review``).
+    - ``off``: print a hint.
+    """
+    from specweaver.project.constitution import (
+        CONSTITUTION_FILENAME,
+        generate_constitution_from_standards,
+        is_unmodified_starter,
     )
+
+    constitution_path = project_path / CONSTITUTION_FILENAME
+    needs_bootstrap = (
+        not constitution_path.exists()
+        or is_unmodified_starter(constitution_path)
+    )
+
+    if not needs_bootstrap:
+        return
+
+    bootstrap_mode = db.get_auto_bootstrap(project_name)
+    languages = sorted({
+        r.language or "unknown"
+        for results in accepted.values()
+        for r in results
+    })
+
+    if bootstrap_mode == "auto":
+        all_standards = db.get_standards(project_name)
+        project_slug = project_path.name.lower().replace(" ", "-")
+        result = generate_constitution_from_standards(
+            project_path, project_slug, all_standards, languages,
+        )
+        if result:
+            _core.console.print(
+                f"\n[green]\u2713[/green] CONSTITUTION.md auto-bootstrapped "
+                f"from {len(all_standards)} standards.",
+            )
+    elif bootstrap_mode == "prompt" and not no_review:
+        do_bootstrap = typer.confirm(
+            "\nBootstrap CONSTITUTION.md from these standards?",
+            default=True,
+        )
+        if do_bootstrap:
+            all_standards = db.get_standards(project_name)
+            project_slug = project_path.name.lower().replace(" ", "-")
+            result = generate_constitution_from_standards(
+                project_path, project_slug, all_standards, languages,
+            )
+            if result:
+                _core.console.print(
+                    f"[green]\u2713[/green] CONSTITUTION.md bootstrapped: "
+                    f"[bold]{result}[/bold]",
+                )
+    else:
+        # mode == "off" or (mode == "prompt" and no_review)
+        _core.console.print(
+            "\n[dim]Tip: Run 'sw constitution bootstrap' to generate "
+            "CONSTITUTION.md from these standards.[/dim]",
+        )
 
 
 def _file_in_scope(

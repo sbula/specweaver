@@ -1,20 +1,22 @@
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from specweaver.flow.models import PipelineStep, StepAction, StepTarget
-from specweaver.flow.state import StepStatus
+import pytest
+
 from specweaver.flow.handlers import (
-    RunContext,
-    ValidateCodeHandler,
     GenerateCodeHandler,
     GenerateTestsHandler,
-    ValidateTestsHandler,
     LintFixHandler,
-    ReviewSpecHandler,
     ReviewCodeHandler,
+    ReviewSpecHandler,
+    RunContext,
+    ValidateCodeHandler,
+    ValidateTestsHandler,
 )
-from specweaver.validation.models import RuleResult, Status as RuleStatus
+from specweaver.flow.models import PipelineStep, StepAction, StepTarget
+from specweaver.flow.state import StepStatus
+from specweaver.validation.models import RuleResult
+from specweaver.validation.models import Status as RuleStatus
 
 
 @pytest.fixture
@@ -47,16 +49,16 @@ async def test_validate_code_handler_empty_dir(run_context: RunContext, pipeline
 async def test_validate_code_handler_success_output(run_context: RunContext, pipeline_step: PipelineStep) -> None:
     """ValidateCodeHandler constructs proper output payloads when validation rules execute."""
     (run_context.output_dir / "foo.py").touch()
-    
+
     handler = ValidateCodeHandler()
-    
+
     with patch.object(handler, "_run_validation") as mock_run:
         mock_run.return_value = [
             RuleResult(rule_id="r1", rule_name="rule1", status=RuleStatus.PASS, message="OK", line=1, file="foo.py"),
             RuleResult(rule_id="r2", rule_name="rule2", status=RuleStatus.FAIL, message="Bad", line=2, file="foo.py"),
         ]
         result = await handler.execute(pipeline_step, run_context)
-        
+
         assert result.status == StepStatus.FAILED
         assert result.output["total"] == 2
         assert result.output["passed"] == 1
@@ -67,7 +69,7 @@ async def test_validate_code_handler_success_output(run_context: RunContext, pip
 async def test_generate_handlers_exception_wrapper(run_context: RunContext, pipeline_step: PipelineStep) -> None:
     """GenerateCodeHandler and GenerateTestsHandler trap LLM generation faults."""
     run_context.llm = AsyncMock()
-    
+
     code_handler = GenerateCodeHandler()
     test_handler = GenerateTestsHandler()
 
@@ -96,20 +98,20 @@ async def test_lint_fix_handler_missing_code(run_context: RunContext, pipeline_s
     """LintFixHandler safely aborts reflection if code files vanish."""
     run_context.llm = AsyncMock()
     handler = LintFixHandler()
-    
+
     with patch.object(handler, "_get_atom") as mock_get_atom:
         mock_atom = MagicMock()
         mock_get_atom.return_value = mock_atom
-        
+
         mock_atom.run.side_effect = [
             # Initial lint returns an error
-            MagicMock(exports={"error_count": 1, "errors": [{"line": 1}]}), 
+            MagicMock(exports={"error_count": 1, "errors": [{"line": 1}]}),
             # Auto-fix run
             MagicMock(),
             # Post-auto-fix lint STILL returns error
             MagicMock(exports={"error_count": 1, "errors": [{"line": 1}]}),
         ]
-        
+
         # We ensure output dir is empty so _find_code_files returns []
         result = await handler.execute(pipeline_step, run_context)
         assert result.status == StepStatus.FAILED
@@ -122,12 +124,12 @@ async def test_lint_fix_handler_ast_fences(tmp_path: Path) -> None:
     handler = LintFixHandler()
     llm = AsyncMock()
     llm.generate.return_value = MagicMock(text="```python\nprint('fixed')\n```")
-    
+
     code_path = tmp_path / "target.py"
     code_path.touch()
-    
+
     await handler._llm_fix(llm, code_path, [{"line": 1}])
-    
+
     fixed = code_path.read_text(encoding="utf-8")
     assert "print('fixed')" in fixed
     assert "```" not in fixed
@@ -138,10 +140,10 @@ async def test_review_handlers_execution(run_context: RunContext, pipeline_step:
     """ReviewSpecHandler and ReviewCodeHandler execute their core LLM logic without crashing."""
     run_context.llm = AsyncMock()
     (run_context.output_dir / "foo.py").touch()
-    
+
     spec_handler = ReviewSpecHandler()
     code_handler = ReviewCodeHandler()
-    
+
     mock_review_result = MagicMock()
     mock_review_result.verdict.value = "accepted"
     mock_review_result.findings = []

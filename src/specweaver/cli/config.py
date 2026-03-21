@@ -221,7 +221,51 @@ def config_get_constitution_max_size() -> None:
     )
 
 
+@config_app.command("set-auto-bootstrap")
+def config_set_auto_bootstrap(
+    mode: str = typer.Argument(
+        help="Auto-bootstrap mode: off, prompt, or auto.",
+    ),
+) -> None:
+    """Set the auto-bootstrap mode for constitution generation.
+
+    Controls what happens after 'sw standards scan' completes:
+    - off:    Only print a hint about 'sw constitution bootstrap'.
+    - prompt: Ask the user interactively (default).
+    - auto:   Bootstrap silently without asking.
+    """
+    name = _core._require_active_project()
+    db = _core.get_db()
+    try:
+        db.set_auto_bootstrap(name, mode)
+    except ValueError as exc:
+        _core.console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    _core.console.print(
+        f"[green]\u2713[/green] Auto-bootstrap mode set to [bold]{mode.lower()}[/bold] "
+        f"for project [bold]{name}[/bold].",
+    )
+
+
+@config_app.command("get-auto-bootstrap")
+def config_get_auto_bootstrap() -> None:
+    """Show the current auto-bootstrap mode for the active project."""
+    name = _core._require_active_project()
+    db = _core.get_db()
+    try:
+        mode = db.get_auto_bootstrap(name)
+    except ValueError as exc:
+        _core.console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    _core.console.print(
+        f"Auto-bootstrap mode for [bold]{name}[/bold]: [cyan]{mode}[/cyan]",
+    )
+
+
 # -- Domain profile commands ------------------------------------------------
+
 
 
 @config_app.command("profiles")

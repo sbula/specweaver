@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from specweaver.validation.models import Status
 from specweaver.validation.rules.code.c01_syntax_valid import SyntaxValidRule
@@ -192,8 +195,8 @@ class TestTestsPassRule:
         mock_result = MagicMock(failed=0, errors=0, failures=[])
         with patch(
             "specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner"
-        ) as MockRunner:
-            MockRunner.return_value.run_tests.return_value = mock_result
+        ) as mock_runner:
+            mock_runner.return_value.run_tests.return_value = mock_result
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)
         assert result.status == Status.PASS
@@ -211,8 +214,8 @@ class TestTestsPassRule:
         mock_result = MagicMock(failed=1, errors=0, failures=[mock_failure])
         with patch(
             "specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner"
-        ) as MockRunner:
-            MockRunner.return_value.run_tests.return_value = mock_result
+        ) as mock_runner:
+            mock_runner.return_value.run_tests.return_value = mock_result
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)
         assert result.status == Status.FAIL
@@ -228,8 +231,8 @@ class TestTestsPassRule:
 
         with patch(
             "specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner"
-        ) as MockRunner:
-            MockRunner.return_value.run_tests.side_effect = TimeoutError
+        ) as mock_runner:
+            mock_runner.return_value.run_tests.side_effect = TimeoutError
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)
         assert result.status == Status.FAIL

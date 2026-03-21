@@ -16,7 +16,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with confidence-scored findings
 - **Feature decomposition** — Draft feature specs and decompose them into component-level work items via pipeline
 - **Code generation** — Generate implementation + test files from a validated spec
-- **Constitution support** — Project-wide `CONSTITUTION.md` with coding principles, testing standards, and UX guidelines injected into every LLM call (review, implement, pipeline). Walk-up resolution, configurable size limits, CLI management
+- **Constitution support** — Project-wide `CONSTITUTION.md` with coding principles, testing standards, and UX guidelines injected into every LLM call (review, implement, pipeline). Walk-up resolution, configurable size limits, CLI management. Auto-bootstrap from discovered standards with configurable behavior (off/prompt/auto)
 - **Validation pipelines** — YAML-defined rule sub-pipelines with inheritance (extends/override/remove/add), profile-specific pipelines, project-local overrides, and custom D-prefix rule support
 - **Pipeline definitions** — YAML-defined workflows with configurable gates, retries, and feedback loops
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
@@ -118,6 +118,8 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw config get-log-level` | Show current log level and log file path |
 | `sw config set-constitution-max-size <N>` | Set maximum constitution file size (bytes) |
 | `sw config get-constitution-max-size` | Show current constitution size limit |
+| `sw config set-auto-bootstrap <mode>` | Set constitution bootstrap behavior (`off`, `prompt`, `auto`) |
+| `sw config get-auto-bootstrap` | Show current auto-bootstrap mode |
 
 ### Constitution Management
 
@@ -127,6 +129,8 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 | `sw constitution check` | Validate constitution against size limits |
 | `sw constitution init` | Create a fresh CONSTITUTION.md template |
 | `sw constitution init --force` | Overwrite an existing CONSTITUTION.md |
+| `sw constitution bootstrap` | Generate CONSTITUTION.md from discovered standards |
+| `sw constitution bootstrap --force` | Overwrite user-edited CONSTITUTION.md with generated version |
 
 ### Pipeline Execution
 
@@ -217,7 +221,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 2668+ tests (unit, integration, E2E)
+├── tests/                      # 2774+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

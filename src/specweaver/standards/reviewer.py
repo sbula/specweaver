@@ -82,19 +82,12 @@ class StandardsReviewer:
                     break
 
                 # Auto-accept if unchanged AND already HITL-confirmed
-                old = existing_by_cat.get(result.category)
-                if old and old.get("confirmed_by") == "hitl":
-                    old_data = (
-                        json.loads(old["data"])
-                        if isinstance(old["data"], str)
-                        else old["data"]
-                    )
-                    if old_data == result.dominant:
-                        # Unchanged and already confirmed → auto-accept
-                        scope_accepted.append(result)
-                        continue
+                if self._should_auto_accept(result, existing_by_cat):
+                    scope_accepted.append(result)
+                    continue
 
                 # Show diff if re-scan
+                old = existing_by_cat.get(result.category)
                 if old:
                     self._show_diff(scope, result.category, old, result)
 
@@ -103,31 +96,54 @@ class StandardsReviewer:
 
                 # Prompt for action
                 action = self._prompt_action()
-
-                if action == "a":
-                    scope_accepted.append(result)
-                elif action == "A":
-                    # Accept all remaining in this scope
-                    scope_accepted.append(result)
-                    # Accept all remaining
-                    idx = results.index(result)
-                    for remaining in results[idx + 1:]:
-                        scope_accepted.append(remaining)
-                    break
-                elif action == "e":
-                    edited = self._edit_data(result)
-                    scope_accepted.append(edited)
-                elif action == "r":
-                    # Rejected — skip
-                    continue
-                elif action == "S":
-                    # Skip entire scope
+                stop = self._handle_result_action(
+                    action, result, results, scope_accepted,
+                )
+                if stop == "skip_scope":
                     skip_scope = True
-                    break
 
             accepted[scope] = scope_accepted
 
         return accepted
+
+    def _should_auto_accept(
+        self, result: CategoryResult, existing_by_cat: dict,
+    ) -> bool:
+        """Check if a result is unchanged and already HITL-confirmed."""
+        old = existing_by_cat.get(result.category)
+        if not old or old.get("confirmed_by") != "hitl":
+            return False
+        old_data = (
+            json.loads(old["data"])
+            if isinstance(old["data"], str)
+            else old["data"]
+        )
+        return old_data == result.dominant
+
+    def _handle_result_action(
+        self,
+        action: str,
+        result: CategoryResult,
+        all_results: list[CategoryResult],
+        scope_accepted: list[CategoryResult],
+    ) -> str | None:
+        """Process user action on a result. Returns 'skip_scope' to stop."""
+        if action == "a":
+            scope_accepted.append(result)
+        elif action == "A":
+            # Accept all remaining in this scope
+            scope_accepted.append(result)
+            idx = all_results.index(result)
+            scope_accepted.extend(all_results[idx + 1:])
+            return "skip_scope"  # Break out of inner loop
+        elif action == "e":
+            edited = self._edit_data(result)
+            scope_accepted.append(edited)
+        elif action == "r":
+            pass  # Rejected — skip
+        elif action == "S":
+            return "skip_scope"
+        return None
 
     def _show_category(
         self, scope: str, result: CategoryResult,

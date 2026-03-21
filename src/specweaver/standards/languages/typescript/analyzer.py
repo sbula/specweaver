@@ -82,7 +82,7 @@ class TSStandardsAnalyzer(JSStandardsAnalyzer):
         styles: Counter = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
             nodes = walk_tree(tree)
             for node in nodes:
                 if node.type == "interface_declaration":

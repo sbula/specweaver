@@ -161,20 +161,20 @@ class TestTestFirstRuleCheck:
     def test_no_contract_fails(self) -> None:
         rule = TestFirstRule()
         result = rule.check(_NO_CONTRACT_SPEC)
-        assert not result.status == Status.PASS
+        assert result.status != Status.PASS
         assert any("Contract" in f.message for f in result.findings)
 
     def test_no_code_contract_warns_or_fails(self) -> None:
         rule = TestFirstRule()
         result = rule.check(_NO_CODE_CONTRACT)
         # Should warn or fail — not pass cleanly
-        assert not result.status == Status.PASS or result.status == Status.WARN
+        assert result.status != Status.PASS or result.status == Status.WARN
 
     def test_empty_contract_warns(self) -> None:
         rule = TestFirstRule()
         result = rule.check(_EMPTY_CONTRACT)
         # Empty contract should fail (very low score)
-        assert not result.status == Status.PASS
+        assert result.status != Status.PASS
 
     def test_custom_thresholds(self) -> None:
         rule = TestFirstRule(warn_score=1, fail_score=0)

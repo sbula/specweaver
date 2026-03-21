@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -157,7 +156,7 @@ class TestValidateCodeHandler:
         # Ensure path exists so it actually tries to validate
         (tmp_path / "src").mkdir()
         (tmp_path / "src" / "test.py").write_text("x = 1")
-        
+
         step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.CODE)
         handler = ValidateCodeHandler()
         # Mock _run_validation to crash

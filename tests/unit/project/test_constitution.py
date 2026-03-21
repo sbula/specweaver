@@ -18,6 +18,8 @@ from specweaver.project.constitution import (
     find_all_constitutions,
     find_constitution,
     generate_constitution,
+    generate_constitution_from_standards,
+    is_unmodified_starter,
 )
 
 if TYPE_CHECKING:
@@ -492,3 +494,289 @@ class TestConstitutionEdgeCases:
 
         errors = check_constitution(path, max_size=DEFAULT_MAX_CONSTITUTION_SIZE)
         assert len(errors) >= 1
+
+
+# ---------------------------------------------------------------------------
+# is_unmodified_starter
+# ---------------------------------------------------------------------------
+
+
+class TestIsUnmodifiedStarter:
+    """Tests for is_unmodified_starter()."""
+
+    def test_starter_template_is_unmodified(self, tmp_path: Path) -> None:
+        """Generated starter template is detected as unmodified."""
+        generate_constitution(tmp_path, "my-app")
+        path = tmp_path / CONSTITUTION_FILENAME
+        assert is_unmodified_starter(path) is True
+
+    def test_edited_template_is_not_unmodified(self, tmp_path: Path) -> None:
+        """File with few TODO markers is detected as user-edited."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        path.write_text("# My Customized Constitution\n\nAll real content.\n")
+        assert is_unmodified_starter(path) is False
+
+    def test_partially_edited_with_some_todos(self, tmp_path: Path) -> None:
+        """File with 4 TODOs (below threshold of 5) is considered edited."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        path.write_text("# Real\nTODO\nTODO\nTODO\nTODO\n")
+        assert is_unmodified_starter(path) is False
+
+    def test_five_todos_is_unmodified(self, tmp_path: Path) -> None:
+        """File with exactly 5 TODOs is considered unmodified."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        path.write_text("TODO " * 5 + "\n")
+        assert is_unmodified_starter(path) is True
+
+    def test_nonexistent_file_returns_false(self, tmp_path: Path) -> None:
+        """Nonexistent file returns False."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        assert is_unmodified_starter(path) is False
+
+    def test_empty_file_returns_false(self, tmp_path: Path) -> None:
+        """Empty file returns False (no TODOs = edited)."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        path.write_text("")
+        assert is_unmodified_starter(path) is False
+
+
+# ---------------------------------------------------------------------------
+# generate_constitution_from_standards
+# ---------------------------------------------------------------------------
+
+
+_SAMPLE_STANDARDS = [
+    {
+        "scope": ".",
+        "language": "python",
+        "category": "naming",
+        "data": {"function_style": "snake_case", "class_style": "PascalCase"},
+        "confidence": 0.95,
+        "confirmed_by": "hitl",
+    },
+    {
+        "scope": ".",
+        "language": "python",
+        "category": "error_handling",
+        "data": {"pattern": "try_except_specific"},
+        "confidence": 0.88,
+        "confirmed_by": "hitl",
+    },
+]
+
+
+class TestGenerateConstitutionFromStandards:
+    """Tests for generate_constitution_from_standards()."""
+
+    def test_creates_file_from_standards(self, tmp_path: Path) -> None:
+        """Creates CONSTITUTION.md with standards data."""
+        result = generate_constitution_from_standards(
+            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+        )
+        assert result is not None
+        assert result.exists()
+        content = result.read_text()
+        assert "Auto-Discovered" in content
+        assert "Python" in content
+
+    def test_content_has_coding_standards(self, tmp_path: Path) -> None:
+        """Generated file includes standards data."""
+        generate_constitution_from_standards(
+            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+        )
+        content = (tmp_path / CONSTITUTION_FILENAME).read_text()
+        assert "snake_case" in content
+        assert "PascalCase" in content
+        assert "try_except_specific" in content
+
+    def test_multi_language_tech_stack(self, tmp_path: Path) -> None:
+        """Multiple languages are listed in tech stack."""
+        standards = [*_SAMPLE_STANDARDS, {
+            "scope": ".",
+            "language": "typescript",
+            "category": "naming",
+            "data": {"variable_style": "camelCase"},
+            "confidence": 0.90,
+            "confirmed_by": "hitl",
+        }]
+        generate_constitution_from_standards(
+            tmp_path, "my-app", standards, ["python", "typescript"],
+        )
+        content = (tmp_path / CONSTITUTION_FILENAME).read_text()
+        assert "Python" in content
+        assert "TypeScript" in content
+
+    def test_empty_standards_falls_back_to_todo(self, tmp_path: Path) -> None:
+        """Empty standards list falls back to TODO placeholders."""
+        result = generate_constitution_from_standards(
+            tmp_path, "my-app", [], [],
+        )
+        assert result is not None
+        content = result.read_text()
+        assert "TODO" in content
+        assert "Naming conventions" in content
+
+    def test_skips_user_edited_constitution(self, tmp_path: Path) -> None:
+        """Does not overwrite user-edited CONSTITUTION.md."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        path.write_text("# My custom constitution\nNo TODOs here.\n")
+
+        result = generate_constitution_from_standards(
+            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+        )
+        assert result is None
+        assert "My custom constitution" in path.read_text()
+
+    def test_replaces_unmodified_starter(self, tmp_path: Path) -> None:
+        """Auto-replaces the unmodified starter template."""
+        generate_constitution(tmp_path, "my-app")
+        path = tmp_path / CONSTITUTION_FILENAME
+        original = path.read_text()
+        assert "TODO" in original  # starter template
+
+        result = generate_constitution_from_standards(
+            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+        )
+        assert result is not None
+        new_content = path.read_text()
+        assert "Auto-Discovered" in new_content
+        assert new_content != original
+
+    def test_force_overwrites_user_edited(self, tmp_path: Path) -> None:
+        """--force overwrites even user-edited constitutions."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        path.write_text("# My custom constitution\n")
+
+        result = generate_constitution_from_standards(
+            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+            force=True,
+        )
+        assert result is not None
+        assert "Auto-Discovered" in path.read_text()
+
+    def test_creates_when_no_file_exists(self, tmp_path: Path) -> None:
+        """Creates CONSTITUTION.md when none exists."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        assert not path.exists()
+
+        result = generate_constitution_from_standards(
+            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+        )
+        assert result is not None
+        assert path.exists()
+
+
+# ---------------------------------------------------------------------------
+# is_unmodified_starter — OSError edge case
+# ---------------------------------------------------------------------------
+
+
+class TestIsUnmodifiedStarterOSError:
+    """Test is_unmodified_starter() handles OS-level read errors."""
+
+    def test_oserror_on_read_returns_false(
+        self, tmp_path: Path, monkeypatch,
+    ) -> None:
+        """OSError during file read → returns False gracefully."""
+        path = tmp_path / CONSTITUTION_FILENAME
+        path.write_text("TODO " * 10)
+
+        # Monkeypatch Path.read_text to raise OSError
+        from pathlib import Path as _Path
+
+        original_read_text = _Path.read_text
+
+        def broken_read_text(self, *args, **kwargs):
+            if self.name == CONSTITUTION_FILENAME:
+                raise OSError("Permission denied")
+            return original_read_text(self, *args, **kwargs)
+
+        monkeypatch.setattr(_Path, "read_text", broken_read_text)
+        assert is_unmodified_starter(path) is False
+
+
+# ---------------------------------------------------------------------------
+# _build_tech_stack_rows — direct helper tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuildTechStackRows:
+    """Tests for _build_tech_stack_rows() helper."""
+
+    def test_empty_languages_returns_todo_row(self) -> None:
+        """Empty languages list → single TODO row."""
+        from specweaver.project.constitution import _build_tech_stack_rows
+
+        result = _build_tech_stack_rows([])
+        assert "TODO" in result
+        assert "Language" in result
+
+    def test_unknown_language_gets_fallback(self) -> None:
+        """Unknown language → capitalized name with TODO version."""
+        from specweaver.project.constitution import _build_tech_stack_rows
+
+        result = _build_tech_stack_rows(["rust"])
+        assert "Rust" in result
+        assert "TODO" in result
+
+    def test_known_language_gets_info(self) -> None:
+        """Known language → specific version and purpose."""
+        from specweaver.project.constitution import _build_tech_stack_rows
+
+        result = _build_tech_stack_rows(["python"])
+        assert "Python" in result
+        assert "3.11+" in result
+
+
+# ---------------------------------------------------------------------------
+# _build_standards_section — edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestBuildStandardsSection:
+    """Tests for _build_standards_section() helper."""
+
+    def test_string_data_parsed_as_json(self) -> None:
+        """Data stored as JSON string is round-tripped."""
+        import json
+
+        from specweaver.project.constitution import _build_standards_section
+
+        standards = [{
+            "scope": ".",
+            "language": "python",
+            "category": "naming",
+            "data": json.dumps({"style": "snake_case"}),
+            "confidence": 0.9,
+        }]
+        result = _build_standards_section(standards)
+        assert "snake_case" in result
+
+    def test_scoped_standards_prefix_format(self) -> None:
+        """Standards with scope != '.' get [scope/lang] prefix."""
+        from specweaver.project.constitution import _build_standards_section
+
+        standards = [{
+            "scope": "backend",
+            "language": "python",
+            "category": "naming",
+            "data": {"style": "snake_case"},
+            "confidence": 0.85,
+        }]
+        result = _build_standards_section(standards)
+        assert "[backend/python]" in result
+
+    def test_root_scope_prefix_format(self) -> None:
+        """Standards with scope == '.' get [lang] prefix."""
+        from specweaver.project.constitution import _build_standards_section
+
+        standards = [{
+            "scope": ".",
+            "language": "python",
+            "category": "naming",
+            "data": {"style": "snake_case"},
+            "confidence": 0.85,
+        }]
+        result = _build_standards_section(standards)
+        assert "[python]" in result
+        assert "[./python]" not in result

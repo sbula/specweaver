@@ -6,7 +6,10 @@
 from __future__ import annotations
 
 import textwrap
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import pytest
 
@@ -36,7 +39,7 @@ class TestJSAnalyzerInterface:
 
 
 class TestJSNamingExtraction:
-    def test_detects_camelCase_functions(
+    def test_detects_camel_case_functions(
         self, analyzer: JSStandardsAnalyzer, tmp_path: Path
     ) -> None:
         f = tmp_path / "code.js"
@@ -50,7 +53,7 @@ class TestJSNamingExtraction:
         assert naming.dominant.get("function_style") == "camelCase"
         assert naming.sample_size == 3
 
-    def test_detects_PascalCase_classes(
+    def test_detects_pascal_case_classes(
         self, analyzer: JSStandardsAnalyzer, tmp_path: Path
     ) -> None:
         f = tmp_path / "models.js"

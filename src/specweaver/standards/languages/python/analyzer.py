@@ -108,7 +108,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         total_weight = 0.0
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -144,7 +144,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         styles: Counter = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.ExceptHandler):
@@ -171,7 +171,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         typed: Counter = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -199,7 +199,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         total_funcs = 0
         documented = 0
 
-        for path, w, tree in parsed_files:
+        for _path, _w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -232,7 +232,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         styles: Counter = Counter()
         sample_size = 0
 
-        for path, w, tree in parsed_files:
+        for _path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):

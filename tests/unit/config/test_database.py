@@ -68,12 +68,12 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 6 after v6 migration."""
+        """Schema version is 7 after v7 migration."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 6
+            assert row[0] == 7
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""
@@ -533,7 +533,7 @@ class TestSchemaV2Migration:
             ).fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 6  # V2, V3, V4, V5, V6 all applied
+        assert version[0] == 7  # V2, V3, V4, V5, V6, V7 all applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -545,7 +545,7 @@ class TestSchemaV2Migration:
             version = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 6  # V2, V3, V4, V5, V6 all applied
+        assert version[0] == 7  # V2, V3, V4, V5, V6, V7 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -683,7 +683,7 @@ class TestSchemaV3Migration:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 6  # v3, v4, v5, v6 all applied
+        assert version[0] == 7  # v3, v4, v5, v6, v7 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -801,7 +801,7 @@ class TestSchemaV3ToV4Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 6  # v4, v5, v6 all applied
+        assert version[0] == 7  # v4, v5, v6, v7 all applied
 
 
 # ===========================================================================
@@ -920,13 +920,13 @@ class TestDomainProfile:
         overrides = db.get_validation_overrides("myapp")
         assert len(overrides) > 0
 
-    def test_schema_version_is_5(self, db):
-        """Schema version is 5 after v5 migration."""
+    def test_schema_version_is_7(self, db):
+        """Schema version is 7 after all migrations."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 6
+            assert row[0] == 7
 
 
 class TestSchemaV4ToV5Upgrade:
@@ -976,5 +976,116 @@ class TestSchemaV4ToV5Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 6
+        assert version[0] == 7  # v5, v6, v7 all applied
 
+
+# ===========================================================================
+# Schema v7 — auto_bootstrap_constitution
+# ===========================================================================
+
+
+class TestSchemaV7AutoBootstrap:
+    """Tests for auto_bootstrap_constitution column and accessors."""
+
+    def test_auto_bootstrap_default_is_prompt(self, db, tmp_path: Path):
+        """Default auto_bootstrap_constitution is 'prompt'."""
+        db.register_project("myapp", str(tmp_path))
+        assert db.get_auto_bootstrap("myapp") == "prompt"
+
+    def test_set_auto_bootstrap_off(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_auto_bootstrap("myapp", "off")
+        assert db.get_auto_bootstrap("myapp") == "off"
+
+    def test_set_auto_bootstrap_auto(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_auto_bootstrap("myapp", "auto")
+        assert db.get_auto_bootstrap("myapp") == "auto"
+
+    def test_set_auto_bootstrap_prompt(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_auto_bootstrap("myapp", "off")
+        db.set_auto_bootstrap("myapp", "prompt")
+        assert db.get_auto_bootstrap("myapp") == "prompt"
+
+    def test_set_auto_bootstrap_case_insensitive(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_auto_bootstrap("myapp", "AUTO")
+        assert db.get_auto_bootstrap("myapp") == "auto"
+
+    def test_set_auto_bootstrap_invalid_raises(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        with pytest.raises(ValueError, match=r"Invalid auto-bootstrap mode"):
+            db.set_auto_bootstrap("myapp", "always")
+
+    def test_get_auto_bootstrap_nonexistent_raises(self, db):
+        with pytest.raises(ValueError, match=r"not found"):
+            db.get_auto_bootstrap("nonexistent")
+
+    def test_set_auto_bootstrap_nonexistent_raises(self, db):
+        with pytest.raises(ValueError, match=r"not found"):
+            db.set_auto_bootstrap("nonexistent", "off")
+
+    def test_auto_bootstrap_persists_across_connections(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_auto_bootstrap("myapp", "auto")
+
+        from specweaver.config.database import Database
+
+        db2 = Database(db._db_path)
+        assert db2.get_auto_bootstrap("myapp") == "auto"
+
+
+class TestSchemaV6ToV7Upgrade:
+    """Simulate opening a v6-only DB and verify v7 migration kicks in."""
+
+    @pytest.fixture()
+    def db_path(self, tmp_path: Path) -> Path:
+        return tmp_path / "upgrade_v6_v7.db"
+
+    def test_v6_to_v7_upgrade(self, db_path: Path):
+        """Simulate a v6 DB and verify v7 migration applies correctly."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import (
+            _SCHEMA_V1,
+            _SCHEMA_V2,
+            _SCHEMA_V3,
+            _SCHEMA_V4,
+            _SCHEMA_V5,
+            _SCHEMA_V6,
+            Database,
+        )
+
+        # Create a v6-only DB manually (no v7 migration)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.executescript(_SCHEMA_V3)
+        conn.executescript(_SCHEMA_V4)
+        conn.executescript(_SCHEMA_V5)
+        conn.executescript(_SCHEMA_V6)
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) "
+            "VALUES (6, '2026-01-01T00:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO projects (name, root_path, created_at, last_used_at, "
+            "log_level, constitution_max_size, domain_profile) "
+            "VALUES ('legacy', '/tmp/legacy', '2026-01-01', '2026-01-01', "
+            "'INFO', 5120, NULL)"
+        )
+        conn.commit()
+        conn.close()
+
+        # Open with Database — should apply v7 migration
+        db = Database(db_path)
+        assert db.get_auto_bootstrap("legacy") == "prompt"  # default
+        assert db.get_log_level("legacy") == "INFO"  # preserved
+        assert db.get_constitution_max_size("legacy") == 5120  # preserved
+        with db.connect() as conn2:
+            version = conn2.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+        assert version[0] == 7

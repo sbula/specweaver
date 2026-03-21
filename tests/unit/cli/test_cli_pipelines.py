@@ -11,7 +11,7 @@ cover the real CLI via CliRunner with file I/O.
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import typer
@@ -80,7 +80,6 @@ class TestRunPipelineMocked:
 
     def test_run_with_failed_pipeline_exits_1(self, tmp_path: Path, monkeypatch) -> None:
         """A pipeline that ends FAILED should produce exit code 1."""
-        from specweaver.flow.state import RunStatus
 
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
@@ -89,8 +88,6 @@ class TestRunPipelineMocked:
         spec = project_dir / "specs" / "test_spec.md"
         spec.parent.mkdir(exist_ok=True)
         spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
-
-        mock_run = MagicMock(status=RunStatus.FAILED)
 
         with patch("specweaver.cli.pipelines._execute_run") as mock_exec:
             mock_exec.side_effect = typer.Exit(code=1)

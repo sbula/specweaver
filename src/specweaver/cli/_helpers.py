@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import typer
@@ -14,6 +13,8 @@ from rich.table import Table
 from specweaver.cli import _core
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.graph.topology import TopologyGraph
     from specweaver.validation.models import RuleResult
 

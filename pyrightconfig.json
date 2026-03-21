@@ -1,0 +1,9 @@
+{
+    "include": ["src"],
+    "pythonVersion": "3.11",
+    "pythonPlatform": "All",
+    "reportMissingImports": "warning",
+    "reportMissingTypeStubs": "none",
+    "venvPath": ".",
+    "typeCheckingMode": "basic"
+}

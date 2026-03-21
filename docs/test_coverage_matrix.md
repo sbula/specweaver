@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **2 722 passed** · 9 skipped · 92 source modules · 113 test files
+> **2 774 passed** · 9 skipped · 92 source modules · 113 test files
 > **Last updated**: 2026-03-21
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -27,8 +27,8 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Package | Files | Unit | Integ | E2E | Total |
 |---------|------:|-----:|------:|----:|------:|
-| `cli/` | 10 | 194 | 84 | 53 | 331 |
-| `config/` | 3 | 204 | 19 | — | 223 |
+| `cli/` | 10 | 215 | 84 | 53 | 352 |
+| `config/` | 3 | 205 | 19 | — | 224 |
 | `context/` | 4 | 53 | 8 | — | 61 |
 | `drafting/` | 3 | 113 | 0 | — | 113 |
 | `flow/` | 8 | 243 | 21 | — | 264 |
@@ -36,12 +36,12 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `implementation/` | 1 | — | — | — | (in llm) |
 | `llm/` | 5 | 150 | 0 | — | 150 |
 | `loom/` | 15 | 571 | 14 | — | 585 |
-| `project/` | 3 | 69 | 0 | — | 69 |
+| `project/` | 3 | 77 | 0 | — | 77 |
 | `review/` | 1 | 30 | 0 | — | 30 |
 | `standards/` | 11 | 112 | 13 | 5 | 130 |
 | `validation/` | 24 | 505 | 49 | — | 554 |
 | `logging.py` | 1 | — | — | — | (in config) |
-| **Total** | **92** | **2 208** | **195** | **53** | **2 456** |
+| **Total** | **92** | **2 238** | **195** | **53** | **2 486** |
 
 ---
 
@@ -111,12 +111,19 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `config_*_constitution_max_size` | ✅ | ✅ | ✅ | ⚪ | — |
 | `config_profiles` / `config_show_profile` | ✅ | ✅ | ✅ | ⚪ | — |
 | `config_set_profile` / `config_get_profile` / `config_reset_profile` | ✅ | ✅ | ✅ | ⚪ | — |
+| `config_set_auto_bootstrap` / `config_get_auto_bootstrap` | ✅ | ⚪ | ⚪ | ⚪ | 4 unit (prompt/auto/off/invalid) |
 
 ### 1.4 `constitution.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `constitution_show` / `constitution_check` / `constitution_init` | ✅ | ✅ | ✅ | ⚪ | — |
+| `constitution_bootstrap` generates from standards | ✅ | ⚪ | ⚪ | ⚪ | Happy path |
+| `constitution_bootstrap` no standards → error | ✅ | ⚪ | ⚪ | ⚪ | Empty DB |
+| `constitution_bootstrap` user-edited → requires `--force` | ✅ | ⚪ | ⚪ | ⚪ | Modified detection |
+| `constitution_bootstrap --force` overwrites | ✅ | ⚪ | ⚪ | ⚪ | Force flag |
+| `_maybe_bootstrap_constitution()` auto mode | ✅ | ⚪ | ⚪ | ⚪ | auto_bootstrap='auto' |
+| `_maybe_bootstrap_constitution()` prompt mode | ✅ | ⚪ | ⚪ | ⚪ | auto_bootstrap='prompt' |
 
 ### 1.5 `implement.py`
 
@@ -144,6 +151,10 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `init` / `use` / `projects` / `remove` / `update` / `scan` | ✅ | ✅ | ✅ | ⚪ | — |
+| `sw init` existing project → scan hint | ✅ | ⚪ | ⚪ | ⚪ | Prints `sw standards scan` hint |
+| `sw init` new project → no scan hint | ✅ | ⚪ | ⚪ | ⚪ | Clean init |
+| `sw init` scan hint respects `--no-hints` | ✅ | ⚪ | ⚪ | ⚪ | Suppression flag |
+| `sw init` scan hint console output | ✅ | ⚪ | ⚪ | ⚪ | Rich text check |
 
 ### 1.8 `review.py`
 
@@ -174,6 +185,10 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Scan with confidence boundary (exactly 0.3) | ✅ | ⚪ | ⚪ | ⚪ | Boundary tested |
 | SyntaxError file graceful degradation | ✅ | ✅ | ⚪ | ⚪ | Skips bad file, still analyzes good ones |
 | `.specweaverignore` filtering | ✅ | ✅ | ⚪ | ⚪ | Glob/negation/dir patterns |
+| `_save_accepted_standards()` writes to DB | ✅ | ⚪ | ⚪ | ⚪ | 3 unit (save, scope, overwrite) |
+| `_save_accepted_standards()` confirmed_by field | ✅ | ⚪ | ⚪ | ⚪ | hitl vs None |
+| `_maybe_bootstrap_constitution()` hint after scan | ✅ | ⚪ | ⚪ | ⚪ | Prints bootstrap cmd |
+| Scan end-to-end with auto-bootstrap | ✅ | ⚪ | ⚪ | ⚪ | auto mode triggers bootstrap |
 
 ### 1.10 `validation.py`
 
@@ -199,6 +214,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | All standards (save, get, list, clear, scopes) | ✅ | ✅ | ⚪ | ⚪ | — |
 | Concurrent access (two connections) | ❌ | ❌ | ⚪ | ❌ | WAL assumed safe |
 | Schema migration on upgrade | ❌ | ❌ | ⚪ | ⚪ | Only initial schema tested |
+| Schema v6→v7 migration (`auto_bootstrap_constitution`) | ✅ | ⚪ | ⚪ | ⚪ | Column exists, default 'prompt' |
 
 ### 2.2 `profiles.py`
 
@@ -499,6 +515,14 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `find_all_constitutions()` | ✅ | ⚪ | ⚪ | ⚪ | — |
 | `check_constitution()` size limits | ✅ | ⚪ | ✅ | ⚪ | — |
 | `generate_constitution()` | ✅ | ⚪ | ✅ | ⚪ | — |
+| `generate_constitution_from_standards()` happy path | ✅ | ⚪ | ⚪ | ⚪ | Multi-language standards |
+| `generate_constitution_from_standards()` empty standards | ✅ | ⚪ | ⚪ | ⚪ | Raises ValueError |
+| `generate_constitution_from_standards()` OSError on write | ✅ | ⚪ | ⚪ | ⚪ | Read-only dir handling |
+| `_build_tech_stack_rows()` language-to-row map | ✅ | ⚪ | ⚪ | ⚪ | Python/JS/TS rows |
+| `_build_tech_stack_rows()` empty standards | ✅ | ⚪ | ⚪ | ⚪ | Returns empty |
+| `_build_standards_section()` formatting | ✅ | ⚪ | ⚪ | ⚪ | Category grouping |
+| `_build_standards_section()` special chars in values | ✅ | ⚪ | ⚪ | ⚪ | Pipe/backslash escaping |
+| `is_unmodified_template()` TODO marker check | ✅ | ⚪ | ⚪ | ⚪ | Detects starter template |
 
 ### 10.2 `discovery.py`
 
