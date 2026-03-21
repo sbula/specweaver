@@ -96,8 +96,8 @@ def _git_ls_files(project_path: Path) -> list[Path] | None:
             timeout=30,
             check=False,
         )
-    except (FileNotFoundError, OSError):
-        logger.debug("git not available, falling back to os.walk")
+    except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
+        logger.debug("git not available or timed out, falling back to os.walk")
         return None
 
     if result.returncode != 0:

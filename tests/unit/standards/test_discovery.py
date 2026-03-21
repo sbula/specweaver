@@ -299,17 +299,10 @@ class TestGitLsFilesIsolated:
 
         monkeypatch.setattr(sp, "run", mock_run)
 
-        # TimeoutExpired is a subclass of SubprocessError not
-        # FileNotFoundError/OSError, so the code catches it? Let's check:
-        # The code catches (FileNotFoundError, OSError).
-        # TimeoutExpired inherits SubprocessError → Exception,
-        # NOT OSError. So this should NOT be caught, it should propagate.
-        # Actually let me re-check: the code only catches
-        # (FileNotFoundError, OSError) at L99.
-        # TimeoutExpired will propagate. That's actually a bug!
-        # For now, verify the current behavior:
-        with pytest.raises(sp.TimeoutExpired):
-            discover_files(tmp_path)
+        # After fix: TimeoutExpired is now caught → falls back to walk
+        files = discover_files(tmp_path)
+        assert len(files) == 1
+        assert files[0].name == "main.py"
 
     def test_git_oserror_returns_none(
         self, tmp_path: Path, monkeypatch,
