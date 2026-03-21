@@ -144,7 +144,7 @@ def review(
         constitution=_load_constitution_content(
             project_path, spec_path=target_path,
         ),
-        standards=_load_standards_content(project_path),
+        standards=_load_standards_content(project_path, target_path=target_path),
     )
     _display_review_result(result)
 

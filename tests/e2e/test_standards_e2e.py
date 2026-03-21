@@ -102,7 +102,7 @@ class TestStandardsLifecycleE2E:
         _create_python_project(tmp_path, name)
 
         # 1. Scan
-        scan = runner.invoke(app, ["standards", "scan"])
+        scan = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert scan.exit_code == 0
         assert "scan" in scan.output.lower()
 
@@ -125,7 +125,7 @@ class TestStandardsLifecycleE2E:
         name = _unique_name()
         _create_python_project(tmp_path, name)
 
-        runner.invoke(app, ["standards", "scan"])
+        runner.invoke(app, ["standards", "scan", "--no-review"])
         show = runner.invoke(app, ["standards", "show"])
 
         # The project has snake_case functions and PascalCase classes
@@ -153,7 +153,7 @@ class TestStandardsInjectionE2E:
         project = _create_python_project(tmp_path, name)
 
         # Scan to populate DB
-        scan = runner.invoke(app, ["standards", "scan"])
+        scan = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert scan.exit_code == 0
 
         # Load standards content (what review/implement would inject)
@@ -162,7 +162,7 @@ class TestStandardsInjectionE2E:
             assert isinstance(content, str)
             assert len(content) > 0
             # Should contain formatted standard entries
-            assert ("[python/" in content or "SHOULD follow" in content
+            assert ("python" in content or "SHOULD follow" in content
                     or "snake" in content.lower())
 
     def test_rescan_after_code_change(self, tmp_path: Path) -> None:
@@ -171,7 +171,7 @@ class TestStandardsInjectionE2E:
         project = _create_python_project(tmp_path, name)
 
         # First scan
-        runner.invoke(app, ["standards", "scan"])
+        runner.invoke(app, ["standards", "scan", "--no-review"])
         show1 = runner.invoke(app, ["standards", "show"])
         assert show1.exit_code == 0
 
@@ -186,7 +186,7 @@ class TestStandardsInjectionE2E:
         )
 
         # Re-scan
-        runner.invoke(app, ["standards", "scan"])
+        runner.invoke(app, ["standards", "scan", "--no-review"])
         show2 = runner.invoke(app, ["standards", "show"])
         assert show2.exit_code == 0
         # No crash, no duplicates — upsert works

@@ -66,17 +66,23 @@ monorepo/
 
 ### Phase 3.5a-2: Multi-Scope + HITL Document Review
 
-**Goal**: Monorepo support, interactive review, re-scan diff.
+**Goal**: Monorepo support (2-level scopes), interactive HITL review, scoped injection with token cap, re-scan diff.
+
+**Resolved decisions**: 2-level scopes (not just top-level). HITL on by default (one combined review, not per-file). Edit = JSON dict editing. Re-scan diff mode = configurable (`sw config set-rescan-mode approve|inform`, default: `inform`). Token cap = 2000 chars (scope-specific prioritized over root). Scope inheritance: merge scope-specific + root `"."`, HITL for conflicts unless already resolved.
 
 | Component | What |
 |---|---|
-| `standards/inferrer.py` | `StandardsInferrer`: scope detection, `git ls-files`, multi-scope grouping, file-per-language grouping. |
-| `standards/reviewer.py` | `StandardsReviewer`: Rich structured report, per-category Accept/Edit/Reject, per-scope Accept All/Skip, re-scan diff display. |
-| `cli.py` | Interactive HITL flow in `sw standards scan`. `sw standards show --scope X`. `sw standards scopes`. `_load_standards_content(project_path, target_path)` (resolves project_name + scope internally). Scope resolution for auto-injection in all PromptBuilder callers. |
-| Scope resolution | `_resolve_scope(target_path, project_path)` — walk up from spec to find matching scope. Merge scope-specific + cross-cutting (scope=`.`). |
+| `standards/scope_detector.py` | `detect_scopes()` — 2-level deep, `_has_source_files()`, imports `_SKIP_DIRS_WALK` from `discovery.py`. `_resolve_scope(target_path, project_path, known_scopes)` — walk-up longest-prefix match for injection. |
+| `standards/reviewer.py` | `StandardsReviewer`: Rich table, combined review (all scopes at once), per-category Accept/Edit(JSON)/Reject, Accept-All, Skip-scope. Re-scan diff display. |
+| `cli/standards.py` | Multi-scope scan (`--scope X`, `--no-review`). `sw standards scopes` (summary table). |
+| `cli/_helpers.py` | Scope-aware `_load_standards_content(project_path, target_path, max_chars=2000)`. Pass `target_path` at 4 call sites. |
+| `cli/config.py` | `sw config set-rescan-mode approve|inform`. |
+| `config/database.py` | `set_rescan_mode()` / `get_rescan_mode()` (follows `set_log_level` pattern). |
 
-**Tests**: ~40-60 tests. Multi-scope fixtures, mocked Rich prompts, re-scan diff.
-**Deliverable**: `sw scan --standards` on a monorepo produces per-service standards, HITL reviews each scope, re-scan shows diff.
+**Backlog** (noted, not implemented now): configurable multi-stage reviews; force re-evaluation of previous HITL decisions.
+
+**Tests**: ~40-50 tests. Synthetic monorepo fixtures, mocked Rich prompts, re-scan diff.
+**Deliverable**: `sw standards scan` on a monorepo produces per-scope standards, HITL reviews, `sw review` injects scope-specific standards with token cap.
 
 ---
 
@@ -304,11 +310,8 @@ Injection merges scope-specific + cross-cutting (scope=`.`) standards.
 | # | Issue | Details | When |
 |---|---|---|---|
 | 1 | **`AnalyzerFactory` pattern mismatch** | Existing `AnalyzerFactory.for_directory()` returns first match only. Standards needs ALL matching analyzers for mixed-language dirs. `StandardsInferrer` groups files by extension, matches to analyzers — does NOT use `AnalyzerFactory`. | 3.5a-1 |
-| 3 | **Scope detection heuristic** | Recursive detection, not just top-level. Detect from `context.yaml` locations first, fall back to first-level dirs with source files. | 3.5a-2 |
-| 6 | **Rich interactive prompts in tests** | `StandardsReviewer` uses Rich `Prompt.ask()`. Tests mock via `monkeypatch`. Verify cross-platform (Windows terminal). | 3.5a-2 |
 | 7 | **tree-sitter API version** | Pin exact version in `pyproject.toml`. Verify API: `Language()`, `Parser()`, node traversal. | 3.5a-3 |
 | 8 | **LLM prompt template** | Design exact prompt for best-practice comparison. Structured JSON output or free-text for HITL report. | 3.5a-3 |
-| 9 | **Token budget impact** | Multi-scope could be 4000+ tokens. Add max-size guard (e.g., 2000 token cap, prioritize scope-specific over cross-cutting). | 3.5a-2 |
 | 10 | **Constitution bootstrap template** | Concrete template for auto-generated `CONSTITUTION.md`. | 3.5a-4 |
 | 11 | **Single-pass AST optimization** | Parse each `.py` file once, collect all category data, split after. Critical for 10K+ file projects. | 3.5a-1 |
 | 12 | **Windows `mtime` after `git clone`** | May reset all mtime to clone time. Test and document limitation. | 3.5a-1 |
@@ -318,8 +321,11 @@ Injection merges scope-specific + cross-cutting (scope=`.`) standards.
 | # | Issue | Solution |
 |---|---|---|
 | 2 | **File discovery** | Priority chain: `git ls-files` → `.specweaverignore` → `os.walk` fallback. Uses `pathspec` library. See File Discovery Strategy above. |
+| 3 | **Scope detection heuristic** | 2-level deep detection. L1 dirs with sub-scopes → sub-scopes only (no double-counting). Always includes root `"."`. Implemented in `scope_detector.py`. |
 | 4 | **`_render()` test breakage** | Insert standards block directly (5 lines) — no refactor of existing logic, no test breakage. Data-driven `_RENDER_ORDER` deferred. |
 | 5 | **Scope resolution** | DB-backed walk-up: query known scopes once, walk up from file path, longest-prefix match. Falls back to `.` (root). See Scope Resolution Algorithm above. |
+| 6 | **Rich interactive prompts in tests** | Mock `rich.prompt.Prompt.ask()` via `monkeypatch`. `--no-review` flag for CI. Combined review (one table for all scopes). |
+| 9 | **Token budget impact** | 2000-char cap. Scope-specific standards prioritized over root `"."`. Implemented in `_load_standards_content()`. |
 | 13 | **`_render()` per-kind logic** | Don't refactor. Insert `<standards>` block directly between constitution and topology. Each kind keeps its own rendering logic. |
 | 14 | **`project_name` at call sites** | `_load_standards_content(project_path, target_path)` resolves project_name internally from DB by matching the path. Same function resolves scope via walk-up. |
 | 15 | **Command structure** | `sw standards scan` as separate command. `sw scan` stays context.yaml-only. No coupling between the two. |

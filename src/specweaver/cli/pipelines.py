@@ -228,7 +228,7 @@ def _execute_run(  # noqa: C901
         constitution=_load_constitution_content(
             project_path, spec_path=spec_path,
         ),
-        standards=_load_standards_content(project_path),
+        standards=_load_standards_content(project_path, target_path=spec_path),
     )
 
     # Wire up LLM if needed (non-validate-only pipelines)
@@ -377,7 +377,7 @@ def resume(
         constitution=_load_constitution_content(
             project_path, spec_path=spec_path,
         ),
-        standards=_load_standards_content(project_path),
+        standards=_load_standards_content(project_path, target_path=spec_path),
     )
 
     display = _create_display(use_json=json_output, verbose=verbose)

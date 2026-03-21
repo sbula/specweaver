@@ -225,26 +225,76 @@ def _load_constitution_content(
     return info.content if info else None
 
 
-def _load_standards_content(project_path: Path) -> str | None:
-    """Load formatted standards from DB for prompt injection, or None."""
+def _load_standards_content(
+    project_path: Path,
+    target_path: Path | None = None,
+    *,
+    max_chars: int = 2000,
+) -> str | None:
+    """Load formatted standards from DB for prompt injection, or None.
+
+    When *target_path* is provided, resolves which scope the file belongs
+    to and loads scope-specific + root (``"."``) standards.  Applies a
+    :pycode:`max_chars` cap, prioritising scope-specific over root.
+
+    Args:
+        project_path: Absolute path to the project root.
+        target_path: Path to the spec/code file being reviewed/generated.
+            If ``None``, all standards are loaded (backward-compatible).
+        max_chars: Maximum output length in characters.
+    """
     import json
+
+    from specweaver.standards.scope_detector import _resolve_scope
 
     db = _core.get_db()
     active = db.get_active_project()
     if not active:
         return None
 
-    standards = db.get_standards(active)
-    if not standards:
+    if target_path is not None:
+        known_scopes = db.list_scopes(active)
+        scope = _resolve_scope(target_path, project_path, known_scopes)
+        # Load scope-specific standards
+        scope_standards = db.get_standards(active, scope=scope)
+        # Load root cross-cutting standards (if scope != ".")
+        root_standards = (
+            db.get_standards(active, scope=".") if scope != "." else []
+        )
+    else:
+        scope_standards = db.get_standards(active)
+        root_standards = []
+
+    all_standards = scope_standards + root_standards
+    if not all_standards:
         return None
 
-    lines: list[str] = []
-    lines.append("The following coding standards were auto-discovered from this project.")
-    lines.append("Generated code SHOULD follow these conventions.\n")
-    for s in standards:
+    lines: list[str] = [
+        "The following coding standards were auto-discovered from this project.",
+        "Generated code SHOULD follow these conventions.\n",
+    ]
+
+    def _format_standard(s: dict) -> list[str]:
         data = json.loads(s["data"]) if isinstance(s["data"], str) else s["data"]
         conf = s["confidence"]
-        lines.append(f"[{s['language']}/{s['category']}] (confidence={conf:.0%})")
+        result = [f"[{s['scope']}/{s['language']}/{s['category']}] (confidence={conf:.0%})"]
         for k, v in data.items():
-            lines.append(f"  {k}: {v}")
-    return "\n".join(lines)
+            result.append(f"  {k}: {v}")
+        return result
+
+    # Scope-specific first (higher priority for cap)
+    for s in scope_standards:
+        lines.extend(_format_standard(s))
+
+    # Root standards second
+    for s in root_standards:
+        lines.extend(_format_standard(s))
+
+    text = "\n".join(lines)
+
+    # Apply token cap — truncate from the end (root standards trimmed first)
+    if len(text) > max_chars:
+        text = text[:max_chars - 15] + "\n[... truncated]"
+
+    return text
+

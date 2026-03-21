@@ -77,7 +77,7 @@ class TestStandardsLifecycle:
     def test_scan_discovers_standards(self, tmp_path: Path) -> None:
         """sw standards scan discovers standards from Python files."""
         _init_project_with_python(tmp_path)
-        result = runner.invoke(app, ["standards", "scan"])
+        result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result.exit_code == 0
         assert "scan" in result.output.lower()
         assert "complete" in result.output.lower()
@@ -85,7 +85,7 @@ class TestStandardsLifecycle:
     def test_show_after_scan(self, tmp_path: Path) -> None:
         """sw standards show displays discovered standards after scan."""
         _init_project_with_python(tmp_path)
-        runner.invoke(app, ["standards", "scan"])
+        runner.invoke(app, ["standards", "scan", "--no-review"])
         result = runner.invoke(app, ["standards", "show"])
         assert result.exit_code == 0
         # Should show a table with at least one standard
@@ -94,7 +94,7 @@ class TestStandardsLifecycle:
     def test_clear_removes_all(self, tmp_path: Path) -> None:
         """sw standards clear removes all discovered standards."""
         _init_project_with_python(tmp_path)
-        runner.invoke(app, ["standards", "scan"])
+        runner.invoke(app, ["standards", "scan", "--no-review"])
         result = runner.invoke(app, ["standards", "clear"])
         assert result.exit_code == 0
         assert "cleared" in result.output.lower()
@@ -108,7 +108,7 @@ class TestStandardsLifecycle:
         _init_project_with_python(tmp_path)
 
         # 1. Scan
-        scan_result = runner.invoke(app, ["standards", "scan"])
+        scan_result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert scan_result.exit_code == 0
 
         # 2. Show (should have results)
@@ -174,7 +174,7 @@ class TestStandardsRescan:
         project_dir = _init_project_with_python(tmp_path)
 
         # First scan
-        r1 = runner.invoke(app, ["standards", "scan"])
+        r1 = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert r1.exit_code == 0
 
         show1 = runner.invoke(app, ["standards", "show"])
@@ -186,7 +186,7 @@ class TestStandardsRescan:
             encoding="utf-8",
         )
 
-        r2 = runner.invoke(app, ["standards", "scan"])
+        r2 = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert r2.exit_code == 0
 
         show2 = runner.invoke(app, ["standards", "show"])
@@ -210,7 +210,7 @@ class TestStandardsSyntaxError:
         broken = project_dir / "src" / "broken.py"
         broken.write_text("def oops(\n", encoding="utf-8")
 
-        result = runner.invoke(app, ["standards", "scan"])
+        result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result.exit_code == 0
         assert "scan" in result.output.lower()
         assert "complete" in result.output.lower()
@@ -245,7 +245,7 @@ class TestStandardsWithIgnore:
             encoding="utf-8",
         )
 
-        result = runner.invoke(app, ["standards", "scan"])
+        result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result.exit_code == 0
 
 
@@ -265,7 +265,7 @@ class TestStandardsPromptInjection:
 
         project_dir = _init_project_with_python(tmp_path)
 
-        runner.invoke(app, ["standards", "scan"])
+        runner.invoke(app, ["standards", "scan", "--no-review"])
 
         content = _load_standards_content(project_dir)
         # After scanning a project with consistent snake_case functions

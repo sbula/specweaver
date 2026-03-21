@@ -90,7 +90,7 @@ def implement(
     constitution_content = _load_constitution_content(
         project_path, spec_path=spec_path,
     )
-    standards_content = _load_standards_content(project_path)
+    standards_content = _load_standards_content(project_path, target_path=spec_path)
 
     # Generate code
     _core.console.print("[dim]Generating implementation code...[/dim]")
