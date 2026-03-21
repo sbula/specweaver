@@ -901,7 +901,7 @@ class Database:
             language: Language name (e.g., ``"python"``).
             category: Category name (e.g., ``"naming"``).
             data: Findings as a dictionary (serialized to JSON).
-            confidence: Confidence score (0.0–1.0).
+            confidence: Confidence score (0.0-1.0).
             confirmed_by: ``"hitl"`` if user-confirmed, else None.
         """
         import json

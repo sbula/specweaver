@@ -80,7 +80,7 @@ class _ContentBlock:
     text: str
     priority: int  # 0 = instructions (never truncated), lower = higher priority
     label: str = ""
-    kind: str = "context"  # "instructions", "file", "context", "topology", "reminder"
+    kind: str = "context"  # "instructions", "file", "context", "topology", "standards", "reminder"
     language: str = "text"
     file_path: str = ""
     role: str = ""  # trust signal: "reference" | "target" | ""
@@ -271,6 +271,22 @@ class PromptBuilder:
                 priority=0,
                 kind="constitution",
                 tokens=self._count(full_text),
+            ),
+        )
+        return self
+
+    def add_standards(self, text: str) -> PromptBuilder:
+        """Add project standards (priority 1 — truncatable).
+
+        Standards are rendered after constitution, before topology,
+        inside ``<standards>`` tags.
+        """
+        self._blocks.append(
+            _ContentBlock(
+                text=text.strip(),
+                priority=1,
+                kind="standards",
+                tokens=self._count(text),
             ),
         )
         return self
@@ -474,6 +490,13 @@ class PromptBuilder:
         if constitutions:
             text = "\n\n".join(b.text for b in constitutions)
             parts.append(f"<constitution>\n{text}\n</constitution>")
+
+        # Standards (after constitution, before topology)
+        standards = [b for b in blocks if b.kind == "standards"]
+        if standards:
+            text = "\n\n".join(b.text for b in standards)
+            marker = "\n[truncated]" if any(b.truncated for b in standards) else ""
+            parts.append(f"<standards>\n{text}{marker}\n</standards>")
 
         # Topology (before files — gives structural context)
         topology = [b for b in blocks if b.kind == "topology"]

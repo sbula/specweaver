@@ -1,0 +1,39 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: cli
+level: module
+purpose: >
+  Typer-based CLI interface for SpecWeaver. Provides the `sw` command
+  with subcommands for project management, validation, LLM review,
+  code generation, pipeline execution, config management, constitution
+  management, and standards discovery.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/config
+  - specweaver/validation
+  - specweaver/review
+  - specweaver/drafting
+  - specweaver/implementation
+  - specweaver/flow
+  - specweaver/graph
+  - specweaver/llm
+  - specweaver/project
+  - specweaver/standards
+  - specweaver/context
+  - specweaver/logging
+
+forbids:
+  - specweaver/loom/*
+
+exposes:
+  - app
+  - console
+  - get_db
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

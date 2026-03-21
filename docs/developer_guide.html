@@ -99,7 +99,7 @@ python -m pytest -m unit -q   # Run unit tests</code></pre>
 <h3>Package Map</h3>
 <table>
   <tr><th>Package</th><th>Purpose</th></tr>
-  <tr><td><code>cli.py</code></td><td>Typer CLI — entry point for all commands</td></tr>
+  <tr><td><code>cli/</code></td><td>Typer CLI package — entry point + submodules (_core, _helpers, config, constitution, implement, pipelines, projects, review, standards, validation)</td></tr>
   <tr><td><code>config/</code></td><td>Project configuration, validation settings, database, domain profiles</td></tr>
   <tr><td><code>context/</code></td><td>Topology/dependency context for LLM prompts</td></tr>
   <tr><td><code>drafting/</code></td><td>Spec co-authoring with HITL interaction</td></tr>
@@ -845,7 +845,7 @@ flowchart LR
   <tr><th>File</th><th>Purpose</th></tr>
   <tr><td><code>config/profiles.py</code></td><td><code>DomainProfile</code> frozen dataclass, <code>PROFILES</code> registry, <code>get_profile()</code>/<code>list_profiles()</code> API</td></tr>
   <tr><td><code>config/database.py</code></td><td>Schema v5 migration (<code>domain_profile</code> column), <code>set_domain_profile()</code>/<code>get_domain_profile()</code>/<code>clear_domain_profile()</code></td></tr>
-  <tr><td><code>cli.py</code></td><td>5 <code>config_app</code> commands (profiles, show-profile, set-profile, get-profile, reset-profile)</td></tr>
+  <tr><td><code>cli/config.py</code></td><td>5 <code>config_app</code> commands (profiles, show-profile, set-profile, get-profile, reset-profile)</td></tr>
 </table>
 
 <!-- ================================================================== -->
@@ -1001,16 +1001,16 @@ classDiagram
 <h2 id="testing">10. Testing Strategy</h2>
 
 <pre><code>tests/
-├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~1960 tests)
-├── integration/   # Cross-module (real file I/O, real ruff)     (176 tests)
-│   ├── cli/       # CLI command integration (check, implement, list-rules)
+├── unit/          # Fast, isolated (mocked I/O) — mirrors src/  (~2176 tests)
+├── integration/   # Cross-module (real file I/O, real ruff)     (200 tests)
+│   ├── cli/       # CLI command integration (check, implement, review, list-rules)
 │   ├── config/    # Config cascade, profiles
 │   ├── context/   # Context inference, scan
 │   ├── flow/      # Flow engine, lint-fix
 │   ├── loom/      # Loom stack, tools
 │   ├── validation/  # Sub-pipeline, registry, feature-kind
 │   └── constitution/ # Constitution loader
-├── e2e/           # Full pipeline runs (45 tests)
+├── e2e/           # Full pipeline runs (44 tests)
 └── fixtures/      # Shared test data
     ├── good_spec.md / bad_spec_*.md   # Spec fixtures
     └── sample_project/                # Shared integration test project
@@ -1021,10 +1021,10 @@ classDiagram
             ├── broken/                # Lint errors + high complexity
             └── no_context/            # No context.yaml (for inference)</code></pre>
 
-<pre><code>uv run pytest -q                      # Everything (2181+ tests)
-uv run pytest tests/unit/ -q          # Unit tests only (~1960)
-uv run pytest tests/integration/ -q   # Integration tests (176)
-uv run pytest tests/e2e/ -q           # E2E lifecycle tests (45)
+<pre><code>uv run pytest -q                      # Everything (2411+ tests)
+uv run pytest tests/unit/ -q          # Unit tests only (~2176)
+uv run pytest tests/integration/ -q   # Integration tests (200)
+uv run pytest tests/e2e/ -q           # E2E lifecycle tests (44)
 uv run pytest --cov src/ -q           # With coverage
 uv run ruff check src/ tests/         # Lint</code></pre>
 

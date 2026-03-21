@@ -1,0 +1,250 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+"""Shared helper functions used across CLI submodules."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import typer
+from rich.table import Table
+
+from specweaver.cli import _core
+
+if TYPE_CHECKING:
+    from specweaver.graph.topology import TopologyGraph
+    from specweaver.validation.models import RuleResult
+
+# Status display mapping (shared across check command)
+_STATUS_STYLE = {
+    "pass": "[green]PASS[/green]",
+    "fail": "[red]FAIL[/red]",
+    "warn": "[yellow]WARN[/yellow]",
+    "skip": "[dim]SKIP[/dim]",
+}
+
+
+def _display_results(
+    results: list[RuleResult],
+    title: str,
+) -> None:
+    """Display validation results as a Rich table with findings."""
+    from specweaver.validation.models import Status
+
+    table = Table(title=title)
+    table.add_column("Rule", style="cyan")
+    table.add_column("Name", style="white")
+    table.add_column("Status", justify="center")
+    table.add_column("Message", style="dim")
+
+    for r in results:
+        table.add_row(
+            r.rule_id,
+            r.rule_name,
+            _STATUS_STYLE.get(r.status.value, str(r.status)),
+            r.message[:80] if r.message else "",
+        )
+    _core.console.print(table)
+
+    # Show detailed findings for failed/warned rules
+    for r in results:
+        if r.findings and r.status in (Status.FAIL, Status.WARN):
+            _core.console.print(
+                f"\n[bold]{r.rule_id} {r.rule_name}[/bold] findings:",
+            )
+            for f in r.findings:
+                line_info = f" (line {f.line})" if f.line else ""
+                _core.console.print(
+                    f"  [{f.severity.value}] {f.message}{line_info}",
+                )
+                if f.suggestion:
+                    _core.console.print(f"    [dim]-> {f.suggestion}[/dim]")
+
+
+def _print_summary(results: list[RuleResult], *, strict: bool = False) -> None:
+    """Print pass/fail summary and raise Exit(1) on failures.
+
+    Args:
+        results: Validation results to summarize.
+        strict: If True, WARNs also cause exit code 1.
+    """
+    from specweaver.validation.models import Status
+
+    fail_count = sum(1 for r in results if r.status == Status.FAIL)
+    warn_count = sum(1 for r in results if r.status == Status.WARN)
+
+    if fail_count > 0:
+        _core.console.print(
+            f"\n[red]FAILED[/red]: {fail_count} rule(s) failed, {warn_count} warning(s)",
+        )
+        raise typer.Exit(code=1)
+    if warn_count > 0:
+        _core.console.print(
+            f"\n[yellow]PASSED with warnings[/yellow]: {warn_count} warning(s)",
+        )
+        if strict:
+            raise typer.Exit(code=1)
+    else:
+        _core.console.print("\n[green]ALL PASSED[/green]")
+
+
+def _require_llm_adapter(project_path: Path, *, llm_role: str = "draft") -> tuple:
+    """Create and validate an LLM adapter from project settings.
+
+    Returns (settings, adapter, gen_config) or raises typer.Exit.
+    """
+    from specweaver.config.settings import load_settings_for_active
+    from specweaver.llm.adapters.gemini import GeminiAdapter
+    from specweaver.llm.models import GenerationConfig
+
+    db = _core.get_db()
+    try:
+        settings = load_settings_for_active(db, llm_role=llm_role)
+    except ValueError:
+        # Fallback: try loading from env with defaults
+        import os
+
+        from specweaver.config.settings import LLMSettings, SpecWeaverSettings
+
+        settings = SpecWeaverSettings(
+            llm=LLMSettings(api_key=os.environ.get("GEMINI_API_KEY", "")),
+        )
+
+    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
+
+    if not adapter.available():
+        _core.console.print(
+            "[red]Error:[/red] No API key configured. Set GEMINI_API_KEY environment variable.",
+        )
+        raise typer.Exit(code=1)
+
+    gen_config = GenerationConfig(
+        model=settings.llm.model,
+        temperature=settings.llm.temperature,
+        max_output_tokens=settings.llm.max_output_tokens,
+    )
+
+    return settings, adapter, gen_config
+
+
+def _load_topology(project_path: Path) -> TopologyGraph | None:
+    """Try to load the project's topology graph from context.yaml files.
+
+    Returns ``None`` (with a dim console note) if no context.yaml files
+    are found -- this keeps all LLM commands usable without context.
+    """
+    from specweaver.graph.topology import TopologyGraph
+
+    graph = TopologyGraph.from_project(project_path, auto_infer=False)
+    if not graph.nodes:
+        _core.console.print(
+            "[dim]No context.yaml files found -- topology context disabled.[/dim]",
+        )
+        return None
+    _core.console.print(
+        f"[dim]Loaded topology: {len(graph.nodes)} modules.[/dim]",
+    )
+    return graph
+
+
+# Selector name -> class mapping (configurable via --selector)
+_SELECTOR_MAP: dict[str, type] = {}
+
+
+def _get_selector_map() -> dict[str, type]:
+    """Lazily populate and return the selector name->class mapping."""
+    if not _SELECTOR_MAP:
+        from specweaver.graph.selectors import (
+            ConstraintOnlySelector,
+            DirectNeighborSelector,
+            ImpactWeightedSelector,
+            NHopConstraintSelector,
+        )
+
+        _SELECTOR_MAP.update({
+            "direct": DirectNeighborSelector,
+            "nhop": NHopConstraintSelector,
+            "constraint": ConstraintOnlySelector,
+            "impact": ImpactWeightedSelector,
+        })
+    return _SELECTOR_MAP
+
+
+def _select_topology_contexts(
+    graph: TopologyGraph | None,
+    module_name: str,
+    *,
+    selector_name: str = "direct",
+) -> list | None:
+    """Run a selector and return topology contexts, or None.
+
+    Args:
+        graph: The topology graph (None = no topology).
+        module_name: Target module name (typically derived from spec/file stem).
+        selector_name: One of 'direct', 'nhop', 'constraint', 'impact'.
+
+    Returns:
+        List of TopologyContext, or None if no graph or no related modules.
+    """
+    if graph is None:
+        return None
+
+    selector_map = _get_selector_map()
+    selector_cls = selector_map.get(selector_name)
+    if selector_cls is None:
+        _core.console.print(
+            f"[yellow]Warning:[/yellow] Unknown selector '{selector_name}', "
+            "falling back to 'direct'.",
+        )
+        from specweaver.graph.selectors import DirectNeighborSelector
+
+        selector_cls = DirectNeighborSelector
+
+    selector = selector_cls()
+    related = selector.select(graph, module_name)
+    if not related:
+        return None
+
+    contexts = graph.format_context_summary(module_name, related)
+    _core.console.print(
+        f"[dim]Topology: {len(contexts)} related module(s) "
+        f"via {selector_name} selector.[/dim]",
+    )
+    return contexts
+
+
+def _load_constitution_content(
+    project_path: Path, spec_path: Path | None = None,
+) -> str | None:
+    """Load constitution content for the given project, or None."""
+    from specweaver.project.constitution import find_constitution
+
+    info = find_constitution(project_path, spec_path=spec_path)
+    return info.content if info else None
+
+
+def _load_standards_content(project_path: Path) -> str | None:
+    """Load formatted standards from DB for prompt injection, or None."""
+    import json
+
+    db = _core.get_db()
+    active = db.get_active_project()
+    if not active:
+        return None
+
+    standards = db.get_standards(active)
+    if not standards:
+        return None
+
+    lines: list[str] = []
+    lines.append("The following coding standards were auto-discovered from this project.")
+    lines.append("Generated code SHOULD follow these conventions.\n")
+    for s in standards:
+        data = json.loads(s["data"]) if isinstance(s["data"], str) else s["data"]
+        conf = s["confidence"]
+        lines.append(f"[{s['language']}/{s['category']}] (confidence={conf:.0%})")
+        for k, v in data.items():
+            lines.append(f"  {k}: {v}")
+    return "\n".join(lines)

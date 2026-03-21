@@ -1,0 +1,14 @@
+# Root boundary manifest — see docs/architecture/context_yaml_spec.md
+
+name: specweaver
+level: system
+purpose: >
+  TODO: One sentence describing this project's responsibility.
+
+archetype: orchestrator
+
+consumes: []
+
+exposes: []
+
+owner: TODO

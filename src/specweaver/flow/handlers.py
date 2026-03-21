@@ -57,6 +57,7 @@ class RunContext(BaseModel):
     output_dir: Path | None = None
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
+    standards: str | None = None  # Pre-loaded project standards
 
 
 # ---------------------------------------------------------------------------

@@ -12,7 +12,7 @@ for each.
 
 Usage::
 
-    from specweaver.context.standards_analyzer import (
+    from specweaver.standards.analyzer import (
         CategoryResult,
         ScopeReport,
         StandardsAnalyzer,
@@ -23,7 +23,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass
@@ -33,7 +36,7 @@ class CategoryResult:
     Attributes:
         category: Category name (e.g., "naming", "docstrings").
         dominant: Dominant pattern findings (e.g., {"style": "snake_case"}).
-        confidence: Recency-weighted confidence score (0.0–1.0).
+        confidence: Recency-weighted confidence score (0.0-1.0).
         sample_size: Number of samples analyzed.
         alternatives: Minority patterns with locations.
         conflicts: Human-readable conflict notes.
@@ -49,7 +52,7 @@ class CategoryResult:
 
 @dataclass
 class ScopeReport:
-    """Standards report for one scope × language combination.
+    """Standards report for one scope x language combination.
 
     Attributes:
         scope: Directory scope name (e.g., "user-service" or ".").

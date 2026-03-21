@@ -77,6 +77,7 @@ class Generator:
         *,
         topology_contexts: list[TopologyContext] | None = None,
         constitution: str | None = None,
+        standards: str | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -85,6 +86,7 @@ class Generator:
             output_path: Path to write the generated code to.
             topology_contexts: Optional topology context from the project graph.
             constitution: Optional constitution content to inject.
+            standards: Optional project standards to inject.
 
         Returns:
             Path to the generated code file.
@@ -99,6 +101,9 @@ class Generator:
         if constitution:
             builder.add_constitution(constitution)
             logger.debug("generate_code: constitution injected (%d chars)", len(constitution))
+        if standards:
+            builder.add_standards(standards)
+            logger.debug("generate_code: standards injected (%d chars)", len(standards))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()
@@ -127,6 +132,7 @@ class Generator:
         *,
         topology_contexts: list[TopologyContext] | None = None,
         constitution: str | None = None,
+        standards: str | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -135,6 +141,7 @@ class Generator:
             output_path: Path to write the generated test file to.
             topology_contexts: Optional topology context from the project graph.
             constitution: Optional constitution content to inject.
+            standards: Optional project standards to inject.
 
         Returns:
             Path to the generated test file.
@@ -149,6 +156,9 @@ class Generator:
         if constitution:
             builder.add_constitution(constitution)
             logger.debug("generate_tests: constitution injected (%d chars)", len(constitution))
+        if standards:
+            builder.add_standards(standards)
+            logger.debug("generate_tests: standards injected (%d chars)", len(standards))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()

@@ -37,6 +37,7 @@
 - ✅ Feature 3.2: Constitution as first-class artifact — `CONSTITUTION.md` injected into all LLM calls, walk-up resolution, CLI management (`sw constitution show/check/init`), configurable size limits
 - ✅ Feature 3.3: Domain profiles for threshold calibration — 5 built-in profiles (web-app, data-pipeline, library, microservice, ml-model), `config/profiles.py`, DB v5 migration, 5 CLI commands (`sw config profiles/show-profile/set-profile/get-profile/reset-profile`)
 - ✅ Feature 3.4: Rules-as-pipeline architecture — validation sub-pipeline (YAML definitions with inheritance), `sw list-rules`, `--pipeline` override, custom D-prefix rule loader, `RuleAtom` adapter, profile-specific pipelines, circular-extends guard, project-local pipeline overrides, 2181 tests
+- ✅ CLI refactoring: Split `cli.py` into `cli/` package (11 submodules), 65 new unit tests, reviewer ERROR verdict bug fix, 2411 tests
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
 **Phase 2 (Flow Engine)**: Steps 7–14 ✅
@@ -72,7 +73,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Auto-Discover Standards) → 3.6 (Plan Phase) → 3.7 (Pipeline Viz) → 3.8–3.19
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Auto-Discover Standards) → 3.6 (Plan Phase) → 3.7 (Pipeline Viz) → 3.7a (REST API) → 3.7b (Web Dashboard) → 3.7c (Container) → 3.8–3.19 → 3.20 (VS Code Extension)
 
 ---
 

@@ -20,7 +20,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

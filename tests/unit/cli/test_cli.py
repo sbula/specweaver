@@ -25,7 +25,7 @@ def _mock_db(tmp_path, monkeypatch):
     from specweaver.config.database import Database
 
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
     return db
 
 
@@ -596,4 +596,5 @@ class TestCheckSetOverrideEdgeCases:
         )
         assert "S08" not in result.output
         assert "S01" not in result.output
+
 

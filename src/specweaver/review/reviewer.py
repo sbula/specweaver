@@ -116,6 +116,7 @@ class Reviewer:
         *,
         topology_contexts: list[TopologyContext] | None = None,
         constitution: str | None = None,
+        standards: str | None = None,
     ) -> ReviewResult:
         """Review a spec file for quality and completeness.
 
@@ -123,6 +124,7 @@ class Reviewer:
             spec_path: Path to the spec markdown file.
             topology_contexts: Optional topology context from the project graph.
             constitution: Optional constitution content to inject.
+            standards: Optional project standards to inject.
 
         Returns:
             ReviewResult with verdict and findings.
@@ -137,6 +139,9 @@ class Reviewer:
         if constitution:
             builder.add_constitution(constitution)
             logger.debug("review_spec: constitution injected (%d chars)", len(constitution))
+        if standards:
+            builder.add_standards(standards)
+            logger.debug("review_spec: standards injected (%d chars)", len(standards))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()
@@ -150,6 +155,7 @@ class Reviewer:
         *,
         topology_contexts: list[TopologyContext] | None = None,
         constitution: str | None = None,
+        standards: str | None = None,
     ) -> ReviewResult:
         """Review generated code against its source spec.
 
@@ -158,6 +164,7 @@ class Reviewer:
             spec_path: Path to the source spec file.
             topology_contexts: Optional topology context from the project graph.
             constitution: Optional constitution content to inject.
+            standards: Optional project standards to inject.
 
         Returns:
             ReviewResult with verdict and findings.
@@ -173,6 +180,9 @@ class Reviewer:
         if constitution:
             builder.add_constitution(constitution)
             logger.debug("review_code: constitution injected (%d chars)", len(constitution))
+        if standards:
+            builder.add_standards(standards)
+            logger.debug("review_code: standards injected (%d chars)", len(standards))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()
@@ -192,7 +202,7 @@ class Reviewer:
         try:
             response = await self._llm.generate(messages, self._config)
         except Exception as exc:
-            logger.warning("Review LLM call failed: %s", exc)
+            logger.debug("Review LLM call failed: %s", str(exc))
             return ReviewResult(
                 verdict=ReviewVerdict.ERROR,
                 summary=f"Review failed: {exc}",

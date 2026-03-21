@@ -43,7 +43,7 @@ def _mock_db(tmp_path, monkeypatch):
     from specweaver.config.database import Database
 
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
     return db
 
 
@@ -231,7 +231,7 @@ class TestFullLifecycle:
             return next(_mock_hitl_answers, "")
 
         with (
-            patch("specweaver.cli._require_llm_adapter") as mock_req,
+            patch("specweaver.cli._helpers._require_llm_adapter") as mock_req,
             patch(
                 "specweaver.context.hitl_provider.HITLProvider",
             ) as mock_hitl_cls,
@@ -274,7 +274,7 @@ class TestFullLifecycle:
         # -- Step 4: Review spec (mocked LLM) ------------------------------
         review_llm = _make_sequenced_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 review_llm,
@@ -294,7 +294,7 @@ class TestFullLifecycle:
         # -- Step 5: Implement (mocked LLM) --------------------------------
         impl_llm = _make_sequenced_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 impl_llm,
@@ -334,7 +334,7 @@ class TestFullLifecycle:
         # -- Step 7: Review code (mocked LLM) ------------------------------
         code_review_llm = _make_sequenced_llm([_CODE_REVIEW_RESPONSE])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 code_review_llm,
@@ -365,7 +365,7 @@ class TestLifecycleEdgeCases:
         specs_dir.mkdir(exist_ok=True)
         (specs_dir / "existing_spec.md").write_text("# Existing", encoding="utf-8")
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 _make_sequenced_llm([]),
@@ -399,7 +399,7 @@ class TestLifecycleEdgeCases:
             "VERDICT: DENIED\n- Missing examples\n- No error paths\nReject.",
         ])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 denied_llm,
@@ -487,7 +487,7 @@ class TestHighPriorityEdgeCases:
         failing_llm.available.return_value = True
         failing_llm.generate = _generate_or_fail
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 failing_llm,
@@ -518,7 +518,7 @@ class TestHighPriorityEdgeCases:
 
         empty_llm = _make_sequenced_llm(["", ""])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 empty_llm,
@@ -572,7 +572,7 @@ class TestHighPriorityEdgeCases:
         # LLM returns code that references spec concepts
         impl_llm = _make_sequenced_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 impl_llm,
@@ -626,7 +626,7 @@ class TestMediumPriorityEdgeCases:
         mock_hitl.name = "mock_hitl"
 
         with (
-            patch("specweaver.cli._require_llm_adapter") as mock_req,
+            patch("specweaver.cli._helpers._require_llm_adapter") as mock_req,
             patch(
                 "specweaver.context.hitl_provider.HITLProvider",
             ) as mock_hitl_cls,
@@ -675,7 +675,7 @@ class TestMediumPriorityEdgeCases:
             "VERDICT: DENIED\n- Insufficient detail\n- Missing error paths",
         ])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 denied_llm,
@@ -691,7 +691,7 @@ class TestMediumPriorityEdgeCases:
         # Step 2: Implement anyway (user's choice, no gate enforcement)
         impl_llm = _make_sequenced_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 impl_llm,
@@ -730,7 +730,7 @@ class TestMediumPriorityEdgeCases:
         tests_a = '"""Tests for comp_a."""\n\ndef test_do_x() -> None:\n    pass\n'
 
         llm_a = _make_sequenced_llm([code_a, tests_a])
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, llm_a, GenerationConfig(model="mock"),
             )
@@ -751,7 +751,7 @@ class TestMediumPriorityEdgeCases:
         tests_b = '"""Tests for comp_b."""\n\ndef test_do_y() -> None:\n    pass\n'
 
         llm_b = _make_sequenced_llm([code_b, tests_b])
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, llm_b, GenerationConfig(model="mock"),
             )
@@ -858,7 +858,7 @@ class TestRealWorldEdgeCases:
 
         # First implement
         llm_v1 = _make_sequenced_llm([code_v1, tests_v1])
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, llm_v1, GenerationConfig(model="mock"),
             )
@@ -885,7 +885,7 @@ class TestRealWorldEdgeCases:
         )
 
         llm_v2 = _make_sequenced_llm([code_v2, tests_v2])
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, llm_v2, GenerationConfig(model="mock"),
             )
@@ -930,7 +930,7 @@ class TestRealWorldEdgeCases:
         )
 
         fenced_llm = _make_sequenced_llm([fenced_code, fenced_tests])
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, fenced_llm, GenerationConfig(model="mock"),
             )
@@ -971,7 +971,7 @@ class TestRealWorldEdgeCases:
 
         error_llm.generate = _crash
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, error_llm, GenerationConfig(model="mock"),
             )
@@ -986,4 +986,5 @@ class TestRealWorldEdgeCases:
         assert "ERROR" in result.output
         # Should contain the error message
         assert "Service unavailable" in result.output or "failed" in result.output.lower()
+
 

@@ -25,7 +25,7 @@ def _mock_db(tmp_path: Path, monkeypatch):
     from specweaver.config.database import Database
 
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
     return db
 
 
@@ -406,3 +406,4 @@ class TestCLIScan:
         result = runner.invoke(app, ["scan"])
         assert result.exit_code == 0
         assert "existing" in result.output.lower() or "exists" in result.output.lower()
+

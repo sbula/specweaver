@@ -42,7 +42,7 @@ def _mock_db(tmp_path, monkeypatch):
     from specweaver.config.database import Database
 
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
     return db
 
 
@@ -172,7 +172,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, review_llm, GenerationConfig(model="mock"),
             )
@@ -207,7 +207,7 @@ class TestConstitutionE2E:
 
         review_llm, captured = _make_capturing_llm([_CODE_REVIEW_RESPONSE])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, review_llm, GenerationConfig(model="mock"),
             )
@@ -236,7 +236,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         impl_llm, captured = _make_capturing_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, impl_llm, GenerationConfig(model="mock"),
             )
@@ -267,7 +267,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, review_llm, GenerationConfig(model="mock"),
             )
@@ -291,7 +291,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None, review_llm, GenerationConfig(model="mock"),
             )
@@ -448,3 +448,4 @@ class TestConstitutionCLI:
         assert result.exit_code != 0, (
             f"Expected failure for negative size, got: {result.output}"
         )
+
