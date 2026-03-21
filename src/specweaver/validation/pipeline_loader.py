@@ -76,7 +76,7 @@ def _load_raw_yaml(
         if local_path.is_file():
             logger.debug("Loading pipeline '%s' from project: %s", name, local_path)
             text = local_path.read_text(encoding="utf-8")
-            return cast(dict[str, Any], _yaml.load(io.StringIO(text)))
+            return cast("dict[str, Any]", _yaml.load(io.StringIO(text)))
 
     # 2. Packaged default
     try:
@@ -84,7 +84,7 @@ def _load_raw_yaml(
         resource = files.joinpath(f"{name}.yaml")
         text = resource.read_text(encoding="utf-8")
         logger.debug("Loading pipeline '%s' from package", name)
-        return cast(dict[str, Any], _yaml.load(io.StringIO(text)))
+        return cast("dict[str, Any]", _yaml.load(io.StringIO(text)))
     except (FileNotFoundError, ModuleNotFoundError, TypeError):
         pass
 

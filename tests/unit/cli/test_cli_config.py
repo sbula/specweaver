@@ -206,7 +206,11 @@ class TestConfigProfiles:
         _create_project(_mock_db)
         result = runner.invoke(app, ["config", "reset-profile"])
         assert result.exit_code == 0
-        assert "cleared" in result.output.lower() or "reset" in result.output.lower()
+        assert (
+            "cleared" in result.output.lower()
+            or "reset" in result.output.lower()
+            or "deactivated" in result.output.lower()
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -275,23 +275,38 @@ def config_profiles() -> None:
 
     profiles = list_profiles()
 
+    if not profiles:
+        _core.console.print(
+            "[dim]No domain profiles found. "
+            "Built-in profiles are automatically discovered from pipeline YAML files.[/dim]",
+        )
+        return
+
     table = Table(title="Available Domain Profiles")
     table.add_column("Name", style="cyan", no_wrap=True)
     table.add_column("Description")
-    table.add_column("Overrides", justify="right")
 
     for p in profiles:
-        table.add_row(p.name, p.description, str(len(p.overrides)))
+        table.add_row(p.name, p.description)
 
     _core.console.print(table)
+    _core.console.print(
+        "\n[dim]Use 'sw config set-profile <name>' to activate a profile.[/dim]",
+    )
 
 
 @config_app.command("show-profile")
 def config_show_profile(
     profile_name: str = typer.Argument(help="Profile name to preview."),
 ) -> None:
-    """Show the overrides a domain profile would apply."""
-    from specweaver.config.profiles import get_profile
+    """Show the pipeline overrides a domain profile applies.
+
+    Loads the profile's YAML pipeline and displays the rule parameters
+    that differ from the base (validation_spec_default) pipeline.
+    """
+    import specweaver.validation.rules.spec  # noqa: F401
+    from specweaver.config.profiles import get_profile, profile_to_pipeline_name
+    from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
     profile = get_profile(profile_name)
     if profile is None:
@@ -301,30 +316,45 @@ def config_show_profile(
         )
         raise typer.Exit(code=1)
 
-    table = Table(title=f"Profile: {profile.name} -- {profile.description}")
-    table.add_column("Rule", style="cyan")
-    table.add_column("Warn", justify="right")
-    table.add_column("Fail", justify="right")
+    pipeline_name = profile_to_pipeline_name(profile.name)
+    try:
+        resolved = load_pipeline_yaml(pipeline_name)
+    except FileNotFoundError:
+        _core.console.print(
+            f"[red]Error:[/red] Pipeline YAML for profile '{profile_name}' not found.",
+        )
+        raise typer.Exit(code=1) from None
 
-    for rule_id, override in sorted(profile.overrides.items()):
-        warn_str = str(override.warn_threshold) if override.warn_threshold is not None else "-"
-        fail_str = str(override.fail_threshold) if override.fail_threshold is not None else "-"
-        table.add_row(rule_id, warn_str, fail_str)
+    table = Table(
+        title=f"Profile: {profile.name} \u2014 {profile.description or 'No description'}",
+    )
+    table.add_column("Rule", style="cyan")
+    table.add_column("Parameter")
+    table.add_column("Value", justify="right")
+
+    for step in sorted(resolved.steps, key=lambda s: s.rule):
+        for param_key, param_val in step.params.items():
+            table.add_row(step.rule, param_key, str(param_val))
 
     _core.console.print(table)
     _core.console.print(
-        "\n[dim]Rules not listed use code defaults.[/dim]",
+        f"\n[dim]Pipeline: {pipeline_name}.yaml "
+        "| Rules not listed use base pipeline defaults.[/dim]",
     )
 
 
 @config_app.command("set-profile")
 def config_set_profile(
-    profile_name: str = typer.Argument(help="Profile name to apply."),
+    profile_name: str = typer.Argument(help="Profile name to activate."),
 ) -> None:
-    """Apply a domain profile to the active project.
+    """Activate a domain profile for the active project.
 
-    This clears all existing validation overrides and replaces them
-    with the profile's preset values.
+    This records the profile name so that 'sw check' automatically
+    selects the matching YAML pipeline.  It does NOT write any
+    validation overrides to the database — those remain independent
+    and are managed via 'sw config set <RULE>'.
+
+    To deactivate, run 'sw config reset-profile'.
     """
     name = _core._require_active_project()
     db = _core.get_db()
@@ -334,13 +364,10 @@ def config_set_profile(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.config.profiles import get_profile
-
-    profile = get_profile(profile_name)
-    count = len(profile.overrides) if profile else 0
     _core.console.print(
-        f"[green]\u2713[/green] Profile [bold]{profile_name}[/bold] applied to "
-        f"project [bold]{name}[/bold] ({count} rule overrides set).",
+        f"[green]\u2713[/green] Profile [bold]{profile_name}[/bold] activated for "
+        f"project [bold]{name}[/bold]. "
+        "'sw check' will now use the matching pipeline YAML.",
     )
 
 
@@ -369,7 +396,12 @@ def config_get_profile() -> None:
 
 @config_app.command("reset-profile")
 def config_reset_profile() -> None:
-    """Clear the domain profile and all validation overrides."""
+    """Deactivate the domain profile for the active project.
+
+    Only the profile selection is cleared.  Any per-rule overrides set
+    via 'sw config set <RULE>' are preserved — remove them individually
+    with 'sw config reset <RULE>' if no longer needed.
+    """
     name = _core._require_active_project()
     db = _core.get_db()
     try:
@@ -379,6 +411,6 @@ def config_reset_profile() -> None:
         raise typer.Exit(code=1) from exc
 
     _core.console.print(
-        f"[green]\u2713[/green] Profile and all overrides cleared "
-        f"for project [bold]{name}[/bold].",
+        f"[green]\u2713[/green] Profile deactivated for project [bold]{name}[/bold]. "
+        "Per-rule overrides are preserved.",
     )

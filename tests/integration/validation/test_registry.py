@@ -111,7 +111,6 @@ class TestRunnerRegistryIntegration:
     def test_get_spec_rules_returns_11(self):
         """Spec default pipeline produces 11 rule results (S01-S11)."""
         import specweaver.validation.rules.spec  # noqa: F401
-
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
@@ -122,7 +121,6 @@ class TestRunnerRegistryIntegration:
     def test_get_spec_rules_ids_match(self):
         """Spec default pipeline returns results in S01-S11 order."""
         import specweaver.validation.rules.spec  # noqa: F401
-
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
@@ -135,7 +133,6 @@ class TestRunnerRegistryIntegration:
     def test_get_code_rules_without_subprocess(self):
         """Code default pipeline without subprocess rules returns 6 rules."""
         import specweaver.validation.rules.code  # noqa: F401
-
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
@@ -144,7 +141,6 @@ class TestRunnerRegistryIntegration:
         pipeline = load_pipeline_yaml("validation_code_default")
         # Filter out subprocess-based steps (C03, C04)
         subprocess_ids = {"C03", "C04"}
-        from specweaver.validation.pipeline import ValidationStep
         filtered = [s for s in pipeline.steps if s.rule not in subprocess_ids]
         pipeline = pipeline.model_copy(update={"steps": filtered})
         results = execute_validation_pipeline(pipeline, "# Test")
@@ -156,7 +152,6 @@ class TestRunnerRegistryIntegration:
     def test_get_code_rules_with_subprocess(self):
         """Code default pipeline with all rules returns 8 rules."""
         import specweaver.validation.rules.code  # noqa: F401
-
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 

@@ -100,23 +100,43 @@ def _load_check_settings(
     return settings
 
 
-def _resolve_pipeline_name(level: str, pipeline: str | None) -> str:
-    """Resolve the YAML pipeline name from --pipeline or --level.
+def _resolve_pipeline_name(
+    level: str,
+    pipeline: str | None,
+    active_project: str | None = None,
+) -> str:
+    """Resolve the YAML pipeline name from --pipeline, --level, or active profile.
 
-    Precedence: ``--pipeline`` > ``--level``.
+    Precedence (highest to lowest):
+    1. ``--pipeline`` flag — explicit override, always wins.
+    2. ``--level feature`` — always uses feature pipeline, ignores profile.
+       (Feature specs and project domains are orthogonal concerns.)
+    3. Active project domain profile — auto-selects profile pipeline YAML.
+    4. ``--level component`` / ``--level code`` — default YAML.
+
     Raises ``typer.Exit`` for unknown level values.
     """
     if pipeline:
         return pipeline
-    if level == "component":
-        return "validation_spec_default"
     if level == "feature":
         return "validation_spec_feature"
     if level == "code":
         return "validation_code_default"
-    from specweaver.cli import _core
-    _core.console.print(
-        f"[red]Error:[/red] Unknown level '{level}'. Use 'feature', 'component', or 'code'.",
+    if level == "component":
+        # Check for an active domain profile
+        if active_project:
+            from specweaver.config.profiles import profile_to_pipeline_name
+            db = _core.get_db()
+            import contextlib
+            with contextlib.suppress(ValueError):
+                profile_name = db.get_domain_profile(active_project)
+                if profile_name:
+                    return profile_to_pipeline_name(profile_name)
+        return "validation_spec_default"
+    from specweaver.cli import _core as _c
+    _c.console.print(
+        f"[red]Error:[/red] Unknown level '{level}'."
+        " Use 'feature', 'component', or 'code'.",
     )
     raise typer.Exit(code=1)
 
@@ -199,7 +219,9 @@ def check(
         raise typer.Exit(code=1) from None
     project_dir = Path(project) if project else None
 
-    pipeline_name = _resolve_pipeline_name(level, pipeline)
+    # Determine active project for profile-aware pipeline selection
+    active = _core.get_db().get_active_project()
+    pipeline_name = _resolve_pipeline_name(level, pipeline, active_project=active)
 
     try:
         resolved = load_pipeline_yaml(pipeline_name, project_dir=project_dir)

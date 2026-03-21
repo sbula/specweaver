@@ -1,7 +1,7 @@
 # Test Coverage Matrix
 
-> **2 774 passed** · 9 skipped · 92 source modules · 113 test files
-> **Last updated**: 2026-03-21
+> **2 866 passed** · 9 skipped · 92 source modules · 118 test files
+> **Last updated**: 2026-03-22
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
 
@@ -27,8 +27,8 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Package | Files | Unit | Integ | E2E | Total |
 |---------|------:|-----:|------:|----:|------:|
-| `cli/` | 10 | 215 | 84 | 53 | 352 |
-| `config/` | 3 | 205 | 19 | — | 224 |
+| `cli/` | 10 | 231 | 89 | 53 | 373 |
+| `config/` | 3 | 212 | 19 | — | 231 |
 | `context/` | 4 | 53 | 8 | — | 61 |
 | `drafting/` | 3 | 113 | 0 | — | 113 |
 | `flow/` | 8 | 243 | 21 | — | 264 |
@@ -39,9 +39,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `project/` | 3 | 77 | 0 | — | 77 |
 | `review/` | 1 | 30 | 0 | — | 30 |
 | `standards/` | 11 | 112 | 13 | 5 | 130 |
-| `validation/` | 24 | 505 | 49 | — | 554 |
+| `validation/` | 24 | 558 | 49 | — | 607 |
 | `logging.py` | 1 | — | — | — | (in config) |
-| **Total** | **92** | **2 238** | **195** | **53** | **2 486** |
+| **Total** | **92** | **2 308** | **200** | **53** | **2 561** |
 
 ---
 
@@ -195,6 +195,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `_apply_override` / `_load_check_settings` | ✅ | ✅ | ⚪ | ⚪ | — |
+| `_resolve_pipeline_name` — all precedence branches | ✅ | ✅ | ⚪ | ⚪ | 15 unit tests (Feature 3.5b) |
 | `check()` main entry | ✅ | ✅ | ✅ | ⚪ | — |
 | `list_rules()` | ✅ | ✅ | ⚪ | ⚪ | — |
 
@@ -221,6 +222,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `DomainProfile` / `get_profile` / `list_profiles` | ✅ | ✅ | ✅ | ⚪ | — |
+| `_extract_description()` missing field / OSError | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.5b |
+| `profile_exists` / `profile_to_pipeline_name` | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Custom profile overrides built-in in listing | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.5b |
 
 ### 2.3 `settings.py`
 
@@ -711,6 +715,11 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `apply_settings_to_pipeline()` | ✅ | ✅ | ⚪ | ⚪ | — |
 | `resolve_pipeline()` inheritance | ✅ | ⚪ | ⚪ | ⚪ | — |
 | `_validate_loop_back()` | ❌ | ❌ | ⚪ | ⚪ | — |
+| `_build_rule_kwargs()` — all kwargs scenarios | ✅ | ⚪ | ⚪ | ⚪ | 12+ unit tests (Feature 3.5b) |
+| `_build_rule_kwargs()` — None settings / empty PARAM_MAP | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.5b |
+| `_get_rule_id_from_cls()` — all 9 configurable rules | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.5b |
+| `Rule.PARAM_MAP` ABC default + per-rule contracts (9 rules) | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.5b |
+| Removed legacy `get_spec_rules/get_code_rules` (negative) | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.5b |
 | Pipeline loader YAML | ✅ | ✅ | ⚪ | ⚪ | — |
 | Rule registry | ✅ | ✅ | ⚪ | ⚪ | — |
 | Custom D-prefix rule loading | ✅ | ⚪ | ⚪ | ⚪ | — |

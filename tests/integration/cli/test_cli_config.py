@@ -229,4 +229,7 @@ class TestConfigProfiles:
         _init_project(tmp_path)
         result = runner.invoke(app, ["config", "reset-profile"])
         assert result.exit_code == 0
-        assert "cleared" in result.output.lower()
+        assert (
+            "cleared" in result.output.lower()
+            or "deactivated" in result.output.lower()
+        )

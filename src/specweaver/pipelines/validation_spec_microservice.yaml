@@ -3,6 +3,7 @@
 
 # Microservice profile -- strict API contract rules.
 name: validation_spec_microservice
+description: Tuned for service boundaries and contract clarity
 extends: validation_spec_default
 override:
   s05_day_test:

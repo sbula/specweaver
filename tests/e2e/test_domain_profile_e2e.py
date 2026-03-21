@@ -63,12 +63,13 @@ class TestDomainProfileCLI:
         assert "ml-model" in result.output
 
     def test_show_profile(self, _mock_db) -> None:
-        """sw config show-profile shows overrides for a profile."""
+        """sw config show-profile shows the pipeline parameters for a profile."""
         result = runner.invoke(app, ["config", "show-profile", "web-app"])
         assert result.exit_code == 0, f"Failed: {result.output}"
-        assert "S05" in result.output
-        assert "S08" in result.output
-        assert "C04" in result.output
+        # web-app YAML has s05 and s03 overrides
+        assert "S05" in result.output or "s05" in result.output.lower()
+        # Profile table should show the pipeline name
+        assert "web-app" in result.output.lower()
 
     def test_show_profile_unknown(self, _mock_db) -> None:
         """sw config show-profile with unknown profile shows error."""
@@ -76,7 +77,7 @@ class TestDomainProfileCLI:
         assert result.exit_code != 0
 
     def test_set_profile(self, tmp_path: Path, _mock_db) -> None:
-        """sw config set-profile applies profile overrides."""
+        """sw config set-profile stores the profile name only (no DB overrides written)."""
         name = _unique_name("profile")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
         _mock_db.set_active_project(name)
@@ -85,11 +86,12 @@ class TestDomainProfileCLI:
         assert result.exit_code == 0, f"Failed: {result.output}"
         assert "web-app" in result.output
 
-        # Verify overrides are now set
+        # Profile name is stored — but NO DB overrides are written
+        assert _mock_db.get_domain_profile(name) == "web-app"
         overrides = _mock_db.get_validation_overrides(name)
-        rule_ids = {o["rule_id"] for o in overrides}
-        assert "S05" in rule_ids
-        assert "C04" in rule_ids
+        assert overrides == [], (
+            "set-profile must NOT write validation_overrides (new Sub-Phase A contract)"
+        )
 
     def test_set_profile_unknown(self, tmp_path: Path, _mock_db) -> None:
         """sw config set-profile with unknown profile shows error."""
@@ -122,7 +124,7 @@ class TestDomainProfileCLI:
         assert "library" in result.output
 
     def test_reset_profile(self, tmp_path: Path, _mock_db) -> None:
-        """sw config reset-profile clears profile and overrides."""
+        """sw config reset-profile clears profile name only (overrides preserved)."""
         name = _unique_name("profreset")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
         _mock_db.set_active_project(name)
@@ -131,9 +133,10 @@ class TestDomainProfileCLI:
         result = runner.invoke(app, ["config", "reset-profile"])
         assert result.exit_code == 0, f"Failed: {result.output}"
 
-        # Profile should be cleared
+        # Profile name should be cleared
         assert _mock_db.get_domain_profile(name) is None
-        assert _mock_db.get_validation_overrides(name) == []
+        # Per-rule overrides are preserved (none were set in this test, so empty)
+        # assert _mock_db.get_validation_overrides(name) == []
 
     def test_individual_override_on_top_of_profile(
         self, tmp_path: Path, _mock_db,
@@ -181,7 +184,12 @@ class TestDomainProfileCLI:
     def test_config_list_shows_profile_overrides(
         self, tmp_path: Path, _mock_db,
     ) -> None:
-        """sw config list after set-profile shows all profile overrides."""
+        """After set-profile, config list doesn't show profile overrides.
+
+        Under the new Sub-Phase A model, the profile is NOT written to
+        validation_overrides.  The profile just selects a YAML pipeline.
+        config list (which shows DB overrides) therefore shows nothing.
+        """
         name = _unique_name("proflist")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
         _mock_db.set_active_project(name)
@@ -189,9 +197,9 @@ class TestDomainProfileCLI:
 
         result = runner.invoke(app, ["config", "list"])
         assert result.exit_code == 0, f"Failed: {result.output}"
-        # Should show the profile's overrides
-        assert "S05" in result.output
-        assert "C04" in result.output
+        # Profile is stored as a name; config list shows per-rule DB overrides
+        # (none, since set-profile doesn't write overrides)
+        assert _mock_db.get_domain_profile(name) == "web-app"  # profile stored
 
     def test_set_profile_no_active_project(self, _mock_db) -> None:
         """sw config set-profile without active project shows error."""

@@ -3,6 +3,7 @@
 
 # Library profile -- stricter on ambiguity and terminology.
 name: validation_spec_library
+description: Strict thresholds for public-facing libraries and SDKs
 extends: validation_spec_default
 override:
   s05_day_test:

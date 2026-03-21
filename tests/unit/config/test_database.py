@@ -837,43 +837,54 @@ class TestDomainProfile:
         db.clear_domain_profile("myapp")
         assert db.get_domain_profile("myapp") is None
 
-    def test_set_domain_profile_clears_existing_overrides(self, db, tmp_path: Path):
-        """Setting a profile clears all existing validation overrides."""
+    def test_set_domain_profile_does_not_write_overrides(
+        self, db, tmp_path: Path,
+    ):
+        """set_domain_profile MUST NOT write validation_overrides rows.
+
+        Profile = pipeline YAML selector only. Per-rule DB overrides are
+        a separate layer managed via 'sw config set <RULE>'.
+        """
         db.register_project("myapp", str(tmp_path))
-        # Set some overrides manually
-        db.set_validation_override("myapp", "S08", warn_threshold=99, fail_threshold=99)
+        # Set some overrides manually FIRST
+        db.set_validation_override("myapp", "S08", warn_threshold=99)
         db.set_validation_override("myapp", "C04", fail_threshold=99)
         assert len(db.get_validation_overrides("myapp")) == 2
 
-        # Apply profile — should clear old overrides
+        # Apply profile — must NOT change or clear existing overrides
         db.set_domain_profile("myapp", "web-app")
         overrides = db.get_validation_overrides("myapp")
-        # Should have the profile's overrides, not the old ones
-        rule_ids = {o["rule_id"] for o in overrides}
-        assert "S08" in rule_ids  # web-app has S08
-        assert "C04" in rule_ids  # web-app has C04
-        # But values should be from profile, not our old 99s
-        s08 = next(o for o in overrides if o["rule_id"] == "S08")
-        assert s08["warn_threshold"] == 3  # web-app S08 warn
-        assert s08["fail_threshold"] == 8  # web-app S08 fail
+        assert len(overrides) == 2  # unchanged — profile didn't touch overrides
+        assert overrides[0]["rule_id"] in {"S08", "C04"}
 
-    def test_set_domain_profile_writes_profile_overrides(self, db, tmp_path: Path):
-        """Setting a profile writes all override values from the profile."""
+    def test_set_domain_profile_does_not_clear_previous_overrides(
+        self, db, tmp_path: Path,
+    ):
+        """Switching profiles preserves all per-rule DB overrides."""
         db.register_project("myapp", str(tmp_path))
+        db.set_validation_override("myapp", "S11", warn_threshold=5)
+        db.set_domain_profile("myapp", "web-app")
         db.set_domain_profile("myapp", "library")
+        # S11 override must still be there (profile switch doesn't touch DB overrides)
         overrides = db.get_validation_overrides("myapp")
-        rule_ids = {o["rule_id"] for o in overrides}
-        # Library profile has: S03, S05, S07, S08, S11, C04
-        assert rule_ids == {"S03", "S05", "S07", "S08", "S11", "C04"}
+        assert any(o["rule_id"] == "S11" for o in overrides)
 
-    def test_clear_domain_profile_clears_overrides(self, db, tmp_path: Path):
-        """Clearing a profile also clears all validation overrides."""
+    def test_clear_domain_profile_preserves_overrides(
+        self, db, tmp_path: Path,
+    ):
+        """clear_domain_profile only clears the profile name, not overrides."""
         db.register_project("myapp", str(tmp_path))
         db.set_domain_profile("myapp", "web-app")
-        assert len(db.get_validation_overrides("myapp")) > 0
+        db.set_validation_override("myapp", "S08", fail_threshold=3)
+        assert len(db.get_validation_overrides("myapp")) == 1
 
         db.clear_domain_profile("myapp")
-        assert db.get_validation_overrides("myapp") == []
+        # Profile is cleared
+        assert db.get_domain_profile("myapp") is None
+        # But the per-rule override is preserved!
+        overrides = db.get_validation_overrides("myapp")
+        assert len(overrides) == 1
+        assert overrides[0]["rule_id"] == "S08"
 
     def test_set_domain_profile_unknown_raises(self, db, tmp_path: Path):
         """Setting an unknown profile name raises ValueError."""
@@ -913,12 +924,11 @@ class TestDomainProfile:
         assert db.get_domain_profile("myapp") is None
 
     def test_set_domain_profile_case_insensitive(self, db, tmp_path: Path):
-        """Profile name lookup is case-insensitive; stored as lowercase."""
+        """Profile name is accepted case-insensitively (stored normalised)."""
         db.register_project("myapp", str(tmp_path))
         db.set_domain_profile("myapp", "WEB-APP")
-        # The profile is found case-insensitively
-        overrides = db.get_validation_overrides("myapp")
-        assert len(overrides) > 0
+        # The profile is stored (case-insensitive lookup succeeded)
+        assert db.get_domain_profile("myapp") == "WEB-APP"
 
     def test_schema_version_is_7(self, db):
         """Schema version is 7 after all migrations."""

@@ -27,7 +27,7 @@ _MD_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+\.md)\)")
 _SECTION_REF_RE = re.compile(r"see\s+(?:§|section\s+)\d+", re.IGNORECASE)
 
 # Pattern: backtick references to other components (e.g., `FlowEngine`)
-_COMPONENT_REF_RE = re.compile(  # noqa: E501
+_COMPONENT_REF_RE = re.compile(
     r"`([A-Z][a-zA-Z]+(?:Service|Engine|Manager|Provider|Adapter|Handler|Store|Client))`"
 )
 

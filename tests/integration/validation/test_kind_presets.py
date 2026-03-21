@@ -14,7 +14,6 @@ instead of the legacy get_spec_rules() function (removed in Feature 3.5b).
 from __future__ import annotations
 
 import specweaver.validation.rules.spec  # noqa: F401 — register all spec rules
-
 from specweaver.config.settings import RuleOverride, ValidationSettings
 from specweaver.validation.executor import (
     apply_settings_to_pipeline,

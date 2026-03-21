@@ -1,107 +1,137 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""Domain profiles — named preset bundles for validation threshold calibration.
+"""Domain profiles — named validation pipeline presets for project domains.
 
-Each profile maps rule IDs to RuleOverride values.  Applying a profile
-bulk-writes these overrides to the project's DB, replacing any existing
-overrides.
+A *profile* is simply a name that maps to a built-in or custom
+YAML pipeline file (``validation_spec_<profile>.yaml``).  Applying a
+profile does **not** write any DB overrides; it only stores the
+pipeline name so that ``sw check`` auto-selects the matching YAML.
+
+Two configuration layers are completely independent and must not be
+confused:
+
+1. **YAML pipeline** (profile) — controls which rules run and their
+   base parameters.  Selected by ``sw config set-profile <name>``.
+   Lives in ``specweaver/pipelines/`` or ``.specweaver/pipelines/``.
+
+2. **DB overrides** (per-rule runtime tuning) — controlled by
+   ``sw config set <RULE> --warn/--fail``.  Always applied on top of
+   the pipeline, regardless of which profile is active.
 
 Usage::
 
-    from specweaver.config.profiles import get_profile, list_profiles
+    from specweaver.config.profiles import list_profiles, profile_exists
 
-    profile = get_profile("web-app")
-    if profile:
-        for rule_id, override in profile.overrides.items():
-            db.set_validation_override(project, rule_id, ...)
+    if profile_exists("web-app"):
+        ...
+    for p in list_profiles():
+        print(p.name, p.description)
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-
-from specweaver.config.settings import RuleOverride
+from dataclasses import dataclass
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Profiles that are reserved for internal use and must never appear in
+# the public listing (they are pipeline implementation details, not domains).
+_RESERVED_PIPELINE_NAMES = frozenset(
+    {"default", "feature", "code"}
+)
+
+# Base name prefix used by all spec-level pipeline YAML files.
+_PIPELINE_PREFIX = "validation_spec_"
 
 
 @dataclass(frozen=True)
 class DomainProfile:
-    """A named collection of validation overrides for a project domain.
+    """A named domain profile backed by a YAML pipeline file.
 
     Attributes:
         name: Profile identifier (e.g. ``"web-app"``).
-        description: Human-readable description of the profile.
-        overrides: Mapping of rule_id → RuleOverride values.
+        description: Human-readable description from the YAML header.
     """
 
     name: str
     description: str
-    overrides: dict[str, RuleOverride] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
-# Profile definitions
+# Discovery helpers
 # ---------------------------------------------------------------------------
 
-PROFILES: dict[str, DomainProfile] = {
-    "web-app": DomainProfile(
-        name="web-app",
-        description="Balanced thresholds for web applications",
-        overrides={
-            "S03": RuleOverride(rule_id="S03", warn_threshold=3, fail_threshold=5),
-            "S05": RuleOverride(rule_id="S05", warn_threshold=30, fail_threshold=50),
-            "S08": RuleOverride(rule_id="S08", warn_threshold=3, fail_threshold=8),
-            "C04": RuleOverride(rule_id="C04", fail_threshold=70),
-        },
-    ),
-    "data-pipeline": DomainProfile(
-        name="data-pipeline",
-        description="Lenient on complexity and external references for ETL/batch pipelines",
-        overrides={
-            "S03": RuleOverride(rule_id="S03", warn_threshold=6, fail_threshold=10),
-            "S05": RuleOverride(rule_id="S05", warn_threshold=50, fail_threshold=80),
-            "S08": RuleOverride(rule_id="S08", warn_threshold=5, fail_threshold=12),
-            "C04": RuleOverride(rule_id="C04", fail_threshold=60),
-        },
-    ),
-    "library": DomainProfile(
-        name="library",
-        description="Strict thresholds for public-facing libraries and SDKs",
-        overrides={
-            "S03": RuleOverride(rule_id="S03", warn_threshold=2, fail_threshold=4),
-            "S05": RuleOverride(rule_id="S05", warn_threshold=20, fail_threshold=40),
-            "S07": RuleOverride(rule_id="S07", warn_threshold=8, fail_threshold=6),
-            "S08": RuleOverride(rule_id="S08", warn_threshold=2, fail_threshold=5),
-            "S11": RuleOverride(rule_id="S11", warn_threshold=2, fail_threshold=4),
-            "C04": RuleOverride(rule_id="C04", fail_threshold=85),
-        },
-    ),
-    "microservice": DomainProfile(
-        name="microservice",
-        description="Tuned for service boundaries and contract clarity",
-        overrides={
-            "S03": RuleOverride(rule_id="S03", warn_threshold=3, fail_threshold=5),
-            "S05": RuleOverride(rule_id="S05", warn_threshold=25, fail_threshold=45),
-            "S08": RuleOverride(rule_id="S08", warn_threshold=3, fail_threshold=8),
-            "C04": RuleOverride(rule_id="C04", fail_threshold=75),
-        },
-    ),
-    "ml-model": DomainProfile(
-        name="ml-model",
-        description="Very lenient thresholds for ML/AI projects with research-style specs",
-        overrides={
-            "S03": RuleOverride(rule_id="S03", warn_threshold=8, fail_threshold=12),
-            "S05": RuleOverride(rule_id="S05", warn_threshold=80, fail_threshold=120),
-            "S07": RuleOverride(rule_id="S07", warn_threshold=4, fail_threshold=3),
-            "S08": RuleOverride(rule_id="S08", warn_threshold=8, fail_threshold=15),
-            "S11": RuleOverride(rule_id="S11", warn_threshold=5, fail_threshold=8),
-            "C04": RuleOverride(rule_id="C04", fail_threshold=50),
-        },
-    ),
-}
+def _builtin_pipelines_dir() -> Path:
+    """Return the path to the built-in pipelines directory."""
+    return Path(__file__).parent.parent / "pipelines"
+
+
+def _custom_pipelines_dir(project_dir: Path | None = None) -> Path | None:
+    """Return the path to a project's custom pipelines directory, or None."""
+    base = project_dir or Path.cwd()
+    candidate = base / ".specweaver" / "pipelines"
+    return candidate if candidate.is_dir() else None
+
+
+def _extract_description(yaml_path: Path) -> str:
+    """Extract the ``description`` field from a pipeline YAML file.
+
+    Uses simple line-by-line parsing to avoid loading ruamel.yaml for
+    every profile scan.  Returns an empty string if the field is absent.
+    """
+    try:
+        for line in yaml_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("description:"):
+                return stripped.removeprefix("description:").strip().strip("'\"")
+    except OSError:
+        logger.debug("Could not read pipeline YAML: %s", yaml_path)
+    return ""
+
+
+def _profile_name_from_yaml(path: Path) -> str | None:
+    """Return the profile name derived from a pipeline YAML filename.
+
+    Returns ``None`` for reserved names (default, feature, code).
+    """
+    stem = path.stem  # e.g. "validation_spec_web_app"
+    if not stem.startswith(_PIPELINE_PREFIX):
+        return None
+    profile = stem[len(_PIPELINE_PREFIX):]  # e.g. "web_app"
+    profile_hyphen = profile.replace("_", "-")  # e.g. "web-app"
+    if profile_hyphen in _RESERVED_PIPELINE_NAMES:
+        return None
+    return profile_hyphen
+
+
+def _scan_profiles(project_dir: Path | None = None) -> list[DomainProfile]:
+    """Scan built-in and custom pipeline directories for domain profiles.
+
+    Args:
+        project_dir: Optional project root for custom pipeline discovery.
+
+    Returns:
+        Sorted list of ``DomainProfile`` instances (alphabetically by name).
+    """
+    seen: dict[str, DomainProfile] = {}
+
+    dirs: list[Path] = [_builtin_pipelines_dir()]
+    custom = _custom_pipelines_dir(project_dir)
+    if custom:
+        dirs.append(custom)
+
+    for d in dirs:
+        for yaml_file in sorted(d.glob(f"{_PIPELINE_PREFIX}*.yaml")):
+            name = _profile_name_from_yaml(yaml_file)
+            if name is None:
+                continue
+            description = _extract_description(yaml_file)
+            seen[name] = DomainProfile(name=name, description=description)
+
+    return sorted(seen.values(), key=lambda p: p.name)
 
 
 # ---------------------------------------------------------------------------
@@ -109,24 +139,75 @@ PROFILES: dict[str, DomainProfile] = {
 # ---------------------------------------------------------------------------
 
 
-def get_profile(name: str) -> DomainProfile | None:
-    """Get a profile by name (case-insensitive).
+def profile_exists(
+    name: str,
+    project_dir: Path | None = None,
+) -> bool:
+    """Return True if a profile pipeline YAML exists for ``name``.
 
     Args:
-        name: Profile name (e.g. ``"web-app"`` or ``"WEB-APP"``).
+        name: Profile name (e.g. ``"web-app"``).
+        project_dir: Optional project root for custom pipeline lookup.
+    """
+    return get_profile(name, project_dir=project_dir) is not None
 
-    Returns:
-        The matching ``DomainProfile``, or ``None`` if not found.
+
+def get_profile(
+    name: str,
+    project_dir: Path | None = None,
+) -> DomainProfile | None:
+    """Get a profile by name, or None if not found.
+
+    Looks up built-in pipelines first, then custom project pipelines.
+
+    Args:
+        name: Profile name (e.g. ``"web-app"``).
+        project_dir: Optional project root for custom pipeline lookup.
     """
     if not name:
         return None
-    return PROFILES.get(name.lower())
+    normalised = name.lower().replace("_", "-")
+    if normalised in _RESERVED_PIPELINE_NAMES:
+        return None
+
+    dirs: list[Path] = [_builtin_pipelines_dir()]
+    custom = _custom_pipelines_dir(project_dir)
+    if custom:
+        dirs.append(custom)
+
+    # Convert "web-app" → "web_app" for the filename
+    stem_suffix = normalised.replace("-", "_")
+    filename = f"{_PIPELINE_PREFIX}{stem_suffix}.yaml"
+
+    for d in dirs:
+        yaml_path = d / filename
+        if yaml_path.exists():
+            description = _extract_description(yaml_path)
+            return DomainProfile(name=normalised, description=description)
+
+    return None
 
 
-def list_profiles() -> list[DomainProfile]:
-    """Return all available profiles, sorted by name.
+def list_profiles(project_dir: Path | None = None) -> list[DomainProfile]:
+    """Return all available profiles in alphabetical order.
+
+    Includes built-in profiles and any custom profiles found under
+    ``{project_dir}/.specweaver/pipelines/``.
+
+    Args:
+        project_dir: Optional project root for custom pipeline discovery.
+    """
+    return _scan_profiles(project_dir)
+
+
+def profile_to_pipeline_name(profile_name: str) -> str:
+    """Convert a profile name to its YAML pipeline name.
+
+    Args:
+        profile_name: Profile name (e.g. ``"web-app"``).
 
     Returns:
-        List of ``DomainProfile`` instances in alphabetical order.
+        Pipeline name without ``.yaml`` (e.g. ``"validation_spec_web_app"``).
     """
-    return sorted(PROFILES.values(), key=lambda p: p.name)
+    stem_suffix = profile_name.lower().replace("-", "_")
+    return f"{_PIPELINE_PREFIX}{stem_suffix}"

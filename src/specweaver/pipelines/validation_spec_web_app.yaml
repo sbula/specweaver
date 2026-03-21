@@ -3,6 +3,7 @@
 
 # Web-app profile -- relaxed size thresholds, stricter concrete examples.
 name: validation_spec_web_app
+description: Balanced thresholds for web applications
 extends: validation_spec_default
 override:
   s05_day_test:

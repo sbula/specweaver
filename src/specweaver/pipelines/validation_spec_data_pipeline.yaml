@@ -3,6 +3,7 @@
 
 # Data-pipeline profile -- relaxed on examples, strict on error paths.
 name: validation_spec_data_pipeline
+description: Lenient on complexity and external references for ETL/batch pipelines
 extends: validation_spec_default
 override:
   s05_day_test:

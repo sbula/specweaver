@@ -868,20 +868,26 @@ class Database:
         project_name: str,
         profile_name: str,
     ) -> None:
-        """Apply a domain profile to a project.
+        """Set the active domain profile for a project.
 
-        This:
-        1. Validates the profile name exists in the built-in registry
-        2. Clears all existing validation overrides for the project
-        3. Writes the profile's overrides to the DB
-        4. Stores the profile name
+        This **only stores the profile name** — it does NOT write any
+        validation overrides to the DB.  The profile selects which YAML
+        pipeline ``sw check`` will use; per-rule DB overrides are a
+        separate, independent configuration layer managed by
+        ``sw config set <RULE>``.
+
+        Cascade (from lowest to highest precedence):
+          YAML pipeline base params
+          → DB overrides (``sw config set``)
+          → ``--set`` CLI flags
 
         Args:
             project_name: Must be a registered project.
-            profile_name: Name of a built-in profile (e.g. 'web-app').
+            profile_name: Name of an available profile (e.g. 'web-app').
+                Must correspond to a built-in or custom pipeline YAML.
 
         Raises:
-            ValueError: If project not found or profile name unknown.
+            ValueError: If project not found or profile YAML not found.
         """
         from specweaver.config.profiles import get_profile
 
@@ -890,32 +896,13 @@ class Database:
             msg = f"Project '{project_name}' not found"
             raise ValueError(msg)
 
-        profile = get_profile(profile_name)
-        if profile is None:
+        if get_profile(profile_name) is None:
             msg = (
                 f"Unknown profile '{profile_name}'. "
                 "Use 'sw config profiles' to see available profiles."
             )
             raise ValueError(msg)
 
-        # 1. Clear existing overrides
-        with self.connect() as conn:
-            conn.execute(
-                "DELETE FROM validation_overrides WHERE project_name = ?",
-                (project_name,),
-            )
-
-        # 2. Write profile overrides
-        for rule_id, override in profile.overrides.items():
-            self.set_validation_override(
-                project_name,
-                rule_id,
-                enabled=override.enabled if not override.enabled else None,
-                warn_threshold=override.warn_threshold,
-                fail_threshold=override.fail_threshold,
-            )
-
-        # 3. Store profile name
         with self.connect() as conn:
             conn.execute(
                 "UPDATE projects SET domain_profile = ? WHERE name = ?",
@@ -923,12 +910,19 @@ class Database:
             )
 
         logger.info(
-            "Applied domain profile '%s' to project '%s' (%d overrides)",
-            profile_name, project_name, len(profile.overrides),
+            "Domain profile '%s' activated for project '%s' "
+            "(pipeline: validation_spec_%s.yaml)",
+            profile_name, project_name,
+            profile_name.replace("-", "_"),
         )
 
     def clear_domain_profile(self, project_name: str) -> None:
-        """Clear the domain profile and all validation overrides.
+        """Clear the active domain profile for a project.
+
+        Only the profile name is cleared.  Any per-rule DB overrides
+        written by ``sw config set`` are intentionally preserved — they
+        are independent of the profile and must be removed explicitly
+        via ``sw config reset <RULE>`` if no longer wanted.
 
         Args:
             project_name: Must be a registered project.
@@ -943,16 +937,13 @@ class Database:
 
         with self.connect() as conn:
             conn.execute(
-                "DELETE FROM validation_overrides WHERE project_name = ?",
-                (project_name,),
-            )
-            conn.execute(
                 "UPDATE projects SET domain_profile = NULL WHERE name = ?",
                 (project_name,),
             )
 
         logger.info(
-            "Cleared domain profile and overrides for project '%s'",
+            "Domain profile cleared for project '%s' "
+            "(per-rule overrides preserved)",
             project_name,
         )
 

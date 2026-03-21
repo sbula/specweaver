@@ -3,6 +3,7 @@
 
 # ML-model profile -- relaxed size, strict terminology.
 name: validation_spec_ml_model
+description: Very lenient thresholds for ML/AI projects with research-style specs
 extends: validation_spec_default
 override:
   s05_day_test:
