@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **2 539 passed** · 9 skipped · 87 source modules · 106 test files
+> **2 668 passed** · 9 skipped · 87 source modules · 106 test files
 > **Last updated**: 2026-03-21
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -36,7 +36,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `loom/` | 15 | 571 | 14 | — | 585 |
 | `project/` | 3 | 69 | 0 | — | 69 |
 | `review/` | 1 | 30 | 0 | — | 30 |
-| `standards/` | 4 | 47 | 0 | — | 47 |
+| `standards/` | 6 | 83 | 13 | 5 | 101 |
 | `validation/` | 24 | 505 | 49 | — | 554 |
 | `logging.py` | 1 | — | — | — | (in config) |
 | **Total** | **87** | **2 179** | **190** | **53** | **2 422** |
@@ -96,7 +96,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `_get_selector_map()` selector dispatch | ✅ | ❌ | ⚪ | ⚪ | No integ for wiring |
 | `_select_topology_contexts()` neighbor selection | ✅ | ❌ | ⚪ | ⚪ | No integ for injection |
 | `_load_constitution_content()` reads file | ✅ | ✅ | ⚪ | ⚪ | — |
-| `_load_standards_content()` reads from DB | ✅ | ❌ | ⚪ | ⚪ | No integ for DB read |
+| `_load_standards_content()` reads from DB | ✅ | ✅ | ✅ | ⚪ | Scope-aware w/ target_path, token cap |
+| `_load_standards_content()` scope-aware load | ✅ | ❌ | ⚪ | ⚪ | 9 unit tests (scope resolve, cap, priority) |
+| `_load_standards_content()` token cap truncation | ✅ | ❌ | ⚪ | ⚪ | Truncation + below-limit tested |
 
 ### 1.3 `config.py`
 
@@ -158,10 +160,14 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `standards_scan()` scan project | ✅ | ✅ | ✅ | ⚪ | 7 unit + 5 integ + 3 e2e |
+| `standards_scan()` scan project | ✅ | ✅ | ✅ | ⚪ | Multi-scope + HITL, --no-review |
 | `standards_show()` display stored | ✅ | ✅ | ✅ | ⚪ | 7 unit + 2 integ + 2 e2e |
 | `standards_clear()` clear stored | ✅ | ✅ | ✅ | ⚪ | 5 unit + 2 integ + 1 e2e |
+| `standards_scopes()` summary table | ✅ | ❌ | ⚪ | ⚪ | 5 unit tests |
+| `_file_in_scope()` scope filter | ✅ | ❌ | ⚪ | ⚪ | 5 unit tests |
 | `_load_standards_content()` formatting | ✅ | ✅ | ✅ | ⚪ | 7 unit + 1 integ + 1 e2e |
+| `scan --scope` single-scope scan | ✅ | ❌ | ⚪ | ⚪ | 1 unit test |
+| `scan` confirmed_by='hitl' / None | ✅ | ❌ | ⚪ | ⚪ | 1 unit test |
 | Re-scan overwrites existing standards | ✅ | ✅ | ✅ | ⚪ | Unit + integ + e2e |
 | Scan with confidence boundary (exactly 0.3) | ✅ | ⚪ | ⚪ | ⚪ | Boundary tested |
 | SyntaxError file graceful degradation | ✅ | ✅ | ⚪ | ⚪ | Skips bad file, still analyzes good ones |
@@ -564,6 +570,40 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `recency_weight()` / `compute_half_life()` | ✅ | ❌ | ⚪ | ⚪ | — |
 | `_find_oldest_source_mtime()` | ❌ | ❌ | ⚪ | ⚪ | Not tested |
+
+### 12.5 `scope_detector.py` *(Feature 3.5a-2)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `detect_scopes()` — empty/flat/L1/L2 | ✅ | ⚪ | ⚪ | ⚪ | 12 unit tests |
+| `detect_scopes()` — skip dirs + hidden dirs | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `detect_scopes()` — depth cap at 2 levels | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `detect_scopes()` — sorted output | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `detect_scopes()` — PermissionError handling | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test (mocked) |
+| `_has_source_files()` all extensions + edge | ✅ | ⚪ | ⚪ | ⚪ | 7 unit tests |
+| `_has_source_files()` — PermissionError | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+| `_resolve_scope()` — all paths | ✅ | ⚪ | ⚪ | ⚪ | 8 unit tests |
+| `_resolve_scope()` — target outside project | ✅ | ⚪ | ⚪ | ⚪ | ValueError path tested |
+| L2 hidden/skip dirs filtering | ✅ | ⚪ | ⚪ | ⚪ | 2 unit tests |
+| Mixed L1-only + L1/L2 layouts | ✅ | ⚪ | ⚪ | ⚪ | 2 unit tests |
+| Multi-scope detect on monorepo | ⚪ | ❌ | ❌ | ⚪ | End-to-end path |
+
+### 12.6 `reviewer.py` *(Feature 3.5a-2)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| Accept/Reject/Edit/AcceptAll/SkipScope | ✅ | ⚪ | ⚪ | ⚪ | 6 unit tests |
+| Multi-scope combined review | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Empty results → empty dict | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Re-scan diff shown | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Auto-accept unchanged HITL-confirmed | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Edit with non-dict JSON → retry | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+| HITL confirmed but data changed → prompt | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+| Accept All on first/last category | ✅ | ⚪ | ⚪ | ⚪ | 2 unit tests |
+| Skip scope then next scope proceeds | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+| Scope review order is sorted | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+| Show methods render without crash | ✅ | ⚪ | ⚪ | ⚪ | 3 unit tests |
+| Existing category not in results | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
 
 ---
 

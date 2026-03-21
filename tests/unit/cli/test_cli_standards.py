@@ -515,3 +515,174 @@ class TestStandardsClear:
         result = runner.invoke(app, ["standards", "clear", "--help"])
         assert result.exit_code == 0
 
+
+# ---------------------------------------------------------------------------
+# Item 5: _file_in_scope helper
+# ---------------------------------------------------------------------------
+
+
+class TestFileInScope:
+    """Unit tests for _file_in_scope() helper in standards.py."""
+
+    def test_file_in_named_scope(self, tmp_path: Path) -> None:
+        """File under scope path → True."""
+        from specweaver.cli.standards import _file_in_scope
+
+        file_path = tmp_path / "backend" / "auth" / "login.py"
+        scope_path = tmp_path / "backend" / "auth"
+        assert _file_in_scope(
+            file_path, scope_path, tmp_path, "backend/auth", [".", "backend/auth"],
+        ) is True
+
+    def test_file_not_in_scope(self, tmp_path: Path) -> None:
+        """File NOT under scope path → False."""
+        from specweaver.cli.standards import _file_in_scope
+
+        file_path = tmp_path / "frontend" / "app.ts"
+        scope_path = tmp_path / "backend"
+        assert _file_in_scope(
+            file_path, scope_path, tmp_path, "backend", [".", "backend"],
+        ) is False
+
+    def test_root_scope_excludes_named_scope_files(self, tmp_path: Path) -> None:
+        """Root scope '.' excludes files belonging to named scopes."""
+        from specweaver.cli.standards import _file_in_scope
+
+        # File in backend/auth — should NOT be in root scope
+        file_path = tmp_path / "backend" / "auth" / "login.py"
+        scope_path = tmp_path
+        assert _file_in_scope(
+            file_path, scope_path, tmp_path, ".", [".", "backend/auth"],
+        ) is False
+
+    def test_root_scope_includes_non_scoped_files(self, tmp_path: Path) -> None:
+        """Root scope '.' includes files not in any named scope."""
+        from specweaver.cli.standards import _file_in_scope
+
+        file_path = tmp_path / "setup.py"
+        scope_path = tmp_path
+        assert _file_in_scope(
+            file_path, scope_path, tmp_path, ".", [".", "backend/auth"],
+        ) is True
+
+    def test_root_scope_with_no_other_scopes(self, tmp_path: Path) -> None:
+        """Root scope '.' with only root → all files belong to root."""
+        from specweaver.cli.standards import _file_in_scope
+
+        file_path = tmp_path / "main.py"
+        scope_path = tmp_path
+        assert _file_in_scope(
+            file_path, scope_path, tmp_path, ".", ["."],
+        ) is True
+
+
+# ---------------------------------------------------------------------------
+# Item 6: sw standards scopes
+# ---------------------------------------------------------------------------
+
+
+class TestStandardsScopes:
+    """CLI tests for sw standards scopes."""
+
+    def test_scopes_no_active_project(self) -> None:
+        """scopes without active project → error."""
+        result = runner.invoke(app, ["standards", "scopes"])
+        assert result.exit_code != 0
+
+    def test_scopes_no_stored_scopes(
+        self, tmp_path: Path, _mock_db,
+    ) -> None:
+        """scopes with no stored scopes → friendly message."""
+        _init_project(_mock_db, "empty", str(tmp_path))
+        result = runner.invoke(app, ["standards", "scopes"])
+        assert result.exit_code == 0
+        assert "No scopes found" in result.output
+
+    def test_scopes_renders_summary_table(
+        self, tmp_path: Path, _mock_db,
+    ) -> None:
+        """scopes with standards → renders summary table."""
+        _init_project(_mock_db, "proj", str(tmp_path))
+        _seed_standards(_mock_db, "proj", count=2)
+        result = runner.invoke(app, ["standards", "scopes"])
+        assert result.exit_code == 0
+        assert "python" in result.output.lower()
+
+    def test_scopes_multiple_scopes(
+        self, tmp_path: Path, _mock_db,
+    ) -> None:
+        """scopes with multiple distinct scopes shows all."""
+        _init_project(_mock_db, "proj", str(tmp_path))
+        _seed_standards(_mock_db, "proj", count=1)
+        _mock_db.save_standard(
+            project_name="proj",
+            scope="backend",
+            language="python",
+            category="imports",
+            data={"style": "grouped"},
+            confidence=0.8,
+        )
+        result = runner.invoke(app, ["standards", "scopes"])
+        assert result.exit_code == 0
+        assert "backend" in result.output
+
+    def test_scopes_help(self) -> None:
+        """sw standards scopes --help works."""
+        result = runner.invoke(app, ["standards", "scopes", "--help"])
+        assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# Item 7: scan --scope flag
+# ---------------------------------------------------------------------------
+
+
+class TestScanScopeFlag:
+    """Tests for the --scope flag on sw standards scan."""
+
+    def test_scan_scope_flag(
+        self, tmp_path: Path, _mock_db, monkeypatch,
+    ) -> None:
+        """--scope limits scanning to a single scope."""
+        _init_project(_mock_db, "proj", str(tmp_path))
+        py_file = tmp_path / "backend" / "app.py"
+        py_file.parent.mkdir()
+        py_file.write_text("def hello():\n    pass\n", encoding="utf-8")
+
+        monkeypatch.setattr(
+            "specweaver.standards.discovery.discover_files",
+            lambda p: [py_file],
+        )
+
+        result = runner.invoke(
+            app, ["standards", "scan", "--scope", "backend", "--no-review"],
+        )
+        assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# Item 8: confirmed_by audit trail
+# ---------------------------------------------------------------------------
+
+
+class TestConfirmedByAuditTrail:
+    """Tests for confirmed_by='hitl' / None for scan with/without review."""
+
+    def test_no_review_sets_confirmed_by_none(
+        self, tmp_path: Path, _mock_db, monkeypatch,
+    ) -> None:
+        """--no-review → saved standards have confirmed_by=None."""
+        _init_project(_mock_db, "proj", str(tmp_path))
+        py_file = tmp_path / "hello.py"
+        py_file.write_text("def hello():\n    pass\n", encoding="utf-8")
+
+        monkeypatch.setattr(
+            "specweaver.standards.discovery.discover_files",
+            lambda p: [py_file],
+        )
+
+        runner.invoke(app, ["standards", "scan", "--no-review"])
+
+        standards = _mock_db.get_standards("proj")
+        for s in standards:
+            assert s.get("confirmed_by") is None

@@ -265,3 +265,145 @@ class TestResolveScope:
         scopes = [".", "backend"]
 
         assert _resolve_scope(target, project, scopes) == "."
+
+    def test_target_outside_project(self) -> None:
+        """Target outside project boundaries → '.' fallback (ValueError path)."""
+        target = Path("/other_project/src/main.py")
+        project = Path("/proj")
+        scopes = [".", "backend"]
+
+        assert _resolve_scope(target, project, scopes) == "."
+
+
+# ---------------------------------------------------------------------------
+# Additional gap tests — PermissionError, L2 filtering, mixed layouts
+# ---------------------------------------------------------------------------
+
+
+class TestDetectScopesPermissionError:
+    """Tests for PermissionError handling in scope detection."""
+
+    def test_permission_error_on_l1_dir(self, tmp_path: Path) -> None:
+        """PermissionError iterating L1 dir → gracefully skip it."""
+        from unittest.mock import patch
+
+        normal = tmp_path / "normal"
+        normal.mkdir()
+        (normal / "app.py").write_text("pass")
+
+        denied = tmp_path / "denied"
+        denied.mkdir()
+
+        original_iterdir = Path.iterdir
+
+        def mock_iterdir(self):
+            if self.name == "denied":
+                raise PermissionError("Access denied")
+            return original_iterdir(self)
+
+        with patch.object(Path, "iterdir", mock_iterdir):
+            scopes = detect_scopes(tmp_path)
+
+        assert "normal" in scopes
+        assert "denied" not in scopes
+
+    def test_permission_error_in_has_source_files(self, tmp_path: Path) -> None:
+        """PermissionError in _has_source_files → returns False."""
+        from unittest.mock import patch
+
+        locked = tmp_path / "locked"
+        locked.mkdir()
+
+        original_iterdir = Path.iterdir
+
+        def mock_iterdir(self):
+            if self.name == "locked":
+                raise PermissionError("Access denied")
+            return original_iterdir(self)
+
+        with patch.object(Path, "iterdir", mock_iterdir):
+            assert _has_source_files(locked) is False
+
+
+class TestDetectScopesL2Filtering:
+    """Tests for L2-level hidden dir and _SKIP_DIRS filtering."""
+
+    def test_l2_hidden_dirs_skipped(self, tmp_path: Path) -> None:
+        """Hidden dirs at L2 level are skipped."""
+        backend = tmp_path / "backend"
+        backend.mkdir()
+
+        hidden = backend / ".internal"
+        hidden.mkdir()
+        (hidden / "secret.py").write_text("pass")
+
+        visible = backend / "auth"
+        visible.mkdir()
+        (visible / "handler.py").write_text("pass")
+
+        scopes = detect_scopes(tmp_path)
+        assert "backend/.internal" not in scopes
+        assert "backend/auth" in scopes
+
+    def test_l2_skip_dirs_skipped(self, tmp_path: Path) -> None:
+        """_SKIP_DIRS at L2 level (e.g., node_modules) are skipped."""
+        frontend = tmp_path / "frontend"
+        frontend.mkdir()
+
+        nm = frontend / "node_modules"
+        nm.mkdir()
+        (nm / "pkg.js").write_text("pass")
+
+        src = frontend / "src"
+        src.mkdir()
+        (src / "app.ts").write_text("pass")
+
+        scopes = detect_scopes(tmp_path)
+        assert "frontend/node_modules" not in scopes
+        assert "frontend/src" in scopes
+
+
+class TestDetectScopesMixedLayouts:
+    """Tests for mixed L1-only and L1/L2 scope layouts."""
+
+    def test_l1_with_subscope_and_own_source_files(
+        self, tmp_path: Path,
+    ) -> None:
+        """L1 dir with sub-scopes AND own source files → only sub-scopes."""
+        backend = tmp_path / "backend"
+        backend.mkdir()
+        (backend / "shared.py").write_text("pass")  # Own source files
+
+        auth = backend / "auth"
+        auth.mkdir()
+        (auth / "login.py").write_text("pass")
+
+        scopes = detect_scopes(tmp_path)
+        # backend/ has sub-scope (auth/) so backend itself is NOT a scope
+        assert "backend" not in scopes
+        assert "backend/auth" in scopes
+
+    def test_mixed_l1_only_and_l1_l2(self, tmp_path: Path) -> None:
+        """Mix of L1-only scope + L1/L2 scopes in same project."""
+        # L1-only scope: "scripts"
+        scripts = tmp_path / "scripts"
+        scripts.mkdir()
+        (scripts / "deploy.py").write_text("pass")
+
+        # L1/L2 scope: "backend/auth", "backend/payments"
+        backend = tmp_path / "backend"
+        backend.mkdir()
+        auth = backend / "auth"
+        auth.mkdir()
+        (auth / "login.py").write_text("pass")
+        payments = backend / "payments"
+        payments.mkdir()
+        (payments / "stripe.py").write_text("pass")
+
+        scopes = detect_scopes(tmp_path)
+        assert "scripts" in scopes  # L1-only
+        assert "backend/auth" in scopes  # L2
+        assert "backend/payments" in scopes  # L2
+        assert "backend" not in scopes  # L1 with sub-scopes excluded
+        assert "." in scopes  # Root always present
+

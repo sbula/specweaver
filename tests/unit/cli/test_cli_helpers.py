@@ -213,6 +213,7 @@ class TestLoadStandardsContent:
         mock_db.get_active_project.return_value = "myproject"
         mock_db.get_standards.return_value = [
             {
+                "scope": ".",
                 "language": "python",
                 "category": "naming",
                 "data": json.dumps({"snake_case": "functions"}),
@@ -226,3 +227,223 @@ class TestLoadStandardsContent:
         assert "python/naming" in result
         assert "confidence=95%" in result
         assert "snake_case" in result
+
+
+# ---------------------------------------------------------------------------
+# _load_standards_content — scope-aware and token cap (gap tests)
+# ---------------------------------------------------------------------------
+
+
+class TestLoadStandardsContentScopeAware:
+    """Scope-aware loading, token cap, and format tests."""
+
+    @patch("specweaver.cli._helpers._core.get_db")
+    def test_target_path_resolves_scope(self, mock_get_db) -> None:
+        """target_path → _resolve_scope identifies correct scope."""
+        from pathlib import Path as _Path
+
+        from specweaver.cli._helpers import _load_standards_content
+
+        mock_db = MagicMock()
+        mock_db.get_active_project.return_value = "proj"
+        mock_db.list_scopes.return_value = [".", "backend/auth"]
+        mock_db.get_standards.side_effect = lambda name, scope=None: [
+            {
+                "scope": scope or ".",
+                "language": "python",
+                "category": "naming",
+                "data": json.dumps({"style": "snake_case"}),
+                "confidence": 0.9,
+            },
+        ]
+        mock_get_db.return_value = mock_db
+
+        result = _load_standards_content(
+            _Path("/proj"), target_path=_Path("/proj/backend/auth/login.py"),
+        )
+        assert result is not None
+        assert "python/naming" in result
+
+    @patch("specweaver.cli._helpers._core.get_db")
+    def test_target_path_loads_scope_and_root(self, mock_get_db) -> None:
+        """target_path with non-root scope → loads scope + root standards."""
+        from pathlib import Path as _Path
+
+        from specweaver.cli._helpers import _load_standards_content
+
+        mock_db = MagicMock()
+        mock_db.get_active_project.return_value = "proj"
+        mock_db.list_scopes.return_value = [".", "backend"]
+
+        scope_std = {
+            "scope": "backend", "language": "python", "category": "naming",
+            "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+        }
+        root_std = {
+            "scope": ".", "language": "python", "category": "docstrings",
+            "data": json.dumps({"style": "google"}), "confidence": 0.85,
+        }
+
+        def get_standards_mock(name, scope=None):
+            if scope == "backend":
+                return [scope_std]
+            if scope == ".":
+                return [root_std]
+            return [scope_std, root_std]
+
+        mock_db.get_standards.side_effect = get_standards_mock
+        mock_get_db.return_value = mock_db
+
+        result = _load_standards_content(
+            _Path("/proj"), target_path=_Path("/proj/backend/app.py"),
+        )
+        assert result is not None
+        assert "naming" in result
+        assert "docstrings" in result
+
+    @patch("specweaver.cli._helpers._core.get_db")
+    def test_target_path_root_scope_no_root_duplicate(self, mock_get_db) -> None:
+        """target_path resolving to '.' → root standards not loaded twice."""
+        from pathlib import Path as _Path
+
+        from specweaver.cli._helpers import _load_standards_content
+
+        mock_db = MagicMock()
+        mock_db.get_active_project.return_value = "proj"
+        mock_db.list_scopes.return_value = ["."]
+        mock_db.get_standards.return_value = [
+            {
+                "scope": ".", "language": "python", "category": "naming",
+                "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+            },
+        ]
+        mock_get_db.return_value = mock_db
+
+        result = _load_standards_content(
+            _Path("/proj"), target_path=_Path("/proj/main.py"),
+        )
+        assert result is not None
+        # Should contain naming exactly once
+        assert result.count("naming") == 1
+
+    @patch("specweaver.cli._helpers._core.get_db")
+    def test_token_cap_truncates_long_output(self, mock_get_db) -> None:
+        """Output exceeding max_chars is truncated."""
+        from specweaver.cli._helpers import _load_standards_content
+
+        mock_db = MagicMock()
+        mock_db.get_active_project.return_value = "proj"
+        # Generate many standards to exceed limit
+        mock_db.get_standards.return_value = [
+            {
+                "scope": ".", "language": "python", "category": f"cat_{i}",
+                "data": json.dumps({"pattern": "x" * 100}), "confidence": 0.9,
+            }
+            for i in range(50)
+        ]
+        mock_get_db.return_value = mock_db
+
+        result = _load_standards_content(MagicMock(), max_chars=200)
+        assert result is not None
+        # Truncation suffix is "\n[... truncated]" (17 chars), slicing at max-15
+        # gives max_chars + 2 — verify it's close and truncated
+        assert len(result) < 250
+        assert "[... truncated]" in result
+
+    @patch("specweaver.cli._helpers._core.get_db")
+    def test_token_cap_untouched_below_limit(self, mock_get_db) -> None:
+        """Output below max_chars is NOT truncated."""
+        from specweaver.cli._helpers import _load_standards_content
+
+        mock_db = MagicMock()
+        mock_db.get_active_project.return_value = "proj"
+        mock_db.get_standards.return_value = [
+            {
+                "scope": ".", "language": "python", "category": "naming",
+                "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+            },
+        ]
+        mock_get_db.return_value = mock_db
+
+        result = _load_standards_content(MagicMock(), max_chars=5000)
+        assert result is not None
+        assert "[... truncated]" not in result
+
+    @patch("specweaver.cli._helpers._core.get_db")
+    def test_token_cap_scope_specific_prioritized(self, mock_get_db) -> None:
+        """Scope-specific standards appear before root in output."""
+        from pathlib import Path as _Path
+
+        from specweaver.cli._helpers import _load_standards_content
+
+        mock_db = MagicMock()
+        mock_db.get_active_project.return_value = "proj"
+        mock_db.list_scopes.return_value = [".", "backend"]
+
+        scope_std = {
+            "scope": "backend", "language": "python", "category": "naming",
+            "data": json.dumps({"scope_specific": "yes"}), "confidence": 0.9,
+        }
+        root_std = {
+            "scope": ".", "language": "python", "category": "docstrings",
+            "data": json.dumps({"root_standard": "yes"}), "confidence": 0.85,
+        }
+
+        def get_standards_mock(name, scope=None):
+            if scope == "backend":
+                return [scope_std]
+            if scope == ".":
+                return [root_std]
+            return []
+
+        mock_db.get_standards.side_effect = get_standards_mock
+        mock_get_db.return_value = mock_db
+
+        result = _load_standards_content(
+            _Path("/proj"), target_path=_Path("/proj/backend/app.py"),
+        )
+        assert result is not None
+        # Scope-specific appears before root
+        scope_idx = result.index("scope_specific")
+        root_idx = result.index("root_standard")
+        assert scope_idx < root_idx
+
+    @patch("specweaver.cli._helpers._core.get_db")
+    def test_target_path_none_backward_compatible(self, mock_get_db) -> None:
+        """target_path=None → all standards loaded (backward compat)."""
+        from specweaver.cli._helpers import _load_standards_content
+
+        mock_db = MagicMock()
+        mock_db.get_active_project.return_value = "proj"
+        mock_db.get_standards.return_value = [
+            {
+                "scope": ".", "language": "python", "category": "naming",
+                "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+            },
+        ]
+        mock_get_db.return_value = mock_db
+
+        # target_path=None by default
+        result = _load_standards_content(MagicMock())
+        assert result is not None
+        assert "naming" in result
+
+    @patch("specweaver.cli._helpers._core.get_db")
+    def test_format_includes_scope_prefix(self, mock_get_db) -> None:
+        """Output format includes [scope/language/category] prefix."""
+        from specweaver.cli._helpers import _load_standards_content
+
+        mock_db = MagicMock()
+        mock_db.get_active_project.return_value = "proj"
+        mock_db.get_standards.return_value = [
+            {
+                "scope": "backend", "language": "python", "category": "naming",
+                "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+            },
+        ]
+        mock_get_db.return_value = mock_db
+
+        result = _load_standards_content(MagicMock())
+        assert result is not None
+        assert "[backend/python/naming]" in result
+
