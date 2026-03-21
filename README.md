@@ -340,6 +340,8 @@ result = atom.run({"intent": "integrate", "source": "feat/login", "target": "mai
 
 ## Development
 
+For detailed instructions on running specific tests, integration layers, or the full suite, please see the [Testing Guide](docs/testing_guide.md).
+
 ```bash
 # Install with dev dependencies
 uv sync --all-extras

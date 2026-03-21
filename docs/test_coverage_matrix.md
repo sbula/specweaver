@@ -5,6 +5,8 @@
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
 
+> 💡 **Tip:** Need help running these tests? See the [Testing Guide](testing_guide.md).
+
 ---
 
 ## Summary
@@ -283,8 +285,11 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `RichPipelineDisplay` all event handlers | ✅ | ❌ | ⚪ | ⚪ | No integ with real pipeline |
-| `JsonPipelineDisplay` NDJSON output | ✅ | ❌ | ⚪ | ⚪ | No integ with real pipeline |
+| `RichPipelineDisplay.on_event` unknown event | ✅ | ❌ | ❌ | ⚪ | Graceful ignore |
+| `RichPipelineDisplay` run_started missing `total_steps` | ✅ | ❌ | ❌ | ⚪ | Graceful default |
+| `RichPipelineDisplay` loop_back missing step target in history | ❌ | ❌ | ❌ | ⚪ | Edge case crash |
+| `RichPipelineDisplay` gate_result logs (advance/stop/etc) | ✅ | ❌ | ❌ | ⚪ | Visual feedback |
+| `JsonPipelineDisplay.on_event` serialization error | ✅ | ❌ | ❌ | ⚪ | Unhandled object safety |
 | Display with 10+ step pipeline | ❌ | ❌ | ⚪ | ⚪ | Only 2-step tested |
 | Display with PARKED status (HITL gate) | ❌ | ❌ | ⚪ | ⚪ | Not tested |
 
@@ -292,68 +297,65 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `evaluate()` / `passes()` | ✅ | ✅ | ⚪ | ⚪ | — |
-| `find_step_index()` | ✅ | ✅ | ⚪ | ⚪ | — |
-| `inject_feedback()` | ✅ | ✅ | ⚪ | ⚪ | — |
-| `_handle_retry` / `_handle_loop_back` | ✅ | ✅ | ⚪ | ⚪ | — |
-| Gate with `max_retries=0` | ❌ | ❌ | ⚪ | ⚪ | Immediate failure |
-| LOOP_BACK to nonexistent target | ❌ | ❌ | ⚪ | ⚪ | Error handling |
+| HITL passed (result == PASSED) | ✅ | ✅ | ❌ | ⚪ | Gate advance |
+| HITL failed (result == FAILED) | ✅ | ❌ | ❌ | ⚪ | Gate on_fail |
+| AUTO / ACCEPTED `output` missing verdict | ✅ | ❌ | ❌ | ⚪ | Graceful fallback |
+| `on_fail` RETRY limits | ✅ | ✅ | ❌ | ⚪ | Escalate to stop |
+| `on_fail` LOOP_BACK limits | ✅ | ❌ | ❌ | ⚪ | Max loops boundary |
+| `inject_feedback` missing loop target | ❌ | ❌ | ❌ | ⚪ | Prevents crash |
 
 ### 5.3 `handlers.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `ValidateSpecHandler.execute()` | ✅ | ✅ | ⚪ | ⚪ | — |
-| `ValidateCodeHandler.execute()` | ✅ | ❌ | ⚪ | ⚪ | No real file integ |
-| `ValidateCodeHandler._find_code_path()` | ❌ | ❌ | ⚪ | ⚪ | Not tested |
-| `ReviewSpecHandler.execute()` | ❌ | ❌ | ⚪ | ⚪ | CLI only |
-| `ReviewCodeHandler.execute()` | ❌ | ❌ | ⚪ | ⚪ | CLI only |
-| `ReviewCodeHandler._find_code_path()` | ❌ | ❌ | ⚪ | ⚪ | Not tested |
-| `GenerateCodeHandler.execute()` | ❌ | ❌ | ⚪ | ⚪ | CLI only |
-| `GenerateTestsHandler.execute()` | ❌ | ❌ | ⚪ | ⚪ | No test at all |
-| `DraftSpecHandler.execute()` | ❌ | ❌ | ⚪ | ⚪ | No test at all |
-| `ValidateTestsHandler.execute()` | ❌ | ❌ | ⚪ | ⚪ | No test at all |
-| `LintFixHandler.execute()` | ❌ | ❌ | ⚪ | ⚪ | No test at all |
-| `LintFixHandler._llm_fix()` | ❌ | ❌ | ⚪ | ⚪ | LLM lint fix |
-| `StepHandlerRegistry` get/register | ✅ | ✅ | ⚪ | ⚪ | — |
-| `_error_result()` factory | ❌ | ❌ | ⚪ | ⚪ | Not tested |
-| Handler raises exception → error result | ❌ | ❌ | ⚪ | ⚪ | Per-handler error propagation |
-| Handler with missing LLM adapter | ❌ | ❌ | ⚪ | ⚪ | Per-handler |
-| `ValidateTestsHandler` no test file found | ❌ | ❌ | ⚪ | ⚪ | Edge case |
+| `ValidateSpecHandler` normal execute | ✅ | ✅ | ✅ | ⚪ | Core function |
+| `ValidateSpecHandler` atom run exception catch | ❌ | ❌ | ❌ | ⚪ | Prevents runner crash |
+| `ValidateCodeHandler` no `output_dir` or files | ✅ | ❌ | ❌ | ⚪ | Skips/fails code val |
+| `ValidateCodeHandler` atom run exception catch | ❌ | ❌ | ❌ | ⚪ | Prevents runner crash |
+| `ReviewSpecHandler.execute()` mock LLM review | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
+| `ReviewCodeHandler.execute()` mock LLM review | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
+| `GenerateCodeHandler.execute()` mock LLM prompt | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
+| `GenerateTestsHandler.execute()` mock LLM tests | ❌ | ❌ | ❌ | ⚪ | Missing coverage entirely |
+| `ValidateTestsHandler` tests fail / exception | ✅ | ❌ | ❌ | ⚪ | Fallback / crash prevent |
+| `LintFixHandler` exhaustion of reflections | ✅ | ❌ | ❌ | ⚪ | Reflections max hit |
+| `LintFixHandler` LLM exception during reflection | ✅ | ❌ | ❌ | ⚪ | Fails step cleanly |
+| `DraftSpecHandler` spec exists | ✅ | ❌ | ❌ | ⚪ | Skips execution |
 
 ### 5.4 `models.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | All models and enums | ✅ | ✅ | ⚪ | ⚪ | — |
-| `PipelineDefinition.validate_flow()` | ✅ | ❌ | ⚪ | ⚪ | No integ in loading context |
-| `_validate_loop_back()` | ❌ | ❌ | ⚪ | ⚪ | Not unit-tested |
+| `PipelineDefinition.validate_flow()` combos | ✅ | ❌ | ❌ | ⚪ | Target limits |
+| Gate `loop_target` validation | ✅ | ❌ | ❌ | ⚪ | Infinite loop guard |
 
 ### 5.5 `parser.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `load_pipeline()` | ✅ | ✅ | ⚪ | ⚪ | — |
+| `load_pipeline()` normal parsing | ✅ | ✅ | ✅ | ⚪ | — |
 | `list_bundled_pipelines()` | ✅ | ✅ | ⚪ | ⚪ | — |
-| `_resolve_path()` bundled/project/absolute | ❌ | ❌ | ⚪ | ⚪ | Not isolated |
+| `load_pipeline()` invalid YAML syntax | ✅ | ❌ | ❌ | ⚪ | Parser errors cleanly |
 
 ### 5.6 `runner.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `PipelineRunner.run()` | ✅ | ✅ | ✅ | ⚪ | — |
-| `PipelineRunner.resume()` | ✅ | ✅ | ✅ | ⚪ | — |
-| `_execute_loop()` / `_persist()` / `_log()` / `_emit()` | ✅ | ✅ | ⚪ | ⚪ | — |
-| Runner with no event callback | ❌ | ❌ | ⚪ | ⚪ | — |
-| Runner with no store (in-memory only) | ❌ | ❌ | ⚪ | ⚪ | — |
+| `PipelineRunner.run()` general path | ✅ | ✅ | ✅ | ⚪ | — |
+| `PipelineRunner.run()` empty pipeline | ✅ | ✅ | ❌ | ⚪ | Immediate complete |
+| handler `.execute()` throws exception externally | ✅ | ❌ | ❌ | ⚪ | Captures unknown errors |
+| runner evaluating AUTO gate `stop`/`retry` | ✅ | ✅ | ❌ | ⚪ | — |
+| runner evaluating gate HITL `park` | ✅ | ✅ | ❌ | ⚪ | — |
+| runner evaluating gate `loop_back` | ✅ | ✅ | ❌ | ⚪ | — |
 
 ### 5.7 `state.py` + `store.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| All `PipelineRun` methods | ✅ | ✅ | ⚪ | ⚪ | — |
-| All `StateStore` methods | ✅ | ✅ | ⚪ | ⚪ | — |
-| Store survives process restart (real file) | ❌ | ❌ | ⚪ | ⚪ | In-process only |
+| `PipelineRun.complete_current_step` past end | ✅ | ❌ | ❌ | ⚪ | No-op bounds check |
+| `StateStore.get_latest_run` without existing | ✅ | ❌ | ❌ | ⚪ | Returns None |
+| `StateStore.load_run` corrupt JSON load | ❌ | ❌ | ❌ | ⚪ | Unhandled JSON decoder error |
+| Store survives process restart (real file) | ❌ | ✅ | ✅ | ⚪ | Tested in Integ/E2E via SQLite |
 
 ---
 
@@ -746,3 +748,11 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | 20 | `test_review_with_nhop_selector` | `--selector nhop` → neighbors in prompt |
 | 21 | `test_review_with_impact_selector` | `--selector impact` → weighted contexts |
 | 22 | `test_review_with_no_topology` | No context.yaml → review still works |
+
+### `test_flow_engine_e2e.py` — Flow Engine Cross-Seam Integration (Proposed)
+
+| # | Test Name | Story Covered |
+|---|-----------|--------------|
+| 23 | `test_sw_run_new_feature_hitl_interaction`| E2E from draft -> hitl park -> sw draft -> pass |
+| 24 | `test_sw_run_loop_back_reflection`        | Forced fail in validate triggers loop back to LLM |
+| 25 | `test_cli_to_runner_integration`          | CLI -> Runner -> Display loop with no mocking |
