@@ -242,22 +242,23 @@ class TestStandardsScan:
         py_file = tmp_path / "tiny.py"
         py_file.write_text("x = 1\n", encoding="utf-8")
 
-        # Mock extract to always return low confidence
-        def mock_extract(self, cat, files, hld):
-            return CategoryResult(
-                category=cat,
+        # Mock scan to always return low confidence
+        def mock_scan(self, files, hld):
+            return [CategoryResult(
+                category="test",
                 dominant={"style": "none"},
                 confidence=0.1,
                 sample_size=1,
-            )
+                language="python"
+            )]
 
         monkeypatch.setattr(
             "specweaver.standards.discovery.discover_files",
             lambda p: [py_file],
         )
         monkeypatch.setattr(
-            "specweaver.standards.python_analyzer.PythonStandardsAnalyzer.extract",
-            mock_extract,
+            "specweaver.standards.scanner.StandardsScanner.scan",
+            mock_scan,
         )
 
         result = runner.invoke(app, ["standards", "scan", "--no-review"])
@@ -374,25 +375,26 @@ class TestStandardsEdgeCases:
 
         call_count = 0
 
-        def mock_extract(self, cat, files, hld):
+        def mock_scan(self, files, hld):
             nonlocal call_count
             call_count += 1
             # First: 0.3 (saved), rest: 0.29 (skipped)
             conf = 0.3 if call_count == 1 else 0.29
-            return CategoryResult(
-                category=cat,
+            return [CategoryResult(
+                category="test_cat",
                 dominant={"style": "test"},
                 confidence=conf,
                 sample_size=1,
-            )
+                language="python"
+            )]
 
         monkeypatch.setattr(
             "specweaver.standards.discovery.discover_files",
             lambda p: [py_file],
         )
         monkeypatch.setattr(
-            "specweaver.standards.python_analyzer.PythonStandardsAnalyzer.extract",
-            mock_extract,
+            "specweaver.standards.scanner.StandardsScanner.scan",
+            mock_scan,
         )
 
         result = runner.invoke(app, ["standards", "scan", "--no-review"])

@@ -15,7 +15,6 @@ import typer
 
 from specweaver.config.settings import RuleOverride, ValidationSettings
 
-
 # ---------------------------------------------------------------------------
 # _apply_override
 # ---------------------------------------------------------------------------

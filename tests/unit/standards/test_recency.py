@@ -164,8 +164,9 @@ class TestFindOldestSourceMtime:
 
     def test_skips_hidden_directories(self, tmp_path: Path) -> None:
         """Files inside hidden directories (.hidden/) are ignored."""
-        from specweaver.standards.recency import _find_oldest_source_mtime
         import os
+
+        from specweaver.standards.recency import _find_oldest_source_mtime
 
         hidden = tmp_path / ".hidden"
         hidden.mkdir()
@@ -185,8 +186,9 @@ class TestFindOldestSourceMtime:
 
     def test_skips_pycache(self, tmp_path: Path) -> None:
         """Files inside __pycache__ are ignored."""
-        from specweaver.standards.recency import _find_oldest_source_mtime
         import os
+
+        from specweaver.standards.recency import _find_oldest_source_mtime
 
         cache = tmp_path / "__pycache__"
         cache.mkdir()
@@ -204,8 +206,9 @@ class TestFindOldestSourceMtime:
 
     def test_finds_oldest_among_multiple_files(self, tmp_path: Path) -> None:
         """Returns the oldest mtime when multiple source files exist."""
-        from specweaver.standards.recency import _find_oldest_source_mtime
         import os
+
+        from specweaver.standards.recency import _find_oldest_source_mtime
 
         new_file = tmp_path / "new.py"
         new_file.write_text("pass")
@@ -221,8 +224,8 @@ class TestFindOldestSourceMtime:
 
     def test_recognizes_multiple_source_extensions(self, tmp_path: Path) -> None:
         """Should recognize .js, .ts, .go, .rs, etc. as source files."""
+
         from specweaver.standards.recency import _find_oldest_source_mtime
-        import os
 
         for ext in (".js", ".ts", ".go", ".rs", ".java"):
             f = tmp_path / f"file{ext}"

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.standards.python_analyzer import PythonStandardsAnalyzer
+from specweaver.standards.languages.python.analyzer import PythonStandardsAnalyzer
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -46,11 +46,6 @@ class TestAnalyzerInterface:
         assert "import_patterns" in cats
         assert "test_patterns" in cats
 
-    def test_extract_invalid_category_raises(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
-    ) -> None:
-        with pytest.raises(ValueError, match="not_a_category"):
-            analyzer.extract("not_a_category", [], 180)
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +71,11 @@ class TestNamingExtraction:
             def create_new_record():
                 pass
         """))
-        result = analyzer.extract("naming", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "naming"), None)
+
+        assert result is not None, 'Category "naming" not found in results'
         assert result.dominant.get("function_style") == "snake_case"
         assert result.confidence > 0.5
 
@@ -95,7 +94,11 @@ class TestNamingExtraction:
             class AbstractBaseModel:
                 pass
         """))
-        result = analyzer.extract("naming", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "naming"), None)
+
+        assert result is not None, 'Category "naming" not found in results'
         assert result.dominant.get("class_style") == "PascalCase"
 
     def test_empty_files_return_zero_confidence(
@@ -104,14 +107,22 @@ class TestNamingExtraction:
         """Empty files should produce zero sample_size."""
         f = tmp_path / "empty.py"
         f.write_text("")
-        result = analyzer.extract("naming", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "naming"), None)
+
+        assert result is not None, 'Category "naming" not found in results'
         assert result.sample_size == 0
 
     def test_no_files_returns_zero_sample(
         self, analyzer: PythonStandardsAnalyzer,
     ) -> None:
         """No files → zero sample size."""
-        result = analyzer.extract("naming", [], 180)
+        results = analyzer.extract_all([], 180)
+
+        result = next((r for r in results if r.category == "naming"), None)
+
+        assert result is not None, 'Category "naming" not found in results'
         assert result.sample_size == 0
         assert result.confidence == 0.0
 
@@ -138,7 +149,11 @@ class TestErrorHandlingExtraction:
                 except KeyError:
                     handle_key_error()
         """))
-        result = analyzer.extract("error_handling", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "error_handling"), None)
+
+        assert result is not None, 'Category "error_handling" not found in results'
         assert result.dominant.get("exception_style") == "specific"
         assert result.sample_size > 0
 
@@ -158,7 +173,11 @@ class TestErrorHandlingExtraction:
                 except:
                     pass
         """))
-        result = analyzer.extract("error_handling", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "error_handling"), None)
+
+        assert result is not None, 'Category "error_handling" not found in results'
         assert result.dominant.get("exception_style") == "bare"
 
 
@@ -185,7 +204,11 @@ class TestTypeHintsExtraction:
             def noop() -> None:
                 pass
         """))
-        result = analyzer.extract("type_hints", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "type_hints"), None)
+
+        assert result is not None, 'Category "type_hints" not found in results'
         assert result.dominant.get("usage") == "yes"
         assert result.sample_size >= 3
 
@@ -201,7 +224,11 @@ class TestTypeHintsExtraction:
             def add(a, b):
                 return a + b
         """))
-        result = analyzer.extract("type_hints", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "type_hints"), None)
+
+        assert result is not None, 'Category "type_hints" not found in results'
         assert result.dominant.get("usage") == "no"
 
 
@@ -227,7 +254,11 @@ class TestDocstringsExtraction:
                 """Add two numbers."""
                 return a + b
         '''))
-        result = analyzer.extract("docstrings", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "docstrings"), None)
+
+        assert result is not None, 'Category "docstrings" not found in results'
         assert result.dominant.get("coverage") in ("high", "full")
 
     def test_detects_no_docstrings(
@@ -242,7 +273,11 @@ class TestDocstringsExtraction:
             def add(a, b):
                 return a + b
         """))
-        result = analyzer.extract("docstrings", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "docstrings"), None)
+
+        assert result is not None, 'Category "docstrings" not found in results'
         assert result.dominant.get("coverage") in ("none", "low")
 
 
@@ -265,7 +300,11 @@ class TestImportPatternsExtraction:
             from pathlib import Path
             from collections import defaultdict
         """))
-        result = analyzer.extract("import_patterns", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "import_patterns"), None)
+
+        assert result is not None, 'Category "import_patterns" not found in results'
         assert result.dominant.get("style") == "absolute"
         assert result.sample_size >= 4
 
@@ -296,7 +335,11 @@ class TestTestPatternsExtraction:
                 def test_multiply(self):
                     assert 2 * 3 == 6
         """))
-        result = analyzer.extract("test_patterns", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "test_patterns"), None)
+
+        assert result is not None, 'Category "test_patterns" not found in results'
         assert result.dominant.get("framework") == "pytest"
 
     def test_no_test_files_returns_zero(
@@ -305,7 +348,11 @@ class TestTestPatternsExtraction:
         """Non-test files should produce zero sample for test_patterns."""
         f = tmp_path / "app.py"
         f.write_text("def main(): pass")
-        result = analyzer.extract("test_patterns", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "test_patterns"), None)
+
+        assert result is not None, 'Category "test_patterns" not found in results'
         assert result.sample_size == 0
 
     def test_suffix_style_test_file_detected(
@@ -319,7 +366,11 @@ class TestTestPatternsExtraction:
             def test_add():
                 assert 1 + 1 == 2
         """))
-        result = analyzer.extract("test_patterns", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "test_patterns"), None)
+
+        assert result is not None, 'Category "test_patterns" not found in results'
         assert result.sample_size > 0
         assert result.dominant.get("framework") == "pytest"
 
@@ -335,7 +386,11 @@ class TestTestPatternsExtraction:
                 def test_one(self):
                     self.assertEqual(1, 1)
         """))
-        result = analyzer.extract("test_patterns", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "test_patterns"), None)
+
+        assert result is not None, 'Category "test_patterns" not found in results'
         assert result.dominant.get("framework") == "unittest"
 
 
@@ -370,7 +425,6 @@ class TestHelperEdgeCases:
         self, analyzer: PythonStandardsAnalyzer, tmp_path: Path, monkeypatch,
     ) -> None:
         """If stat() fails, _file_weight should use time.time()."""
-        from pathlib import Path as P
 
         f = tmp_path / "gone.py"
         f.write_text("pass")
@@ -419,37 +473,37 @@ class TestClassifyName:
     """Test _classify_name for every return branch."""
 
     def test_dunder_name(self) -> None:
-        from specweaver.standards.python_analyzer import _classify_name
+        from specweaver.standards.languages.python.analyzer import _classify_name
 
         assert _classify_name("__init__") == "dunder"
         assert _classify_name("__str__") == "dunder"
 
     def test_pascal_case(self) -> None:
-        from specweaver.standards.python_analyzer import _classify_name
+        from specweaver.standards.languages.python.analyzer import _classify_name
 
         assert _classify_name("MyClass") == "PascalCase"
         assert _classify_name("AbstractBase") == "PascalCase"
 
     def test_snake_case(self) -> None:
-        from specweaver.standards.python_analyzer import _classify_name
+        from specweaver.standards.languages.python.analyzer import _classify_name
 
         assert _classify_name("get_user") == "snake_case"
         assert _classify_name("process_data_v2") == "snake_case"
 
     def test_camel_case(self) -> None:
-        from specweaver.standards.python_analyzer import _classify_name
+        from specweaver.standards.languages.python.analyzer import _classify_name
 
         assert _classify_name("getUserName") == "camelCase"
         assert _classify_name("processData") == "camelCase"
 
     def test_upper_snake(self) -> None:
-        from specweaver.standards.python_analyzer import _classify_name
+        from specweaver.standards.languages.python.analyzer import _classify_name
 
         assert _classify_name("MAX_RETRIES") == "UPPER_SNAKE"
         assert _classify_name("DB_HOST") == "UPPER_SNAKE"
 
     def test_other_fallback(self) -> None:
-        from specweaver.standards.python_analyzer import _classify_name
+        from specweaver.standards.languages.python.analyzer import _classify_name
 
         assert _classify_name("_private_func") == "other"
         assert _classify_name("__double_private") == "other"
@@ -475,7 +529,11 @@ class TestNamingEdgeCases:
             def __double():
                 pass
         """))
-        result = analyzer.extract("naming", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "naming"), None)
+
+        assert result is not None, 'Category "naming" not found in results'
         # No public functions → empty dominant, 0 sample
         assert result.sample_size == 0
         assert result.dominant == {}
@@ -495,7 +553,11 @@ class TestNamingEdgeCases:
             def fetch_items():
                 pass
         """))
-        result = analyzer.extract("naming", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "naming"), None)
+
+        assert result is not None, 'Category "naming" not found in results'
         # snake_case is dominant (2 vs 1 camelCase)
         assert result.dominant.get("function_style") == "snake_case"
         assert result.confidence < 1.0
@@ -506,7 +568,11 @@ class TestNamingEdgeCases:
         """File with only module-level constants → empty dominant dict."""
         f = tmp_path / "constants.py"
         f.write_text("MAX_SIZE = 100\nDEFAULT_NAME = 'test'\n")
-        result = analyzer.extract("naming", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "naming"), None)
+
+        assert result is not None, 'Category "naming" not found in results'
         assert result.dominant == {}
         assert result.sample_size == 0
 
@@ -531,7 +597,13 @@ class TestDocstringBoundaries:
         lines.append("def no_doc():\n    pass\n")
         f.write_text("\n".join(lines))
 
-        result = analyzer.extract("docstrings", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+
+        result = next((r for r in results if r.category == "docstrings"), None)
+
+
+        assert result is not None, 'Category "docstrings" not found in results'
         assert result.dominant.get("coverage") == "full"
 
     def test_no_functions_at_all(
@@ -540,7 +612,11 @@ class TestDocstringBoundaries:
         """File with no functions → sample_size=0, confidence=0.0."""
         f = tmp_path / "no_funcs.py"
         f.write_text("X = 42\n")
-        result = analyzer.extract("docstrings", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "docstrings"), None)
+
+        assert result is not None, 'Category "docstrings" not found in results'
         assert result.sample_size == 0
         assert result.confidence == 0.0
         assert result.dominant == {}
@@ -564,7 +640,11 @@ class TestImportEdgeCases:
             from ..parent import base
             from .utils import helper
         """))
-        result = analyzer.extract("import_patterns", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "import_patterns"), None)
+
+        assert result is not None, 'Category "import_patterns" not found in results'
         assert result.dominant.get("style") == "relative"
         assert result.sample_size == 3
 
@@ -579,7 +659,11 @@ class TestImportEdgeCases:
             from pathlib import Path
             from . import local
         """))
-        result = analyzer.extract("import_patterns", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "import_patterns"), None)
+
+        assert result is not None, 'Category "import_patterns" not found in results'
         assert result.dominant.get("style") == "absolute"
         assert result.confidence > 0.5
 
@@ -589,7 +673,11 @@ class TestImportEdgeCases:
         """File with no imports → empty dominant."""
         f = tmp_path / "no_imports.py"
         f.write_text("x = 1\n")
-        result = analyzer.extract("import_patterns", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "import_patterns"), None)
+
+        assert result is not None, 'Category "import_patterns" not found in results'
         assert result.sample_size == 0
         assert result.dominant == {}
 
@@ -608,7 +696,11 @@ class TestErrorHandlingEdgeCases:
         """File with no try/except → empty dominan, 0 samples."""
         f = tmp_path / "clean.py"
         f.write_text("def add(a, b):\n    return a + b\n")
-        result = analyzer.extract("error_handling", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "error_handling"), None)
+
+        assert result is not None, 'Category "error_handling" not found in results'
         assert result.sample_size == 0
         assert result.dominant == {}
         assert result.confidence == 0.0
@@ -629,7 +721,11 @@ class TestErrorHandlingEdgeCases:
                 except:
                     pass
         """))
-        result = analyzer.extract("error_handling", [f], 180)
+        results = analyzer.extract_all([f], 180)
+
+        result = next((r for r in results if r.category == "error_handling"), None)
+
+        assert result is not None, 'Category "error_handling" not found in results'
         assert result.dominant.get("exception_style") == "specific"
         assert result.sample_size == 3
 
@@ -651,7 +747,13 @@ class TestExtractWithBrokenFiles:
         bad = tmp_path / "bad.py"
         bad.write_text("def oops(\n")
 
-        result = analyzer.extract("naming", [good, bad], 180)
+        results = analyzer.extract_all([good, bad], 180)
+
+
+        result = next((r for r in results if r.category == "naming"), None)
+
+
+        assert result is not None, 'Category "naming" not found in results'
         assert result.sample_size == 1
         assert result.dominant.get("function_style") == "snake_case"
 

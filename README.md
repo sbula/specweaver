@@ -21,7 +21,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Pipeline definitions** — YAML-defined workflows with configurable gates, retries, and feedback loops
 - **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
 - **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
-- **Standards auto-discovery** — Analyze codebase to extract naming, error handling, type hints, docstring, import, and test patterns. Multi-scope support (monorepo-aware), Human-in-the-Loop review, token-capped injection into LLM prompts
+- **Standards auto-discovery** — Analyze codebase (Python, JavaScript, TypeScript) to extract naming, error handling, type hints/jsdoc/tsdoc, import, async, and test patterns. Multi-scope support (monorepo-aware), Human-in-the-Loop review, optional async LLM best-practice comparison, and token-capped injection into LLM prompts
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
 
 ## Quickstart
@@ -145,8 +145,9 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 
 | Command | Description |
 |---|---|
-| `sw standards scan` | Scan codebase for naming, error handling, docstring, type hint, import, and test patterns |
+| `sw standards scan` | Scan codebase (Py, JS, TS) for coding standard patterns |
 | `sw standards scan --no-review` | Scan without HITL review (CI-friendly) |
+| `sw standards scan --compare` | Force async LLM comparison against industry best practices |
 | `sw standards scan --scope <name>` | Scan a single scope in a monorepo |
 | `sw standards show` | Display discovered standards |
 | `sw standards show --scope <name>` | Display standards for a specific scope |

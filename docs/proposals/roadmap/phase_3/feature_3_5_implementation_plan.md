@@ -88,17 +88,19 @@ monorepo/
 
 ### Phase 3.5a-3: JS/TS (tree-sitter) + Conditional LLM
 
-**Goal**: Multi-language support, LLM-enriched findings.
+**Goal**: Multi-language support, single-pass AST execution, and Pydantic-structured LLM enrichment.
 
 | Component | What |
 |---|---|
-| `standards/js_analyzer.py` | `JSStandardsAnalyzer`: naming, error_handling, typescript_types, jsdoc, test_patterns, import_patterns, async_patterns. Uses tree-sitter. |
-| `pyproject.toml` | Add `tree-sitter`, `tree-sitter-javascript`, `tree-sitter-typescript` dependencies. |
-| `standards/inferrer.py` | Conditional LLM comparison (`compare_with_best_practices()`). Only fires for confidence < 90% or `--compare` flag. |
-| `cli.py` | `--compare` flag. LLM enrichment in HITL report. |
+| `pyproject.toml` | Add `tree-sitter>=0.22.0`, `tree-sitter-javascript`, `tree-sitter-typescript` dependencies. |
+| `standards/analyzer.py` | Refactor base `StandardsAnalyzer` to `extract_all(files) -> list[CategoryResult]` to enforce single-pass AST parsing. Retain independent category extractor methods for isolation. |
+| `standards/languages/` | Move `python_analyzer.py` here. Add `tree_sitter_base.py` interface. Add `javascript/analyzer.py` and `typescript/analyzer.py`. |
+| `standards/scanner.py` | `StandardsScanner`: Orchestrate file discovery, auto-detect language by extension, and execute mapped analyzers. |
+| `standards/enricher.py` | `StandardsEnricher`: Async LLM comparison (`asyncio.gather`). Requests Pydantic JSON structure. Only fires for confidence < 90% or `--compare` flag. |
+| `cli/standards.py` | `--compare` flag. Color-coded UI warnings for LLM deviations in HITL report. |
 
-**Tests**: ~40-50 tests. tree-sitter fixtures, LLM mocking.
-**Deliverable**: Scan a project with Python backend + TypeScript frontend, each gets language-appropriate standards.
+**Tests**: ~60-80 tests. tree-sitter fixtures, LLM component mocking.
+**Deliverable**: Scan a project with Python backend + TypeScript frontend, each gets auto-detected language-appropriate standards with LLM enrichment.
 
 ---
 
@@ -172,20 +174,29 @@ class StandardsAnalyzer(ABC):
     @abstractmethod
     def supported_categories(self) -> list[str]: ...
     @abstractmethod
-    def extract(self, category: str, files: list[Path], half_life_days: float) -> CategoryResult: ...
+    def extract_all(self, files: list[Path], half_life_days: float) -> list[CategoryResult]: ...
 ```
 
 #### [NEW] [python_analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/python_analyzer.py)
 
 7 categories: naming, error_handling, type_hints, docstrings, test_patterns, import_patterns, async_patterns.
 
-#### [NEW] [js_analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/js_analyzer.py)
+#### [NEW] [tree_sitter_base.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/tree_sitter_base.py)
 
-7 categories: naming, error_handling, typescript_types, jsdoc, test_patterns, import_patterns, async_patterns.
+Base class for `TreeSitterAnalyzer` to establish tree-sitter bindings.
 
-#### [NEW] [inferrer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/inferrer.py)
+#### [NEW] [languages/javascript/analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/languages/javascript/analyzer.py)
+#### [NEW] [languages/typescript/analyzer.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/languages/typescript/analyzer.py)
 
-`scan_project()`, `detect_scopes()`, `compare_with_best_practices()`, `format_for_prompt()`, `_compute_half_life()`.
+Implements language-specific AST node traversal categories (`typescript_types` for TS, `jsdoc`/`tsdoc`, etc.).
+
+#### [NEW] [scanner.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/scanner.py)
+
+Contains `StandardsScanner` which handles orchestration: detecting scopes, mapping languages, and iterating analyzers.
+
+#### [NEW] [enricher.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/enricher.py)
+
+Contains `StandardsEnricher` which handles async LLM comparison loops via Pydantic output parsing.
 
 #### [NEW] [recency.py](file:///c:/development/pitbula/specweaver/src/specweaver/standards/recency.py)
 

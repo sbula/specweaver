@@ -10,17 +10,12 @@ Tests: _print_summary, _select_topology_contexts,
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
 import typer
 
-from specweaver.validation.models import Finding, RuleResult, Severity, Status
-
-if TYPE_CHECKING:
-    pass
-
+from specweaver.validation.models import RuleResult, Status
 
 # ---------------------------------------------------------------------------
 # _print_summary

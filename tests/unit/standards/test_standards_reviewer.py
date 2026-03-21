@@ -6,14 +6,12 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
 
 from specweaver.standards.analyzer import CategoryResult
 from specweaver.standards.reviewer import StandardsReviewer
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

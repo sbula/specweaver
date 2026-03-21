@@ -10,9 +10,8 @@ cover the real CLI via CliRunner with file I/O.
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import typer

@@ -46,6 +46,7 @@ class CategoryResult:
     dominant: dict
     confidence: float
     sample_size: int
+    language: str | None = None
     alternatives: dict = field(default_factory=dict)
     conflicts: list[str] = field(default_factory=list)
 
@@ -93,23 +94,18 @@ class StandardsAnalyzer(ABC):
         ...
 
     @abstractmethod
-    def extract(
+    def extract_all(
         self,
-        category: str,
         files: list[Path],
         half_life_days: float,
-    ) -> CategoryResult:
-        """Extract one category from the given files.
+    ) -> list[CategoryResult]:
+        """Extract all supported categories from the given files in a single pass.
 
         Args:
-            category: One of the values from ``supported_categories()``.
             files: Source files to analyze.
             half_life_days: Decay half-life for recency weighting.
 
         Returns:
-            CategoryResult with dominant patterns and confidence.
-
-        Raises:
-            ValueError: If *category* is not in ``supported_categories()``.
+            List of CategoryResult containing findings for all supported categories.
         """
         ...

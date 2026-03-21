@@ -6,16 +6,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-import pytest
 
 from specweaver.standards.scope_detector import (
     _has_source_files,
     _resolve_scope,
     detect_scopes,
 )
-
 
 # ---------------------------------------------------------------------------
 # detect_scopes()

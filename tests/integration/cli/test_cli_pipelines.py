@@ -10,15 +10,11 @@ run error paths, resume error paths.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli import app
-
-if TYPE_CHECKING:
-    pass
 
 runner = CliRunner()
 

@@ -34,16 +34,25 @@ def standards_scan(
         "--no-review",
         help="Skip HITL review, auto-accept all (CI mode).",
     ),
+    compare: bool = typer.Option(
+        False,
+        "--compare",
+        help="Force LLM best-practice comparison.",
+    ),
 ) -> None:
     """Scan the active project and auto-discover coding standards.
 
     Detects scopes (up to 2 levels deep), analyses source files per scope,
     and presents a combined HITL review (unless --no-review is set).
     """
+    import asyncio
+
+    from specweaver.llm.adapters.gemini import GeminiAdapter
     from specweaver.standards.analyzer import CategoryResult
     from specweaver.standards.discovery import discover_files
-    from specweaver.standards.python_analyzer import PythonStandardsAnalyzer
+    from specweaver.standards.enricher import StandardsEnricher
     from specweaver.standards.reviewer import StandardsReviewer
+    from specweaver.standards.scanner import StandardsScanner
     from specweaver.standards.scope_detector import detect_scopes
 
     name = _core._require_active_project()
@@ -71,8 +80,8 @@ def standards_scan(
     # Discover all files once
     all_files = discover_files(project_path)
 
-    analyzer = PythonStandardsAnalyzer()
-    language = analyzer.language_name()
+    scanner = StandardsScanner()
+    enricher = StandardsEnricher(GeminiAdapter())
     half_life_days = 90.0
 
     # Scan each scope
@@ -88,24 +97,21 @@ def standards_scan(
         # Filter files to this scope
         scope_files = [
             f for f in all_files
-            if f.suffix in analyzer.file_extensions()
-            and _file_in_scope(f, scope_path, project_path, s, scopes)
+            if _file_in_scope(f, scope_path, project_path, s, scopes)
         ]
 
         if not scope_files:
             continue
 
         _core.console.print(
-            f"  Scope [cyan]{s}[/cyan]: {len(scope_files)} Python files",
+            f"  Scope [cyan]{s}[/cyan]: {len(scope_files)} source files",
         )
 
-        results: list[CategoryResult] = []
-        for category in analyzer.supported_categories():
-            result = analyzer.extract(category, scope_files, half_life_days)
-            if result.confidence >= 0.3:
-                results.append(result)
+        raw_results = scanner.scan(scope_files, half_life_days)
+        results = [r for r in raw_results if r.confidence >= 0.3]
 
         if results:
+            asyncio.run(enricher.enrich(results, language="auto", force_compare=compare))
             scope_results[s] = results
 
     if not scope_results:
@@ -132,7 +138,7 @@ def standards_scan(
             db.save_standard(
                 project_name=name,
                 scope=s,
-                language=language,
+                language=result.language or "unknown",
                 category=result.category,
                 data=result.dominant,
                 confidence=result.confidence,

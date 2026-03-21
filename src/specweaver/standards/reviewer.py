@@ -139,6 +139,12 @@ class StandardsReviewer:
         table.add_column("Confidence", justify="right")
 
         patterns = ", ".join(f"{k}={v}" for k, v in result.dominant.items())
+
+        # UI Enhancement: Append color-coded text for deviations
+        if result.conflicts:
+            issues = " ".join(result.conflicts)
+            patterns += f"\n[red]⚠️ Deviation: {issues}[/red]"
+
         table.add_row(result.category, patterns, f"{result.confidence:.0%}")
         self._console.print(table)
 

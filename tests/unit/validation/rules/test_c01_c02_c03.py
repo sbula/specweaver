@@ -8,13 +8,10 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from specweaver.validation.models import Status
 from specweaver.validation.rules.code.c01_syntax_valid import SyntaxValidRule
 from specweaver.validation.rules.code.c02_tests_exist import TestsExistRule
 from specweaver.validation.rules.code.c03_tests_pass import TestsPassRule
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # C01: SyntaxValidRule

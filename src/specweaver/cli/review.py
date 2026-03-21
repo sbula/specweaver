@@ -10,8 +10,7 @@ from pathlib import Path
 
 import typer
 
-from specweaver.cli import _core
-from specweaver.cli import _helpers
+from specweaver.cli import _core, _helpers
 from specweaver.cli._helpers import (
     _load_constitution_content,
     _load_standards_content,
@@ -175,7 +174,7 @@ def _execute_review(
                     standards=standards,
                 ),
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             return ReviewResult(
                 verdict=ReviewVerdict.ERROR,
                 summary=f"Review failed: {exc}",
@@ -189,7 +188,7 @@ def _execute_review(
                 standards=standards,
             ),
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return ReviewResult(
             verdict=ReviewVerdict.ERROR,
             summary=f"Review failed: {exc}",

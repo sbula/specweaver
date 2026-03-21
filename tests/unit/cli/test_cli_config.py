@@ -9,7 +9,6 @@ Tests all 10 config commands via CliRunner with mocked DB.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner

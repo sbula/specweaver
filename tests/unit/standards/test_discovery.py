@@ -8,8 +8,6 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-import pytest
-
 from specweaver.standards.discovery import discover_files
 
 if TYPE_CHECKING:
@@ -427,8 +425,8 @@ class TestApplySpecweaverignoreIsolated:
         self, tmp_path: Path,
     ) -> None:
         """Files not relative to project root survive the filter (ValueError)."""
+
         from specweaver.standards.discovery import _apply_specweaverignore
-        from pathlib import Path as P
 
         project_root = tmp_path / "project"
         project_root.mkdir()

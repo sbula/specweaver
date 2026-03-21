@@ -64,43 +64,51 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
     def supported_categories(self) -> list[str]:
         return list(_CATEGORIES)
 
-    def extract(
+    def extract_all(
         self,
-        category: str,
         files: list[Path],
         half_life_days: float,
-    ) -> CategoryResult:
-        if category not in _CATEGORIES:
-            msg = f"Unsupported category: {category}"
-            raise ValueError(msg)
+    ) -> list[CategoryResult]:
+        parsed_files: list[tuple[Path, float, ast.Module]] = []
+        for path in files:
+            tree = self._parse_file(path)
+            if tree is None:
+                continue
+            w = self._file_weight(path, half_life_days)
+            parsed_files.append((path, w, tree))
 
-        extractors = {
-            "naming": self._extract_naming,
-            "error_handling": self._extract_error_handling,
-            "type_hints": self._extract_type_hints,
-            "docstrings": self._extract_docstrings,
-            "import_patterns": self._extract_imports,
-            "test_patterns": self._extract_test_patterns,
-        }
-        return extractors[category](files, half_life_days)
+        extractors = [
+            self._extract_naming,
+            self._extract_error_handling,
+            self._extract_type_hints,
+            self._extract_docstrings,
+            self._extract_imports,
+            self._extract_test_patterns,
+        ]
+
+        results = []
+        for ext in extractors:
+            try:
+                results.append(ext(parsed_files))
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Failed to extract with {ext.__name__}: {e}")
+
+        return results
 
     # ------------------------------------------------------------------
     # Category extractors
     # ------------------------------------------------------------------
 
     def _extract_naming(
-        self, files: list[Path], half_life_days: float,
+        self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         func_styles: Counter = Counter()
         class_styles: Counter = Counter()
         total_weight = 0.0
         sample_size = 0
 
-        for path in files:
-            tree = self._parse_file(path)
-            if tree is None:
-                continue
-            w = self._file_weight(path, half_life_days)
+        for path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -131,16 +139,12 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_error_handling(
-        self, files: list[Path], half_life_days: float,
+        self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         styles: Counter = Counter()
         sample_size = 0
 
-        for path in files:
-            tree = self._parse_file(path)
-            if tree is None:
-                continue
-            w = self._file_weight(path, half_life_days)
+        for path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.ExceptHandler):
@@ -162,16 +166,12 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_type_hints(
-        self, files: list[Path], half_life_days: float,
+        self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         typed: Counter = Counter()
         sample_size = 0
 
-        for path in files:
-            tree = self._parse_file(path)
-            if tree is None:
-                continue
-            w = self._file_weight(path, half_life_days)
+        for path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -194,15 +194,12 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_docstrings(
-        self, files: list[Path], half_life_days: float,
+        self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         total_funcs = 0
         documented = 0
 
-        for path in files:
-            tree = self._parse_file(path)
-            if tree is None:
-                continue
+        for path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -230,16 +227,12 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_imports(
-        self, files: list[Path], half_life_days: float,
+        self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         styles: Counter = Counter()
         sample_size = 0
 
-        for path in files:
-            tree = self._parse_file(path)
-            if tree is None:
-                continue
-            w = self._file_weight(path, half_life_days)
+        for path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
@@ -264,24 +257,18 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_test_patterns(
-        self, files: list[Path], half_life_days: float,
+        self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         frameworks: Counter = Counter()
         sample_size = 0
 
-        for path in files:
-            if not path.name.startswith("test_") and not path.name.endswith(
-                "_test.py",
-            ):
-                continue
-
-            tree = self._parse_file(path)
-            if tree is None:
+        for path, w, tree in parsed_files:
+            if not path.name.startswith("test_") and not path.name.endswith("_test.py"):
                 continue
 
             framework = self._detect_test_framework(tree)
             if framework:
-                frameworks[framework] += self._file_weight(path, half_life_days)
+                frameworks[framework] += w
                 sample_size += 1
 
         dominant: dict = {}

@@ -9,7 +9,6 @@ Tests: show, check, init via CliRunner with mocked DB.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner

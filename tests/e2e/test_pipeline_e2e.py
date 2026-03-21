@@ -11,16 +11,11 @@ Only the LLM adapter is mocked.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli import app
-
-if TYPE_CHECKING:
-    from specweaver.config.database import Database
 
 runner = CliRunner()
 

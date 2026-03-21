@@ -8,19 +8,12 @@ Tests: _display_review_result, _execute_review dispatch logic.
 
 from __future__ import annotations
 
-import asyncio
-from pathlib import Path
-from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import typer
 
 from specweaver.review.reviewer import ReviewFinding, ReviewResult, ReviewVerdict
-
-if TYPE_CHECKING:
-    pass
-
 
 # ---------------------------------------------------------------------------
 # _display_review_result

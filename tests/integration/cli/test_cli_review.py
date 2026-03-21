@@ -81,7 +81,7 @@ class TestReviewErrors:
     ) -> None:
         """sw review on a spec returns ACCEPTED verdict."""
         from specweaver.llm.models import GenerationConfig
-        from specweaver.review.reviewer import ReviewFinding, ReviewResult, ReviewVerdict
+        from specweaver.review.reviewer import ReviewResult, ReviewVerdict
 
         project_dir = _init_project(tmp_path)
         spec = project_dir / "specs" / "greeter_spec.md"

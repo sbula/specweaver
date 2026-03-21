@@ -208,7 +208,7 @@ Edit `CONSTITUTION.md` directly to customize your project's rules. The content i
 
 ## Standards Auto-Discovery
 
-SpecWeaver can analyze your codebase to automatically discover coding standards (naming conventions, error handling patterns, docstring styles, type hint usage, import patterns, test patterns). Discovered standards are injected into LLM prompts alongside the constitution.
+SpecWeaver can analyze your codebase (Python, JavaScript, TypeScript) to automatically discover coding standards (naming conventions, error handling, docstrings/JSDoc/TSDoc, import patterns, test patterns, async patterns). Discovered standards are injected into LLM prompts alongside the constitution.
 
 ```bash
 # Scan the project for coding standards (with interactive HITL review)
@@ -216,6 +216,9 @@ sw standards scan --project ./my-project
 
 # Scan without review (CI mode — auto-accepts all findings)
 sw standards scan --no-review --project ./my-project
+
+# Force LLM comparison against industry best practices
+sw standards scan --compare --project ./my-project
 
 # View discovered standards
 sw standards show --project ./my-project

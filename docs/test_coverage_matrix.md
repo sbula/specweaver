@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **2 668 passed** · 9 skipped · 87 source modules · 106 test files
+> **2 705 passed** · 9 skipped · 92 source modules · 113 test files
 > **Last updated**: 2026-03-21
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -36,10 +36,10 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `loom/` | 15 | 571 | 14 | — | 585 |
 | `project/` | 3 | 69 | 0 | — | 69 |
 | `review/` | 1 | 30 | 0 | — | 30 |
-| `standards/` | 6 | 83 | 13 | 5 | 101 |
+| `standards/` | 11 | 112 | 13 | 5 | 130 |
 | `validation/` | 24 | 505 | 49 | — | 554 |
 | `logging.py` | 1 | — | — | — | (in config) |
-| **Total** | **87** | **2 179** | **190** | **53** | **2 422** |
+| **Total** | **92** | **2 208** | **190** | **53** | **2 451** |
 
 ---
 
@@ -604,6 +604,37 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Scope review order is sorted | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
 | Show methods render without crash | ✅ | ⚪ | ⚪ | ⚪ | 3 unit tests |
 | Existing category not in results | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+
+### 12.7 `scanner.py` *(Feature 3.5a-3)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `StandardsScanner.scan()` empty files | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+| `StandardsScanner.scan()` groups by extension | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+| `StandardsScanner.scan()` skips unknown | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+
+### 12.8 `enricher.py` *(Feature 3.5a-3)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `enrich()` filters by confidence | ✅ | ⚪ | ⚪ | ⚪ | LLM conditionally triggered |
+| `enrich()` handles LLM invalid JSON | ✅ | ⚪ | ⚪ | ⚪ | Fallback correctly |
+| `enrich()` with force_compare | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+
+### 12.9 `tree_sitter_base.py` *(Feature 3.5a-3)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `extract_all()` loops and yields single pass | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+| `extract_all()` tolerates extractor unhandled exception | ✅ | ⚪ | ⚪ | ⚪ | 1 unit test |
+
+### 12.10 `languages/javascript/analyzer.py` & `languages/typescript/analyzer.py` *(Feature 3.5a-3)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| Detects async functions, promises, await | ✅ | ⚪ | ⚪ | ⚪ | Unit tests in both JS/TS |
+| Detects naming paradigms (camelCase/PascalCase) | ✅ | ⚪ | ⚪ | ⚪ | Unit tests in both JS/TS |
+| Detects JSDoc / TSDoc | ✅ | ⚪ | ⚪ | ⚪ | Unit tests |
 
 ---
 

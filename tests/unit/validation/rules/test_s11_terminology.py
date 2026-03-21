@@ -14,7 +14,6 @@ from specweaver.validation.rules.spec.s11_terminology import (
     _normalize_term,
 )
 
-
 # ── Helper functions ─────────────────────────────────────────────────────
 
 class TestNormalizeTerm:
