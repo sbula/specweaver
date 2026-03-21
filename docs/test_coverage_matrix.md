@@ -16,8 +16,8 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Total stories / use cases catalogued | 185 |
 | Fully covered (✅ at all applicable layers) | 69 |
 | Missing **unit** tests | 49 |
-| Missing **integration** tests | 67 |
-| Missing **both** unit + integration | 39 |
+| Missing **integration** tests | 64 |
+| Missing **both** unit + integration | 37 |
 | Missing **e2e** tests (proposed) | 22 |
 | Missing **performance** tests | 3 |
 
@@ -31,7 +31,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `config/` | 3 | 204 | 19 | — | 223 |
 | `context/` | 4 | 53 | 8 | — | 61 |
 | `drafting/` | 3 | 113 | 0 | — | 113 |
-| `flow/` | 8 | 243 | 16 | — | 259 |
+| `flow/` | 8 | 243 | 21 | — | 264 |
 | `graph/` | 2 | — | — | — | (in context) |
 | `implementation/` | 1 | — | — | — | (in llm) |
 | `llm/` | 5 | 150 | 0 | — | 150 |
@@ -41,7 +41,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `standards/` | 11 | 112 | 13 | 5 | 130 |
 | `validation/` | 24 | 505 | 49 | — | 554 |
 | `logging.py` | 1 | — | — | — | (in config) |
-| **Total** | **92** | **2 208** | **190** | **53** | **2 451** |
+| **Total** | **92** | **2 208** | **195** | **53** | **2 456** |
 
 ---
 
@@ -288,10 +288,10 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `RichPipelineDisplay.on_event` unknown event | ✅ | ❌ | ❌ | ⚪ | Graceful ignore |
 | `RichPipelineDisplay` run_started missing `total_steps` | ✅ | ❌ | ❌ | ⚪ | Graceful default |
 | `RichPipelineDisplay` loop_back missing step target in history | ❌ | ❌ | ❌ | ⚪ | Edge case crash |
-| `RichPipelineDisplay` gate_result logs (advance/stop/etc) | ✅ | ❌ | ❌ | ⚪ | Visual feedback |
+| `RichPipelineDisplay` gate_result logs (advance/stop/etc) | ✅ | ✅ | ❌ | ⚪ | Visual feedback |
 | `JsonPipelineDisplay.on_event` serialization error | ✅ | ❌ | ❌ | ⚪ | Unhandled object safety |
 | Display with 10+ step pipeline | ❌ | ❌ | ⚪ | ⚪ | Only 2-step tested |
-| Display with PARKED status (HITL gate) | ❌ | ❌ | ⚪ | ⚪ | Not tested |
+| Display with PARKED status (HITL gate) | ❌ | ✅ | ⚪ | ⚪ | Integration tested |
 
 ### 5.2 `gates.py`
 
@@ -314,7 +314,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `ValidateCodeHandler` atom run exception catch | ❌ | ❌ | ❌ | ⚪ | Prevents runner crash |
 | `ReviewSpecHandler.execute()` mock LLM review | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
 | `ReviewCodeHandler.execute()` mock LLM review | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
-| `GenerateCodeHandler.execute()` mock LLM prompt | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
+| `GenerateCodeHandler.execute()` mock LLM prompt | ❌ | ✅ | ✅ | ⚪ | Tested in CLI E2E |
 | `GenerateTestsHandler.execute()` mock LLM tests | ❌ | ❌ | ❌ | ⚪ | Missing coverage entirely |
 | `ValidateTestsHandler` tests fail / exception | ✅ | ❌ | ❌ | ⚪ | Fallback / crash prevent |
 | `LintFixHandler` exhaustion of reflections | ✅ | ❌ | ❌ | ⚪ | Reflections max hit |
