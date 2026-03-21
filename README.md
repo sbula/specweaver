@@ -221,7 +221,7 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 2774+ tests (unit, integration, E2E)
+├── tests/                      # 2893+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

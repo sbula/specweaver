@@ -59,7 +59,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 |---|-------|--------|---------------|-----|
 | 1 | `Reviewer.review_spec()` / `review_code()` — full cycle with mocked LLM | `review/reviewer.py` | Unit + Integration | [§ 11.1](#111-reviewerpy) |
 | 2 | `Drafter.draft()` — full section loop with mocked LLM | `drafting/drafter.py` | Unit + Integration | [§ 4.2](#42-drafterpy) |
-| 3 | `sw run new_feature` — Draft→validate→review→implement cycle | `cli/pipelines.py` | E2E | [§ 1.6](#16-pipelinespy) |
+| 3 | ~~`sw run new_feature` — Draft→validate→review→implement cycle~~ ✅ | `cli/pipelines.py` | ~~E2E~~ | [§ 1.6](#16-pipelinespy) |
 | 4 | `GenerateCodeHandler` / `GenerateTestsHandler` / `DraftSpecHandler.execute()` | `flow/handlers.py` | Unit | [§ 5.3](#53-handlerspy) |
 | 5 | `ReviewSpecHandler` / `ReviewCodeHandler.execute()` with mocked LLM | `flow/handlers.py` | Unit | [§ 5.3](#53-handlerspy) |
 | 6 | `Generator.generate_code()` / `generate_tests()` / `_clean_code_output()` | `implementation/generator.py` | Unit + Integration | [§ 7.1](#71-generatorpy) |
@@ -71,9 +71,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 **Graduation queue** (promote when a slot opens):
 - C04 / C05 isolated unit tests (`validation/rules/`)
 - Selectors integration with real topology (`graph/selectors.py`)
-- `sw review` with topology context injected (`cli/review.py`)
+- `_apply_specweaverignore()` / `_git_ls_files()` ✅ (6 + 4 unit tests added)
+- `sw review` with topology context injected ✅ (nhop/impact E2E)
 - `sw draft` user feedback mid-draft + interrupt handling (`cli/review.py`)
-- `_apply_specweaverignore()` / `_git_ls_files()` (`standards/discovery.py`)
 - Prompt with constitution + standards + topology all combined (`llm/prompt_builder.py`)
 - Concurrent DB access (`config/database.py`)
 - `ContextInferrer` edge cases — empty dirs, `__init__.py` only (`context/inferrer.py`)
@@ -588,12 +588,12 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `discover_files()` | ✅ | ❌ | ⚪ | ⚪ | No integ on real project |
-| `_git_ls_files()` | ❌ | ❌ | ⚪ | ⚪ | Not tested |
+| `_git_ls_files()` | ✅ | ❌ | ⚪ | ⚪ | 6 unit tests via monkeypatch (nonzero, timeout, OSError, deleted file, blank lines, success) |
 | `_walk_with_skips()` | ✅ | ❌ | ⚪ | ⚪ | — |
-| `_apply_specweaverignore()` | ❌ | ❌ | ⚪ | ⚪ | Not tested |
-| Discovery with `.specweaverignore` | ❌ | ❌ | ⚪ | ⚪ | — |
-| Discovery with `git ls-files` | ❌ | ❌ | ⚪ | ⚪ | — |
-| Discovery on non-git directory | ❌ | ❌ | ⚪ | ⚪ | — |
+| `_apply_specweaverignore()` | ✅ | ❌ | ⚪ | ⚪ | 4 unit tests (not-installed, external file, dir pattern, negation pattern) |
+| Discovery with `.specweaverignore` | ✅ | ❌ | ⚪ | ⚪ | 3 unit tests (pattern, glob, missing file) |
+| Discovery with `git ls-files` | ✅ | ❌ | ⚪ | ⚪ | gitignore respect + fallback tested |
+| Discovery on non-git directory | ✅ | ❌ | ⚪ | ⚪ | TestWalkWithSkips covers all cases |
 
 ### 12.3 `python_analyzer.py`
 

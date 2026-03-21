@@ -17,7 +17,7 @@ Test 7 (topology context injected) is covered in test_topology_e2e.py.
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -25,6 +25,9 @@ from typer.testing import CliRunner
 
 from specweaver.cli import app
 from specweaver.llm.models import GenerationConfig, LLMResponse
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 runner = CliRunner()
 
