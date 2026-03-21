@@ -6,13 +6,14 @@
 from __future__ import annotations
 
 import time
-from pathlib import Path
-from unittest.mock import patch
+from typing import TYPE_CHECKING
 
 import pytest
 
 from specweaver.standards.recency import compute_half_life, recency_weight
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # recency_weight()
@@ -135,3 +136,98 @@ class TestComputeHalfLife:
         half_life = compute_half_life(tmp_path)
         # Should use py file age, not txt — project is young
         assert half_life == pytest.approx(180, abs=10)
+
+
+# ---------------------------------------------------------------------------
+# _find_oldest_source_mtime()
+# ---------------------------------------------------------------------------
+
+
+class TestFindOldestSourceMtime:
+    """Tests for _find_oldest_source_mtime edge cases."""
+
+    def test_no_source_files_returns_none(self, tmp_path: Path) -> None:
+        """Directory with only non-source files → None."""
+        from specweaver.standards.recency import _find_oldest_source_mtime
+
+        (tmp_path / "readme.md").write_text("hello")
+        (tmp_path / "config.yaml").write_text("key: val")
+        (tmp_path / "data.json").write_text("{}")
+
+        assert _find_oldest_source_mtime(tmp_path) is None
+
+    def test_empty_directory_returns_none(self, tmp_path: Path) -> None:
+        """Empty directory → None."""
+        from specweaver.standards.recency import _find_oldest_source_mtime
+
+        assert _find_oldest_source_mtime(tmp_path) is None
+
+    def test_skips_hidden_directories(self, tmp_path: Path) -> None:
+        """Files inside hidden directories (.hidden/) are ignored."""
+        from specweaver.standards.recency import _find_oldest_source_mtime
+        import os
+
+        hidden = tmp_path / ".hidden"
+        hidden.mkdir()
+        old_file = hidden / "ancient.py"
+        old_file.write_text("pass")
+        ancient = time.time() - (50 * 365 * 86400)
+        os.utime(old_file, (ancient, ancient))
+
+        # Visible file is recent
+        visible = tmp_path / "recent.py"
+        visible.write_text("pass")
+
+        mtime = _find_oldest_source_mtime(tmp_path)
+        # Should use the visible file, not the hidden one
+        assert mtime is not None
+        assert mtime > ancient
+
+    def test_skips_pycache(self, tmp_path: Path) -> None:
+        """Files inside __pycache__ are ignored."""
+        from specweaver.standards.recency import _find_oldest_source_mtime
+        import os
+
+        cache = tmp_path / "__pycache__"
+        cache.mkdir()
+        cached = cache / "module.cpython-313.py"
+        cached.write_text("pass")
+        ancient = time.time() - (50 * 365 * 86400)
+        os.utime(cached, (ancient, ancient))
+
+        visible = tmp_path / "main.py"
+        visible.write_text("pass")
+
+        mtime = _find_oldest_source_mtime(tmp_path)
+        assert mtime is not None
+        assert mtime > ancient
+
+    def test_finds_oldest_among_multiple_files(self, tmp_path: Path) -> None:
+        """Returns the oldest mtime when multiple source files exist."""
+        from specweaver.standards.recency import _find_oldest_source_mtime
+        import os
+
+        new_file = tmp_path / "new.py"
+        new_file.write_text("pass")
+
+        old_file = tmp_path / "old.py"
+        old_file.write_text("pass")
+        three_years_ago = time.time() - (3 * 365 * 86400)
+        os.utime(old_file, (three_years_ago, three_years_ago))
+
+        mtime = _find_oldest_source_mtime(tmp_path)
+        assert mtime is not None
+        assert mtime == pytest.approx(three_years_ago, abs=1)
+
+    def test_recognizes_multiple_source_extensions(self, tmp_path: Path) -> None:
+        """Should recognize .js, .ts, .go, .rs, etc. as source files."""
+        from specweaver.standards.recency import _find_oldest_source_mtime
+        import os
+
+        for ext in (".js", ".ts", ".go", ".rs", ".java"):
+            f = tmp_path / f"file{ext}"
+            f.write_text("content")
+
+        mtime = _find_oldest_source_mtime(tmp_path)
+        assert mtime is not None
+
