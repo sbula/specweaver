@@ -556,3 +556,62 @@ class TestNoGate:
         run = await runner.run()
 
         assert run.status == RunStatus.COMPLETED
+
+class TestGateEdgeCases:
+    """Tests covering defensive edge cases in GateEvaluator."""
+
+    def test_passes_unhandled_condition(self, tmp_path: Path) -> None:
+        from specweaver.flow.gates import GateEvaluator
+        from specweaver.flow.models import PipelineDefinition
+        pipeline = PipelineDefinition(name="p", steps=[])
+        evaluator = GateEvaluator(pipeline)
+        
+        gate = GateDefinition.model_construct(condition="UNKNOWN_ENUM_VALUE", on_fail=OnFailAction.ABORT) # type: ignore
+        result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
+        assert evaluator.passes(gate, result) is True
+        
+    def test_find_step_index_not_found(self, tmp_path: Path) -> None:
+        from specweaver.flow.gates import GateEvaluator
+        from specweaver.flow.models import PipelineDefinition
+        pipeline = PipelineDefinition(name="p", steps=[])
+        evaluator = GateEvaluator(pipeline)
+        assert evaluator.find_step_index("imaginary_step") is None
+
+    def test_inject_feedback_dynamic_init(self) -> None:
+        from specweaver.flow.gates import GateEvaluator
+        class MockContext:
+            pass
+        context = MockContext()
+        result = StepResult(status=StepStatus.FAILED, output={"foo": "bar"}, started_at="now", completed_at="now")
+        GateEvaluator.inject_feedback(context, "a", "b", result)
+        assert hasattr(context, "feedback")
+        assert context.feedback["b"]["findings"] == {"foo": "bar"}
+
+    def test_handle_loop_back_missing_target(self, tmp_path: Path) -> None:
+        from specweaver.flow.gates import GateEvaluator
+        from specweaver.flow.models import PipelineDefinition
+        from specweaver.flow.state import PipelineRun
+        pipeline = PipelineDefinition(name="p", steps=[])
+        evaluator = GateEvaluator(pipeline)
+        gate = GateDefinition(condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.LOOP_BACK, loop_target="none")
+        result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
+        run = PipelineRun.model_construct(pipeline_name="p", steps=[])
+        
+        action = evaluator._handle_loop_back(gate, result, run, {0: 0})
+        # because target doesn't exist, it stops
+        assert action == "stop"
+
+    def test_handle_retry_missing_record(self, tmp_path: Path) -> None:
+        from specweaver.flow.gates import GateEvaluator
+        from specweaver.flow.models import PipelineDefinition
+        from specweaver.flow.state import PipelineRun
+        pipeline = PipelineDefinition(name="p", steps=[])
+        evaluator = GateEvaluator(pipeline)
+        gate = GateDefinition(condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.RETRY, max_retries=5)
+        result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
+        # Empty step records array, simulating record is None fetch
+        run = PipelineRun.model_construct(pipeline_name="p", steps=[])
+        run.step_records = []
+        
+        action = evaluator._handle_retry(gate, result, run, {0: 0})
+        assert action == "retry"

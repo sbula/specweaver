@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **2 705 passed** · 9 skipped · 92 source modules · 113 test files
+> **2 722 passed** · 9 skipped · 92 source modules · 113 test files
 > **Last updated**: 2026-03-21
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -287,7 +287,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `RichPipelineDisplay.on_event` unknown event | ✅ | ❌ | ❌ | ⚪ | Graceful ignore |
 | `RichPipelineDisplay` run_started missing `total_steps` | ✅ | ❌ | ❌ | ⚪ | Graceful default |
-| `RichPipelineDisplay` loop_back missing step target in history | ❌ | ❌ | ❌ | ⚪ | Edge case crash |
+| `RichPipelineDisplay` loop_back missing step target in history | ✅ | ❌ | ❌ | ⚪ | Edge case |
 | `RichPipelineDisplay` gate_result logs (advance/stop/etc) | ✅ | ✅ | ❌ | ⚪ | Visual feedback |
 | `JsonPipelineDisplay.on_event` serialization error | ✅ | ❌ | ❌ | ⚪ | Unhandled object safety |
 | Display with 10+ step pipeline | ❌ | ❌ | ⚪ | ⚪ | Only 2-step tested |
@@ -298,20 +298,21 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | HITL passed (result == PASSED) | ✅ | ✅ | ❌ | ⚪ | Gate advance |
-| HITL failed (result == FAILED) | ✅ | ❌ | ❌ | ⚪ | Gate on_fail |
-| AUTO / ACCEPTED `output` missing verdict | ✅ | ❌ | ❌ | ⚪ | Graceful fallback |
+| HITL failed (result == FAILED) | ✅ | ✅ | ❌ | ⚪ | Gate on_fail |
+| AUTO / ACCEPTED `output` missing verdict | ✅ | ✅ | ❌ | ⚪ | Graceful fallback |
 | `on_fail` RETRY limits | ✅ | ✅ | ❌ | ⚪ | Escalate to stop |
-| `on_fail` LOOP_BACK limits | ✅ | ❌ | ❌ | ⚪ | Max loops boundary |
-| `inject_feedback` missing loop target | ❌ | ❌ | ❌ | ⚪ | Prevents crash |
+| `on_fail` LOOP_BACK limits | ✅ | ✅ | ❌ | ⚪ | Max loops boundary |
+| `inject_feedback` missing loop target | ✅ | ✅ | ❌ | ⚪ | Prevents crash |
+| Graceful fallback on unmapped or missing gate data | ✅ | ✅ | ❌ | ⚪ | Enums/Missing steps |
 
 ### 5.3 `handlers.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `ValidateSpecHandler` normal execute | ✅ | ✅ | ✅ | ⚪ | Core function |
-| `ValidateSpecHandler` atom run exception catch | ❌ | ❌ | ❌ | ⚪ | Prevents runner crash |
-| `ValidateCodeHandler` no `output_dir` or files | ✅ | ❌ | ❌ | ⚪ | Skips/fails code val |
-| `ValidateCodeHandler` atom run exception catch | ❌ | ❌ | ❌ | ⚪ | Prevents runner crash |
+| `ValidateSpecHandler` atom run exception catch | ✅ | ✅ | ❌ | ⚪ | Prevents runner crash |
+| `ValidateCodeHandler` no `output_dir` or files | ✅ | ✅ | ❌ | ⚪ | Skips/fails code val |
+| `ValidateCodeHandler` atom run exception catch | ✅ | ✅ | ❌ | ⚪ | Prevents runner crash |
 | `ReviewSpecHandler.execute()` mock LLM review | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
 | `ReviewCodeHandler.execute()` mock LLM review | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
 | `GenerateCodeHandler.execute()` mock LLM prompt | ❌ | ✅ | ✅ | ⚪ | Tested in CLI E2E |
@@ -335,26 +336,27 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `load_pipeline()` normal parsing | ✅ | ✅ | ✅ | ⚪ | — |
 | `list_bundled_pipelines()` | ✅ | ✅ | ⚪ | ⚪ | — |
-| `load_pipeline()` invalid YAML syntax | ✅ | ❌ | ❌ | ⚪ | Parser errors cleanly |
+| `load_pipeline()` invalid YAML syntax | ✅ | ✅ | ❌ | ⚪ | Parser errors cleanly |
+| Pipeline native ModuleNotFoundError interception | ✅ | ✅ | ❌ | ⚪ | Bundled template missing |
 
 ### 5.6 `runner.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `PipelineRunner.run()` general path | ✅ | ✅ | ✅ | ⚪ | — |
-| `PipelineRunner.run()` empty pipeline | ✅ | ✅ | ❌ | ⚪ | Immediate complete |
-| handler `.execute()` throws exception externally | ✅ | ❌ | ❌ | ⚪ | Captures unknown errors |
-| runner evaluating AUTO gate `stop`/`retry` | ✅ | ✅ | ❌ | ⚪ | — |
-| runner evaluating gate HITL `park` | ✅ | ✅ | ❌ | ⚪ | — |
-| runner evaluating gate `loop_back` | ✅ | ✅ | ❌ | ⚪ | — |
+| `PipelineRunner.run()` empty pipeline | ✅ | ✅ | ✅ | ⚪ | Immediate complete |
+| handler `.execute()` throws exception externally | ✅ | ✅ | ❌ | ⚪ | Captures unknown errors |
+| runner evaluating AUTO gate `stop`/`retry` | ✅ | ✅ | ✅ | ⚪ | — |
+| runner evaluating gate HITL `park` | ✅ | ✅ | ✅ | ⚪ | — |
+| runner evaluating gate `loop_back` | ✅ | ✅ | ✅ | ⚪ | — |
 
 ### 5.7 `state.py` + `store.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `PipelineRun.complete_current_step` past end | ✅ | ❌ | ❌ | ⚪ | No-op bounds check |
-| `StateStore.get_latest_run` without existing | ✅ | ❌ | ❌ | ⚪ | Returns None |
-| `StateStore.load_run` corrupt JSON load | ❌ | ❌ | ❌ | ⚪ | Unhandled JSON decoder error |
+| `PipelineRun.complete_current_step` past end | ✅ | ✅ | ❌ | ⚪ | No-op bounds check |
+| `StateStore.get_latest_run` without existing | ✅ | ✅ | ❌ | ⚪ | Returns None |
+| `StateStore.load_run` corrupt JSON load | ✅ | ❌ | ❌ | ⚪ | Unhandled JSON decoder error |
 | Store survives process restart (real file) | ❌ | ✅ | ✅ | ⚪ | Tested in Integ/E2E via SQLite |
 
 ---

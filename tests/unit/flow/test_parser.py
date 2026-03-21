@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
+from unittest.mock import patch
 import pytest
 
 from specweaver.flow.models import (
@@ -202,6 +203,13 @@ class TestBundledTemplates:
         p = load_pipeline(Path("validate_only"))
         errors = p.validate_flow()
         assert errors == []
+
+    def test_load_pipeline_importlib_handling(self) -> None:
+        """Test that FileNotFoundError is successfully trapped and re-raised upon importlib throwing TypeError."""
+        with pytest.raises(FileNotFoundError, match="Pipeline not found"):
+            import importlib
+            with patch.object(importlib.resources, "as_file", side_effect=TypeError("mock type error")):
+                load_pipeline(Path("nonexistent_pipeline_name"))
 
 
 # ---------------------------------------------------------------------------

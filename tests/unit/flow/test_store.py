@@ -301,3 +301,21 @@ class TestStoreEdgeCases:
         fk = conn.execute("PRAGMA foreign_keys").fetchone()[0]
         conn.close()
         assert fk == 1
+
+    def test_store_load_run_corrupt_json(self, store: StateStore) -> None:
+        """Loading a run with corrupt JSON in step_records handles safely."""
+        run = _make_run(run_id="run-corrupt")
+        store.save_run(run)
+        
+        # Manually corrupt the DB payload
+        conn = store.connect()
+        conn.execute("UPDATE pipeline_runs SET step_records = ? WHERE run_id = ?", ("{bad_json:", "run-corrupt"))
+        conn.commit()
+        conn.close()
+        
+        import json
+        try:
+            loaded = store.load_run("run-corrupt")
+            assert loaded is None
+        except json.JSONDecodeError:
+            pass

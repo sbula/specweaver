@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from specweaver.flow.handlers import (
@@ -107,6 +109,20 @@ class TestValidateSpecHandler:
         assert result.status == StepStatus.ERROR
         assert result.error_message != ""
 
+    @pytest.mark.asyncio
+    @patch.object(ValidateSpecHandler, "_run_validation")
+    async def test_validate_spec_atom_crash(self, mock_run_val, tmp_path: Path) -> None:
+        """Exceptions in the underlying _run_validation are caught and logged as ERROR."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec)
+        step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.SPEC)
+        handler = ValidateSpecHandler()
+        mock_run_val.side_effect = ValueError("Boom")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.ERROR
+        assert "Boom" in result.error_message
+
 
 # ---------------------------------------------------------------------------
 # ValidateCodeHandler
@@ -130,6 +146,25 @@ class TestValidateCodeHandler:
         result = await handler.execute(step, ctx)
         # No code to validate → error or skipped
         assert result.status in (StepStatus.ERROR, StepStatus.SKIPPED)
+
+    @pytest.mark.asyncio
+    @patch.object(ValidateCodeHandler, "_run_validation")
+    async def test_validate_code_atom_crash(self, mock_run_val, tmp_path: Path) -> None:
+        """Exceptions in the underlying validation are caught and wrapped."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=tmp_path / "src")
+        # Ensure path exists so it actually tries to validate
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "test.py").write_text("x = 1")
+        
+        step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.CODE)
+        handler = ValidateCodeHandler()
+        # Mock _run_validation to crash
+        mock_run_val.side_effect = ValueError("Code Boom")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.ERROR
+        assert "Code Boom" in result.error_message
 
 
 # ---------------------------------------------------------------------------
@@ -175,6 +210,24 @@ class TestGenerateCodeHandler:
         assert result.status == StepStatus.ERROR
         assert "llm" in result.error_message.lower()
 
+    @pytest.mark.asyncio
+    @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
+    async def test_generate_code_success_path(self, mock_git, tmp_path: Path) -> None:
+        """Verifies successful LLM code generation does not crash and passes output."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        src_dir = tmp_path / "src"
+        src_dir.mkdir(exist_ok=True)
+        mock_adapter = MagicMock()
+        mock_adapter.generate = AsyncMock(return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None))
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter)
+        step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
+        handler = GenerateCodeHandler()
+        mock_git.return_value = (0, "", "")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+        assert "generated_path" in result.output
+
 
 # ---------------------------------------------------------------------------
 # GenerateTestsHandler (mocked LLM)
@@ -198,6 +251,24 @@ class TestGenerateTestsHandler:
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.ERROR
         assert "llm" in result.error_message.lower()
+
+    @pytest.mark.asyncio
+    @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
+    async def test_generate_tests_success_path(self, mock_git, tmp_path: Path) -> None:
+        """Verifies successful LLM test generation does not crash."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir(exist_ok=True)
+        mock_adapter = MagicMock()
+        mock_adapter.generate = AsyncMock(return_value=MagicMock(text="```python\ndef test_x(): pass\n```", finish_reason=1, parsed=None))
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter)
+        step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
+        handler = GenerateTestsHandler()
+        mock_git.return_value = (0, "", "")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+        assert "generated_path" in result.output
 
 
 # ---------------------------------------------------------------------------

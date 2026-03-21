@@ -364,3 +364,47 @@ class TestCLIRunEdgeCases:
         from specweaver.cli import _create_display
         display = _create_display(use_json=False, verbose=True)
         assert isinstance(display, RichPipelineDisplay)
+
+    def test_display_loop_back_missing_target(self) -> None:
+        """RichPipelineDisplay ignores missing loop target in history without crashing."""
+        display = RichPipelineDisplay()
+        display.start("test_pipe", [("step_0", "Desc 0")])
+        # Manually sending a gate_result loop_back verdict mimicking undefined behavior
+        display("_on_gate_result", step_idx=99, verdict="loop_back")
+        display.stop()  # Should not crash
+
+    def test_rich_display_missing_event_data_graceful_ignore(self) -> None:
+        """Test that all display methods handle None arguments gracefully without crashing."""
+        from specweaver.flow.display import RichPipelineDisplay
+        from specweaver.flow.models import PipelineStep
+        from specweaver.flow.state import PipelineRun, StepResult, StepStatus
+        display = RichPipelineDisplay()
+        step = PipelineStep.model_construct(name="validate", action="validate+spec", gates=[])
+        run = PipelineRun.model_construct(run_id="mock", pipeline_name="test", steps=[step])
+        display("run_started", run=run)
+
+        # 1. _on_run_started with run=None
+        display("run_started", run=None)
+        
+        # 2. _on_step_failed with out-of-bounds step_idx
+        display("step_failed", step_idx=999, result=None)
+
+        # 3. _on_step_failed missing result completely, or result.error_message is None
+        display("step_failed", step_idx=0, result=None)
+        empty_result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
+        display("step_failed", step_idx=0, result=empty_result)
+
+        # 4. _on_gate_result bounds safety
+        display("gate_result", step_idx=999, verdict="park")
+
+        # 5. _on_run_completed with run=None
+        display("run_completed", run=None)
+
+        # 6. _on_run_failed with run=None (and run is not None formatting block)
+        display("run_failed", run=None)
+        display("run_failed", run=run)
+
+        # 7. _on_run_parked with run=None
+        display("run_parked", run=None)
+
+        display.stop()
