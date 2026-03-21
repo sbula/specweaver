@@ -408,7 +408,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `cycles()` / `constraints_for()` | ✅ | ❌ | ⚪ | ⚪ | No integ in real project |
 | `operational_warnings()` | ✅ | ❌ | ⚪ | ⚪ | No integ |
 | `format_context_summary()` | ✅ | ❌ | ⚪ | ⚪ | No integ |
-| `_auto_infer_missing()` partial context.yaml | ❌ | ❌ | ⚪ | ⚪ | Edge case |
+| `_auto_infer_missing()` partial context.yaml | ✅ | ❌ | ⚪ | ⚪ | 4 unit tests (skips hidden, all-covered, mixed, no-python) |
 
 ---
 
@@ -418,11 +418,15 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `Generator.generate_code()` | ❌ | ❌ | ✅ | ⚪ | Via CLI only |
-| `Generator.generate_tests()` | ❌ | ❌ | ❌ | ⚪ | Not tested at all |
+| `Generator.generate_code()` — happy path | ✅ | ❌ | ✅ | ⚪ | Unit via standards injection test; E2E via lifecycle |
+| `Generator.generate_code()` — with standards injected | ✅ | ❌ | ⚪ | ⚪ | `tests/unit/implementation/test_generator_standards.py` |
+| `Generator.generate_code()` — without standards | ✅ | ❌ | ⚪ | ⚪ | Same file |
+| `Generator.generate_tests()` — with standards | ✅ | ❌ | ❌ | ⚪ | Same file |
+| `Generator.generate_tests()` — without standards | ✅ | ❌ | ❌ | ⚪ | Same file |
+| `Generator` — standards + constitution both injected | ✅ | ❌ | ❌ | ⚪ | Same file |
+| `Generator` — output file still written | ✅ | ❌ | ❌ | ⚪ | Same file |
 | `Generator._clean_code_output()` fence stripping | ❌ | ❌ | ✅ | ⚪ | E2E only |
-| Generate code with constitution | ❌ | ❌ | ❌ | ⚪ | — |
-| Generate code with markdown fences | ✅ | ❌ | ✅ | ⚪ | E2E only |
+| Generate code with constitution (standalone) | ❌ | ❌ | ❌ | ⚪ | Not tested in isolation |
 | Generate tests from spec | ❌ | ❌ | ❌ | ⚪ | — |
 
 ---
@@ -520,10 +524,10 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
-| `find_constitution()` walk-up, override, BOM | ✅ | ⚪ | ✅ | ⚪ | — |
-| `find_all_constitutions()` | ✅ | ⚪ | ⚪ | ⚪ | — |
-| `check_constitution()` size limits | ✅ | ⚪ | ✅ | ⚪ | — |
-| `generate_constitution()` | ✅ | ⚪ | ✅ | ⚪ | — |
+| `find_constitution()` walk-up, override, BOM | ✅ | ✅ | ✅ | ⚪ | Unit + integ/constitution + E2E |
+| `find_all_constitutions()` | ✅ | ✅ | ⚪ | ⚪ | 4 integ tests (scaffold, walk-up) |
+| `check_constitution()` size limits | ✅ | ✅ | ✅ | ⚪ | Unit + `test_db_max_size_controls_check` |
+| `generate_constitution()` | ✅ | ✅ | ✅ | ⚪ | Scaffold integration tests |
 | `generate_constitution_from_standards()` happy path | ✅ | ⚪ | ⚪ | ⚪ | Multi-language standards |
 | `generate_constitution_from_standards()` empty standards | ✅ | ⚪ | ⚪ | ⚪ | Raises ValueError |
 | `generate_constitution_from_standards()` OSError on write | ✅ | ⚪ | ⚪ | ⚪ | Read-only dir handling |
@@ -532,6 +536,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `_build_standards_section()` formatting | ✅ | ⚪ | ⚪ | ⚪ | Category grouping |
 | `_build_standards_section()` special chars in values | ✅ | ⚪ | ⚪ | ⚪ | Pipe/backslash escaping |
 | `is_unmodified_template()` TODO marker check | ✅ | ⚪ | ⚪ | ⚪ | Detects starter template |
+| Logging: find/generate/oversize | ✅ | ✅ | ⚪ | ⚪ | 4 tests in `TestConstitutionLogging` |
 
 ### 10.2 `discovery.py`
 
