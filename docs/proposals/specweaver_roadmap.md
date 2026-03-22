@@ -47,9 +47,9 @@
 - ✅ Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_ — multi-language (Py/JS/TS), multi-scope, conditional LLM comparison
 - ⚠️ **Post-3.5 cleanup**: Consolidate DB `validation_overrides` (3.3) vs sub-pipeline YAML inheritance (3.4) — decide single source of truth
 - ✅ Feature 3.6: Explicit plan phase (Spec → Plan → Tasks) (Including Stitch UI Mockups)
-- Feature 3.7: Pipeline visualization _(CrewAI)_
-- Feature 3.8: REST API server (`sw serve`)
-- Feature 3.9: Web dashboard
+- Feature 3.7: REST API server (`sw serve`)
+- Feature 3.8: Web dashboard
+- Feature 3.9: Containerization
 
 ---
 
@@ -75,7 +75,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (Pipeline Viz) → 3.8 (REST API) → 3.9 (Web Dashboard) → 3.10 (Container) → 3.11–3.22 → 3.23 (VS Code Extension)
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API) → 3.8 (Web Dashboard) → 3.9 (Container) → 3.10–3.18 → 3.19 (Pipeline Viz ⏸) → 3.20–3.23
 
 ---
 
