@@ -1,0 +1,131 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+"""Project management API endpoints."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from fastapi import APIRouter, Depends
+
+from specweaver.api.deps import get_db
+from specweaver.api.errors import SpecWeaverAPIError
+from specweaver.api.v1.schemas import ProjectCreate, ProjectResponse, ProjectUpdate
+from specweaver.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
+
+router = APIRouter()
+
+_db_dep = Depends(get_db)
+
+
+@router.get("/projects", response_model=list[ProjectResponse])
+def list_projects(db: Database = _db_dep) -> list[ProjectResponse]:
+    """List all registered projects."""
+    all_projects = db.list_projects()
+    active = db.get_active_project()
+    return [
+        ProjectResponse(
+            name=str(p["name"]),
+            path=str(p["root_path"]),
+            active=(str(p["name"]) == active),
+        )
+        for p in all_projects
+    ]
+
+
+@router.post("/projects", response_model=ProjectResponse, status_code=201)
+def create_project(
+    body: ProjectCreate,
+    db: Database = _db_dep,
+) -> ProjectResponse:
+    """Register a new project with optional scaffolding."""
+    project_path = Path(body.path)
+    if not project_path.exists():
+        raise SpecWeaverAPIError(
+            detail=f"Path does not exist: {body.path}",
+            error_code="PATH_NOT_FOUND",
+            status_code=400,
+        )
+
+    try:
+        db.register_project(body.name, str(project_path))
+    except ValueError as exc:
+        raise SpecWeaverAPIError(
+            detail=str(exc),
+            error_code="PROJECT_ALREADY_EXISTS",
+            status_code=409,
+        ) from exc
+
+    db.set_active_project(body.name)
+
+    if body.scaffold:
+        from specweaver.project.scaffold import scaffold_project
+
+        scaffold_project(project_path)
+
+    return ProjectResponse(
+        name=body.name,
+        path=str(project_path),
+        active=True,
+    )
+
+
+@router.delete("/projects/{name}", status_code=200)
+def delete_project(
+    name: str,
+    db: Database = _db_dep,
+) -> dict[str, str]:
+    """Unregister a project."""
+    proj = db.get_project(name)
+    if not proj:
+        raise SpecWeaverAPIError(
+            detail=f"Project '{name}' not found.",
+            error_code="PROJECT_NOT_FOUND",
+            status_code=404,
+        )
+    db.remove_project(name)
+    return {"detail": f"Project '{name}' removed."}
+
+
+@router.put("/projects/{name}", response_model=ProjectResponse)
+def update_project(
+    name: str,
+    body: ProjectUpdate,
+    db: Database = _db_dep,
+) -> ProjectResponse:
+    """Update a project setting (currently: path only)."""
+    proj = db.get_project(name)
+    if not proj:
+        raise SpecWeaverAPIError(
+            detail=f"Project '{name}' not found.",
+            error_code="PROJECT_NOT_FOUND",
+            status_code=404,
+        )
+    try:
+        db.update_project_path(name, body.path)
+    except ValueError as exc:
+        raise SpecWeaverAPIError(
+            detail=str(exc),
+            error_code="INVALID_PATH",
+            status_code=400,
+        ) from exc
+    active = db.get_active_project()
+    return ProjectResponse(name=name, path=body.path, active=(name == active))
+
+
+@router.post("/projects/{name}/use")
+def use_project(
+    name: str,
+    db: Database = _db_dep,
+) -> dict[str, str]:
+    """Set a project as the active project."""
+    proj = db.get_project(name)
+    if not proj:
+        raise SpecWeaverAPIError(
+            detail=f"Project '{name}' not found.",
+            error_code="PROJECT_NOT_FOUND",
+            status_code=404,
+        )
+    db.set_active_project(name)
+    return {"active": name}

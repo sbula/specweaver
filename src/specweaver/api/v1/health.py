@@ -1,0 +1,24 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+"""Health check endpoint."""
+
+from __future__ import annotations
+
+from importlib.metadata import version
+
+from fastapi import APIRouter
+
+from specweaver.api.v1.schemas import HealthResponse
+
+router = APIRouter()
+
+
+@router.get("/healthz", response_model=HealthResponse)
+def healthz() -> HealthResponse:
+    """Return service status and version."""
+    try:
+        ver = version("specweaver")
+    except Exception:
+        ver = "dev"
+    return HealthResponse(status="ok", version=ver)

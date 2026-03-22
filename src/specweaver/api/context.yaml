@@ -1,0 +1,33 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: api
+level: module
+purpose: >
+  FastAPI REST API server for SpecWeaver. Exposes all CLI operations
+  as HTTP endpoints for external UIs, CI/CD, and IDE extensions.
+
+archetype: adapter
+
+consumes:
+  - specweaver/config
+  - specweaver/validation
+  - specweaver/review
+  - specweaver/implementation
+  - specweaver/flow
+  - specweaver/graph
+  - specweaver/llm
+  - specweaver/project
+  - specweaver/standards
+
+forbids:
+  - specweaver/cli
+  - specweaver/loom/*
+
+exposes:
+  - create_app
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: true
+  concurrency_model: none
