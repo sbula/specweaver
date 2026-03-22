@@ -231,7 +231,7 @@ class TestEdgeCases:
             ["check", "--level", "invalid", str(f)],
         )
         assert result.exit_code == 1
-        assert "unknown level" in result.output.lower()
+        assert "unknown" in result.output.lower() and "level" in result.output.lower()
 
     def test_check_empty_spec(
         self,

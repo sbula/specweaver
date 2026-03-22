@@ -17,7 +17,10 @@ import importlib.resources
 import io
 import logging
 from pathlib import Path  # noqa: TC003  -- used at runtime
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from specweaver.config.database import Database
 
 from ruamel.yaml import YAML
 
@@ -95,3 +98,52 @@ def _load_raw_yaml(
     if project_dir:
         msg += f", {project_dir / '.specweaver' / 'pipelines'}"
     raise FileNotFoundError(msg)
+
+
+def resolve_pipeline_name(
+    level: str,
+    pipeline: str | None = None,
+    *,
+    db: Database | None = None,
+    active_project: str | None = None,
+) -> str:
+    """Resolve the validation pipeline YAML name from level and context.
+
+    Precedence (highest to lowest):
+    1. ``pipeline`` — explicit override, always wins.
+    2. ``level='feature'`` — always uses feature pipeline, ignores profile.
+    3. Active project domain profile — auto-selects profile pipeline YAML.
+    4. ``level='component'`` / ``level='code'`` — default YAML.
+
+    Args:
+        level: One of 'feature', 'component', 'code'.
+        pipeline: Explicit pipeline name override.
+        db: Database instance for profile lookups.
+        active_project: Active project name for profile resolution.
+
+    Returns:
+        Resolved pipeline name (e.g. 'validation_spec_default').
+
+    Raises:
+        ValueError: If the level is unknown.
+    """
+    if pipeline:
+        return pipeline
+    if level == "feature":
+        return "validation_spec_feature"
+    if level == "code":
+        return "validation_code_default"
+    if level == "component":
+        # Check for an active domain profile
+        if active_project and db is not None:
+            import contextlib
+
+            from specweaver.config.profiles import profile_to_pipeline_name
+
+            with contextlib.suppress(ValueError):
+                profile_name = db.get_domain_profile(active_project)
+                if profile_name:
+                    return profile_to_pipeline_name(profile_name)
+        return "validation_spec_default"
+    msg = f"Unknown validation level '{level}'. Use 'feature', 'component', or 'code'."
+    raise ValueError(msg)

@@ -107,38 +107,20 @@ def _resolve_pipeline_name(
 ) -> str:
     """Resolve the YAML pipeline name from --pipeline, --level, or active profile.
 
-    Precedence (highest to lowest):
-    1. ``--pipeline`` flag — explicit override, always wins.
-    2. ``--level feature`` — always uses feature pipeline, ignores profile.
-       (Feature specs and project domains are orthogonal concerns.)
-    3. Active project domain profile — auto-selects profile pipeline YAML.
-    4. ``--level component`` / ``--level code`` — default YAML.
-
-    Raises ``typer.Exit`` for unknown level values.
+    Thin CLI wrapper around
+    :func:`specweaver.validation.pipeline_loader.resolve_pipeline_name`.
+    Translates :class:`ValueError` into ``typer.Exit(1)``.
     """
-    if pipeline:
-        return pipeline
-    if level == "feature":
-        return "validation_spec_feature"
-    if level == "code":
-        return "validation_code_default"
-    if level == "component":
-        # Check for an active domain profile
-        if active_project:
-            from specweaver.config.profiles import profile_to_pipeline_name
-            db = _core.get_db()
-            import contextlib
-            with contextlib.suppress(ValueError):
-                profile_name = db.get_domain_profile(active_project)
-                if profile_name:
-                    return profile_to_pipeline_name(profile_name)
-        return "validation_spec_default"
-    from specweaver.cli import _core as _c
-    _c.console.print(
-        f"[red]Error:[/red] Unknown level '{level}'."
-        " Use 'feature', 'component', or 'code'.",
-    )
-    raise typer.Exit(code=1)
+    from specweaver.validation.pipeline_loader import resolve_pipeline_name
+
+    db = _core.get_db()
+    try:
+        return resolve_pipeline_name(
+            level, pipeline, db=db, active_project=active_project,
+        )
+    except ValueError as exc:
+        _core.console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
 
 
 def _build_result_label(level: str, pipeline: str | None, pipeline_name: str) -> str:

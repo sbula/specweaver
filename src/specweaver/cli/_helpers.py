@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-import json
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import typer
 from rich.table import Table
@@ -100,52 +99,20 @@ def _require_llm_adapter(
 ) -> tuple[SpecWeaverSettings, GeminiAdapter, GenerationConfig]:
     """Create and validate an LLM adapter from project settings.
 
-    Returns (settings, adapter, gen_config) or raises typer.Exit.
+    Thin CLI wrapper around :func:`specweaver.llm.factory.create_llm_adapter`.
+    Translates :class:`LLMAdapterError` into ``typer.Exit(1)``.
     """
-    from specweaver.config.settings import load_settings_for_active
-    from specweaver.llm.adapters.gemini import GeminiAdapter
-    from specweaver.llm.models import GenerationConfig
+    from specweaver.llm.factory import LLMAdapterError, create_llm_adapter
 
     db = _core.get_db()
     try:
-        settings = load_settings_for_active(db, llm_role=llm_role)
-    except ValueError:
-        # Fallback: try loading from env with defaults
-        import os
-
-        from specweaver.config.settings import LLMSettings, SpecWeaverSettings
-
-        # Try to get model from system-default DB profile
-        fallback_model = "gemini-3-flash-preview"
-        try:
-            sys_profile = db.get_llm_profile_by_name("system-default")
-            if sys_profile:
-                fallback_model = str(sys_profile["model"])
-        except Exception:
-            pass
-
-        settings = SpecWeaverSettings(
-            llm=LLMSettings(
-                model=fallback_model,
-                api_key=os.environ.get("GEMINI_API_KEY", ""),
-            ),
-        )
-
-    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
-
-    if not adapter.available():
-        _core.console.print(
-            "[red]Error:[/red] No API key configured. Set GEMINI_API_KEY environment variable.",
-        )
-        raise typer.Exit(code=1)
-
-    gen_config = GenerationConfig(
-        model=settings.llm.model,
-        temperature=settings.llm.temperature,
-        max_output_tokens=settings.llm.max_output_tokens,
-    )
-
-    return settings, adapter, gen_config
+        return create_llm_adapter(db, llm_role=llm_role)
+    except LLMAdapterError as exc:
+        _core.console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    except ValueError as exc:
+        _core.console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
 
 
 def _load_topology(project_path: Path) -> TopologyGraph | None:
@@ -252,67 +219,16 @@ def _load_standards_content(
 ) -> str | None:
     """Load formatted standards from DB for prompt injection, or None.
 
-    When *target_path* is provided, resolves which scope the file belongs
-    to and loads scope-specific + root (``"."``) standards.  Applies a
-    :pycode:`max_chars` cap, prioritising scope-specific over root.
-
-    Args:
-        project_path: Absolute path to the project root.
-        target_path: Path to the spec/code file being reviewed/generated.
-            If ``None``, all standards are loaded (backward-compatible).
-        max_chars: Maximum output length in characters.
+    Thin CLI wrapper around :func:`specweaver.standards.loader.load_standards_content`.
     """
-
-    from specweaver.standards.scope_detector import _resolve_scope
+    from specweaver.standards.loader import load_standards_content
 
     db = _core.get_db()
     active = db.get_active_project()
     if not active:
         return None
 
-    if target_path is not None:
-        known_scopes = db.list_scopes(active)
-        scope = _resolve_scope(target_path, project_path, known_scopes)
-        # Load scope-specific standards
-        scope_standards = db.get_standards(active, scope=scope)
-        # Load root cross-cutting standards (if scope != ".")
-        root_standards = (
-            db.get_standards(active, scope=".") if scope != "." else []
-        )
-    else:
-        scope_standards = db.get_standards(active)
-        root_standards = []
-
-    all_standards = scope_standards + root_standards
-    if not all_standards:
-        return None
-
-    lines: list[str] = [
-        "The following coding standards were auto-discovered from this project.",
-        "Generated code SHOULD follow these conventions.\n",
-    ]
-
-    def _format_standard(s: dict[str, object]) -> list[str]:
-        data: dict[str, object] = json.loads(s["data"]) if isinstance(s["data"], str) else cast("dict[str, object]", s["data"])
-        conf = s["confidence"]
-        result = [f"[{s['scope']}/{s['language']}/{s['category']}] (confidence={conf:.0%})"]
-        for k, v in data.items():
-            result.append(f"  {k}: {v}")
-        return result
-
-    # Scope-specific first (higher priority for cap)
-    for s in scope_standards:
-        lines.extend(_format_standard(s))
-
-    # Root standards second
-    for s in root_standards:
-        lines.extend(_format_standard(s))
-
-    text = "\n".join(lines)
-
-    # Apply token cap — truncate from the end (root standards trimmed first)
-    if len(text) > max_chars:
-        text = text[:max_chars - 15] + "\n[... truncated]"
-
-    return text
-
+    return load_standards_content(
+        db, active, project_path,
+        target_path=target_path, max_chars=max_chars,
+    )
