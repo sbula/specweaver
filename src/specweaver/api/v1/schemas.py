@@ -166,3 +166,33 @@ class ConstitutionInitRequest(BaseModel):
 
     project: str = Field(..., description="Project name.")
 
+
+# ---------------------------------------------------------------------------
+# Phase 3 — Pipeline Execution
+# ---------------------------------------------------------------------------
+
+
+class PipelineRunRequest(BaseModel):
+    """Request body for POST /pipelines/{name}/run."""
+
+    project: str = Field(..., description="Project name.")
+    spec: str = Field(..., description="Spec file (relative to project root).")
+    selector: str = Field(default="direct", description="Topology selector.")
+
+
+class PipelineRunResponse(BaseModel):
+    """Response for POST /pipelines/{name}/run (fire-and-forget)."""
+
+    run_id: str
+    detail: str
+
+
+class GateDecisionRequest(BaseModel):
+    """Request body for POST /runs/{run_id}/gate."""
+
+    action: str = Field(
+        ...,
+        description="Gate decision: 'approve' or 'reject'.",
+    )
+
+

@@ -11,10 +11,12 @@ from specweaver.api.v1 import (
     constitution,
     health,
     implement,
+    pipelines,
     projects,
     review,
     standards,
     validation,
+    ws,
 )
 
 router = APIRouter(prefix="/api/v1")
@@ -25,4 +27,7 @@ router.include_router(review.router, tags=["review"])
 router.include_router(implement.router, tags=["implement"])
 router.include_router(standards.router, tags=["standards"])
 router.include_router(constitution.router, tags=["constitution"])
+router.include_router(pipelines.router, tags=["pipelines"])
+router.include_router(ws.router, tags=["websocket"])
+
 

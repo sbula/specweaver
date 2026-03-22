@@ -16,7 +16,27 @@ from specweaver.api.errors import SpecWeaverAPIError, specweaver_error_handler
 from specweaver.api.v1 import health, router
 
 if TYPE_CHECKING:
+    from specweaver.api.event_bridge import EventBridge
     from specweaver.config.database import Database
+
+# Module-level singleton for the event bridge
+_event_bridge: EventBridge | None = None
+
+
+def get_event_bridge() -> EventBridge:
+    """Get the shared EventBridge instance (lazy init)."""
+    global _event_bridge
+    if _event_bridge is None:
+        from specweaver.api.event_bridge import EventBridge
+
+        _event_bridge = EventBridge()
+    return _event_bridge
+
+
+def set_event_bridge(bridge: EventBridge) -> None:
+    """Override the EventBridge (for testing)."""
+    global _event_bridge
+    _event_bridge = bridge
 
 
 def create_app(
@@ -71,3 +91,4 @@ def create_app(
     app.include_router(router)
 
     return app
+
