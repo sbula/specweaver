@@ -47,6 +47,7 @@ class RunContext(BaseModel):
     context_provider: Any = None  # ContextProvider | None
     topology: Any = None  # TopologyContext | None
     settings: Any = None  # ValidationSettings | None
+    config: Any = None  # SpecWeaverSettings | None — LLM config for adapters
     output_dir: Path | None = None
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content

@@ -36,6 +36,7 @@ from specweaver.config._schema import (
     SCHEMA_V5,
     SCHEMA_V6,
     SCHEMA_V7,
+    SCHEMA_V8,
 )
 
 # Backward-compatible aliases (tests import with underscore prefix)
@@ -46,6 +47,7 @@ _SCHEMA_V4 = SCHEMA_V4
 _SCHEMA_V5 = SCHEMA_V5
 _SCHEMA_V6 = SCHEMA_V6
 _SCHEMA_V7 = SCHEMA_V7
+_SCHEMA_V8 = SCHEMA_V8
 _DEFAULT_PROFILES = DEFAULT_PROFILES
 
 logger = logging.getLogger(__name__)
@@ -162,6 +164,18 @@ class Database(ConfigSettingsMixin, LlmProfilesMixin, DataExtensionsMixin):
                 )
                 logger.info(
                     "Database schema migrated to v7 (auto_bootstrap_constitution)",
+                )
+
+            if current_version < 8:
+                with suppress(Exception):
+                    conn.executescript(SCHEMA_V8)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (8, _now_iso()),
+                )
+                logger.info(
+                    "Database schema migrated to v8 (stitch_mode)",
                 )
 
 

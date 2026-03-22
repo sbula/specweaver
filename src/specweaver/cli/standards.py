@@ -52,7 +52,9 @@ def standards_scan(
     """
     import asyncio
 
+    from specweaver.config.settings import load_settings
     from specweaver.llm.adapters.gemini import GeminiAdapter
+    from specweaver.llm.models import GenerationConfig
     from specweaver.standards.discovery import discover_files
     from specweaver.standards.enricher import StandardsEnricher
     from specweaver.standards.reviewer import StandardsReviewer
@@ -84,8 +86,16 @@ def standards_scan(
     # Discover all files once
     all_files = discover_files(project_path)
 
+    settings = load_settings(db, name)
+    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
+    gen_config = GenerationConfig(
+        model=settings.llm.model,
+        temperature=settings.llm.temperature,
+        max_output_tokens=settings.llm.max_output_tokens,
+    )
+
     scanner = StandardsScanner()
-    enricher = StandardsEnricher(GeminiAdapter())
+    enricher = StandardsEnricher(adapter, config=gen_config)
     half_life_days = 90.0
 
     # Scan each scope

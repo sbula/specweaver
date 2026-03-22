@@ -46,7 +46,7 @@
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - ✅ Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_ — multi-language (Py/JS/TS), multi-scope, conditional LLM comparison
 - ⚠️ **Post-3.5 cleanup**: Consolidate DB `validation_overrides` (3.3) vs sub-pipeline YAML inheritance (3.4) — decide single source of truth
-- ✅ Feature 3.6: Explicit plan phase (Spec → Plan → Tasks)
+- ✅ Feature 3.6: Explicit plan phase (Spec → Plan → Tasks) (Including Stitch UI Mockups)
 - Feature 3.7: Pipeline visualization _(CrewAI)_
 
 ---
@@ -104,7 +104,7 @@ SpecWeaver is used on a real project that isn't SpecWeaver itself (e.g., the aut
 ```
 Phase 1: MVP (Steps 1-6)     ████████████████████████████     (~8-12 sessions)  [Steps 1-5 ✅, Step 6 ⏸]
 Phase 2: Flow Engine (7-14)   ████████████████████████████████ (~10-14 sessions) [Steps 7-12 ✅]
-Phase 3: Feature Expansion    ████████████████████████████████ (~open-ended, feature by feature)
+Phase 3: Feature Expansion    ████████████████████████████████ (~open-ended, feature by feature) [Feature 3.6 ✅]
 Phase 4: Advanced             ████████████████████████████████ (~open-ended)
 Phase 5: Domain Brain         ████████████████             (~when in-memory graph proves insufficient)
 Phase 6: External             ████████                         (~2-3 sessions)

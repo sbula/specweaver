@@ -31,8 +31,13 @@ class StandardComparison(BaseModel):
 class StandardsEnricher:
     """Enriches codebase standard findings using asynchronous LLM comparisons."""
 
-    def __init__(self, llm_adapter: LLMAdapter):
+    def __init__(self, llm_adapter: LLMAdapter, config: GenerationConfig | None = None):
         self.llm = llm_adapter
+        self.config = config or GenerationConfig(
+            model="gemini-3-flash-preview",
+            temperature=0.3,
+            max_output_tokens=4096,
+        )
 
     async def enrich(
         self,
@@ -78,11 +83,8 @@ Respond in pure JSON matching this schema:
             Message(role=Role.USER, content=prompt),
         ]
 
-        # In a real app we might use response_schema if supported, but here we enforce standard JSON.
-        config = GenerationConfig(model="gemini-2.5-flash", temperature=0.1)
-
         try:
-            response = await self.llm.generate(messages, config)
+            response = await self.llm.generate(messages, self.config)
             # Clean up markdown if the LLM leaked some
             text = response.text.strip()
             if text.startswith("```json"):

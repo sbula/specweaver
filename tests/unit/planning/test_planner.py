@@ -335,3 +335,101 @@ class TestPlannerEdgeCases:
                 spec_name="Test",
             )
         assert llm._call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# Test: Stitch Integration
+# ---------------------------------------------------------------------------
+
+
+class TestPlannerStitchIntegration:
+    """Tests for Planner generating Stitch mockups."""
+
+    @pytest.mark.asyncio()
+    async def test_stitch_mode_off_does_not_extract(self, monkeypatch) -> None:
+        llm = FakeLLM([_valid_plan_json()])
+        planner = Planner(llm, max_retries=1)
+        mock_extract_called = False
+
+        def mock_extract(spec):
+            nonlocal mock_extract_called
+            mock_extract_called = True
+            return None
+
+        import specweaver.planning.ui_extractor
+        monkeypatch.setattr(specweaver.planning.ui_extractor, "extract_ui_requirements", mock_extract, raising=False)
+
+        plan = await planner.generate_plan(
+            spec_content="## Protocol\n\nUI dashboard",
+            spec_path="test.md",
+            spec_name="Test",
+            stitch_mode="off",
+        )
+        assert mock_extract_called is False
+        assert not plan.mockups
+
+    @pytest.mark.asyncio()
+    async def test_stitch_mode_auto_no_ui_found(self, monkeypatch) -> None:
+        llm = FakeLLM([_valid_plan_json()])
+        planner = Planner(llm, max_retries=1)
+        mock_stitch_called = False
+
+        class MockStitchClient:
+            def __init__(self, api_key): pass
+            def generate_mockup(self, desc):
+                nonlocal mock_stitch_called
+                mock_stitch_called = True
+                return []
+
+        import specweaver.planning.planner
+        monkeypatch.setattr(specweaver.planning.planner, "StitchClient", MockStitchClient, raising=False)
+
+        # Content has no UI keywords
+        plan = await planner.generate_plan(
+            spec_content="## Protocol\n\nBackend stuff",
+            spec_path="test.md",
+            spec_name="Test",
+            stitch_mode="auto",
+        )
+        assert mock_stitch_called is False
+        assert not plan.mockups
+
+    @pytest.mark.asyncio()
+    async def test_stitch_returns_empty_mockups(self, monkeypatch) -> None:
+        llm = FakeLLM([_valid_plan_json()])
+        planner = Planner(llm, max_retries=1)
+
+        class MockMockupResult:
+            def __init__(self):
+                self.references = []
+
+        class MockStitchClient:
+            def __init__(self, api_key): pass
+            def generate_mockup(self, desc): return MockMockupResult()
+
+        import specweaver.planning.planner
+        monkeypatch.setattr(specweaver.planning.planner, "StitchClient", MockStitchClient, raising=False)
+
+        plan = await planner.generate_plan(
+            spec_content="## Protocol\n\nUI dashboard",
+            spec_path="test.md",
+            spec_name="Test",
+            stitch_mode="auto",
+        )
+        assert not plan.mockups
+
+    @pytest.mark.asyncio()
+    async def test_stitch_mode_prompt_behaves_like_auto(self) -> None:
+        llm = FakeLLM([_valid_plan_json()])
+        planner = Planner(llm, max_retries=1)
+
+        plan = await planner.generate_plan(
+            spec_content="## Protocol\n\nUI dashboard",
+            spec_path="test.md",
+            spec_name="Test",
+            stitch_mode="prompt",
+            stitch_api_key="fake-key",
+        )
+        assert plan.mockups
+        assert len(plan.mockups) == 1
+        assert "placeholder" in plan.mockups[0].preview_url

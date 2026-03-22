@@ -20,10 +20,10 @@ async def test_validate_spec_integration_real_rules(tmp_path: Path) -> None:
     spec_path.write_text("# Test Spec\n\n## Intent\n\nThis is a test spec.\n")
 
     # We provide a real ProjectConfig since the validation framework relies on context
-    from specweaver.config.settings import SpecWeaverSettings
+    from specweaver.config.settings import LLMSettings, SpecWeaverSettings
 
     # Create an empty specweaver.toml so config loader finds it
-    settings = SpecWeaverSettings()
+    settings = SpecWeaverSettings(llm=LLMSettings(model="mock-model"))
 
     context = RunContext(project_path=tmp_path, spec_path=spec_path, settings=settings)
 

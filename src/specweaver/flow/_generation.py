@@ -17,6 +17,26 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _gen_config_from_context(
+    context: RunContext, *, temperature: float = 0.2,
+) -> object:
+    """Build GenerationConfig from RunContext, falling back to defaults."""
+    from specweaver.llm.models import GenerationConfig
+
+    if context.config is not None:
+        return GenerationConfig(
+            model=context.config.llm.model,
+            temperature=temperature,
+            max_output_tokens=context.config.llm.max_output_tokens,
+        )
+    # Fallback: no config set (e.g. test harness)
+    return GenerationConfig(
+        model="gemini-3-flash-preview",
+        temperature=temperature,
+        max_output_tokens=4096,
+    )
+
+
 class GenerateCodeHandler:
     """Handler for generate+code — LLM code generation."""
 
@@ -29,7 +49,10 @@ class GenerateCodeHandler:
         try:
             from specweaver.implementation.generator import Generator
 
-            generator = Generator(context.llm)
+            generator = Generator(
+                llm=context.llm,
+                config=_gen_config_from_context(context, temperature=0.2),
+            )
             output_dir = context.output_dir or context.project_path / "src"
             output_path = output_dir / f"{context.spec_path.stem.replace('_spec', '')}.py"
             logger.debug("GenerateCodeHandler: generating code to '%s' from spec '%s'", output_path, context.spec_path.name)
@@ -65,7 +88,10 @@ class GenerateTestsHandler:
         try:
             from specweaver.implementation.generator import Generator
 
-            generator = Generator(context.llm)
+            generator = Generator(
+                llm=context.llm,
+                config=_gen_config_from_context(context, temperature=0.2),
+            )
             output_dir = context.output_dir or context.project_path / "tests"
             output_path = output_dir / f"test_{context.spec_path.stem.replace('_spec', '')}.py"
             logger.debug("GenerateTestsHandler: generating tests to '%s' from spec '%s'", output_path, context.spec_path.name)
@@ -117,7 +143,11 @@ class PlanSpecHandler:
             from specweaver.planning.planner import Planner
 
             max_retries: int = step.params.get("max_retries", 3)
-            planner = Planner(context.llm, max_retries=max_retries)
+            planner = Planner(
+                llm=context.llm,
+                config=_gen_config_from_context(context, temperature=0.3),
+                max_retries=max_retries,
+            )
 
             spec_content = context.spec_path.read_text(encoding="utf-8")
             logger.debug(
@@ -125,12 +155,27 @@ class PlanSpecHandler:
                 context.spec_path.name, max_retries,
             )
 
+
+            try:
+                from specweaver.cli._core import get_db
+                from specweaver.config.settings import load_settings
+
+                db = get_db()
+                settings = load_settings(db, context.project_path.name)
+                stitch_mode = settings.stitch.mode
+                stitch_api_key = settings.stitch.api_key
+            except Exception:
+                stitch_mode = "off"
+                stitch_api_key = ""
+
             plan_artifact = await planner.generate_plan(
                 spec_content=spec_content,
                 spec_path=str(context.spec_path),
                 spec_name=context.spec_path.stem.replace("_spec", "").replace("_", " ").title(),
                 constitution=context.constitution,
                 standards=context.standards,
+                stitch_mode=stitch_mode,
+                stitch_api_key=stitch_api_key,
             )
 
             # Save plan YAML alongside the spec

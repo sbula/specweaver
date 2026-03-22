@@ -143,7 +143,7 @@ class TestScanGeneratesContextYaml:
         assert scan_result.exit_code == 0, f"sw scan failed: {scan_result.output}"
 
         # At least one context.yaml should have been generated
-        import yaml
+        from ruamel.yaml import YAML
 
         src = project_dir / "src"
         generated = list(src.rglob("context.yaml"))
@@ -151,11 +151,12 @@ class TestScanGeneratesContextYaml:
             f"No context.yaml files generated. scan output:\n{scan_result.output}"
         )
 
+        yaml = YAML(typ="safe")
         for ctx_file in generated:
             content = ctx_file.read_text(encoding="utf-8")
             assert len(content) > 0, f"Empty context.yaml at {ctx_file}"
             # Should be parseable YAML
-            data = yaml.safe_load(content)
+            data = yaml.load(content)
             assert isinstance(data, dict), f"context.yaml not a dict: {data}"
 
     def test_scan_skips_modules_with_existing_context(self, tmp_path: Path) -> None:

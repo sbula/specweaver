@@ -87,14 +87,15 @@ class Planner:
         self,
         llm: LLMAdapter,
         *,
-        max_retries: int = 3,
         config: GenerationConfig | None = None,
+        max_retries: int = 3,
     ) -> None:
         self._llm = llm
         self._max_retries = max_retries
         self._config = config or GenerationConfig(
-            model="gemini-2.5-flash",
+            model="gemini-3-flash-preview",
             temperature=0.3,
+            max_output_tokens=4096,
         )
 
     async def generate_plan(
@@ -105,6 +106,8 @@ class Planner:
         *,
         constitution: str | None = None,
         standards: str | None = None,
+        stitch_mode: str = "off",
+        stitch_api_key: str = "",
     ) -> PlanArtifact:
         """Generate an implementation plan from spec content.
 
@@ -151,6 +154,19 @@ class Planner:
             try:
                 data = json.loads(raw)
                 plan = PlanArtifact.model_validate(data)
+
+                # Check for UI mockups via Stitch if enabled
+                if stitch_mode != "off":
+                    from specweaver.planning.stitch import StitchClient
+                    from specweaver.planning.ui_extractor import extract_ui_requirements
+
+                    ui_reqs = extract_ui_requirements(spec_content)
+                    if ui_reqs:
+                        logger.info("Planner: UI requirements detected, requesting Stitch mockups")
+                        stitch_client = StitchClient(api_key=stitch_api_key)
+                        mockup_result = stitch_client.generate_mockup(ui_reqs.description)
+                        plan.mockups = mockup_result.references
+
                 # Ensure hash and path are correct (LLM may hallucinate)
                 plan.spec_hash = spec_hash
                 plan.spec_path = spec_path

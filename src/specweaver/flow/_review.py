@@ -19,6 +19,23 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _review_config_from_context(context: RunContext) -> object:
+    """Build GenerationConfig from RunContext, falling back to defaults."""
+    from specweaver.llm.models import GenerationConfig
+
+    if context.config is not None:
+        return GenerationConfig(
+            model=context.config.llm.model,
+            temperature=0.3,
+            max_output_tokens=context.config.llm.max_output_tokens,
+        )
+    return GenerationConfig(
+        model="gemini-3-flash-preview",
+        temperature=0.3,
+        max_output_tokens=4096,
+    )
+
+
 class ReviewSpecHandler:
     """Handler for review+spec — LLM-based spec review."""
 
@@ -32,7 +49,10 @@ class ReviewSpecHandler:
         try:
             from specweaver.review.reviewer import Reviewer
 
-            reviewer = Reviewer(context.llm)
+            reviewer = Reviewer(
+                llm=context.llm,
+                config=_review_config_from_context(context),
+            )
             result = await reviewer.review_spec(
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
@@ -73,11 +93,12 @@ class ReviewCodeHandler:
 
             code_path = self._find_code_path(context)
             if code_path is None:
-                logger.warning("ReviewCodeHandler: no code file found for review")
                 return _error_result("No code file found for review", started)
 
-            logger.debug("ReviewCodeHandler: reviewing code '%s' against spec '%s'", code_path.name, context.spec_path.name)
-            reviewer = Reviewer(context.llm)
+            reviewer = Reviewer(
+                llm=context.llm,
+                config=_review_config_from_context(context),
+            )
             result = await reviewer.review_code(
                 code_path,
                 context.spec_path,

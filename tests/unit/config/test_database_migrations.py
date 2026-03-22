@@ -84,7 +84,7 @@ class TestSchemaV2Migration:
             ).fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 7  # V2, V3, V4, V5, V6, V7 all applied
+        assert version[0] == 8  # V2, V3, V4, V5, V6, V7, V8 all applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -96,7 +96,7 @@ class TestSchemaV2Migration:
             version = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 7  # V2, V3, V4, V5, V6, V7 all applied
+        assert version[0] == 8  # V2, V3, V4, V5, V6, V7, V8 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -234,7 +234,7 @@ class TestSchemaV3Migration:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 7  # v3, v4, v5, v6, v7 all applied
+        assert version[0] == 8  # v3, v4, v5, v6, v7, v8 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -352,7 +352,7 @@ class TestSchemaV3ToV4Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 7  # v4, v5, v6, v7 all applied
+        assert version[0] == 8  # v4, v5, v6, v7, v8 all applied
 
 
 # ===========================================================================
@@ -481,13 +481,13 @@ class TestDomainProfile:
         # The profile is stored (case-insensitive lookup succeeded)
         assert db.get_domain_profile("myapp") == "WEB-APP"
 
-    def test_schema_version_is_7(self, db):
-        """Schema version is 7 after all migrations."""
+    def test_schema_version_is_latest(self, db):
+        """Schema version is 8 after all migrations."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 7
+            assert row[0] == 8
 
 
 class TestSchemaV4ToV5Upgrade:
@@ -537,7 +537,7 @@ class TestSchemaV4ToV5Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 7  # v5, v6, v7 all applied
+        assert version[0] == 8  # v5, v6, v7, v8 all applied
 
 
 # ===========================================================================
@@ -649,4 +649,58 @@ class TestSchemaV6ToV7Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 7
+        assert version[0] == 8
+
+
+class TestSchemaV7ToV8Upgrade:
+    """Simulate opening a v7-only DB and verify v8 migration kicks in."""
+
+    @pytest.fixture()
+    def db_path(self, tmp_path: Path) -> Path:
+        return tmp_path / "upgrade_v7_v8.db"
+
+    def test_v7_to_v8_upgrade(self, db_path: Path):
+        """Simulate a v7 DB and verify v8 migration applies correctly."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import (
+            _SCHEMA_V1,
+            _SCHEMA_V2,
+            _SCHEMA_V3,
+            _SCHEMA_V4,
+            _SCHEMA_V5,
+            _SCHEMA_V6,
+            _SCHEMA_V7,
+            Database,
+        )
+
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.executescript(_SCHEMA_V3)
+        conn.executescript(_SCHEMA_V4)
+        conn.executescript(_SCHEMA_V5)
+        conn.executescript(_SCHEMA_V6)
+        conn.executescript(_SCHEMA_V7)
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) "
+            "VALUES (7, '2026-01-01T00:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO projects (name, root_path, created_at, last_used_at, "
+            "log_level, constitution_max_size, domain_profile, auto_bootstrap_constitution) "
+            "VALUES ('legacy', '/tmp/legacy', '2026-01-01', '2026-01-01', "
+            "'INFO', 5120, NULL, 'prompt')"
+        )
+        conn.commit()
+        conn.close()
+
+        # Open with Database — should apply v8 migration
+        db = Database(db_path)
+        assert db.get_stitch_mode("legacy") == "off"  # default from ALTER
+        with db.connect() as conn2:
+            version = conn2.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+        assert version[0] == 8

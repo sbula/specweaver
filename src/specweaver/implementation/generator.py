@@ -66,8 +66,9 @@ class Generator:
     ) -> None:
         self._llm = llm
         self._config = config or GenerationConfig(
-            model="gemini-2.5-flash",
-            temperature=0.2,  # Low temperature for deterministic code
+            model="gemini-3-flash-preview",
+            temperature=0.2,
+            max_output_tokens=4096,
         )
 
     async def generate_code(

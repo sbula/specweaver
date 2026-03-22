@@ -165,7 +165,11 @@ class FeatureDrafter:
     ) -> None:
         self._llm = llm
         self._context = context_provider
-        self._config = config or GenerationConfig(model="gemini-2.5-flash")
+        self._config = config or GenerationConfig(
+            model="gemini-3-flash-preview",
+            temperature=0.7,
+            max_output_tokens=4096,
+        )
 
     async def draft(
         self,

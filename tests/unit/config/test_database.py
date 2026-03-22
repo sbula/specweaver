@@ -68,12 +68,12 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 7 after v7 migration."""
+        """Schema version is 8 after v8 migration."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 7
+            assert row[0] == 8
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""
@@ -85,6 +85,7 @@ class TestSchemaCreation:
         assert "draft" in names
         assert "review" in names
         assert "search" in names
+        assert "system-default" in names
         assert all(r[1] == 1 for r in rows)  # all global
 
     def test_review_profile_low_temperature(self, db):
@@ -119,7 +120,7 @@ class TestSchemaCreation:
         db2 = Database(db_path)
         with db2.connect() as conn:
             count = conn.execute("SELECT COUNT(*) FROM llm_profiles").fetchone()[0]
-        assert count == 3  # not 6
+        assert count == 4  # Includes system-default
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +277,7 @@ class TestLLMProfiles:
     def test_list_global_profiles(self, db):
         profiles = db.list_llm_profiles(global_only=True)
         names = [p["name"] for p in profiles]
-        assert set(names) == {"review", "draft", "search"}
+        assert set(names) == {"review", "draft", "search", "system-default"}
 
     def test_create_global_profile(self, db):
         db.create_llm_profile(
@@ -303,7 +304,7 @@ class TestLLMProfiles:
         profiles = db.list_llm_profiles(global_only=True)
         review = next(p for p in profiles if p["name"] == "review")
         fetched = db.get_llm_profile(review["id"])
-        assert fetched["model"] == "gemini-2.5-flash"
+        assert fetched["model"] == "gemini-3-flash-preview"
         assert fetched["temperature"] == pytest.approx(0.3)
 
     def test_get_nonexistent_profile_returns_none(self, db):
@@ -323,7 +324,7 @@ class TestProjectLLMLinks:
         db.register_project("myapp", str(tmp_path))
         links = db.get_project_llm_links("myapp")
         roles = {link["role"] for link in links}
-        assert roles == {"review", "draft", "search"}
+        assert roles == {"review", "draft", "search", "system-default"}
 
     def test_linked_profile_data_accessible(self, db, tmp_path: Path):
         db.register_project("myapp", str(tmp_path))
@@ -476,3 +477,29 @@ class TestEdgeCases:
         assert after >= before
 
 
+# ---------------------------------------------------------------------------
+# get_llm_profile_by_name (gap #13-14)
+# ---------------------------------------------------------------------------
+
+
+class TestGetLlmProfileByName:
+    """Tests for the get_llm_profile_by_name DB helper."""
+
+    def test_get_profile_by_name_found(self, db):
+        """Existing profile is returned as a dict."""
+        profile = db.get_llm_profile_by_name("review")
+        assert profile is not None
+        assert profile["name"] == "review"
+        assert profile["model"] == "gemini-3-flash-preview"
+
+    def test_get_profile_by_name_system_default(self, db):
+        """system-default profile is retrievable by name."""
+        profile = db.get_llm_profile_by_name("system-default")
+        assert profile is not None
+        assert profile["name"] == "system-default"
+        assert profile["is_global"] == 1
+
+    def test_get_profile_by_name_not_found(self, db):
+        """Non-existent profile name returns None."""
+        profile = db.get_llm_profile_by_name("nonexistent-profile")
+        assert profile is None

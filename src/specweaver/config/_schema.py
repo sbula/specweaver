@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS llm_profiles (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     name              TEXT NOT NULL,
     is_global         INTEGER NOT NULL DEFAULT 1,
-    model             TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
+    model             TEXT NOT NULL DEFAULT 'gemini-3-flash-preview',
     temperature       REAL NOT NULL DEFAULT 0.7,
     max_output_tokens INTEGER NOT NULL DEFAULT 4096,
     response_format   TEXT NOT NULL DEFAULT 'text'
@@ -49,9 +49,10 @@ CREATE TABLE IF NOT EXISTS schema_version (
 """
 
 DEFAULT_PROFILES = [
-    ("review", 1, "gemini-2.5-flash", 0.3, 4096, "text", 128_000),
-    ("draft", 1, "gemini-2.5-flash", 0.7, 4096, "text", 128_000),
-    ("search", 1, "gemini-2.5-flash", 0.1, 4096, "text", 128_000),
+    ("system-default", 1, "gemini-3-flash-preview", 0.7, 4096, "text", 128_000),
+    ("review", 1, "gemini-3-flash-preview", 0.3, 4096, "text", 128_000),
+    ("draft", 1, "gemini-3-flash-preview", 0.7, 4096, "text", 128_000),
+    ("search", 1, "gemini-3-flash-preview", 0.1, 4096, "text", 128_000),
 ]
 
 SCHEMA_V2 = """\
@@ -86,4 +87,8 @@ CREATE TABLE IF NOT EXISTS project_standards (
 
 SCHEMA_V7 = """\
 ALTER TABLE projects ADD COLUMN auto_bootstrap_constitution TEXT NOT NULL DEFAULT 'prompt';
+"""
+
+SCHEMA_V8 = """\
+ALTER TABLE projects ADD COLUMN stitch_mode TEXT NOT NULL DEFAULT 'off';
 """

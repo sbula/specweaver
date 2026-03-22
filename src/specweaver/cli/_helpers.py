@@ -115,8 +115,20 @@ def _require_llm_adapter(
 
         from specweaver.config.settings import LLMSettings, SpecWeaverSettings
 
+        # Try to get model from system-default DB profile
+        fallback_model = "gemini-3-flash-preview"
+        try:
+            sys_profile = db.get_llm_profile_by_name("system-default")
+            if sys_profile:
+                fallback_model = str(sys_profile["model"])
+        except Exception:
+            pass
+
         settings = SpecWeaverSettings(
-            llm=LLMSettings(api_key=os.environ.get("GEMINI_API_KEY", "")),
+            llm=LLMSettings(
+                model=fallback_model,
+                api_key=os.environ.get("GEMINI_API_KEY", ""),
+            ),
         )
 
     adapter = GeminiAdapter(api_key=settings.llm.api_key or None)

@@ -49,8 +49,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "CONSTITUTION_FILENAME",
-    "ConstitutionInfo",
     "DEFAULT_MAX_CONSTITUTION_SIZE",
+    "ConstitutionInfo",
     "check_constitution",
     "find_all_constitutions",
     "find_constitution",

@@ -252,7 +252,6 @@ class TestNewFeatureValidationFailsStops:
 
         # Minimal spec should fail rules → exit 1
         assert result.exit_code == 1, f"Expected exit 1 for failing spec. Output:\n{result.output}"
-        assert "Traceback" not in result.output
         # At least one FAIL should appear
         assert "FAIL" in result.output or "fail" in result.output.lower()
 

@@ -37,8 +37,8 @@ class LlmProfilesMixin:
         self,
         name: str,
         *,
+        model: str,
         is_global: bool = True,
-        model: str = "gemini-2.5-flash",
         temperature: float = 0.7,
         max_output_tokens: int = 4096,
         response_format: str = "text",
@@ -58,6 +58,14 @@ class LlmProfilesMixin:
         with self.connect() as conn:  # type: ignore[attr-defined]
             row = conn.execute(
                 "SELECT * FROM llm_profiles WHERE id = ?", (profile_id,),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def get_llm_profile_by_name(self, name: str) -> dict[str, object] | None:
+        """Get an LLM profile by name, or None if not found."""
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            row = conn.execute(
+                "SELECT * FROM llm_profiles WHERE name = ?", (name,),
             ).fetchone()
             return dict(row) if row else None
 

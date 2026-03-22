@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class LLMSettings(BaseModel):
     """LLM-related configuration."""
 
-    model: str = "gemini-2.5-flash"
+    model: str
     temperature: float = 0.7
     max_output_tokens: int = 4096
     response_format: Literal["text", "json"] = "text"
@@ -63,10 +63,19 @@ class ValidationSettings(BaseModel):
         return override.enabled if override else True
 
 
-class SpecWeaverSettings(BaseModel):
-    """Root settings model for SpecWeaver."""
+class StitchSettings(BaseModel):
+    """Stitch UI mockup generation configuration."""
 
-    llm: LLMSettings = LLMSettings()
+    mode: Literal["auto", "prompt", "off"] = "off"
+    api_key: str = ""
+
+
+class SpecWeaverSettings(BaseModel):
+    """Root configuration object spanning all domains."""
+
+    llm: LLMSettings
+    stitch: StitchSettings = StitchSettings()
+    validation: ValidationSettings = ValidationSettings()
 
 
 def load_settings(
@@ -93,22 +102,30 @@ def load_settings(
         msg = f"Project '{project_name}' not found"
         raise ValueError(msg)
 
-    # Resolve LLM profile for the requested role
     profile = db.get_project_profile(project_name, llm_role)
 
-    if profile:
-        llm = LLMSettings(
-            model=str(profile["model"]),
-            temperature=float(profile["temperature"]),  # type: ignore[arg-type]
-            max_output_tokens=int(str(profile["max_output_tokens"])),
-            response_format=str(profile["response_format"]),  # type: ignore[arg-type]
-            api_key=os.environ.get("GEMINI_API_KEY", ""),
-        )
-    else:
-        # No profile linked for this role — use defaults
-        llm = LLMSettings(api_key=os.environ.get("GEMINI_API_KEY", ""))
+    if not profile:
+        profile = db.get_llm_profile_by_name("system-default")
 
-    return SpecWeaverSettings(llm=llm)
+    if not profile:
+        msg = f"System default profile not found in database. Cannot load settings for '{project_name}'."
+        raise ValueError(msg)
+
+    llm = LLMSettings(
+        model=str(profile["model"]),
+        temperature=float(profile["temperature"]),  # type: ignore[arg-type]
+        max_output_tokens=int(str(profile["max_output_tokens"])),
+        response_format=str(profile["response_format"]),  # type: ignore[arg-type]
+        api_key=os.environ.get("GEMINI_API_KEY", ""),
+    )
+
+    stitch_mode = db.get_stitch_mode(project_name)
+    stitch = StitchSettings(
+        mode=stitch_mode,  # type: ignore[arg-type]
+        api_key=os.environ.get("STITCH_API_KEY", ""),
+    )
+
+    return SpecWeaverSettings(llm=llm, stitch=stitch)
 
 
 def load_settings_for_active(
@@ -191,8 +208,11 @@ def migrate_legacy_config(
     # Register project
     db.register_project(project_name, project_path)
 
-    # Create a project-specific profile from legacy values
-    model = llm_raw.get("model", "gemini-2.5-flash")
+    sys_profile = db.get_llm_profile_by_name("system-default")
+    if not sys_profile:
+        raise ValueError("Database missing system-default profile.")
+
+    model = llm_raw.get("model", str(sys_profile["model"]))
     temperature = llm_raw.get("temperature", 0.7)
     max_tokens = llm_raw.get("max_output_tokens", 4096)
     resp_format = llm_raw.get("response_format", "text")

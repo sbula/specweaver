@@ -192,3 +192,65 @@ class ConfigSettingsMixin:
                 "set_auto_bootstrap: %s = %s",
                 project_name, mode_lower,
             )
+
+    # ------------------------------------------------------------------
+    # Stitch mode configuration
+    # ------------------------------------------------------------------
+
+    _VALID_STITCH_MODES = frozenset({"off", "prompt", "auto"})
+
+    def get_stitch_mode(self, project_name: str) -> str:
+        """Get the stitch mode for a project.
+
+        Returns ``"off"`` if the project has no explicit setting.
+
+        Raises:
+            ValueError: If project not found.
+        """
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            row = conn.execute(
+                "SELECT stitch_mode FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not row:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+            return str(row["stitch_mode"])
+
+    def set_stitch_mode(
+        self, project_name: str, mode: str,
+    ) -> None:
+        """Set the stitch mode for a project.
+
+        Args:
+            project_name: Name of the registered project.
+            mode: One of ``"off"``, ``"prompt"``, ``"auto"``.
+
+        Raises:
+            ValueError: If project not found or mode is invalid.
+        """
+        mode_lower = mode.lower()
+        if mode_lower not in self._VALID_STITCH_MODES:
+            msg = (
+                f"Invalid stitch mode '{mode}'. "
+                f"Must be one of: {', '.join(sorted(self._VALID_STITCH_MODES))}"
+            )
+            raise ValueError(msg)
+
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            existing = conn.execute(
+                "SELECT name FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not existing:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+
+            conn.execute(
+                "UPDATE projects SET stitch_mode = ? WHERE name = ?",
+                (mode_lower, project_name),
+            )
+            logger.debug(
+                "set_stitch_mode: %s = %s",
+                project_name, mode_lower,
+            )

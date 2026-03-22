@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **2 968 collected** · 2 959 passed · 9 skipped · 97 source modules · 139 test files
+> **3 037 collected** · 3 026 passed · 9 skipped · 97 source modules · 145 test files
 > **Last updated**: 2026-03-22
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -29,11 +29,11 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Package | Src Files | Unit | Integ | E2E | Total |
 |---------|----------:|-----:|------:|----:|------:|
-| `cli/` | 10 | 253 | 94 | 38 | 385 |
-| `config/` | 3 | 228 | 20 | 0 | 248 |
+| `cli/` | 10 | 256 | 94 | 38 | 388 |
+| `config/` | 3 | 234 | 20 | 0 | 254 |
 | `context/` | 4 | 53 | 8 | 7 | 68 |
 | `drafting/` | 3 | 113 | 0 | 0 | 113 |
-| `flow/` | 8 | 265 | 34 | 13 | 312 |
+| `flow/` | 8 | 269 | 35 | 13 | 317 |
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
 | `llm/` | 5 | 155 | 0 | 0 | 155 |
@@ -44,7 +44,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `standards/` | 11 | 172 | 0 | 4 | 176 |
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **97** | **2 690** | **229** | **78** | **2 968** |
+| **Total** | **97** | **2 700** | **230** | **78** | **3 037** |
 
 
 ---
@@ -78,7 +78,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 - Concurrent DB access (`config/database.py`)
 - `ContextInferrer` edge cases — empty dirs, `__init__.py` only (`context/inferrer.py`)
 - Display with PARKED status / 10+ step pipeline (`flow/display.py`)
-- `migrate_legacy_config()` (`config/settings.py`)
+- `migrate_legacy_config()` (`config/settings.py`) ✅ (3 unit tests added)
 
 ---
 
@@ -99,6 +99,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `_display_results()` console formatting | ✅ | ✅ | ⚪ | ⚪ | — |
 | `_print_summary()` pass/fail/warn counts | ✅ | ✅ | ⚪ | ⚪ | — |
 | `_require_llm_adapter()` loads adapter | ✅ | ✅ | ⚪ | ⚪ | — |
+| `_require_llm_adapter()` fallback chain (system-default → hardcoded) | ✅ | ⚪ | ⚪ | ⚪ | 3 tests in `test_helpers_llm_fallback.py` |
 | `_load_topology()` loads graph | ✅ | ✅ | ✅ | ⚪ | E2E via topology/nhop/impact selector tests |
 | `_get_selector_map()` selector dispatch | ✅ | ❌ | ✅ | ⚪ | E2E via review --selector tests |
 | `_select_topology_contexts()` neighbor selection | ✅ | ❌ | ✅ | ⚪ | E2E via nhop/impact/no-topology tests |
@@ -218,6 +219,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | All validation overrides (set, get, list, delete, load) | ✅ | ✅ | ⚪ | ⚪ | — |
 | All domain profiles (get, set, clear) | ✅ | ✅ | ⚪ | ⚪ | — |
 | All standards (save, get, list, clear, scopes) | ✅ | ✅ | ⚪ | ⚪ | — |
+| `get_llm_profile_by_name()` found/system-default/not-found | ✅ | ⚪ | ⚪ | ⚪ | 3 tests in `test_database.py` |
 | Concurrent access (two connections) | ❌ | ❌ | ⚪ | ❌ | WAL assumed safe |
 | Schema migration on upgrade | ❌ | ❌ | ⚪ | ⚪ | Only initial schema tested |
 | Schema v6→v7 migration (`auto_bootstrap_constitution`) | ✅ | ⚪ | ⚪ | ⚪ | Column exists, default 'prompt' |
@@ -236,7 +238,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | All Settings models and methods | ✅ | ✅ | ⚪ | ⚪ | — |
-| `migrate_legacy_config()` one-time migration | ❌ | ❌ | ⚪ | ⚪ | Not tested |
+| `migrate_legacy_config()` one-time migration | ✅ | ❌ | ⚪ | ⚪ | Tested: missing system-default fallback |
+| `load_settings()` missing system-default profile | ✅ | ❌ | ⚪ | ⚪ | `test_settings_db.py` |
+| `load_settings()` model string fallback | ✅ | ❌ | ⚪ | ⚪ | `test_settings_db.py` |
 
 ---
 
@@ -338,8 +342,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `ValidateSpecHandler` atom run exception catch | ✅ | ✅ | ❌ | ⚪ | Prevents runner crash |
 | `ValidateCodeHandler` no `output_dir` or files | ✅ | ✅ | ❌ | ⚪ | Skips/fails code val |
 | `ValidateCodeHandler` atom run exception catch | ✅ | ✅ | ❌ | ⚪ | Prevents runner crash |
-| `ReviewSpecHandler.execute()` mock LLM review | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E + new_feature E2E |
-| `ReviewCodeHandler.execute()` mock LLM review | ❌ | ❌ | ✅ | ⚪ | Tested in CLI E2E |
+| `ReviewSpecHandler.execute()` mock LLM review | ✅ | ❌ | ✅ | ⚪ | Guard clauses tested in `test_review_handlers.py` |
+| `ReviewCodeHandler.execute()` mock LLM review | ✅ | ❌ | ✅ | ⚪ | Guard clauses tested in `test_review_handlers.py` |
+| `RunContext.config` field default/acceptance | ✅ | ⚪ | ⚪ | ⚪ | `test_review_handlers.py` |
 | `GenerateCodeHandler.execute()` mock LLM prompt | ❌ | ✅ | ✅ | ⚪ | Tested in CLI E2E |
 | `GenerateTestsHandler.execute()` mock LLM tests | ❌ | ❌ | ❌ | ⚪ | Missing coverage entirely |
 | `ValidateTestsHandler` tests fail / exception | ✅ | ❌ | ❌ | ⚪ | Fallback / crash prevent |

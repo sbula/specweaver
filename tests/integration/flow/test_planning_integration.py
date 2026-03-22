@@ -18,7 +18,8 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -35,10 +36,6 @@ from specweaver.flow.state import StepStatus
 from specweaver.llm.prompt_builder import PromptBuilder
 from specweaver.planning.models import PlanArtifact
 from specweaver.planning.renderer import render_plan_markdown
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -270,6 +267,127 @@ class TestPlanSpecHandlerFileSystem:
         restored = PlanArtifact.model_validate(loaded)
         assert restored.confidence == 80
         assert len(restored.file_layout) >= 1
+
+    @pytest.mark.asyncio()
+    async def test_handler_passes_stitch_mode_from_settings(self, tmp_path: Path, monkeypatch) -> None:
+        """I8b: Handler accurately passes extracted mode & api key to Planner."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("## Protocol\n\nUI content", encoding="utf-8")
+
+        mock_planner_called_with = {}
+
+        from specweaver.planning.models import PlanArtifact
+        from specweaver.planning.planner import Planner
+
+        async def mock_generate_plan(self, **kwargs):
+            mock_planner_called_with.update(kwargs)
+            return PlanArtifact(spec_path="x", spec_name="y", spec_hash="z", file_layout=[], timestamp="t", confidence=0)
+
+        monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
+
+        import specweaver.config.settings
+        class MockStitchSettings:
+            mode = "auto"
+            api_key = "fake_key"
+        class MockSettings:
+            stitch = MockStitchSettings()
+
+        monkeypatch.setattr(specweaver.config.settings, "load_settings", lambda db, proj: MockSettings())
+
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]))
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+
+        handler = PlanSpecHandler()
+        await handler.execute(step, ctx)
+
+        assert mock_planner_called_with.get("stitch_mode") == "auto"
+        assert mock_planner_called_with.get("stitch_api_key") == "fake_key"
+
+    @pytest.mark.asyncio()
+    async def test_handler_valueerror_fallback(self, tmp_path: Path, monkeypatch) -> None:
+        """I8c: Handler gracefully falls back if load_settings raises ValueError."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("## Protocol\n\nUI content", encoding="utf-8")
+
+        mock_planner_called_with = {}
+
+        from specweaver.planning.models import PlanArtifact
+        from specweaver.planning.planner import Planner
+
+        async def mock_generate_plan(self, **kwargs):
+            mock_planner_called_with.update(kwargs)
+            return PlanArtifact(spec_path="x", spec_name="y", spec_hash="z", file_layout=[], timestamp="t", confidence=0)
+
+        monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
+
+        import specweaver.config.settings
+        def raise_value_error(*args):
+            raise ValueError("project missing")
+        monkeypatch.setattr(specweaver.config.settings, "load_settings", raise_value_error)
+
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]))
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+
+        handler = PlanSpecHandler()
+        await handler.execute(step, ctx)
+
+        assert mock_planner_called_with.get("stitch_mode") == "off"
+        assert mock_planner_called_with.get("stitch_api_key") == ""
+
+    @pytest.mark.asyncio()
+    async def test_handler_saves_mockup_to_yaml_when_stitch_auto(self, tmp_path: Path, monkeypatch) -> None:
+        """I8d: E2E Pipeline (Stitch Auto) saving YAML to disk with mockups."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("## Protocol\n\nUI component with a button", encoding="utf-8")
+
+        import specweaver.config.settings
+        class MockStitchSettings:
+            mode = "auto"
+            api_key = "fake_key"
+        class MockSettings:
+            stitch = MockStitchSettings()
+        monkeypatch.setattr(specweaver.config.settings, "load_settings", lambda db, proj: MockSettings())
+
+        llm = FakeLLM([_valid_plan_json()])
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm)
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+
+        handler = PlanSpecHandler()
+        result = await handler.execute(step, ctx)
+
+        plan_path = Path(result.output["plan_path"])
+        yaml_content = plan_path.read_text(encoding="utf-8")
+
+        assert "mockups" in yaml_content
+        assert "placeholder" in yaml_content
+        assert "Generated UI" in yaml_content
+
+    @pytest.mark.asyncio()
+    async def test_handler_saves_no_mockup_to_yaml_when_stitch_off(self, tmp_path: Path, monkeypatch) -> None:
+        """I8e: E2E Pipeline (Stitch Off) saving YAML to disk omits mockups."""
+        spec = tmp_path / "spec.md"
+        spec.write_text("## Protocol\n\nUI component", encoding="utf-8")
+
+        import specweaver.config.settings
+        class MockStitchSettings:
+            mode = "off"
+            api_key = ""
+        class MockSettings:
+            stitch = MockStitchSettings()
+        monkeypatch.setattr(specweaver.config.settings, "load_settings", lambda db, proj: MockSettings())
+
+        llm = FakeLLM([_valid_plan_json()])
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm)
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+
+        handler = PlanSpecHandler()
+        result = await handler.execute(step, ctx)
+
+        plan_path = Path(result.output["plan_path"])
+        yaml_content = plan_path.read_text(encoding="utf-8")
+
+        assert "mockups: []" in yaml_content
+
 
 
 # ---------------------------------------------------------------------------

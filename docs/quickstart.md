@@ -113,6 +113,8 @@ This generates:
 - `src/greet_service.py` — implementation
 - `tests/test_greet_service.py` — test file
 
+*(If a spec contains UI requirements, SpecWeaver will automatically attempt to generate a visual mockup via the Google Stitch MCP if `stitch_mode` is set to `auto` or `prompt`)*
+
 ## 8. Validate Generated Code
 
 ```bash
