@@ -1,0 +1,25 @@
+name: planning
+level: module
+purpose: >
+  LLM-assisted implementation planning from approved specs.
+  Generates structured Plan artifacts (YAML) with architecture decisions,
+  tech stack choices, file layout, and constraint reasoning.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/llm
+  - specweaver/config
+  - specweaver/context
+
+forbids:
+  - specweaver/loom/*
+
+exposes:
+  - Planner
+  - PlanArtifact
+  - render_plan_markdown
+
+operational:
+  async_ready: true
+  concurrency_model: none

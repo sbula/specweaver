@@ -33,6 +33,7 @@ class StepAction(enum.StrEnum):
     GENERATE = "generate"
     LINT_FIX = "lint_fix"
     DECOMPOSE = "decompose"
+    PLAN = "plan"
 
 
 class StepTarget(enum.StrEnum):
@@ -87,6 +88,8 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.DRAFT, StepTarget.FEATURE),
         (StepAction.VALIDATE, StepTarget.FEATURE),
         (StepAction.DECOMPOSE, StepTarget.FEATURE),
+        # Planning pipeline combos
+        (StepAction.PLAN, StepTarget.SPEC),
     }
 )
 

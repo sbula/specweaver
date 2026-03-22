@@ -53,6 +53,14 @@ class TestRunContext:
         )
         assert ctx.output_dir == tmp_path / "src"
 
+    def test_plan_defaults_to_none(self, tmp_path: Path) -> None:
+        """RunContext.plan should default to None."""
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "specs" / "test.md",
+        )
+        assert ctx.plan is None
+
 
 # ---------------------------------------------------------------------------
 # Registry

@@ -23,102 +23,37 @@ import sqlite3
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from specweaver.config.settings import ValidationSettings
+from specweaver.config._db_config_mixin import ConfigSettingsMixin
+from specweaver.config._db_extensions_mixin import DataExtensionsMixin
+from specweaver.config._db_llm_mixin import LlmProfilesMixin
+from specweaver.config._schema import (
+    DEFAULT_PROFILES,
+    SCHEMA_V1,
+    SCHEMA_V2,
+    SCHEMA_V3,
+    SCHEMA_V4,
+    SCHEMA_V5,
+    SCHEMA_V6,
+    SCHEMA_V7,
+)
+
+# Backward-compatible aliases (tests import with underscore prefix)
+_SCHEMA_V1 = SCHEMA_V1
+_SCHEMA_V2 = SCHEMA_V2
+_SCHEMA_V3 = SCHEMA_V3
+_SCHEMA_V4 = SCHEMA_V4
+_SCHEMA_V5 = SCHEMA_V5
+_SCHEMA_V6 = SCHEMA_V6
+_SCHEMA_V7 = SCHEMA_V7
+_DEFAULT_PROFILES = DEFAULT_PROFILES
 
 logger = logging.getLogger(__name__)
 
 _PROJECT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
-_SCHEMA_V1 = """\
-CREATE TABLE IF NOT EXISTS projects (
-    name         TEXT PRIMARY KEY,
-    root_path    TEXT NOT NULL UNIQUE,
-    created_at   TEXT NOT NULL,
-    last_used_at TEXT NOT NULL
-);
 
-CREATE TABLE IF NOT EXISTS llm_profiles (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    name              TEXT NOT NULL,
-    is_global         INTEGER NOT NULL DEFAULT 1,
-    model             TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
-    temperature       REAL NOT NULL DEFAULT 0.7,
-    max_output_tokens INTEGER NOT NULL DEFAULT 4096,
-    response_format   TEXT NOT NULL DEFAULT 'text'
-);
-
-CREATE TABLE IF NOT EXISTS project_llm_links (
-    project_name TEXT NOT NULL REFERENCES projects(name) ON DELETE CASCADE,
-    role         TEXT NOT NULL,
-    profile_id   INTEGER NOT NULL REFERENCES llm_profiles(id),
-    PRIMARY KEY (project_name, role)
-);
-
-CREATE TABLE IF NOT EXISTS validation_overrides (
-    project_name   TEXT NOT NULL REFERENCES projects(name) ON DELETE CASCADE,
-    rule_id        TEXT NOT NULL,
-    enabled        INTEGER NOT NULL DEFAULT 1,
-    warn_threshold REAL DEFAULT NULL,
-    fail_threshold REAL DEFAULT NULL,
-    PRIMARY KEY (project_name, rule_id)
-);
-
-CREATE TABLE IF NOT EXISTS active_state (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS schema_version (
-    version    INTEGER PRIMARY KEY,
-    applied_at TEXT NOT NULL
-);
-"""
-
-_DEFAULT_PROFILES = [
-    ("review", 1, "gemini-2.5-flash", 0.3, 4096, "text", 128_000),
-    ("draft", 1, "gemini-2.5-flash", 0.7, 4096, "text", 128_000),
-    ("search", 1, "gemini-2.5-flash", 0.1, 4096, "text", 128_000),
-]
-
-_SCHEMA_V2 = """\
-ALTER TABLE llm_profiles ADD COLUMN context_limit INTEGER NOT NULL DEFAULT 128000;
-"""
-
-_SCHEMA_V3 = """\
-ALTER TABLE projects ADD COLUMN log_level TEXT NOT NULL DEFAULT 'DEBUG';
-"""
-
-_SCHEMA_V4 = """\
-ALTER TABLE projects ADD COLUMN constitution_max_size INTEGER NOT NULL DEFAULT 5120;
-"""
-
-_SCHEMA_V5 = """\
-ALTER TABLE projects ADD COLUMN domain_profile TEXT DEFAULT NULL;
-"""
-
-_SCHEMA_V6 = """\
-CREATE TABLE IF NOT EXISTS project_standards (
-    project_name TEXT NOT NULL REFERENCES projects(name) ON DELETE CASCADE,
-    scope        TEXT NOT NULL,
-    language     TEXT NOT NULL,
-    category     TEXT NOT NULL,
-    data         TEXT NOT NULL,
-    confidence   REAL NOT NULL,
-    confirmed_by TEXT DEFAULT NULL,
-    scanned_at   TEXT NOT NULL,
-    PRIMARY KEY (project_name, scope, language, category)
-);
-"""
-
-_SCHEMA_V7 = """\
-ALTER TABLE projects ADD COLUMN auto_bootstrap_constitution TEXT NOT NULL DEFAULT 'prompt';
-"""
-
-
-class Database:
+class Database(ConfigSettingsMixin, LlmProfilesMixin, DataExtensionsMixin):
     """SpecWeaver SQLite configuration database.
 
     Args:
@@ -146,7 +81,7 @@ class Database:
     def _ensure_schema(self) -> None:
         """Create tables and apply migrations. Idempotent."""
         with self.connect() as conn:
-            conn.executescript(_SCHEMA_V1)
+            conn.executescript(SCHEMA_V1)
 
             # Seed schema version if empty
             existing = conn.execute(
@@ -165,7 +100,7 @@ class Database:
 
             if current_version < 2:
                 with suppress(Exception):
-                    conn.executescript(_SCHEMA_V2)
+                    conn.executescript(SCHEMA_V2)
                 conn.execute(
                     "INSERT OR REPLACE INTO schema_version "
                     "(version, applied_at) VALUES (?, ?)",
@@ -174,7 +109,7 @@ class Database:
 
             if current_version < 3:
                 with suppress(Exception):
-                    conn.executescript(_SCHEMA_V3)
+                    conn.executescript(SCHEMA_V3)
                 conn.execute(
                     "INSERT OR REPLACE INTO schema_version "
                     "(version, applied_at) VALUES (?, ?)",
@@ -183,7 +118,7 @@ class Database:
 
             if current_version < 4:
                 with suppress(Exception):
-                    conn.executescript(_SCHEMA_V4)
+                    conn.executescript(SCHEMA_V4)
                 conn.execute(
                     "INSERT OR REPLACE INTO schema_version "
                     "(version, applied_at) VALUES (?, ?)",
@@ -195,7 +130,7 @@ class Database:
 
             if current_version < 5:
                 with suppress(Exception):
-                    conn.executescript(_SCHEMA_V5)
+                    conn.executescript(SCHEMA_V5)
                 conn.execute(
                     "INSERT OR REPLACE INTO schema_version "
                     "(version, applied_at) VALUES (?, ?)",
@@ -207,7 +142,7 @@ class Database:
 
             if current_version < 6:
                 with suppress(Exception):
-                    conn.executescript(_SCHEMA_V6)
+                    conn.executescript(SCHEMA_V6)
                 conn.execute(
                     "INSERT OR REPLACE INTO schema_version "
                     "(version, applied_at) VALUES (?, ?)",
@@ -219,7 +154,7 @@ class Database:
 
             if current_version < 7:
                 with suppress(Exception):
-                    conn.executescript(_SCHEMA_V7)
+                    conn.executescript(SCHEMA_V7)
                 conn.execute(
                     "INSERT OR REPLACE INTO schema_version "
                     "(version, applied_at) VALUES (?, ?)",
@@ -240,7 +175,7 @@ class Database:
                     "(name, is_global, model, temperature, "
                     "max_output_tokens, response_format, context_limit) "
                     "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    _DEFAULT_PROFILES,
+                    DEFAULT_PROFILES,
                 )
 
     # ------------------------------------------------------------------
@@ -405,688 +340,6 @@ class Database:
                 "UPDATE projects SET last_used_at = ? WHERE name = ?",
                 (_now_iso(), name),
             )
-
-    # ------------------------------------------------------------------
-    # Logging configuration
-    # ------------------------------------------------------------------
-
-    _VALID_LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
-
-    def get_log_level(self, project_name: str) -> str:
-        """Get the log level for a project.
-
-        Returns "DEBUG" if the project has no explicit setting.
-
-        Raises:
-            ValueError: If project not found.
-        """
-        with self.connect() as conn:
-            row = conn.execute(
-                "SELECT log_level FROM projects WHERE name = ?",
-                (project_name,),
-            ).fetchone()
-            if not row:
-                msg = f"Project '{project_name}' not found"
-                raise ValueError(msg)
-            return str(row["log_level"])
-
-    def set_log_level(self, project_name: str, level: str) -> None:
-        """Set the log level for a project.
-
-        Args:
-            project_name: Name of the registered project.
-            level: One of DEBUG, INFO, WARNING, ERROR, CRITICAL.
-
-        Raises:
-            ValueError: If project not found or level is invalid.
-        """
-        level_upper = level.upper()
-        if level_upper not in self._VALID_LOG_LEVELS:
-            msg = (
-                f"Invalid log level '{level}'. "
-                f"Must be one of: {', '.join(sorted(self._VALID_LOG_LEVELS))}"
-            )
-            raise ValueError(msg)
-
-        with self.connect() as conn:
-            existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?",
-                (project_name,),
-            ).fetchone()
-            if not existing:
-                msg = f"Project '{project_name}' not found"
-                raise ValueError(msg)
-
-            conn.execute(
-                "UPDATE projects SET log_level = ? WHERE name = ?",
-                (level_upper, project_name),
-            )
-
-    # ------------------------------------------------------------------
-    # Constitution configuration
-    # ------------------------------------------------------------------
-
-    def get_constitution_max_size(self, project_name: str) -> int:
-        """Get the constitution max size for a project (bytes).
-
-        Returns 5120 if the project has no explicit setting.
-
-        Raises:
-            ValueError: If project not found.
-        """
-        with self.connect() as conn:
-            row = conn.execute(
-                "SELECT constitution_max_size FROM projects WHERE name = ?",
-                (project_name,),
-            ).fetchone()
-            if not row:
-                msg = f"Project '{project_name}' not found"
-                raise ValueError(msg)
-            return int(row["constitution_max_size"])
-
-    def set_constitution_max_size(
-        self, project_name: str, max_size: int,
-    ) -> None:
-        """Set the constitution max size for a project (bytes).
-
-        Args:
-            project_name: Name of the registered project.
-            max_size: Maximum size in bytes.  Must be positive.
-
-        Raises:
-            ValueError: If project not found or size is invalid.
-        """
-        if max_size <= 0:
-            msg = (
-                f"Invalid constitution max size {max_size}. "
-                "Must be positive."
-            )
-            raise ValueError(msg)
-
-        with self.connect() as conn:
-            existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?",
-                (project_name,),
-            ).fetchone()
-            if not existing:
-                msg = f"Project '{project_name}' not found"
-                raise ValueError(msg)
-
-            conn.execute(
-                "UPDATE projects SET constitution_max_size = ? WHERE name = ?",
-                (max_size, project_name),
-            )
-            logger.debug(
-                "set_constitution_max_size: %s = %d bytes",
-                project_name, max_size,
-            )
-
-    # ------------------------------------------------------------------
-    # Auto-bootstrap constitution configuration
-    # ------------------------------------------------------------------
-
-    _VALID_BOOTSTRAP_MODES = frozenset({"off", "prompt", "auto"})
-
-    def get_auto_bootstrap(self, project_name: str) -> str:
-        """Get the auto-bootstrap mode for a project.
-
-        Returns ``"prompt"`` if the project has no explicit setting.
-
-        Raises:
-            ValueError: If project not found.
-        """
-        with self.connect() as conn:
-            row = conn.execute(
-                "SELECT auto_bootstrap_constitution FROM projects WHERE name = ?",
-                (project_name,),
-            ).fetchone()
-            if not row:
-                msg = f"Project '{project_name}' not found"
-                raise ValueError(msg)
-            return str(row["auto_bootstrap_constitution"])
-
-    def set_auto_bootstrap(
-        self, project_name: str, mode: str,
-    ) -> None:
-        """Set the auto-bootstrap mode for a project.
-
-        Args:
-            project_name: Name of the registered project.
-            mode: One of ``"off"``, ``"prompt"``, ``"auto"``.
-
-        Raises:
-            ValueError: If project not found or mode is invalid.
-        """
-        mode_lower = mode.lower()
-        if mode_lower not in self._VALID_BOOTSTRAP_MODES:
-            msg = (
-                f"Invalid auto-bootstrap mode '{mode}'. "
-                f"Must be one of: {', '.join(sorted(self._VALID_BOOTSTRAP_MODES))}"
-            )
-            raise ValueError(msg)
-
-        with self.connect() as conn:
-            existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?",
-                (project_name,),
-            ).fetchone()
-            if not existing:
-                msg = f"Project '{project_name}' not found"
-                raise ValueError(msg)
-
-            conn.execute(
-                "UPDATE projects SET auto_bootstrap_constitution = ? WHERE name = ?",
-                (mode_lower, project_name),
-            )
-            logger.debug(
-                "set_auto_bootstrap: %s = %s",
-                project_name, mode_lower,
-            )
-
-    # ------------------------------------------------------------------
-    # LLM Profiles
-    # ------------------------------------------------------------------
-
-    def list_llm_profiles(self, *, global_only: bool = False) -> list[dict[str, object]]:
-        """List LLM profiles.
-
-        Args:
-            global_only: If True, only return global (shared) profiles.
-        """
-        with self.connect() as conn:
-            if global_only:
-                rows = conn.execute(
-                    "SELECT * FROM llm_profiles WHERE is_global = 1 ORDER BY name",
-                ).fetchall()
-            else:
-                rows = conn.execute(
-                    "SELECT * FROM llm_profiles ORDER BY name",
-                ).fetchall()
-            return [dict(r) for r in rows]
-
-    def create_llm_profile(
-        self,
-        name: str,
-        *,
-        is_global: bool = True,
-        model: str = "gemini-2.5-flash",
-        temperature: float = 0.7,
-        max_output_tokens: int = 4096,
-        response_format: str = "text",
-    ) -> int:
-        """Create an LLM profile. Returns the new profile ID."""
-        with self.connect() as conn:
-            cursor = conn.execute(
-                "INSERT INTO llm_profiles "
-                "(name, is_global, model, temperature, max_output_tokens, response_format) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (name, int(is_global), model, temperature, max_output_tokens, response_format),
-            )
-            return cursor.lastrowid  # type: ignore[return-value]
-
-    def get_llm_profile(self, profile_id: int) -> dict[str, object] | None:
-        """Get an LLM profile by ID, or None if not found."""
-        with self.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM llm_profiles WHERE id = ?", (profile_id,),
-            ).fetchone()
-            return dict(row) if row else None
-
-    # ------------------------------------------------------------------
-    # Project-LLM links
-    # ------------------------------------------------------------------
-
-    def get_project_llm_links(self, project_name: str) -> list[dict[str, object]]:
-        """Get all role → profile links for a project."""
-        with self.connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM project_llm_links WHERE project_name = ? ORDER BY role",
-                (project_name,),
-            ).fetchall()
-            return [dict(r) for r in rows]
-
-    def link_project_profile(
-        self, project_name: str, role: str, profile_id: int,
-    ) -> None:
-        """Link (or re-link) a project role to an LLM profile.
-
-        Raises:
-            ValueError: If project or profile not found.
-        """
-        with self.connect() as conn:
-            # Verify project exists
-            proj = conn.execute(
-                "SELECT name FROM projects WHERE name = ?", (project_name,),
-            ).fetchone()
-            if not proj:
-                msg = f"Project '{project_name}' not found"
-                raise ValueError(msg)
-
-            # Verify profile exists
-            profile = conn.execute(
-                "SELECT id FROM llm_profiles WHERE id = ?", (profile_id,),
-            ).fetchone()
-            if not profile:
-                msg = f"Profile ID {profile_id} not found"
-                raise ValueError(msg)
-
-            conn.execute(
-                "INSERT OR REPLACE INTO project_llm_links "
-                "(project_name, role, profile_id) VALUES (?, ?, ?)",
-                (project_name, role, profile_id),
-            )
-
-    def get_project_profile(
-        self, project_name: str, role: str,
-    ) -> dict[str, object] | None:
-        """Get the resolved LLM profile for a project + role.
-
-        Returns the full profile dict, or None if the role is not linked.
-        """
-        with self.connect() as conn:
-            link = conn.execute(
-                "SELECT profile_id FROM project_llm_links "
-                "WHERE project_name = ? AND role = ?",
-                (project_name, role),
-            ).fetchone()
-            if not link:
-                return None
-
-            row = conn.execute(
-                "SELECT * FROM llm_profiles WHERE id = ?",
-                (link["profile_id"],),
-            ).fetchone()
-            return dict(row) if row else None
-
-    # ------------------------------------------------------------------
-    # Validation overrides
-    # ------------------------------------------------------------------
-
-    def set_validation_override(
-        self,
-        project_name: str,
-        rule_id: str,
-        *,
-        enabled: bool | None = None,
-        warn_threshold: float | None = None,
-        fail_threshold: float | None = None,
-    ) -> None:
-        """Set or update a validation override for a project/rule pair.
-
-        Uses UPSERT semantics — creates the row if it doesn't exist,
-        updates it if it does.
-
-        Args:
-            project_name: Must be a registered project.
-            rule_id: Rule identifier (e.g. 'S08', 'C04').
-            enabled: Whether the rule is enabled (None = keep existing/default 1).
-            warn_threshold: Override warn threshold (None = keep existing/default).
-            fail_threshold: Override fail threshold (None = keep existing/default).
-
-        Raises:
-            ValueError: If project is not registered.
-        """
-        with self.connect() as conn:
-            proj = conn.execute(
-                "SELECT name FROM projects WHERE name = ?",
-                (project_name,),
-            ).fetchone()
-            if not proj:
-                msg = f"Project '{project_name}' not found"
-                raise ValueError(msg)
-
-            # Check if override already exists
-            existing = conn.execute(
-                "SELECT * FROM validation_overrides "
-                "WHERE project_name = ? AND rule_id = ?",
-                (project_name, rule_id),
-            ).fetchone()
-
-            if existing:
-                # Update only the fields that were explicitly provided
-                updates: list[str] = []
-                params: list[object] = []
-                if enabled is not None:
-                    updates.append("enabled = ?")
-                    params.append(int(enabled))
-                if warn_threshold is not None:
-                    updates.append("warn_threshold = ?")
-                    params.append(warn_threshold)
-                if fail_threshold is not None:
-                    updates.append("fail_threshold = ?")
-                    params.append(fail_threshold)
-                if updates:
-                    params.extend([project_name, rule_id])
-                    conn.execute(
-                        f"UPDATE validation_overrides SET {', '.join(updates)} "
-                        f"WHERE project_name = ? AND rule_id = ?",
-                        params,
-                    )
-            else:
-                conn.execute(
-                    "INSERT INTO validation_overrides "
-                    "(project_name, rule_id, enabled, warn_threshold, fail_threshold) "
-                    "VALUES (?, ?, ?, ?, ?)",
-                    (
-                        project_name,
-                        rule_id,
-                        int(enabled) if enabled is not None else 1,
-                        warn_threshold,
-                        fail_threshold,
-                    ),
-                )
-
-    def get_validation_override(
-        self, project_name: str, rule_id: str,
-    ) -> dict[str, object] | None:
-        """Get a single validation override, or None if not set."""
-        with self.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM validation_overrides "
-                "WHERE project_name = ? AND rule_id = ?",
-                (project_name, rule_id),
-            ).fetchone()
-            return dict(row) if row else None
-
-    def get_validation_overrides(self, project_name: str) -> list[dict[str, object]]:
-        """Get all validation overrides for a project."""
-        with self.connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM validation_overrides "
-                "WHERE project_name = ? ORDER BY rule_id",
-                (project_name,),
-            ).fetchall()
-            return [dict(r) for r in rows]
-
-    def delete_validation_override(
-        self, project_name: str, rule_id: str,
-    ) -> None:
-        """Delete a validation override. Idempotent."""
-        with self.connect() as conn:
-            conn.execute(
-                "DELETE FROM validation_overrides "
-                "WHERE project_name = ? AND rule_id = ?",
-                (project_name, rule_id),
-            )
-
-    def load_validation_settings(
-        self, project_name: str,
-    ) -> ValidationSettings:
-        """Load ValidationSettings from DB overrides for a project.
-
-        Args:
-            project_name: Must be a registered project.
-
-        Returns:
-            ValidationSettings with all overrides for this project.
-
-        Raises:
-            ValueError: If project is not registered.
-        """
-        from specweaver.config.settings import RuleOverride, ValidationSettings
-
-        proj = self.get_project(project_name)
-        if not proj:
-            msg = f"Project '{project_name}' not found"
-            raise ValueError(msg)
-
-        rows = self.get_validation_overrides(project_name)
-        overrides: dict[str, RuleOverride] = {}
-        for row in rows:
-            rule_id = str(row["rule_id"])
-            overrides[rule_id] = RuleOverride(
-                rule_id=rule_id,
-                enabled=bool(row["enabled"]),
-                warn_threshold=float(str(row["warn_threshold"])) if row["warn_threshold"] is not None else None,
-                fail_threshold=float(str(row["fail_threshold"])) if row["fail_threshold"] is not None else None,
-            )
-        return ValidationSettings(overrides=overrides)
-
-    # ------------------------------------------------------------------
-    # Domain Profiles (Feature 3.3)
-    # ------------------------------------------------------------------
-
-    def get_domain_profile(self, project_name: str) -> str | None:
-        """Get the active domain profile name for a project.
-
-        Args:
-            project_name: Must be a registered project.
-
-        Returns:
-            Profile name, or None if no profile is active.
-
-        Raises:
-            ValueError: If project is not registered.
-        """
-        proj = self.get_project(project_name)
-        if not proj:
-            msg = f"Project '{project_name}' not found"
-            raise ValueError(msg)
-        return str(proj["domain_profile"]) if proj.get("domain_profile") is not None else None
-
-    def set_domain_profile(
-        self,
-        project_name: str,
-        profile_name: str,
-    ) -> None:
-        """Set the active domain profile for a project.
-
-        This **only stores the profile name** — it does NOT write any
-        validation overrides to the DB.  The profile selects which YAML
-        pipeline ``sw check`` will use; per-rule DB overrides are a
-        separate, independent configuration layer managed by
-        ``sw config set <RULE>``.
-
-        Cascade (from lowest to highest precedence):
-          YAML pipeline base params
-          → DB overrides (``sw config set``)
-          → ``--set`` CLI flags
-
-        Args:
-            project_name: Must be a registered project.
-            profile_name: Name of an available profile (e.g. 'web-app').
-                Must correspond to a built-in or custom pipeline YAML.
-
-        Raises:
-            ValueError: If project not found or profile YAML not found.
-        """
-        from specweaver.config.profiles import get_profile
-
-        proj = self.get_project(project_name)
-        if not proj:
-            msg = f"Project '{project_name}' not found"
-            raise ValueError(msg)
-
-        if get_profile(profile_name) is None:
-            msg = (
-                f"Unknown profile '{profile_name}'. "
-                "Use 'sw config profiles' to see available profiles."
-            )
-            raise ValueError(msg)
-
-        with self.connect() as conn:
-            conn.execute(
-                "UPDATE projects SET domain_profile = ? WHERE name = ?",
-                (profile_name, project_name),
-            )
-
-        logger.info(
-            "Domain profile '%s' activated for project '%s' "
-            "(pipeline: validation_spec_%s.yaml)",
-            profile_name, project_name,
-            profile_name.replace("-", "_"),
-        )
-
-    def clear_domain_profile(self, project_name: str) -> None:
-        """Clear the active domain profile for a project.
-
-        Only the profile name is cleared.  Any per-rule DB overrides
-        written by ``sw config set`` are intentionally preserved — they
-        are independent of the profile and must be removed explicitly
-        via ``sw config reset <RULE>`` if no longer wanted.
-
-        Args:
-            project_name: Must be a registered project.
-
-        Raises:
-            ValueError: If project is not registered.
-        """
-        proj = self.get_project(project_name)
-        if not proj:
-            msg = f"Project '{project_name}' not found"
-            raise ValueError(msg)
-
-        with self.connect() as conn:
-            conn.execute(
-                "UPDATE projects SET domain_profile = NULL WHERE name = ?",
-                (project_name,),
-            )
-
-        logger.info(
-            "Domain profile cleared for project '%s' "
-            "(per-rule overrides preserved)",
-            project_name,
-        )
-
-    # ------------------------------------------------------------------
-    # Project Standards CRUD
-    # ------------------------------------------------------------------
-
-    def save_standard(
-        self,
-        project_name: str,
-        scope: str,
-        language: str,
-        category: str,
-        data: dict[str, object],
-        confidence: float,
-        *,
-        confirmed_by: str | None = None,
-    ) -> None:
-        """Save or update a coding standard (upsert).
-
-        Args:
-            project_name: Must be a registered project.
-            scope: Scope name (e.g., ``"user-service"`` or ``"."``).
-            language: Language name (e.g., ``"python"``).
-            category: Category name (e.g., ``"naming"``).
-            data: Findings as a dictionary (serialized to JSON).
-            confidence: Confidence score (0.0-1.0).
-            confirmed_by: ``"hitl"`` if user-confirmed, else None.
-        """
-        import json
-
-        with self.connect() as conn:
-            conn.execute(
-                "INSERT OR REPLACE INTO project_standards "
-                "(project_name, scope, language, category, data, "
-                "confidence, confirmed_by, scanned_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (
-                    project_name,
-                    scope,
-                    language,
-                    category,
-                    json.dumps(data),
-                    confidence,
-                    confirmed_by,
-                    _now_iso(),
-                ),
-            )
-
-    def get_standards(
-        self,
-        project_name: str,
-        *,
-        scope: str | None = None,
-        language: str | None = None,
-    ) -> list[dict[str, object]]:
-        """Query standards for a project, optionally filtered.
-
-        Args:
-            project_name: Project to query.
-            scope: Filter by scope (optional).
-            language: Filter by language (optional).
-
-        Returns:
-            List of dicts with keys: scope, language, category, data,
-            confidence, confirmed_by, scanned_at.
-        """
-        query = "SELECT * FROM project_standards WHERE project_name = ?"
-        params: list[str] = [project_name]
-
-        if scope is not None:
-            query += " AND scope = ?"
-            params.append(scope)
-        if language is not None:
-            query += " AND language = ?"
-            params.append(language)
-
-        with self.connect() as conn:
-            rows = conn.execute(query, params).fetchall()
-            return [dict(row) for row in rows]
-
-    def get_standard(
-        self,
-        project_name: str,
-        scope: str,
-        language: str,
-        category: str,
-    ) -> dict[str, object] | None:
-        """Get a single standard by exact key.
-
-        Returns:
-            Dict with all fields, or None if not found.
-        """
-        with self.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM project_standards "
-                "WHERE project_name = ? AND scope = ? "
-                "AND language = ? AND category = ?",
-                (project_name, scope, language, category),
-            ).fetchone()
-            return dict(row) if row else None
-
-    def clear_standards(
-        self,
-        project_name: str,
-        *,
-        scope: str | None = None,
-    ) -> None:
-        """Delete standards for a project, optionally scoped.
-
-        Args:
-            project_name: Project to clear.
-            scope: If provided, only delete standards for this scope.
-                If None, delete all standards for the project.
-        """
-        if scope is not None:
-            query = (
-                "DELETE FROM project_standards "
-                "WHERE project_name = ? AND scope = ?"
-            )
-            params: tuple[str, str] | tuple[str] = (project_name, scope)
-        else:
-            query = "DELETE FROM project_standards WHERE project_name = ?"
-            params = (project_name,)
-
-        with self.connect() as conn:
-            conn.execute(query, params)
-
-    def list_scopes(self, project_name: str) -> list[str]:
-        """List distinct scopes that have stored standards.
-
-        Returns:
-            Sorted list of scope names.
-        """
-        with self.connect() as conn:
-            rows = conn.execute(
-                "SELECT DISTINCT scope FROM project_standards "
-                "WHERE project_name = ? ORDER BY scope",
-                (project_name,),
-            ).fetchall()
-            return [row[0] for row in rows]
-
 
 
 # ---------------------------------------------------------------------------

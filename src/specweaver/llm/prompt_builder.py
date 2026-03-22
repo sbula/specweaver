@@ -80,7 +80,7 @@ class _ContentBlock:
     text: str
     priority: int  # 0 = instructions (never truncated), lower = higher priority
     label: str = ""
-    kind: str = "context"  # "instructions", "file", "context", "topology", "standards", "reminder"
+    kind: str = "context"  # "instructions", "file", "context", "topology", "standards", "plan", "reminder"
     language: str = "text"
     file_path: str = ""
     role: str = ""  # trust signal: "reference" | "target" | ""
@@ -291,6 +291,24 @@ class PromptBuilder:
         )
         return self
 
+    def add_plan(self, text: str) -> PromptBuilder:
+        """Add implementation plan context (priority 1 — truncatable).
+
+        Plan content is rendered after standards, before topology,
+        inside ``<plan>`` tags.  The caller is responsible for
+        selective section extraction (file_layout, architecture,
+        tasks, test_expectations) from the full Plan YAML.
+        """
+        self._blocks.append(
+            _ContentBlock(
+                text=text.strip(),
+                priority=1,
+                kind="plan",
+                tokens=self._count(text),
+            ),
+        )
+        return self
+
     # ------------------------------------------------------------------
     # Build
     # ------------------------------------------------------------------
@@ -472,67 +490,19 @@ class PromptBuilder:
         return result
 
     # ------------------------------------------------------------------
-    # XML rendering
+    # XML rendering (delegated to _prompt_render)
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _render_files(blocks: list[_ContentBlock]) -> str | None:
+        """Render ``<file_contents>`` XML from file blocks."""
+        from specweaver.llm._prompt_render import render_files
+
+        return render_files(blocks)
 
     def _render(self, blocks: list[_ContentBlock]) -> str:
         """Render blocks into XML-tagged prompt text."""
-        parts: list[str] = []
+        from specweaver.llm._prompt_render import render_blocks
 
-        # Instructions first
-        instructions = [b for b in blocks if b.kind == "instructions"]
-        if instructions:
-            instr_text = "\n\n".join(b.text for b in instructions)
-            parts.append(f"<instructions>\n{instr_text}\n</instructions>")
+        return render_blocks(blocks)
 
-        # Constitution (after instructions, before topology)
-        constitutions = [b for b in blocks if b.kind == "constitution"]
-        if constitutions:
-            text = "\n\n".join(b.text for b in constitutions)
-            parts.append(f"<constitution>\n{text}\n</constitution>")
-
-        # Standards (after constitution, before topology)
-        standards = [b for b in blocks if b.kind == "standards"]
-        if standards:
-            text = "\n\n".join(b.text for b in standards)
-            marker = "\n[truncated]" if any(b.truncated for b in standards) else ""
-            parts.append(f"<standards>\n{text}{marker}\n</standards>")
-
-        # Topology (before files — gives structural context)
-        topology = [b for b in blocks if b.kind == "topology"]
-        for topo in topology:
-            marker = "\n[truncated]" if topo.truncated else ""
-            parts.append(
-                f"<topology>\n{topo.text}{marker}\n</topology>",
-            )
-
-        # Files
-        files = [b for b in blocks if b.kind == "file"]
-        if files:
-            file_parts: list[str] = []
-            for f in files:
-                attrs = f'path="{f.label}" language="{f.language}"'
-                if f.role:
-                    attrs += f' role="{f.role}"'
-                marker = "\n[truncated]" if f.truncated else ""
-                file_parts.append(
-                    f"<file {attrs}>\n{f.text}{marker}\n</file>",
-                )
-            inner = "\n".join(file_parts)
-            parts.append(f"<file_contents>\n{inner}\n</file_contents>")
-
-        # Context blocks
-        contexts = [b for b in blocks if b.kind == "context"]
-        for ctx in contexts:
-            marker = "\n[truncated]" if ctx.truncated else ""
-            parts.append(
-                f'<context label="{ctx.label}">\n{ctx.text}{marker}\n</context>',
-            )
-
-        # Reminders at the very end
-        reminders = [b for b in blocks if b.kind == "reminder"]
-        if reminders:
-            reminder_text = "\n\n".join(b.text for b in reminders)
-            parts.append(f"<reminder>\n{reminder_text}\n</reminder>")
-
-        return "\n\n".join(parts)

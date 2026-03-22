@@ -78,6 +78,7 @@ class Generator:
         topology_contexts: list[TopologyContext] | None = None,
         constitution: str | None = None,
         standards: str | None = None,
+        plan: str | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -104,6 +105,9 @@ class Generator:
         if standards:
             builder.add_standards(standards)
             logger.debug("generate_code: standards injected (%d chars)", len(standards))
+        if plan:
+            builder.add_plan(plan)
+            logger.debug("generate_code: plan injected (%d chars)", len(plan))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()
@@ -133,6 +137,7 @@ class Generator:
         topology_contexts: list[TopologyContext] | None = None,
         constitution: str | None = None,
         standards: str | None = None,
+        plan: str | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -159,6 +164,9 @@ class Generator:
         if standards:
             builder.add_standards(standards)
             logger.debug("generate_tests: standards injected (%d chars)", len(standards))
+        if plan:
+            builder.add_plan(plan)
+            logger.debug("generate_tests: plan injected (%d chars)", len(plan))
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()

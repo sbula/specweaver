@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **2 893 collected** · 2 884 passed · 9 skipped · 96 source modules · 128 test files
+> **2 968 collected** · 2 959 passed · 9 skipped · 97 source modules · 139 test files
 > **Last updated**: 2026-03-22
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -11,10 +11,8 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 ## Summary
 
-| Metric | Count |
-|--------|------:|
-| Total stories / use cases catalogued | 185 |
-| Fully covered (✅ at all applicable layers) | 69 |
+| Total stories / use cases catalogued | 199 |
+| Fully covered (✅ at all applicable layers) | 83 |
 | Missing **unit** tests | 49 |
 | Missing **integration** tests | 64 |
 | Missing **both** unit + integration | 37 |
@@ -35,17 +33,18 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `config/` | 3 | 228 | 20 | 0 | 248 |
 | `context/` | 4 | 53 | 8 | 7 | 68 |
 | `drafting/` | 3 | 113 | 0 | 0 | 113 |
-| `flow/` | 8 | 263 | 22 | 13 | 298 |
+| `flow/` | 8 | 265 | 34 | 13 | 312 |
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
-| `implementation/` | 1 | 6 | 0 | 0 | 6 |
-| `llm/` | 5 | 150 | 0 | 0 | 150 |
+| `implementation/` | 1 | 9 | 0 | 0 | 9 |
+| `llm/` | 5 | 155 | 0 | 0 | 155 |
 | `loom/` | 15 | 571 | 14 | 0 | 585 |
+| `planning/` | 3 | 79 | 0 | 0 | 79 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
 | `review/` | 1 | 30 | 0 | 0 | 30 |
 | `standards/` | 11 | 172 | 0 | 4 | 176 |
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **96** | **2 601** | **217** | **76** | **2 893** |
+| **Total** | **97** | **2 690** | **229** | **78** | **2 968** |
 
 
 ---
@@ -63,6 +62,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | 4 | `GenerateCodeHandler` / `GenerateTestsHandler` / `DraftSpecHandler.execute()` | `flow/handlers.py` | Unit | [§ 5.3](#53-handlerspy) |
 | 5 | `ReviewSpecHandler` / `ReviewCodeHandler.execute()` with mocked LLM | `flow/handlers.py` | Unit | [§ 5.3](#53-handlerspy) |
 | 6 | `Generator.generate_code()` / `generate_tests()` / `_clean_code_output()` | `implementation/generator.py` | Unit + Integration | [§ 7.1](#71-generatorpy) |
+ ✅ |
 | 7 | ~~Standards edge cases + e2e~~ ✅ | `standards/*` + `cli/standards.py` | ~~Edge-case Unit + E2E~~ | [§ 1.9](#19-standardspy) |
 | 8 | `GeminiAdapter._parse_response()` / `_handle_error()` / `_messages_to_gemini()` | `llm/adapters/gemini.py` | Unit | [§ 8.5](#85-adaptersgeminipy) |
 | 9 | `FeatureDrafter.draft()` — decomposition + drafting with mocked LLM | `drafting/feature_drafter.py` | Unit + Integration | [§ 4.3](#43-feature_drafterpy) |
@@ -427,7 +427,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `Generator` — output file still written | ✅ | ❌ | ❌ | ⚪ | Same file |
 | `Generator._clean_code_output()` fence stripping | ❌ | ❌ | ✅ | ⚪ | E2E only |
 | Generate code with constitution (standalone) | ❌ | ❌ | ❌ | ⚪ | Not tested in isolation |
-| Generate tests from spec | ❌ | ❌ | ❌ | ⚪ | — |
+| Generate tests from spec | ✅ | ✅ | ❌ | ⚪ | — |
 
 ---
 
@@ -454,7 +454,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | All builder methods (`add_*`, `build`) | ✅ | ❌ | ⚪ | ⚪ | No integ with adapter |
 | `_compute_auto_scale()` | ✅ | ❌ | ⚪ | ⚪ | — |
 | `detect_language()` | ✅ | ❌ | ⚪ | ⚪ | — |
-| Prompt with constitution + standards + topology combined | ❌ | ❌ | ⚪ | ⚪ | Never combined |
+| Prompt with constitution + standards + topology + plan combined | ✅ | ✅ | ⚪ | ⚪ | Integrated in pipeline |
 | Prompt exceeds token budget → truncation | ✅ | ❌ | ⚪ | ⚪ | Unit only |
 
 ### 8.4 `adapters/base.py`
@@ -744,6 +744,36 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `teardown_logging()` | ✅ | ❌ | ⚪ | ⚪ | — |
 
 ---
+
+---
+
+## 14 · Planning (planning/)
+
+### 14.1 planner.py
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| Planner.generate_plan() happy path | ✅ | ✅ | ✅ | ⚪ | — |
+| _clean_json() code fence stripping | ✅ | ⚪ | ⚪ | ⚪ | — |
+| generate_plan() fills timestamp if missing | ✅ | ⚪ | ⚪ | ⚪ | — |
+| generate_plan() invalid JSON fallback/retry | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+### 14.2 
+enderer.py
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| 
+ender_plan_markdown() happy path | ✅ | ✅ | ⚪ | ⚪ | — |
+| Render architecture missing patterns | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Render tech stack missing alternatives | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Render task missing files/dependencies | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+### 14.3 models.py
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| All models validation | ✅ | ✅ | ⚪ | ⚪ | — |
 
 ## Implemented E2E Tests (2026-03-22 additions)
 

@@ -19,34 +19,45 @@ Size policy:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+
+# Re-export from sub-modules for backward compatibility
+from specweaver.project._helpers import (
+    CONSTITUTION_FILENAME,
+    DEFAULT_MAX_CONSTITUTION_SIZE,
+    ConstitutionInfo,
+)
+from specweaver.project._helpers import (
+    build_standards_section as _build_standards_section,
+)
+from specweaver.project._helpers import (
+    build_tech_stack_rows as _build_tech_stack_rows,
+)
+from specweaver.project._helpers import (
+    load_constitution as _load_constitution,
+)
+from specweaver.project._helpers import (
+    walk_up_dirs as _walk_up_dirs,
+)
+from specweaver.project._templates import STANDARDS_TEMPLATE as _STANDARDS_TEMPLATE
+from specweaver.project._templates import STARTER_TEMPLATE as _STARTER_TEMPLATE
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-CONSTITUTION_FILENAME = "CONSTITUTION.md"
-DEFAULT_MAX_CONSTITUTION_SIZE = 5120  # 5 KB
-
-
-@dataclass(frozen=True)
-class ConstitutionInfo:
-    """Result of loading a constitution.
-
-    Attributes:
-        content: Raw markdown content (BOM-stripped).
-        path: Absolute path to the file.
-        size: File size in bytes.
-        is_override: True if this is not the root-level constitution
-            (i.e. found in a subdirectory, overriding the root).
-    """
-
-    content: str
-    path: Path
-    size: int
-    is_override: bool
+__all__ = [
+    "CONSTITUTION_FILENAME",
+    "ConstitutionInfo",
+    "DEFAULT_MAX_CONSTITUTION_SIZE",
+    "check_constitution",
+    "find_all_constitutions",
+    "find_constitution",
+    "generate_constitution",
+    "generate_constitution_from_standards",
+    "is_unmodified_starter",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -306,304 +317,3 @@ def generate_constitution_from_standards(
     )
 
     return target
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-
-def _walk_up_dirs(
-    project_path: Path,
-    spec_path: Path | None,
-) -> list[Path]:
-    """Build ordered list of directories to search for constitution.
-
-    Starts at spec_path's parent, walks up to project_path (inclusive).
-    Returns [project_path] if spec_path is None.
-    """
-    project_resolved = project_path.resolve()
-
-    if spec_path is None:
-        return [project_resolved]
-
-    directories: list[Path] = []
-    current = spec_path.resolve().parent
-
-    while True:
-        directories.append(current)
-        if current == project_resolved:
-            break
-        parent = current.parent
-        if parent == current:
-            # Reached filesystem root without finding project_path
-            break
-        # Don't walk above project_path
-        if not str(current).startswith(str(project_resolved)):
-            break
-        current = parent
-
-    # Ensure project_path is always in the list
-    if project_resolved not in directories:
-        directories.append(project_resolved)
-
-    return directories
-
-
-def _load_constitution(
-    path: Path,
-    *,
-    is_override: bool,
-    max_size: int = DEFAULT_MAX_CONSTITUTION_SIZE,
-) -> ConstitutionInfo:
-    """Load a constitution file with BOM stripping and size warning."""
-    raw = path.read_text(encoding="utf-8-sig")  # auto-strips BOM
-
-    # Strip BOM if present
-    if raw.startswith("\ufeff"):
-        raw = raw[1:]
-
-    size = path.stat().st_size
-
-    if size > max_size:
-        logger.warning(
-            "Constitution %s size (%d bytes) exceeds recommended limit "
-            "(%d bytes). Consider trimming.",
-            path,
-            size,
-            max_size,
-        )
-
-    return ConstitutionInfo(
-        content=raw,
-        path=path,
-        size=size,
-        is_override=is_override,
-    )
-
-
-def _build_tech_stack_rows(languages: list[str]) -> str:
-    """Build markdown table rows for the Tech Stack section."""
-    if not languages:
-        return "| Language | TODO | TODO | TODO |"
-
-    lang_info = {
-        "python": ("Python", "3.11+", "Primary language"),
-        "javascript": ("JavaScript", "ES2022+", "Frontend / Node.js"),
-        "typescript": ("TypeScript", "5.x+", "Type-safe JavaScript"),
-    }
-
-    rows: list[str] = []
-    for lang in languages:
-        info = lang_info.get(lang.lower(), (lang.capitalize(), "TODO", "TODO"))
-        rows.append(f"| Language | {info[0]} | {info[1]} | {info[2]} |")
-
-    return "\n".join(rows)
-
-
-def _build_standards_section(standards: list[dict[str, Any]]) -> str:
-    """Build markdown bullet list from confirmed standards."""
-    import json
-
-    if not standards:
-        return (
-            "- TODO: Naming conventions\n"
-            "- TODO: Error handling patterns\n"
-            "- TODO: Documentation requirements"
-        )
-
-    lines: list[str] = []
-    # Group by category
-    by_category: dict[str, list[dict[str, Any]]] = {}
-    for s in standards:
-        cat = s.get("category", "unknown")
-        by_category.setdefault(cat, []).append(s)
-
-    category_labels = {
-        "naming": "Naming Conventions",
-        "error_handling": "Error Handling",
-        "type_hints": "Type Annotations",
-        "docstrings": "Documentation Style",
-        "import_patterns": "Import Organization",
-        "test_patterns": "Testing Conventions",
-        "async_patterns": "Async Patterns",
-        "jsdoc": "JSDoc Documentation",
-        "tsdoc": "TSDoc Documentation",
-    }
-
-    for category, items in sorted(by_category.items()):
-        label = category_labels.get(category, category.replace("_", " ").title())
-        lines.append(f"### {label}")
-        lines.append("")
-        for item in items:
-            data = json.loads(item["data"]) if isinstance(item["data"], str) else item["data"]
-            scope = item.get("scope", ".")
-            lang = item.get("language", "unknown")
-            conf = item.get("confidence", 0.0)
-            prefix = f"[{scope}/{lang}]" if scope != "." else f"[{lang}]"
-            lines.append(f"**{prefix}** (confidence: {conf:.0%})")
-            for k, v in data.items():
-                lines.append(f"- {k.replace('_', ' ').title()}: `{v}`")
-            lines.append("")
-
-    return "\n".join(lines).rstrip()
-
-
-# ---------------------------------------------------------------------------
-# Starter template (~1.5 KB with TODO placeholders)
-# ---------------------------------------------------------------------------
-
-_STARTER_TEMPLATE = """\
-# {project_name} — Constitution
-
-> **Status**: ACTIVE
-> **Owner**: TODO
-> **Rule**: This file is READ-ONLY for agents. Only the owner may modify it.
-> **Last Updated**: TODO
-
----
-
-## 1. Identity
-
-**Project**: {project_name}
-**One-Line Purpose**: TODO: What this project does, in one sentence.
-**Domain**: TODO: Industry/domain
-**Target Users**: TODO: Who uses this
-
-## 2. Tech Stack
-
-| Layer | Technology | Version | Rationale |
-|-------|-----------|---------|-----------|
-| Language | TODO | TODO | TODO |
-| Framework | TODO | TODO | TODO |
-| Database | TODO | TODO | TODO |
-| Testing | TODO | TODO | TODO |
-
-**Rule**: Agents MUST NOT introduce technologies not listed here without HITL approval.
-
-## 3. Architecture Principles (Non-Negotiable)
-
-1. TODO: First principle
-2. TODO: Second principle
-
-## 4. Coding Standards
-
-- TODO: Naming conventions
-- TODO: Error handling patterns
-- TODO: Documentation requirements
-
-**Rule**: These standards apply to ALL code, whether written by a human or an agent.
-
-## 5. Security Invariants
-
-- TODO: Input validation rules
-- TODO: Secret management rules
-
-## 6. Prohibited Actions
-
-### Filesystem
-- Never modify this Constitution without HITL instruction
-- Never write secrets to tracked files
-
-### Git
-- Never `git push --force` to main/master
-
-### Project-Specific
-- TODO: Add project-specific prohibitions
-
-## 7. Key Documents Index
-
-| Document | Purpose | Path |
-|----------|---------|------|
-| Constitution | This file — non-negotiable rules | `CONSTITUTION.md` |
-| TODO | TODO | TODO |
-
-## 8. Agent Instructions
-
-**Before starting ANY work, every agent MUST:**
-1. Read this Constitution in full
-2. Read the relevant Component Spec(s)
-3. Verify that the planned work does not violate any section above
-
-**If an agent encounters a conflict between a spec and this Constitution, the Constitution wins.**
-"""
-
-
-# ---------------------------------------------------------------------------
-# Standards-enriched template (sections 1, 2, 4 pre-filled)
-# ---------------------------------------------------------------------------
-
-_STANDARDS_TEMPLATE = """\
-# {project_name} — Constitution
-
-> **Status**: ACTIVE
-> **Owner**: TODO
-> **Rule**: This file is READ-ONLY for agents. Only the owner may modify it.
-> **Last Updated**: TODO
-> **Generated from**: Auto-discovered coding standards (review and customize!)
-
----
-
-## 1. Identity
-
-**Project**: {project_name}
-**Languages**: {languages}
-**One-Line Purpose**: TODO: What this project does, in one sentence.
-**Domain**: TODO: Industry/domain
-**Target Users**: TODO: Who uses this
-
-## 2. Tech Stack
-
-| Layer | Technology | Version | Rationale |
-|-------|-----------|---------|-----------|
-{tech_stack_rows}
-| Framework | TODO | TODO | TODO |
-| Database | TODO | TODO | TODO |
-| Testing | TODO | TODO | TODO |
-
-**Rule**: Agents MUST NOT introduce technologies not listed here without HITL approval.
-
-## 3. Architecture Principles (Non-Negotiable)
-
-1. TODO: First principle
-2. TODO: Second principle
-
-## 4. Coding Standards (Auto-Discovered)
-
-{coding_standards}
-
-**Rule**: These standards apply to ALL code, whether written by a human or an agent.
-
-## 5. Security Invariants
-
-- TODO: Input validation rules
-- TODO: Secret management rules
-
-## 6. Prohibited Actions
-
-### Filesystem
-- Never modify this Constitution without HITL instruction
-- Never write secrets to tracked files
-
-### Git
-- Never `git push --force` to main/master
-
-### Project-Specific
-- TODO: Add project-specific prohibitions
-
-## 7. Key Documents Index
-
-| Document | Purpose | Path |
-|----------|---------|------|
-| Constitution | This file — non-negotiable rules | `CONSTITUTION.md` |
-| TODO | TODO | TODO |
-
-## 8. Agent Instructions
-
-**Before starting ANY work, every agent MUST:**
-1. Read this Constitution in full
-2. Read the relevant Component Spec(s)
-3. Verify that the planned work does not violate any section above
-
-**If an agent encounters a conflict between a spec and this Constitution, the Constitution wins.**
-"""

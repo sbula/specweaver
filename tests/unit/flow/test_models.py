@@ -33,9 +33,10 @@ class TestStepAction:
         assert StepAction.REVIEW == "review"
         assert StepAction.GENERATE == "generate"
         assert StepAction.DECOMPOSE == "decompose"
+        assert StepAction.PLAN == "plan"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 6
+        assert len(StepAction) == 7
 
 
 # ---------------------------------------------------------------------------
@@ -65,7 +66,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 12
+        assert len(VALID_STEP_COMBINATIONS) == 13
 
     @pytest.mark.parametrize(
         ("action", "target"),
@@ -83,6 +84,8 @@ class TestValidStepCombinations:
             (StepAction.DRAFT, StepTarget.FEATURE),
             (StepAction.VALIDATE, StepTarget.FEATURE),
             (StepAction.DECOMPOSE, StepTarget.FEATURE),
+            # Planning combos
+            (StepAction.PLAN, StepTarget.SPEC),
         ],
     )
     def test_valid_combination(self, action: StepAction, target: StepTarget) -> None:
