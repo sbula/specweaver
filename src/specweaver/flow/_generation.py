@@ -13,13 +13,14 @@ from specweaver.flow.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
     from specweaver.flow.models import PipelineStep
+    from specweaver.llm.models import GenerationConfig
 
 logger = logging.getLogger(__name__)
 
 
 def _gen_config_from_context(
     context: RunContext, *, temperature: float = 0.2,
-) -> object:
+) -> GenerationConfig:
     """Build GenerationConfig from RunContext, falling back to defaults."""
     from specweaver.llm.models import GenerationConfig
 

@@ -24,7 +24,7 @@ _db_dep = Depends(get_db)
 def review_spec(
     body: ReviewRequest,
     db: Database = _db_dep,
-) -> dict:
+) -> dict[str, object]:
     """Run an LLM-powered review of a spec file (blocking).
 
     Returns the ReviewResult as a dict.

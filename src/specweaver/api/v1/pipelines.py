@@ -120,7 +120,7 @@ def start_pipeline_run(
 def get_run_status(
     run_id: str,
     detail: str = Query(default="summary", description="'summary' or 'full'."),
-) -> dict:
+) -> dict[str, object]:
     """Get run status and step results."""
     from specweaver.api.errors import SpecWeaverAPIError
     from specweaver.flow.store import StateStore
@@ -147,7 +147,7 @@ def get_run_status(
 
 
 @router.get("/runs/{run_id}/log")
-def get_run_log(run_id: str) -> list[dict]:
+def get_run_log(run_id: str) -> list[dict[str, object]]:
     """Get audit log for a pipeline run."""
     from specweaver.api.errors import SpecWeaverAPIError
     from specweaver.flow.store import StateStore

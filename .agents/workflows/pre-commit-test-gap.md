@@ -7,6 +7,24 @@ description: Run a pre-commit quality gate for the current feature before markin
 Before we commit, run a full pre-commit quality gate for the feature we just built.
 This workflow covers test gap analysis, linting, complexity, file size, and documentation.
 
+> [!CAUTION]
+> **MANDATORY SEQUENCING — DO NOT SKIP OR REORDER PHASES!**
+>
+> This workflow has 5 phases that MUST be executed **in strict order**.
+> Every phase MUST be completed before moving to the next one.
+>
+> **Before starting each phase:**
+> 1. Re-read this workflow file to confirm which phase is next
+> 2. Update `task.md` to mark the current phase as `[/]` in-progress
+> 3. After completing a phase, mark it `[x]` in `task.md`
+>
+> **Phase 2 has a HITL gate (step 13)** — you MUST stop and present the
+> gap analysis to the user. Do NOT continue until the user responds.
+>
+> If you catch yourself about to run `pytest` or "verify everything works"
+> before completing Phase 2 and Phase 3 — **STOP immediately**.
+> That is Phase 4. You are skipping phases.
+
 ## Phase 1: Code Quality Checks
 
 // turbo-all
@@ -36,6 +54,10 @@ This workflow covers test gap analysis, linting, complexity, file size, and docu
    ```
    Files over 500 lines MUST be refactored by splitting into smaller modules!
 
+> [!IMPORTANT]
+> **CHECKPOINT:** Phase 1 is complete. Update `task.md`.
+> The NEXT phase is Phase 2 (Test Gap Analysis) — NOT running pytest!
+
 ## Phase 2: Test Gap Analysis
 
 5. Read EVERY source file that was created or modified for this feature.
@@ -55,6 +77,11 @@ This workflow covers test gap analysis, linting, complexity, file size, and docu
 13. **STOP and wait for the HITL response.** Present the gap analysis to the
     user and wait for their feedback before proceeding. Do NOT continue
     until the user confirms or provides changes.
+
+> [!CAUTION]
+> **HARD GATE:** You MUST use `notify_user` to present the gap analysis
+> and WAIT for the user's response. Do NOT proceed to Phase 3 without
+> explicit user confirmation. This is non-negotiable.
 
 ## Phase 3: Implement Missing Tests
 

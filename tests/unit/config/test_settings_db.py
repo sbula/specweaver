@@ -373,7 +373,7 @@ class TestLoadSettingsNoSystemDefault:
             conn.execute("DELETE FROM project_llm_links")
             conn.execute("DELETE FROM llm_profiles")
 
-        with pytest.raises(ValueError, match="[Ss]ystem default"):
+        with pytest.raises(ValueError, match=r"[Ss]ystem default"):
             load_settings(db, "orphan", llm_role="custom-unlinked")
 
 

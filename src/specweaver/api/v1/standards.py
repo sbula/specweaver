@@ -26,7 +26,7 @@ _db_dep = Depends(get_db)
 def get_standards(
     project: str = Query(..., description="Project name."),
     db: Database = _db_dep,
-) -> list[dict]:
+) -> list[dict[str, object]]:
     """List saved standards for a project."""
     resolve_project_root(project, db)
     standards = db.get_standards(project)
@@ -48,7 +48,7 @@ def clear_standards(
 def scan_standards(
     body: ScanRequest,
     db: Database = _db_dep,
-) -> list[dict]:
+) -> list[dict[str, object]]:
     """Scan project directory for coding standards (returns without saving)."""
     from specweaver.standards.scanner import StandardsScanner
 
@@ -82,13 +82,16 @@ def accept_standards(
     resolve_project_root(body.project, db)
 
     for standard in body.standards:
+        dominant_raw = standard.get("dominant", {})
+        dominant: dict[str, object] = dominant_raw if isinstance(dominant_raw, dict) else {}
+        conf_raw = standard.get("confidence", 0.0)
         db.save_standard(
             body.project,
-            scope=standard.get("scope", "."),
-            language=standard.get("language", ""),
-            category=standard.get("category", ""),
-            data=standard.get("dominant", {}),
-            confidence=float(standard.get("confidence", 0.0)),
+            scope=str(standard.get("scope", ".")),
+            language=str(standard.get("language", "")),
+            category=str(standard.get("category", "")),
+            data=dominant,
+            confidence=float(conf_raw) if isinstance(conf_raw, (int, float, str)) else 0.0,
         )
 
     return {"detail": f"Saved {len(body.standards)} standards for project '{body.project}'."}

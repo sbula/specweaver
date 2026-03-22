@@ -12,14 +12,16 @@ Covers gap analysis items:
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from specweaver.flow._base import RunContext
-from specweaver.flow.state import StepStatus
 from specweaver.flow.models import PipelineStep, StepAction, StepTarget
+from specweaver.flow.state import StepStatus
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # RunContext.config field (gap #18)

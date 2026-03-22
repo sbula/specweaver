@@ -45,12 +45,12 @@ class TestRequireLlmAdapterFallback:
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
         # Patch at the source module (lazy imports inside the function)
-        with patch("specweaver.llm.adapters.gemini.GeminiAdapter") as MockAdapter:
+        with patch("specweaver.llm.adapters.gemini.GeminiAdapter") as mock_adapter_cls:
             mock_adapter = MagicMock()
             mock_adapter.available.return_value = True
-            MockAdapter.return_value = mock_adapter
+            mock_adapter_cls.return_value = mock_adapter
 
-            settings, adapter, gen_config = _require_llm_adapter(tmp_path)
+            _settings, adapter, gen_config = _require_llm_adapter(tmp_path)
 
         # Should have fallen back to system-default model
         assert gen_config.model == "gemini-3-flash-preview"
@@ -71,12 +71,12 @@ class TestRequireLlmAdapterFallback:
         with patch("specweaver.config.settings.load_settings_for_active") as mock_load:
             mock_load.side_effect = ValueError("No active project")
 
-            with patch("specweaver.llm.adapters.gemini.GeminiAdapter") as MockAdapter:
+            with patch("specweaver.llm.adapters.gemini.GeminiAdapter") as mock_adapter_cls:
                 mock_adapter = MagicMock()
                 mock_adapter.available.return_value = True
-                MockAdapter.return_value = mock_adapter
+                mock_adapter_cls.return_value = mock_adapter
 
-                settings, adapter, gen_config = _require_llm_adapter(tmp_path)
+                _settings, _adapter, gen_config = _require_llm_adapter(tmp_path)
 
         # Should use hardcoded fallback model
         assert gen_config.model == "gemini-3-flash-preview"

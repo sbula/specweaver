@@ -48,10 +48,12 @@ def serve(
         )
         raise typer.Exit(code=1) from None
 
+    from pathlib import Path as _Path
+
     from specweaver.api.app import create_app
     from specweaver.config.database import Database
 
-    db = Database()
+    db = Database(_Path.home() / ".specweaver" / "specweaver.db")
     app = create_app(db=db, cors_origins=cors_origins)
 
     _core.console.print(

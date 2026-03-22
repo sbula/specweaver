@@ -146,7 +146,7 @@ class AcceptRequest(BaseModel):
     """Request body for POST /standards/accept."""
 
     project: str = Field(..., description="Project name.")
-    standards: list[dict] = Field(..., description="Scanned standards to save.")
+    standards: list[dict[str, object]] = Field(..., description="Scanned standards to save.")
 
 
 # ---------------------------------------------------------------------------

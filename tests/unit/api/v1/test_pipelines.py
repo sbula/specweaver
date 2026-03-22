@@ -236,3 +236,253 @@ class TestGateDecision:
             )
             assert resp.status_code == 200
             assert "rejected" in resp.json()["detail"].lower()
+
+    # --- Gap #38: gate on non-parked run → 409 ---
+
+    def test_gate_non_parked_run_returns_409(self, client, tmp_path) -> None:
+        """POST /runs/{id}/gate on a running (non-parked) run → 409."""
+        from specweaver.flow.state import PipelineRun, RunStatus
+        from specweaver.flow.store import StateStore
+
+        state_dir = tmp_path / ".specweaver"
+        state_dir.mkdir(exist_ok=True)
+        store = StateStore(state_dir / "pipeline_state.db")
+
+        run = PipelineRun(
+            run_id="test-run-1",
+            pipeline_name="validate_only",
+            project_name="myproject",
+            spec_path="/fake/spec.md",
+            status=RunStatus.RUNNING,
+            current_step=0,
+            step_records=[],
+            started_at="2026-01-01T00:00:00",
+            updated_at="2026-01-01T00:00:01",
+        )
+        store.save_run(run)
+
+        with patch.object(Path, "home", return_value=tmp_path):
+            resp = client.post(
+                "/api/v1/runs/test-run-1/gate",
+                json={"action": "approve"},
+            )
+            assert resp.status_code == 409
+
+
+def _make_state_store(tmp_path: Path) -> tuple:
+    """Helper: create StateStore + .specweaver dir at tmp_path."""
+    from specweaver.flow.store import StateStore
+
+    state_dir = tmp_path / ".specweaver"
+    state_dir.mkdir(exist_ok=True)
+    return StateStore(state_dir / "pipeline_state.db"), state_dir
+
+
+def _make_parked_run(
+    store,
+    run_id: str = "test-run-1",
+    project: str = "myproject",
+    spec: str = "/fake/spec.md",
+):
+    """Helper: create and save a PARKED PipelineRun."""
+    from specweaver.flow.state import PipelineRun, RunStatus
+
+    run = PipelineRun(
+        run_id=run_id,
+        pipeline_name="validate_only",
+        project_name=project,
+        spec_path=spec,
+        status=RunStatus.PARKED,
+        current_step=0,
+        step_records=[],
+        started_at="2026-01-01T00:00:00",
+        updated_at="2026-01-01T00:00:01",
+    )
+    store.save_run(run)
+    return run
+
+
+class TestGetRunStatusModes:
+    """Tests for GET /runs/{run_id} detail modes (#33, #34)."""
+
+    def test_summary_mode_strips_output(self, client, tmp_path) -> None:
+        """detail=summary strips output from step result records."""
+        from specweaver.flow.state import (
+            PipelineRun,
+            RunStatus,
+            StepRecord,
+            StepResult,
+            StepStatus,
+        )
+
+        store, _state_dir = _make_state_store(tmp_path)
+        run = PipelineRun(
+            run_id="run-detail-1",
+            pipeline_name="validate_only",
+            project_name="myproject",
+            spec_path="/fake/spec.md",
+            status=RunStatus.COMPLETED,
+            current_step=1,
+            step_records=[
+                StepRecord(
+                    step_name="validate",
+                    result=StepResult(
+                        status=StepStatus.PASSED,
+                        output={"big": "payload"},
+                        started_at="2026-01-01T00:00:00",
+                        completed_at="2026-01-01T00:00:01",
+                    ),
+                ),
+            ],
+            started_at="2026-01-01T00:00:00",
+            updated_at="2026-01-01T00:00:01",
+        )
+        store.save_run(run)
+
+        with patch.object(Path, "home", return_value=tmp_path):
+            resp = client.get("/api/v1/runs/run-detail-1?detail=summary")
+            assert resp.status_code == 200
+            data = resp.json()
+            # output should be stripped in summary mode
+            result = data["step_records"][0]["result"]
+            assert "output" not in result
+
+    def test_full_mode_includes_output(self, client, tmp_path) -> None:
+        """detail=full includes output in step result records."""
+        from specweaver.flow.state import (
+            PipelineRun,
+            RunStatus,
+            StepRecord,
+            StepResult,
+            StepStatus,
+        )
+
+        store, _state_dir = _make_state_store(tmp_path)
+        run = PipelineRun(
+            run_id="run-detail-2",
+            pipeline_name="validate_only",
+            project_name="myproject",
+            spec_path="/fake/spec.md",
+            status=RunStatus.COMPLETED,
+            current_step=1,
+            step_records=[
+                StepRecord(
+                    step_name="validate",
+                    result=StepResult(
+                        status=StepStatus.PASSED,
+                        output={"big": "payload"},
+                        started_at="2026-01-01T00:00:00",
+                        completed_at="2026-01-01T00:00:01",
+                    ),
+                ),
+            ],
+            started_at="2026-01-01T00:00:00",
+            updated_at="2026-01-01T00:00:01",
+        )
+        store.save_run(run)
+
+        with patch.object(Path, "home", return_value=tmp_path):
+            resp = client.get("/api/v1/runs/run-detail-2?detail=full")
+            assert resp.status_code == 200
+            data = resp.json()
+            result = data["step_records"][0]["result"]
+            assert result["output"] == {"big": "payload"}
+
+
+class TestResumeRun:
+    """Tests for POST /api/v1/runs/{run_id}/resume (#35-37, #41)."""
+
+    def test_resume_unknown_run_returns_404(self, client) -> None:
+        """POST /runs/unknown/resume → 404."""
+        resp = client.post("/api/v1/runs/fake-run-id-000/resume")
+        assert resp.status_code == 404
+
+    def test_resume_non_parked_run_returns_409(self, client, tmp_path) -> None:
+        """POST /runs/{id}/resume on a running run → 409."""
+        from specweaver.flow.state import PipelineRun, RunStatus
+
+        store, _state_dir = _make_state_store(tmp_path)
+        run = PipelineRun(
+            run_id="test-run-1",
+            pipeline_name="validate_only",
+            project_name="myproject",
+            spec_path="/fake/spec.md",
+            status=RunStatus.RUNNING,
+            current_step=0,
+            step_records=[],
+            started_at="2026-01-01T00:00:00",
+            updated_at="2026-01-01T00:00:01",
+        )
+        store.save_run(run)
+
+        with patch.object(Path, "home", return_value=tmp_path):
+            resp = client.post("/api/v1/runs/test-run-1/resume")
+            assert resp.status_code == 409
+
+
+class TestMaxConcurrent:
+    """Tests for 429 (max concurrent) on start, resume, and gate-approve (#32, #41, #42)."""
+
+    def test_start_run_max_concurrent_returns_429(
+        self, client, _project_with_spec, tmp_path
+    ) -> None:
+        """POST /pipelines/{name}/run at max concurrent → 429."""
+        from specweaver.api.app import set_event_bridge
+        from specweaver.api.event_bridge import EventBridge
+
+        bridge = EventBridge(max_concurrent=0)
+        set_event_bridge(bridge)
+
+        try:
+            with patch.object(Path, "home", return_value=tmp_path), patch(
+                "specweaver.flow.parser.load_pipeline"
+            ) as mock_load:
+                mock_load.return_value = type(
+                    "P", (), {"name": "test", "steps": []}
+                )()
+                resp = client.post(
+                    "/api/v1/pipelines/validate_only/run",
+                    json={"project": "myproject", "spec": "specs/test_spec.md"},
+                )
+                assert resp.status_code == 429
+        finally:
+            set_event_bridge(EventBridge())
+
+
+class TestStartRunResponse:
+    """Tests for POST /pipelines/{name}/run response (#62)."""
+
+    def test_start_run_returns_run_id_and_detail(
+        self, client, _project_with_spec, tmp_path
+    ) -> None:
+        """Successful pipeline start returns run_id and detail in body."""
+        from unittest.mock import MagicMock
+
+        from specweaver.api.event_bridge import EventBridge
+
+        mock_bridge = MagicMock(spec=EventBridge)
+        mock_bridge.start_run = MagicMock()
+        mock_bridge.make_event_callback = MagicMock(return_value=lambda *a, **kw: None)
+
+        with patch.object(Path, "home", return_value=tmp_path), patch(
+            "specweaver.api.app.get_event_bridge",
+            return_value=mock_bridge,
+        ), patch(
+            "specweaver.flow.parser.load_pipeline"
+        ) as mock_load:
+            mock_load.return_value = type(
+                "P", (), {"name": "test", "steps": []}
+            )()
+
+            resp = client.post(
+                "/api/v1/pipelines/validate_only/run",
+                json={"project": "myproject", "spec": "specs/test_spec.md"},
+            )
+            assert resp.status_code == 200
+            data = resp.json()
+            assert "run_id" in data
+            assert "detail" in data
+            assert len(data["run_id"]) > 0
+            mock_bridge.start_run.assert_called_once()
+
+

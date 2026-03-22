@@ -1,6 +1,6 @@
 # SpecWeaver Roadmap
 
-> **Date**: 2026-03-08 | **Updated**: 2026-03-20
+> **Date**: 2026-03-08 | **Updated**: 2026-03-22
 > **Status**: ACTIVE
 > **Context**: Step-by-step plan for SpecWeaver development. Fresh start from scratch, informed by [flowManager](https://github.com/sbula/flowManager) learnings. MVP-first approach: prove the concept, then expand feature by feature.
 
@@ -41,13 +41,13 @@
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
 **Phase 2 (Flow Engine)**: Steps 7–14 ✅
-**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅
+**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅ | Feature 3.7 🔧 (57 API tests, 3128 total)
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - ✅ Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_ — multi-language (Py/JS/TS), multi-scope, conditional LLM comparison
 - ⚠️ **Post-3.5 cleanup**: Consolidate DB `validation_overrides` (3.3) vs sub-pipeline YAML inheritance (3.4) — decide single source of truth
 - ✅ Feature 3.6: Explicit plan phase (Spec → Plan → Tasks) (Including Stitch UI Mockups)
-- Feature 3.7: REST API server (`sw serve`)
+- 🔧 Feature 3.7: REST API server (`sw serve`) — TDD phases 1–3 complete, pre-commit quality gate passed
 - Feature 3.8: Web dashboard
 - Feature 3.9: Containerization
 
@@ -106,7 +106,7 @@ SpecWeaver is used on a real project that isn't SpecWeaver itself (e.g., the aut
 ```
 Phase 1: MVP (Steps 1-6)     ████████████████████████████     (~8-12 sessions)  [Steps 1-5 ✅, Step 6 ⏸]
 Phase 2: Flow Engine (7-14)   ████████████████████████████████ (~10-14 sessions) [Steps 7-12 ✅]
-Phase 3: Feature Expansion    ████████████████████████████████ (~open-ended, feature by feature) [Feature 3.6 ✅]
+Phase 3: Feature Expansion    ████████████████████████████████ (~open-ended, feature by feature) [Feature 3.7 🔧]
 Phase 4: Advanced             ████████████████████████████████ (~open-ended)
 Phase 5: Domain Brain         ████████████████             (~when in-memory graph proves insufficient)
 Phase 6: External             ████████                         (~2-3 sessions)

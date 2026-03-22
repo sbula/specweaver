@@ -15,11 +15,12 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.flow.models import PipelineStep
+    from specweaver.llm.models import GenerationConfig
 
 logger = logging.getLogger(__name__)
 
 
-def _review_config_from_context(context: RunContext) -> object:
+def _review_config_from_context(context: RunContext) -> GenerationConfig:
     """Build GenerationConfig from RunContext, falling back to defaults."""
     from specweaver.llm.models import GenerationConfig
 

@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **3 037 collected** · 3 026 passed · 9 skipped · 97 source modules · 145 test files
+> **3 128 collected** · 3 128 passed · 9 skipped · 101 source modules · 148 test files
 > **Last updated**: 2026-03-22
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -43,8 +43,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `review/` | 1 | 30 | 0 | 0 | 30 |
 | `standards/` | 11 | 172 | 0 | 4 | 176 |
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
+| `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **97** | **2 700** | **230** | **78** | **3 037** |
+| **Total** | **101** | **2 757** | **230** | **78** | **3 128** |
 
 
 ---
@@ -839,3 +840,68 @@ ender_plan_markdown() happy path | ✅ | ✅ | ⚪ | ⚪ | — |
 | 23 | ~~`test_sw_run_new_feature_hitl_interaction`~~ | Requires live HITL driver at CLI level — deferred | ⚪ |
 | 24 | ~~`test_sw_run_loop_back_reflection`~~ | Covered at integration/flow/ level — deferred | ⚪ |
 | 25 | ~~`test_cli_to_runner_integration`~~ | Covered by `test_pipeline_e2e.py` — deferred | ⚪ |
+
+---
+
+## 15 · API (`api/`)
+
+### 15.1 `event_bridge.py`
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `EventBridge.start_run()` happy path | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `EventBridge.start_run()` duplicate run_id | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `EventBridge.subscribe()` / `unsubscribe()` | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `EventBridge.make_event_callback()` | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `_broadcast()` drops event on full queue | ✅ | ⚪ | ⚪ | ⚪ | QueueFull backpressure |
+| `_wrapper()` broadcasts None on coroutine failure | ✅ | ⚪ | ⚪ | ⚪ | Error path |
+| `get_result()` completed / unknown | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Callback includes result/run/verdict kwargs | ✅ | ⚪ | ⚪ | ⚪ | 3 tests |
+| `unsubscribe()` unknown queue/run_id no-ops | ✅ | ⚪ | ⚪ | ⚪ | 2 tests |
+| `active_count` ignores done tasks | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Multi-subscriber fan-out | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Callback fallback when no event loop | ✅ | ⚪ | ⚪ | ⚪ | RuntimeError path |
+| Broadcast with no subscribers is no-op | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+### 15.2 `v1/pipelines.py`
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `GET /pipelines` list all | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `GET /pipelines/{name}` found / 404 | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `POST /pipelines/{name}/run` 404 pipeline / 404 project | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `POST /pipelines/{name}/run` 429 max concurrent | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `POST /pipelines/{name}/run` success response | ✅ | ⚪ | ⚪ | ⚪ | run_id + detail |
+| `GET /runs/{id}` unknown 404 | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `GET /runs/{id}?detail=summary` / `full` modes | ✅ | ⚪ | ⚪ | ⚪ | 2 tests |
+| `GET /runs/{id}/log` found / 404 | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `POST /runs/{id}/resume` 404 / 409 | ✅ | ⚪ | ⚪ | ⚪ | 2 tests |
+| `POST /runs/{id}/gate` approve / reject / 404 / 400 / 409 | ✅ | ⚪ | ⚪ | ⚪ | 5 tests |
+
+### 15.3 `v1/ws.py`
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| WebSocket connect + receive events | ✅ | ⚪ | ⚪ | ⚪ | — |
+| WebSocket sends JSON events + done signal | ✅ | ⚪ | ⚪ | ⚪ | — |
+| WebSocket unsubscribes on close | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Multiple events before done | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Client disconnect cleanup | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+### 15.4 `app.py`
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `get_event_bridge()` lazy-creates singleton | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `get_event_bridge()` returns same instance | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `set_event_bridge()` overrides singleton | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+### 15.5 `v1/schemas.py` (Phase 3 models)
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `PipelineRunRequest` requires project+spec | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `PipelineRunRequest` valid fields + selector defaults | ✅ | ⚪ | ⚪ | ⚪ | 3 tests |
+| `GateDecisionRequest` requires action | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `GateDecisionRequest` valid approve/reject | ✅ | ⚪ | ⚪ | ⚪ | 2 tests |
+| `PipelineRunResponse` fields | ✅ | ⚪ | ⚪ | ⚪ | — |

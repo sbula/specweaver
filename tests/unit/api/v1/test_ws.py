@@ -84,3 +84,37 @@ class TestWebSocket:
 
         # After close, subscriber should be removed
         assert len(bridge._subscribers.get("test-run-3", [])) == 0
+
+    # --- Gap #46: Multiple events before done ---
+
+    def test_ws_receives_multiple_events_before_done(self, client, bridge) -> None:
+        """WebSocket receives multiple events in sequence before done signal."""
+        with client.websocket_connect("/api/v1/ws/pipeline/test-run-4") as ws:
+            queue_list = bridge._subscribers.get("test-run-4", [])
+
+            # Push multiple events
+            queue_list[0].put_nowait({"event": "step_started", "step_idx": 0})
+            queue_list[0].put_nowait({"event": "step_completed", "step_idx": 0})
+            queue_list[0].put_nowait({"event": "step_started", "step_idx": 1})
+            queue_list[0].put_nowait(None)  # completion
+
+            msgs = []
+            for _ in range(4):
+                msgs.append(json.loads(ws.receive_text()))
+
+            assert msgs[0]["event"] == "step_started"
+            assert msgs[1]["event"] == "step_completed"
+            assert msgs[2]["event"] == "step_started"
+            assert msgs[3]["event"] == "done"
+
+    # --- Gap #47: Client disconnect ---
+
+    def test_ws_handles_client_disconnect(self, client, bridge) -> None:
+        """WebSocket handles early client disconnect gracefully."""
+        with client.websocket_connect("/api/v1/ws/pipeline/test-run-5") as _ws:
+            queue_list = bridge._subscribers.get("test-run-5", [])
+            assert len(queue_list) == 1
+
+        # After context manager exits (disconnect), subscriber should be cleaned
+        assert len(bridge._subscribers.get("test-run-5", [])) == 0
+

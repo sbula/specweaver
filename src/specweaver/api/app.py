@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from importlib.metadata import version
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
@@ -81,7 +82,7 @@ def create_app(
     if db is None:
         from specweaver.config.database import Database as _Database
 
-        db = _Database()
+        db = _Database(Path.home() / ".specweaver" / "specweaver.db")
     deps.set_db(db)
 
     # --- Routers ---
