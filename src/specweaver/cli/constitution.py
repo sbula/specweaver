@@ -181,7 +181,7 @@ def constitution_bootstrap(
         raise typer.Exit(code=1)
 
     # Extract unique languages
-    languages = sorted({s["language"] for s in standards})
+    languages = sorted({str(s["language"]) for s in standards})
 
     project_name = project_path.name.lower().replace(" ", "-")
     result = generate_constitution_from_standards(

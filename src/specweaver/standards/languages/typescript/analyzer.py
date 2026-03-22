@@ -51,7 +51,7 @@ class TSStandardsAnalyzer(JSStandardsAnalyzer):
         # as TSX components, covering both extensions effectively.
         return tree_sitter.Language(tree_sitter_typescript.language_tsx())
 
-    def get_extractors(self) -> list[Callable]:
+    def get_extractors(self) -> list[Callable[..., CategoryResult]]:
         return [
             self._extract_naming,
             self._extract_error_handling,
@@ -79,20 +79,20 @@ class TSStandardsAnalyzer(JSStandardsAnalyzer):
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
         """Determine whether interfaces or type aliases are dominantly used."""
-        styles: Counter = Counter()
+        styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
             nodes = walk_tree(tree)
             for node in nodes:
                 if node.type == "interface_declaration":
-                    styles["interface"] += w
+                    styles["interface"] += round(w)
                     sample_size += 1
                 elif node.type == "type_alias_declaration":
-                    styles["type_alias"] += w
+                    styles["type_alias"] += round(w)
                     sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if styles:
             dominant["declaration"] = styles.most_common(1)[0][0]
 

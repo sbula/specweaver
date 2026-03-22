@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
 
 
@@ -43,11 +44,11 @@ class CategoryResult:
     """
 
     category: str
-    dominant: dict
+    dominant: Mapping[str, object]
     confidence: float
     sample_size: int
     language: str | None = None
-    alternatives: dict = field(default_factory=dict)
+    alternatives: Mapping[str, object] = field(default_factory=dict)
     conflicts: list[str] = field(default_factory=list)
 
 

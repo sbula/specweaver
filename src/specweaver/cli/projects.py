@@ -93,7 +93,7 @@ def use(
         raise typer.Exit(code=1)
 
     # Check path still exists
-    root = Path(proj["root_path"])
+    root = Path(str(proj["root_path"]))
     if not root.exists():
         _core.console.print(
             f"[red]Error:[/red] Project root no longer exists: {root}\n"
@@ -129,9 +129,9 @@ def projects() -> None:
         marker = "*" if proj["name"] == active else ""
         table.add_row(
             marker,
-            proj["name"],
-            proj["root_path"],
-            proj["last_used_at"][:10],
+            str(proj["name"]),
+            str(proj["root_path"]),
+            str(proj["last_used_at"])[:10],
         )
 
     _core.console.print(table)
@@ -212,7 +212,7 @@ def scan() -> None:
     if proj is None:
         _core.console.print(f"[red]Error:[/red] Project '{active}' not found.")
         raise typer.Exit(code=1)
-    project_path = Path(proj["root_path"])
+    project_path = Path(str(proj["root_path"]))
 
     if not project_path.exists():
         _core.console.print(f"[red]Error:[/red] Project root does not exist: {project_path}")

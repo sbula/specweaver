@@ -98,10 +98,10 @@ def load_settings(
 
     if profile:
         llm = LLMSettings(
-            model=profile["model"],
-            temperature=profile["temperature"],
-            max_output_tokens=profile["max_output_tokens"],
-            response_format=profile["response_format"],
+            model=str(profile["model"]),
+            temperature=float(profile["temperature"]),  # type: ignore[arg-type]
+            max_output_tokens=int(str(profile["max_output_tokens"])),
+            response_format=str(profile["response_format"]),  # type: ignore[arg-type]
             api_key=os.environ.get("GEMINI_API_KEY", ""),
         )
     else:
@@ -158,7 +158,11 @@ def migrate_legacy_config(
     """
     from pathlib import Path
 
-    from ruamel.yaml import YAML, YAMLError
+    from ruamel.yaml import YAML
+    try:
+        from ruamel.yaml import YAMLError  # type: ignore[attr-defined]
+    except ImportError:
+        YAMLError = Exception  # noqa: N806
 
     config_file = Path(project_path) / ".specweaver" / "config.yaml"
     if not config_file.is_file():

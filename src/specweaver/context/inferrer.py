@@ -111,7 +111,7 @@ class ContextInferrer:
         )
 
         # Build YAML content
-        data: dict = {
+        data: dict[str, object] = {
             "name": name,
             "level": level,
             "purpose": purpose,

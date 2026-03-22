@@ -83,7 +83,7 @@ class GitAtom(Atom):
                         f"Known: {sorted(self._known_intents())}",
             )
 
-        return handler(context)
+        return handler(context)  # type: ignore[no-any-return]
 
     def _known_intents(self) -> set[str]:
         """Return the set of known intent names."""

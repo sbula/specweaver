@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 
@@ -19,10 +20,16 @@ from specweaver.cli._helpers import (
 )
 from specweaver.project.discovery import resolve_project_path
 
+if TYPE_CHECKING:
+    from specweaver.flow.display import JsonPipelineDisplay, RichPipelineDisplay
+    from specweaver.flow.store import StateStore
+
+    PipelineDisplay = JsonPipelineDisplay | RichPipelineDisplay
+
 _STATE_DB_PATH = Path.home() / ".specweaver" / "pipeline_state.db"
 
 
-def _get_state_store():
+def _get_state_store() -> StateStore:
     """Get the pipeline state store (lazy import)."""
     from specweaver.flow.store import StateStore
     return StateStore(_STATE_DB_PATH)
@@ -61,7 +68,7 @@ def _create_display(
     *,
     use_json: bool = False,
     verbose: bool = False,
-):
+) -> PipelineDisplay:
     """Create the appropriate display backend."""
     if use_json:
         from specweaver.flow.display import JsonPipelineDisplay

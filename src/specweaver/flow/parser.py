@@ -62,7 +62,7 @@ def list_bundled_pipelines() -> list[str]:
     names: list[str] = []
     pipelines_pkg = importlib.resources.files("specweaver.pipelines")
     for item in pipelines_pkg.iterdir():
-        name = item.name  # type: ignore[union-attr]
+        name = item.name
         if name.endswith(".yaml"):
             names.append(name.removesuffix(".yaml"))
     return sorted(names)
@@ -95,7 +95,7 @@ def _resolve_path(path: Path) -> Path:
         pipelines_pkg = importlib.resources.files("specweaver.pipelines")
         template = pipelines_pkg / f"{name}.yaml"
         # importlib.resources returns a Traversable — we need a real Path
-        with importlib.resources.as_file(template) as real_path:  # type: ignore[arg-type]
+        with importlib.resources.as_file(template) as real_path:
             if real_path.exists():
                 return real_path
     except (FileNotFoundError, TypeError, ModuleNotFoundError):

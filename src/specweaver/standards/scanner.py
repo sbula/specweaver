@@ -56,11 +56,11 @@ class StandardsScanner:
         analyzer_to_files: dict[StandardsAnalyzer, list[Path]] = {}
         for path in files:
             ext = path.suffix
-            analyzer = ext_to_analyzer.get(ext)
-            if analyzer:
-                if analyzer not in analyzer_to_files:
-                    analyzer_to_files[analyzer] = []
-                analyzer_to_files[analyzer].append(path)
+            matched = ext_to_analyzer.get(ext)
+            if matched:
+                if matched not in analyzer_to_files:
+                    analyzer_to_files[matched] = []
+                analyzer_to_files[matched].append(path)
 
         # 3. Execute extract_all on each active analyzer
         results: list[CategoryResult] = []

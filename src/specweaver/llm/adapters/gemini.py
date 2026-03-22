@@ -147,11 +147,12 @@ class GeminiAdapter(LLMAdapter):
         )
 
         try:
-            async for chunk in client.aio.models.generate_content_stream(
+            stream = client.aio.models.generate_content_stream(
                 model=config.model,
                 contents=contents,
                 config=gen_config,
-            ):
+            )
+            async for chunk in await stream:
                 if chunk.text:
                     yield chunk.text
         except Exception as exc:

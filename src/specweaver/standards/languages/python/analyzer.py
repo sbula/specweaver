@@ -103,8 +103,8 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
     def _extract_naming(
         self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
-        func_styles: Counter = Counter()
-        class_styles: Counter = Counter()
+        func_styles: Counter[str] = Counter()
+        class_styles: Counter[str] = Counter()
         total_weight = 0.0
         sample_size = 0
 
@@ -114,16 +114,16 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                     if not node.name.startswith("_"):
                         style = _classify_name(node.name)
-                        func_styles[style] += w
+                        func_styles[style] += round(w)
                         sample_size += 1
                 elif isinstance(node, ast.ClassDef):
                     style = _classify_name(node.name)
-                    class_styles[style] += w
+                    class_styles[style] += round(w)
                     sample_size += 1
 
             total_weight += w
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if func_styles:
             dominant["function_style"] = func_styles.most_common(1)[0][0]
         if class_styles:
@@ -141,7 +141,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
     def _extract_error_handling(
         self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
-        styles: Counter = Counter()
+        styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
@@ -149,12 +149,12 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
             for node in ast.walk(tree):
                 if isinstance(node, ast.ExceptHandler):
                     if node.type is None:
-                        styles["bare"] += w
+                        styles["bare"] += round(w)
                     else:
-                        styles["specific"] += w
+                        styles["specific"] += round(w)
                     sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if styles:
             dominant["exception_style"] = styles.most_common(1)[0][0]
 
@@ -168,7 +168,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
     def _extract_type_hints(
         self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
-        typed: Counter = Counter()
+        typed: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
@@ -179,10 +179,10 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
                         node.returns is not None
                         or any(a.annotation is not None for a in node.args.args)
                     )
-                    typed["yes" if has_annotations else "no"] += w
+                    typed["yes" if has_annotations else "no"] += round(w)
                     sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if typed:
             dominant["usage"] = typed.most_common(1)[0][0]
 
@@ -207,7 +207,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
                     if ast.get_docstring(node):
                         documented += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if total_funcs > 0:
             ratio = documented / total_funcs
             if ratio >= 0.9:
@@ -229,23 +229,23 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
     def _extract_imports(
         self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
-        styles: Counter = Counter()
+        styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
 
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
-                    styles["absolute"] += w
+                    styles["absolute"] += round(w)
                     sample_size += 1
                 elif isinstance(node, ast.ImportFrom):
                     if node.level and node.level > 0:
-                        styles["relative"] += w
+                        styles["relative"] += round(w)
                     else:
-                        styles["absolute"] += w
+                        styles["absolute"] += round(w)
                     sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if styles:
             dominant["style"] = styles.most_common(1)[0][0]
 
@@ -259,7 +259,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
     def _extract_test_patterns(
         self, parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
-        frameworks: Counter = Counter()
+        frameworks: Counter[str] = Counter()
         sample_size = 0
 
         for path, w, tree in parsed_files:
@@ -268,10 +268,10 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
 
             framework = self._detect_test_framework(tree)
             if framework:
-                frameworks[framework] += w
+                frameworks[framework] += round(w)
                 sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if frameworks:
             dominant["framework"] = frameworks.most_common(1)[0][0]
 
@@ -325,7 +325,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         return recency_weight(mtime, half_life_days=half_life_days)
 
     @staticmethod
-    def _compute_confidence(counter: Counter) -> float:
+    def _compute_confidence(counter: Counter[str]) -> float:
         """Compute confidence as the fraction of the dominant pattern."""
         if not counter:
             return 0.0

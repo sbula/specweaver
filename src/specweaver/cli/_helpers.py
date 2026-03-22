@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
+from typing import TYPE_CHECKING, cast
 
 import typer
 from rich.table import Table
@@ -15,7 +16,10 @@ from specweaver.cli import _core
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.graph.topology import TopologyGraph
+    from specweaver.config.settings import SpecWeaverSettings
+    from specweaver.graph.topology import TopologyContext, TopologyGraph
+    from specweaver.llm.adapters.gemini import GeminiAdapter
+    from specweaver.llm.models import GenerationConfig
     from specweaver.validation.models import RuleResult
 
 # Status display mapping (shared across check command)
@@ -91,7 +95,9 @@ def _print_summary(results: list[RuleResult], *, strict: bool = False) -> None:
         _core.console.print("\n[green]ALL PASSED[/green]")
 
 
-def _require_llm_adapter(project_path: Path, *, llm_role: str = "draft") -> tuple:
+def _require_llm_adapter(
+    project_path: Path, *, llm_role: str = "draft",
+) -> tuple[SpecWeaverSettings, GeminiAdapter, GenerationConfig]:
     """Create and validate an LLM adapter from project settings.
 
     Returns (settings, adapter, gen_config) or raises typer.Exit.
@@ -178,7 +184,7 @@ def _select_topology_contexts(
     module_name: str,
     *,
     selector_name: str = "direct",
-) -> list | None:
+) -> list[TopologyContext] | None:
     """Run a selector and return topology contexts, or None.
 
     Args:
@@ -244,7 +250,6 @@ def _load_standards_content(
             If ``None``, all standards are loaded (backward-compatible).
         max_chars: Maximum output length in characters.
     """
-    import json
 
     from specweaver.standards.scope_detector import _resolve_scope
 
@@ -275,8 +280,8 @@ def _load_standards_content(
         "Generated code SHOULD follow these conventions.\n",
     ]
 
-    def _format_standard(s: dict) -> list[str]:
-        data = json.loads(s["data"]) if isinstance(s["data"], str) else s["data"]
+    def _format_standard(s: dict[str, object]) -> list[str]:
+        data: dict[str, object] = json.loads(s["data"]) if isinstance(s["data"], str) else cast("dict[str, object]", s["data"])
         conf = s["confidence"]
         result = [f"[{s['scope']}/{s['language']}/{s['category']}] (confidence={conf:.0%})"]
         for k, v in data.items():

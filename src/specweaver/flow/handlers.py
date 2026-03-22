@@ -18,13 +18,17 @@ import asyncio
 import logging
 from datetime import UTC, datetime
 from pathlib import Path  # noqa: TC003 — Pydantic needs Path at runtime
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from specweaver.flow.models import PipelineStep, StepAction, StepTarget
 from specweaver.flow.state import StepResult, StepStatus
 from specweaver.validation.models import Status as RuleStatus
+
+if TYPE_CHECKING:
+    from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+    from specweaver.validation.models import RuleResult
 
 logger = logging.getLogger(__name__)
 
@@ -149,11 +153,12 @@ class ValidateSpecHandler:
         settings: Any,
         *,
         kind_str: str | None = None,
-    ) -> list:
+    ) -> list[RuleResult]:
         """Run spec validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
         import specweaver.validation.rules.spec  # noqa: F401
         from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.models import RuleResult  # noqa: F401 — for type narrowing
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
         # Map kind to pipeline name
@@ -226,11 +231,12 @@ class ValidateCodeHandler:
         code_path: Path,
         spec_path: Path,
         settings: Any,
-    ) -> list:
+    ) -> list[RuleResult]:
         """Run code validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
         import specweaver.validation.rules.code  # noqa: F401
         from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.models import RuleResult  # noqa: F401 — for type narrowing
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")
@@ -502,7 +508,7 @@ class ValidateTestsHandler:
             completed_at=_now_iso(),
         )
 
-    def _get_atom(self, context: RunContext):
+    def _get_atom(self, context: RunContext) -> TestRunnerAtom:
         """Lazily create a TestRunnerAtom for the project."""
         from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
         return TestRunnerAtom(cwd=context.project_path)
@@ -671,7 +677,7 @@ class LintFixHandler:
             completed_at=_now_iso(),
         )
 
-    def _get_atom(self, context: RunContext):
+    def _get_atom(self, context: RunContext) -> TestRunnerAtom:
         """Lazily create a TestRunnerAtom for the project."""
         from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
         return TestRunnerAtom(cwd=context.project_path)
@@ -686,7 +692,7 @@ class LintFixHandler:
         self,
         llm: Any,
         code_path: Path,
-        lint_errors: list[dict],
+        lint_errors: list[dict[str, object]],
     ) -> None:
         """Ask the LLM to fix lint errors in the given file."""
         code = code_path.read_text(encoding="utf-8")

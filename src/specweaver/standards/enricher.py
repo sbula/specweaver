@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ValidationError
 
-from specweaver.llm.models import GenerationConfig, Message
+from specweaver.llm.models import GenerationConfig, Message, Role
 
 if TYPE_CHECKING:
     from specweaver.llm.adapters.base import LLMAdapter
@@ -74,8 +74,8 @@ Respond in pure JSON matching this schema:
 }}
 """
         messages = [
-            Message(role="system", content="You output pure JSON matching the requested schema without markdown blocks."),
-            Message(role="user", content=prompt),
+            Message(role=Role.SYSTEM, content="You output pure JSON matching the requested schema without markdown blocks."),
+            Message(role=Role.USER, content=prompt),
         ]
 
         # In a real app we might use response_schema if supported, but here we enforce standard JSON.

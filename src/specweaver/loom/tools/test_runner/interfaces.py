@@ -104,7 +104,7 @@ class ReviewerTestInterface:
 # Factory
 # ---------------------------------------------------------------------------
 
-_ROLE_INTERFACE_MAP: dict[str, type] = {
+_ROLE_INTERFACE_MAP: dict[str, type[ImplementerTestInterface | ReviewerTestInterface]] = {
     "implementer": ImplementerTestInterface,
     "reviewer": ReviewerTestInterface,
 }

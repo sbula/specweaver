@@ -298,7 +298,7 @@ class Database:
                     (name, profile["name"], profile["id"]),
                 )
 
-    def get_project(self, name: str) -> dict | None:
+    def get_project(self, name: str) -> dict[str, object] | None:
         """Get project info by name, or None if not found."""
         with self.connect() as conn:
             row = conn.execute(
@@ -306,7 +306,7 @@ class Database:
             ).fetchone()
             return dict(row) if row else None
 
-    def list_projects(self) -> list[dict]:
+    def list_projects(self) -> list[dict[str, object]]:
         """List all registered projects, ordered by last_used_at desc."""
         with self.connect() as conn:
             rows = conn.execute(
@@ -428,7 +428,7 @@ class Database:
             if not row:
                 msg = f"Project '{project_name}' not found"
                 raise ValueError(msg)
-            return row["log_level"]
+            return str(row["log_level"])
 
     def set_log_level(self, project_name: str, level: str) -> None:
         """Set the log level for a project.
@@ -482,7 +482,7 @@ class Database:
             if not row:
                 msg = f"Project '{project_name}' not found"
                 raise ValueError(msg)
-            return row["constitution_max_size"]
+            return int(row["constitution_max_size"])
 
     def set_constitution_max_size(
         self, project_name: str, max_size: int,
@@ -543,7 +543,7 @@ class Database:
             if not row:
                 msg = f"Project '{project_name}' not found"
                 raise ValueError(msg)
-            return row["auto_bootstrap_constitution"]
+            return str(row["auto_bootstrap_constitution"])
 
     def set_auto_bootstrap(
         self, project_name: str, mode: str,
@@ -587,7 +587,7 @@ class Database:
     # LLM Profiles
     # ------------------------------------------------------------------
 
-    def list_llm_profiles(self, *, global_only: bool = False) -> list[dict]:
+    def list_llm_profiles(self, *, global_only: bool = False) -> list[dict[str, object]]:
         """List LLM profiles.
 
         Args:
@@ -624,7 +624,7 @@ class Database:
             )
             return cursor.lastrowid  # type: ignore[return-value]
 
-    def get_llm_profile(self, profile_id: int) -> dict | None:
+    def get_llm_profile(self, profile_id: int) -> dict[str, object] | None:
         """Get an LLM profile by ID, or None if not found."""
         with self.connect() as conn:
             row = conn.execute(
@@ -636,7 +636,7 @@ class Database:
     # Project-LLM links
     # ------------------------------------------------------------------
 
-    def get_project_llm_links(self, project_name: str) -> list[dict]:
+    def get_project_llm_links(self, project_name: str) -> list[dict[str, object]]:
         """Get all role → profile links for a project."""
         with self.connect() as conn:
             rows = conn.execute(
@@ -678,7 +678,7 @@ class Database:
 
     def get_project_profile(
         self, project_name: str, role: str,
-    ) -> dict | None:
+    ) -> dict[str, object] | None:
         """Get the resolved LLM profile for a project + role.
 
         Returns the full profile dict, or None if the role is not linked.
@@ -778,7 +778,7 @@ class Database:
 
     def get_validation_override(
         self, project_name: str, rule_id: str,
-    ) -> dict | None:
+    ) -> dict[str, object] | None:
         """Get a single validation override, or None if not set."""
         with self.connect() as conn:
             row = conn.execute(
@@ -788,7 +788,7 @@ class Database:
             ).fetchone()
             return dict(row) if row else None
 
-    def get_validation_overrides(self, project_name: str) -> list[dict]:
+    def get_validation_overrides(self, project_name: str) -> list[dict[str, object]]:
         """Get all validation overrides for a project."""
         with self.connect() as conn:
             rows = conn.execute(
@@ -833,11 +833,12 @@ class Database:
         rows = self.get_validation_overrides(project_name)
         overrides: dict[str, RuleOverride] = {}
         for row in rows:
-            overrides[row["rule_id"]] = RuleOverride(
-                rule_id=row["rule_id"],
+            rule_id = str(row["rule_id"])
+            overrides[rule_id] = RuleOverride(
+                rule_id=rule_id,
                 enabled=bool(row["enabled"]),
-                warn_threshold=row["warn_threshold"],
-                fail_threshold=row["fail_threshold"],
+                warn_threshold=float(str(row["warn_threshold"])) if row["warn_threshold"] is not None else None,
+                fail_threshold=float(str(row["fail_threshold"])) if row["fail_threshold"] is not None else None,
             )
         return ValidationSettings(overrides=overrides)
 
@@ -861,7 +862,7 @@ class Database:
         if not proj:
             msg = f"Project '{project_name}' not found"
             raise ValueError(msg)
-        return proj.get("domain_profile")
+        return str(proj["domain_profile"]) if proj.get("domain_profile") is not None else None
 
     def set_domain_profile(
         self,
@@ -957,7 +958,7 @@ class Database:
         scope: str,
         language: str,
         category: str,
-        data: dict,
+        data: dict[str, object],
         confidence: float,
         *,
         confirmed_by: str | None = None,
@@ -999,7 +1000,7 @@ class Database:
         *,
         scope: str | None = None,
         language: str | None = None,
-    ) -> list[dict]:
+    ) -> list[dict[str, object]]:
         """Query standards for a project, optionally filtered.
 
         Args:
@@ -1012,7 +1013,7 @@ class Database:
             confidence, confirmed_by, scanned_at.
         """
         query = "SELECT * FROM project_standards WHERE project_name = ?"
-        params: list = [project_name]
+        params: list[str] = [project_name]
 
         if scope is not None:
             query += " AND scope = ?"
@@ -1031,7 +1032,7 @@ class Database:
         scope: str,
         language: str,
         category: str,
-    ) -> dict | None:
+    ) -> dict[str, object] | None:
         """Get a single standard by exact key.
 
         Returns:
@@ -1064,7 +1065,7 @@ class Database:
                 "DELETE FROM project_standards "
                 "WHERE project_name = ? AND scope = ?"
             )
-            params = (project_name, scope)
+            params: tuple[str, str] | tuple[str] = (project_name, scope)
         else:
             query = "DELETE FROM project_standards WHERE project_name = ?"
             params = (project_name,)

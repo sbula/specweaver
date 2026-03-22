@@ -115,7 +115,7 @@ def config_list() -> None:
 
     for o in overrides:
         table.add_row(
-            o["rule_id"],
+            str(o["rule_id"]),
             "[green]Yes[/green]" if o["enabled"] else "[red]No[/red]",
             str(o["warn_threshold"]) if o["warn_threshold"] is not None else "[dim]\u2014[/dim]",
             str(o["fail_threshold"]) if o["fail_threshold"] is not None else "[dim]\u2014[/dim]",

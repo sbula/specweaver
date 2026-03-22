@@ -14,7 +14,7 @@ Output: a complete _spec.md file in the target project's specs/ directory.
 from __future__ import annotations
 
 from datetime import UTC
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from jinja2 import Template
 
@@ -27,8 +27,18 @@ if TYPE_CHECKING:
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
 
+
+class SectionDef(TypedDict, total=False):
+    """A single spec section definition."""
+    name: str
+    heading: str
+    question: str
+    prompt: str
+    inject_topology: bool
+
+
 # The 5 sections of a component spec and their guiding questions
-SPEC_SECTIONS: list[dict[str, str | bool]] = [
+SPEC_SECTIONS: list[SectionDef] = [
     {
         "name": "Purpose",
         "heading": "## 1. Purpose",

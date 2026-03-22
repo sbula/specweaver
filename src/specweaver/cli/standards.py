@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import typer
 from rich.table import Table
@@ -65,7 +65,7 @@ def standards_scan(
     if proj is None:
         _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
         raise typer.Exit(code=1)
-    project_path = Path(proj["root_path"])
+    project_path = Path(str(proj["root_path"]))
 
     if not project_path.exists():
         _core.console.print(
@@ -166,7 +166,7 @@ def _save_accepted_standards(
                 scope=s,
                 language=result.language or "unknown",
                 category=result.category,
-                data=result.dominant,
+                data=dict(result.dominant),
                 confidence=result.confidence,
                 confirmed_by=confirmed,
             )
@@ -320,14 +320,14 @@ def standards_show(
     table.add_column("Confirmed")
 
     for s in standards:
-        data = json.loads(s["data"]) if isinstance(s["data"], str) else s["data"]
+        data: dict[str, object] = json.loads(s["data"]) if isinstance(s["data"], str) else cast("dict[str, object]", s["data"])
         patterns = ", ".join(f"{k}={v}" for k, v in data.items())
-        conf_str = f"{s['confidence']:.0%}"
-        confirmed = s.get("confirmed_by") or "[dim]\u2014[/dim]"
+        conf_str = f"{float(str(s['confidence'])):.0%}"
+        confirmed = str(s.get("confirmed_by") or "[dim]\u2014[/dim]")
         table.add_row(
-            s["scope"],
-            s["language"],
-            s["category"],
+            str(s["scope"]),
+            str(s["language"]),
+            str(s["category"]),
             patterns,
             conf_str,
             confirmed,
@@ -383,12 +383,12 @@ def standards_scopes() -> None:
         standards = db.get_standards(name, scope=scope_name)
         if not standards:
             continue
-        languages = sorted({s["language"] for s in standards})
+        languages_str = sorted({str(s["language"]) for s in standards})
         cats = len(standards)
-        last_scanned = max(s.get("scanned_at", "") for s in standards)
+        last_scanned = max((str(s.get("scanned_at") or "") for s in standards), default="")
         table.add_row(
             scope_name,
-            ", ".join(languages),
+            ", ".join(languages_str),
             str(cats),
             last_scanned[:10] if last_scanned else "[dim]\u2014[/dim]",
         )

@@ -234,11 +234,11 @@ def create_git_interface(role: str, cwd: Path) -> GitInterface:
 
     # conflict_resolver needs EngineGitExecutor (merge is in its whitelist)
     if role == "conflict_resolver":
-        executor = EngineGitExecutor(cwd=cwd, whitelist=whitelist)
+        executor: EngineGitExecutor | GitExecutor = EngineGitExecutor(cwd=cwd, whitelist=whitelist)
     else:
         executor = GitExecutor(cwd=cwd, whitelist=whitelist)
 
     tool = GitTool(executor=executor, role=role)
 
     interface_cls = _ROLE_INTERFACE_MAP[role]
-    return interface_cls(tool)
+    return interface_cls(tool)  # type: ignore[return-value]

@@ -105,8 +105,8 @@ class GateEvaluator:
     ) -> None:
         """Inject step result as feedback into RunContext."""
         if not hasattr(context, "feedback"):
-            context.feedback = {}  # type: ignore[attr-defined]
-        context.feedback[to_step] = {  # type: ignore[attr-defined]
+            context.feedback = {}
+        context.feedback[to_step] = {
             "from_step": from_step,
             "findings": result.output,
         }

@@ -39,7 +39,7 @@ class TreeSitterAnalyzer(StandardsAnalyzer):
         ...
 
     @abstractmethod
-    def get_extractors(self) -> list[Callable]:
+    def get_extractors(self) -> list[Callable[..., CategoryResult]]:
         """Return a list of extraction methods to run during the single pass.
 
         Each extractor should accept:

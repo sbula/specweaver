@@ -13,7 +13,7 @@ Output: a *_feature_spec.md file in the target directory.
 from __future__ import annotations
 
 from datetime import UTC
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from jinja2 import Template
 
@@ -26,8 +26,18 @@ if TYPE_CHECKING:
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
 
+
+class FeatureSectionDef(TypedDict, total=False):
+    """A single feature spec section definition."""
+    name: str
+    heading: str
+    question: str
+    prompt: str
+    inject_topology: bool
+
+
 # The 5 sections of a Feature Spec and their guiding questions
-FEATURE_SECTIONS: list[dict[str, str | bool]] = [
+FEATURE_SECTIONS: list[FeatureSectionDef] = [
     {
         "name": "Intent",
         "heading": "## Intent",

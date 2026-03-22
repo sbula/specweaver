@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 
@@ -18,6 +19,10 @@ from specweaver.cli._helpers import (
     _select_topology_contexts,
 )
 from specweaver.project.discovery import resolve_project_path
+
+if TYPE_CHECKING:
+    from specweaver.graph.topology import TopologyContext
+    from specweaver.review.reviewer import Reviewer, ReviewResult
 
 
 @_core.app.command()
@@ -149,14 +154,14 @@ def review(
 
 
 def _execute_review(
-    reviewer: object,
+    reviewer: Reviewer,
     target_path: Path,
     spec: str | None,
-    topology_contexts: list | None = None,
+    topology_contexts: list[TopologyContext] | None = None,
     *,
     constitution: str | None = None,
     standards: str | None = None,
-) -> object:
+) -> ReviewResult:
     """Run the appropriate review (spec or code)."""
     from specweaver.review.reviewer import ReviewResult, ReviewVerdict
 
@@ -195,7 +200,7 @@ def _execute_review(
         )
 
 
-def _display_review_result(result: object) -> None:
+def _display_review_result(result: ReviewResult) -> None:
     """Display review verdict and findings."""
     from specweaver.review.reviewer import ReviewVerdict
 

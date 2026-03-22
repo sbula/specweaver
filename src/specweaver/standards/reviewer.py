@@ -46,7 +46,7 @@ class StandardsReviewer:
         self,
         scope_results: dict[str, list[CategoryResult]],
         *,
-        existing: dict[str, list[dict]],
+        existing: dict[str, list[dict[str, object]]],
     ) -> dict[str, list[CategoryResult]]:
         """Run combined HITL review across all scopes.
 
@@ -71,8 +71,8 @@ class StandardsReviewer:
             scope_accepted: list[CategoryResult] = []
 
             # Build lookup of existing by category
-            existing_by_cat = {
-                e["category"]: e for e in scope_existing
+            existing_by_cat: dict[str, dict[str, object]] = {
+                str(e["category"]): e for e in scope_existing
             }
 
             skip_scope = False
@@ -107,7 +107,7 @@ class StandardsReviewer:
         return accepted
 
     def _should_auto_accept(
-        self, result: CategoryResult, existing_by_cat: dict,
+        self, result: CategoryResult, existing_by_cat: dict[str, dict[str, object]],
     ) -> bool:
         """Check if a result is unchanged and already HITL-confirmed."""
         old = existing_by_cat.get(result.category)
@@ -118,7 +118,7 @@ class StandardsReviewer:
             if isinstance(old["data"], str)
             else old["data"]
         )
-        return old_data == result.dominant
+        return bool(old_data == result.dominant)
 
     def _handle_result_action(
         self,
@@ -168,7 +168,7 @@ class StandardsReviewer:
         self,
         scope: str,
         category: str,
-        old: dict,
+        old: dict[str, object],
         new: CategoryResult,
     ) -> None:
         """Show what changed between old and new standards."""

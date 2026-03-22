@@ -32,10 +32,11 @@ def walk_tree(tree: tree_sitter.Tree) -> list[tree_sitter.Node]:
     """Generator that yields all nodes in a tree-sitter tree (DFS)."""
     cursor = tree.walk()
     reached_root = False
-    nodes = []
+    nodes: list[tree_sitter.Node] = []
 
     while not reached_root:
-        nodes.append(cursor.node)
+        if cursor.node is not None:
+            nodes.append(cursor.node)
         if cursor.goto_first_child():
             continue
         if cursor.goto_next_sibling():
@@ -50,6 +51,17 @@ def walk_tree(tree: tree_sitter.Tree) -> list[tree_sitter.Node]:
                 retracing = False
 
     return nodes
+
+
+def walk_node(node: tree_sitter.Node) -> list[tree_sitter.Node]:
+    """Walk all descendants of a Node (DFS), not requiring a Tree root."""
+    results: list[tree_sitter.Node] = []
+    stack = [node]
+    while stack:
+        current = stack.pop()
+        results.append(current)
+        stack.extend(reversed(current.children))
+    return results
 
 
 class JSStandardsAnalyzer(TreeSitterAnalyzer):
@@ -74,7 +86,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
     def get_language(self) -> tree_sitter.Language:
         return tree_sitter.Language(tree_sitter_javascript.language())
 
-    def get_extractors(self) -> list[Callable]:
+    def get_extractors(self) -> list[Callable[..., CategoryResult]]:
         return [
             self._extract_naming,
             self._extract_error_handling,
@@ -84,7 +96,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             self._extract_async_patterns,
         ]
 
-    def _compute_confidence(self, counter: Counter) -> float:
+    def _compute_confidence(self, counter: Counter[str]) -> float:
         """Compute confidence as the fraction of the dominant pattern."""
         if not counter:
             return 0.0
@@ -101,8 +113,8 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
     def _extract_naming(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
-        func_styles: Counter = Counter()
-        class_styles: Counter = Counter()
+        func_styles: Counter[str] = Counter()
+        class_styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
@@ -112,12 +124,12 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                 if result:
                     target, style = result
                     if target == "func":
-                        func_styles[style] += w
+                        func_styles[style] += round(w)
                     else:
-                        class_styles[style] += w
+                        class_styles[style] += round(w)
                     sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if func_styles:
             dominant["function_style"] = func_styles.most_common(1)[0][0]
         if class_styles:
@@ -151,7 +163,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
     def _extract_error_handling(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
-        styles: Counter = Counter()
+        styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
@@ -159,10 +171,10 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             for node in nodes:
                 if node.type == "catch_clause":
                     is_specific = self._is_specific_catch(node)
-                    styles["specific" if is_specific else "bare"] += w
+                    styles["specific" if is_specific else "bare"] += round(w)
                     sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if styles:
             dominant["exception_style"] = styles.most_common(1)[0][0]
 
@@ -179,7 +191,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
         body = node.child_by_field_name("body")
         if not body:
             return False
-        for bnode in walk_tree(body):
+        for bnode in walk_node(body):
             if bnode.type == "instanceof_expression":
                 return True
             if bnode.type == "member_expression":
@@ -201,12 +213,12 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                     total_funcs += 1
                     # In tree-sitter, comments preceding a node are typically previous siblings
                     prev = node.prev_sibling
-                    if prev and prev.type == "comment":
+                    if prev and prev.type == "comment" and prev.text is not None:
                         text = prev.text.decode("utf-8")
                         if text.startswith("/**"):
                             documented += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if total_funcs > 0:
             ratio = documented / total_funcs
             if ratio >= 0.9:
@@ -228,22 +240,22 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
     def _extract_import_patterns(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
-        styles: Counter = Counter()
+        styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
             nodes = walk_tree(tree)
             for node in nodes:
                 if node.type == "import_statement":
-                    styles["es6"] += w
+                    styles["es6"] += round(w)
                     sample_size += 1
                 elif node.type == "call_expression":
                     func = node.child_by_field_name("function")
                     if func and func.type == "identifier" and func.text and func.text.decode("utf-8") == "require":
-                        styles["commonjs"] += w
+                        styles["commonjs"] += round(w)
                         sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if styles:
             dominant["style"] = styles.most_common(1)[0][0]
 
@@ -257,7 +269,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
     def _extract_async_patterns(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
-        styles: Counter = Counter()
+        styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
@@ -265,10 +277,10 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             for node in nodes:
                 pattern = self._classify_async_node(node)
                 if pattern:
-                    styles[pattern] += w
+                    styles[pattern] += round(w)
                     sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if styles:
             dominant["style"] = styles.most_common(1)[0][0]
 
@@ -299,7 +311,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
     def _extract_test_patterns(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
     ) -> CategoryResult:
-        frameworks: Counter = Counter()
+        frameworks: Counter[str] = Counter()
         sample_size = 0
 
         for path, w, tree in parsed_files:
@@ -313,10 +325,10 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                     if func and func.type == "identifier" and func.text:
                         name = func.text.decode("utf-8")
                         if name in ("describe", "it", "xdescribe", "xit"):
-                            frameworks["jest/mocha"] += w
+                            frameworks["jest/mocha"] += round(w)
                             sample_size += 1
 
-        dominant: dict = {}
+        dominant: dict[str, str] = {}
         if frameworks:
             dominant["framework"] = frameworks.most_common(1)[0][0]
 

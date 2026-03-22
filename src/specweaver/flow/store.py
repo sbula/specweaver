@@ -186,7 +186,7 @@ class StateStore:
                 (run_id, _now_iso(), event, step_name, details or None),
             )
 
-    def get_audit_log(self, run_id: str) -> list[dict]:
+    def get_audit_log(self, run_id: str) -> list[dict[str, object]]:
         """Get all audit events for a run, ordered by timestamp."""
         with self.connect() as conn:
             rows = conn.execute(

@@ -78,7 +78,8 @@ This workflow covers test gap analysis, linting, complexity, file size, and docu
 ## Phase 5: Documentation Updates
 
 17. Update `docs/test_coverage_matrix.md` with the corrected test count and
-    any new entries for modules added or modified in this feature.
+    any new entries for modules added or modified in this feature. Do not forget 
+    to update the story -> unit/integr/e2e/... matrices!
 
 18. Review and update these documents if they are affected by the feature:
     - `README.md` — features list, CLI commands table, project structure

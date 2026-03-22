@@ -15,7 +15,7 @@ import logging
 import re
 import subprocess
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from specweaver.loom.commons.test_runner.interface import (
     ComplexityRunResult,
@@ -53,9 +53,20 @@ _FAILURE_RE = re.compile(r"FAILED\s+(\S+)\s*-\s*(.*)")
 _COVERAGE_RE = re.compile(r"TOTAL\s+\d+\s+\d+\s+(\d+)%")
 
 
-def _parse_pytest_output(stdout: str) -> dict:
+class _ParsedOutput(TypedDict):
+    passed: int
+    failed: int
+    errors: int
+    skipped: int
+    total: int
+    duration: float
+    failures: list[TestFailure]
+    coverage_pct: float | None
+
+
+def _parse_pytest_output(stdout: str) -> _ParsedOutput:
     """Parse pytest --tb=short -q output into structured data."""
-    result: dict = {
+    result: _ParsedOutput = {
         "passed": 0, "failed": 0, "errors": 0, "skipped": 0,
         "total": 0, "duration": 0.0, "failures": [], "coverage_pct": None,
     }
@@ -215,7 +226,7 @@ class PythonTestRunner(TestRunnerInterface):
 
         return self._build_lint_result(proc.stdout, fixed_count)
 
-    def _parse_ruff_json(self, stdout: str) -> dict:
+    def _parse_ruff_json(self, stdout: str) -> dict[str, list[dict[str, object]]]:
         """Parse ruff --output-format=json output."""
         try:
             data = json.loads(stdout)
@@ -233,11 +244,12 @@ class PythonTestRunner(TestRunnerInterface):
 
         for err in raw_errors:
             loc = err.get("location", {})
+            loc_dict = loc if isinstance(loc, dict) else {}
             errors.append(LintError(
-                file=err.get("filename", ""),
-                line=loc.get("row", 0),
-                code=err.get("code", ""),
-                message=err.get("message", ""),
+                file=str(err.get("filename", "")),
+                line=int(str(loc_dict.get("row", 0))),
+                code=str(err.get("code", "")),
+                message=str(err.get("message", "")),
             ))
             if err.get("fix"):
                 fixable_count += 1
@@ -292,7 +304,7 @@ class PythonTestRunner(TestRunnerInterface):
         violations: list[ComplexityViolation] = []
         for err in raw_errors:
             loc = err.get("location", {})
-            message = err.get("message", "")
+            message = str(err.get("message", ""))
             # Extract complexity score from ruff message like:
             # "`func` is too complex (12 > 10)"
             func_name = ""
@@ -304,9 +316,10 @@ class PythonTestRunner(TestRunnerInterface):
             if match:
                 complexity = int(match.group(1))
 
+            loc_dict = loc if isinstance(loc, dict) else {}
             violations.append(ComplexityViolation(
-                file=err.get("filename", ""),
-                line=loc.get("row", 0),
+                file=str(err.get("filename", "")),
+                line=int(str(loc_dict.get("row", 0))),
                 function=func_name,
                 complexity=complexity,
                 message=message,
