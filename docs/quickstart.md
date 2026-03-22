@@ -4,6 +4,25 @@ Get from zero to a completed pipeline run in under 5 minutes.
 
 SpecWeaver supports two spec levels: **feature specs** (cross-cutting features) and **component specs** (isolated implementable units). This guide shows both.
 
+## Container Deployment (Alternative)
+
+Skip the Python install — run SpecWeaver with Podman or Docker:
+
+```bash
+# Copy and configure the env file
+cp .env.example .env
+# Edit .env with your GEMINI_API_KEY
+
+# Run with your project mounted
+podman run --env-file .env -v ./my-project:/projects -p 8000:8000 ghcr.io/sbula/specweaver
+
+# Dashboard at http://localhost:8000/dashboard
+```
+
+See the [README](../README.md#container-deployment) for Docker Compose and advanced options.
+
+---
+
 ## Prerequisites
 
 - Python >= 3.11

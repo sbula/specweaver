@@ -79,6 +79,32 @@ sw check src/greet_service.py --level code --project ./my-project
 sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my-project
 ```
 
+## Container Deployment
+
+Run SpecWeaver without installing Python — just Podman or Docker:
+
+```bash
+# One-command deployment
+podman run --env-file .env \
+  -v ./my-project:/projects \
+  -p 8000:8000 \
+  ghcr.io/sbula/specweaver
+
+# Access the dashboard
+open http://localhost:8000/dashboard
+```
+
+Or use Docker Compose:
+
+```bash
+cp .env.example .env
+# Edit .env with your GEMINI_API_KEY
+docker compose up -d
+```
+
+> **Note:** The data volume must be a local filesystem or named volume (not NFS/CIFS) for SQLite WAL mode compatibility.
+> For non-standard UID, use `--user $(id -u):$(id -g)`. Podman users can use `--userns=keep-id`.
+
 ## CLI Commands
 
 ### Spec Pipeline

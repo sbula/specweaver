@@ -17,6 +17,7 @@ from specweaver.api.v1.schemas import (
     PipelineRunResponse,
 )
 from specweaver.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
+from specweaver.config.paths import state_db_path
 
 router = APIRouter()
 
@@ -82,7 +83,7 @@ def start_pipeline_run(
     )
 
     # State store
-    state_db = Path.home() / ".specweaver" / "pipeline_state.db"
+    state_db = state_db_path()
     store = StateStore(state_db)
 
     # Get or create event bridge
@@ -125,7 +126,7 @@ def get_run_status(
     from specweaver.api.errors import SpecWeaverAPIError
     from specweaver.flow.store import StateStore
 
-    state_db = Path.home() / ".specweaver" / "pipeline_state.db"
+    state_db = state_db_path()
     store = StateStore(state_db)
 
     run = store.load_run(run_id)
@@ -166,7 +167,7 @@ def get_run_log(run_id: str) -> list[dict[str, object]]:
     from specweaver.api.errors import SpecWeaverAPIError
     from specweaver.flow.store import StateStore
 
-    state_db = Path.home() / ".specweaver" / "pipeline_state.db"
+    state_db = state_db_path()
     store = StateStore(state_db)
 
     run = store.load_run(run_id)
@@ -192,7 +193,7 @@ def resume_run(
     from specweaver.flow.runner import PipelineRunner
     from specweaver.flow.store import StateStore
 
-    state_db = Path.home() / ".specweaver" / "pipeline_state.db"
+    state_db = state_db_path()
     store = StateStore(state_db)
 
     run = store.load_run(run_id)
@@ -258,7 +259,7 @@ def submit_gate_decision(
     from specweaver.api.errors import SpecWeaverAPIError
     from specweaver.flow.store import StateStore
 
-    state_db = Path.home() / ".specweaver" / "pipeline_state.db"
+    state_db = state_db_path()
     store = StateStore(state_db)
 
     run = store.load_run(run_id)

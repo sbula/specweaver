@@ -68,9 +68,16 @@ def create_app(
     )
 
     # --- CORS Middleware ---
+    import os
+
+    all_origins: list[str] = list(cors_origins or [])
+    cors_env = os.environ.get("CORS_ORIGINS", "")
+    if cors_env:
+        all_origins.extend(o.strip() for o in cors_env.split(",") if o.strip())
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cors_origins or [],
+        allow_origins=all_origins,
         allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
         allow_credentials=True,
         allow_methods=["*"],
@@ -83,8 +90,9 @@ def create_app(
     # --- Database ---
     if db is None:
         from specweaver.config.database import Database as _Database
+        from specweaver.config.paths import config_db_path
 
-        db = _Database(Path.home() / ".specweaver" / "specweaver.db")
+        db = _Database(config_db_path())
     deps.set_db(db)
 
     # --- Routers ---

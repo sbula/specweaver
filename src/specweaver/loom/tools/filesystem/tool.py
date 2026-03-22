@@ -57,7 +57,7 @@ class FolderGrant:
 
 # Role → allowed intents
 
-ROLE_INTENTS: dict[str, frozenset[str]] = {  # fmt: skip
+ROLE_INTENTS: dict[str, frozenset[str]] = {
     "implementer": frozenset(
         {
             "read_file",

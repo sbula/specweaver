@@ -32,7 +32,15 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 _SPECWEAVER_ROOT = Path.home() / ".specweaver"
-_LOGS_DIR = _SPECWEAVER_ROOT / "logs"
+_LOGS_DIR_FALLBACK = _SPECWEAVER_ROOT / "logs"
+
+
+def _get_logs_dir() -> Path:
+    """Return the logs directory, respecting SPECWEAVER_DATA_DIR."""
+    from specweaver.config.paths import logs_dir
+
+    return logs_dir()
+
 
 #: Canonical log format — consistent across all modules and handlers.
 #: Example: [2026-03-15 12:04:31] [DEBUG   ] [flow.runner] Starting pipeline run abc123
@@ -68,7 +76,7 @@ def get_log_path(project_name: str) -> Path:
     >>> get_log_path("calculator")
     PosixPath('~/.specweaver/logs/calculator/specweaver.log')
     """
-    return _LOGS_DIR / project_name / "specweaver.log"
+    return _get_logs_dir() / project_name / "specweaver.log"
 
 
 def setup_logging(

@@ -152,7 +152,7 @@ class TestSaveLoadRun:
         for i, run in enumerate(runs):
             run.updated_at = f"2026-03-14T1{i}:00:00Z"
             store.save_run(run)
-        
+
         # Default limit is 50, but we can list exactly 2
         listed = store.list_runs(limit=2)
         assert len(listed) == 2

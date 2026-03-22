@@ -12,13 +12,13 @@ local binding.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 import typer
 from rich.console import Console
 
 from specweaver import __version__
 from specweaver.config.database import Database
+from specweaver.config.paths import config_db_path
 
 app = typer.Typer(
     name="sw",
@@ -31,12 +31,10 @@ console = Console()
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB_PATH = Path.home() / ".specweaver" / "specweaver.db"
-
 
 def get_db() -> Database:
     """Get the global SpecWeaver database (creates if needed)."""
-    return Database(_DEFAULT_DB_PATH)
+    return Database(config_db_path())
 
 
 def _require_active_project() -> str:

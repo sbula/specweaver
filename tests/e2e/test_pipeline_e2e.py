@@ -92,9 +92,10 @@ class TestRunPipelineE2E:
     ) -> None:
         """sw run validate_only on a good spec → exit 0 or 1 (rule results)."""
         project_dir, spec = project_with_spec
+        _state_path = project_dir / ".specweaver" / "pipeline_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            project_dir / ".specweaver" / "pipeline_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
 
         result = runner.invoke(
@@ -111,9 +112,10 @@ class TestRunPipelineE2E:
     ) -> None:
         """sw run validate_only --json produces NDJSON event output."""
         project_dir, spec = project_with_spec
+        _state_path = project_dir / ".specweaver" / "pipeline_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            project_dir / ".specweaver" / "pipeline_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
 
         result = runner.invoke(
@@ -129,9 +131,10 @@ class TestRunPipelineE2E:
     ) -> None:
         """sw run validate_only --verbose produces detailed output."""
         project_dir, spec = project_with_spec
+        _state_path = project_dir / ".specweaver" / "pipeline_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            project_dir / ".specweaver" / "pipeline_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
 
         result = runner.invoke(
@@ -145,9 +148,10 @@ class TestRunPipelineE2E:
     ) -> None:
         """sw run validate_only on missing spec → exit 1."""
         project_dir, _ = project_with_spec
+        _state_path = project_dir / ".specweaver" / "pipeline_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            project_dir / ".specweaver" / "pipeline_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
 
         result = runner.invoke(
@@ -161,9 +165,10 @@ class TestRunPipelineE2E:
     ) -> None:
         """sw run with unknown pipeline → exit 1."""
         project_dir, spec = project_with_spec
+        _state_path = project_dir / ".specweaver" / "pipeline_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            project_dir / ".specweaver" / "pipeline_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
 
         result = runner.invoke(
@@ -186,9 +191,10 @@ class TestResumePipelineE2E:
     ) -> None:
         """sw resume with garbage ID → exit 1."""
         project_dir, _ = project_with_spec
+        _state_path = project_dir / ".specweaver" / "pipeline_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            project_dir / ".specweaver" / "pipeline_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
 
         result = runner.invoke(app, ["resume", "fake-run-id-12345"])
@@ -199,9 +205,10 @@ class TestResumePipelineE2E:
     ) -> None:
         """sw resume with no parked/failed runs → exit 0 with message."""
         project_dir, _ = project_with_spec
+        _state_path = project_dir / ".specweaver" / "pipeline_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            project_dir / ".specweaver" / "pipeline_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
 
         result = runner.invoke(app, ["resume"])

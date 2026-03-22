@@ -145,9 +145,10 @@ class TestResumeMocked:
         assert result.exit_code == 1
 
     def test_resume_unknown_run_id_fails(self, tmp_path: Path, monkeypatch) -> None:
+        _state_path = tmp_path / "pipe_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            tmp_path / "pipe_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
         project_dir = tmp_path / "r-proj"
         project_dir.mkdir()
@@ -157,9 +158,10 @@ class TestResumeMocked:
         assert result.exit_code == 1
 
     def test_resume_no_resumable_runs(self, tmp_path: Path, monkeypatch) -> None:
+        _state_path = tmp_path / "pipe_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            tmp_path / "pipe_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
         project_dir = tmp_path / "nr-proj"
         project_dir.mkdir()

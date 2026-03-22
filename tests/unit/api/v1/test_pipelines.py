@@ -180,6 +180,8 @@ class TestGetRunStatus:
 
     def test_parked_run_exposes_pending_gate_string_output(self, client, tmp_path) -> None:
         """GET /runs/{id} correctly handles string outputs when creating pending_gate_prompt."""
+        from unittest.mock import patch
+
         from specweaver.flow.state import (
             PipelineRun,
             RunStatus,
@@ -187,8 +189,6 @@ class TestGetRunStatus:
             StepResult,
             StepStatus,
         )
-        from specweaver.flow.store import StateStore
-        from unittest.mock import patch
 
         run = PipelineRun.model_construct(
             run_id="test-run-3",
@@ -214,16 +214,15 @@ class TestGetRunStatus:
         )
 
         from pathlib import Path
-        with patch.object(Path, "home", return_value=tmp_path):
-            with patch("specweaver.flow.store.StateStore") as mock_cls:
-                mock_store = mock_cls.return_value
-                mock_store.load_run.return_value = run
-                resp = client.get("/api/v1/runs/test-run-3")
-                assert resp.status_code == 200
-                data = resp.json()
-                assert data["status"] == "parked"
-                assert data["pending_gate"] is True
-                assert "String fallback prompt" in data["pending_gate_prompt"]
+        with patch.object(Path, "home", return_value=tmp_path), patch("specweaver.flow.store.StateStore") as mock_cls:
+            mock_store = mock_cls.return_value
+            mock_store.load_run.return_value = run
+            resp = client.get("/api/v1/runs/test-run-3")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["status"] == "parked"
+            assert data["pending_gate"] is True
+            assert "String fallback prompt" in data["pending_gate_prompt"]
 
 
 class TestGetRunLog:

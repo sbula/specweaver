@@ -18,6 +18,7 @@ from specweaver.cli._helpers import (
     _load_topology,
     _select_topology_contexts,
 )
+from specweaver.config.paths import state_db_path
 from specweaver.project.discovery import resolve_project_path
 
 if TYPE_CHECKING:
@@ -26,13 +27,11 @@ if TYPE_CHECKING:
 
     PipelineDisplay = JsonPipelineDisplay | RichPipelineDisplay
 
-_STATE_DB_PATH = Path.home() / ".specweaver" / "pipeline_state.db"
-
 
 def _get_state_store() -> StateStore:
     """Get the pipeline state store (lazy import)."""
     from specweaver.flow.store import StateStore
-    return StateStore(_STATE_DB_PATH)
+    return StateStore(state_db_path())
 
 
 def _resolve_spec_path(

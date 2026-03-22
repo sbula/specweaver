@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 # Language detection
 
-_LANG_MAP: dict[str, str] = {  # fmt: skip
+_LANG_MAP: dict[str, str] = {
     ".py": "python",
     ".js": "javascript",
     ".ts": "typescript",

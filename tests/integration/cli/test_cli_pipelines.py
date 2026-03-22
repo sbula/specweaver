@@ -197,9 +197,10 @@ class TestResumeErrors:
         """sw resume with unknown run ID fails."""
         _init_project(tmp_path)
         # Redirect state store to tmp so it doesn't touch user's real state
+        _state_path = tmp_path / "pipeline_state.db"
         monkeypatch.setattr(
-            "specweaver.cli.pipelines._STATE_DB_PATH",
-            tmp_path / "pipeline_state.db",
+            "specweaver.config.paths.state_db_path",
+            lambda: _state_path,
         )
         result = runner.invoke(app, ["resume", "nonexistent-run-id-12345"])
         assert result.exit_code == 1

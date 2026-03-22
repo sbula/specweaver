@@ -53,9 +53,10 @@ def _mock_db(tmp_path: Path, monkeypatch):
 @pytest.fixture()
 def _mock_state_db(tmp_path: Path, monkeypatch):
     """Patch the pipeline state DB path to use tmp_path."""
+    _state_path = tmp_path / ".specweaver" / "pipeline_state.db"
     monkeypatch.setattr(
-        "specweaver.cli.pipelines._STATE_DB_PATH",
-        tmp_path / ".specweaver" / "pipeline_state.db",
+        "specweaver.config.paths.state_db_path",
+        lambda: _state_path,
     )
 
 

@@ -1,0 +1,18 @@
+# SpecWeaver — Docker Compose configuration
+# Usage: docker compose up -d
+# Dashboard: http://localhost:8000/dashboard
+
+services:
+  specweaver:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - specweaver-data:/data/.specweaver
+      - ${PROJECT_DIR:-.}:/projects
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  specweaver-data:

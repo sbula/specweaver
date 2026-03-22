@@ -74,3 +74,121 @@ class TestCORSHeaders:
             },
         )
         assert resp.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+    def test_cors_env_var_single_origin(self, tmp_path, monkeypatch) -> None:
+        """CORS_ORIGINS env var adds origins to allowed list."""
+        from specweaver.api.app import create_app
+        from specweaver.config.database import Database
+
+        monkeypatch.setenv("CORS_ORIGINS", "http://192.168.1.100:8000")
+        db = Database(tmp_path / ".sw-cors" / "specweaver.db")
+        app = create_app(db=db)
+        c = TestClient(app)
+
+        resp = c.options(
+            "/healthz",
+            headers={
+                "Origin": "http://192.168.1.100:8000",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp.headers.get("access-control-allow-origin") == "http://192.168.1.100:8000"
+
+    def test_cors_env_var_comma_separated(self, tmp_path, monkeypatch) -> None:
+        """CORS_ORIGINS with multiple comma-separated origins."""
+        from specweaver.api.app import create_app
+        from specweaver.config.database import Database
+
+        monkeypatch.setenv("CORS_ORIGINS", "http://a.com, http://b.com")
+        db = Database(tmp_path / ".sw-cors2" / "specweaver.db")
+        app = create_app(db=db)
+        c = TestClient(app)
+
+        resp = c.options(
+            "/healthz",
+            headers={
+                "Origin": "http://b.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp.headers.get("access-control-allow-origin") == "http://b.com"
+
+    def test_cors_env_var_empty_no_effect(self, tmp_path, monkeypatch) -> None:
+        """Empty CORS_ORIGINS env var has no effect."""
+        from specweaver.api.app import create_app
+        from specweaver.config.database import Database
+
+        monkeypatch.setenv("CORS_ORIGINS", "")
+        db = Database(tmp_path / ".sw-cors3" / "specweaver.db")
+        app = create_app(db=db)
+        c = TestClient(app)
+
+        # Non-localhost origin should be rejected when env is empty
+        resp = c.options(
+            "/healthz",
+            headers={
+                "Origin": "http://external.example.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp.headers.get("access-control-allow-origin") != "http://external.example.com"
+
+    def test_cors_env_var_whitespace_handling(self, tmp_path, monkeypatch) -> None:
+        """CORS_ORIGINS with extra whitespace and empty entries."""
+        from specweaver.api.app import create_app
+        from specweaver.config.database import Database
+
+        monkeypatch.setenv("CORS_ORIGINS", "  , http://clean.com ,  ")
+        db = Database(tmp_path / ".sw-cors4" / "specweaver.db")
+        app = create_app(db=db)
+        c = TestClient(app)
+
+        resp = c.options(
+            "/healthz",
+            headers={
+                "Origin": "http://clean.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp.headers.get("access-control-allow-origin") == "http://clean.com"
+
+    def test_cors_programmatic_and_env_merge(self, tmp_path, monkeypatch) -> None:
+        """Programmatic cors_origins and CORS_ORIGINS env var are merged."""
+        from specweaver.api.app import create_app
+        from specweaver.config.database import Database
+
+        monkeypatch.setenv("CORS_ORIGINS", "http://env.example.com")
+        db = Database(tmp_path / ".sw-cors5" / "specweaver.db")
+        app = create_app(db=db, cors_origins=["http://prog.example.com"])
+        c = TestClient(app)
+
+        # Env origin allowed
+        resp1 = c.options(
+            "/healthz",
+            headers={
+                "Origin": "http://env.example.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp1.headers.get("access-control-allow-origin") == "http://env.example.com"
+
+        # Programmatic origin also allowed
+        resp2 = c.options(
+            "/healthz",
+            headers={
+                "Origin": "http://prog.example.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp2.headers.get("access-control-allow-origin") == "http://prog.example.com"
+
+    def test_cors_allows_127_0_0_1(self, client: TestClient) -> None:
+        """127.0.0.1 origin should be allowed by regex."""
+        resp = client.options(
+            "/healthz",
+            headers={
+                "Origin": "http://127.0.0.1:5000",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert resp.headers.get("access-control-allow-origin") == "http://127.0.0.1:5000"

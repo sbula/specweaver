@@ -924,3 +924,34 @@ ender_plan_markdown() happy path | ✅ | ✅ | ⚪ | ⚪ | — |
 | `POST /dashboard/runs/{id}/gate` invalid action | ✅ | ⚪ | ⚪ | ⚪ | Validates HTTP 400 |
 | Markdown parsing isolated tests | ✅ | ⚪ | ⚪ | ⚪ | 2 tests (none vs content) |
 | Root router redirects to `/dashboard` | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+## 17 · Containerization (`config/paths.py`)
+
+### 17.1 `test_paths.py` (centralized path resolution)
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `specweaver_root()` default `~/.specweaver` | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `specweaver_root()` with `SPECWEAVER_DATA_DIR` set | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `specweaver_root()` empty env var falls back to default | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `config_db_path()` returns `specweaver.db` under root | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `config_db_path()` respects override | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `state_db_path()` returns `pipeline_state.db` | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `state_db_path()` respects override | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `logs_dir()` returns `logs/` under root | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `logs_dir()` respects override | ✅ | ⚪ | ⚪ | ⚪ | — |
+| All functions return `Path` type | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Consistency: all share same root | ✅ | ⚪ | ⚪ | ⚪ | — |
+| Whitespace-only env var falls back to default | ✅ | ⚪ | ⚪ | ⚪ | `.strip()` guard |
+
+### 17.2 `test_app.py` (CORS env var)
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `CORS_ORIGINS` single origin accepted | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `CORS_ORIGINS` comma-separated list | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `CORS_ORIGINS` empty string no effect | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `CORS_ORIGINS` whitespace/empty entries stripped | ✅ | ⚪ | ⚪ | ⚪ | `.strip()` + empty filter |
+| `CORS_ORIGINS` + programmatic origins merged | ✅ | ⚪ | ⚪ | ⚪ | Both sources combined |
+| `127.0.0.1` allowed by regex | ✅ | ⚪ | ⚪ | ⚪ | Regex correctness |
+

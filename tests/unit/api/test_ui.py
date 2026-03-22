@@ -157,7 +157,6 @@ def test_get_dashboard_run_detail_string_output(client, tmp_path) -> None:
     from unittest.mock import patch
 
     from specweaver.flow.state import PipelineRun, RunStatus, StepRecord, StepResult, StepStatus
-    from specweaver.flow.store import StateStore
 
     run = PipelineRun(
         run_id="test-run-ui-3",
@@ -182,16 +181,15 @@ def test_get_dashboard_run_detail_string_output(client, tmp_path) -> None:
         updated_at="2026-01-01T00:00:01",
     )
 
-    with patch.object(Path, "home", return_value=tmp_path):
-        with patch("specweaver.flow.store.StateStore") as mock_cls:
-            mock_store = mock_cls.return_value
-            mock_store.load_run.return_value = run
-            
-            resp = client.get("/dashboard/runs/test-run-ui-3")
-            assert resp.status_code == 200
-            text = resp.text
-            assert "Human Action Required" in text
-            assert "Plain string output requiring attention" in text
+    with patch.object(Path, "home", return_value=tmp_path), patch("specweaver.flow.store.StateStore") as mock_cls:
+        mock_store = mock_cls.return_value
+        mock_store.load_run.return_value = run
+
+        resp = client.get("/dashboard/runs/test-run-ui-3")
+        assert resp.status_code == 200
+        text = resp.text
+        assert "Human Action Required" in text
+        assert "Plain string output requiring attention" in text
 
 
 def test_submit_hitl_gate(tmp_path) -> None:

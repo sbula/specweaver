@@ -16,6 +16,7 @@ from fastapi.templating import Jinja2Templates
 from specweaver.api.deps import get_db
 from specweaver.api.v1.projects import list_projects
 from specweaver.config.database import Database  # noqa: TC001
+from specweaver.config.paths import state_db_path
 
 router = APIRouter(tags=["UI"])
 
@@ -55,7 +56,7 @@ def get_dashboard_runs(request: Request) -> HTMLResponse:
     """Render the dashboard runs list page."""
     from specweaver.flow.store import StateStore
 
-    state_db = Path.home() / ".specweaver" / "pipeline_state.db"
+    state_db = state_db_path()
     store = StateStore(state_db)
     runs = store.list_runs()
 
@@ -71,7 +72,7 @@ def get_dashboard_run_detail(request: Request, run_id: str) -> HTMLResponse:
     """Render the details of a specific pipeline run."""
     from specweaver.flow.store import StateStore
 
-    state_db = Path.home() / ".specweaver" / "pipeline_state.db"
+    state_db = state_db_path()
     store = StateStore(state_db)
 
     run = store.load_run(run_id)

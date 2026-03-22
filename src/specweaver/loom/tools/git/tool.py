@@ -30,7 +30,7 @@ _BRANCH_NAME_RE = re.compile(r"^(feat|fix|docs|chore|refactor)/[a-z0-9][a-z0-9-]
 
 # Role → allowed intents
 
-ROLE_INTENTS: dict[str, frozenset[str]] = {  # fmt: skip
+ROLE_INTENTS: dict[str, frozenset[str]] = {
     "implementer": frozenset(
         {"commit", "inspect_changes", "discard", "uncommit", "start_branch", "switch_branch"}
     ),
