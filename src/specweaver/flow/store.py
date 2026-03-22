@@ -165,6 +165,15 @@ class StateStore:
                 return None
             return _row_to_run(row)
 
+    def list_runs(self, limit: int = 50) -> list[PipelineRun]:
+        """List recent pipeline runs, ordered by most recently updated."""
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM pipeline_runs ORDER BY updated_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            return [_row_to_run(row) for row in rows]
+
     # ------------------------------------------------------------------
     # Audit log
     # ------------------------------------------------------------------

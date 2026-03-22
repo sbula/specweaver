@@ -19,61 +19,31 @@ if TYPE_CHECKING:
     from specweaver.loom.commons.git.executor import GitExecutor
 
 
-# ---------------------------------------------------------------------------
 # Validation patterns
-# ---------------------------------------------------------------------------
 
 _CONVENTIONAL_COMMIT_RE = re.compile(
     r"^(feat|fix|docs|test|chore|refactor|style|perf|ci|build)(\(.+\))?: .+$"
 )
 
-_BRANCH_NAME_RE = re.compile(
-    r"^(feat|fix|docs|chore|refactor)/[a-z0-9][a-z0-9-]*$"
-)
+_BRANCH_NAME_RE = re.compile(r"^(feat|fix|docs|chore|refactor)/[a-z0-9][a-z0-9-]*$")
 
 
-# ---------------------------------------------------------------------------
 # Role → allowed intents
-# ---------------------------------------------------------------------------
 
-ROLE_INTENTS: dict[str, frozenset[str]] = {
-    "implementer": frozenset({
-        "commit",
-        "inspect_changes",
-        "discard",
-        "uncommit",
-        "start_branch",
-        "switch_branch",
-    }),
-    "reviewer": frozenset({
-        "history",
-        "show_commit",
-        "blame",
-        "compare",
-        "list_branches",
-    }),
-    "debugger": frozenset({
-        "history",
-        "file_history",
-        "show_old",
-        "search_history",
-        "reflog",
-        "inspect_changes",
-    }),
-    "drafter": frozenset({
-        "commit",
-        "inspect_changes",
-        "discard",
-    }),
+ROLE_INTENTS: dict[str, frozenset[str]] = {  # fmt: skip
+    "implementer": frozenset(
+        {"commit", "inspect_changes", "discard", "uncommit", "start_branch", "switch_branch"}
+    ),
+    "reviewer": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
+    "debugger": frozenset(
+        {"history", "file_history", "show_old", "search_history", "reflog", "inspect_changes"}
+    ),
+    "drafter": frozenset({"commit", "inspect_changes", "discard"}),
     # Hidden role — only the Engine can activate this for conflict resolution.
     # Never assigned directly to agents.
-    "conflict_resolver": frozenset({
-        "list_conflicts",
-        "show_conflict",
-        "mark_resolved",
-        "abort_merge",
-        "complete_merge",
-    }),
+    "conflict_resolver": frozenset(
+        {"list_conflicts", "show_conflict", "mark_resolved", "abort_merge", "complete_merge"}
+    ),
 }
 
 # Intent → required git subcommands (for building the GitExecutor whitelist)
@@ -114,9 +84,8 @@ def whitelist_for_role(role: str) -> set[str]:
     return commands
 
 
-# ---------------------------------------------------------------------------
 # Tool result
-# ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ToolResult:
@@ -127,9 +96,8 @@ class ToolResult:
     data: str = ""  # stdout or combined output
 
 
-# ---------------------------------------------------------------------------
 # GitTool
-# ---------------------------------------------------------------------------
+
 
 class GitToolError(Exception):
     """Raised when a GitTool operation is blocked or invalid."""

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article>
+    <header>
+        <hgroup>
+            <h1>Run: <code>{{ run.run_id[:8] }}</code></h1>
+            <p>Pipeline: <strong>{{ run.pipeline_name }}</strong> | Project: <strong>{{ run.project_name }}</strong> | Target: <code>{{ run.spec_path }}</code></p>
+        </hgroup>
+    </header>
+    
+    <div id="run-content" class="grid"
+         {% if run.status.value not in ['completed', 'failed', 'parked'] %}
+         hx-get="/dashboard/runs/{{ run.run_id }}" hx-select="#run-content" hx-swap="outerHTML" hx-trigger="every 2s"
+         {% endif %}>
+        <!-- Main Content Column -->
+        <div>
+            <h2>Steps</h2>
+            {% for step in run.step_records %}
+                <details {% if loop.index0 == run.current_step or step.status.value == 'failed' %}open{% endif %}>
+                    <summary role="button" class="{% if step.status.value == 'completed' %}outline{% elif step.status.value == 'failed' %}secondary{% endif %}">
+                        {{ loop.index }}. <strong>{{ step.step_name }}</strong> 
+                        <span style="float: right;">[{{ step.status.value | upper }}]</span>
+                    </summary>
+                    <div style="padding: 1rem;">
+                        {% if step.result %}
+                            {% if step.result.error_message %}
+                                <div style="color: var(--pico-del-color);">
+                                    <strong>Error:</strong> {{ step.result.error_message }}
+                                </div>
+                            {% endif %}
+                            {% if step.result.output %}
+                                {% if "comment" in step.result.output %}
+                                    <strong>AI Feedback:</strong>
+                                    <div class="blockquote">
+                                        {{ step.result.output.comment | markdown | safe }}
+                                    </div>
+                                {% else %}
+                                    <pre><code>{{ step.result.output }}</code></pre>
+                                {% endif %}
+                            {% endif %}
+                        {% else %}
+                            <p class="muted">No execution details yet.</p>
+                        {% endif %}
+                    </div>
+                </details>
+            {% endfor %}
+
+            <!-- HITL Gate Display -->
+            {% if pending_gate %}
+                <article style="border: 2px solid var(--pico-primary); margin-top: 2rem;">
+                    <header><strong>Human Action Required</strong></header>
+                    <p>Provide a decision to continue the pipeline.</p>
+                    {% if pending_gate_prompt %}
+                        <div class="blockquote">
+                            {{ pending_gate_prompt | markdown | safe }}
+                        </div>
+                    {% endif %}
+                    <form hx-post="/dashboard/runs/{{ run.run_id }}/gate" style="margin-top: 1rem; display: flex; gap: 1rem;">
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit" class="primary">Approve</button>
+                    </form>
+                    <form hx-post="/dashboard/runs/{{ run.run_id }}/gate" style="margin-top: -3.5rem; margin-left: auto; max-width: 15rem; display: flex;">
+                        <input type="hidden" name="action" value="reject">
+                        <button type="submit" class="secondary outline">Reject</button>
+                    </form>
+                </article>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar Column -->
+        <div>
+            <h2>Status Logs</h2>
+            <article style="background-color: var(--pico-muted-background-color); max-height: 30rem; overflow-y: auto;">
+                <ul style="list-style: none; padding-left: 0;">
+                    {% for event in events %}
+                        <li style="margin-bottom: 0.5rem; font-family: monospace; font-size: 0.85rem;">
+                            <span class="muted">[{{ event.timestamp[11:19] }}]</span>
+                            <strong>{{ event.event }}</strong>
+                            {% if event.step_name %}
+                                [{{ event.step_name }}]
+                            {% endif %}
+                            {% if event.details %}
+                                <br><span class="muted" style="margin-left: 4.5rem;">{{ event.details }}</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                    {% if not events %}
+                        <li class="muted">No logs recorded yet.</li>
+                    {% endif %}
+                </ul>
+            </article>
+        </div>
+    </div>
+</article>
+{% endblock %}

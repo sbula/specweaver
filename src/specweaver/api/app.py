@@ -14,6 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from specweaver.api import deps
 from specweaver.api.errors import SpecWeaverAPIError, specweaver_error_handler
+from specweaver.api.ui import htmx as ui_htmx
+from specweaver.api.ui import routes as ui_routes
 from specweaver.api.v1 import health, router
 
 if TYPE_CHECKING:
@@ -88,8 +90,27 @@ def create_app(
     # --- Routers ---
     # Mount health check at root (not under /api/v1)
     app.include_router(health.router)
-    # Mount v1 router
+    # Mount v1 REST router
     app.include_router(router)
+
+    # --- Web Dashboard (UI) ---
+    from fastapi.responses import RedirectResponse
+    from fastapi.staticfiles import StaticFiles
+
+    # Mount static assets
+    ui_dir = Path(__file__).parent / "ui"
+    static_dir = ui_dir / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+    # Mount the UI routers
+    app.include_router(ui_routes.router)
+    app.include_router(ui_htmx.router)
+
+    @app.get("/", include_in_schema=False)
+    def redirect_to_dashboard() -> RedirectResponse:
+        """Redirect root to the UI dashboard."""
+        return RedirectResponse(url="/dashboard")
 
     return app
 

@@ -41,14 +41,14 @@
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
 **Phase 2 (Flow Engine)**: Steps 7–14 ✅
-**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅ | Feature 3.7 🔧 (57 API tests, 3128 total)
+**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅ | Feature 3.7 🔧 | Feature 3.8 ✅ (3142 total tests)
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - ✅ Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_ — multi-language (Py/JS/TS), multi-scope, conditional LLM comparison
 - ⚠️ **Post-3.5 cleanup**: Consolidate DB `validation_overrides` (3.3) vs sub-pipeline YAML inheritance (3.4) — decide single source of truth
 - ✅ Feature 3.6: Explicit plan phase (Spec → Plan → Tasks) (Including Stitch UI Mockups)
 - 🔧 Feature 3.7: REST API server (`sw serve`) — TDD phases 1–3 complete, pre-commit quality gate passed
-- Feature 3.8: Web dashboard
+- ✅ Feature 3.8: Web Dashboard (`sw serve`) — TDD and pre-commit gate passed (HTMX, Jinja2, REST endpoints)
 - Feature 3.9: Containerization
 
 ---

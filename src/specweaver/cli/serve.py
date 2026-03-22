@@ -59,6 +59,9 @@ def serve(
     _core.console.print(
         f"[bold]SpecWeaver API[/bold] starting on [cyan]http://{host}:{port}[/cyan]",
     )
+    _core.console.print(
+        f"Dashboard available at: [green]http://{host}:{port}/dashboard[/green]",
+    )
     _core.console.print("[dim]OpenAPI docs: /docs  |  Health: /healthz[/dim]")
 
     import uvicorn

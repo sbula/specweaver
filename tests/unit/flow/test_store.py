@@ -146,6 +146,20 @@ class TestSaveLoadRun:
     def test_get_latest_run_no_match(self, store: StateStore) -> None:
         assert store.get_latest_run("no_project", "no_pipeline") is None
 
+    def test_list_runs_with_limit(self, store: StateStore) -> None:
+        """list_runs respects the limit parameter."""
+        runs = [_make_run(run_id=f"run-{i}") for i in range(5)]
+        for i, run in enumerate(runs):
+            run.updated_at = f"2026-03-14T1{i}:00:00Z"
+            store.save_run(run)
+        
+        # Default limit is 50, but we can list exactly 2
+        listed = store.list_runs(limit=2)
+        assert len(listed) == 2
+        # Should be ordered by updated_at DESC (so run-4 and run-3)
+        assert listed[0].run_id == "run-4"
+        assert listed[1].run_id == "run-3"
+
 
 # ---------------------------------------------------------------------------
 # Audit log

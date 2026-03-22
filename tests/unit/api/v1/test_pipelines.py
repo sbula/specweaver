@@ -126,6 +126,104 @@ class TestGetRunStatus:
             data = resp.json()
             assert data["run_id"] == "test-run-1"
             assert data["status"] == "completed"
+            assert data.get("pending_gate") is False
+
+    def test_parked_run_exposes_pending_gate(self, client, tmp_path) -> None:
+        """GET /runs/{id} for a RUNNING or PARKED run exposes pending_gate fields."""
+        from specweaver.flow.state import (
+            PipelineRun,
+            RunStatus,
+            StepRecord,
+            StepResult,
+            StepStatus,
+        )
+        from specweaver.flow.store import StateStore
+
+        store = StateStore(tmp_path / "state2.db")
+        run = PipelineRun(
+            run_id="test-run-2",
+            pipeline_name="validate_only",
+            project_name="myproject",
+            spec_path="/fake/spec.md",
+            status=RunStatus.PARKED,
+            current_step=0,
+            step_records=[
+                StepRecord(
+                    step_name="review_code",
+                    status=StepStatus.WAITING_FOR_INPUT,
+                    result=StepResult(
+                        status=StepStatus.WAITING_FOR_INPUT,
+                        output={"comment": "Please approve this spec."},
+                        started_at="2026-01-01T00:00:00",
+                        completed_at="2026-01-01T00:00:01",
+                    ),
+                )
+            ],
+            started_at="2026-01-01T00:00:00",
+            updated_at="2026-01-01T00:00:01",
+        )
+        store.save_run(run)
+
+        with patch.object(Path, "home", return_value=tmp_path):
+            state_dir = tmp_path / ".specweaver"
+            state_dir.mkdir(exist_ok=True)
+            store2 = StateStore(state_dir / "pipeline_state.db")
+            store2.save_run(run)
+
+            resp = client.get("/api/v1/runs/test-run-2")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["status"] == "parked"
+            assert data["pending_gate"] is True
+            assert "Please approve this spec." in data["pending_gate_prompt"]
+
+
+    def test_parked_run_exposes_pending_gate_string_output(self, client, tmp_path) -> None:
+        """GET /runs/{id} correctly handles string outputs when creating pending_gate_prompt."""
+        from specweaver.flow.state import (
+            PipelineRun,
+            RunStatus,
+            StepRecord,
+            StepResult,
+            StepStatus,
+        )
+        from specweaver.flow.store import StateStore
+        from unittest.mock import patch
+
+        run = PipelineRun.model_construct(
+            run_id="test-run-3",
+            pipeline_name="validate_only",
+            project_name="myproject",
+            spec_path="/fake/spec.md",
+            status=RunStatus.PARKED,
+            current_step=0,
+            step_records=[
+                StepRecord.model_construct(
+                    step_name="review_code",
+                    status=StepStatus.WAITING_FOR_INPUT,
+                    result=StepResult.model_construct(
+                        status=StepStatus.WAITING_FOR_INPUT,
+                        output="String fallback prompt",
+                        started_at="2026-01-01T00:00:00",
+                        completed_at="2026-01-01T00:00:01",
+                    ),
+                )
+            ],
+            started_at="2026-01-01T00:00:00",
+            updated_at="2026-01-01T00:00:01",
+        )
+
+        from pathlib import Path
+        with patch.object(Path, "home", return_value=tmp_path):
+            with patch("specweaver.flow.store.StateStore") as mock_cls:
+                mock_store = mock_cls.return_value
+                mock_store.load_run.return_value = run
+                resp = client.get("/api/v1/runs/test-run-3")
+                assert resp.status_code == 200
+                data = resp.json()
+                assert data["status"] == "parked"
+                assert data["pending_gate"] is True
+                assert "String fallback prompt" in data["pending_gate_prompt"]
 
 
 class TestGetRunLog:

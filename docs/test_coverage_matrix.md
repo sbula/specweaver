@@ -905,3 +905,22 @@ ender_plan_markdown() happy path | ✅ | ✅ | ⚪ | ⚪ | — |
 | `GateDecisionRequest` requires action | ✅ | ⚪ | ⚪ | ⚪ | — |
 | `GateDecisionRequest` valid approve/reject | ✅ | ⚪ | ⚪ | ⚪ | 2 tests |
 | `PipelineRunResponse` fields | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+---
+
+## 16 · UI Dashboard (`api/ui/`)
+
+### 16.1 `test_ui.py` (Phase 3.8 views)
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `GET /dashboard` project list view | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `GET /dashboard/runs` run list | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `GET /dashboard/runs/{id}` generic rendering | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `GET /dashboard/runs/{id}` 404 behavior | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `GET /dashboard/runs/{id}` human-in-the-loop pending | ✅ | ⚪ | ⚪ | ⚪ | HTMX display logic |
+| `GET /dashboard/runs/{id}` string output fallback | ✅ | ⚪ | ⚪ | ⚪ | Bypasses Pydantic validation via store mock |
+| `POST /dashboard/runs/{id}/gate` approve/reject flow | ✅ | ⚪ | ⚪ | ⚪ | Returns HTMX refresh |
+| `POST /dashboard/runs/{id}/gate` invalid action | ✅ | ⚪ | ⚪ | ⚪ | Validates HTTP 400 |
+| Markdown parsing isolated tests | ✅ | ⚪ | ⚪ | ⚪ | 2 tests (none vs content) |
+| Root router redirects to `/dashboard` | ✅ | ⚪ | ⚪ | ⚪ | — |

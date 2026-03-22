@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article>
+    <header><h1>Projects</h1></header>
+    {% if projects %}
+        <table role="grid">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Path</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in projects %}
+                <tr>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td><code>{{ p.path }}</code></td>
+                    <td>
+                        {% if p.active %}
+                            <span style="color: var(--pico-ins-color);">Active</span>
+                        {% else %}
+                            <span class="muted">Inactive</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No projects registered. Use the CLI to register a project: <code>sw repo register &lt;name&gt; &lt;path&gt;</code></p>
+    {% endif %}
+</article>
+{% endblock %}

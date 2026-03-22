@@ -143,6 +143,20 @@ def get_run_status(
             if rec.get("result"):
                 rec["result"].pop("output", None)
 
+    # Dashboard helper fields
+    data["pending_gate"] = False
+    data["pending_gate_prompt"] = None
+    if run.status.value == "parked":
+        data["pending_gate"] = True
+        record = run.current_step_record()
+        if record is not None and record.result is not None:
+            # We look for a prompt/comment in the output of the paused step
+            output = record.result.output
+            if isinstance(output, dict):
+                data["pending_gate_prompt"] = output.get("comment") or output.get("prompt") or str(output)
+            else:
+                data["pending_gate_prompt"] = str(output)
+
     return data
 
 

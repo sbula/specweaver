@@ -22,32 +22,22 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from specweaver.loom.commons.filesystem.executor import ExecutorResult, FileExecutor
 
-# ---------------------------------------------------------------------------
 # Access models
-# ---------------------------------------------------------------------------
 
 
 class AccessMode(StrEnum):
     """Access level for a folder grant."""
 
-    READ = "read"    # list, read, search
+    READ = "read"  # list, read, search
     WRITE = "write"  # read + write + edit
-    FULL = "full"    # read + write + edit + create + delete
+    FULL = "full"  # read + write + edit + create + delete
 
 
 # Permission hierarchy: which modes allow which operations
-_MODE_ALLOWS_READ: frozenset[AccessMode] = frozenset({
-    AccessMode.READ, AccessMode.WRITE, AccessMode.FULL,
-})
-_MODE_ALLOWS_WRITE: frozenset[AccessMode] = frozenset({
-    AccessMode.WRITE, AccessMode.FULL,
-})
-_MODE_ALLOWS_CREATE: frozenset[AccessMode] = frozenset({
-    AccessMode.FULL,
-})
-_MODE_ALLOWS_DELETE: frozenset[AccessMode] = frozenset({
-    AccessMode.FULL,
-})
+_MODE_ALLOWS_READ: frozenset[AccessMode] = frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})  # fmt: skip
+_MODE_ALLOWS_WRITE: frozenset[AccessMode] = frozenset({AccessMode.WRITE, AccessMode.FULL})  # fmt: skip
+_MODE_ALLOWS_CREATE: frozenset[AccessMode] = frozenset({AccessMode.FULL})  # fmt: skip
+_MODE_ALLOWS_DELETE: frozenset[AccessMode] = frozenset({AccessMode.FULL})  # fmt: skip
 
 
 @dataclass(frozen=True)
@@ -65,42 +55,37 @@ class FolderGrant:
     recursive: bool
 
 
-# ---------------------------------------------------------------------------
 # Role → allowed intents
-# ---------------------------------------------------------------------------
 
-
-ROLE_INTENTS: dict[str, frozenset[str]] = {
-    "implementer": frozenset({
-        "read_file",
-        "write_file",
-        "edit_file",
-        "create_file",
-        "delete_file",
-        "list_directory",
-        "search_content",
-        "find_placement",
-    }),
-    "reviewer": frozenset({
-        "read_file",
-        "list_directory",
-        "search_content",
-    }),
-    "drafter": frozenset({
-        "read_file",
-        "write_file",
-        "create_file",
-        "delete_file",
-        "list_directory",
-        "search_content",
-        "find_placement",
-    }),
+ROLE_INTENTS: dict[str, frozenset[str]] = {  # fmt: skip
+    "implementer": frozenset(
+        {
+            "read_file",
+            "write_file",
+            "edit_file",
+            "create_file",
+            "delete_file",
+            "list_directory",
+            "search_content",
+            "find_placement",
+        }
+    ),
+    "reviewer": frozenset({"read_file", "list_directory", "search_content"}),
+    "drafter": frozenset(
+        {
+            "read_file",
+            "write_file",
+            "create_file",
+            "delete_file",
+            "list_directory",
+            "search_content",
+            "find_placement",
+        }
+    ),
 }
 
 
-# ---------------------------------------------------------------------------
 # Tool result
-# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -112,9 +97,7 @@ class ToolResult:
     data: Any = None
 
 
-# ---------------------------------------------------------------------------
 # FileSystemTool
-# ---------------------------------------------------------------------------
 
 
 class FileSystemToolError(Exception):
@@ -153,9 +136,7 @@ class FileSystemTool:
         """Intents available for this role."""
         return ROLE_INTENTS[self._role]
 
-    # -------------------------------------------------------------------
     # Intent methods
-    # -------------------------------------------------------------------
 
     def read_file(self, path: str) -> ToolResult:
         """Read a file's contents."""
@@ -236,7 +217,11 @@ class FileSystemTool:
         return self._wrap(result)
 
     def search_content(
-        self, path: str, regex: str, *, recursive: bool = False,
+        self,
+        path: str,
+        regex: str,
+        *,
+        recursive: bool = False,
     ) -> ToolResult:
         """Search for a regex pattern across files in a directory.
 
@@ -327,11 +312,7 @@ class FileSystemTool:
         self._require_intent("find_placement")
 
         # Extract keywords (lowercase, 3+ chars to skip noise like 'a', 'to')
-        keywords = [
-            w.lower()
-            for w in re.split(r'\s+', description.strip())
-            if len(w) >= 3
-        ]
+        keywords = [w.lower() for w in re.split(r"\s+", description.strip()) if len(w) >= 3]
         if not keywords:
             return ToolResult(status="success", data=[])
 
@@ -369,21 +350,21 @@ class FileSystemTool:
             if rel_path == ".":
                 rel_path = ""
 
-            scored.append({
-                "path": rel_path,
-                "name": name,
-                "purpose": data.get("purpose", ""),
-                "score": score,
-            })
+            scored.append(
+                {
+                    "path": rel_path,
+                    "name": name,
+                    "purpose": data.get("purpose", ""),
+                    "score": score,
+                }
+            )
 
         # Sort by score descending
         scored.sort(key=lambda x: x["score"], reverse=True)
 
         return ToolResult(status="success", data=scored)
 
-    # -------------------------------------------------------------------
     # Internal: role gating
-    # -------------------------------------------------------------------
 
     def _require_intent(self, intent: str) -> None:
         """Raise if the current role doesn't have this intent."""
@@ -394,9 +375,7 @@ class FileSystemTool:
             )
             raise FileSystemToolError(msg)
 
-    # -------------------------------------------------------------------
     # Internal: boundary enforcement
-    # -------------------------------------------------------------------
 
     @staticmethod
     def _normalize_path(path: str) -> str:
@@ -454,9 +433,8 @@ class FileSystemTool:
         for grant in self._grants:
             grant_path = grant.path.replace("\\", "/").rstrip("/")
 
-            if (
-                self._path_matches_grant(normalized_path, grant_path, grant.recursive)
-                and (best is None or mode_priority[grant.mode] > mode_priority[best])
+            if self._path_matches_grant(normalized_path, grant_path, grant.recursive) and (
+                best is None or mode_priority[grant.mode] > mode_priority[best]
             ):
                 best = grant.mode
 
@@ -499,9 +477,7 @@ class FileSystemTool:
             return True
         return depth == 1
 
-    # -------------------------------------------------------------------
     # Internal: result wrapping
-    # -------------------------------------------------------------------
 
     @staticmethod
     def _wrap(result: ExecutorResult) -> ToolResult:

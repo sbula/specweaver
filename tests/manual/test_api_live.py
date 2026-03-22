@@ -209,10 +209,8 @@ class TestAPILiveSmoke:
     def test_pipeline_detail_and_404(self, _live_env) -> None:
         """GET /pipelines/{name} returns detail for known, 404 for unknown."""
         client = _live_env["client"]
-
-        # Get list to find a valid name
-        pipelines = client.get("/api/v1/pipelines").json()
-        first_name = pipelines[0]["name"]
+        # Get list to find a valid name (request only, no need to parse json if we just drop the 404 test name)
+        client.get("/api/v1/pipelines")
 
         # 404 for unknown
         resp = client.get("/api/v1/pipelines/nonexistent_pipeline_xyz")

@@ -33,11 +33,9 @@ if TYPE_CHECKING:
     from specweaver.llm.adapters.base import LLMAdapter
     from specweaver.llm.models import TokenBudget
 
-# ---------------------------------------------------------------------------
 # Language detection
-# ---------------------------------------------------------------------------
 
-_LANG_MAP: dict[str, str] = {
+_LANG_MAP: dict[str, str] = {  # fmt: skip
     ".py": "python",
     ".js": "javascript",
     ".ts": "typescript",
@@ -68,9 +66,7 @@ def detect_language(path: Path) -> str:
     return _LANG_MAP.get(path.suffix.lower(), "text")
 
 
-# ---------------------------------------------------------------------------
 # Internal content blocks
-# ---------------------------------------------------------------------------
 
 
 @dataclass
@@ -80,7 +76,9 @@ class _ContentBlock:
     text: str
     priority: int  # 0 = instructions (never truncated), lower = higher priority
     label: str = ""
-    kind: str = "context"  # "instructions", "file", "context", "topology", "standards", "plan", "reminder"
+    kind: str = (
+        "context"  # "instructions", "file", "context", "topology", "standards", "plan", "reminder"
+    )
     language: str = "text"
     file_path: str = ""
     role: str = ""  # trust signal: "reference" | "target" | ""
@@ -88,9 +86,7 @@ class _ContentBlock:
     truncated: bool = False
 
 
-# ---------------------------------------------------------------------------
 # Constitution preamble (injected before user's constitution content)
-# ---------------------------------------------------------------------------
 
 _CONSTITUTION_PREAMBLE = (
     "The following are non-negotiable project constraints.\n"
@@ -100,9 +96,7 @@ _CONSTITUTION_PREAMBLE = (
 )
 
 
-# ---------------------------------------------------------------------------
 # PromptBuilder
-# ---------------------------------------------------------------------------
 
 
 class PromptBuilder:
@@ -128,9 +122,7 @@ class PromptBuilder:
         self._auto_scale = budget_scale_factor == 1.0  # auto-scale when default
         self._blocks: list[_ContentBlock] = []
 
-    # ------------------------------------------------------------------
     # Builder API (all return self for chaining)
-    # ------------------------------------------------------------------
 
     def add_instructions(self, text: str) -> PromptBuilder:
         """Add instruction text (priority 0 — never truncated).
@@ -309,9 +301,7 @@ class PromptBuilder:
         )
         return self
 
-    # ------------------------------------------------------------------
     # Build
-    # ------------------------------------------------------------------
 
     def build(self) -> str:
         """Assemble the prompt as an XML-tagged string.
@@ -338,9 +328,7 @@ class PromptBuilder:
 
         return self._render(blocks)
 
-    # ------------------------------------------------------------------
     # Auto budget scaling
-    # ------------------------------------------------------------------
 
     def _compute_auto_scale(self, blocks: list[_ContentBlock]) -> None:
         """Auto-adjust ``_scale`` based on content-to-budget ratio.
@@ -361,9 +349,7 @@ class PromptBuilder:
         if not has_topology:
             return  # No topology to scale, keep default
 
-        non_topology_tokens = sum(
-            b.tokens for b in blocks if b.kind != "topology"
-        )
+        non_topology_tokens = sum(b.tokens for b in blocks if b.kind != "topology")
         ratio = non_topology_tokens / max(self._budget.limit, 1)
 
         if ratio < 0.25:
@@ -372,9 +358,7 @@ class PromptBuilder:
             self._scale = 0.5  # Tight budget → compress topology
         # else: keep at 1.0
 
-    # ------------------------------------------------------------------
     # Token estimation
-    # ------------------------------------------------------------------
 
     def _count(self, text: str) -> int:
         """Estimate token count for *text*."""
@@ -382,9 +366,7 @@ class PromptBuilder:
             return self._adapter.estimate_tokens(text)
         return len(text) // 4
 
-    # ------------------------------------------------------------------
     # Hybrid truncation
-    # ------------------------------------------------------------------
 
     def _apply_truncation(self, blocks: list[_ContentBlock]) -> list[_ContentBlock]:
         """Apply hybrid priority-ordered + proportional truncation."""
@@ -459,10 +441,7 @@ class PromptBuilder:
         result: list[_ContentBlock] = []
 
         # Calculate proportional shares
-        shares = {
-            i: int((b.tokens / total) * available)
-            for i, b in enumerate(group)
-        }
+        shares = {i: int((b.tokens / total) * available) for i, b in enumerate(group)}
 
         for i, block in enumerate(group):
             share = shares[i]
@@ -489,9 +468,7 @@ class PromptBuilder:
 
         return result
 
-    # ------------------------------------------------------------------
     # XML rendering (delegated to _prompt_render)
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _render_files(blocks: list[_ContentBlock]) -> str | None:
@@ -505,4 +482,3 @@ class PromptBuilder:
         from specweaver.llm._prompt_render import render_blocks
 
         return render_blocks(blocks)
-

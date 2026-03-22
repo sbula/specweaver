@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article>
+    <header><h1>Pipeline Runs</h1></header>
+    {% if runs %}
+        <table role="grid">
+            <thead>
+                <tr>
+                    <th scope="col">Run ID</th>
+                    <th scope="col">Project</th>
+                    <th scope="col">Pipeline</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Updated At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in runs %}
+                <tr>
+                    <td><strong><a href="/dashboard/runs/{{ r.run_id }}">{{ r.run_id[:8] }}...</a></strong></td>
+                    <td>{{ r.project_name }}</td>
+                    <td><code>{{ r.pipeline_name }}</code></td>
+                    <td>
+                        {% if r.status.value == "completed" %}
+                            <span style="color: var(--pico-ins-color);">Completed</span>
+                        {% elif r.status.value == "failed" %}
+                            <span style="color: var(--pico-del-color);">Failed</span>
+                        {% elif r.status.value == "parked" %}
+                            <span style="color: var(--pico-mark-color);">Pending Gate</span>
+                        {% else %}
+                            <span class="muted">{{ r.status.value | title }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ r.updated_at[:19] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No pipeline runs found. Start a run via the CLI or UI.</p>
+    {% endif %}
+</article>
+{% endblock %}

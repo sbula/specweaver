@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|default('SpecWeaver Dashboard') }}</title>
+    <link rel="stylesheet" href="/static/pico.min.css">
+    <script src="/static/htmx.min.js"></script>
+    <style>
+        body { padding-top: 2rem; }
+        .nav-header { border-bottom: 1px solid var(--pico-muted-border-color); margin-bottom: 2rem; padding-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header class="nav-header">
+            <nav>
+                <ul>
+                    <li><strong><a href="/dashboard" class="contrast">SpecWeaver</a></strong></li>
+                </ul>
+                <ul>
+                    <li><a href="/dashboard">Projects</a></li>
+                    <li><a href="/dashboard/runs">Runs</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <div id="content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</body>
+</html>

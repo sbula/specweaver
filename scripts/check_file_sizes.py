@@ -9,7 +9,7 @@ Thresholds (src/ files):
   - 451 to 600 lines: YELLOW (warning)
   - above 600 lines:  RED    (error, blocks pre-commit)
 
-Test files (tests/) use src thresholds × 1.5:
+Test files (tests/) use src thresholds x 1.5:
   - up to 675 lines:  GREEN  (ok)
   - 676 to 900 lines: YELLOW (warning)
   - above 900 lines:  RED    (error, blocks pre-commit)
