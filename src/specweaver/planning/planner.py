@@ -20,6 +20,7 @@ from specweaver.planning.models import PlanArtifact
 
 if TYPE_CHECKING:
     from specweaver.llm.adapters.base import LLMAdapter
+    from specweaver.loom.commons.research.executor import ToolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +90,11 @@ class Planner:
         *,
         config: GenerationConfig | None = None,
         max_retries: int = 3,
+        tool_executor: ToolExecutor | None = None,
     ) -> None:
         self._llm = llm
         self._max_retries = max_retries
+        self._tool_executor = tool_executor
         self._config = config or GenerationConfig(
             model="gemini-3-flash-preview",
             temperature=0.3,
@@ -148,7 +151,17 @@ class Planner:
 
         for attempt in range(1, self._max_retries + 1):
             logger.debug("Planner: attempt %d/%d", attempt, self._max_retries)
-            response = await self._llm.generate(messages, self._config)
+
+            # Tool loop runs to completion BEFORE retry loop
+            if self._tool_executor:
+                config = self._config.model_copy(
+                    update={"tools": self._tool_executor.available_tools()},
+                )
+                response = await self._llm.generate_with_tools(
+                    messages, config, self._tool_executor,
+                )
+            else:
+                response = await self._llm.generate(messages, self._config)
             raw = self._clean_json(response.text)
 
             try:

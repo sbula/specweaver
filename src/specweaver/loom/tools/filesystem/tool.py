@@ -15,93 +15,22 @@ from __future__ import annotations
 
 import posixpath
 import re
-from dataclasses import dataclass
-from enum import StrEnum
 from typing import TYPE_CHECKING, Any
+
+from specweaver.loom.tools.filesystem.models import (
+    MODE_ALLOWS_CREATE,
+    MODE_ALLOWS_DELETE,
+    MODE_ALLOWS_READ,
+    MODE_ALLOWS_WRITE,
+    ROLE_INTENTS,
+    AccessMode,
+    FileSystemToolError,
+    FolderGrant,
+    ToolResult,
+)
 
 if TYPE_CHECKING:
     from specweaver.loom.commons.filesystem.executor import ExecutorResult, FileExecutor
-
-# Access models
-
-
-class AccessMode(StrEnum):
-    """Access level for a folder grant."""
-
-    READ = "read"  # list, read, search
-    WRITE = "write"  # read + write + edit
-    FULL = "full"  # read + write + edit + create + delete
-
-
-# Permission hierarchy: which modes allow which operations
-_MODE_ALLOWS_READ: frozenset[AccessMode] = frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})  # fmt: skip
-_MODE_ALLOWS_WRITE: frozenset[AccessMode] = frozenset({AccessMode.WRITE, AccessMode.FULL})  # fmt: skip
-_MODE_ALLOWS_CREATE: frozenset[AccessMode] = frozenset({AccessMode.FULL})  # fmt: skip
-_MODE_ALLOWS_DELETE: frozenset[AccessMode] = frozenset({AccessMode.FULL})  # fmt: skip
-
-
-@dataclass(frozen=True)
-class FolderGrant:
-    """A single folder access grant.
-
-    Args:
-        path: Relative path from project root (e.g., "src/domain/billing").
-        mode: Access level (READ, WRITE, or FULL).
-        recursive: If True, grant covers all subdirectories.
-    """
-
-    path: str
-    mode: AccessMode
-    recursive: bool
-
-
-# Role → allowed intents
-
-ROLE_INTENTS: dict[str, frozenset[str]] = {
-    "implementer": frozenset(
-        {
-            "read_file",
-            "write_file",
-            "edit_file",
-            "create_file",
-            "delete_file",
-            "list_directory",
-            "search_content",
-            "find_placement",
-        }
-    ),
-    "reviewer": frozenset({"read_file", "list_directory", "search_content"}),
-    "drafter": frozenset(
-        {
-            "read_file",
-            "write_file",
-            "create_file",
-            "delete_file",
-            "list_directory",
-            "search_content",
-            "find_placement",
-        }
-    ),
-}
-
-
-# Tool result
-
-
-@dataclass(frozen=True)
-class ToolResult:
-    """Result from a FileSystemTool intent execution."""
-
-    status: str  # "success" or "error"
-    message: str = ""
-    data: Any = None
-
-
-# FileSystemTool
-
-
-class FileSystemToolError(Exception):
-    """Raised when a FileSystemTool operation is blocked by role or configuration."""
 
 
 class FileSystemTool:
@@ -141,7 +70,7 @@ class FileSystemTool:
     def read_file(self, path: str) -> ToolResult:
         """Read a file's contents."""
         self._require_intent("read_file")
-        err = self._check_grant(path, _MODE_ALLOWS_READ)
+        err = self._check_grant(path, MODE_ALLOWS_READ)
         if err:
             return err
         result = self._executor.read(path)
@@ -150,7 +79,7 @@ class FileSystemTool:
     def write_file(self, path: str, content: str) -> ToolResult:
         """Overwrite a file's contents."""
         self._require_intent("write_file")
-        err = self._check_grant(path, _MODE_ALLOWS_WRITE)
+        err = self._check_grant(path, MODE_ALLOWS_WRITE)
         if err:
             return err
         result = self._executor.write(path, content)
@@ -159,7 +88,7 @@ class FileSystemTool:
     def create_file(self, path: str, content: str) -> ToolResult:
         """Create a new file (fails if exists)."""
         self._require_intent("create_file")
-        err = self._check_grant(path, _MODE_ALLOWS_CREATE)
+        err = self._check_grant(path, MODE_ALLOWS_CREATE)
         if err:
             return err
         # Check existence first
@@ -172,7 +101,7 @@ class FileSystemTool:
     def delete_file(self, path: str) -> ToolResult:
         """Delete a file."""
         self._require_intent("delete_file")
-        err = self._check_grant(path, _MODE_ALLOWS_DELETE)
+        err = self._check_grant(path, MODE_ALLOWS_DELETE)
         if err:
             return err
         result = self._executor.delete(path)
@@ -187,7 +116,7 @@ class FileSystemTool:
             new: Replacement string.
         """
         self._require_intent("edit_file")
-        err = self._check_grant(path, _MODE_ALLOWS_WRITE)
+        err = self._check_grant(path, MODE_ALLOWS_WRITE)
         if err:
             return err
 
@@ -210,11 +139,76 @@ class FileSystemTool:
     def list_directory(self, path: str) -> ToolResult:
         """List directory contents."""
         self._require_intent("list_directory")
-        err = self._check_grant(path, _MODE_ALLOWS_READ)
+        err = self._check_grant(path, MODE_ALLOWS_READ)
         if err:
             return err
         result = self._executor.list_dir(path)
         return self._wrap(result)
+
+    def grep(
+        self,
+        path: str,
+        pattern: str,
+        *,
+        context_lines: int = 3,
+        case_sensitive: bool = False,
+        max_results: int = 20,
+    ) -> ToolResult:
+        """Search for a pattern in file contents using ripgrep or Python fallback.
+
+        Args:
+            path: Relative directory path to search.
+            pattern: Search pattern (string or regex).
+            context_lines: Lines of context before/after each match.
+            case_sensitive: Whether to perform case-sensitive search.
+            max_results: Maximum number of matches to return.
+        """
+        self._require_intent("grep")
+        err = self._check_grant(path, MODE_ALLOWS_READ)
+        if err:
+            return err
+        resolved = self._executor.cwd / path
+        if not resolved.is_dir():
+            return ToolResult(status="error", message=f"Not a directory: {path}")
+        from specweaver.loom.commons.filesystem.search import grep_content
+        results = grep_content(
+            resolved.resolve(), pattern,
+            context_lines=context_lines,
+            case_sensitive=case_sensitive,
+            max_results=max_results,
+        )
+        return ToolResult(status="success", data=results)
+
+    def find_files(
+        self,
+        path: str,
+        pattern: str,
+        *,
+        file_type: str = "any",
+        max_results: int = 30,
+    ) -> ToolResult:
+        """Find files matching a glob pattern.
+
+        Args:
+            path: Relative directory path to search.
+            pattern: Glob pattern (e.g., '*.py', 'context.yaml').
+            file_type: Filter: 'file', 'directory', or 'any'.
+            max_results: Maximum number of results.
+        """
+        self._require_intent("find_files")
+        err = self._check_grant(path, MODE_ALLOWS_READ)
+        if err:
+            return err
+        resolved = self._executor.cwd / path
+        if not resolved.is_dir():
+            return ToolResult(status="error", message=f"Not a directory: {path}")
+        from specweaver.loom.commons.filesystem.search import find_by_glob
+        results = find_by_glob(
+            resolved.resolve(), pattern,
+            file_type=file_type,
+            max_results=max_results,
+        )
+        return ToolResult(status="success", data=results)
 
     def search_content(
         self,
@@ -234,7 +228,7 @@ class FileSystemTool:
             ToolResult with data=list of {file, line, content} matches.
         """
         self._require_intent("search_content")
-        err = self._check_grant(path, _MODE_ALLOWS_READ)
+        err = self._check_grant(path, MODE_ALLOWS_READ)
         if err:
             return err
 

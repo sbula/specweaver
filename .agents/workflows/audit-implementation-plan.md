@@ -11,6 +11,13 @@ If no path argument is provided, ask the user which implementation plan to audit
 
 ## Instructions
 
+0. **MANDATORY: Read the architecture reference** before auditing any plan:
+   ```
+   docs/architecture/architecture_reference.md
+   ```
+   Cross-check every proposed module placement, dependency direction, and layer
+   choice against this document. Flag violations as CRITICAL.
+
 1. Read the implementation plan file at the provided path in its entirety. If any link or reference is mentioned, also read these.
 
 2. **Identify every single open question, unresolved decision, silent assumption, and ambiguity** in the plan. There is NO LIMIT on the number of questions. Surface every one you find. Do NOT guess answers. Do NOT assume defaults. Just list the questions.
@@ -20,6 +27,8 @@ If no path argument is provided, ask the user which implementation plan to audit
    - **Question**: the specific decision or ambiguity
    - **Options**: concrete alternatives (if identifiable)
    - **Impact**: what breaks or gets harder if we pick wrong
+   - **pros/cons**: positive and negative impact if we chose this option
+   - **proposal** what would you chose and why
    - **Severity**: CRITICAL / HIGH / MEDIUM / LOW
 
 4. Sort the final list by severity (CRITICAL first), then by impact within the same severity level.

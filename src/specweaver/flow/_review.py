@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from specweaver.flow.models import PipelineStep
     from specweaver.llm.models import GenerationConfig
+    from specweaver.loom.commons.research.executor import ToolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,31 @@ def _review_config_from_context(context: RunContext) -> GenerationConfig:
     )
 
 
+def _build_tool_executor(context: RunContext) -> ToolExecutor | None:
+    """Build a ToolExecutor from RunContext if workspace boundaries exist.
+
+    Returns None when research tools should not be available, preserving
+    backwards compatibility with contexts that don't set workspace roots
+    or when the LLM doesn't support tool use.
+    """
+    import os
+
+    from specweaver.loom.commons.research.boundaries import WorkspaceBoundary
+    from specweaver.loom.commons.research.executor import ToolExecutor
+
+    # Only enable when the LLM actually supports tool use
+    if not hasattr(context.llm, "generate_with_tools"):
+        return None
+
+    try:
+        boundary = WorkspaceBoundary.from_run_context(context)
+    except (ValueError, AttributeError):
+        return None
+
+    web_enabled = bool(os.environ.get("SEARCH_API_KEY"))
+    return ToolExecutor(boundary, web_enabled=web_enabled)
+
+
 class ReviewSpecHandler:
     """Handler for review+spec — LLM-based spec review."""
 
@@ -53,11 +79,13 @@ class ReviewSpecHandler:
             reviewer = Reviewer(
                 llm=context.llm,
                 config=_review_config_from_context(context),
+                tool_executor=_build_tool_executor(context),
             )
             result = await reviewer.review_spec(
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
                 constitution=context.constitution,
+                standards=context.standards,
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
@@ -99,12 +127,14 @@ class ReviewCodeHandler:
             reviewer = Reviewer(
                 llm=context.llm,
                 config=_review_config_from_context(context),
+                tool_executor=_build_tool_executor(context),
             )
             result = await reviewer.review_code(
                 code_path,
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
                 constitution=context.constitution,
+                standards=context.standards,
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",

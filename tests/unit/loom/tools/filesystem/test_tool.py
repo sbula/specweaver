@@ -18,13 +18,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.loom.commons.filesystem.executor import FileExecutor
-from specweaver.loom.tools.filesystem.tool import (
+from specweaver.loom.tools.filesystem.models import (
     ROLE_INTENTS,
     AccessMode,
-    FileSystemTool,
     FileSystemToolError,
     FolderGrant,
 )
+from specweaver.loom.tools.filesystem.tool import FileSystemTool
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -147,17 +147,19 @@ class TestRoleIntentMapping:
         expected = {
             "read_file", "write_file", "edit_file", "create_file",
             "delete_file", "list_directory", "search_content", "find_placement",
+            "grep", "find_files",
         }
         assert ROLE_INTENTS["implementer"] == frozenset(expected)
 
     def test_reviewer_intents(self) -> None:
-        expected = {"read_file", "list_directory", "search_content"}
+        expected = {"read_file", "list_directory", "search_content", "grep", "find_files"}
         assert ROLE_INTENTS["reviewer"] == frozenset(expected)
 
     def test_drafter_intents(self) -> None:
         expected = {
             "read_file", "write_file", "create_file", "delete_file",
             "list_directory", "search_content", "find_placement",
+            "grep", "find_files",
         }
         assert ROLE_INTENTS["drafter"] == frozenset(expected)
 

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
+    from specweaver.loom.commons.research.executor import ToolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,7 @@ class Reviewer:
         llm: LLMAdapter,
         config: GenerationConfig | None = None,
         confidence_threshold: int = 80,
+        tool_executor: ToolExecutor | None = None,
     ) -> None:
         self._llm = llm
         self._config = config or GenerationConfig(
@@ -110,6 +112,7 @@ class Reviewer:
             max_output_tokens=4096,
         )
         self._confidence_threshold = confidence_threshold
+        self._tool_executor = tool_executor
 
     async def review_spec(
         self,
@@ -201,7 +204,15 @@ class Reviewer:
         ]
 
         try:
-            response = await self._llm.generate(messages, self._config)
+            if self._tool_executor:
+                config = self._config.model_copy(
+                    update={"tools": self._tool_executor.available_tools()},
+                )
+                response = await self._llm.generate_with_tools(
+                    messages, config, self._tool_executor,
+                )
+            else:
+                response = await self._llm.generate(messages, self._config)
         except Exception as exc:
             logger.debug("Review LLM call failed: %s", str(exc))
             return ReviewResult(

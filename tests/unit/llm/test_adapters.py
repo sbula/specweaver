@@ -377,3 +377,130 @@ class TestTokenCounting:
 
         with pytest.raises(AuthenticationError):
             await adapter.count_tokens("test", "gemini-2.5-flash")
+
+
+# ---------------------------------------------------------------------------
+# generate_with_tools() tests
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateWithTools:
+    """Tests for the agentic tool-use loop."""
+
+    @pytest.mark.asyncio
+    async def test_no_tool_calls_returns_text(self) -> None:
+        """When LLM returns text without tool calls, return directly."""
+        adapter = GeminiAdapter(api_key="fake-key")
+
+        mock_response = MagicMock()
+        mock_response.text = "Final answer"
+        mock_response.usage_metadata = None
+        mock_response.candidates = [MagicMock(finish_reason="STOP")]
+        mock_response.function_calls = None
+
+        mock_client = MagicMock()
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+        adapter._client = mock_client
+
+        from specweaver.llm.models import ToolDefinition
+
+        config = GenerationConfig(
+            model="gemini-2.5-flash",
+            tools=[ToolDefinition(name="grep", description="search")],
+        )
+        messages = [Message(role=Role.USER, content="Hello")]
+        mock_executor = AsyncMock()
+
+        result = await adapter.generate_with_tools(messages, config, mock_executor)
+        assert result.text == "Final answer"
+        mock_executor.execute.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_single_tool_call_round(self) -> None:
+        """LLM calls a tool, gets result, then returns text."""
+        adapter = GeminiAdapter(api_key="fake-key")
+
+        # Round 1: tool call
+        mock_fc = MagicMock()
+        mock_fc.name = "grep"
+        mock_fc.args = {"pattern": "hello"}
+
+        mock_response_1 = MagicMock()
+        mock_response_1.text = ""
+        mock_response_1.usage_metadata = None
+        mock_response_1.candidates = [MagicMock(content=MagicMock())]
+        mock_response_1.function_calls = [mock_fc]
+
+        # Round 2: final text
+        mock_response_2 = MagicMock()
+        mock_response_2.text = "Found 3 matches"
+        mock_response_2.usage_metadata = None
+        mock_response_2.candidates = [MagicMock(finish_reason="STOP")]
+        mock_response_2.function_calls = None
+
+        mock_client = MagicMock()
+        mock_client.aio.models.generate_content = AsyncMock(
+            side_effect=[mock_response_1, mock_response_2],
+        )
+        adapter._client = mock_client
+
+        mock_executor = AsyncMock()
+        mock_executor.execute.return_value = {"results": [{"file": "main.py", "line_number": 1}]}
+
+        from specweaver.llm.models import ToolDefinition
+
+        config = GenerationConfig(
+            model="gemini-2.5-flash",
+            tools=[ToolDefinition(name="grep", description="search")],
+        )
+        messages = [Message(role=Role.USER, content="Search for hello")]
+
+        result = await adapter.generate_with_tools(messages, config, mock_executor)
+        assert result.text == "Found 3 matches"
+        mock_executor.execute.assert_called_once_with("grep", {"pattern": "hello"})
+
+    @pytest.mark.asyncio
+    async def test_no_tools_config_falls_back_to_generate(self) -> None:
+        """When config.tools is None, fall back to regular generate()."""
+        adapter = GeminiAdapter(api_key="fake-key")
+
+        mock_response = MagicMock()
+        mock_response.text = "Direct response"
+        mock_response.usage_metadata = None
+        mock_response.candidates = [MagicMock(finish_reason="STOP")]
+
+        mock_client = MagicMock()
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+        adapter._client = mock_client
+
+        config = GenerationConfig(model="gemini-2.5-flash")  # No tools
+        messages = [Message(role=Role.USER, content="Hello")]
+
+        result = await adapter.generate_with_tools(messages, config, AsyncMock())
+        assert result.text == "Direct response"
+
+    @pytest.mark.asyncio
+    async def test_base_adapter_fallback(self) -> None:
+        """Base adapter's generate_with_tools falls back to generate()."""
+        adapter = GeminiAdapter(api_key="fake-key")
+
+        mock_response = MagicMock()
+        mock_response.text = "Fallback"
+        mock_response.usage_metadata = None
+        mock_response.candidates = [MagicMock(finish_reason="STOP")]
+
+        mock_client = MagicMock()
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+        adapter._client = mock_client
+
+        # Call the base class method explicitly (no tools)
+        from specweaver.llm.adapters.base import LLMAdapter
+
+        config = GenerationConfig(model="gemini-2.5-flash")
+        messages = [Message(role=Role.USER, content="Hello")]
+
+        result = await LLMAdapter.generate_with_tools(
+            adapter, messages, config, AsyncMock(),
+        )
+        assert result.text == "Fallback"
+

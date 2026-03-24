@@ -141,6 +141,7 @@ class PlanSpecHandler:
             )
 
         try:
+            from specweaver.flow._review import _build_tool_executor
             from specweaver.planning.planner import Planner
 
             max_retries: int = step.params.get("max_retries", 3)
@@ -148,6 +149,7 @@ class PlanSpecHandler:
                 llm=context.llm,
                 config=_gen_config_from_context(context, temperature=0.3),
                 max_retries=max_retries,
+                tool_executor=_build_tool_executor(context),
             )
 
             spec_content = context.spec_path.read_text(encoding="utf-8")

@@ -53,6 +53,8 @@ class RunContext(BaseModel):
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
     plan: str | None = None  # Pre-loaded plan content (set by runner hook)
+    workspace_roots: list[str] | None = None  # Override boundary roots (set by decomposition)
+    api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
 
 
 # ---------------------------------------------------------------------------

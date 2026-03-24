@@ -19,14 +19,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from specweaver.loom.commons.filesystem.executor import FileExecutor
-from specweaver.loom.tools.filesystem.tool import (
-    FileSystemTool,
-    FolderGrant,
-    ToolResult,
-)
+from specweaver.loom.tools.filesystem.tool import FileSystemTool
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from specweaver.loom.tools.filesystem.models import FolderGrant, ToolResult
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +36,8 @@ class ImplementerFileInterface:
     """Filesystem interface for the Implementer role.
 
     Allowed intents: read_file, write_file, edit_file, create_file,
-                     delete_file, list_directory, search_content, find_placement.
+                     delete_file, list_directory, search_content, find_placement,
+                     grep, find_files.
     """
 
     def __init__(self, tool: FileSystemTool) -> None:
@@ -76,11 +75,19 @@ class ImplementerFileInterface:
         """Find where new code should go based on context.yaml purposes."""
         return self._tool.find_placement(description)
 
+    def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+        """Search for a pattern in file contents."""
+        return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
+
+    def find_files(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+        """Find files matching a glob pattern."""
+        return self._tool.find_files(path, pattern, **kwargs)  # type: ignore[arg-type]
+
 
 class ReviewerFileInterface:
     """Filesystem interface for the Reviewer role.
 
-    Allowed intents: read_file, list_directory, search_content.
+    Allowed intents: read_file, list_directory, search_content, grep, find_files.
     All read-only.
     """
 
@@ -99,12 +106,21 @@ class ReviewerFileInterface:
         """Search for regex pattern in files."""
         return self._tool.search_content(path, regex)
 
+    def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+        """Search for a pattern in file contents."""
+        return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
+
+    def find_files(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+        """Find files matching a glob pattern."""
+        return self._tool.find_files(path, pattern, **kwargs)  # type: ignore[arg-type]
+
 
 class DrafterFileInterface:
     """Filesystem interface for the Drafter role.
 
     Allowed intents: read_file, write_file, create_file, delete_file,
-                     list_directory, search_content, find_placement.
+                     list_directory, search_content, find_placement,
+                     grep, find_files.
     """
 
     def __init__(self, tool: FileSystemTool) -> None:
@@ -137,6 +153,14 @@ class DrafterFileInterface:
     def find_placement(self, description: str) -> ToolResult:
         """Find where new code should go based on context.yaml purposes."""
         return self._tool.find_placement(description)
+
+    def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+        """Search for a pattern in file contents."""
+        return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
+
+    def find_files(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+        """Find files matching a glob pattern."""
+        return self._tool.find_files(path, pattern, **kwargs)  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------

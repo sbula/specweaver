@@ -21,7 +21,7 @@ from specweaver.loom.tools.filesystem.interfaces import (
     ReviewerFileInterface,
     create_filesystem_interface,
 )
-from specweaver.loom.tools.filesystem.tool import (
+from specweaver.loom.tools.filesystem.models import (
     AccessMode,
     FolderGrant,
 )
@@ -79,16 +79,20 @@ _ALL_METHODS = {
     "list_directory",
     "search_content",
     "find_placement",
+    "grep",
+    "find_files",
 }
 
 _IMPLEMENTER_METHODS = {
     "read_file", "write_file", "edit_file", "create_file",
     "delete_file", "list_directory", "search_content", "find_placement",
+    "grep", "find_files",
 }
-_REVIEWER_METHODS = {"read_file", "list_directory", "search_content"}
+_REVIEWER_METHODS = {"read_file", "list_directory", "search_content", "grep", "find_files"}
 _DRAFTER_METHODS = {
     "read_file", "write_file", "create_file", "delete_file",
     "list_directory", "search_content", "find_placement",
+    "grep", "find_files",
 }
 
 

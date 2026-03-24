@@ -29,6 +29,8 @@ from specweaver.llm.models import (
     Message,
     Role,
     TokenUsage,
+    ToolCall,
+    ToolDefinition,
 )
 
 if TYPE_CHECKING:
@@ -198,6 +200,131 @@ class GeminiAdapter(LLMAdapter):
             usage=usage,
             finish_reason=finish_reason,
         )
+
+    # ------------------------------------------------------------------
+    # Agentic tool-use loop
+    # ------------------------------------------------------------------
+
+    def _to_gemini_tools(self, tools: list[ToolDefinition]) -> list[types.Tool]:
+        """Convert SpecWeaver ToolDefinitions to Gemini FunctionDeclarations."""
+        declarations = []
+        for tool in tools:
+            schema = tool.to_json_schema()
+            declarations.append(types.FunctionDeclaration(
+                name=tool.name,
+                description=tool.description,
+                parameters=schema if schema["properties"] else None,  # type: ignore[arg-type]
+            ))
+        return [types.Tool(function_declarations=declarations)]
+
+    def _extract_tool_calls(self, response: Any) -> list[ToolCall]:
+        """Convert Gemini function_calls to SpecWeaver ToolCall models."""
+        if not hasattr(response, "function_calls") or not response.function_calls:
+            return []
+        return [
+            ToolCall(name=fc.name, args=dict(fc.args) if fc.args else {})
+            for fc in response.function_calls
+        ]
+
+    def _extract_usage(self, response: Any) -> TokenUsage:
+        """Extract token usage from a Gemini response."""
+        if hasattr(response, "usage_metadata") and response.usage_metadata:
+            meta = response.usage_metadata
+            return TokenUsage(
+                prompt_tokens=getattr(meta, "prompt_token_count", 0) or 0,
+                completion_tokens=getattr(meta, "candidates_token_count", 0) or 0,
+                total_tokens=getattr(meta, "total_token_count", 0) or 0,
+            )
+        return TokenUsage()
+
+    async def generate_with_tools(
+        self,
+        messages: list[Message],
+        config: GenerationConfig,
+        tool_executor: object,
+    ) -> LLMResponse:
+        """Agentic generation loop with tool use via Gemini function calling.
+
+        Converts SpecWeaver ToolDefinitions to Gemini FunctionDeclarations,
+        runs multi-turn loop, dispatches tool calls via executor.
+
+        All Gemini-specific types are confined to this method.
+        """
+        if not config.tools:
+            return await self.generate(messages, config)
+
+        client = self._get_client()
+        system_instruction, contents = _messages_to_gemini(messages)
+
+        gemini_tools = self._to_gemini_tools(config.tools)
+        gen_config = types.GenerateContentConfig(
+            tools=gemini_tools,  # type: ignore[arg-type]
+            temperature=config.temperature,
+            max_output_tokens=config.max_output_tokens,
+            system_instruction=system_instruction,
+        )
+
+        cumulative_usage = TokenUsage()
+        total_calls = 0
+
+        for round_num in range(config.max_tool_rounds):
+            logger.debug(
+                "GeminiAdapter.generate_with_tools: round %d/%d",
+                round_num + 1, config.max_tool_rounds,
+            )
+
+            try:
+                response = await client.aio.models.generate_content(
+                    model=config.model,
+                    contents=contents,
+                    config=gen_config,
+                )
+            except Exception as exc:
+                logger.error("GeminiAdapter.generate_with_tools: API call failed — %s", exc)
+                return self._handle_error(exc)
+
+            cumulative_usage = cumulative_usage + self._extract_usage(response)
+            total_calls += 1
+
+            tool_calls = self._extract_tool_calls(response)
+            if tool_calls:
+                logger.debug(
+                    "GeminiAdapter: %d tool call(s) in round %d: %s",
+                    len(tool_calls), round_num + 1,
+                    [tc.name for tc in tool_calls],
+                )
+                tool_results = []
+                for tc in tool_calls:
+                    # Provider-agnostic call: (name, args)
+                    result = await tool_executor.execute(tc.name, tc.args)  # type: ignore[attr-defined]
+                    tool_results.append((tc, result))
+
+                # Append in Gemini-specific format (only here, inside the adapter)
+                contents.append(response.candidates[0].content)  # type: ignore[index,arg-type]
+                contents.append(types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_function_response(
+                            name=tc.name, response=r,
+                        )
+                        for tc, r in tool_results
+                    ],
+                ))
+            else:
+                # LLM produced final text response
+                resp = self._parse_response(response, config.model)
+                resp.usage = cumulative_usage
+                return resp
+
+        # Max rounds reached — log warning and return
+        if total_calls > 5:
+            logger.warning(
+                "GeminiAdapter: tool loop used %d LLM calls (max_rounds=%d)",
+                total_calls, config.max_tool_rounds,
+            )
+        resp = self._parse_response(response, config.model)
+        resp.usage = cumulative_usage
+        return resp
 
     async def count_tokens(
         self,

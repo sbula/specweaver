@@ -122,3 +122,26 @@ class LLMAdapter(ABC):
             Approximate token count.
         """
         return len(text) // 4
+
+    async def generate_with_tools(
+        self,
+        messages: list[Message],
+        config: GenerationConfig,
+        tool_executor: object,
+    ) -> LLMResponse:
+        """Agentic generation loop with tool use.
+
+        Default implementation: ignores tools, calls generate() directly.
+        Adapters that support function calling override this.
+
+        Returns:
+            LLMResponse with cumulative token usage across all rounds.
+        """
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "%s does not support tool use — falling back to generate()",
+            self.provider_name,
+        )
+        return await self.generate(messages, config)
+
