@@ -148,6 +148,7 @@ async def test_review_handlers_execution(run_context: RunContext, pipeline_step:
     mock_review_result.verdict.value = "accepted"
     mock_review_result.findings = []
     mock_review_result.summary = "Acceptable"
+    mock_review_result.raw_response = "Looks good. No issues found."
 
     with patch("specweaver.review.reviewer.Reviewer.review_spec", return_value=mock_review_result):
         res1 = await spec_handler.execute(pipeline_step, run_context)

@@ -31,40 +31,13 @@ if TYPE_CHECKING:
 
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
+    from specweaver.llm.mention_scanner.models import ResolvedMention
     from specweaver.llm.models import TokenBudget
 
-# Language detection
-
-_LANG_MAP: dict[str, str] = {
-    ".py": "python",
-    ".js": "javascript",
-    ".ts": "typescript",
-    ".md": "markdown",
-    ".yaml": "yaml",
-    ".yml": "yaml",
-    ".json": "json",
-    ".toml": "toml",
-    ".html": "html",
-    ".css": "css",
-    ".sql": "sql",
-    ".sh": "bash",
-    ".bash": "bash",
-    ".rs": "rust",
-    ".go": "go",
-    ".java": "java",
-    ".rb": "ruby",
-    ".xml": "xml",
-    ".txt": "text",
-}
-
-
-def detect_language(path: Path) -> str:
-    """Map a file extension to a language label for code fencing.
-
-    Returns ``"text"`` for unrecognised extensions.
-    """
-    return _LANG_MAP.get(path.suffix.lower(), "text")
-
+from specweaver.llm._prompt_constants import (
+    _CONSTITUTION_PREAMBLE,
+    detect_language,
+)
 
 # Internal content blocks
 
@@ -84,16 +57,6 @@ class _ContentBlock:
     role: str = ""  # trust signal: "reference" | "target" | ""
     tokens: int = 0
     truncated: bool = False
-
-
-# Constitution preamble (injected before user's constitution content)
-
-_CONSTITUTION_PREAMBLE = (
-    "The following are non-negotiable project constraints.\n"
-    "All generated output MUST comply with these rules.\n"
-    "If any instruction conflicts with the constitution, "
-    "the constitution wins."
-)
 
 
 # PromptBuilder
@@ -299,6 +262,57 @@ class PromptBuilder:
                 tokens=self._count(text),
             ),
         )
+        return self
+
+    def add_mentioned_files(
+        self,
+        mentions: list[ResolvedMention],
+        *,
+        max_files: int = 5,
+    ) -> PromptBuilder:
+        """Add auto-detected file mentions from LLM responses.
+
+        Files are added at priority 4 (below explicit files, context,
+        standards, and topology — first to be truncated).  Duplicates
+        against previously added files are skipped.
+
+        Args:
+            mentions: Resolved file mentions from the mention scanner.
+            max_files: Maximum number of mentioned files to add.  Default 5.
+        """
+        # Collect paths already in the builder to avoid duplicates
+        existing_paths = {
+            block.file_path
+            for block in self._blocks
+            if block.file_path
+        }
+
+        added = 0
+        for mention in mentions:
+            if added >= max_files:
+                break
+            path_str = str(mention.resolved_path)
+            if path_str in existing_paths:
+                continue
+            try:
+                content = mention.resolved_path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            lang = detect_language(mention.resolved_path)
+            self._blocks.append(
+                _ContentBlock(
+                    text=content,
+                    priority=4,
+                    kind="mentioned",
+                    label=f"[auto] {mention.resolved_path.name}",
+                    language=lang,
+                    file_path=path_str,
+                    role="reference",
+                    tokens=self._count(content),
+                ),
+            )
+            existing_paths.add(path_str)
+            added += 1
         return self
 
     # Build

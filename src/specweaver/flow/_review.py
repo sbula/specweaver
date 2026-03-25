@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.flow.models import PipelineStep
+    from specweaver.llm.mention_scanner.models import ResolvedMention
     from specweaver.llm.models import GenerationConfig
     from specweaver.loom.commons.research.executor import ToolExecutor
 
@@ -86,11 +87,16 @@ class ReviewSpecHandler:
                 topology_contexts=([context.topology] if context.topology else None),
                 constitution=context.constitution,
                 standards=context.standards,
+                mentioned_files=_get_prior_mentions(context),
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
                 result.verdict.value, len(result.findings),
             )
+
+            # 3.11: Scan LLM response for file mentions
+            _scan_and_store_mentions(result.raw_response, context)
+
             return StepResult(
                 status=StepStatus.PASSED
                 if result.verdict.value == "accepted"
@@ -135,11 +141,16 @@ class ReviewCodeHandler:
                 topology_contexts=([context.topology] if context.topology else None),
                 constitution=context.constitution,
                 standards=context.standards,
+                mentioned_files=_get_prior_mentions(context),
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",
                 result.verdict.value, len(result.findings),
             )
+
+            # 3.11: Scan LLM response for file mentions
+            _scan_and_store_mentions(result.raw_response, context)
+
             return StepResult(
                 status=StepStatus.PASSED
                 if result.verdict.value == "accepted"
@@ -162,3 +173,114 @@ class ReviewCodeHandler:
             if py_files:
                 return py_files[0]
         return None
+
+
+# ---------------------------------------------------------------------------
+# 3.11 — Mention scanning helpers
+# ---------------------------------------------------------------------------
+
+
+def _get_prior_mentions(context: RunContext) -> list[ResolvedMention] | None:
+    """Read auto-detected file mentions stored by a prior pipeline step.
+
+    Returns None if no prior step stored mentions.
+    """
+    mentions = context.feedback.get("mention_scanner:resolved")
+    if mentions and isinstance(mentions, list):
+        return mentions  # type: ignore[return-value]
+    return None
+
+
+def _scan_and_store_mentions(
+    raw_response: str,
+    context: RunContext,
+) -> None:
+    """Scan LLM response for file mentions and store in context.feedback.
+
+    Resolution respects workspace boundaries: only files within
+    ``context.project_path`` (or ``context.workspace_roots``) are included.
+    """
+    from specweaver.llm.mention_scanner import extract_mentions
+
+    candidates = extract_mentions(raw_response)
+    if not candidates:
+        return
+
+    resolved = _resolve_mentions(
+        candidates,
+        context.project_path,
+        workspace_roots=(
+            [context.project_path / r for r in context.workspace_roots]
+            if context.workspace_roots
+            else None
+        ),
+    )
+
+    if resolved:
+        context.feedback["mention_scanner:resolved"] = resolved
+        names = [m.resolved_path.name for m in resolved]
+        logger.info(
+            "Auto-detected %d file mentions: %s",
+            len(resolved),
+            ", ".join(names),
+        )
+
+
+def _resolve_mentions(
+    candidates: list[str],
+    project_path: Path,
+    *,
+    workspace_roots: list[Path] | None = None,
+    max_files: int = 5,
+) -> list[ResolvedMention]:
+    """Resolve candidate path strings to actual files on disk.
+
+    Only files within the project or workspace boundaries are included.
+    Spec files (kind="spec") are prioritized over other kinds.
+    """
+    from specweaver.llm.mention_scanner.models import ResolvedMention
+
+    roots = [project_path]
+    if workspace_roots:
+        roots.extend(workspace_roots)
+
+    resolved: list[ResolvedMention] = []
+    seen_paths: set[Path] = set()
+
+    for candidate in candidates:
+        for root in roots:
+            candidate_path = root / candidate
+            try:
+                # Resolve symlinks and normalize
+                resolved_path = candidate_path.resolve(strict=False)
+            except (OSError, ValueError):
+                continue
+
+            # Workspace boundary check: must be within a root
+            if not any(_is_within(resolved_path, r) for r in roots):
+                continue
+
+            if resolved_path.is_file() and resolved_path not in seen_paths:
+                seen_paths.add(resolved_path)
+                kind = ResolvedMention.classify(resolved_path)
+                resolved.append(
+                    ResolvedMention(
+                        original=candidate,
+                        resolved_path=resolved_path,
+                        kind=kind,
+                    ),
+                )
+                break  # Found a match for this candidate; next candidate
+
+    # Prioritize specs, then cap
+    resolved.sort(key=lambda m: (0 if m.kind == "spec" else 1))
+    return resolved[:max_files]
+
+
+def _is_within(path: Path, root: Path) -> bool:
+    """Check if path is within root directory."""
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return False
+    return True

@@ -1,7 +1,7 @@
 # Test Coverage Matrix
 
-> **3 128 collected** · 3 128 passed · 9 skipped · 101 source modules · 148 test files
-> **Last updated**: 2026-03-22
+> **3 362 collected** · 3 353 passed · 9 skipped · 108 source modules · 153 test files
+> **Last updated**: 2026-03-25
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
 
@@ -33,19 +33,20 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `config/` | 3 | 234 | 20 | 0 | 254 |
 | `context/` | 4 | 53 | 8 | 7 | 68 |
 | `drafting/` | 3 | 113 | 0 | 0 | 113 |
-| `flow/` | 8 | 269 | 35 | 13 | 317 |
+| `flow/` | 8 | 287 | 35 | 13 | 335 |
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
-| `llm/` | 5 | 155 | 0 | 0 | 155 |
+| `llm/` | 8 | 222 | 0 | 0 | 222 |
 | `loom/` | 15 | 571 | 14 | 0 | 585 |
 | `planning/` | 3 | 79 | 0 | 0 | 79 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
+| `research/` | 4 | 59 | 0 | 0 | 59 |
 | `review/` | 1 | 30 | 0 | 0 | 30 |
 | `standards/` | 11 | 172 | 0 | 4 | 176 |
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **101** | **2 757** | **230** | **78** | **3 128** |
+| **Total** | **108** | **2 882** | **230** | **78** | **3 362** |
 
 
 ---
@@ -352,6 +353,14 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `LintFixHandler` exhaustion of reflections | ✅ | ❌ | ❌ | ⚪ | Reflections max hit |
 | `LintFixHandler` LLM exception during reflection | ✅ | ❌ | ❌ | ⚪ | Fails step cleanly |
 | `DraftSpecHandler` spec exists | ✅ | ❌ | ❌ | ⚪ | Skips execution |
+| `_resolve_mentions()` resolves existing file within boundary | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `_resolve_mentions()` skips nonexistent / rejects outside boundary | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `_resolve_mentions()` dedup, spec priority, max_files cap | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `_resolve_mentions()` multiple workspace roots | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `_scan_and_store_mentions()` stores resolved in context.feedback | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `_scan_and_store_mentions()` empty response / no mentions | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `_is_within()` boundary check | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `_get_prior_mentions()` reads/returns from context.feedback | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
 
 ### 5.4 `models.py`
 
@@ -462,6 +471,33 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `detect_language()` | ✅ | ❌ | ⚪ | ⚪ | — |
 | Prompt with constitution + standards + topology + plan combined | ✅ | ✅ | ⚪ | ⚪ | Integrated in pipeline |
 | Prompt exceeds token budget → truncation | ✅ | ❌ | ⚪ | ⚪ | Unit only |
+| `add_mentioned_files()` priority-4 block added | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `add_mentioned_files()` dedup with existing files | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `add_mentioned_files()` respects max_files cap | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `add_mentioned_files()` handles read failure | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `add_mentioned_files()` empty list → no blocks | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+
+### 8.6 `mention_scanner/scanner.py` *(Feature 3.11)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `extract_mentions()` backtick detection | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `extract_mentions()` quoted path detection | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `_strip_large_code_blocks()` removal | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `_should_include()` extension filtering | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+### 8.7 `mention_scanner/models.py` *(Feature 3.11)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `ResolvedMention` dataclass construction | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `ResolvedMention.classify()` spec vs code | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+### 8.8 `_prompt_render.py`
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `render_blocks()` mentioned files section | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11, `<mentioned_files>` XML |
 
 ### 8.4 `adapters/base.py`
 

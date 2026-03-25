@@ -16,11 +16,17 @@ description: |
 archetype: orchestrator
 
 consumes:
+  - specweaver/config
+  - specweaver/llm
+  - specweaver/review
+  - specweaver/implementation
+  - specweaver/planning
+  - specweaver/validation
   - specweaver/loom/atoms/test_runner
-  - specweaver/loom/commons/test_runner
 
 forbids:
   - specweaver/loom/tools/*
+  - specweaver/loom/commons/*  # commons is internal to loom — only atoms/tools may consume it
   - specweaver/drafting
   - specweaver/context
 

@@ -72,6 +72,21 @@ def render_blocks(blocks: list[_ContentBlock]) -> str:
     if file_xml:
         parts.append(file_xml)
 
+    # Mentioned files (auto-detected from prior LLM responses)
+    mentioned = [b for b in blocks if b.kind == "mentioned"]
+    if mentioned:
+        mention_parts: list[str] = []
+        for m in mentioned:
+            attrs = f'path="{m.label}" language="{m.language}"'
+            if m.role:
+                attrs += f' role="{m.role}"'
+            marker = "\n[truncated]" if m.truncated else ""
+            mention_parts.append(
+                f"<file {attrs}>\n{m.text}{marker}\n</file>",
+            )
+        inner = "\n".join(mention_parts)
+        parts.append(f"<mentioned_files>\n{inner}\n</mentioned_files>")
+
     # Context blocks
     contexts = [b for b in blocks if b.kind == "context"]
     for ctx in contexts:

@@ -1,0 +1,25 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: mention_scanner
+level: sub-module
+purpose: >
+  Pure-logic text scanner that extracts file and spec references from LLM
+  response text. No I/O — produces candidate path strings only.
+
+description: |
+  Parses LLM output for backtick-quoted paths, quoted paths, bare spec names
+  (_spec.md/_spec.yaml), and relative paths. Filters URLs, __init__.py, and
+  large fenced code blocks. Returns deduplicated candidate lists for resolution
+  by the consuming handler.
+
+archetype: pure-logic
+
+consumes: []
+
+forbids:
+  - specweaver/loom/*
+
+exposes:
+  - extract_mentions
+  - ResolvedMention

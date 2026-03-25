@@ -86,6 +86,20 @@ file size, and documentation.
      - **No violation may be silently skipped.** Every issue must be either
        fixed or documented — this is non-negotiable.
 
+1.9. **HITL GATE — If ANY violations were found (pre-existing or new):**
+     - **STOP and present findings to the user** via `notify_user`.
+     - Include: what was found, where, which rule is broken, and whether it
+       was fixed or documented.
+     - If violations were only documented (not fixed), explain why a fix
+       was deferred and what the proposed resolution is.
+     - **Do NOT proceed to Phase 2 until the user confirms.**
+
+> [!CAUTION]
+> **HARD GATE:** If Phase 1 found ANY architecture violations, you MUST
+> use `notify_user` to present them and WAIT for the user's response.
+> Do NOT proceed to Phase 2 without explicit user confirmation.
+> If NO violations were found, you may proceed directly to Phase 2.
+
 > [!IMPORTANT]
 > **CHECKPOINT:** Phase 1 is complete. Update `task.md`.
 > The NEXT phase is Phase 2 (Code Quality Checks) — NOT running pytest!
@@ -132,21 +146,62 @@ file size, and documentation.
 3.3. Read EVERY existing test file that covers these modules (unit, integration,
      e2e). Do NOT guess — actually read the test files and list what scenarios
      they already cover.
-3.4. Produce a gap table per source module with columns:
-     `[#, Scenario, Why It Matters, Source Line, Layer (Unit/Integ/E2E), Status (✅ covered / ❌ missing)]`
-3.5. Propose integration tests that exercise the seams between modules
-     (e.g., CLI → service → DB round-trip, service → prompt builder → adapter).
-3.6. Propose e2e tests for the user-facing workflows this feature enables.
-3.7. Do NOT invent arbitrary test counts. Every scenario must trace to real code.
-3.8. Present the FULL list — do NOT limit to 10 items.
-3.9. **STOP and wait for the HITL response.** Present the gap analysis to the
+
+3.4. **Deliverable 1 — Coverage Matrix** (one table per source module):
+
+     Rows = classes/functions in the module.
+     Columns = Unit | Integration | E2E.
+     Cell values:
+     - `❌` = no test exists for this class/function at this level
+     - `🟡` = tests exist but coverage is insufficient (gaps remain)
+     - `✅` = adequately covered
+
+     Example:
+
+     **Module: `flow/_review.py`**
+
+     | Class / Function | Unit | Integration | E2E |
+     |------------------|------|-------------|-----|
+     | `_resolve_mentions()` | ❌ | ❌ | ❌ |
+     | `_scan_and_store_mentions()` | ❌ | ❌ | ❌ |
+     | `_is_within()` | ❌ | — | — |
+     | `ReviewSpecHandler` | ✅ | 🟡 | ❌ |
+
+     Use `—` when a test kind does not apply (e.g., e2e for a pure helper).
+
+3.5. **Deliverable 2 — Proposed Test Stories** (flat list, grouped by kind):
+
+     Each proposed new test is written as a **story** with the kind clearly
+     tagged. Stories are grouped under headings: `### Unit`, `### Integration`,
+     `### E2E`.
+
+     Example:
+
+     ### Unit
+     | # | Story | Target Class/Function | Source Line |
+     |---|-------|-----------------------|-------------|
+     | 1 | Resolver skips candidates outside workspace boundary | `_resolve_mentions()` | L247 |
+     | 2 | Scanner stores nothing when no mentions found | `_scan_and_store_mentions()` | L193 |
+
+     ### Integration
+     | # | Story | Target Seam | Source Lines |
+     |---|-------|-------------|-------------|
+     | 3 | Scanner → resolver → feedback with real files | `extract_mentions` → `_resolve_mentions` → `context.feedback` | L181-213 |
+
+     ### E2E
+     (none proposed / or list here)
+
+3.6. Do NOT invent arbitrary test counts. Every story must trace to real code.
+3.7. Present the FULL list — do NOT limit to 10 items.
+3.8. **STOP and wait for the HITL response.** Present the gap analysis to the
      user and wait for their feedback before proceeding. Do NOT continue
      until the user confirms or provides changes.
      Include in the HITL notification:
-     - The full gap table
+     - The coverage matrix (Deliverable 1)
+     - The proposed test stories (Deliverable 2)
      - Your reasoning for each gap's priority
      - Any recommendations for deferral vs. immediate fix
-     - Any pre-existing issues discovered during the analysis
+     - Any issues discovered during the analysis
 
 > [!CAUTION]
 > **HARD GATE:** You MUST use `notify_user` to present the gap analysis

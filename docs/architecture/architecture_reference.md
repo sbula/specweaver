@@ -233,7 +233,7 @@ graph TD
 | `config` | pure-logic | *(leaf)* | loom/* |
 | `context` | contract | *(leaf)* | loom/* |
 | `drafting` | orchestrator | llm, config, context | loom/* |
-| `flow` | orchestrator | loom/atoms/test_runner, loom/commons/test_runner | loom/tools/*, drafting, context |
+| `flow` | orchestrator | config, llm, review, implementation, planning, validation, loom/atoms/test_runner | loom/tools/*, loom/commons/*, drafting, context |
 | `graph` | pure-logic | context | loom/*, llm, drafting, implementation |
 | `implementation` | orchestrator | llm, config, validation | *(none)* |
 | `llm` | adapter | config | loom/* |
@@ -247,7 +247,7 @@ graph TD
 
 > [!CAUTION]
 > **12 of 16 modules explicitly `forbid: loom/*`.** Only `flow/` is allowed to
-> touch loom (via atoms + commons, NOT tools). The loom layer is isolated.
+> touch loom (via atoms only, NOT tools or commons). The loom layer is isolated.
 
 ### Loom Sub-Layers
 
@@ -597,14 +597,14 @@ Tool stack ─────▶ runtime: enforces agent permissions
 | `commons/research/executor.py` imports `tools/web/tool.py` | `loom/commons/research/` | commons forbids tools/* (upward dep) |
 | `review/reviewer.py` imports from `loom/commons/research/` | `review/` | review forbids loom/* |
 | `planning/planner.py` imports from `loom/commons/research/` | `planning/` | planning forbids loom/* |
-| `flow/_review.py` imports from `loom/commons/research/` | `flow/` | flow forbids loom/tools/* (indirect via executor) |
+| `flow/_review.py` imports from `loom/commons/research/` | `flow/` | flow forbids loom/commons/* |
 | `commons/research/boundaries.py` duplicates `FolderGrant` | `loom/commons/research/` | Parallel security mechanism |
 | `commons/research/definitions.py` centralizes tool defs | `loom/commons/research/` | Each tool should own its definitions |
 
-> **Resolution**: Delete `loom/commons/research/` entirely. Move the LLM
-> tool-calling dispatcher to `loom/` root (it consumes tools, so it belongs
-> at the loom orchestrator level). Merge `WorkspaceBoundary` into `FolderGrant`.
-> Move tool definitions into each tool's own module.
+> **Resolution for commons/research**: Delete `loom/commons/research/` entirely.
+> Move the LLM tool-calling dispatcher to `loom/` root (it consumes tools, so
+> it belongs at the loom orchestrator level). Merge `WorkspaceBoundary` into
+> `FolderGrant`. Move tool definitions into each tool's own module.
 
 ---
 

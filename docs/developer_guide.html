@@ -106,7 +106,7 @@ python -m pytest -m unit -q   # Run unit tests</code></pre>
   <tr><td><code>flow/</code></td><td>★ Pipeline engine (runner, gates, state, handlers)</td></tr>
   <tr><td><code>graph/</code></td><td>Project dependency graph (import analysis)</td></tr>
   <tr><td><code>implementation/</code></td><td>Code generation from specs</td></tr>
-  <tr><td><code>llm/</code></td><td>LLM adapter layer (Gemini, etc.)</td></tr>
+  <tr><td><code>llm/</code></td><td>LLM adapter layer (Gemini, etc.), prompt builder, mention scanner (auto-detect file references)</td></tr>
   <tr><td><code>loom/</code></td><td>★ Interaction layer — atoms, tools, commons</td></tr>
   <tr><td><code>pipelines/</code></td><td>YAML pipeline definitions</td></tr>
   <tr><td><code>project/</code></td><td>Project scaffolding, detection, and constitution loader</td></tr>
@@ -689,6 +689,7 @@ flowchart TD
         INST["Instructions<br/>(5 review criteria)"]
         FILES["add_file(priority, role)"]
         CONST["add_constitution()<br/>(project rules)"]
+        MENTION["add_mentioned_files()<br/>(auto-detected, priority 4)"]
     end
 
     subgraph "LLM Interaction"
@@ -715,9 +716,11 @@ flowchart TD
     TOPO --> PB
     INST --> PB
     CONST --> PB
+    MENTION --> PB
     PB --> FILES --> MSG --> LLM
 
     LLM --> PARSE
+    LLM --> MSCAN["MentionScanner<br/>(3.11)"]
     PARSE --> VERDICT
     VERDICT -->|"VERDICT: ACCEPTED"| ACC
     VERDICT -->|"VERDICT: DENIED"| DEN
@@ -726,6 +729,9 @@ flowchart TD
 
     PARSE --> FINDINGS --> RR
     PARSE --> SUMMARY --> RR
+
+    MSCAN --> |"extract_mentions()"| RESOLVE["_resolve_mentions()<br/>boundary check"]
+    RESOLVE --> |"context.feedback"| NEXT["Next Step<br/>(follow-up injection)"]
   </pre>
 </div>
 
