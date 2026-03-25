@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING
 
@@ -16,8 +17,8 @@ if TYPE_CHECKING:
 
     from specweaver.flow.models import PipelineStep
     from specweaver.llm.mention_scanner.models import ResolvedMention
-    from specweaver.llm.models import GenerationConfig
-    from specweaver.loom.commons.research.executor import ToolExecutor
+    from specweaver.llm.models import GenerationConfig, Message
+    from specweaver.loom.dispatcher import ToolDispatcher
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,8 @@ def _review_config_from_context(context: RunContext) -> GenerationConfig:
     )
 
 
-def _build_tool_executor(context: RunContext) -> ToolExecutor | None:
-    """Build a ToolExecutor from RunContext if workspace boundaries exist.
+def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | None:
+    """Build a ToolDispatcher from RunContext if workspace boundaries exist.
 
     Returns None when research tools should not be available, preserving
     backwards compatibility with contexts that don't set workspace roots
@@ -48,8 +49,8 @@ def _build_tool_executor(context: RunContext) -> ToolExecutor | None:
     """
     import os
 
-    from specweaver.loom.commons.research.boundaries import WorkspaceBoundary
-    from specweaver.loom.commons.research.executor import ToolExecutor
+    from specweaver.loom.dispatcher import ToolDispatcher
+    from specweaver.loom.security import WorkspaceBoundary
 
     # Only enable when the LLM actually supports tool use
     if not hasattr(context.llm, "generate_with_tools"):
@@ -60,8 +61,11 @@ def _build_tool_executor(context: RunContext) -> ToolExecutor | None:
     except (ValueError, AttributeError):
         return None
 
-    web_enabled = bool(os.environ.get("SEARCH_API_KEY"))
-    return ToolExecutor(boundary, web_enabled=web_enabled)
+    allowed_tools = ["fs"]
+    if bool(os.environ.get("SEARCH_API_KEY")):
+        allowed_tools.append("web")
+
+    return ToolDispatcher.create_standard_set(boundary, role=role, allowed_tools=allowed_tools)
 
 
 class ReviewSpecHandler:
@@ -80,14 +84,38 @@ class ReviewSpecHandler:
             reviewer = Reviewer(
                 llm=context.llm,
                 config=_review_config_from_context(context),
-                tool_executor=_build_tool_executor(context),
+                tool_dispatcher=_build_tool_dispatcher(context, role="reviewer"),
             )
+            def on_tool_round(round_num: int, messages: list[Message]) -> None:
+                from specweaver.llm.mention_scanner import extract_mentions
+                from specweaver.llm.models import Message, Role
+                last_msg = messages[-1]
+                if last_msg.role == Role.ASSISTANT:
+                    candidates = extract_mentions(last_msg.content)
+                    if candidates:
+                        resolved = _resolve_mentions(
+                            candidates,
+                            context.project_path,
+                            workspace_roots=(
+                                [context.project_path / r for r in context.workspace_roots]
+                                if context.workspace_roots else None
+                            )
+                        )
+                        if resolved:
+                            for r in resolved:
+                                with contextlib.suppress(OSError):
+                                    messages.append(Message(
+                                        role=Role.USER,
+                                        content=f"Auto-resolved file `{r.original}`:\\n\\n```\\n{r.resolved_path.read_text('utf-8')}\\n```"
+                                    ))
+
             result = await reviewer.review_spec(
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
                 constitution=context.constitution,
                 standards=context.standards,
                 mentioned_files=_get_prior_mentions(context),
+                on_tool_round=on_tool_round,
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
@@ -133,8 +161,32 @@ class ReviewCodeHandler:
             reviewer = Reviewer(
                 llm=context.llm,
                 config=_review_config_from_context(context),
-                tool_executor=_build_tool_executor(context),
+                tool_dispatcher=_build_tool_dispatcher(context, role="reviewer"),
             )
+
+            def on_tool_round(round_num: int, messages: list[Message]) -> None:
+                from specweaver.llm.mention_scanner import extract_mentions
+                from specweaver.llm.models import Message, Role
+                last_msg = messages[-1]
+                if last_msg.role == Role.ASSISTANT:
+                    candidates = extract_mentions(last_msg.content)
+                    if candidates:
+                        resolved = _resolve_mentions(
+                            candidates,
+                            context.project_path,
+                            workspace_roots=(
+                                [context.project_path / r for r in context.workspace_roots]
+                                if context.workspace_roots else None
+                            )
+                        )
+                        if resolved:
+                            for r in resolved:
+                                with contextlib.suppress(OSError):
+                                    messages.append(Message(
+                                        role=Role.USER,
+                                        content=f"Auto-resolved file `{r.original}`:\\n\\n```\\n{r.resolved_path.read_text('utf-8')}\\n```"
+                                    ))
+
             result = await reviewer.review_code(
                 code_path,
                 context.spec_path,
@@ -142,6 +194,7 @@ class ReviewCodeHandler:
                 constitution=context.constitution,
                 standards=context.standards,
                 mentioned_files=_get_prior_mentions(context),
+                on_tool_round=on_tool_round,
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",
@@ -187,7 +240,7 @@ def _get_prior_mentions(context: RunContext) -> list[ResolvedMention] | None:
     """
     mentions = context.feedback.get("mention_scanner:resolved")
     if mentions and isinstance(mentions, list):
-        return mentions  # type: ignore[return-value]
+        return mentions  # type: ignore[no-any-return]
     return None
 
 

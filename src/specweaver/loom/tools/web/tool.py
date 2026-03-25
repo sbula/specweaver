@@ -12,7 +12,10 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from specweaver.llm.models import ToolDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +188,11 @@ class WebTool:
             return WebToolResult(status="error", message=str(exc))
 
     # Internal: role gating
+    def definitions(self) -> list[ToolDefinition]:
+        from specweaver.loom.tools.web.definitions import INTENT_DEFINITIONS
+        from specweaver.loom.tools.web.tool import ROLE_INTENTS
+        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
+
 
     def _require_intent(self, intent: str) -> None:
         """Raise if the current role doesn't have this intent."""

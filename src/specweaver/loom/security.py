@@ -1,16 +1,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""Workspace boundary — dynamic path enforcement for research tools.
-
-Defines which paths an agent can access, based on its pipeline phase:
-- Feature-level: entire project root
-- Component-level: microservice folder + API contracts of neighbors
-"""
+"""Security models — boundaries, access controls, and role intents."""
 
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -18,6 +15,37 @@ if TYPE_CHECKING:
     from specweaver.flow._base import RunContext
 
 logger = logging.getLogger(__name__)
+
+
+class AccessMode(StrEnum):
+    """Access level for a folder grant."""
+    READ = "read"  # list, read, search
+    WRITE = "write"  # read + write + edit
+    FULL = "full"  # read + write + edit + create + delete
+
+
+# Permission hierarchy: which modes allow which operations
+MODE_ALLOWS_READ: frozenset[AccessMode] = frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
+MODE_ALLOWS_WRITE: frozenset[AccessMode] = frozenset({AccessMode.WRITE, AccessMode.FULL})
+MODE_ALLOWS_CREATE: frozenset[AccessMode] = frozenset({AccessMode.FULL})
+MODE_ALLOWS_DELETE: frozenset[AccessMode] = frozenset({AccessMode.FULL})
+
+
+@dataclass(frozen=True)
+class FolderGrant:
+    """A single folder access grant.
+
+    Args:
+        path: Relative path from project root (e.g., "src/domain/billing").
+        mode: Access level (READ, WRITE, or FULL).
+        recursive: If True, grant covers all subdirectories.
+    """
+    path: str
+    mode: AccessMode
+    recursive: bool
+
+
+
 
 
 class WorkspaceBoundaryError(Exception):
@@ -69,41 +97,21 @@ class WorkspaceBoundary:
         raise WorkspaceBoundaryError(msg)
 
     def resolve_relative(self, relative: str) -> Path:
-        """Resolve a relative path against the primary root.
-
-        Validates the resolved path is within boundaries.
-        """
+        """Resolve a relative path against the primary root."""
         resolved = (self.roots[0] / relative).resolve()
         return self.validate_path(resolved)
 
     @classmethod
     def from_run_context(cls, context: RunContext) -> WorkspaceBoundary:
-        """Build boundary from pipeline context.
-
-        - If workspace_roots is set (by decomposition): use those
-        - Otherwise: use project_path (feature-level boundary)
-        - If api_contract_paths is set: include as read-only paths
-        """
+        """Build boundary from pipeline context."""
         if context.workspace_roots:
             roots = [Path(r) for r in context.workspace_roots]
-            logger.debug(
-                "WorkspaceBoundary: component-level, roots=%s",
-                [str(r) for r in roots],
-            )
         else:
             roots = [context.project_path]
-            logger.debug(
-                "WorkspaceBoundary: feature-level, root=%s",
-                context.project_path,
-            )
 
         api_paths: list[Path] | None = None
         if context.api_contract_paths:
             api_paths = [Path(p) for p in context.api_contract_paths]
-            logger.debug(
-                "WorkspaceBoundary: api_paths=%s",
-                [str(p) for p in api_paths],
-            )
 
         return cls(roots=roots, api_paths=api_paths)
 

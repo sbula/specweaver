@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from specweaver.llm.models import ToolDefinition
     from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
 
 
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
 ROLE_INTENTS: dict[str, frozenset[str]] = {
     "implementer": frozenset({"run_tests", "run_linter", "run_linter_fix", "run_complexity"}),
     "reviewer": frozenset({"run_tests", "run_linter", "run_complexity"}),
+    "planner": frozenset({"run_tests", "run_linter", "run_complexity"}),
     # drafter: no access — not in the map
 }
 
@@ -127,6 +129,11 @@ class TestRunnerTool:
     # -------------------------------------------------------------------
     # Internal: role gating
     # -------------------------------------------------------------------
+    def definitions(self) -> list[ToolDefinition]:
+        from specweaver.loom.tools.test_runner.definitions import INTENT_DEFINITIONS
+        from specweaver.loom.tools.test_runner.tool import ROLE_INTENTS
+        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
+
 
     def _require_intent(self, intent: str) -> None:
         """Raise if the current role doesn't have this intent."""

@@ -50,6 +50,8 @@ _CONCRETE_VALUE_RE = re.compile(
 class TestFirstRule(Rule):
     """Check that Contract section is concrete enough to derive tests."""
 
+    __test__ = False
+
     PARAM_MAP: ClassVar[dict[str, str]] = {
         "warn_threshold": "warn_score",
         "fail_threshold": "fail_score",

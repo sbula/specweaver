@@ -19,12 +19,13 @@ from pydantic import BaseModel, Field
 from specweaver.llm.models import GenerationConfig, Message, Role
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
     from specweaver.llm.mention_scanner.models import ResolvedMention
-    from specweaver.loom.commons.research.executor import ToolExecutor
+    from specweaver.llm.models import ToolDispatcherProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ class Reviewer:
         llm: LLMAdapter,
         config: GenerationConfig | None = None,
         confidence_threshold: int = 80,
-        tool_executor: ToolExecutor | None = None,
+        tool_dispatcher: ToolDispatcherProtocol | None = None,
     ) -> None:
         self._llm = llm
         self._config = config or GenerationConfig(
@@ -113,7 +114,7 @@ class Reviewer:
             max_output_tokens=4096,
         )
         self._confidence_threshold = confidence_threshold
-        self._tool_executor = tool_executor
+        self._tool_dispatcher = tool_dispatcher
 
     async def review_spec(
         self,
@@ -123,6 +124,7 @@ class Reviewer:
         constitution: str | None = None,
         standards: str | None = None,
         mentioned_files: list[ResolvedMention] | None = None,
+        on_tool_round: Callable[[int, list[Message]], None] | None = None,
     ) -> ReviewResult:
         """Review a spec file for quality and completeness.
 
@@ -168,6 +170,7 @@ class Reviewer:
         constitution: str | None = None,
         standards: str | None = None,
         mentioned_files: list[ResolvedMention] | None = None,
+        on_tool_round: Callable[[int, list[Message]], None] | None = None,
     ) -> ReviewResult:
         """Review generated code against its source spec.
 
@@ -206,7 +209,11 @@ class Reviewer:
         logger.info("review_code: reviewing %s against %s", code_path, spec_path)
         return await self._execute_review(prompt)
 
-    async def _execute_review(self, prompt: str) -> ReviewResult:
+    async def _execute_review(
+        self,
+        prompt: str,
+        on_tool_round: Callable[[int, list[Message]], None] | None = None,
+    ) -> ReviewResult:
         """Send a review prompt to the LLM and parse the response."""
         messages = [
             Message(
@@ -217,12 +224,13 @@ class Reviewer:
         ]
 
         try:
-            if self._tool_executor:
+            if self._tool_dispatcher:
                 config = self._config.model_copy(
-                    update={"tools": self._tool_executor.available_tools()},
+                    update={"tools": self._tool_dispatcher.available_tools()},
                 )
                 response = await self._llm.generate_with_tools(
-                    messages, config, self._tool_executor,
+                    messages, config, self._tool_dispatcher,
+                    on_tool_round=on_tool_round,
                 )
             else:
                 response = await self._llm.generate(messages, self._config)

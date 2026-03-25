@@ -34,6 +34,8 @@ class TestFailure:
     message: str
     stdout: str = ""
 
+    __test__ = False
+
 
 @dataclass(frozen=True)
 class TestRunResult:
@@ -59,6 +61,8 @@ class TestRunResult:
     coverage_pct: float | None = None
     duration_seconds: float = 0.0
 
+    __test__ = False
+
 
 @dataclass(frozen=True)
 class LintError:
@@ -76,6 +80,8 @@ class LintError:
     code: str
     message: str
 
+    __test__ = False
+
 
 @dataclass(frozen=True)
 class LintRunResult:
@@ -92,6 +98,8 @@ class LintRunResult:
     fixable_count: int
     fixed_count: int
     errors: list[LintError] = field(default_factory=list)
+
+    __test__ = False
 
 
 @dataclass(frozen=True)
@@ -112,6 +120,8 @@ class ComplexityViolation:
     complexity: int
     message: str
 
+    __test__ = False
+
 
 @dataclass(frozen=True)
 class ComplexityRunResult:
@@ -127,6 +137,8 @@ class ComplexityRunResult:
     max_complexity: int
     violations: list[ComplexityViolation] = field(default_factory=list)
 
+    __test__ = False
+
 
 # ---------------------------------------------------------------------------
 # Abstract interface
@@ -139,6 +151,8 @@ class TestRunnerInterface(ABC):
     Each language implementation (Python, TypeScript, Go, etc.)
     subclasses this and provides concrete implementations.
     """
+
+    __test__ = False
 
     @abstractmethod
     def run_tests(

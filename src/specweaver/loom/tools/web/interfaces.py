@@ -10,7 +10,12 @@ methods that don't exist on its interface.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from specweaver.loom.tools.web.tool import WebTool, WebToolResult
+
+if TYPE_CHECKING:
+    from specweaver.llm.models import ToolDefinition
 
 # ---------------------------------------------------------------------------
 # Role-specific interfaces
@@ -25,6 +30,9 @@ class PlannerWebInterface:
 
     def __init__(self, tool: WebTool) -> None:
         self._tool = tool
+
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
 
     def web_search(self, query: str, **kwargs: object) -> WebToolResult:
         """Search the web."""
@@ -43,6 +51,9 @@ class ReviewerWebInterface:
 
     def __init__(self, tool: WebTool) -> None:
         self._tool = tool
+
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
 
     def web_search(self, query: str, **kwargs: object) -> WebToolResult:
         """Search the web."""

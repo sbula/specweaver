@@ -12,11 +12,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
 from specweaver.loom.tools.test_runner.tool import TestRunnerTool, ToolResult
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from specweaver.llm.models import ToolDefinition
 
 
 # ---------------------------------------------------------------------------
@@ -32,6 +33,9 @@ class ImplementerTestInterface:
 
     def __init__(self, tool: TestRunnerTool) -> None:
         self._tool = tool
+
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
 
     def run_tests(
         self,
@@ -73,6 +77,9 @@ class ReviewerTestInterface:
     def __init__(self, tool: TestRunnerTool) -> None:
         self._tool = tool
 
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
+
     def run_tests(
         self,
         target: str,
@@ -107,6 +114,7 @@ class ReviewerTestInterface:
 _ROLE_INTERFACE_MAP: dict[str, type[ImplementerTestInterface | ReviewerTestInterface]] = {
     "implementer": ImplementerTestInterface,
     "reviewer": ReviewerTestInterface,
+    "planner": ReviewerTestInterface,
 }
 
 TestInterface = ImplementerTestInterface | ReviewerTestInterface
@@ -133,6 +141,8 @@ def create_test_runner_interface(
     if role not in _ROLE_INTERFACE_MAP:
         msg = f"Unknown role: {role!r}. Known roles: {sorted(_ROLE_INTERFACE_MAP)}"
         raise ValueError(msg)
+
+    from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
 
     atom = TestRunnerAtom(cwd=cwd, language=language)
     tool = TestRunnerTool(atom=atom, role=role)

@@ -233,15 +233,15 @@ graph TD
 | `config` | pure-logic | *(leaf)* | loom/* |
 | `context` | contract | *(leaf)* | loom/* |
 | `drafting` | orchestrator | llm, config, context | loom/* |
-| `flow` | orchestrator | config, llm, review, implementation, planning, validation, loom/atoms/test_runner | loom/tools/*, loom/commons/*, drafting, context |
+| `flow` | orchestrator | config, llm, review, implementation, planning, validation, loom/atoms/test_runner, loom/dispatcher, loom/security | loom/tools/*, loom/commons/*, drafting, context |
 | `graph` | pure-logic | context | loom/*, llm, drafting, implementation |
 | `implementation` | orchestrator | llm, config, validation | *(none)* |
 | `llm` | adapter | config | loom/* |
 | `llm/adapters` | adapter | llm | loom/*, validation, drafting |
 | `pipelines` | data | *(leaf)* | *(none)* |
-| `planning` | orchestrator | llm, config, context | loom/* |
+| `planning` | orchestrator | llm, config, context, loom/dispatcher (type-only) | loom/* (except dispatcher) |
 | `project` | adapter | config | loom/*, llm |
-| `review` | orchestrator | llm, config | loom/* |
+| `review` | orchestrator | llm, config, loom/dispatcher (type-only) | loom/* (except dispatcher) |
 | `standards` | orchestrator | config | loom/* |
 | `validation` | pure-logic | config | loom/*, llm |
 
@@ -592,19 +592,18 @@ Tool stack ─────▶ runtime: enforces agent permissions
 
 ## Known Boundary Violations
 
-| Violation | Where | Rule Broken |
-|-----------|-------|-------------|
-| `commons/research/executor.py` imports `tools/web/tool.py` | `loom/commons/research/` | commons forbids tools/* (upward dep) |
-| `review/reviewer.py` imports from `loom/commons/research/` | `review/` | review forbids loom/* |
-| `planning/planner.py` imports from `loom/commons/research/` | `planning/` | planning forbids loom/* |
-| `flow/_review.py` imports from `loom/commons/research/` | `flow/` | flow forbids loom/commons/* |
-| `commons/research/boundaries.py` duplicates `FolderGrant` | `loom/commons/research/` | Parallel security mechanism |
-| `commons/research/definitions.py` centralizes tool defs | `loom/commons/research/` | Each tool should own its definitions |
+| Violation | Where | Rule Broken | Status |
+|-----------|-------|-------------|--------|
+| *(none)* | — | — | All previously known violations resolved in Feature 3.11a |
 
-> **Resolution for commons/research**: Delete `loom/commons/research/` entirely.
-> Move the LLM tool-calling dispatcher to `loom/` root (it consumes tools, so
-> it belongs at the loom orchestrator level). Merge `WorkspaceBoundary` into
-> `FolderGrant`. Move tool definitions into each tool's own module.
+> **Resolved in Feature 3.11a:**
+> - Deleted `loom/commons/research/` entirely
+> - Moved dispatcher to `loom/dispatcher.py` (loom root level)
+> - Consolidated `WorkspaceBoundary` into `loom/security.py`
+> - Tool definitions moved into each tool's own `definitions.py`
+> - `review/` and `planning/` use `loom/dispatcher` via `TYPE_CHECKING` only
+> - `flow/` consumes `loom/dispatcher` and `loom/security` at runtime (declared in `context.yaml`)
+> - `test_runner/interfaces.py` tools→atoms import fixed to lazy factory import
 
 ---
 

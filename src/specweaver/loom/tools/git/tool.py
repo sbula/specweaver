@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from specweaver.llm.models import ToolDefinition
     from specweaver.loom.commons.git.executor import GitExecutor
 
 
@@ -35,6 +36,7 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
         {"commit", "inspect_changes", "discard", "uncommit", "start_branch", "switch_branch"}
     ),
     "reviewer": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
+    "planner": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
     "debugger": frozenset(
         {"history", "file_history", "show_old", "search_history", "reflog", "inspect_changes"}
     ),
@@ -128,6 +130,11 @@ class GitTool:
     def allowed_intents(self) -> frozenset[str]:
         """Intents available for this role."""
         return self._allowed
+    def definitions(self) -> list[ToolDefinition]:
+        from specweaver.loom.tools.git.definitions import INTENT_DEFINITIONS
+        from specweaver.loom.tools.git.tool import ROLE_INTENTS
+        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
+
 
     def _require_intent(self, intent: str) -> None:
         """Raise if the current role doesn't have this intent."""

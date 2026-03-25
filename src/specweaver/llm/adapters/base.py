@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Callable
 
     from specweaver.llm.models import GenerationConfig, LLMResponse, Message
 
@@ -128,6 +128,7 @@ class LLMAdapter(ABC):
         messages: list[Message],
         config: GenerationConfig,
         tool_executor: object,
+        on_tool_round: Callable[[int, list[Message]], None] | None = None,
     ) -> LLMResponse:
         """Agentic generation loop with tool use.
 

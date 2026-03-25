@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.loom.security import WorkspaceBoundary, WorkspaceBoundaryError
+
 if TYPE_CHECKING:
     from pathlib import Path
-
-from specweaver.loom.commons.research.boundaries import WorkspaceBoundary, WorkspaceBoundaryError
 
 
 class TestWorkspaceBoundaryInit:

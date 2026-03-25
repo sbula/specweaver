@@ -20,7 +20,7 @@ from specweaver.planning.models import PlanArtifact
 
 if TYPE_CHECKING:
     from specweaver.llm.adapters.base import LLMAdapter
-    from specweaver.loom.commons.research.executor import ToolExecutor
+    from specweaver.llm.models import ToolDispatcherProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +39,7 @@ No markdown fences, no explanation."""
 # User prompt template
 # ---------------------------------------------------------------------------
 
-PLAN_USER_TEMPLATE = """\
-Generate an implementation plan for the following specification.
-
-## Specification
-{spec_content}
-
+PLAN_SCHEMA_TEMPLATE = """\
 ## Output Schema
 Return a JSON object with these fields:
 - spec_path (str): "{spec_path}"
@@ -61,7 +56,6 @@ Return a JSON object with these fields:
 - reasoning (str): your chain-of-thought
 - confidence (int): 0-100
 
-{extra_context}
 Return ONLY the JSON object."""
 
 # ---------------------------------------------------------------------------
@@ -90,11 +84,11 @@ class Planner:
         *,
         config: GenerationConfig | None = None,
         max_retries: int = 3,
-        tool_executor: ToolExecutor | None = None,
+        tool_dispatcher: ToolDispatcherProtocol | None = None,
     ) -> None:
         self._llm = llm
         self._max_retries = max_retries
-        self._tool_executor = tool_executor
+        self._tool_dispatcher = tool_dispatcher
         self._config = config or GenerationConfig(
             model="gemini-3-flash-preview",
             temperature=0.3,
@@ -129,20 +123,27 @@ class Planner:
         """
         spec_hash = hashlib.sha256(spec_content.encode()).hexdigest()
 
-        extra_parts: list[str] = []
-        if constitution:
-            extra_parts.append(f"## Constitution\n{constitution}")
-        if standards:
-            extra_parts.append(f"## Standards\n{standards}")
-        extra_context = "\n\n".join(extra_parts)
+        from specweaver.llm.prompt_builder import PromptBuilder
 
-        user_prompt = PLAN_USER_TEMPLATE.format(
-            spec_content=spec_content,
+        schema_text = PLAN_SCHEMA_TEMPLATE.format(
             spec_path=spec_path,
             spec_name=spec_name,
             spec_hash=spec_hash,
-            extra_context=extra_context,
         )
+
+        builder = (
+            PromptBuilder()
+            .add_instructions("Generate an implementation plan for the following specification.")
+            .add_instructions(schema_text)
+            .add_context(spec_content, label="Specification")
+        )
+
+        if constitution:
+            builder.add_constitution(constitution)
+        if standards:
+            builder.add_standards(standards)
+
+        user_prompt = builder.build()
 
         messages: list[Message] = [
             Message(role=Role.SYSTEM, content=PLAN_SYSTEM_PROMPT),
@@ -153,12 +154,12 @@ class Planner:
             logger.debug("Planner: attempt %d/%d", attempt, self._max_retries)
 
             # Tool loop runs to completion BEFORE retry loop
-            if self._tool_executor:
+            if self._tool_dispatcher:
                 config = self._config.model_copy(
-                    update={"tools": self._tool_executor.available_tools()},
+                    update={"tools": self._tool_dispatcher.available_tools()},
                 )
                 response = await self._llm.generate_with_tools(
-                    messages, config, self._tool_executor,
+                    messages, config, self._tool_dispatcher,
                 )
             else:
                 response = await self._llm.generate(messages, self._config)

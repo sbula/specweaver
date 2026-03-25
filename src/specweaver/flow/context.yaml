@@ -23,6 +23,8 @@ consumes:
   - specweaver/planning
   - specweaver/validation
   - specweaver/loom/atoms/test_runner
+  - specweaver/loom/dispatcher
+  - specweaver/loom/security
 
 forbids:
   - specweaver/loom/tools/*

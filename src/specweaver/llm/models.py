@@ -13,7 +13,7 @@ Each adapter converts these to its provider's format internally.
 from __future__ import annotations
 
 import enum
-from typing import Any, Literal
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
@@ -186,4 +186,27 @@ class ToolCall(BaseModel):
     name: str
     args: dict[str, Any]
     call_id: str = ""  # Provider-specific correlation ID
+
+
+# ---------------------------------------------------------------------------
+# Dispatcher Protocol — structural interface for tool dispatch consumers
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class ToolDispatcherProtocol(Protocol):
+    """Structural typing contract for tool dispatchers.
+
+    Domain modules (review, planning) type-hint against this protocol
+    instead of importing the concrete ToolDispatcher from loom/.
+    This ensures clean dependency inversion: domain modules never touch loom.
+    """
+
+    def available_tools(self) -> list[ToolDefinition]:
+        """Return all tool definitions available in this dispatcher."""
+        ...
+
+    async def execute(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
+        """Execute a tool call by name with arguments."""
+        ...
 

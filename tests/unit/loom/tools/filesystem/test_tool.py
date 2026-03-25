@@ -18,11 +18,10 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.loom.commons.filesystem.executor import FileExecutor
+from specweaver.loom.security import AccessMode, FolderGrant
 from specweaver.loom.tools.filesystem.models import (
     ROLE_INTENTS,
-    AccessMode,
     FileSystemToolError,
-    FolderGrant,
 )
 from specweaver.loom.tools.filesystem.tool import FileSystemTool
 

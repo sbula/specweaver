@@ -13,23 +13,27 @@ Each intent method checks:
 
 from __future__ import annotations
 
+import os
 import posixpath
 import re
 from typing import TYPE_CHECKING, Any
 
-from specweaver.loom.tools.filesystem.models import (
+from specweaver.loom.security import (
     MODE_ALLOWS_CREATE,
     MODE_ALLOWS_DELETE,
     MODE_ALLOWS_READ,
     MODE_ALLOWS_WRITE,
-    ROLE_INTENTS,
     AccessMode,
-    FileSystemToolError,
     FolderGrant,
+)
+from specweaver.loom.tools.filesystem.models import (
+    ROLE_INTENTS,
+    FileSystemToolError,
     ToolResult,
 )
 
 if TYPE_CHECKING:
+    from specweaver.llm.models import ToolDefinition
     from specweaver.loom.commons.filesystem.executor import ExecutorResult, FileExecutor
 
 
@@ -64,6 +68,10 @@ class FileSystemTool:
     def allowed_intents(self) -> frozenset[str]:
         """Intents available for this role."""
         return ROLE_INTENTS[self._role]
+
+    def definitions(self) -> list[ToolDefinition]:
+        from specweaver.loom.tools.filesystem.definitions import INTENT_DEFINITIONS
+        return [d for name, d in INTENT_DEFINITIONS.items() if name in self.allowed_intents]
 
     # Intent methods
 
@@ -419,15 +427,29 @@ class FileSystemTool:
         """Find the most permissive mode that covers this path.
 
         Returns None if no grant covers the path.
+        Handles mixed relative/absolute paths: if grants use absolute paths
+        (from the factory) and the input is relative, resolves against cwd.
         """
         # Mode priority for "most permissive"
         mode_priority = {AccessMode.READ: 0, AccessMode.WRITE: 1, AccessMode.FULL: 2}
         best: AccessMode | None = None
 
+        # Resolve relative path to absolute if grants use absolute paths
+        check_path = normalized_path
+        if normalized_path and not os.path.isabs(normalized_path):
+            cwd_str = str(self._executor.cwd).replace("\\", "/")
+            check_path = f"{cwd_str}/{normalized_path}"
+        elif not normalized_path:
+            check_path = str(self._executor.cwd).replace("\\", "/")
+
         for grant in self._grants:
             grant_path = grant.path.replace("\\", "/").rstrip("/")
 
-            if self._path_matches_grant(normalized_path, grant_path, grant.recursive) and (
+            # Try both original normalized_path and resolved absolute path
+            if (
+                self._path_matches_grant(normalized_path, grant_path, grant.recursive)
+                or self._path_matches_grant(check_path, grant_path, grant.recursive)
+            ) and (
                 best is None or mode_priority[grant.mode] > mode_priority[best]
             ):
                 best = grant.mode

@@ -60,6 +60,8 @@ class TestRunnerAtom(Atom):
         language: Programming language (default: "python").
     """
 
+    __test__ = False
+
     def __init__(self, cwd: Path, language: str = "python") -> None:
         self._runner = _resolve_runner(language, cwd)
         self._cwd = cwd

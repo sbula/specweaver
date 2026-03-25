@@ -61,6 +61,7 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
         }
     ),
     "reviewer": frozenset({"read_file", "list_directory", "search_content", "grep", "find_files"}),
+    "planner": frozenset({"read_file", "list_directory", "search_content", "grep", "find_files"}),
     "drafter": frozenset(
         {
             "read_file",

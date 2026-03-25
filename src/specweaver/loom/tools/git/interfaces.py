@@ -29,6 +29,8 @@ from specweaver.loom.tools.git.tool import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.llm.models import ToolDefinition
+
 # ---------------------------------------------------------------------------
 # Role-specific interfaces
 # ---------------------------------------------------------------------------
@@ -43,6 +45,9 @@ class ImplementerGitInterface:
 
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
+
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
 
     def commit(self, message: str) -> ToolResult:
         """Stage all changes and commit with a conventional commit message."""
@@ -79,6 +84,9 @@ class ReviewerGitInterface:
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
 
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
+
     def history(self, n: int = 10) -> ToolResult:
         """Show recent commit history."""
         return self._tool.history(n)
@@ -109,6 +117,9 @@ class DebuggerGitInterface:
 
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
+
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
 
     def history(self, n: int = 10) -> ToolResult:
         """Show recent commit history."""
@@ -144,6 +155,9 @@ class DrafterGitInterface:
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
 
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
+
     def commit(self, message: str) -> ToolResult:
         """Stage all changes and commit with a conventional commit message."""
         return self._tool.commit(message)
@@ -167,6 +181,9 @@ class ConflictResolverGitInterface:
 
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
+
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
 
     def list_conflicts(self) -> ToolResult:
         """List files with merge conflicts."""
@@ -196,6 +213,7 @@ class ConflictResolverGitInterface:
 _ROLE_INTERFACE_MAP = {
     "implementer": ImplementerGitInterface,
     "reviewer": ReviewerGitInterface,
+    "planner": ReviewerGitInterface,
     "debugger": DebuggerGitInterface,
     "drafter": DrafterGitInterface,
     "conflict_resolver": ConflictResolverGitInterface,

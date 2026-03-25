@@ -34,7 +34,7 @@ from specweaver.llm.models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -242,6 +242,7 @@ class GeminiAdapter(LLMAdapter):
         messages: list[Message],
         config: GenerationConfig,
         tool_executor: object,
+        on_tool_round: Callable[[int, list[Message]], None] | None = None,
     ) -> LLMResponse:
         """Agentic generation loop with tool use via Gemini function calling.
 
@@ -272,6 +273,18 @@ class GeminiAdapter(LLMAdapter):
                 "GeminiAdapter.generate_with_tools: round %d/%d",
                 round_num + 1, config.max_tool_rounds,
             )
+
+            if on_tool_round:
+                old_len = len(messages)
+                on_tool_round(round_num, messages)
+                if len(messages) > old_len:
+                    for new_msg in messages[old_len:]:
+                        if new_msg.role != Role.SYSTEM:
+                            role = "user" if new_msg.role == Role.USER else "model"
+                            contents.append(types.Content(
+                                role=role,
+                                parts=[types.Part.from_text(text=new_msg.content)]
+                            ))
 
             try:
                 response = await client.aio.models.generate_content(

@@ -9,6 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.flow._base import RunContext, _error_result, _now_iso
+from specweaver.flow._review import _build_tool_dispatcher
 from specweaver.flow.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
@@ -128,6 +129,23 @@ class PlanSpecHandler:
             failure (default: 3).
     """
 
+    def _build_config(self, context: RunContext) -> GenerationConfig:
+        """Build GenerationConfig from RunContext, falling back to defaults."""
+        from specweaver.llm.models import GenerationConfig
+
+        if context.config is not None:
+            return GenerationConfig(
+                model=context.config.llm.model,
+                temperature=0.3,
+                max_output_tokens=context.config.llm.max_output_tokens,
+            )
+        # Fallback: no config set (e.g. test harness)
+        return GenerationConfig(
+            model="gemini-3-flash-preview",
+            temperature=0.3,
+            max_output_tokens=4096,
+        )
+
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
         if context.llm is None:
@@ -141,15 +159,14 @@ class PlanSpecHandler:
             )
 
         try:
-            from specweaver.flow._review import _build_tool_executor
             from specweaver.planning.planner import Planner
 
             max_retries: int = step.params.get("max_retries", 3)
             planner = Planner(
                 llm=context.llm,
-                config=_gen_config_from_context(context, temperature=0.3),
+                config=self._build_config(context),
                 max_retries=max_retries,
-                tool_executor=_build_tool_executor(context),
+                tool_dispatcher=_build_tool_dispatcher(context, role="implementer"),
             )
 
             spec_content = context.spec_path.read_text(encoding="utf-8")

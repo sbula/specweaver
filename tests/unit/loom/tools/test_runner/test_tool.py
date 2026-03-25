@@ -102,7 +102,7 @@ class TestInterfaces:
 
     def test_implementer_interface(self, tmp_path: Path) -> None:
         with patch(
-            "specweaver.loom.tools.test_runner.interfaces.TestRunnerAtom",
+            "specweaver.loom.atoms.test_runner.atom.TestRunnerAtom",
         ) as mock_atom_cls:
             mock_atom = MagicMock()
             mock_atom.run.return_value = AtomResult(
@@ -117,7 +117,7 @@ class TestInterfaces:
 
     def test_reviewer_interface(self, tmp_path: Path) -> None:
         with patch(
-            "specweaver.loom.tools.test_runner.interfaces.TestRunnerAtom",
+            "specweaver.loom.atoms.test_runner.atom.TestRunnerAtom",
         ) as mock_atom_cls:
             mock_atom_cls.return_value = MagicMock()
             iface = create_test_runner_interface("reviewer", tmp_path)
@@ -131,7 +131,7 @@ class TestInterfaces:
     def test_reviewer_interface_has_no_fix(self, tmp_path: Path) -> None:
         """ReviewerTestInterface.run_linter should NOT allow fix=True."""
         with patch(
-            "specweaver.loom.tools.test_runner.interfaces.TestRunnerAtom",
+            "specweaver.loom.atoms.test_runner.atom.TestRunnerAtom",
         ) as mock_atom_cls:
             mock_atom = MagicMock()
             mock_atom.run.return_value = AtomResult(
@@ -210,7 +210,7 @@ class TestInterfaceComplexity:
 
     def test_implementer_has_run_complexity(self, tmp_path: Path) -> None:
         with patch(
-            "specweaver.loom.tools.test_runner.interfaces.TestRunnerAtom",
+            "specweaver.loom.atoms.test_runner.atom.TestRunnerAtom",
         ) as mock_atom_cls:
             mock_atom = MagicMock()
             mock_atom.run.return_value = AtomResult(
@@ -226,7 +226,7 @@ class TestInterfaceComplexity:
 
     def test_reviewer_has_run_complexity(self, tmp_path: Path) -> None:
         with patch(
-            "specweaver.loom.tools.test_runner.interfaces.TestRunnerAtom",
+            "specweaver.loom.atoms.test_runner.atom.TestRunnerAtom",
         ) as mock_atom_cls:
             mock_atom = MagicMock()
             mock_atom.run.return_value = AtomResult(

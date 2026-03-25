@@ -15,15 +15,15 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.loom.security import (
+    AccessMode,
+    FolderGrant,
+)
 from specweaver.loom.tools.filesystem.interfaces import (
     DrafterFileInterface,
     ImplementerFileInterface,
     ReviewerFileInterface,
     create_filesystem_interface,
-)
-from specweaver.loom.tools.filesystem.models import (
-    AccessMode,
-    FolderGrant,
 )
 
 if TYPE_CHECKING:

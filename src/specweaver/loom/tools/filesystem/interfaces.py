@@ -24,7 +24,9 @@ from specweaver.loom.tools.filesystem.tool import FileSystemTool
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.loom.tools.filesystem.models import FolderGrant, ToolResult
+    from specweaver.llm.models import ToolDefinition
+    from specweaver.loom.security import FolderGrant
+    from specweaver.loom.tools.filesystem.models import ToolResult
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +44,9 @@ class ImplementerFileInterface:
 
     def __init__(self, tool: FileSystemTool) -> None:
         self._tool = tool
+
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
 
     def read_file(self, path: str) -> ToolResult:
         """Read a file's contents."""
@@ -94,6 +99,9 @@ class ReviewerFileInterface:
     def __init__(self, tool: FileSystemTool) -> None:
         self._tool = tool
 
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
+
     def read_file(self, path: str) -> ToolResult:
         """Read a file's contents."""
         return self._tool.read_file(path)
@@ -125,6 +133,9 @@ class DrafterFileInterface:
 
     def __init__(self, tool: FileSystemTool) -> None:
         self._tool = tool
+
+    def definitions(self) -> list[ToolDefinition]:
+        return self._tool.definitions()
 
     def read_file(self, path: str) -> ToolResult:
         """Read a file's contents."""
@@ -173,6 +184,7 @@ _ROLE_INTERFACE_MAP: dict[
     "implementer": ImplementerFileInterface,
     "reviewer": ReviewerFileInterface,
     "drafter": DrafterFileInterface,
+    "planner": ReviewerFileInterface,
 }
 
 FileInterface = (
