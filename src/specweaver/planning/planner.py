@@ -24,50 +24,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# System prompt
-# ---------------------------------------------------------------------------
-
-PLAN_SYSTEM_PROMPT = """\
+_SYSTEM_PROMPT = """\
 You are an implementation planner for a Python project. Given a component \
 specification, you produce a structured implementation plan as JSON.
 
 Your output must be ONLY valid JSON matching the PlanArtifact schema. \
 No markdown fences, no explanation."""
-
-# ---------------------------------------------------------------------------
-# User prompt template
-# ---------------------------------------------------------------------------
-
-PLAN_SCHEMA_TEMPLATE = """\
-## Output Schema
-Return a JSON object with these fields:
-- spec_path (str): "{spec_path}"
-- spec_name (str): "{spec_name}"
-- spec_hash (str): "{spec_hash}"
-- timestamp (str): current ISO-8601 timestamp
-- file_layout (list): files to create/modify/delete, each with:
-  - path (str), action ("create"|"modify"|"delete"), purpose (str), dependencies (list[str])
-- architecture (object|null): module_layout, dependency_direction, archetype, patterns
-- tech_stack (list): category, choice, rationale, alternatives_considered
-- constraints (list): source, constraint, impact
-- tasks (list): name, description, files, dependencies
-- test_expectations (list): name, description, function_under_test, input_summary, expected_behavior, category ("happy"|"error"|"boundary")
-- reasoning (str): your chain-of-thought
-- confidence (int): 0-100
-
-Return ONLY the JSON object."""
-
-# ---------------------------------------------------------------------------
-# Reflection retry prompt
-# ---------------------------------------------------------------------------
-
-RETRY_PROMPT_TEMPLATE = """\
-Your previous response was not valid JSON. The error was:
-
-{error}
-
-Please fix the output and return ONLY valid JSON matching the schema."""
 
 
 class Planner:
@@ -125,16 +87,28 @@ class Planner:
 
         from specweaver.llm.prompt_builder import PromptBuilder
 
-        schema_text = PLAN_SCHEMA_TEMPLATE.format(
-            spec_path=spec_path,
-            spec_name=spec_name,
-            spec_hash=spec_hash,
-        )
-
         builder = (
             PromptBuilder()
             .add_instructions("Generate an implementation plan for the following specification.")
-            .add_instructions(schema_text)
+            .add_instructions(
+                f"""## Output Schema
+Return a JSON object with these fields:
+- spec_path (str): "{spec_path}"
+- spec_name (str): "{spec_name}"
+- spec_hash (str): "{spec_hash}"
+- timestamp (str): current ISO-8601 timestamp
+- file_layout (list): files to create/modify/delete, each with:
+  - path (str), action ("create"|"modify"|"delete"), purpose (str), dependencies (list[str])
+- architecture (object|null): module_layout, dependency_direction, archetype, patterns
+- tech_stack (list): category, choice, rationale, alternatives_considered
+- constraints (list): source, constraint, impact
+- tasks (list): name, description, files, dependencies
+- test_expectations (list): name, description, function_under_test, input_summary, expected_behavior, category ("happy"|"error"|"boundary")
+- reasoning (str): your chain-of-thought
+- confidence (int): 0-100
+
+Return ONLY the JSON object.""",
+            )
             .add_context(spec_content, label="Specification")
         )
 
@@ -146,7 +120,7 @@ class Planner:
         user_prompt = builder.build()
 
         messages: list[Message] = [
-            Message(role=Role.SYSTEM, content=PLAN_SYSTEM_PROMPT),
+            Message(role=Role.SYSTEM, content=_SYSTEM_PROMPT),
             Message(role=Role.USER, content=user_prompt),
         ]
 
@@ -203,7 +177,12 @@ class Planner:
                 messages.append(
                     Message(
                         role=Role.USER,
-                        content=RETRY_PROMPT_TEMPLATE.format(error=error_msg),
+                        content=(
+                            f"Your previous response was not valid JSON. "
+                            f"The error was:\n\n{error_msg}\n\n"
+                            f"Please fix the output and return ONLY valid "
+                            f"JSON matching the schema."
+                        ),
                     ),
                 )
 
@@ -216,9 +195,9 @@ class Planner:
         """Remove markdown code fences if present."""
         text = text.strip()
         if text.startswith("```json"):
-            text = text[len("```json"):].strip()
+            text = text.removeprefix("```json").strip()
         elif text.startswith("```"):
-            text = text[3:].strip()
+            text = text.removeprefix("```").strip()
         if text.endswith("```"):
-            text = text[:-3].strip()
+            text = text.removesuffix("```").strip()
         return text

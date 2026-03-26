@@ -29,6 +29,38 @@ def render_files(blocks: list[_ContentBlock]) -> str | None:
     return f"<file_contents>\n{inner}\n</file_contents>"
 
 
+def _render_tagged_blocks(
+    blocks: list[_ContentBlock],
+    kind: str,
+    tag: str,
+) -> str | None:
+    """Render blocks of a given kind into a single XML-tagged section."""
+    items = [b for b in blocks if b.kind == kind]
+    if not items:
+        return None
+    text = "\n\n".join(b.text for b in items)
+    marker = "\n[truncated]" if any(b.truncated for b in items) else ""
+    return f"<{tag}>\n{text}{marker}\n</{tag}>"
+
+
+def _render_mentioned(blocks: list[_ContentBlock]) -> str | None:
+    """Render auto-detected mentioned files into XML."""
+    mentioned = [b for b in blocks if b.kind == "mentioned"]
+    if not mentioned:
+        return None
+    mention_parts: list[str] = []
+    for m in mentioned:
+        attrs = f'path="{m.label}" language="{m.language}"'
+        if m.role:
+            attrs += f' role="{m.role}"'
+        marker = "\n[truncated]" if m.truncated else ""
+        mention_parts.append(
+            f"<file {attrs}>\n{m.text}{marker}\n</file>",
+        )
+    inner = "\n".join(mention_parts)
+    return f"<mentioned_files>\n{inner}\n</mentioned_files>"
+
+
 def render_blocks(blocks: list[_ContentBlock]) -> str:
     """Render blocks into XML-tagged prompt text."""
     parts: list[str] = []
@@ -45,19 +77,11 @@ def render_blocks(blocks: list[_ContentBlock]) -> str:
         text = "\n\n".join(b.text for b in constitutions)
         parts.append(f"<constitution>\n{text}\n</constitution>")
 
-    # Standards (after constitution, before topology)
-    standards = [b for b in blocks if b.kind == "standards"]
-    if standards:
-        text = "\n\n".join(b.text for b in standards)
-        marker = "\n[truncated]" if any(b.truncated for b in standards) else ""
-        parts.append(f"<standards>\n{text}{marker}\n</standards>")
-
-    # Plan (after standards, before topology)
-    plans = [b for b in blocks if b.kind == "plan"]
-    if plans:
-        text = "\n\n".join(b.text for b in plans)
-        marker = "\n[truncated]" if any(b.truncated for b in plans) else ""
-        parts.append(f"<plan>\n{text}{marker}\n</plan>")
+    # Standards → Plan (tagged block pattern)
+    for kind, tag in [("standards", "standards"), ("plan", "plan")]:
+        rendered = _render_tagged_blocks(blocks, kind, tag)
+        if rendered:
+            parts.append(rendered)
 
     # Topology (before files — gives structural context)
     topology = [b for b in blocks if b.kind == "topology"]
@@ -73,19 +97,9 @@ def render_blocks(blocks: list[_ContentBlock]) -> str:
         parts.append(file_xml)
 
     # Mentioned files (auto-detected from prior LLM responses)
-    mentioned = [b for b in blocks if b.kind == "mentioned"]
-    if mentioned:
-        mention_parts: list[str] = []
-        for m in mentioned:
-            attrs = f'path="{m.label}" language="{m.language}"'
-            if m.role:
-                attrs += f' role="{m.role}"'
-            marker = "\n[truncated]" if m.truncated else ""
-            mention_parts.append(
-                f"<file {attrs}>\n{m.text}{marker}\n</file>",
-            )
-        inner = "\n".join(mention_parts)
-        parts.append(f"<mentioned_files>\n{inner}\n</mentioned_files>")
+    mentioned_xml = _render_mentioned(blocks)
+    if mentioned_xml:
+        parts.append(mentioned_xml)
 
     # Context blocks
     contexts = [b for b in blocks if b.kind == "context"]
@@ -102,3 +116,4 @@ def render_blocks(blocks: list[_ContentBlock]) -> str:
         parts.append(f"<reminder>\n{reminder_text}\n</reminder>")
 
     return "\n\n".join(parts)
+

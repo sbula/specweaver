@@ -86,9 +86,6 @@ def whitelist_for_role(role: str) -> set[str]:
     return commands
 
 
-# Tool result
-
-
 @dataclass(frozen=True)
 class ToolResult:
     """Result from a GitTool intent execution."""
@@ -97,8 +94,6 @@ class ToolResult:
     message: str
     data: str = ""  # stdout or combined output
 
-
-# GitTool
 
 
 class GitToolError(Exception):

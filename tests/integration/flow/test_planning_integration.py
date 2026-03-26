@@ -53,8 +53,10 @@ class FakeLLM:
     def __init__(self, responses: list[str]) -> None:
         self._responses = list(responses)
         self._call_count = 0
+        self.messages_log: list[Any] = []
 
     async def generate(self, messages: Any, config: Any = None) -> _FakeResponse:
+        self.messages_log.append(messages)
         idx = min(self._call_count, len(self._responses) - 1)
         self._call_count += 1
         return _FakeResponse(text=self._responses[idx])
@@ -497,3 +499,119 @@ class TestRenderFilesInPipeline:
         assert result.index("<plan>") < result.index("<file_contents>")
         assert 'role="target"' in result
         assert "class Auth" in result
+
+
+# ---------------------------------------------------------------------------
+# I13: Planner + constitution + standards via refactored render pipeline
+# ---------------------------------------------------------------------------
+
+
+class TestPlannerWithConstitutionAndStandards:
+    """I13: Planner passes constitution+standards through PromptBuilder
+    which now renders standards via _render_tagged_blocks."""
+
+    @pytest.mark.asyncio()
+    async def test_planner_constitution_and_standards_in_prompt(self) -> None:
+        """Planner with constitution+standards → both appear in prompt."""
+        llm = FakeLLM([_valid_plan_json()])
+        from specweaver.planning.planner import Planner
+
+        planner = Planner(llm, max_retries=1)
+        plan = await planner.generate_plan(
+            spec_content="# Login Spec\nHandle login.",
+            spec_path="specs/login_spec.md",
+            spec_name="Login",
+            constitution="Always follow security best practices.",
+            standards="Use PEP 8 naming conventions.",
+        )
+
+        # Verify the plan was generated correctly
+        assert plan.spec_name == "Login"
+        assert plan.confidence == 80
+
+        # Verify the prompt sent to the LLM contained both sections
+        # (inspect messages_log from the fake LLM)
+        prompt = llm.messages_log[0][-1].content
+        assert "<constitution>" in prompt
+        assert "security best practices" in prompt
+        assert "<standards>" in prompt
+        assert "PEP 8 naming" in prompt
+
+
+# ---------------------------------------------------------------------------
+# I14: render_blocks assembly order preserved after helper extraction
+# ---------------------------------------------------------------------------
+
+
+class TestRenderBlocksOrderPreserved:
+    """I14: render_blocks still produces correct section ordering
+    after extracting _render_tagged_blocks and _render_mentioned."""
+
+    def test_full_render_order_with_all_block_types(self, tmp_path: Path) -> None:
+        """All block types rendered in correct architectural order."""
+        from specweaver.graph.topology import TopologyContext
+
+        f = tmp_path / "code.py"
+        f.write_text("x = 1", encoding="utf-8")
+        ctx = [TopologyContext(
+            name="mod", purpose="A module.", archetype="pure-logic",
+            relationship="direct consumer",
+        )]
+
+        result = (
+            PromptBuilder()
+            .add_instructions("Review code")
+            .add_constitution("Be safe")
+            .add_standards("Follow PEP 8")
+            .add_plan("## Tasks\n1. Review")
+            .add_topology(ctx)
+            .add_file(f)
+            .add_context("Extra info", "ctx_label")
+            .add_reminder("Don't forget quality")
+            .build()
+        )
+
+        # Verify strict rendering order
+        positions = {
+            "instructions": result.index("<instructions>"),
+            "constitution": result.index("<constitution>"),
+            "standards": result.index("<standards>"),
+            "plan": result.index("<plan>"),
+            "topology": result.index("<topology>"),
+            "files": result.index("<file_contents>"),
+            "context": result.index("<context "),
+            "reminder": result.index("<reminder>"),
+        }
+        order = sorted(positions.keys(), key=lambda k: positions[k])
+        assert order == [
+            "instructions", "constitution", "standards", "plan",
+            "topology", "files", "context", "reminder",
+        ]
+
+
+# ---------------------------------------------------------------------------
+# I15: Planner retry flow with refactored _clean_json
+# ---------------------------------------------------------------------------
+
+
+class TestPlannerRetryWithCleanJson:
+    """I15: Planner retry uses refactored _clean_json (removeprefix/removesuffix)
+    end-to-end."""
+
+    @pytest.mark.asyncio()
+    async def test_retry_with_markdown_fenced_json(self) -> None:
+        """LLM returns markdown-fenced JSON on first attempt → cleaned and parsed."""
+        fenced = f"```json\n{_valid_plan_json()}\n```"
+        llm = FakeLLM([fenced])
+        from specweaver.planning.planner import Planner
+
+        planner = Planner(llm, max_retries=1)
+        plan = await planner.generate_plan(
+            spec_content="# Spec\nContent.",
+            spec_path="specs/test.md",
+            spec_name="Test",
+        )
+
+        assert plan.spec_name == "Test"
+        assert plan.confidence == 80
+

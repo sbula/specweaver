@@ -237,6 +237,24 @@ class GeminiAdapter(LLMAdapter):
             )
         return TokenUsage()
 
+    def _apply_on_tool_round(
+        self,
+        on_tool_round: Callable[[int, list[Message]], None],
+        round_num: int,
+        messages: list[Message],
+        contents: list[types.Content],
+    ) -> None:
+        """Invoke the on_tool_round callback and sync new messages into contents."""
+        old_len = len(messages)
+        on_tool_round(round_num, messages)
+        for new_msg in messages[old_len:]:
+            if new_msg.role != Role.SYSTEM:
+                role = "user" if new_msg.role == Role.USER else "model"
+                contents.append(types.Content(
+                    role=role,
+                    parts=[types.Part.from_text(text=new_msg.content)]
+                ))
+
     async def generate_with_tools(
         self,
         messages: list[Message],
@@ -275,16 +293,9 @@ class GeminiAdapter(LLMAdapter):
             )
 
             if on_tool_round:
-                old_len = len(messages)
-                on_tool_round(round_num, messages)
-                if len(messages) > old_len:
-                    for new_msg in messages[old_len:]:
-                        if new_msg.role != Role.SYSTEM:
-                            role = "user" if new_msg.role == Role.USER else "model"
-                            contents.append(types.Content(
-                                role=role,
-                                parts=[types.Part.from_text(text=new_msg.content)]
-                            ))
+                self._apply_on_tool_round(
+                    on_tool_round, round_num, messages, contents,
+                )
 
             try:
                 response = await client.aio.models.generate_content(

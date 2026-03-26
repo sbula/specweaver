@@ -504,3 +504,156 @@ class TestGenerateWithTools:
         )
         assert result.text == "Fallback"
 
+
+# ---------------------------------------------------------------------------
+# _apply_on_tool_round() tests
+# ---------------------------------------------------------------------------
+
+
+class TestApplyOnToolRound:
+    """Tests for the extracted _apply_on_tool_round helper."""
+
+    def test_user_message_synced_to_contents(self) -> None:
+        """Callback adds a USER message → appended to contents as Gemini Content."""
+        adapter = GeminiAdapter(api_key="test")
+        messages: list[Message] = []
+        contents: list = []
+
+        def callback(round_num: int, msgs: list[Message]) -> None:
+            msgs.append(Message(role=Role.USER, content="injected"))
+
+        adapter._apply_on_tool_round(callback, 0, messages, contents)
+
+        assert len(messages) == 1
+        assert messages[0].content == "injected"
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+
+    def test_system_message_skipped_in_contents(self) -> None:
+        """Callback adds a SYSTEM message → NOT appended to contents."""
+        adapter = GeminiAdapter(api_key="test")
+        messages: list[Message] = []
+        contents: list = []
+
+        def callback(round_num: int, msgs: list[Message]) -> None:
+            msgs.append(Message(role=Role.SYSTEM, content="system-only"))
+
+        adapter._apply_on_tool_round(callback, 0, messages, contents)
+
+        assert len(messages) == 1
+        assert len(contents) == 0  # SYSTEM messages not synced
+
+    def test_no_new_messages_contents_unchanged(self) -> None:
+        """Callback adds nothing → contents list unchanged."""
+        adapter = GeminiAdapter(api_key="test")
+        messages: list[Message] = []
+        contents: list = []
+
+        def callback(round_num: int, msgs: list[Message]) -> None:
+            pass  # no-op
+
+        adapter._apply_on_tool_round(callback, 0, messages, contents)
+
+        assert len(messages) == 0
+        assert len(contents) == 0
+
+
+# ---------------------------------------------------------------------------
+# generate_with_tools() edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateWithToolsEdgeCases:
+    """Edge cases for the agentic tool-use loop."""
+
+    @pytest.mark.asyncio
+    async def test_max_rounds_exhausted(self) -> None:
+        """Max tool rounds reached → returns last response, logs warning."""
+        adapter = GeminiAdapter(api_key="fake-key")
+
+        # Every round returns a tool call (never a text response)
+        mock_fc = MagicMock()
+        mock_fc.name = "search"
+        mock_fc.args = {"q": "test"}
+
+        mock_response = MagicMock()
+        mock_response.text = "still calling tools"
+        mock_response.usage_metadata = None
+        mock_response.candidates = [MagicMock(content=MagicMock(), finish_reason="STOP")]
+        mock_response.function_calls = [mock_fc]
+
+        mock_client = MagicMock()
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
+        adapter._client = mock_client
+
+        mock_executor = AsyncMock()
+        mock_executor.execute.return_value = {"result": "data"}
+
+        from specweaver.llm.models import ToolDefinition
+
+        config = GenerationConfig(
+            model="gemini-2.5-flash",
+            tools=[ToolDefinition(name="search", description="search files")],
+            max_tool_rounds=2,  # Only 2 rounds allowed
+        )
+        messages = [Message(role=Role.USER, content="Find it")]
+
+        result = await adapter.generate_with_tools(messages, config, mock_executor)
+
+        # Should return after max rounds with the last parsed response
+        assert result is not None
+        # Executor should have been called in each round
+        assert mock_executor.execute.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_on_tool_round_callback_invoked(self) -> None:
+        """on_tool_round callback is invoked each round with round number."""
+        adapter = GeminiAdapter(api_key="fake-key")
+
+        # Round 1: tool call
+        mock_fc = MagicMock()
+        mock_fc.name = "grep"
+        mock_fc.args = {}
+
+        mock_response_1 = MagicMock()
+        mock_response_1.text = ""
+        mock_response_1.usage_metadata = None
+        mock_response_1.candidates = [MagicMock(content=MagicMock())]
+        mock_response_1.function_calls = [mock_fc]
+
+        # Round 2: final text
+        mock_response_2 = MagicMock()
+        mock_response_2.text = "Done"
+        mock_response_2.usage_metadata = None
+        mock_response_2.candidates = [MagicMock(finish_reason="STOP")]
+        mock_response_2.function_calls = None
+
+        mock_client = MagicMock()
+        mock_client.aio.models.generate_content = AsyncMock(
+            side_effect=[mock_response_1, mock_response_2],
+        )
+        adapter._client = mock_client
+
+        mock_executor = AsyncMock()
+        mock_executor.execute.return_value = {"ok": True}
+
+        callback_rounds: list[int] = []
+
+        def on_round(round_num: int, msgs: list[Message]) -> None:
+            callback_rounds.append(round_num)
+
+        from specweaver.llm.models import ToolDefinition
+
+        config = GenerationConfig(
+            model="gemini-2.5-flash",
+            tools=[ToolDefinition(name="grep", description="search")],
+        )
+        messages = [Message(role=Role.USER, content="Search")]
+
+        result = await adapter.generate_with_tools(
+            messages, config, mock_executor, on_tool_round=on_round,
+        )
+
+        assert result.text == "Done"
+        assert callback_rounds == [0, 1]  # Called in both rounds
+

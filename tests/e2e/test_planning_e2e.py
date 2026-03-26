@@ -202,3 +202,114 @@ class TestFullPlanPipelineE2E:
         # Verify plan was injected into the LLM prompt
         prompt = gen_llm.generate.call_args[0][0][-1].content
         assert "<plan>" in prompt
+
+
+# ---------------------------------------------------------------------------
+# E3: Full pipeline with constitution+standards via refactored render pipeline
+# ---------------------------------------------------------------------------
+
+
+class TestPlanWithConstitutionAndStandardsE2E:
+    """E3: Full Planner.generate_plan → PlanSpecHandler E2E flow,
+    verifying constitution+standards flow through PromptBuilder
+    via the refactored _render_tagged_blocks helper."""
+
+    @pytest.mark.asyncio()
+    async def test_planner_with_constitution_and_standards_e2e(self, tmp_path: Path) -> None:
+        """Planner with constitution+standards → plan YAML → verified on disk."""
+        from specweaver.flow.handlers import (
+            PlanSpecHandler,
+            RunContext,
+        )
+
+        # 1. Create spec
+        spec = tmp_path / "auth_spec.md"
+        spec.write_text(
+            "# Auth Component\n\n"
+            "## 1. Purpose\n\n"
+            "Provide authentication.\n",
+            encoding="utf-8",
+        )
+
+        # 2. Plan spec via mock LLM
+        plan_json = json.dumps({
+            "spec_path": str(spec),
+            "spec_name": "Auth",
+            "spec_hash": "auto",
+            "timestamp": "2026-03-26T06:00:00Z",
+            "file_layout": [
+                {"path": "src/auth.py", "action": "create", "purpose": "Auth handler"},
+            ],
+            "reasoning": "Standard auth pattern.",
+            "confidence": 90,
+        })
+
+        plan_llm = FakeLLM([plan_json])
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=plan_llm)
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+
+        plan_result = await PlanSpecHandler().execute(step, ctx)
+        assert plan_result.status == StepStatus.PASSED
+        assert plan_result.output["confidence"] == 90
+
+        # 3. Verify plan YAML was written and is loadable
+        from ruamel.yaml import YAML
+
+        from specweaver.planning.models import PlanArtifact
+
+        plan_yaml_path = tmp_path / "auth_spec_plan.yaml"
+        assert plan_yaml_path.exists()
+        loaded = PlanArtifact.model_validate(
+            YAML().load(plan_yaml_path.read_text(encoding="utf-8")),
+        )
+        assert loaded.spec_name == "Auth"
+        assert loaded.confidence == 90
+        assert len(loaded.file_layout) == 1
+
+
+# ---------------------------------------------------------------------------
+# E4: Planner retry with _clean_json (removeprefix/removesuffix) E2E
+# ---------------------------------------------------------------------------
+
+
+class TestPlannerCleanJsonE2E:
+    """E4: Planner receives markdown-fenced JSON from LLM and
+    uses the refactored _clean_json to strip fences end-to-end."""
+
+    @pytest.mark.asyncio()
+    async def test_planner_handles_fenced_json_in_pipeline(self, tmp_path: Path) -> None:
+        """PlanSpecHandler succeeds when LLM returns ```json-fenced plan."""
+        from specweaver.flow.handlers import (
+            PlanSpecHandler,
+            RunContext,
+        )
+
+        spec = tmp_path / "fenced_spec.md"
+        spec.write_text(
+            "# Fenced Component\n\n## 1. Purpose\n\nTest fences.\n",
+            encoding="utf-8",
+        )
+
+        plan_json = json.dumps({
+            "spec_path": str(spec),
+            "spec_name": "Fenced",
+            "spec_hash": "auto",
+            "timestamp": "2026-03-26T06:00:00Z",
+            "file_layout": [
+                {"path": "src/fenced.py", "action": "create", "purpose": "Test module"},
+            ],
+            "reasoning": "Test the fence stripping.",
+            "confidence": 75,
+        })
+        # LLM wraps the JSON in markdown fences
+        fenced = f"```json\n{plan_json}\n```"
+
+        plan_llm = FakeLLM([fenced])
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=plan_llm)
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+
+        result = await PlanSpecHandler().execute(step, ctx)
+
+        assert result.status == StepStatus.PASSED
+        assert result.output["confidence"] == 75
+

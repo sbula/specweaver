@@ -1,7 +1,7 @@
 # Test Coverage Matrix
 
-> **3 362 collected** · 3 353 passed · 9 skipped · 108 source modules · 153 test files
-> **Last updated**: 2026-03-25
+> **3 367 collected** · 3 346 passed · 9 skipped · 108 source modules · 153 test files
+> **Last updated**: 2026-03-26
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
 
@@ -36,9 +36,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `flow/` | 8 | 287 | 35 | 13 | 335 |
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
-| `llm/` | 8 | 222 | 0 | 0 | 222 |
+| `llm/` | 8 | 231 | 0 | 0 | 231 |
 | `loom/` | 15 | 571 | 14 | 0 | 585 |
-| `planning/` | 3 | 79 | 0 | 0 | 79 |
+| `planning/` | 3 | 79 | 3 | 2 | 84 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
 | `research/` | 4 | 59 | 0 | 0 | 59 |
 | `review/` | 1 | 30 | 0 | 0 | 30 |
@@ -46,7 +46,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **108** | **2 882** | **230** | **78** | **3 362** |
+| **Total** | **108** | **2 896** | **233** | **80** | **3 367** |
 
 
 ---
@@ -498,6 +498,10 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `render_blocks()` mentioned files section | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11, `<mentioned_files>` XML |
+| `_render_tagged_blocks()` matching blocks → tagged XML | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a, extracted helper |
+| `_render_tagged_blocks()` no matching blocks → None | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
+| `_render_mentioned()` mentioned blocks → `<mentioned_files>` | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
+| `_render_mentioned()` no mentioned blocks → None | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
 
 ### 8.4 `adapters/base.py`
 
@@ -517,6 +521,11 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `GeminiAdapter.count_tokens()` | ❌ | ❌ | ⚪ | ⚪ | Not tested |
 | `GeminiAdapter._handle_error()` API→LLMError mapping | ❌ | ❌ | ⚪ | ⚪ | Not tested |
 | `_messages_to_gemini()` format conversion | ❌ | ❌ | ⚪ | ⚪ | Not tested |
+| `_apply_on_tool_round()` callback → USER message synced | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a, extracted helper |
+| `_apply_on_tool_round()` SYSTEM message skipped | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
+| `_apply_on_tool_round()` no-op callback | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
+| `generate_with_tools()` max rounds exhausted | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
+| `generate_with_tools()` on_tool_round callback invoked | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
 
 ---
 
@@ -796,9 +805,11 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | Planner.generate_plan() happy path | ✅ | ✅ | ✅ | ⚪ | — |
-| _clean_json() code fence stripping | ✅ | ⚪ | ⚪ | ⚪ | — |
+| _clean_json() code fence stripping | ✅ | ✅ | ✅ | ⚪ | Feature 3.11a: removeprefix/removesuffix |
 | generate_plan() fills timestamp if missing | ✅ | ⚪ | ⚪ | ⚪ | — |
 | generate_plan() invalid JSON fallback/retry | ✅ | ⚪ | ⚪ | ⚪ | — |
+| generate_plan() with constitution+standards | ✅ | ✅ | ✅ | ⚪ | Feature 3.11a |
+| render_blocks order preserved after extraction | ⚪ | ✅ | ⚪ | ⚪ | Feature 3.11a |
 
 ### 14.2 
 enderer.py

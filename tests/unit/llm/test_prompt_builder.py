@@ -772,3 +772,61 @@ class TestAddConstitution:
         # Content should be inside constitution, verbatim
         assert xml_content in result
 
+
+# ---------------------------------------------------------------------------
+# Render helpers (extracted from render_blocks)
+# ---------------------------------------------------------------------------
+
+
+class TestRenderTaggedBlocks:
+    """Direct tests for _render_tagged_blocks helper."""
+
+    def test_matching_blocks_returns_tagged_xml(self) -> None:
+        """Matching kind → wrapped in XML tag with correct content."""
+        result = PromptBuilder().add_standards("PEP 8 rules").build()
+        assert "<standards>" in result
+        assert "PEP 8 rules" in result
+        assert "</standards>" in result
+
+    def test_no_matching_blocks_returns_none(self) -> None:
+        """No blocks of the given kind → None (no tag in output)."""
+        result = PromptBuilder().add_instructions("Only instructions").build()
+        assert "<standards>" not in result
+        assert "<plan>" not in result
+
+
+class TestRenderMentioned:
+    """Direct tests for _render_mentioned helper."""
+
+    def test_mentioned_blocks_render_xml(self) -> None:
+        """Mentioned files → <mentioned_files> XML in output."""
+        from specweaver.llm._prompt_render import _render_mentioned
+        from specweaver.llm.prompt_builder import _ContentBlock
+
+        blocks = [
+            _ContentBlock(
+                kind="mentioned", text="x = 1", label="src/main.py",
+                language="python", priority=1,
+            ),
+        ]
+        result = _render_mentioned(blocks)
+        assert result is not None
+        assert "<mentioned_files>" in result
+        assert 'path="src/main.py"' in result
+        assert "x = 1" in result
+        assert "</mentioned_files>" in result
+
+    def test_no_mentioned_blocks_returns_none(self) -> None:
+        """No mentioned blocks → returns None."""
+        from specweaver.llm._prompt_render import _render_mentioned
+        from specweaver.llm.prompt_builder import _ContentBlock
+
+        blocks = [
+            _ContentBlock(
+                kind="file", text="pass", label="code.py",
+                language="python", priority=1,
+            ),
+        ]
+        result = _render_mentioned(blocks)
+        assert result is None
+

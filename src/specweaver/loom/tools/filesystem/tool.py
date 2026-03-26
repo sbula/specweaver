@@ -281,8 +281,6 @@ class FileSystemTool:
         matches: list[dict[str, Any]],
     ) -> None:
         """Search directory and all subdirectories recursively."""
-        import os
-
         base = self._executor._cwd / path
         if not base.is_dir():
             return
@@ -493,7 +491,6 @@ class FileSystemTool:
             return True
         return depth == 1
 
-    # Internal: result wrapping
 
     @staticmethod
     def _wrap(result: ExecutorResult) -> ToolResult:

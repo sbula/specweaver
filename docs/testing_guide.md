@@ -164,9 +164,51 @@ Before marking a feature as done, run the `/pre-commit-test-gap` workflow (`.age
 ## 10. Coverage Target
 The project aims for **70–90% test coverage**. This balances thorough testing with practical development speed.
 
+## 11. Deselected Tests (`@pytest.mark.live`)
+
+12 tests are marked `@pytest.mark.live` and are **excluded from every normal test run** by `addopts = "-m 'not live'"` in `pyproject.toml`.
+
+**Why:** These tests call real external APIs (e.g., Google Gemini) and require:
+- Valid API keys set as environment variables
+- Network access
+- Quota/billing on the target service
+
+**How to run them:**
+```bash
+pytest -m live                       # Run ONLY live tests
+pytest -m "live" --tb=long -v        # With verbose output
+```
+
+**When to run:** Before releases, after changing LLM adapter code, or when troubleshooting API integration issues. Never in automated CI without secrets configured.
+
+**Files containing live tests:**
+- `tests/manual/test_llm_live.py` — Gemini API connectivity
+- `tests/manual/test_stitch_live.py` — Stitch/MCP integration
+
+## 12. Skipped Tests (Platform Limitations)
+
+Some tests are skipped at runtime via `pytest.skip()` or `skipIf()` due to **platform-specific limitations**. These are not failures — they are expected on certain operating systems.
+
+### Windows Skips (5 tests in `test_executor.py`)
+
+| Test | Reason |
+|------|--------|
+| `test_read_symlink` | Symlinks require admin privileges on Windows |
+| `test_list_directory_with_symlink` | Symlinks require admin privileges on Windows |
+| `test_write_to_readonly_file` | `chmod` doesn't enforce read-only on Windows |
+| `test_create_in_readonly_dir` | `chmod` doesn't enforce read-only on Windows |
+| `test_delete_readonly_file` | `chmod` doesn't enforce read-only on Windows |
+
+These tests pass on Linux/macOS. No action needed.
+
+### Empty Parameterized Set (1 test in `test_interfaces.py`)
+
+`TestImplementerMethodVisibility::test_missing_method` — the implementer role has **all** filesystem methods (`_ALL_METHODS == _IMPLEMENTER_METHODS`), so `_ALL_METHODS - _IMPLEMENTER_METHODS` is empty. Pytest skips parameterized tests with no parameters. This is correct by design — there are no methods the implementer should lack.
+
 ---
 
 **Related Documents:**
 - [Test Coverage Matrix](test_coverage_matrix.md) — per-module test story inventory
 - [Pre-Commit Test Gap Workflow](../.agents/workflows/pre-commit-test-gap.md) — automated gap analysis
 - [Architecture Completeness Tests](architecture/completeness_tests.md) — structural verification
+

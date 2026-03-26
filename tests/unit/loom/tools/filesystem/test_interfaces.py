@@ -104,6 +104,8 @@ class TestImplementerMethodVisibility:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
         assert hasattr(iface, method), f"Missing method: {method}"
 
+    # Implementer has ALL methods, so this set is empty → pytest skips.
+    # This is correct: there are no methods the implementer should NOT have.
     @pytest.mark.parametrize("method", sorted(_ALL_METHODS - _IMPLEMENTER_METHODS))
     def test_missing_method(self, method: str, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
