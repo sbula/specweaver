@@ -1,4 +1,4 @@
-# Multi-Model LLM Support — Feature Analysis
+# LLM Routing & Cost Optimization — Feature Analysis
 
 > **Date**: 2026-03-26
 > **Status**: Approved — split into 9 sub-features across Phases 3, 4, and 5
@@ -8,11 +8,11 @@
 
 ## 1. Problem Statement
 
-SpecWeaver currently supports a single LLM provider (Google Gemini via `GeminiAdapter`). The adapter interface (`LLMAdapter` ABC) is already abstracted, but only one implementation exists. This creates three limitations:
+SpecWeaver uses an abstracted `LLMAdapter` interface for LLM integration. To maximize cost efficiency and output quality, different tasks (drafting, reviewing, planning, implementing) should be routable to different models based on their strengths and price points. This requires:
 
-1. **Vendor lock-in** — if Gemini has an outage or quota limit, everything stops
-2. **No cost visibility** — token usage and costs are untracked, making budgeting impossible
-3. **No task optimization** — some models are better/cheaper for certain tasks (e.g., a cheap model for simple validation, an expensive model for complex architectural planning)
+1. **Cost visibility** — token usage and costs must be tracked per call, per task type, per model
+2. **Multi-provider support** — register and call multiple LLM providers through the existing adapter abstraction
+3. **Task optimization** — route tasks to the best model for the job (e.g., cheap model for simple validation, powerful model for complex architectural planning)
 
 The original 3.12 entry described the full end-state: "Route prompts to best model per task by result/cost ratio." This conflates simple plumbing (add more providers), observability (track costs), configuration (pick model per task), analytics (dashboard), and AI-driven optimization (dynamic routing) into a single feature — making it too large and too speculative to implement as one unit.
 
@@ -201,13 +201,13 @@ The full ALS vision: automatic model selection based on lifecycle-attributed per
 graph TD
     A["3.12 Telemetry"] --> B["3.12a Multi-Provider"]
     B --> C["3.12b Static Routing"]
-    A --> D["4.X Cost Analytics"]
-    A --> E["4.X Artifact Lineage<br/>(merges with 3.14)"]
-    E --> F["4.X Friction Detection"]
-    D --> G["4.X Routing Recommendations"]
+    A --> D["4.5a Cost Analytics"]
+    A --> E["4.5b Artifact Lineage<br/>(merges with 3.14)"]
+    E --> F["4.5c Friction Detection"]
+    D --> G["4.5d Routing Recommendations"]
     F --> G
-    E --> H["5.X HITL Root-Cause Tagging"]
-    H --> I["5.X 🔬 Dynamic Routing<br/>+ AI Arbiter"]
+    E --> H["5.5a HITL Root-Cause Tagging"]
+    H --> I["5.8 🔬 Dynamic Routing<br/>+ AI Arbiter"]
     G --> I
 ```
 
@@ -218,9 +218,9 @@ graph TD
 | 3.12 Telemetry | ✅ Concrete | Yes — implement next |
 | 3.12a Multi-Provider | ✅ Concrete | Yes — after 3.12 |
 | 3.12b Static Routing | ✅ Concrete | Yes — after 3.12a |
-| 4.X Cost Analytics | ✅ Concrete | Yes — when data exists |
-| 4.X Artifact Lineage | ✅ Concrete | Yes — merge with 3.14 |
-| 4.X Friction Detection | ⚠️ Experimental | Maybe — needs validation that diffs are meaningful |
-| 4.X Routing Recommendations | ⚠️ Experimental | Maybe — depends on data quality |
-| 5.X HITL Root-Cause | ✅ Concrete | Yes — simple UI |
-| 5.X Dynamic Routing + Arbiter | 🔬 Science Fiction | Not yet — research only |
+| 4.5a Cost Analytics | ✅ Concrete | Yes — when data exists |
+| 4.5b Artifact Lineage | ✅ Concrete | Yes — merge with 3.14 |
+| 4.5c Friction Detection | ⚠️ Experimental | Maybe — needs validation that diffs are meaningful |
+| 4.5d Routing Recommendations | ⚠️ Experimental | Maybe — depends on data quality |
+| 5.5a HITL Root-Cause | ✅ Concrete | Yes — simple UI |
+| 5.8 Dynamic Routing + Arbiter | 🔬 Science Fiction | Not yet — research only |
