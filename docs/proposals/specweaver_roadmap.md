@@ -83,7 +83,7 @@ Take each major capability from the architecture docs, isolate it as a self-cont
 
 Features from `future_capabilities_reference.md` that require significant engineering: symbol index, AST chunking, RAG, tiered access, multi-agent review, conversation summarization, mutation testing, Web UI.
 
-**Features**: 4.1 (Symbol Index) → 4.2 (AST Chunking) → 4.3 (RAG) → 4.4 (Access Rights) → 4.5 (Multi-Agent) → 4.6–4.10
+**Features**: 4.1 (Symbol Index) → 4.2 (AST Chunking) → 4.3 (RAG) → 4.4 (Access Rights) → 4.5 (Multi-Agent) → 4.5a–d (Cost Analytics, Artifact Lineage, Friction Detection, Routing Recommendations) → 4.6–4.10
 
 ---
 
@@ -91,7 +91,7 @@ Features from `future_capabilities_reference.md` that require significant engine
 
 Persistent domain knowledge system: cross-service impact analysis, SLA-aware spec authoring, automated architectural consistency. Extends the in-memory topology graph (Phase 2) into a persistent, event-driven knowledge graph. Enhanced with hierarchical memory scoping, composite scoring (semantic + recency + importance), and LLM-powered memory consolidation (keep/update/delete/insert_new). _(informed by [CrewAI](https://github.com/crewAIInc/crewAI) memory architecture)_
 
-**Features**: 5.1 (Persistent Graph) → 5.2 (EDKG) → 5.3 (GC) → 5.4 (Hybrid RAG + Composite Scoring) → 5.5 (Provenance) → 5.6 (Socratic Drafting) → 5.7 (Memory Consolidation)
+**Features**: 5.1 (Persistent Graph) → 5.2 (EDKG) → 5.3 (GC) → 5.4 (Hybrid RAG + Composite Scoring) → 5.5 (Provenance) → 5.5a (HITL Root-Cause Tagging) → 5.6 (Socratic Drafting) → 5.7 (Memory Consolidation) → 5.8 (🔬 Dynamic Routing + AI Arbiter)
 
 ---
 
