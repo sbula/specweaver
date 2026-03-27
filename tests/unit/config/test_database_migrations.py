@@ -875,3 +875,62 @@ class TestCostOverrideCrud:
         db.set_cost_override("claude-3", 0.003, 0.012)
         overrides = db.get_cost_overrides()
         assert len(overrides) == 2
+
+
+# ---------------------------------------------------------------------------
+# Stories 1, 20, 21: Usage log gap tests
+# ---------------------------------------------------------------------------
+
+
+class TestUsageLogGaps:
+    """Additional DB mixin tests for uncovered scenarios."""
+
+    @pytest.fixture()
+    def db(self, tmp_path: Path):
+        from specweaver.config.database import Database
+
+        return Database(tmp_path / ".specweaver" / "specweaver.db")
+
+    def test_get_usage_summary_since_filter(self, db):
+        """Story 1: get_usage_summary filters by 'since' timestamp."""
+        db.log_usage({"timestamp": "2026-03-01T00:00:00Z", "project_name": "p1",
+                      "task_type": "draft", "model": "m", "provider": "x",
+                      "total_tokens": 100, "estimated_cost_usd": 0.01})
+        db.log_usage({"timestamp": "2026-03-20T00:00:00Z", "project_name": "p1",
+                      "task_type": "draft", "model": "m", "provider": "x",
+                      "total_tokens": 200, "estimated_cost_usd": 0.02})
+        result = db.get_usage_summary(since="2026-03-15T00:00:00Z")
+        assert len(result) == 1
+        assert result[0]["call_count"] == 1
+        assert result[0]["total_tokens"] == 200
+
+    def test_get_usage_summary_combined_project_and_since(self, db):
+        """Story 20: both project AND since filters applied together."""
+        db.log_usage({"timestamp": "2026-03-01T00:00:00Z", "project_name": "p1",
+                      "task_type": "draft", "model": "m", "provider": "x"})
+        db.log_usage({"timestamp": "2026-03-20T00:00:00Z", "project_name": "p1",
+                      "task_type": "draft", "model": "m", "provider": "x"})
+        db.log_usage({"timestamp": "2026-03-20T00:00:00Z", "project_name": "p2",
+                      "task_type": "draft", "model": "m", "provider": "x"})
+
+        result = db.get_usage_summary(project="p1", since="2026-03-15T00:00:00Z")
+        assert len(result) == 1
+        assert result[0]["call_count"] == 1  # Only p1 after cutoff
+
+    def test_log_usage_missing_optional_keys_uses_defaults(self, db):
+        """Story 21: log_usage with only required keys — optionals default to 0."""
+        db.log_usage({
+            "timestamp": "2026-03-27T00:00:00Z",
+            "project_name": "proj",
+            "task_type": "draft",
+            "model": "m",
+            "provider": "x",
+            # No prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd, duration_ms
+        })
+        with db.connect() as conn:
+            row = conn.execute("SELECT * FROM llm_usage_log").fetchone()
+        assert row["prompt_tokens"] == 0
+        assert row["completion_tokens"] == 0
+        assert row["total_tokens"] == 0
+        assert row["estimated_cost"] == 0.0
+        assert row["duration_ms"] == 0

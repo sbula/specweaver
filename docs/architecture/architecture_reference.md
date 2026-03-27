@@ -37,7 +37,11 @@ specweaver/                       ← level: system, archetype: orchestrator
 ├── graph/                        ← Topology graph + dependency analysis
 ├── implementation/               ← Code generation from specs
 ├── llm/                          ← LLM provider abstraction
-│   └── adapters/                 ← Concrete adapters (Gemini)
+│   ├── adapters/                 ← Concrete adapters (Gemini)
+│   ├── mention_scanner/          ← Auto-detect spec/file mentions in LLM output
+│   ├── collector.py              ← TelemetryCollector decorator (3.12)
+│   ├── telemetry.py              ← Cost estimation + UsageRecord (3.12)
+│   └── factory.py                ← Adapter creation with optional telemetry wrapping
 ├── loom/                         ← Execution engine (tools, atoms, commons)
 │   ├── tools/                    ← Agent-facing capability providers
 │   │   ├── filesystem/           ← FileSystemTool + role interfaces
@@ -90,7 +94,11 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `llm/adapter.py` — `LLMAdapter` abstract base class (provider-agnostic contract). In `llm/` (adapter archetype) because it wraps an external service.
 - `llm/adapters/gemini.py` — `GeminiAdapter`: Gemini API calls, error translation, response parsing. In `llm/adapters/` (sub-module) to isolate provider-specific code.
 - `llm/prompt_builder.py` — `PromptBuilder`: XML-tagged block assembly with token budgets. In `llm/` because prompt construction is part of the LLM abstraction.
-- `llm/models.py` — `LLMResponse`, `ToolDefinition`, error hierarchy. Data models for the LLM contract.
+- `llm/models.py` — `LLMResponse`, `ToolDefinition`, `TaskType`, `GenerationConfig`. Data models for the LLM contract.
+- `llm/telemetry.py` — `estimate_cost()`, `create_usage_record()`, `CostEntry`, `UsageRecord`. Pure-logic cost estimation with configurable pricing tables. In `llm/` because it's LLM-specific pricing logic. *(Feature 3.12)*
+- `llm/collector.py` — `TelemetryCollector`: decorator wrapping `LLMAdapter`, captures token usage per call. In `llm/` because it's an adapter-level concern. *(Feature 3.12)*
+- `llm/factory.py` — `create_llm_adapter()`: factory function that creates adapter + optional `TelemetryCollector` wrapping. Loads cost overrides from DB. *(Feature 3.12)*
+- `config/_db_telemetry_mixin.py` — `TelemetryMixin`: DB persistence for `llm_usage_log` + `llm_cost_overrides` tables. In `config/` because it's a DB mixin. *(Feature 3.12)*
 
 **Spec drafting** (`sw draft`)
 - `drafting/drafter.py` — `Drafter`: multi-turn LLM interaction for spec authoring. In `drafting/` (orchestrator) because it coordinates LLM + HITL context.

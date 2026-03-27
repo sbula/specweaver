@@ -24,7 +24,8 @@ def _gen_config_from_context(
     task_type: TaskType | None = None,
 ) -> GenerationConfig:
     """Build GenerationConfig from RunContext, falling back to defaults."""
-    from specweaver.llm.models import GenerationConfig, TaskType as _TaskType
+    from specweaver.llm.models import GenerationConfig
+    from specweaver.llm.models import TaskType as _TaskType
 
     resolved_type = task_type if task_type is not None else _TaskType.IMPLEMENT
 

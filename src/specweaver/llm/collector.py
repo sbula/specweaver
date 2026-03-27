@@ -16,12 +16,14 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any, AsyncIterator
+from typing import TYPE_CHECKING, Any
 
-from specweaver.llm.models import LLMResponse, TaskType, TokenUsage
+from specweaver.llm.models import LLMResponse, TokenUsage
 from specweaver.llm.telemetry import CostEntry, UsageRecord, create_usage_record
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from specweaver.llm.models import GenerationConfig, Message
 
 logger = logging.getLogger(__name__)

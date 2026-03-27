@@ -57,26 +57,57 @@ logger = logging.getLogger(__name__)
 
 _PROJECT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
+# Data-driven migration table: (version, sql_script, description)
+_MIGRATIONS: list[tuple[int, str, str]] = [
+    (2, SCHEMA_V2, "context_limit"),
+    (3, SCHEMA_V3, "log_level"),
+    (4, SCHEMA_V4, "constitution_max_size"),
+    (5, SCHEMA_V5, "domain_profile"),
+    (6, SCHEMA_V6, "project_standards"),
+    (7, SCHEMA_V7, "auto_bootstrap_constitution"),
+    (8, SCHEMA_V8, "stitch_mode"),
+    (9, SCHEMA_V9, "llm_usage_log, llm_cost_overrides"),
+]
 
-class Database(ConfigSettingsMixin, LlmProfilesMixin, DataExtensionsMixin, TelemetryMixin):
-    """SpecWeaver SQLite configuration database.
 
-    Args:
-        db_path: Path to the SQLite database file. Parent directories
-            are created automatically.
+def _now_iso() -> str:
+    return datetime.now(tz=UTC).isoformat()
+
+
+def _validate_project_name(name: str) -> None:
+    if not name or not _PROJECT_NAME_RE.match(name):
+        msg = (
+            f"Invalid project name '{name}'. Must match ^[a-z0-9][a-z0-9_-]*$ "
+            "(lowercase letters, digits, hyphens, underscores; "
+            "must start with letter or digit)."
+        )
+        raise ValueError(msg)
+
+
+class Database(
+    ConfigSettingsMixin,
+    DataExtensionsMixin,
+    LlmProfilesMixin,
+    TelemetryMixin,
+):
+    """Multi-project configuration database.
+
+    Mixins supply domain methods (config settings, LLM profiles,
+    data extensions, telemetry). This class owns the connection and
+    schema lifecycle.
     """
 
-    def __init__(self, db_path: Path | str) -> None:
+    def __init__(self, db_path: str | Path) -> None:
         self._db_path = Path(db_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_schema()
 
     def connect(self) -> sqlite3.Connection:
-        """Return a new connection with WAL mode and foreign keys enabled."""
+        """Return a new connection with WAL + foreign keys enabled."""
         conn = sqlite3.connect(str(self._db_path))
+        conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
-        conn.row_factory = sqlite3.Row
         return conn
 
     # ------------------------------------------------------------------
@@ -98,101 +129,11 @@ class Database(ConfigSettingsMixin, LlmProfilesMixin, DataExtensionsMixin, Telem
                     (1, _now_iso()),
                 )
 
-            # Apply v2 migration before seeding (profiles need context_limit)
             current_version = conn.execute(
                 "SELECT MAX(version) FROM schema_version",
             ).fetchone()[0] or 0
 
-            if current_version < 2:
-                with suppress(Exception):
-                    conn.executescript(SCHEMA_V2)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
-                    (2, _now_iso()),
-                )
-
-            if current_version < 3:
-                with suppress(Exception):
-                    conn.executescript(SCHEMA_V3)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
-                    (3, _now_iso()),
-                )
-
-            if current_version < 4:
-                with suppress(Exception):
-                    conn.executescript(SCHEMA_V4)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
-                    (4, _now_iso()),
-                )
-                logger.info(
-                    "Database schema migrated to v4 (constitution_max_size)",
-                )
-
-            if current_version < 5:
-                with suppress(Exception):
-                    conn.executescript(SCHEMA_V5)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
-                    (5, _now_iso()),
-                )
-                logger.info(
-                    "Database schema migrated to v5 (domain_profile)",
-                )
-
-            if current_version < 6:
-                with suppress(Exception):
-                    conn.executescript(SCHEMA_V6)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
-                    (6, _now_iso()),
-                )
-                logger.info(
-                    "Database schema migrated to v6 (project_standards)",
-                )
-
-            if current_version < 7:
-                with suppress(Exception):
-                    conn.executescript(SCHEMA_V7)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
-                    (7, _now_iso()),
-                )
-                logger.info(
-                    "Database schema migrated to v7 (auto_bootstrap_constitution)",
-                )
-
-            if current_version < 8:
-                with suppress(Exception):
-                    conn.executescript(SCHEMA_V8)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
-                    (8, _now_iso()),
-                )
-                logger.info(
-                    "Database schema migrated to v8 (stitch_mode)",
-                )
-
-            if current_version < 9:
-                with suppress(Exception):
-                    conn.executescript(SCHEMA_V9)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
-                    (9, _now_iso()),
-                )
-                logger.info(
-                    "Database schema migrated to v9 (llm_usage_log, llm_cost_overrides)",
-                )
-
+            self._apply_migrations(conn, current_version)
 
             # Seed default LLM profiles if empty
             profile_count = conn.execute(
@@ -205,6 +146,24 @@ class Database(ConfigSettingsMixin, LlmProfilesMixin, DataExtensionsMixin, Telem
                     "max_output_tokens, response_format, context_limit) "
                     "VALUES (?, ?, ?, ?, ?, ?, ?)",
                     DEFAULT_PROFILES,
+                )
+
+    @staticmethod
+    def _apply_migrations(
+        conn: sqlite3.Connection, current_version: int,
+    ) -> None:
+        """Apply all pending schema migrations from _MIGRATIONS table."""
+        for version, sql, description in _MIGRATIONS:
+            if current_version < version:
+                with suppress(Exception):
+                    conn.executescript(sql)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (version, _now_iso()),
+                )
+                logger.info(
+                    "Database schema migrated to v%d (%s)", version, description,
                 )
 
     # ------------------------------------------------------------------

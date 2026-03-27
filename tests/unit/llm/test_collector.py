@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
@@ -19,6 +19,8 @@ from specweaver.llm.models import (
 )
 from specweaver.llm.telemetry import CostEntry
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 # ---------------------------------------------------------------------------
 # Fake adapter for testing
@@ -36,7 +38,7 @@ class FakeAdapter:
             model="fake-model",
             usage=TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150),
         )
-        self._stream_chunks = stream_chunks or ["hello", " world"]
+        self._stream_chunks = stream_chunks if stream_chunks is not None else ["hello", " world"]
         self._call_count = 0
 
     def available(self) -> bool:
@@ -252,3 +254,128 @@ class TestCollectorCostOverrides:
         record = collector.records[0]
         # (100/1000)*100 + (50/1000)*200 = 10 + 10 = 20
         assert record.estimated_cost_usd == pytest.approx(20.0)
+
+
+# ---------------------------------------------------------------------------
+# Corner-case tests (stories 14-19)
+# ---------------------------------------------------------------------------
+
+
+class TestCollectorAdapterExceptions:
+    """Adapter exceptions propagate without capturing telemetry."""
+
+    @pytest.mark.asyncio
+    async def test_generate_exception_propagates_no_record(self):
+        """adapter.generate() raises → exception propagated, no record."""
+        adapter = FakeAdapter()
+        adapter.generate = _raise_adapter_error
+        collector = TelemetryCollector(adapter, project="proj")
+        config = GenerationConfig(model="fake-model")
+
+        with pytest.raises(RuntimeError, match="adapter exploded"):
+            await collector.generate([], config)
+
+        assert len(collector.records) == 0
+
+    @pytest.mark.asyncio
+    async def test_generate_with_tools_exception_propagates_no_record(self):
+        """adapter.generate_with_tools() raises → no record."""
+        adapter = FakeAdapter()
+        adapter.generate_with_tools = _raise_adapter_error_tools
+        collector = TelemetryCollector(adapter, project="proj")
+        config = GenerationConfig(model="fake-model")
+
+        with pytest.raises(RuntimeError, match="adapter exploded"):
+            await collector.generate_with_tools([], config, MagicMock())
+
+        assert len(collector.records) == 0
+
+
+class TestCollectorStreamEdgeCases:
+    """Edge cases for generate_stream()."""
+
+    @pytest.mark.asyncio
+    async def test_empty_stream_creates_zero_token_record(self):
+        """Empty stream (0 chunks) → record with 0 completion tokens."""
+        adapter = FakeAdapter(stream_chunks=[])
+        collector = TelemetryCollector(adapter, project="proj")
+        config = GenerationConfig(model="fake-model")
+
+        chunks = []
+        async for chunk in collector.generate_stream([], config):
+            chunks.append(chunk)
+
+        assert chunks == []
+        assert len(collector.records) == 1
+        assert collector.records[0].completion_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_stream_error_mid_stream_no_record(self):
+        """Adapter raises mid-stream → no record captured."""
+        adapter = FakeAdapter()
+        adapter.generate_stream = _raise_stream_error
+        collector = TelemetryCollector(adapter, project="proj")
+        config = GenerationConfig(model="fake-model")
+
+        with pytest.raises(RuntimeError, match="stream exploded"):
+            async for _chunk in collector.generate_stream([], config):
+                pass
+
+        assert len(collector.records) == 0
+
+
+class TestCollectorFlushEdgeCases:
+    """Flush edge cases: double flush, partial failure."""
+
+    @pytest.mark.asyncio
+    async def test_double_flush_second_returns_zero(self):
+        """Flushing twice: second flush returns 0 (records already cleared)."""
+        adapter = FakeAdapter()
+        collector = TelemetryCollector(adapter, project="proj")
+        await collector.generate([], GenerationConfig(model="m"))
+
+        mock_db = MagicMock()
+        first = collector.flush(mock_db)
+        second = collector.flush(mock_db)
+
+        assert first == 1
+        assert second == 0
+        assert mock_db.log_usage.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_partial_failure_records_not_cleared(self):
+        """DB fails mid-flush → records are NOT cleared (preserved for retry)."""
+        adapter = FakeAdapter()
+        collector = TelemetryCollector(adapter, project="proj")
+        await collector.generate([], GenerationConfig(model="m"))
+        await collector.generate([], GenerationConfig(model="m"))
+
+        mock_db = MagicMock()
+        # Fail on the second call
+        mock_db.log_usage.side_effect = [None, Exception("DB error")]
+
+        collector.flush(mock_db)
+
+        # Records NOT cleared because the loop raised before .clear()
+        assert len(collector.records) == 2
+
+
+# ---------------------------------------------------------------------------
+# Helper functions for exception tests
+# ---------------------------------------------------------------------------
+
+
+async def _raise_adapter_error(messages, config):
+    msg = "adapter exploded"
+    raise RuntimeError(msg)
+
+
+async def _raise_adapter_error_tools(messages, config, tool_executor, on_tool_round=None):
+    msg = "adapter exploded"
+    raise RuntimeError(msg)
+
+
+async def _raise_stream_error(messages, config):
+    yield "partial"
+    msg = "stream exploded"
+    raise RuntimeError(msg)

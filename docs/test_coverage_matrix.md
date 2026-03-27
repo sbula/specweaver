@@ -1,7 +1,7 @@
 # Test Coverage Matrix
 
-> **3 367 collected** · 3 346 passed · 9 skipped · 108 source modules · 153 test files
-> **Last updated**: 2026-03-26
+> **3 430 collected** · 3 423 passed · 7 skipped · 112 source modules · 157 test files
+> **Last updated**: 2026-03-27
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
 
@@ -11,10 +11,10 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 ## Summary
 
-| Total stories / use cases catalogued | 199 |
-| Fully covered (✅ at all applicable layers) | 83 |
+| Total stories / use cases catalogued | 229 |
+| Fully covered (✅ at all applicable layers) | 113 |
 | Missing **unit** tests | 49 |
-| Missing **integration** tests | 64 |
+| Missing **integration** tests | 57 |
 | Missing **both** unit + integration | 37 |
 | Missing **e2e** tests | 4 |
 | Missing **performance** tests | 3 |
@@ -25,18 +25,18 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 > Counts from `pytest --collect-only` per directory. E2E tests are holistic;
 > attribution is by primary source package under test.
-> Integration subdirs: `cli/`→94, `config/`→20, `constitution/`→10 (→project), `context/`→8, `flow/`→22, `loom/`→14, `validation/`→49.
+> Integration subdirs: `cli/`→94, `config/`→20, `constitution/`→10 (→project), `context/`→8, `flow/`→22, `loom/`→14, `telemetry/`→7, `validation/`→49.
 
 | Package | Src Files | Unit | Integ | E2E | Total |
 |---------|----------:|-----:|------:|----:|------:|
 | `cli/` | 10 | 256 | 94 | 38 | 388 |
-| `config/` | 3 | 234 | 20 | 0 | 254 |
+| `config/` | 3 | 237 | 20 | 0 | 257 |
 | `context/` | 4 | 53 | 8 | 7 | 68 |
 | `drafting/` | 3 | 113 | 0 | 0 | 113 |
-| `flow/` | 8 | 287 | 35 | 13 | 335 |
+| `flow/` | 8 | 294 | 35 | 13 | 342 |
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
-| `llm/` | 8 | 231 | 0 | 0 | 231 |
+| `llm/` | 12 | 274 | 7 | 2 | 283 |
 | `loom/` | 15 | 571 | 14 | 0 | 585 |
 | `planning/` | 3 | 79 | 3 | 2 | 84 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
@@ -46,7 +46,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **108** | **2 896** | **233** | **80** | **3 367** |
+| **Total** | **112** | **2 959** | **240** | **82** | **3 430** |
 
 
 ---
@@ -526,6 +526,54 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `_apply_on_tool_round()` no-op callback | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
 | `generate_with_tools()` max rounds exhausted | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
 | `generate_with_tools()` on_tool_round callback invoked | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11a |
+
+### 8.9 `telemetry.py` *(Feature 3.12)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `estimate_cost()` default pricing table lookup | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `estimate_cost()` with custom cost overrides | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `estimate_cost()` unknown model → zero cost | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `create_usage_record()` happy path | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `create_usage_record()` zero-token response | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 13 |
+
+### 8.10 `collector.py` *(Feature 3.12)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `TelemetryCollector.generate()` captures record | ✅ | ✅ | ✅ | ⚪ | — |
+| `TelemetryCollector.generate_with_tools()` captures record | ✅ | ✅ | ⚪ | ⚪ | — |
+| `TelemetryCollector.generate_stream()` estimates tokens | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `TelemetryCollector.flush()` persists to DB | ✅ | ✅ | ✅ | ⚪ | Feature 3.12, story 22 |
+| Adapter exception propagates, no record | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, stories 14-15 |
+| Empty stream creates zero-token record | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 16 |
+| Mid-stream error prevents capture | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 17 |
+| Double flush returns 0 on second call | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 18 |
+| Partial flush failure preserves records | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 19 |
+| Cost overrides affect pricing | ✅ | ✅ | ✅ | ⚪ | Feature 3.12, story 25/30 |
+
+### 8.11 `factory.py` *(Feature 3.12)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `create_llm_adapter()` no telemetry → raw adapter | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 2 |
+| `create_llm_adapter()` telemetry_project → collector | ✅ | ⚪ | ✅ | ⚪ | Feature 3.12, stories 3/29 |
+| `create_llm_adapter()` empty string → no wrap | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 4 |
+| Cost overrides loaded and passed to collector | ✅ | ⚪ | ✅ | ⚪ | Feature 3.12, stories 5/30 |
+| Cost override load failure → fallback None | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, edge case |
+
+### 8.12 Config helpers: flow task_type wiring *(Feature 3.12)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `_review_config_from_context()` sets REVIEW | ✅ | ✅ | ⚪ | ⚪ | Feature 3.12, story 6 |
+| `_review_config_from_context()` fallback REVIEW | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+| `_gen_config_from_context()` defaults to IMPLEMENT | ✅ | ✅ | ⚪ | ⚪ | Feature 3.12, story 7 |
+| `_gen_config_from_context()` explicit override | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 8 |
+| `_gen_config_from_context()` fallback path | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+| `PlanSpecHandler._build_config()` sets PLAN | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 9 |
+| `PlanSpecHandler._build_config()` fallback PLAN | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+| Multi-project isolation | ⚪ | ✅ | ⚪ | ⚪ | Feature 3.12, story 28 |
 
 ---
 

@@ -11,7 +11,6 @@ from specweaver.llm.models import GenerationConfig, LLMResponse, TaskType, Token
 from specweaver.llm.telemetry import (
     DEFAULT_COST_TABLE,
     CostEntry,
-    UsageRecord,
     create_usage_record,
     estimate_cost,
 )
@@ -155,3 +154,18 @@ class TestCreateUsageRecord:
         )
         # (1000/1000)*10 + (1000/1000)*20 = 30
         assert record.estimated_cost_usd == pytest.approx(30.0)
+
+    def test_zero_token_response(self):
+        """create_usage_record with zero tokens produces zero cost."""
+        config = GenerationConfig(model="gemini-3-flash-preview", task_type=TaskType.DRAFT)
+        response = LLMResponse(
+            text="",
+            model="gemini-3-flash-preview",
+            usage=TokenUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+        )
+        record = create_usage_record(config, response, "gemini", "proj", 42)
+        assert record.prompt_tokens == 0
+        assert record.completion_tokens == 0
+        assert record.total_tokens == 0
+        assert record.estimated_cost_usd == 0.0
+        assert record.duration_ms == 42
