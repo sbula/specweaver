@@ -234,6 +234,7 @@ def _execute_run(  # noqa: C901
             project_path, spec_path=spec_path,
         ),
         standards=_load_standards_content(project_path, target_path=spec_path),
+        db=_core.get_db(),
     )
 
     # Wire up LLM if needed (non-validate-only pipelines)
@@ -383,6 +384,7 @@ def resume(
             project_path, spec_path=spec_path,
         ),
         standards=_load_standards_content(project_path, target_path=spec_path),
+        db=_core.get_db(),
     )
 
     display = _create_display(use_json=json_output, verbose=verbose)

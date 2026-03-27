@@ -91,29 +91,35 @@ def implement(
     )
     standards_content = _load_standards_content(project_path, target_path=spec_path)
 
-    # Generate code
-    _core.console.print("[dim]Generating implementation code...[/dim]")
-    asyncio.run(
-        generator.generate_code(
-            spec_path, code_path,
-            topology_contexts=topo_contexts,
-            constitution=constitution_content,
-            standards=standards_content,
-        ),
-    )
-    _core.console.print(f"  [green]\u2713[/green] {code_path}")
+    try:
+        # Generate code
+        _core.console.print("[dim]Generating implementation code...[/dim]")
+        asyncio.run(
+            generator.generate_code(
+                spec_path, code_path,
+                topology_contexts=topo_contexts,
+                constitution=constitution_content,
+                standards=standards_content,
+            ),
+        )
+        _core.console.print(f"  [green]\u2713[/green] {code_path}")
 
-    # Generate tests
-    _core.console.print("[dim]Generating test file...[/dim]")
-    asyncio.run(
-        generator.generate_tests(
-            spec_path, test_path,
-            topology_contexts=topo_contexts,
-            constitution=constitution_content,
-            standards=standards_content,
-        ),
-    )
-    _core.console.print(f"  [green]\u2713[/green] {test_path}")
+        # Generate tests
+        _core.console.print("[dim]Generating test file...[/dim]")
+        asyncio.run(
+            generator.generate_tests(
+                spec_path, test_path,
+                topology_contexts=topo_contexts,
+                constitution=constitution_content,
+                standards=standards_content,
+            ),
+        )
+        _core.console.print(f"  [green]\u2713[/green] {test_path}")
+    finally:
+        from specweaver.llm.collector import TelemetryCollector
+
+        if isinstance(adapter, TelemetryCollector):
+            adapter.flush(_core.get_db())
 
     _core.console.print(
         "\n[green]Implementation complete![/green]\n"

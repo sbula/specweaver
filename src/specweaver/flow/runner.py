@@ -132,7 +132,10 @@ class PipelineRunner:
             self._pipeline.name, run.run_id, len(run.step_records),
             self._context.project_path.name, self._context.spec_path.name,
         )
-        return await self._execute_loop(run)
+        try:
+            return await self._execute_loop(run)
+        finally:
+            self._flush_telemetry()
 
     async def resume(self, run_id: str) -> PipelineRun:
         """Resume a previously interrupted run.
@@ -165,7 +168,10 @@ class PipelineRunner:
         )
         # Reset from terminal/parked state to running
         run.status = RunStatus.RUNNING
-        return await self._execute_loop(run)
+        try:
+            return await self._execute_loop(run)
+        finally:
+            self._flush_telemetry()
 
     # ------------------------------------------------------------------
     # Core execution loop
@@ -390,3 +396,24 @@ class PipelineRunner:
         """Fire a progress event to the callback, if configured."""
         if self._on_event is not None:
             self._on_event(event, **kwargs)
+
+    def _flush_telemetry(self) -> None:
+        """Flush telemetry if context.llm is a TelemetryCollector.
+
+        Uses ``context.db`` (Database) — NOT ``self._store`` (PipelineRunStore).
+        """
+        from specweaver.llm.collector import TelemetryCollector
+
+        llm = getattr(self._context, "llm", None)
+        if not isinstance(llm, TelemetryCollector):
+            return
+
+        db = getattr(self._context, "db", None)
+        if db is None:
+            logger.warning("Cannot flush telemetry: no db on RunContext")
+            return
+
+        try:
+            llm.flush(db)
+        except Exception:
+            logger.warning("Failed to flush telemetry", exc_info=True)

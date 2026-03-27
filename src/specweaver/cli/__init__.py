@@ -61,11 +61,13 @@ from specweaver.cli import (  # noqa: E402, F401
     _helpers,
     config,
     constitution,
+    cost_commands,
     implement,
     pipelines,
     projects,
     review,
     standards,
+    usage_commands,
     validation,
 )
 

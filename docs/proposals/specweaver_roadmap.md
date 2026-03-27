@@ -1,6 +1,6 @@
 # SpecWeaver Roadmap
 
-> **Date**: 2026-03-08 | **Updated**: 2026-03-22
+> **Date**: 2026-03-08 | **Updated**: 2026-03-27
 > **Status**: ACTIVE
 > **Context**: Step-by-step plan for SpecWeaver development. Fresh start from scratch, informed by [flowManager](https://github.com/sbula/flowManager) learnings. MVP-first approach: prove the concept, then expand feature by feature.
 
@@ -41,7 +41,7 @@
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
 **Phase 2 (Flow Engine)**: Steps 7–14 ✅
-**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅ | Feature 3.7 🔧 | Feature 3.8 ✅ | Feature 3.12 🔧 (3423 total tests)
+**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅ | Feature 3.7 🔧 | Feature 3.8 ✅ | Feature 3.12 ✅ (3451 total tests)
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - ✅ Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_ — multi-language (Py/JS/TS), multi-scope, conditional LLM comparison
@@ -50,7 +50,7 @@
 - 🔧 Feature 3.7: REST API server (`sw serve`) — TDD phases 1–3 complete, pre-commit quality gate passed
 - ✅ Feature 3.8: Web Dashboard (`sw serve`) — TDD and pre-commit gate passed (HTMX, Jinja2, REST endpoints)
 - Feature 3.9: Containerization
-- 🔧 Feature 3.12: Token & cost telemetry — core engine complete (TelemetryCollector, DB persistence, factory wrapping, task_type attribution). Pending: `sw usage`/`sw costs` CLI, runner flush integration.
+- ✅ Feature 3.12: Token & cost telemetry — TelemetryCollector, DB persistence, factory wrapping, task_type attribution, `sw usage`/`sw costs` CLI, runner + CLI + API flush integration. 3451 tests.
 
 ---
 
@@ -76,7 +76,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API) → 3.8 (Web Dashboard) → 3.9 (Container) → 3.10–3.18 → 3.19 (Pipeline Viz ⏸) → 3.20–3.23
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10–3.12 (✅) → 3.13–3.18 → 3.19 (Pipeline Viz ⏸) → 3.20–3.23
 
 ---
 

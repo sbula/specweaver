@@ -105,8 +105,11 @@ def _require_llm_adapter(
     from specweaver.llm.factory import LLMAdapterError, create_llm_adapter
 
     db = _core.get_db()
+    project = db.get_active_project()
     try:
-        return create_llm_adapter(db, llm_role=llm_role)
+        return create_llm_adapter(
+            db, llm_role=llm_role, telemetry_project=project,
+        )
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc

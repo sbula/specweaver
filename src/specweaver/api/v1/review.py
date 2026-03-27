@@ -37,7 +37,9 @@ def review_spec(
     from specweaver.standards.loader import load_standards_content
 
     try:
-        _, adapter, gen_config = create_llm_adapter(db)
+        _, adapter, gen_config = create_llm_adapter(
+            db, telemetry_project=body.project,
+        )
     except (LLMAdapterError, ValueError) as exc:
         raise SpecWeaverAPIError(
             detail=str(exc),
@@ -52,12 +54,18 @@ def review_spec(
         db, project_name=body.project, project_path=project_root,
     )
 
-    result = asyncio.run(
-        reviewer.review_spec(
-            abs_path,
-            constitution=constitution,
-            standards=standards,
-        ),
-    )
+    try:
+        result = asyncio.run(
+            reviewer.review_spec(
+                abs_path,
+                constitution=constitution,
+                standards=standards,
+            ),
+        )
+    finally:
+        from specweaver.llm.collector import TelemetryCollector
+
+        if isinstance(adapter, TelemetryCollector):
+            adapter.flush(db)
 
     return result.model_dump()

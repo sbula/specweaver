@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **3 430 collected** · 3 423 passed · 7 skipped · 112 source modules · 157 test files
+> **3 458 collected** · 3 451 passed · 7 skipped · 114 source modules · 164 test files
 > **Last updated**: 2026-03-27
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -29,14 +29,14 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 | Package | Src Files | Unit | Integ | E2E | Total |
 |---------|----------:|-----:|------:|----:|------:|
-| `cli/` | 10 | 256 | 94 | 38 | 388 |
+| `cli/` | 13 | 269 | 94 | 38 | 401 |
 | `config/` | 3 | 237 | 20 | 0 | 257 |
 | `context/` | 4 | 53 | 8 | 7 | 68 |
 | `drafting/` | 3 | 113 | 0 | 0 | 113 |
-| `flow/` | 8 | 294 | 35 | 13 | 342 |
+| `flow/` | 8 | 300 | 35 | 13 | 348 |
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
-| `llm/` | 12 | 274 | 7 | 2 | 283 |
+| `llm/` | 12 | 274 | 10 | 2 | 286 |
 | `loom/` | 15 | 571 | 14 | 0 | 585 |
 | `planning/` | 3 | 79 | 3 | 2 | 84 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
@@ -46,7 +46,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **112** | **2 959** | **240** | **82** | **3 430** |
+| **Total** | **114** | **2 972** | **243** | **82** | **3 458** |
 
 
 ---
@@ -102,6 +102,8 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `_print_summary()` pass/fail/warn counts | ✅ | ✅ | ⚪ | ⚪ | — |
 | `_require_llm_adapter()` loads adapter | ✅ | ✅ | ⚪ | ⚪ | — |
 | `_require_llm_adapter()` fallback chain (system-default → hardcoded) | ✅ | ⚪ | ⚪ | ⚪ | 3 tests in `test_helpers_llm_fallback.py` |
+
+| `_require_llm_adapter()` passes telemetry_project | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, 3 tests in `test_helpers_telemetry.py` |
 | `_load_topology()` loads graph | ✅ | ✅ | ✅ | ⚪ | E2E via topology/nhop/impact selector tests |
 | `_get_selector_map()` selector dispatch | ✅ | ❌ | ✅ | ⚪ | E2E via review --selector tests |
 | `_select_topology_contexts()` neighbor selection | ✅ | ❌ | ✅ | ⚪ | E2E via nhop/impact/no-topology tests |
@@ -198,7 +200,45 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `_maybe_bootstrap_constitution()` hint after scan | ✅ | ⚪ | ⚪ | ⚪ | Prints bootstrap cmd |
 | Scan end-to-end with auto-bootstrap | ✅ | ⚪ | ⚪ | ⚪ | auto mode triggers bootstrap |
 
-### 1.10 `validation.py`
+### 1.10 `usage_commands.py` *(Feature 3.12)*
+
+
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+
+|-------|:----:|:-----:|:---:|:----:|-------|
+
+| `usage` shows summary table | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+| `usage` no data shows message | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+| `usage --all` flag | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+| `usage --since` filter | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+| `usage` no active project shows hint | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+
+
+### 1.11 `cost_commands.py` *(Feature 3.12)*
+
+
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+
+|-------|:----:|:-----:|:---:|:----:|-------|
+
+| `costs` shows defaults | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+| `costs` shows overrides | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+| `costs set` override | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+| `costs reset` override | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+
+
+
+### 1.12 `validation.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
@@ -389,6 +429,12 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | runner evaluating AUTO gate `stop`/`retry` | ✅ | ✅ | ✅ | ⚪ | — |
 | runner evaluating gate HITL `park` | ✅ | ✅ | ✅ | ⚪ | — |
 | runner evaluating gate `loop_back` | ✅ | ✅ | ✅ | ⚪ | — |
+| `_flush_telemetry()` flushes on success | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+| `_flush_telemetry()` flushes on failure | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+| `_flush_telemetry()` skips non-collector | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+| `_flush_telemetry()` skips when db=None | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, bug fix |
+| `_flush_telemetry()` skips when llm=None | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
+| `resume()` flushes telemetry | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
 
 ### 5.7 `state.py` + `store.py`
 
@@ -551,6 +597,12 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Double flush returns 0 on second call | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 18 |
 | Partial flush failure preserves records | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 19 |
 | Cost overrides affect pricing | ✅ | ✅ | ✅ | ⚪ | Feature 3.12, story 25/30 |
+
+| Factory→collector→flush→DB roundtrip | ⚪ | ✅ | ⚪ | ⚪ | Feature 3.12, integration test |
+
+| Factory creates collector with project | ⚪ | ✅ | ⚪ | ⚪ | Feature 3.12, integration test |
+
+| Factory returns plain adapter without project | ⚪ | ✅ | ⚪ | ⚪ | Feature 3.12, integration test |
 
 ### 8.11 `factory.py` *(Feature 3.12)*
 

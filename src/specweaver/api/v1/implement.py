@@ -41,7 +41,9 @@ def implement_spec(
     from specweaver.standards.loader import load_standards_content
 
     try:
-        _, adapter, gen_config = create_llm_adapter(db)
+        _, adapter, gen_config = create_llm_adapter(
+            db, telemetry_project=body.project,
+        )
     except (LLMAdapterError, ValueError) as exc:
         raise SpecWeaverAPIError(
             detail=str(exc),
@@ -70,25 +72,31 @@ def implement_spec(
         db, project_name=body.project, project_path=project_root,
     )
 
-    # Generate code
-    asyncio.run(
-        generator.generate_code(
-            spec_path, code_path,
-            topology_contexts=topo_contexts,
-            constitution=constitution,
-            standards=standards,
-        ),
-    )
+    try:
+        # Generate code
+        asyncio.run(
+            generator.generate_code(
+                spec_path, code_path,
+                topology_contexts=topo_contexts,
+                constitution=constitution,
+                standards=standards,
+            ),
+        )
 
-    # Generate tests
-    asyncio.run(
-        generator.generate_tests(
-            spec_path, test_path,
-            topology_contexts=topo_contexts,
-            constitution=constitution,
-            standards=standards,
-        ),
-    )
+        # Generate tests
+        asyncio.run(
+            generator.generate_tests(
+                spec_path, test_path,
+                topology_contexts=topo_contexts,
+                constitution=constitution,
+                standards=standards,
+            ),
+        )
+    finally:
+        from specweaver.llm.collector import TelemetryCollector
+
+        if isinstance(adapter, TelemetryCollector):
+            adapter.flush(db)
 
     return ImplementResponse(
         code_path=str(code_path),

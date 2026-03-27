@@ -79,9 +79,15 @@ def draft(
         "[dim]Answer questions below. Press Enter to skip.[/dim]\n",
     )
 
-    result_path = asyncio.run(
-        drafter.draft(name, specs_dir, topology_contexts=topo_contexts),
-    )
+    try:
+        result_path = asyncio.run(
+            drafter.draft(name, specs_dir, topology_contexts=topo_contexts),
+        )
+    finally:
+        from specweaver.llm.collector import TelemetryCollector
+
+        if isinstance(adapter, TelemetryCollector):
+            adapter.flush(_core.get_db())
 
     _core.console.print(f"\n[green]Spec drafted:[/green] {result_path}")
     _core.console.print("[dim]Run 'sw check' to validate the drafted spec.[/dim]")
@@ -143,13 +149,20 @@ def review(
     _core.console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
     _core.console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
 
-    result = _execute_review(
-        reviewer, target_path, spec, topo_contexts,
-        constitution=_load_constitution_content(
-            project_path, spec_path=target_path,
-        ),
-        standards=_load_standards_content(project_path, target_path=target_path),
-    )
+    try:
+        result = _execute_review(
+            reviewer, target_path, spec, topo_contexts,
+            constitution=_load_constitution_content(
+                project_path, spec_path=target_path,
+            ),
+            standards=_load_standards_content(project_path, target_path=target_path),
+        )
+    finally:
+        from specweaver.llm.collector import TelemetryCollector
+
+        if isinstance(adapter, TelemetryCollector):
+            adapter.flush(_core.get_db())
+
     _display_review_result(result)
 
 

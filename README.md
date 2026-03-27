@@ -186,6 +186,17 @@ docker compose up -d
 | `sw standards clear --scope <name>` | Remove standards for a specific scope |
 | `sw standards scopes` | Show scope summary table (scopes, languages, categories, scan times) |
 
+### LLM Telemetry
+
+| Command | Description |
+|---|---|
+| `sw usage` | Show token usage summary for the active project |
+| `sw usage --all` | Show usage across all projects |
+| `sw usage --since <ISO>` | Filter usage records after a timestamp |
+| `sw costs` | Show current cost settings (defaults + overrides) |
+| `sw costs set <model> <in> <out>` | Set a per-model cost override (USD/1k tokens) |
+| `sw costs reset <model>` | Remove a cost override, revert to defaults |
+
 ## Validation Rules
 
 ### Spec Rules (S01–S11)
@@ -224,7 +235,7 @@ docker compose up -d
     specweaver.db               # SQLite: projects, LLM profiles, active state
 
 ├── src/specweaver/
-│   ├── cli/                    # Typer CLI package (11 submodules)
+│   ├── cli/                    # Typer CLI package (13 submodules)
 │   ├── logging.py              # Logging setup (RotatingFileHandler, per-project logs)
 │   ├── config/                 # SQLite database, settings, migrations
 │   ├── context/                # Context providers (HITL, inferrer, analyzers)
@@ -232,7 +243,7 @@ docker compose up -d
 │   ├── flow/                   # Pipeline engine: models, parser, runner, state, handlers, store
 │   ├── graph/                  # TopologyGraph, dependency selectors
 │   ├── implementation/         # Code generator
-│   ├── llm/                    # Gemini adapter, models, errors
+│   ├── llm/                    # Gemini adapter, models, errors, telemetry collector
 │   ├── loom/                   # Dev environment interaction layer
 │   │   ├── atoms/              # Engine-level building blocks
 │   │   │   ├── filesystem/     # Filesystem atom (engine-level)
@@ -248,7 +259,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 3353+ tests (unit, integration, E2E)
+├── tests/                      # 3451+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
