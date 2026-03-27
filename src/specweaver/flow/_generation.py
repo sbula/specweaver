@@ -14,28 +14,33 @@ from specweaver.flow.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
     from specweaver.flow.models import PipelineStep
-    from specweaver.llm.models import GenerationConfig
+    from specweaver.llm.models import GenerationConfig, TaskType
 
 logger = logging.getLogger(__name__)
 
 
 def _gen_config_from_context(
     context: RunContext, *, temperature: float = 0.2,
+    task_type: TaskType | None = None,
 ) -> GenerationConfig:
     """Build GenerationConfig from RunContext, falling back to defaults."""
-    from specweaver.llm.models import GenerationConfig
+    from specweaver.llm.models import GenerationConfig, TaskType as _TaskType
+
+    resolved_type = task_type if task_type is not None else _TaskType.IMPLEMENT
 
     if context.config is not None:
         return GenerationConfig(
             model=context.config.llm.model,
             temperature=temperature,
             max_output_tokens=context.config.llm.max_output_tokens,
+            task_type=resolved_type,
         )
     # Fallback: no config set (e.g. test harness)
     return GenerationConfig(
         model="gemini-3-flash-preview",
         temperature=temperature,
         max_output_tokens=4096,
+        task_type=resolved_type,
     )
 
 
@@ -131,19 +136,21 @@ class PlanSpecHandler:
 
     def _build_config(self, context: RunContext) -> GenerationConfig:
         """Build GenerationConfig from RunContext, falling back to defaults."""
-        from specweaver.llm.models import GenerationConfig
+        from specweaver.llm.models import GenerationConfig, TaskType
 
         if context.config is not None:
             return GenerationConfig(
                 model=context.config.llm.model,
                 temperature=0.3,
                 max_output_tokens=context.config.llm.max_output_tokens,
+                task_type=TaskType.PLAN,
             )
         # Fallback: no config set (e.g. test harness)
         return GenerationConfig(
             model="gemini-3-flash-preview",
             temperature=0.3,
             max_output_tokens=4096,
+            task_type=TaskType.PLAN,
         )
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:

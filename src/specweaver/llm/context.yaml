@@ -28,6 +28,9 @@ exposes:
   - LLMResponse
   - LLMError
   - PromptBuilder
+  - TaskType
+  - TelemetryCollector
+  - UsageRecord
 
 # -- Operational Metadata --------------------------------------------------
 operational:

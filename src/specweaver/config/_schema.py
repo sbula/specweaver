@@ -92,3 +92,28 @@ ALTER TABLE projects ADD COLUMN auto_bootstrap_constitution TEXT NOT NULL DEFAUL
 SCHEMA_V8 = """\
 ALTER TABLE projects ADD COLUMN stitch_mode TEXT NOT NULL DEFAULT 'off';
 """
+
+SCHEMA_V9 = """\
+CREATE TABLE IF NOT EXISTS llm_usage_log (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp         TEXT    NOT NULL,
+    project_name      TEXT    NOT NULL,
+    task_type         TEXT    NOT NULL,
+    model             TEXT    NOT NULL,
+    provider          TEXT    NOT NULL DEFAULT '',
+    prompt_tokens     INTEGER NOT NULL DEFAULT 0,
+    completion_tokens INTEGER NOT NULL DEFAULT 0,
+    total_tokens      INTEGER NOT NULL DEFAULT 0,
+    estimated_cost    REAL    NOT NULL DEFAULT 0.0,
+    duration_ms       INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_usage_project ON llm_usage_log(project_name);
+CREATE INDEX IF NOT EXISTS idx_usage_task_type ON llm_usage_log(task_type);
+
+CREATE TABLE IF NOT EXISTS llm_cost_overrides (
+    model_pattern      TEXT PRIMARY KEY,
+    input_cost_per_1k  REAL NOT NULL,
+    output_cost_per_1k REAL NOT NULL,
+    updated_at         TEXT NOT NULL
+);
+"""

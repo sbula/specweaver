@@ -25,18 +25,20 @@ logger = logging.getLogger(__name__)
 
 def _review_config_from_context(context: RunContext) -> GenerationConfig:
     """Build GenerationConfig from RunContext, falling back to defaults."""
-    from specweaver.llm.models import GenerationConfig
+    from specweaver.llm.models import GenerationConfig, TaskType
 
     if context.config is not None:
         return GenerationConfig(
             model=context.config.llm.model,
             temperature=0.3,
             max_output_tokens=context.config.llm.max_output_tokens,
+            task_type=TaskType.REVIEW,
         )
     return GenerationConfig(
         model="gemini-3-flash-preview",
         temperature=0.3,
         max_output_tokens=4096,
+        task_type=TaskType.REVIEW,
     )
 
 

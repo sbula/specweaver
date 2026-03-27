@@ -84,7 +84,7 @@ class TestSchemaV2Migration:
             ).fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 8  # V2, V3, V4, V5, V6, V7, V8 all applied
+        assert version[0] == 9  # V2, V3, V4, V5, V6, V7, V8 all applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -96,7 +96,7 @@ class TestSchemaV2Migration:
             version = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 8  # V2, V3, V4, V5, V6, V7, V8 all applied
+        assert version[0] == 9  # V2, V3, V4, V5, V6, V7, V8 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -234,7 +234,7 @@ class TestSchemaV3Migration:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 8  # v3, v4, v5, v6, v7, v8 all applied
+        assert version[0] == 9  # v3, v4, v5, v6, v7, v8 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -352,7 +352,7 @@ class TestSchemaV3ToV4Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 8  # v4, v5, v6, v7, v8 all applied
+        assert version[0] == 9  # v4, v5, v6, v7, v8 all applied
 
 
 # ===========================================================================
@@ -482,12 +482,12 @@ class TestDomainProfile:
         assert db.get_domain_profile("myapp") == "WEB-APP"
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 8 after all migrations."""
+        """Schema version is 9 after all migrations."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 8
+            assert row[0] == 9
 
 
 class TestSchemaV4ToV5Upgrade:
@@ -537,7 +537,7 @@ class TestSchemaV4ToV5Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 8  # v5, v6, v7, v8 all applied
+        assert version[0] == 9  # v5, v6, v7, v8 all applied
 
 
 # ===========================================================================
@@ -649,7 +649,7 @@ class TestSchemaV6ToV7Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 8
+        assert version[0] == 9
 
 
 class TestSchemaV7ToV8Upgrade:
@@ -703,4 +703,175 @@ class TestSchemaV7ToV8Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 8
+        assert version[0] == 9
+
+
+class TestSchemaV8ToV9Upgrade:
+    """Simulate opening a v8-only DB and verify v9 migration kicks in."""
+
+    @pytest.fixture()
+    def db_path(self, tmp_path: Path) -> Path:
+        return tmp_path / "upgrade_v8_v9.db"
+
+    def test_v8_to_v9_upgrade(self, db_path: Path):
+        """Simulate a v8 DB and verify v9 migration creates usage tables."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import (
+            _SCHEMA_V1,
+            _SCHEMA_V2,
+            _SCHEMA_V3,
+            _SCHEMA_V4,
+            _SCHEMA_V5,
+            _SCHEMA_V6,
+            _SCHEMA_V7,
+            _SCHEMA_V8,
+            Database,
+        )
+
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.executescript(_SCHEMA_V3)
+        conn.executescript(_SCHEMA_V4)
+        conn.executescript(_SCHEMA_V5)
+        conn.executescript(_SCHEMA_V6)
+        conn.executescript(_SCHEMA_V7)
+        conn.executescript(_SCHEMA_V8)
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) "
+            "VALUES (8, '2026-01-01T00:00:00Z')"
+        )
+        conn.commit()
+        conn.close()
+
+        db = Database(db_path)
+        with db.connect() as conn2:
+            version = conn2.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+            tables = conn2.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name IN ('llm_usage_log', 'llm_cost_overrides')"
+            ).fetchall()
+        assert version[0] == 9
+        table_names = {r[0] for r in tables}
+        assert "llm_usage_log" in table_names
+        assert "llm_cost_overrides" in table_names
+
+
+class TestUsageLogCrud:
+    """Tests for log_usage() and query methods."""
+
+    def test_log_usage_insert(self, db):
+        db.log_usage({
+            "timestamp": "2026-03-27T00:00:00Z",
+            "project_name": "proj",
+            "task_type": "draft",
+            "model": "gemini-3-flash-preview",
+            "provider": "gemini",
+            "prompt_tokens": 100,
+            "completion_tokens": 50,
+            "total_tokens": 150,
+            "estimated_cost_usd": 0.0003,
+            "duration_ms": 500,
+        })
+        with db.connect() as conn:
+            rows = conn.execute("SELECT * FROM llm_usage_log").fetchall()
+        assert len(rows) == 1
+        assert rows[0]["model"] == "gemini-3-flash-preview"
+
+    def test_log_usage_multiple_rows(self, db):
+        for i in range(3):
+            db.log_usage({
+                "timestamp": f"2026-03-27T00:0{i}:00Z",
+                "project_name": "proj",
+                "task_type": "review",
+                "model": "model-x",
+                "provider": "p",
+            })
+        with db.connect() as conn:
+            count = conn.execute("SELECT COUNT(*) FROM llm_usage_log").fetchone()[0]
+        assert count == 3
+
+    def test_get_usage_summary_all(self, db):
+        db.log_usage({
+            "timestamp": "2026-03-27T00:00:00Z",
+            "project_name": "p1",
+            "task_type": "draft",
+            "model": "model-a",
+            "provider": "x",
+            "total_tokens": 100,
+            "estimated_cost_usd": 0.01,
+        })
+        db.log_usage({
+            "timestamp": "2026-03-27T00:01:00Z",
+            "project_name": "p1",
+            "task_type": "draft",
+            "model": "model-a",
+            "provider": "x",
+            "total_tokens": 200,
+            "estimated_cost_usd": 0.02,
+        })
+        result = db.get_usage_summary()
+        assert len(result) == 1
+        assert result[0]["call_count"] == 2
+        assert result[0]["total_tokens"] == 300
+
+    def test_get_usage_summary_filtered_by_project(self, db):
+        db.log_usage({"timestamp": "2026-03-27T00:00:00Z", "project_name": "p1",
+                      "task_type": "draft", "model": "m", "provider": "x"})
+        db.log_usage({"timestamp": "2026-03-27T00:01:00Z", "project_name": "p2",
+                      "task_type": "draft", "model": "m", "provider": "x"})
+        result = db.get_usage_summary(project="p1")
+        assert len(result) == 1
+        assert result[0]["call_count"] == 1
+
+    def test_get_usage_by_task_type(self, db):
+        db.log_usage({"timestamp": "2026-03-27T00:00:00Z", "project_name": "p1",
+                      "task_type": "draft", "model": "m", "provider": "x",
+                      "total_tokens": 100, "estimated_cost_usd": 0.01})
+        db.log_usage({"timestamp": "2026-03-27T00:01:00Z", "project_name": "p1",
+                      "task_type": "review", "model": "m", "provider": "x",
+                      "total_tokens": 200, "estimated_cost_usd": 0.03})
+        result = db.get_usage_by_task_type("p1")
+        assert len(result) == 2
+        types = {r["task_type"] for r in result}
+        assert types == {"draft", "review"}
+
+    def test_get_usage_summary_empty(self, db):
+        assert db.get_usage_summary() == []
+
+
+class TestCostOverrideCrud:
+    """Tests for cost override CRUD methods."""
+
+    def test_get_cost_overrides_empty(self, db):
+        assert db.get_cost_overrides() == {}
+
+    def test_set_and_get_override(self, db):
+        db.set_cost_override("gpt-4o", 0.005, 0.015)
+        overrides = db.get_cost_overrides()
+        assert "gpt-4o" in overrides
+        assert overrides["gpt-4o"] == (0.005, 0.015)
+
+    def test_override_upsert(self, db):
+        db.set_cost_override("gpt-4o", 0.005, 0.015)
+        db.set_cost_override("gpt-4o", 0.010, 0.030)
+        overrides = db.get_cost_overrides()
+        assert overrides["gpt-4o"] == (0.010, 0.030)
+
+    def test_delete_override(self, db):
+        db.set_cost_override("gpt-4o", 0.005, 0.015)
+        db.delete_cost_override("gpt-4o")
+        assert db.get_cost_overrides() == {}
+
+    def test_delete_nonexistent_is_noop(self, db):
+        db.delete_cost_override("nonexistent")  # Should not raise
+
+    def test_multiple_overrides(self, db):
+        db.set_cost_override("gpt-4o", 0.005, 0.015)
+        db.set_cost_override("claude-3", 0.003, 0.012)
+        overrides = db.get_cost_overrides()
+        assert len(overrides) == 2

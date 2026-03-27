@@ -26,6 +26,22 @@ class Role(enum.StrEnum):
     ASSISTANT = "assistant"
 
 
+class TaskType(enum.StrEnum):
+    """Classification of an LLM call's purpose (telemetry metadata).
+
+    Used by the TelemetryCollector to label each usage record.
+    Does not affect generation behavior.
+    """
+
+    DRAFT = "draft"
+    REVIEW = "review"
+    PLAN = "plan"
+    IMPLEMENT = "implement"
+    VALIDATE = "validate"
+    CHECK = "check"
+    UNKNOWN = "unknown"
+
+
 class Message(BaseModel):
     """A single message in a conversation."""
 
@@ -46,6 +62,7 @@ class GenerationConfig(BaseModel):
     system_instruction: str | None = None
     tools: list[ToolDefinition] | None = None  # Provider-agnostic tool definitions
     max_tool_rounds: int = 5  # Max agentic loop iterations
+    task_type: TaskType = TaskType.UNKNOWN  # Telemetry metadata (3.12)
     # Future: top_p, stop_sequences, seed
 
 

@@ -27,6 +27,7 @@ from pathlib import Path
 from specweaver.config._db_config_mixin import ConfigSettingsMixin
 from specweaver.config._db_extensions_mixin import DataExtensionsMixin
 from specweaver.config._db_llm_mixin import LlmProfilesMixin
+from specweaver.config._db_telemetry_mixin import TelemetryMixin
 from specweaver.config._schema import (
     DEFAULT_PROFILES,
     SCHEMA_V1,
@@ -37,6 +38,7 @@ from specweaver.config._schema import (
     SCHEMA_V6,
     SCHEMA_V7,
     SCHEMA_V8,
+    SCHEMA_V9,
 )
 
 # Backward-compatible aliases (tests import with underscore prefix)
@@ -48,6 +50,7 @@ _SCHEMA_V5 = SCHEMA_V5
 _SCHEMA_V6 = SCHEMA_V6
 _SCHEMA_V7 = SCHEMA_V7
 _SCHEMA_V8 = SCHEMA_V8
+_SCHEMA_V9 = SCHEMA_V9
 _DEFAULT_PROFILES = DEFAULT_PROFILES
 
 logger = logging.getLogger(__name__)
@@ -55,7 +58,7 @@ logger = logging.getLogger(__name__)
 _PROJECT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 
-class Database(ConfigSettingsMixin, LlmProfilesMixin, DataExtensionsMixin):
+class Database(ConfigSettingsMixin, LlmProfilesMixin, DataExtensionsMixin, TelemetryMixin):
     """SpecWeaver SQLite configuration database.
 
     Args:
@@ -176,6 +179,18 @@ class Database(ConfigSettingsMixin, LlmProfilesMixin, DataExtensionsMixin):
                 )
                 logger.info(
                     "Database schema migrated to v8 (stitch_mode)",
+                )
+
+            if current_version < 9:
+                with suppress(Exception):
+                    conn.executescript(SCHEMA_V9)
+                conn.execute(
+                    "INSERT OR REPLACE INTO schema_version "
+                    "(version, applied_at) VALUES (?, ?)",
+                    (9, _now_iso()),
+                )
+                logger.info(
+                    "Database schema migrated to v9 (llm_usage_log, llm_cost_overrides)",
                 )
 
 

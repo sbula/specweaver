@@ -11,12 +11,11 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from specweaver.config.database import Database
     from specweaver.config.settings import SpecWeaverSettings
-    from specweaver.llm.adapters.gemini import GeminiAdapter
     from specweaver.llm.models import GenerationConfig
 
 logger = logging.getLogger(__name__)
@@ -30,18 +29,23 @@ def create_llm_adapter(
     db: Database,
     *,
     llm_role: str = "draft",
-) -> tuple[SpecWeaverSettings, GeminiAdapter, GenerationConfig]:
+    telemetry_project: str | None = None,
+) -> tuple[SpecWeaverSettings, Any, GenerationConfig]:
     """Create and validate an LLM adapter from project settings.
 
     Loads settings for the active project, creates a ``GeminiAdapter``,
-    and verifies it has valid credentials.
+    and verifies it has valid credentials.  When *telemetry_project* is
+    provided, the adapter is wrapped in a ``TelemetryCollector`` so
+    every call records usage telemetry.
 
     Args:
         db: Database instance for querying project settings.
         llm_role: Which LLM profile role to use (e.g. "draft", "review").
+        telemetry_project: If set, wraps the adapter in a
+            ``TelemetryCollector`` for this project.
 
     Returns:
-        Tuple of (settings, adapter, generation_config).
+        Tuple of (settings, adapter_or_collector, generation_config).
 
     Raises:
         LLMAdapterError: If no API key is configured or the adapter
@@ -71,11 +75,25 @@ def create_llm_adapter(
             ),
         )
 
-    adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
+    adapter: Any = GeminiAdapter(api_key=settings.llm.api_key or None)
 
     if not adapter.available():
         msg = "No API key configured. Set GEMINI_API_KEY environment variable."
         raise LLMAdapterError(msg)
+
+    # Wrap in telemetry collector if project is specified
+    if telemetry_project:
+        from specweaver.llm.collector import TelemetryCollector
+        from specweaver.llm.telemetry import CostEntry
+
+        try:
+            raw_overrides = db.get_cost_overrides()
+            cost_overrides = {
+                k: CostEntry(*v) for k, v in raw_overrides.items()
+            } if raw_overrides else None
+        except Exception:
+            cost_overrides = None
+        adapter = TelemetryCollector(adapter, telemetry_project, cost_overrides)
 
     gen_config = GenerationConfig(
         model=settings.llm.model,
@@ -84,3 +102,4 @@ def create_llm_adapter(
     )
 
     return settings, adapter, gen_config
+
