@@ -90,9 +90,14 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `validation/rules/spec/s01_one_sentence.py` through `s11_...py` — individual rule implementations. Each is a pure function: `(spec_text) → findings[]`.
 - `validation/rules/code/c01_...py` through `c08_...py` — code quality rules.
 
-**LLM adapter** (Gemini)
+**LLM adapter** (Multi-Provider)
 - `llm/adapter.py` — `LLMAdapter` abstract base class (provider-agnostic contract). In `llm/` (adapter archetype) because it wraps an external service.
-- `llm/adapters/gemini.py` — `GeminiAdapter`: Gemini API calls, error translation, response parsing. In `llm/adapters/` (sub-module) to isolate provider-specific code.
+- `llm/adapters/__init__.py` — Auto-discovery registry. Scans and registers adapters dynamically at import.
+- `llm/adapters/gemini.py` — `GeminiAdapter`: Gemini API calls, error translation, response parsing.
+- `llm/adapters/openai.py` — `OpenAIAdapter`: OpenAI SDK wrapper with full tool use.
+- `llm/adapters/anthropic.py` — `AnthropicAdapter`: Anthropic SDK wrapper with full tool use.
+- `llm/adapters/mistral.py` — `MistralAdapter`: Mistral SDK wrapper.
+- `llm/adapters/qwen.py` — `QwenAdapter`: Qwen via OpenAI-compatible endpoint.
 - `llm/prompt_builder.py` — `PromptBuilder`: XML-tagged block assembly with token budgets. In `llm/` because prompt construction is part of the LLM abstraction.
 - `llm/models.py` — `LLMResponse`, `ToolDefinition`, `TaskType`, `GenerationConfig`. Data models for the LLM contract.
 - `llm/telemetry.py` — `estimate_cost()`, `create_usage_record()`, `CostEntry`, `UsageRecord`. Pure-logic cost estimation with configurable pricing tables. In `llm/` because it's LLM-specific pricing logic. *(Feature 3.12)*

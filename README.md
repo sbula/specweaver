@@ -24,6 +24,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Standards auto-discovery** — Analyze codebase (Python, JavaScript, TypeScript) to extract naming, error handling, type hints/jsdoc/tsdoc, import, async, and test patterns. Multi-scope support (monorepo-aware), Human-in-the-Loop review, optional async LLM best-practice comparison, and token-capped injection into LLM prompts
 - **UI Mockup Generation** — Auto-detects UI/Frontend requirements in specs and calls Google Stitch MCP to generate and attach visual mockups to standard implementation plans
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
+- **Multi-provider support** — Auto-discovering adapter registry supporting Gemini, OpenAI (GPT-5.4), Anthropic (Claude 4.6), Mistral (Small 4), and Qwen (3.5)
 
 ## Quickstart
 
@@ -259,7 +260,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 3451+ tests (unit, integration, E2E)
+├── tests/                      # 3500+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
@@ -405,7 +406,7 @@ uv run pytest --cov=specweaver --cov-report=term-missing
 | Language | Python ≥ 3.11 |
 | Package manager | uv |
 | CLI framework | Typer + Rich |
-| LLM SDK | google-genai (Gemini) |
+| LLM SDK | google-genai, openai, anthropic, mistralai |
 | Config store | SQLite (WAL mode) + Pydantic |
 | Legacy config | ruamel.yaml (migration only) |
 | Testing | pytest + pytest-asyncio |

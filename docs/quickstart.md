@@ -39,13 +39,20 @@ uv sync --all-extras
 
 ## 2. Set Your API Key
 
-```bash
-# Linux/macOS
-export GEMINI_API_KEY="your-key-here"
+SpecWeaver defaults to Gemini, but also supports OpenAI, Anthropic, Mistral, and Qwen via auto-discovery.
 
-# Windows (PowerShell)
-$env:GEMINI_API_KEY = "your-key-here"
+```bash
+# Set the key for your preferred provider:
+export GEMINI_API_KEY="your-gemini-key"
+# export OPENAI_API_KEY="your-openai-key"
+# export ANTHROPIC_API_KEY="your-anthropic-key"
+# export MISTRAL_API_KEY="your-mistral-key"
+# export QWEN_API_KEY="your-qwen-key"
 ```
+
+*Note: For Windows PowerShell, use `$env:GEMINI_API_KEY="your-key-here"`.*
+
+If you use a non-Gemini provider, configure it in step 3.
 
 ## 3. Initialize a Project
 
@@ -63,6 +70,15 @@ You should see:
 
 ```
 ✔ Project 'my-app' initialized at ./my-project
+```
+
+### 3b. Configure a Different Provider (Optional)
+
+If you are not using Gemini, tell the project to use your preferred provider constraint:
+
+```bash
+sw config set-provider openai
+sw config set-model gpt-5.4-mini
 ```
 
 ## 4. Draft a Spec
