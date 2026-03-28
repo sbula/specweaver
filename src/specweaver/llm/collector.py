@@ -24,6 +24,7 @@ from specweaver.llm.telemetry import CostEntry, UsageRecord, create_usage_record
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from specweaver.llm.adapters.base import LLMAdapter
     from specweaver.llm.models import GenerationConfig, Message
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class TelemetryCollector:
 
     def __init__(
         self,
-        adapter: Any,
+        adapter: "LLMAdapter",
         project: str,
         cost_overrides: dict[str, CostEntry] | None = None,
     ) -> None:

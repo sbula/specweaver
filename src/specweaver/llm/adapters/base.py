@@ -4,18 +4,20 @@
 """LLM adapter — abstract interface for LLM providers.
 
 All LLM interactions go through this interface.
-MVP: Gemini adapter. Future: OpenAI, Anthropic, Mistral, Ollama, vLLM, Qwen.
+Concrete adapters are self-describing: each declares its own
+provider_name, api_key_env_var, and default_costs as class attributes.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
     from specweaver.llm.models import GenerationConfig, LLMResponse, Message
+    from specweaver.llm.telemetry import CostEntry
 
 
 class LLMAdapter(ABC):
@@ -24,13 +26,18 @@ class LLMAdapter(ABC):
     All methods are async to support non-blocking I/O.
     Concrete adapters implement provider-specific API calls
     but expose the same interface.
+
+    Subclasses MUST override the metadata class attributes:
+    - ``provider_name``: registry key (e.g. ``"gemini"``, ``"openai"``)
+    - ``api_key_env_var``: environment variable name for the API key
+    - ``default_costs``: ``{model_name: CostEntry}`` for cost estimation
     """
 
-    @property
-    @abstractmethod
-    def provider_name(self) -> str:
-        """Provider identifier (e.g., 'gemini', 'openai', 'anthropic')."""
-        ...
+    # --- Metadata (subclasses MUST override) ---
+    provider_name: str = ""
+    api_key_env_var: str = ""
+    default_costs: ClassVar[dict[str, CostEntry]] = {}
+
 
     @abstractmethod
     async def generate(

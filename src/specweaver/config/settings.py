@@ -30,6 +30,7 @@ class LLMSettings(BaseModel):
     temperature: float = 0.7
     max_output_tokens: int = 4096
     response_format: Literal["text", "json"] = "text"
+    provider: str = "gemini"
     api_key: str = ""
 
 
@@ -111,12 +112,16 @@ def load_settings(
         msg = f"System default profile not found in database. Cannot load settings for '{project_name}'."
         raise ValueError(msg)
 
+    provider_val = str(profile.get("provider", "gemini"))
+    env_key = f"{provider_val.upper()}_API_KEY"
+
     llm = LLMSettings(
         model=str(profile["model"]),
         temperature=float(profile["temperature"]),  # type: ignore[arg-type]
         max_output_tokens=int(str(profile["max_output_tokens"])),
         response_format=str(profile["response_format"]),  # type: ignore[arg-type]
-        api_key=os.environ.get("GEMINI_API_KEY", ""),
+        provider=provider_val,
+        api_key=os.environ.get(env_key, ""),
     )
 
     stitch_mode = db.get_stitch_mode(project_name)
@@ -216,6 +221,7 @@ def migrate_legacy_config(
     temperature = llm_raw.get("temperature", 0.7)
     max_tokens = llm_raw.get("max_output_tokens", 4096)
     resp_format = llm_raw.get("response_format", "text")
+    provider = llm_raw.get("provider", str(sys_profile.get("provider", "gemini")))
 
     profile_id = db.create_llm_profile(
         name="legacy-import",
@@ -224,6 +230,7 @@ def migrate_legacy_config(
         temperature=temperature,
         max_output_tokens=max_tokens,
         response_format=resp_format,
+        provider=provider,
     )
 
     # Link this profile for all standard roles

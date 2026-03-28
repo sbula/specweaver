@@ -106,7 +106,7 @@ python -m pytest -m unit -q   # Run unit tests</code></pre>
   <tr><td><code>flow/</code></td><td>★ Pipeline engine (runner, gates, state, handlers)</td></tr>
   <tr><td><code>graph/</code></td><td>Project dependency graph (import analysis)</td></tr>
   <tr><td><code>implementation/</code></td><td>Code generation from specs</td></tr>
-  <tr><td><code>llm/</code></td><td>LLM adapter layer (Gemini, etc.), prompt builder, mention scanner (auto-detect file references)</td></tr>
+  <tr><td><code>llm/</code></td><td>LLM adapter layer (auto-discovery registry, Gemini, OpenAI, etc.), token/cost telemetry, prompt builder, mention scanner</td></tr>
   <tr><td><code>loom/</code></td><td>★ Interaction layer — atoms, tools, commons</td></tr>
   <tr><td><code>pipelines/</code></td><td>YAML pipeline definitions</td></tr>
   <tr><td><code>project/</code></td><td>Project scaffolding, detection, and constitution loader</td></tr>
@@ -150,7 +150,7 @@ graph TB
         REV["Review<br/>Engine"]
         DRA["Drafting<br/>Engine"]
         IMP["Implementation<br/>Engine"]
-        LLM["LLM Adapter<br/>(Gemini)"]
+        LLM["LLM Adapter Layer<br/>(Registry, Telemetry)"]
     end
 
     subgraph "Loom (Environment Interaction)"
@@ -1117,6 +1117,8 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td>Domain profiles as bulk-write</td><td>Profiles write to the existing DB override layer (not a new cascade layer) → <code>sw config set</code> still works on top, override resolution unchanged</td></tr>
   <tr><td>Hardcoded profile dicts</td><td>Profiles are Python dicts in <code>profiles.py</code> → versioned with code, quick-win over YAML/DB-stored profiles (deferred to 3.3b)</td></tr>
   <tr><td>set-profile overwrites</td><td>Applying a profile DELETEs all existing overrides first → predictable state, no leftover rules from previous profile</td></tr>
+  <tr><td>Self-describing LLM Adapters</td><td>Auto-discovery registry scans package at import → adding a new provider requires exactly one file without touching central maps</td></tr>
+  <tr><td>Cost Telemetry Layering</td><td>Lookup: db overrides → adapter defaults. Ensures system defaults never overwrite user's DB overrides during upgrades</td></tr>
 </table>
 
 <!-- ================================================================== -->

@@ -75,7 +75,7 @@ llm/adapters/__init__.py
 
 ---
 
-### 1. `llm/adapters/base.py` — Adapter ABC: Add Metadata Attributes
+### 1. `llm/adapters/base.py` — Adapter ABC: Add Metadata Attributes ✅ DONE
 
 #### [MODIFY] [base.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/adapters/base.py)
 
@@ -216,7 +216,7 @@ class QwenAdapter(OpenAIAdapter):
 
 ---
 
-### 3. `llm/adapters/__init__.py` — Auto-Discovery Registry
+### 3. `llm/adapters/__init__.py` — Auto-Discovery Registry ✅ DONE
 
 #### [MODIFY] [__init__.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/adapters/__init__.py)
 
@@ -349,7 +349,7 @@ exposes:
 
 ---
 
-### 4. `llm/telemetry.py` — Remove Hardcoded Cost Table
+### 4. `llm/telemetry.py` — Remove Hardcoded Cost Table ✅ DONE
 
 #### [MODIFY] [telemetry.py](file:///c:/development/pitbula/specweaver/src/specweaver/llm/telemetry.py)
 
@@ -389,7 +389,7 @@ def estimate_cost(model, usage, overrides=None) -> float:
 
 ---
 
-### 5. `config/` — Provider Configuration
+### 5. `config/` — Provider Configuration ✅ DONE
 
 #### [MODIFY] [settings.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/settings.py)
 

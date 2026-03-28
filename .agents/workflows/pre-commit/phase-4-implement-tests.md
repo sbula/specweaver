@@ -14,3 +14,6 @@ description: "Phase 4: Implement missing tests identified in Phase 3."
      python -m ruff check tests/
      ```
      Fix any errors immediately!
+
+> [!IMPORTANT]
+> **NO HITL GATE HERE:** Once tests are implemented and lint-clean, update `task.md` and PROCEED IMMEDIATELY to Phase 5. Do NOT stop to ask the user for permission to continue.

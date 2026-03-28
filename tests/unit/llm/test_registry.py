@@ -1,0 +1,87 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+"""Tests for LLM Adapter auto-discovery registry."""
+
+from typing import ClassVar
+
+import pytest
+
+from unittest.mock import patch
+
+from specweaver.llm.adapters import (
+    _DISCOVERED,
+    _ensure_discovered,
+    get_adapter_class,
+    get_all_adapters,
+    register_adapter,
+)
+from specweaver.llm.adapters.base import LLMAdapter
+
+
+class DummyAdapter(LLMAdapter):
+    """A dummy adapter for testing."""
+    provider_name = "dummy"
+    api_key_env_var = "DUMMY_KEY"
+    default_costs: ClassVar[dict] = {}
+
+    async def generate(self, messages, config):
+        pass
+
+    async def generate_stream(self, messages, config):
+        yield ""
+
+    def available(self) -> bool:
+        return True
+
+    async def count_tokens(self, text, model):
+        return 0
+
+
+def test_registry_has_gemini_adapter():
+    """The gemini adapter should be automatically registered."""
+    adapters = get_all_adapters()
+    assert "gemini" in adapters
+    assert adapters["gemini"] is not DummyAdapter
+
+
+def test_get_adapter_class_success():
+    """Can retrieve an adapter class by its provider name."""
+    cls = get_adapter_class("gemini")
+    assert cls.__name__ == "GeminiAdapter"
+
+
+def test_get_adapter_class_not_found():
+    """Raises ValueError if the adapter is not found."""
+    with pytest.raises(ValueError, match="Unknown LLM provider: 'unknown'"):
+        get_adapter_class("unknown")
+
+
+def test_register_adapter():
+    """Can manually register an adapter."""
+    register_adapter(DummyAdapter)
+
+    cls = get_adapter_class("dummy")
+    assert cls is DummyAdapter
+
+    # Clean up (optional but good practice)
+    adapters = get_all_adapters()
+    if "dummy" in adapters:
+        del adapters["dummy"]
+
+
+@patch("specweaver.llm.adapters.importlib.import_module")
+def test_ensure_discovered_swallows_syntax_error(mock_import):
+    """If a dynamic adapter has a SyntaxError or other generic Exception, the registry shouldn't crash."""
+    # Reset internal discovery state
+    import specweaver.llm.adapters as registry_module
+    registry_module._DISCOVERED = False
+
+    # Force a SyntaxError unconditionally during dynamic import
+    mock_import.side_effect = SyntaxError("invalid syntax")
+
+    # Should not raise
+    _ensure_discovered()
+    
+    # Needs to flip back discovered flag otherwise later tests in session complain
+    assert registry_module._DISCOVERED is True

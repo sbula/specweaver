@@ -111,20 +111,28 @@ class TestGetPresets:
         assert presets == {}
 
     # --- Unchanged rules return empty ---
-    @pytest.mark.parametrize("rule_id", ["S02", "S06", "S07", "S09", "S10", "S11"])
-    def test_unchanged_rules_return_empty_for_feature(self, rule_id: str) -> None:
+    @pytest.mark.parametrize(
+        "rule_id", ["S02", "S06", "S07", "S09", "S10", "S11"]
+    )
+    def test_unchanged_rules_return_empty_for_feature(
+        self, rule_id: str
+    ) -> None:
         presets = get_presets(rule_id, SpecKind.FEATURE)
         assert presets == {}
 
-    @pytest.mark.parametrize("rule_id", ["S02", "S06", "S07", "S09", "S10", "S11"])
-    def test_unchanged_rules_return_empty_for_component(self, rule_id: str) -> None:
+    @pytest.mark.parametrize(
+        "rule_id", ["S02", "S06", "S07", "S09", "S10", "S11"]
+    )
+    def test_unchanged_rules_return_empty_for_component(
+        self, rule_id: str
+    ) -> None:
         presets = get_presets(rule_id, SpecKind.COMPONENT)
         assert presets == {}
 
     # --- None kind returns empty (backwards compat) ---
     @pytest.mark.parametrize("rule_id", ["S01", "S03", "S04", "S05", "S08"])
     def test_none_kind_returns_empty(self, rule_id: str) -> None:
-        """When kind is None, get_presets returns empty dict (use code defaults)."""
+        """When kind is None, returns empty dict (use code defaults)."""
         presets = get_presets(rule_id, None)
         assert presets == {}
 
@@ -211,7 +219,10 @@ class TestHeaderPatternRegex:
         from specweaver.validation.spec_kind import _HEADER_PATTERNS
 
         pattern = _HEADER_PATTERNS[SpecKind.COMPONENT]
-        text = "## 1. Purpose\n\nFirst section.\n\n## 2. Contract\n\nSecond section.\n"
+        text = (
+            "## 1. Purpose\n\nFirst section.\n\n"
+            "## 2. Contract\n\nSecond section.\n"
+        )
         match = pattern.search(text)
         assert match is not None
         assert "First section" in match.group(1)

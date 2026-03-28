@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class TelemetryMixin:
     # Usage logging
     # ------------------------------------------------------------------
 
-    def log_usage(self, record: dict) -> None:
+    def log_usage(self, record: dict[str, Any]) -> None:
         """Insert one usage record into ``llm_usage_log``.
 
         Args:
@@ -54,7 +55,7 @@ class TelemetryMixin:
         self,
         project: str | None = None,
         since: str | None = None,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Aggregate usage records, optionally filtered by project and time.
 
         Returns a list of dicts with: task_type, model, call_count,
@@ -92,7 +93,7 @@ class TelemetryMixin:
             rows = conn.execute(query, params).fetchall()
             return [dict(r) for r in rows]
 
-    def get_usage_by_task_type(self, project: str) -> list[dict]:
+    def get_usage_by_task_type(self, project: str) -> list[dict[str, Any]]:
         """Group usage by task_type for a specific project.
 
         Returns list of dicts with: task_type, call_count,
@@ -114,7 +115,7 @@ class TelemetryMixin:
     # Cost overrides
     # ------------------------------------------------------------------
 
-    def get_cost_overrides(self) -> dict:
+    def get_cost_overrides(self) -> dict[str, tuple[float, float]]:
         """Load all user-configured cost overrides.
 
         Returns a dict mapping model_pattern to

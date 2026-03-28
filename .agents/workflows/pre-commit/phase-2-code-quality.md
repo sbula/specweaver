@@ -32,5 +32,4 @@ description: "Phase 2: Code quality checks — ruff, mypy, complexity, and file 
      Files over 500 lines MUST be refactored by splitting into smaller modules!
 
 > [!IMPORTANT]
-> **CHECKPOINT:** Phase 2 is complete. Update `task.md`.
-> The NEXT phase is Phase 3 (Test Gap Analysis) — NOT running pytest!
+> **NO HITL GATE HERE:** If all checks in Phase 2 pass successfully, update `task.md` and PROCEED IMMEDIATELY to Phase 3. Do NOT stop to ask the user for permission to continue.

@@ -49,10 +49,10 @@ CREATE TABLE IF NOT EXISTS schema_version (
 """
 
 DEFAULT_PROFILES = [
-    ("system-default", 1, "gemini-3-flash-preview", 0.7, 4096, "text", 128_000),
-    ("review", 1, "gemini-3-flash-preview", 0.3, 4096, "text", 128_000),
-    ("draft", 1, "gemini-3-flash-preview", 0.7, 4096, "text", 128_000),
-    ("search", 1, "gemini-3-flash-preview", 0.1, 4096, "text", 128_000),
+    ("system-default", 1, "gemini-3-flash-preview", 0.7, 4096, "text", 128_000, "gemini"),
+    ("review", 1, "gemini-3-flash-preview", 0.3, 4096, "text", 128_000, "gemini"),
+    ("draft", 1, "gemini-3-flash-preview", 0.7, 4096, "text", 128_000, "gemini"),
+    ("search", 1, "gemini-3-flash-preview", 0.1, 4096, "text", 128_000, "gemini"),
 ]
 
 SCHEMA_V2 = """\
@@ -116,4 +116,8 @@ CREATE TABLE IF NOT EXISTS llm_cost_overrides (
     output_cost_per_1k REAL NOT NULL,
     updated_at         TEXT NOT NULL
 );
+"""
+
+SCHEMA_V10 = """\
+ALTER TABLE llm_profiles ADD COLUMN provider TEXT NOT NULL DEFAULT 'gemini';
 """

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from google import genai
 from google.genai import types
@@ -32,6 +32,7 @@ from specweaver.llm.models import (
     ToolCall,
     ToolDefinition,
 )
+from specweaver.llm.telemetry import CostEntry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -74,6 +75,16 @@ class GeminiAdapter(LLMAdapter):
     Requires GEMINI_API_KEY environment variable or explicit api_key.
     """
 
+    provider_name = "gemini"
+    api_key_env_var = "GEMINI_API_KEY"
+    default_costs: ClassVar[dict[str, CostEntry]] = {
+        "gemini-3-flash-preview": CostEntry(0.00010, 0.00040),
+        "gemini-2.5-flash-preview-04-17": CostEntry(0.00015, 0.00060),
+        "gemini-2.5-pro-preview-03-25": CostEntry(0.00125, 0.01000),
+        "gemini-2.0-flash": CostEntry(0.00010, 0.00040),
+        "gemini-2.0-flash-lite": CostEntry(0.00005, 0.00020),
+    }
+
     def __init__(self, api_key: str | None = None) -> None:
         """Initialize the Gemini adapter.
 
@@ -82,10 +93,6 @@ class GeminiAdapter(LLMAdapter):
         """
         self._api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
         self._client: genai.Client | None = None
-
-    @property
-    def provider_name(self) -> str:
-        return "gemini"
 
     def _get_client(self) -> genai.Client:
         """Lazy-initialize the Gemini client."""

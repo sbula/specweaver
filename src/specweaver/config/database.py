@@ -39,6 +39,7 @@ from specweaver.config._schema import (
     SCHEMA_V7,
     SCHEMA_V8,
     SCHEMA_V9,
+    SCHEMA_V10,
 )
 
 # Backward-compatible aliases (tests import with underscore prefix)
@@ -51,6 +52,7 @@ _SCHEMA_V6 = SCHEMA_V6
 _SCHEMA_V7 = SCHEMA_V7
 _SCHEMA_V8 = SCHEMA_V8
 _SCHEMA_V9 = SCHEMA_V9
+_SCHEMA_V10 = SCHEMA_V10
 _DEFAULT_PROFILES = DEFAULT_PROFILES
 
 logger = logging.getLogger(__name__)
@@ -67,6 +69,7 @@ _MIGRATIONS: list[tuple[int, str, str]] = [
     (7, SCHEMA_V7, "auto_bootstrap_constitution"),
     (8, SCHEMA_V8, "stitch_mode"),
     (9, SCHEMA_V9, "llm_usage_log, llm_cost_overrides"),
+    (10, SCHEMA_V10, "llm_profiles.provider"),
 ]
 
 
@@ -143,8 +146,8 @@ class Database(
                 conn.executemany(
                     "INSERT INTO llm_profiles "
                     "(name, is_global, model, temperature, "
-                    "max_output_tokens, response_format, context_limit) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "max_output_tokens, response_format, context_limit, provider) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     DEFAULT_PROFILES,
                 )
 
@@ -333,24 +336,3 @@ class Database(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _validate_project_name(name: str) -> None:
-    """Validate project name against ^[a-z0-9][a-z0-9_-]*$.
-
-    Raises:
-        ValueError: If name is invalid.
-    """
-    if not name or not _PROJECT_NAME_RE.match(name):
-        msg = (
-            f"Invalid project name '{name}'. "
-            "Must match ^[a-z0-9][a-z0-9_-]*$ "
-            "(lowercase, digits, hyphens, underscores; "
-            "must start with letter or digit)."
-        )
-        raise ValueError(msg)
-
-
-def _now_iso() -> str:
-    """Return current UTC time as ISO 8601 string."""
-    return datetime.now(UTC).isoformat()

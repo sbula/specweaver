@@ -51,7 +51,7 @@
 - ✅ Feature 3.8: Web Dashboard (`sw serve`) — TDD and pre-commit gate passed (HTMX, Jinja2, REST endpoints)
 - Feature 3.9: Containerization
 - ✅ Feature 3.12: Token & cost telemetry — TelemetryCollector, DB persistence, factory wrapping, task_type attribution, `sw usage`/`sw costs` CLI, runner + CLI + API flush integration. 3451 tests.
-- ⚙️ Feature 3.12a: Multi-provider adapter registry — auto-discovery, self-describing adapters, cost layering (code defaults → DB overrides)
+- ⚙️ Feature 3.12a: Multi-provider adapter registry — auto-discovery, self-describing adapters (Commit 1 completed: Registry + DB Schema)
 - Feature 3.12b: Static model routing — task-type → provider+model config, builds on 3.12a registry
 
 ---

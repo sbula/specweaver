@@ -68,12 +68,12 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 9 after v9 migration."""
+        """Schema version is 10 after v10 migration."""
         with db.connect() as conn:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 9
+            assert row[0] == 10
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""

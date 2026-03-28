@@ -83,7 +83,7 @@ docs/update-readme
 
 ## Architecture Overview
 
-See [docs/README.md](docs/README.md) for a guided tour of the documentation. Key entry points:
+See [docs/INDEX.md](docs/INDEX.md) for a guided tour of the documentation. Key entry points:
 
 - **README.md** — Features, CLI reference, agent tools
 - **docs/architecture/methodology_index.md** — Spec methodology (10-test battery, fractal decomposition)

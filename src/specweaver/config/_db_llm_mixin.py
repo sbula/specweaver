@@ -42,14 +42,15 @@ class LlmProfilesMixin:
         temperature: float = 0.7,
         max_output_tokens: int = 4096,
         response_format: str = "text",
+        provider: str = "gemini",
     ) -> int:
         """Create an LLM profile. Returns the new profile ID."""
         with self.connect() as conn:  # type: ignore[attr-defined]
             cursor = conn.execute(
                 "INSERT INTO llm_profiles "
-                "(name, is_global, model, temperature, max_output_tokens, response_format) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (name, int(is_global), model, temperature, max_output_tokens, response_format),
+                "(name, is_global, model, temperature, max_output_tokens, response_format, provider) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (name, int(is_global), model, temperature, max_output_tokens, response_format, provider),
             )
             return cursor.lastrowid  # type: ignore[no-any-return]
 

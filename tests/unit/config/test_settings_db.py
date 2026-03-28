@@ -41,6 +41,7 @@ class TestLoadSettings:
         db.register_project("myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
         assert settings.llm.model == "gemini-3-flash-preview"
+        assert settings.llm.provider == "gemini"
 
     def test_load_uses_review_profile_by_default(self, db, tmp_path: Path):
         """load_settings uses the 'review' profile for the LLM settings."""
@@ -96,6 +97,7 @@ class TestLoadSettings:
         db.link_project_profile("myapp", "review", custom_id)
         settings = load_settings(db, "myapp")
         assert settings.llm.model == "gemini-2.5-pro"
+        assert settings.llm.provider == "gemini"
         assert settings.llm.temperature == pytest.approx(0.15)
         assert settings.llm.max_output_tokens == 8192
 
@@ -138,6 +140,44 @@ class TestAPIKeyFromEnv:
         db.register_project("myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
         assert settings.stitch.api_key == "test-stitch-key-123"
+
+    def test_api_key_from_custom_provider(self, db, tmp_path: Path, monkeypatch):
+        """If provider is anthropic, the anthropic api key is loaded."""
+        from specweaver.config.settings import load_settings
+
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-anthropic-123")
+        db.register_project("myapp", str(tmp_path / "proj"))
+        
+        # Integration test (Story 5)
+        custom_id = db.create_llm_profile(
+            name="review",
+            is_global=False,
+            model="claude-3-opus",
+            provider="anthropic"
+        )
+        db.link_project_profile("myapp", "review", custom_id)
+        
+        settings = load_settings(db, "myapp")
+        assert settings.llm.provider == "anthropic"
+        assert settings.llm.api_key == "sk-anthropic-123"
+
+    def test_api_key_empty_when_custom_provider_key_missing(self, db, tmp_path: Path, monkeypatch):
+        """If provider is anthropic but ANTHROPIC_API_KEY is missing, api_key is empty string."""
+        from specweaver.config.settings import load_settings
+
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        db.register_project("myapp", str(tmp_path / "proj"))
+        
+        custom_id = db.create_llm_profile(
+            name="review",
+            is_global=False,
+            model="claude-3-opus",
+            provider="anthropic"
+        )
+        db.link_project_profile("myapp", "review", custom_id)
+        
+        settings = load_settings(db, "myapp")
+        assert settings.llm.api_key == ""
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +258,28 @@ class TestLegacyMigration:
         # Should use the imported values for all roles
         assert settings.llm.model == "gemini-2.5-pro"
         assert settings.llm.temperature == pytest.approx(0.5)
+        
+    def test_migrate_maps_custom_provider(self, db, tmp_path: Path):
+        """(Story 4) Verify custom provider from yaml is mapped properly."""
+        from specweaver.config.settings import load_settings, migrate_legacy_config
+
+        project_dir = tmp_path / "my-project"
+        project_dir.mkdir()
+        sw_dir = project_dir / ".specweaver"
+        sw_dir.mkdir()
+        config_file = sw_dir / "config.yaml"
+        config_file.write_text(
+            "llm:\n"
+            "  model: gpt-4o\n"
+            "  provider: openai\n",
+            encoding="utf-8",
+        )
+
+        migrate_legacy_config(db, "legacy-app", str(project_dir))
+        settings = load_settings(db, "legacy-app")
+
+        assert settings.llm.provider == "openai"
+        assert settings.llm.model == "gpt-4o"
 
     def test_migrate_no_config_file_returns_false(self, db, tmp_path: Path):
         from specweaver.config.settings import migrate_legacy_config
@@ -252,8 +314,9 @@ class TestPydanticModels:
     def test_default_settings(self):
         from specweaver.config.settings import LLMSettings, SpecWeaverSettings
 
-        s = SpecWeaverSettings(llm=LLMSettings(model="gemini-3-flash-preview"))
+        s = SpecWeaverSettings(llm=LLMSettings(model="gemini-3-flash-preview", provider="gemini"))
         assert s.llm.model == "gemini-3-flash-preview"
+        assert s.llm.provider == "gemini"
         assert s.llm.temperature == pytest.approx(0.7)
         assert s.llm.api_key == ""
 
@@ -261,7 +324,7 @@ class TestPydanticModels:
         from specweaver.config.settings import LLMSettings, SpecWeaverSettings
 
         s = SpecWeaverSettings(
-            llm=LLMSettings(model="gemini-2.5-pro", temperature=0.3)
+            llm=LLMSettings(model="gemini-2.5-pro", temperature=0.3, provider="gemini")
         )
         assert s.llm.model == "gemini-2.5-pro"
 

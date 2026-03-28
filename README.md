@@ -243,8 +243,8 @@ docker compose up -d
 │   ├── flow/                   # Pipeline engine: models, parser, runner, state, handlers, store
 │   ├── graph/                  # TopologyGraph, dependency selectors
 │   ├── implementation/         # Code generator
-│   ├── llm/                    # Gemini adapter, models, errors, telemetry collector
-│   ├── loom/                   # Dev environment interaction layer
+│   ├── llm/                    # Multi-provider auto-discovery registry, models, telemetry
+│   │   ├── adapters/           # Self-describing concrete adapters (Gemini, OpenAI, etc)
 │   │   ├── atoms/              # Engine-level building blocks
 │   │   │   ├── filesystem/     # Filesystem atom (engine-level)
 │   │   │   └── git/            # Git atom (checkpoint, integrate, publish)

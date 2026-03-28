@@ -84,7 +84,7 @@ class TestSchemaV2Migration:
             ).fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 9  # V2, V3, V4, V5, V6, V7, V8 all applied
+        assert version[0] == 10  # V2, V3, V4, V5, V6, V7, V8 all applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -96,7 +96,7 @@ class TestSchemaV2Migration:
             version = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 9  # V2, V3, V4, V5, V6, V7, V8 all applied
+        assert version[0] == 10  # V2, V3, V4, V5, V6, V7, V8 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -234,7 +234,7 @@ class TestSchemaV3Migration:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 9  # v3, v4, v5, v6, v7, v8 all applied
+        assert version[0] == 10  # v3, v4, v5, v6, v7, v8 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -352,7 +352,7 @@ class TestSchemaV3ToV4Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 9  # v4, v5, v6, v7, v8 all applied
+        assert version[0] == 10  # v4, v5, v6, v7, v8 all applied
 
 
 # ===========================================================================
@@ -487,7 +487,7 @@ class TestDomainProfile:
             row = conn.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-            assert row[0] == 9
+            assert row[0] == 10
 
 
 class TestSchemaV4ToV5Upgrade:
@@ -537,7 +537,7 @@ class TestSchemaV4ToV5Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 9  # v5, v6, v7, v8 all applied
+        assert version[0] == 10  # v5, v6, v7, v8 all applied
 
 
 # ===========================================================================
@@ -649,7 +649,7 @@ class TestSchemaV6ToV7Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 9
+        assert version[0] == 10
 
 
 class TestSchemaV7ToV8Upgrade:
@@ -703,7 +703,7 @@ class TestSchemaV7ToV8Upgrade:
             version = conn2.execute(
                 "SELECT MAX(version) FROM schema_version"
             ).fetchone()
-        assert version[0] == 9
+        assert version[0] == 10
 
 
 class TestSchemaV8ToV9Upgrade:
@@ -755,7 +755,7 @@ class TestSchemaV8ToV9Upgrade:
                 "SELECT name FROM sqlite_master WHERE type='table' "
                 "AND name IN ('llm_usage_log', 'llm_cost_overrides')"
             ).fetchall()
-        assert version[0] == 9
+        assert version[0] == 10
         table_names = {r[0] for r in tables}
         assert "llm_usage_log" in table_names
         assert "llm_cost_overrides" in table_names
@@ -934,3 +934,125 @@ class TestUsageLogGaps:
         assert row["total_tokens"] == 0
         assert row["estimated_cost"] == 0.0
         assert row["duration_ms"] == 0
+
+
+# ===========================================================================
+# Schema v10 — provider column on llm_profiles
+# ===========================================================================
+
+
+class TestSchemaV10Migration:
+    """Test the v9→v10 migration (provider column on llm_profiles)."""
+
+    @pytest.fixture()
+    def db_path(self, tmp_path: Path) -> Path:
+        return tmp_path / "upgrade_v9_v10.db"
+
+    def test_provider_column_exists(self, db):
+        """provider column is present on llm_profiles after migration."""
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT provider FROM llm_profiles WHERE name='review'"
+            ).fetchone()
+        assert row is not None
+
+    def test_provider_default_is_gemini(self, db):
+        """Default provider on seed profiles is 'gemini'."""
+        with db.connect() as conn:
+            rows = conn.execute(
+                "SELECT provider FROM llm_profiles"
+            ).fetchall()
+        for row in rows:
+            assert row[0] == "gemini"
+
+    def test_create_profile_with_provider(self, db):
+        """create_llm_profile accepts provider parameter."""
+        profile_id = db.create_llm_profile(
+            "openai-draft",
+            model="gpt-4o",
+            provider="openai",
+        )
+        profile = db.get_llm_profile(profile_id)
+        assert profile["provider"] == "openai"
+
+    def test_create_profile_provider_defaults_to_gemini(self, db):
+        """create_llm_profile defaults provider to 'gemini'."""
+        profile_id = db.create_llm_profile(
+            "legacy-profile",
+            model="gemini-2.0-flash",
+        )
+        profile = db.get_llm_profile(profile_id)
+        assert profile["provider"] == "gemini"
+
+    def test_default_profiles_include_provider(self, db):
+        """Seed DEFAULT_PROFILES include provider='gemini' for all entries."""
+        with db.connect() as conn:
+            rows = conn.execute(
+                "SELECT name, provider FROM llm_profiles WHERE is_global = 1"
+            ).fetchall()
+        assert len(rows) >= 4
+        for row in rows:
+            assert row["provider"] == "gemini"
+
+    def test_schema_version_is_10(self, db):
+        """Schema version is 10 after all migrations."""
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+        assert row[0] == 10
+
+    def test_v9_to_v10_upgrade(self, db_path: Path):
+        """Simulate a v9 DB and verify v10 migration adds provider column."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import (
+            _SCHEMA_V1,
+            _SCHEMA_V2,
+            _SCHEMA_V3,
+            _SCHEMA_V4,
+            _SCHEMA_V5,
+            _SCHEMA_V6,
+            _SCHEMA_V7,
+            _SCHEMA_V8,
+            _SCHEMA_V9,
+            Database,
+        )
+
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.executescript(_SCHEMA_V3)
+        conn.executescript(_SCHEMA_V4)
+        conn.executescript(_SCHEMA_V5)
+        conn.executescript(_SCHEMA_V6)
+        conn.executescript(_SCHEMA_V7)
+        conn.executescript(_SCHEMA_V8)
+        conn.executescript(_SCHEMA_V9)
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) "
+            "VALUES (9, '2026-01-01T00:00:00Z')"
+        )
+        # Insert a v9 profile (no provider column)
+        conn.execute(
+            "INSERT INTO llm_profiles "
+            "(name, is_global, model, temperature, max_output_tokens, "
+            "response_format, context_limit) "
+            "VALUES ('review', 1, 'gemini-2.5-flash', 0.3, 4096, 'text', 128000)"
+        )
+        conn.commit()
+        conn.close()
+
+        db = Database(db_path)
+        with db.connect() as conn2:
+            row = conn2.execute(
+                "SELECT provider FROM llm_profiles WHERE name='review'"
+            ).fetchone()
+            version = conn2.execute(
+                "SELECT MAX(version) FROM schema_version"
+            ).fetchone()
+
+        assert row[0] == "gemini"  # default from ALTER TABLE
+        assert version[0] == 10
+

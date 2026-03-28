@@ -160,6 +160,10 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.8 Web dashboard** — Extends `api/` with HTMX+Jinja2 templates for browser UI. Same module because it's the same HTTP server, just with HTML rendering alongside JSON endpoints.
 
+**3.12 Token & Cost Telemetry** — `llm/telemetry.py` (`CostEntry`, `UsageRecord`), `llm/collector.py` (`TelemetryCollector`), `config/_db_telemetry_mixin.py` (`llm_cost_overrides`). Lives in `llm/` because it's LLM usage, and `config/` for SQLite persistence.
+
+**3.12a Multi-Provider Adapter Registry** — `llm/adapters/__init__.py` (auto-discovery registry scanning package at import), `llm/adapters/base.py` (self-describing adapter ABC), `config/settings.py` (`provider` field). Lives in `llm/adapters/` (adapter archetype) to support dynamic provider creation without central maps.
+
 ### How Features Map to Lifecycle Layers
 
 ```
