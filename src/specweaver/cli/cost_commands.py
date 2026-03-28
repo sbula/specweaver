@@ -9,7 +9,7 @@ import typer
 from rich.table import Table
 
 from specweaver.cli import _core
-from specweaver.llm.telemetry import DEFAULT_COST_TABLE
+from specweaver.llm.telemetry import get_default_cost_table
 
 costs_app = typer.Typer(
     name="costs",
@@ -37,8 +37,10 @@ def costs(ctx: typer.Context) -> None:
     table.add_column("Output $/1k tokens", justify="right")
     table.add_column("Source", style="dim")
 
+    default_table = get_default_cost_table()
+
     # Show defaults
-    for model, entry in sorted(DEFAULT_COST_TABLE.items()):
+    for model, entry in sorted(default_table.items()):
         if model in overrides:
             inp, out = overrides[model]
             source = "override"
@@ -49,7 +51,7 @@ def costs(ctx: typer.Context) -> None:
 
     # Show overrides not in defaults
     for model, (inp, out) in sorted(overrides.items()):
-        if model not in DEFAULT_COST_TABLE:
+        if model not in default_table:
             table.add_row(model, f"${inp:.5f}", f"${out:.5f}", "override")
 
     _core.console.print(table)

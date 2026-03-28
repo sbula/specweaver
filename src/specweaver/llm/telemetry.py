@@ -27,26 +27,10 @@ class CostEntry(NamedTuple):
     output_cost_per_1k: float
 
 
-# Built-in cost table — sensible defaults, overridable via DB.
-# Prices in USD per 1,000 tokens.
-# Sources: provider pricing pages as of 2026-03-27.
-DEFAULT_COST_TABLE: dict[str, CostEntry] = {
-    # Google Gemini
-    "gemini-3-flash-preview": CostEntry(0.00010, 0.00040),
-    "gemini-2.5-flash-preview-04-17": CostEntry(0.00015, 0.00060),
-    "gemini-2.5-pro-preview-03-25": CostEntry(0.00125, 0.01000),
-    "gemini-2.0-flash": CostEntry(0.00010, 0.00040),
-    "gemini-2.0-flash-lite": CostEntry(0.00005, 0.00020),
-    # OpenAI
-    "gpt-4o": CostEntry(0.00250, 0.01000),
-    "gpt-4o-mini": CostEntry(0.00015, 0.00060),
-    "gpt-4.1": CostEntry(0.00200, 0.00800),
-    "gpt-4.1-mini": CostEntry(0.00040, 0.00160),
-    "gpt-4.1-nano": CostEntry(0.00010, 0.00040),
-    # Anthropic
-    "claude-sonnet-4-20250514": CostEntry(0.00300, 0.01500),
-    "claude-3-5-haiku-20241022": CostEntry(0.00080, 0.00400),
-}
+def get_default_cost_table() -> dict[str, CostEntry]:
+    """Get the merged default pricing from all registered LLM adapters."""
+    from specweaver.llm.adapters import get_merged_default_costs
+    return get_merged_default_costs()
 
 
 class UsageRecord(BaseModel):
@@ -91,7 +75,7 @@ def estimate_cost(
     if overrides:
         entry = overrides.get(model)
     if entry is None:
-        entry = DEFAULT_COST_TABLE.get(model)
+        entry = get_default_cost_table().get(model)
     if entry is None:
         return 0.0
 

@@ -414,3 +414,56 @@ def config_reset_profile() -> None:
         f"[green]\u2713[/green] Profile deactivated for project [bold]{name}[/bold]. "
         "Per-rule overrides are preserved.",
     )
+
+
+@config_app.command("set-provider")
+def config_set_provider(
+    provider: str = typer.Argument(help="LLM provider name (e.g., gemini, openai, anthropic)."),
+    *,
+    role: str = typer.Option("draft", help="Project role to set provider for."),
+    model: str | None = typer.Option(None, help="Optional model name to override the provider default."),
+) -> None:
+    """Set the LLM provider for a specific project role (default: draft)."""
+    name = _core._require_active_project()
+    db = _core.get_db()
+
+    from specweaver.llm.adapters import get_all_adapters
+    
+    adapters = get_all_adapters()
+    if provider not in adapters:
+        _core.console.print(
+            f"[red]Error:[/red] Unknown provider '{provider}'. "
+            f"Available: {', '.join(sorted(adapters.keys()))}",
+        )
+        raise typer.Exit(code=1)
+
+    profile = db.get_project_profile(name, role)
+    
+    # If the profile exists and is project-specific, just update it
+    if profile and not profile["is_global"]:
+        update_args = {"provider": provider}
+        if model is not None:
+            update_args["model"] = model
+        db.update_llm_profile(int(str(profile["id"])), **update_args)
+        
+        _core.console.print(
+            f"[green]\u2713[/green] Updated existing custom profile for role [bold]{role}[/bold]. "
+            f"Provider set to [bold]{provider}[/bold].",
+        )
+    else:
+        # Clone or create a new local profile and link it
+        profile_name = f"{name}-{role}-profile"
+        _model = model or "default"
+        
+        profile_id = db.create_llm_profile(
+            profile_name, 
+            provider=provider, 
+            model=_model, 
+            is_global=False,
+        )
+        db.link_project_profile(name, role, profile_id)
+        
+        _core.console.print(
+            f"[green]\u2713[/green] Created new local profile for role [bold]{role}[/bold]. "
+            f"Provider set to [bold]{provider}[/bold].",
+        )

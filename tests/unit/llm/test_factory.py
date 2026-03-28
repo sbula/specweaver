@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture()
-def db(tmp_path: Path):
+def db(tmp_path: Path) -> Any:
     """Fresh database with schema v9."""
     from specweaver.config.database import Database
 
@@ -29,7 +29,7 @@ class TestFactoryTelemetryWrapping:
     """Factory telemetry_project parameter behavior (stories 2-5)."""
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_no_telemetry_returns_raw_adapter(self, db):
+    def test_no_telemetry_returns_raw_adapter(self, db: Any) -> None:
         """telemetry_project=None → returns raw GeminiAdapter, not wrapped."""
         from specweaver.llm.adapters.gemini import GeminiAdapter
         from specweaver.llm.factory import create_llm_adapter
@@ -41,7 +41,7 @@ class TestFactoryTelemetryWrapping:
         assert isinstance(adapter, GeminiAdapter)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_telemetry_project_wraps_in_collector(self, db):
+    def test_telemetry_project_wraps_in_collector(self, db: Any) -> None:
         """telemetry_project set → adapter is wrapped in TelemetryCollector."""
         from specweaver.llm.collector import TelemetryCollector
         from specweaver.llm.factory import create_llm_adapter
@@ -55,7 +55,7 @@ class TestFactoryTelemetryWrapping:
         assert isinstance(adapter, TelemetryCollector)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_empty_string_telemetry_project_no_wrap(self, db):
+    def test_empty_string_telemetry_project_no_wrap(self, db: Any) -> None:
         """telemetry_project="" (falsy) → no wrapping."""
         from specweaver.llm.adapters.gemini import GeminiAdapter
         from specweaver.llm.factory import create_llm_adapter
@@ -67,7 +67,7 @@ class TestFactoryTelemetryWrapping:
         assert isinstance(adapter, GeminiAdapter)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_cost_overrides_passed_to_collector(self, db):
+    def test_cost_overrides_passed_to_collector(self, db: Any) -> None:
         """DB cost overrides are loaded and passed to TelemetryCollector."""
         from specweaver.llm.collector import TelemetryCollector
         from specweaver.llm.factory import create_llm_adapter
@@ -86,7 +86,7 @@ class TestFactoryTelemetryWrapping:
         assert entry == CostEntry(99.0, 199.0)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_cost_override_load_failure_fallback(self, db):
+    def test_cost_override_load_failure_fallback(self, db: Any) -> None:
         """DB error loading cost overrides → collector created with None."""
         from specweaver.llm.collector import TelemetryCollector
         from specweaver.llm.factory import create_llm_adapter
@@ -104,5 +104,51 @@ class TestFactoryTelemetryWrapping:
         assert isinstance(adapter, TelemetryCollector)
         assert adapter._cost_overrides is None
 
-        # Restore
         db.get_cost_overrides = original
+
+
+class TestFactoryProviderCapabilities:
+    """Factory handles dynamic provider loading based on DB settings."""
+
+    @pytest.mark.parametrize("provider,adapter_cls_name,env_key", [
+        ("openai", "OpenAIAdapter", "OPENAI_API_KEY"),
+        ("anthropic", "AnthropicAdapter", "ANTHROPIC_API_KEY"),
+        ("mistral", "MistralAdapter", "MISTRAL_API_KEY"),
+        ("qwen", "QwenAdapter", "QWEN_API_KEY"),
+    ])
+    def test_factory_loads_specific_provider(
+        self, db: Any, provider: str, adapter_cls_name: str, env_key: str
+    ) -> None:
+        """Factory creates correct adapter based on DB provider setting."""
+        from specweaver.llm.factory import create_llm_adapter
+        from specweaver.llm.adapters import get_adapter_class
+
+        db.register_project("test-proj", "/tmp/test")
+        db.set_active_project("test-proj")
+        
+        # Override the active setting for the provider
+        profile_id = db.create_llm_profile("test-profile", provider=provider, model="some-model")
+        db.link_project_profile("test-proj", "draft", profile_id)
+
+        with patch.dict(os.environ, {env_key: "dummy-key"}):
+            _settings, adapter, _config = create_llm_adapter(db, telemetry_project=None)
+            
+        expected_cls = get_adapter_class(provider)
+        assert isinstance(adapter, expected_cls)
+        assert type(adapter).__name__ == adapter_cls_name
+
+    def test_factory_fallback_on_missing_project(self, db: Any) -> None:
+        """Factory defaults cleanly to gemini if no active project exists."""
+        from specweaver.llm.factory import create_llm_adapter
+        from specweaver.llm.adapters.gemini import GeminiAdapter
+        
+        # Ensure no active project
+        assert db.get_active_project() is None
+
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "fallback-key"}):
+            settings, adapter, config = create_llm_adapter(db, telemetry_project=None)
+            
+        assert isinstance(adapter, GeminiAdapter)
+        assert settings.llm.provider == "gemini"
+        assert config.model == "gemini-3-flash-preview"
+

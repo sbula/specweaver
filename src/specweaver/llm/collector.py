@@ -45,7 +45,7 @@ class TelemetryCollector:
 
     def __init__(
         self,
-        adapter: "LLMAdapter",
+        adapter: LLMAdapter,
         project: str,
         cost_overrides: dict[str, CostEntry] | None = None,
     ) -> None:

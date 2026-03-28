@@ -325,6 +325,15 @@ Do NOT create parallel security mechanisms. Use the existing stack.
 
 ---
 
+## LLM Adapter Registry
+
+The system employs a multi-provider auto-discovery registry for its underlying LLM backends (introduced in Feature 3.12a).
+
+- **Auto-Discovery**: Any new file added to `src/specweaver/llm/adapters/` that defines an `LLMAdapter` subclass with a `provider_name` is automatically discovered at runtime by the `__init__.py` module. No hardcoded imports or central dictionary registrations are needed.
+- **Supported Providers**: Natively supports `gemini`, `openai`, `anthropic`, `mistral`, and `qwen`.
+- **Factory Encapsulation**: `src/specweaver/llm/factory.py` reads the project's linked database profile to instantiate the configured adapter dynamically. If no provider is explicitly set, the factory cleanly falls back to `gemini`.
+- **Telemetry Transparency**: The factory automatically wraps any instantiated adapter inside a `TelemetryCollector` proxy to provide unified token usage, cost tracking, and streaming telemetry, totally invisible to the underlying adapter logic.
+
 ## LLM Function-Calling Dispatch
 
 When the LLM uses native function calling (e.g., Gemini `FunctionDeclaration`), a

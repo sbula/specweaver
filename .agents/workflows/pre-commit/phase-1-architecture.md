@@ -1,6 +1,12 @@
 ---
 description: "Phase 1: Architecture verification — verify layer placement, dependency direction, and archetype compliance."
 ---
+// turbo-all
+
+> [!IMPORTANT]
+> **Autonomy vs. HITL:**
+> Execute the architecture verifications autonomously, but you MUST STOP and present any findings to the user. NEVER bypass the user review of violations.
+
 
 # Phase 1: Architecture Verification
 

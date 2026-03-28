@@ -9,10 +9,10 @@ import pytest
 
 from specweaver.llm.models import GenerationConfig, LLMResponse, TaskType, TokenUsage
 from specweaver.llm.telemetry import (
-    DEFAULT_COST_TABLE,
     CostEntry,
     create_usage_record,
     estimate_cost,
+    get_default_cost_table,
 )
 
 
@@ -75,23 +75,23 @@ class TestEstimateCost:
     def test_empty_overrides_falls_through(self):
         usage = TokenUsage(prompt_tokens=1000, completion_tokens=500)
         cost = estimate_cost("gemini-3-flash-preview", usage, overrides={})
-        assert cost > 0  # Falls through to DEFAULT_COST_TABLE
+        assert cost > 0  # Falls through to get_default_cost_table()
 
 
 class TestCostTableStructure:
-    """DEFAULT_COST_TABLE integrity."""
+    """get_default_cost_table() integrity."""
 
     def test_all_entries_are_cost_entries(self):
-        for model, entry in DEFAULT_COST_TABLE.items():
+        for model, entry in get_default_cost_table().items():
             assert isinstance(entry, CostEntry), f"{model} is not a CostEntry"
 
     def test_all_entries_have_positive_costs(self):
-        for model, entry in DEFAULT_COST_TABLE.items():
+        for model, entry in get_default_cost_table().items():
             assert entry.input_cost_per_1k > 0, f"{model} input cost <= 0"
             assert entry.output_cost_per_1k > 0, f"{model} output cost <= 0"
 
     def test_table_not_empty(self):
-        assert len(DEFAULT_COST_TABLE) >= 5  # At least 5 models
+        assert len(get_default_cost_table()) >= 5  # At least 5 models
 
 
 class TestCreateUsageRecord:

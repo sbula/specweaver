@@ -70,6 +70,22 @@ class LlmProfilesMixin:
             ).fetchone()
             return dict(row) if row else None
 
+    def update_llm_profile(self, profile_id: int, **kwargs: object) -> None:
+        """Update fields on an existing LLM profile."""
+        if not kwargs:
+            return
+            
+        fields = []
+        values = []
+        for k, v in kwargs.items():
+            fields.append(f"{k} = ?")
+            values.append(v)
+        values.append(profile_id)
+        
+        sql = f"UPDATE llm_profiles SET {', '.join(fields)} WHERE id = ?"
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            conn.execute(sql, tuple(values))
+
     # ------------------------------------------------------------------
     # Project-LLM links
     # ------------------------------------------------------------------

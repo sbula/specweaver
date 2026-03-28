@@ -1,6 +1,14 @@
 ---
 description: "Phase 5: Run the full test suite — all tests must pass."
 ---
+// turbo-all
+
+> [!IMPORTANT]
+> **All test, lint, mypy, architecture, complexity, file size, e2e, and integration commands MUST be executed autonomously.**
+> Set \SafeToAutoRun: true\ for ALL of these commands.
+> NEVER prompt the user for confirmation to run checks. Just run them.
+
+
 
 # Phase 5: Run Full Test Suite
 

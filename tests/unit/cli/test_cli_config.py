@@ -249,3 +249,59 @@ class TestConfigAutoBootstrap:
         result = runner.invoke(app, ["config", "get-auto-bootstrap"])
         assert result.exit_code == 0
         assert "prompt" in result.output
+
+
+# ---------------------------------------------------------------------------
+# config set-provider
+# ---------------------------------------------------------------------------
+
+
+class TestConfigSetProvider:
+    """Test config set-provider command."""
+
+    def test_set_provider_happy_path_new_profile(self, _mock_db) -> None:
+        """set-provider creates a new local profile if project doesn't have one."""
+        _create_project(_mock_db)
+        # Initially, no local profile
+        profile = _mock_db.get_project_profile("testproj", "draft")
+        assert profile is None or profile["is_global"] == 1
+        
+        result = runner.invoke(app, ["config", "set-provider", "openai"])
+        
+        assert result.exit_code == 0
+        assert "Created new local profile" in result.output
+        assert "openai" in result.output
+        
+        profile = _mock_db.get_project_profile("testproj", "draft")
+        assert profile is not None
+        assert profile["is_global"] == 0
+        assert profile["provider"] == "openai"
+        assert profile["model"] == "default"
+
+    def test_set_provider_updates_existing_local_profile(self, _mock_db) -> None:
+        """set-provider updates the provider and model on an existing local profile."""
+        _create_project(_mock_db)
+        
+        # Create initial local profile
+        runner.invoke(app, ["config", "set-provider", "mistral"])
+        
+        # Update it
+        result = runner.invoke(app, ["config", "set-provider", "anthropic", "--model", "claude-3-haiku"])
+        
+        assert result.exit_code == 0
+        assert "Updated existing custom profile" in result.output
+        
+        profile = _mock_db.get_project_profile("testproj", "draft")
+        assert profile is not None
+        assert profile["provider"] == "anthropic"
+        assert profile["model"] == "claude-3-haiku"
+
+    def test_set_provider_unknown_provider(self, _mock_db) -> None:
+        """set-provider rejects unknown providers based on the registry."""
+        _create_project(_mock_db)
+        
+        result = runner.invoke(app, ["config", "set-provider", "fake-provider-123"])
+        
+        assert result.exit_code == 1
+        assert "Unknown provider" in result.output
+        assert "Available:" in result.output

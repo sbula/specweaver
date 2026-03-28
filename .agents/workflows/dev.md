@@ -1,3 +1,9 @@
+
+> [!IMPORTANT]
+> **AGENT DIRECTIVE FOR TDD WORKFLOW:**
+> DO NOT prompt or inform the user every time you transition between Red, Green, or Refactor phases.
+> Just execute the phases silently and continuously. Only stop or ask the user when you are completely blocked or have finished the entirety of your assigned tasks.
+
 ---
 description: "TDD development workflow for implementing features. Read spec → break down → red/green/refactor → pre-commit gate → commit."
 ---
@@ -13,6 +19,7 @@ description: "TDD development workflow for implementing features. Read spec → 
 > 3. **TDD: red tests first.** Every task starts with a failing test.
 > 4. **Pre-commit gate before EVERY commit.** Run `/pre-commit` — no shortcuts.
 > 5. **Always re-read a file before editing it.** Never rely on memory.
+> 6. **NEVER skip a commit boundary.** When `task.md` calls for a commit, you MUST STOP and wait for the user (HITL). Do NOT proceed to the next phase.
 
 > [!IMPORTANT]
 > **All test and lint commands MUST run autonomously.**
@@ -123,17 +130,17 @@ python -m pytest --tb=short -q
 
 ## Phase 5: Pre-Commit Quality Gate
 
-5.1. Execute the full `/pre-commit` workflow. This is MANDATORY.
+5.1. Execute the full `/pre-commit` workflow autonomously. This is MANDATORY.
      No commit is allowed without passing all 7 phases.
 
-## Phase 6: Commit
+## Phase 6: Commit Boundary (HITL)
 
-6.1. Stage and commit with a descriptive message following conventional commits:
-     ```
-     feat(X.Y): short description
-     ```
+> [!CAUTION]
+> **HARD STOP REQUIRED:** You MUST NOT proceed past a commit boundary autonomously.
 
-6.2. Push to remote.
+6.1. When all tasks for a scheduled commit in `task.md` are complete (e.g., `commit 2`), **STOP execution**.
+6.2. Inform the user that the tasks and `/pre-commit` checks are complete.
+6.3. **WAIT** for the user to perform the commit or to give you explicit permission to proceed. Do absolutely nothing else until they respond.
 
 ---
 
@@ -150,4 +157,5 @@ python -m pytest --tb=short -q
 | **Architecture** | Check imports respect layer boundaries. No cross-layer violations. |
 | **Coverage** | Target 70-90% test coverage. |
 | **Pre-commit gate** | Mandatory before every commit. No exceptions. |
+| **Commit Boundaries** | Hard stop at every commit. Wait for human. Do not bypass. |
 | **Tests run freely** | `SafeToAutoRun: true` for all test/lint commands. No exceptions. |

@@ -1,6 +1,12 @@
 ---
 description: "Phase 3: Test gap analysis — coverage matrix, proposed test stories, and HITL gate."
 ---
+// turbo-all
+
+> [!IMPORTANT]
+> **Autonomy vs. HITL:**
+> Execute the gap analysis steps autonomously, but you MUST STOP and present the results. NEVER bypass the user review of the findings.
+
 
 # Phase 3: Test Gap Analysis
 
@@ -69,6 +75,4 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
      - Any issues discovered during the analysis
 
 > [!CAUTION]
-> **HARD GATE:** You MUST use `notify_user` to present the gap analysis
-> and WAIT for the user's response. Do NOT proceed to Phase 4 without
-> explicit user confirmation. This is non-negotiable.
+> **MANDATORY HITL OUTCOME REVIEW:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories to the user. You MUST NOT proceed to Phase 4 (implementing tests) until the user explicitly reviews and approves the test gaps. Do not assume they look okay or skip this gate.

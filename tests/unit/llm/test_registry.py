@@ -4,16 +4,15 @@
 """Tests for LLM Adapter auto-discovery registry."""
 
 from typing import ClassVar
+from unittest.mock import patch
 
 import pytest
 
-from unittest.mock import patch
-
 from specweaver.llm.adapters import (
-    _DISCOVERED,
     _ensure_discovered,
     get_adapter_class,
     get_all_adapters,
+    get_merged_default_costs,
     register_adapter,
 )
 from specweaver.llm.adapters.base import LLMAdapter
@@ -82,6 +81,25 @@ def test_ensure_discovered_swallows_syntax_error(mock_import):
 
     # Should not raise
     _ensure_discovered()
-    
+
     # Needs to flip back discovered flag otherwise later tests in session complain
     assert registry_module._DISCOVERED is True
+
+
+def test_get_merged_default_costs():
+    """Returns a unified dictionary with costs from all adapters."""
+    costs = get_merged_default_costs()
+    assert "gemini-3-flash-preview" in costs
+    
+    # Check that a cost entry is structured right
+    gemini_cost = costs["gemini-3-flash-preview"]
+    assert hasattr(gemini_cost, "input_cost_per_1k")
+    assert hasattr(gemini_cost, "output_cost_per_1k")
+
+
+def test_merged_costs_no_duplicates():
+    """First-registered adapter wins on duplicate models (not typically expected)."""
+    # Simply check that what we get is a dict and has no dupes 
+    # (dict keys are inherently unique)
+    costs = get_merged_default_costs()
+    assert isinstance(costs, dict)

@@ -92,7 +92,7 @@ class TestFullPipelineE2E:
         from specweaver.llm.factory import create_llm_adapter
 
         with patch(
-            "specweaver.llm.adapters.gemini.GeminiAdapter", FakeGeminiAdapter,
+            "specweaver.llm.factory._get_adapter_class", return_value=FakeGeminiAdapter,
         ):
             _settings, adapter, gen_config = create_llm_adapter(
                 db, telemetry_project="e2e-proj",
@@ -144,7 +144,7 @@ class TestCostOverrideLifecycleE2E:
         db.set_cost_override("gemini-3-flash-preview", 100.0, 200.0)
 
         with patch(
-            "specweaver.llm.adapters.gemini.GeminiAdapter", FakeGeminiAdapter,
+            "specweaver.llm.factory._get_adapter_class", return_value=FakeGeminiAdapter,
         ):
             _settings, adapter, gen_config = create_llm_adapter(
                 db, telemetry_project="e2e-proj",

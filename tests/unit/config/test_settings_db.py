@@ -147,7 +147,7 @@ class TestAPIKeyFromEnv:
 
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-anthropic-123")
         db.register_project("myapp", str(tmp_path / "proj"))
-        
+
         # Integration test (Story 5)
         custom_id = db.create_llm_profile(
             name="review",
@@ -156,7 +156,7 @@ class TestAPIKeyFromEnv:
             provider="anthropic"
         )
         db.link_project_profile("myapp", "review", custom_id)
-        
+
         settings = load_settings(db, "myapp")
         assert settings.llm.provider == "anthropic"
         assert settings.llm.api_key == "sk-anthropic-123"
@@ -167,7 +167,7 @@ class TestAPIKeyFromEnv:
 
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         db.register_project("myapp", str(tmp_path / "proj"))
-        
+
         custom_id = db.create_llm_profile(
             name="review",
             is_global=False,
@@ -175,7 +175,7 @@ class TestAPIKeyFromEnv:
             provider="anthropic"
         )
         db.link_project_profile("myapp", "review", custom_id)
-        
+
         settings = load_settings(db, "myapp")
         assert settings.llm.api_key == ""
 
@@ -258,7 +258,7 @@ class TestLegacyMigration:
         # Should use the imported values for all roles
         assert settings.llm.model == "gemini-2.5-pro"
         assert settings.llm.temperature == pytest.approx(0.5)
-        
+
     def test_migrate_maps_custom_provider(self, db, tmp_path: Path):
         """(Story 4) Verify custom provider from yaml is mapped properly."""
         from specweaver.config.settings import load_settings, migrate_legacy_config

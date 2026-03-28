@@ -7,9 +7,9 @@ purpose: >
   Concrete LLM provider adapters implementing the base adapter interface.
 
 description: |
-  Contains provider-specific adapter implementations (currently GeminiAdapter).
-  Each adapter translates the provider-agnostic LLMAdapter contract into
-  provider-specific API calls, error handling, and response parsing.
+  Concrete LLM provider adapters with auto-discovery registry.
+  Each adapter is self-describing (provider_name, api_key_env_var, default_costs).
+  Adding a new provider = one file, zero other changes.
 
 archetype: adapter
 
@@ -22,7 +22,15 @@ forbids:
   - specweaver/drafting
 
 exposes:
+  - LLMAdapter
   - GeminiAdapter
+  - OpenAIAdapter
+  - AnthropicAdapter
+  - MistralAdapter
+  - QwenAdapter
+  - get_all_adapters
+  - get_adapter_class
+  - get_merged_default_costs
 
 # -- Operational Metadata --------------------------------------------------
 operational:

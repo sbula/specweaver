@@ -24,6 +24,17 @@ logger = logging.getLogger(__name__)
 class LLMAdapterError(Exception):
     """Raised when an LLM adapter cannot be created or validated."""
 
+def _get_adapter_class(provider: str) -> Any:
+    """Return the adapter class for the given provider name."""
+    from specweaver.llm.adapters import get_adapter_class, get_all_adapters
+
+    try:
+        return get_adapter_class(provider)
+    except ValueError as e:
+        raise LLMAdapterError(
+            f"Unsupported LLM provider: '{provider}'. Available: {list(get_all_adapters().keys())}"
+        ) from e
+
 
 def create_llm_adapter(
     db: Database,
@@ -53,7 +64,6 @@ def create_llm_adapter(
         ValueError: If no project is active (from ``load_settings_for_active``).
     """
     from specweaver.config.settings import LLMSettings, SpecWeaverSettings, load_settings_for_active
-    from specweaver.llm.adapters.gemini import GeminiAdapter
     from specweaver.llm.models import GenerationConfig
 
     try:
@@ -71,14 +81,17 @@ def create_llm_adapter(
         settings = SpecWeaverSettings(
             llm=LLMSettings(
                 model=fallback_model,
+                provider="gemini",
                 api_key=os.environ.get("GEMINI_API_KEY", ""),
             ),
         )
 
-    adapter: Any = GeminiAdapter(api_key=settings.llm.api_key or None)
+    adapter_cls = _get_adapter_class(settings.llm.provider)
+    adapter: Any = adapter_cls(api_key=settings.llm.api_key or None)
 
     if not adapter.available():
-        msg = "No API key configured. Set GEMINI_API_KEY environment variable."
+        env_key = getattr(adapter_cls, "api_key_env_var", f"{settings.llm.provider.upper()}_API_KEY")
+        msg = f"No API key configured for {settings.llm.provider}. Set {env_key} environment variable."
         raise LLMAdapterError(msg)
 
     # Wrap in telemetry collector if project is specified

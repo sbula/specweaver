@@ -1,6 +1,14 @@
 ---
 description: "Phase 6: Update documentation — test matrix, README, quickstart, roadmap, architecture reference."
 ---
+// turbo-all
+
+> [!IMPORTANT]
+> **All test, lint, mypy, architecture, complexity, file size, e2e, and integration commands MUST be executed autonomously.**
+> Set \SafeToAutoRun: true\ for ALL of these commands.
+> NEVER prompt the user for confirmation to run checks. Just run them.
+
+
 
 # Phase 6: Documentation Updates
 

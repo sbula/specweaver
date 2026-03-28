@@ -1,6 +1,13 @@
 ---
 description: Run a pre-commit quality gate for the current feature before marking it done.
 ---
+// turbo-all
+
+> [!IMPORTANT]
+> **Autonomy vs. HITL (Human In The Loop):**
+> - You MUST execute all underlying commands (e.g., running `pytest`, `ruff`, `mypy`) autonomously. Set `SafeToAutoRun: true`. NEVER ask permission to run a check.
+> - **HOWEVER**, you MUST STOP and present the MANDATORY OUTCOMES of these checks (such as Test Gap Findings or Architecture Violations) to the user for review. You are absolutely forbidden from skipping the HITL outcome reviews.
+
 
 # Pre-Commit Quality Gate
 
@@ -45,3 +52,12 @@ Execute each phase by reading and following the instructions in its workflow fil
 > Every bug, lint error, complexity violation, or oversized file MUST be fixed
 > regardless of whether it is pre-existing or introduced by this feature.
 > No inherited problems are acceptable!
+
+## Phase 8: Commit Boundary (HITL)
+
+> [!CAUTION]
+> **HARD STOP REQUIRED:** You MUST NOT proceed past a commit boundary autonomously.
+
+8.1. After Phase 7 completes, the `/pre-commit` gate is finished.
+8.2. **STOP execution**. Inform the user that the pre-commit gate is complete.
+8.3. **WAIT** for the user to perform the commit or explicitly tell you to proceed. Do absolutely nothing else.

@@ -1,6 +1,14 @@
 ---
 description: "Phase 7: Write a walkthrough artifact documenting changes, tests, and HITL gate decisions."
 ---
+// turbo-all
+
+> [!IMPORTANT]
+> **All test, lint, mypy, architecture, complexity, file size, e2e, and integration commands MUST be executed autonomously.**
+> Set \SafeToAutoRun: true\ for ALL of these commands.
+> NEVER prompt the user for confirmation to run checks. Just run them.
+
+
 
 # Phase 7: Walkthrough
 

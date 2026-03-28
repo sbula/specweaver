@@ -1,6 +1,12 @@
 ---
 description: Create or audit an implementation plan — research, audit, merge findings, consistency check. Usage - /implementation-plan <path-to-plan>
 ---
+// turbo-all
+
+> [!IMPORTANT]
+> **Autonomy vs. HITL:**
+> Execute the research and plan auditing autonomously, but you MUST STOP and present any audit findings to the user. NEVER bypass the user review of the findings.
+
 
 # Implementation Plan Workflow
 

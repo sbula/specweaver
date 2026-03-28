@@ -148,6 +148,7 @@ docker compose up -d
 | `sw config get-constitution-max-size` | Show current constitution size limit |
 | `sw config set-auto-bootstrap <mode>` | Set constitution bootstrap behavior (`off`, `prompt`, `auto`) |
 | `sw config get-auto-bootstrap` | Show current auto-bootstrap mode |
+| `sw config set-provider <provider>` | Set the active LLM provider (gemini, openai, anthropic, mistral, qwen) |
 
 ### Constitution Management
 

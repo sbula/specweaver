@@ -1,6 +1,14 @@
 ---
 description: "Phase 2: Code quality checks — ruff, mypy, complexity, and file size limits."
 ---
+// turbo-all
+
+> [!IMPORTANT]
+> **All test, lint, mypy, architecture, complexity, file size, e2e, and integration commands MUST be executed autonomously.**
+> Set \SafeToAutoRun: true\ for ALL of these commands.
+> NEVER prompt the user for confirmation to run checks. Just run them.
+
+
 
 # Phase 2: Code Quality Checks
 
@@ -27,7 +35,7 @@ description: "Phase 2: Code quality checks — ruff, mypy, complexity, and file 
 
 2.4. Run **lines-of-code per file** check (max 500 lines per source file):
      ```
-     python -c "from pathlib import Path; files = [f for f in Path('src').rglob('*.py') if f.stat().st_size > 0]; big = [(f, len(f.read_text(encoding='utf-8').splitlines())) for f in files if len(f.read_text(encoding='utf-8').splitlines()) > 500]; [print(f'{loc} lines: {f}') for f, loc in sorted(big, key=lambda x: -x[1])]; print(f'{len(big)} file(s) over 500 lines') if big else print('All files within 500-line limit')"
+     uv run python scripts/check_file_sizes.py
      ```
      Files over 500 lines MUST be refactored by splitting into smaller modules!
 

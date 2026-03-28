@@ -3,15 +3,18 @@
 
 """LLM adapter interface and concrete implementations."""
 
-import contextlib
 import importlib
 import logging
 import pkgutil
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
+from typing import TYPE_CHECKING
 from specweaver.llm.adapters.base import LLMAdapter
+
+if TYPE_CHECKING:
+    from specweaver.llm.telemetry import CostEntry
+
+logger = logging.getLogger(__name__)
 
 _REGISTRY: dict[str, type[LLMAdapter]] = {}
 _DISCOVERED = False
@@ -37,9 +40,13 @@ def _ensure_discovered() -> None:
             except Exception as e:
                 logger.debug("Failed to load adapter module '%s': %s", module_name, e)
 
+    # Recursively find all subclasses
+    def _get_all_subclasses(cls):
+        return cls.__subclasses__() + [g for s in cls.__subclasses__() for g in _get_all_subclasses(s)]
+
     # Register all subclasses that were loaded
-    for cls in LLMAdapter.__subclasses__():
-        if cls.__name__ != "DummyAdapter": # skip test dummies if any leaked
+    for cls in set(_get_all_subclasses(LLMAdapter)):
+        if cls.__name__ != "DummyAdapter" and getattr(cls, "provider_name", None):
             register_adapter(cls)  # type: ignore
 
     _DISCOVERED = True
@@ -62,4 +69,19 @@ def get_adapter_class(provider_name: str) -> type[LLMAdapter]:
         raise ValueError(f"Unknown LLM provider: {provider_name!r}")
     return _REGISTRY[provider_name]
 
-__all__ = ["get_adapter_class", "get_all_adapters", "register_adapter"]
+
+def get_merged_default_costs() -> dict[str, "CostEntry"]:
+    """Merge default costs from all registered adapters.
+    
+    Returns a unified dictionary mapping model names to their CostEntry.
+    """
+    _ensure_discovered()
+    merged = {}
+    for cls in _REGISTRY.values():
+        if cls.default_costs:
+            for model, cost in cls.default_costs.items():
+                if model not in merged:
+                    merged[model] = cost
+    return merged
+
+__all__ = ["get_adapter_class", "get_all_adapters", "get_merged_default_costs", "register_adapter"]

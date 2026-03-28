@@ -26,6 +26,10 @@ dependencies = [
 sw = "specweaver.cli:app"
 
 [project.optional-dependencies]
+openai = ["openai>=1.5"]
+anthropic = ["anthropic>=0.25"]
+mistral = ["mistralai>=1.0"]
+all-llm = ["openai>=1.5", "anthropic>=0.25", "mistralai>=1.0"]
 serve = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
