@@ -12,8 +12,12 @@ description: "TDD development workflow for implementing features. Read spec → 
 > 2. **NO single-shot implementations.** Break work into small, manageable tasks.
 > 3. **TDD: red tests first.** Every task starts with a failing test.
 > 4. **Pre-commit gate before EVERY commit.** Run `/pre-commit` — no shortcuts.
-> 5. **NEVER wait for user confirmation just to run tests.** Just run them.
-> 6. **Always re-read a file before editing it.** Never rely on memory.
+> 5. **Always re-read a file before editing it.** Never rely on memory.
+
+> [!IMPORTANT]
+> **All test and lint commands MUST run autonomously.**
+> Set `SafeToAutoRun: true` for ALL `pytest`, `ruff`, and `python -m pytest` commands.
+> NEVER prompt the user for confirmation to run tests or linting. Just run them.
 
 ## Phase 1: Read the Spec
 
@@ -32,7 +36,6 @@ description: "TDD development workflow for implementing features. Read spec → 
 ## Phase 2: Task Breakdown
 
 2.1. Break the feature into small, independently testable tasks.
-     Execute all terminal commands for testing without requesting user permission
      Each task should be completable in one TDD cycle (red → green → refactor).
 
 2.2. Order tasks by dependency — implement foundations first, consumers last.
@@ -56,7 +59,10 @@ For each task in the breakdown:
   - Edge cases / corner cases (but keep it simple — avoid over-engineering!)
   - Error paths where relevant
 - Run the test(s) — they MUST fail (red). If they pass, the test is wrong.
-  Execute all terminal commands for testing without requesting user permission
+// turbo
+```
+python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
+```
 
 ### 3.2 Green — Implement the Minimum Code
 
@@ -64,14 +70,42 @@ For each task in the breakdown:
 - Write the simplest code that makes the tests pass.
 - Do NOT add code that isn't needed by a test. YAGNI.
 - Run the tests — they MUST pass (green).
-  Execute all terminal commands for testing without requesting user permission
+// turbo
+```
+python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
+```
+
+### 3.2a Debugging — When Tests Fail Unexpectedly
+
+When a test fails and you need to debug, run targeted tests autonomously.
+All these commands auto-run — no human interaction needed:
+// turbo
+```
+# Single test by node ID
+python -m pytest tests/unit/test_foo.py::TestClass::test_method -v --tb=long
+
+# Keyword filter
+python -m pytest tests/unit/test_foo.py -k "test_specific_case" -v --tb=long
+
+# All tests in a specific file with full traceback
+python -m pytest tests/unit/test_foo.py -v --tb=long
+
+# Re-run only previously failed tests
+python -m pytest --lf -v --tb=long
+```
+
+Debug loop: read error → re-read source → fix → re-run failing test → repeat until green.
 
 ### 3.3 Refactor (if needed)
 
 - Clean up duplication, naming, structure.
 - Run tests again — still green.
-  Execute all terminal commands for testing without requesting user permission
-- Run `ruff check src/ tests/` — fix any lint issues immediately.
+- Run lint — fix any issues immediately.
+// turbo
+```
+python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
+ruff check src/ tests/
+```
 
 ### 3.4 Update task.md
 
@@ -80,10 +114,10 @@ For each task in the breakdown:
 ## Phase 4: Integration Check
 
 4.1. After all tasks are done, run the full test suite:
-     ```
-     python -m pytest --tb=short -q
-     ```
-     Execute all terminal commands for testing without requesting user permission
+// turbo
+```
+python -m pytest --tb=short -q
+```
 
 4.2. Fix any regressions immediately.
 
@@ -116,4 +150,4 @@ For each task in the breakdown:
 | **Architecture** | Check imports respect layer boundaries. No cross-layer violations. |
 | **Coverage** | Target 70-90% test coverage. |
 | **Pre-commit gate** | Mandatory before every commit. No exceptions. |
-| **Tests run freely** | Never ask for permission to run tests. Just run them. |
+| **Tests run freely** | `SafeToAutoRun: true` for all test/lint commands. No exceptions. |
