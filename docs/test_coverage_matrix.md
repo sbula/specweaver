@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **3 492 collected** · 3 480 passed · 12 skipped · 114 source modules · 165 test files
+> **3 562 collected** · 3 550 passed · 12 skipped · 115 source modules · 166 test files
 > **Last updated**: 2026-03-28
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -36,7 +36,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `flow/` | 8 | 300 | 35 | 13 | 348 |
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
-| `llm/` | 12 | 274 | 10 | 2 | 286 |
+| `llm/` | 13 | 285 | 10 | 2 | 297 |
 | `loom/` | 15 | 571 | 14 | 0 | 585 |
 | `planning/` | 3 | 79 | 3 | 2 | 84 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
@@ -46,7 +46,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **114** | **2 972** | **243** | **82** | **3 458** |
+| **Total** | **115** | **2 992** | **243** | **82** | **3 488** |
 
 
 ---
@@ -626,6 +626,16 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `PlanSpecHandler._build_config()` sets PLAN | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12, story 9 |
 | `PlanSpecHandler._build_config()` fallback PLAN | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
 | Multi-project isolation | ⚪ | ✅ | ⚪ | ⚪ | Feature 3.12, story 28 |
+
+### 8.13 `router.py` *(Feature 3.12b)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `ModelRouter.get_for_task()` resolved | ✅ | ❌ | ❌ | ⚪ | Feature 3.12b SF-1 (Foundation) |
+| `ModelRouter.get_for_task()` fallback | ✅ | ❌ | ❌ | ⚪ | Feature 3.12b SF-1 |
+| DB method exceptions handled gracefully | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12b SF-1, via T4 |
+| Profile temperature wins over handler default | ✅ | ❌ | ❌ | ⚪ | Feature 3.12b SF-1, via T3 |
+| Caches adapter securely per project | ✅ | ❌ | ❌ | ⚪ | Feature 3.12b SF-1 |
 
 ---
 

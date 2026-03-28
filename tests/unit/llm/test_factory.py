@@ -120,34 +120,34 @@ class TestFactoryProviderCapabilities:
         self, db: Any, provider: str, adapter_cls_name: str, env_key: str
     ) -> None:
         """Factory creates correct adapter based on DB provider setting."""
-        from specweaver.llm.factory import create_llm_adapter
         from specweaver.llm.adapters import get_adapter_class
+        from specweaver.llm.factory import create_llm_adapter
 
         db.register_project("test-proj", "/tmp/test")
         db.set_active_project("test-proj")
-        
+
         # Override the active setting for the provider
         profile_id = db.create_llm_profile("test-profile", provider=provider, model="some-model")
         db.link_project_profile("test-proj", "draft", profile_id)
 
         with patch.dict(os.environ, {env_key: "dummy-key"}):
             _settings, adapter, _config = create_llm_adapter(db, telemetry_project=None)
-            
+
         expected_cls = get_adapter_class(provider)
         assert isinstance(adapter, expected_cls)
         assert type(adapter).__name__ == adapter_cls_name
 
     def test_factory_fallback_on_missing_project(self, db: Any) -> None:
         """Factory defaults cleanly to gemini if no active project exists."""
-        from specweaver.llm.factory import create_llm_adapter
         from specweaver.llm.adapters.gemini import GeminiAdapter
-        
+        from specweaver.llm.factory import create_llm_adapter
+
         # Ensure no active project
         assert db.get_active_project() is None
 
         with patch.dict(os.environ, {"GEMINI_API_KEY": "fallback-key"}):
             settings, adapter, config = create_llm_adapter(db, telemetry_project=None)
-            
+
         assert isinstance(adapter, GeminiAdapter)
         assert settings.llm.provider == "gemini"
         assert config.model == "gemini-3-flash-preview"

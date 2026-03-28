@@ -27,10 +27,16 @@ class Role(enum.StrEnum):
 
 
 class TaskType(enum.StrEnum):
-    """Classification of an LLM call's purpose (telemetry metadata).
+    """Classification of an LLM call's purpose.
 
-    Used by the TelemetryCollector to label each usage record.
-    Does not affect generation behavior.
+    Used by:
+    - ``TelemetryCollector``: labels each UsageRecord with the call's task type.
+    - ``ModelRouter`` (3.12b): serves as the routing key for per-task LLM profile
+      resolution. Configure a routing entry for a task type to use a different
+      model or temperature than the project default.
+
+    Does NOT affect generation behavior directly — adapters do not inspect this
+    field. It is read by the router and telemetry layers only.
     """
 
     DRAFT = "draft"

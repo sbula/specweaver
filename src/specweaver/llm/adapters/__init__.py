@@ -7,8 +7,8 @@ import importlib
 import logging
 import pkgutil
 from pathlib import Path
-
 from typing import TYPE_CHECKING
+
 from specweaver.llm.adapters.base import LLMAdapter
 
 if TYPE_CHECKING:
@@ -41,13 +41,13 @@ def _ensure_discovered() -> None:
                 logger.debug("Failed to load adapter module '%s': %s", module_name, e)
 
     # Recursively find all subclasses
-    def _get_all_subclasses(cls):
+    def _get_all_subclasses(cls: type[LLMAdapter]) -> list[type[LLMAdapter]]:
         return cls.__subclasses__() + [g for s in cls.__subclasses__() for g in _get_all_subclasses(s)]
 
     # Register all subclasses that were loaded
-    for cls in set(_get_all_subclasses(LLMAdapter)):
+    for cls in set(_get_all_subclasses(LLMAdapter)):  # type: ignore[type-abstract]
         if cls.__name__ != "DummyAdapter" and getattr(cls, "provider_name", None):
-            register_adapter(cls)  # type: ignore
+            register_adapter(cls)
 
     _DISCOVERED = True
 
@@ -72,7 +72,7 @@ def get_adapter_class(provider_name: str) -> type[LLMAdapter]:
 
 def get_merged_default_costs() -> dict[str, "CostEntry"]:
     """Merge default costs from all registered adapters.
-    
+
     Returns a unified dictionary mapping model names to their CostEntry.
     """
     _ensure_discovered()

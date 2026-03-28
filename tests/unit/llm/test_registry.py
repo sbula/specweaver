@@ -90,7 +90,7 @@ def test_get_merged_default_costs():
     """Returns a unified dictionary with costs from all adapters."""
     costs = get_merged_default_costs()
     assert "gemini-3-flash-preview" in costs
-    
+
     # Check that a cost entry is structured right
     gemini_cost = costs["gemini-3-flash-preview"]
     assert hasattr(gemini_cost, "input_cost_per_1k")
@@ -99,7 +99,7 @@ def test_get_merged_default_costs():
 
 def test_merged_costs_no_duplicates():
     """First-registered adapter wins on duplicate models (not typically expected)."""
-    # Simply check that what we get is a dict and has no dupes 
+    # Simply check that what we get is a dict and has no dupes
     # (dict keys are inherently unique)
     costs = get_merged_default_costs()
     assert isinstance(costs, dict)

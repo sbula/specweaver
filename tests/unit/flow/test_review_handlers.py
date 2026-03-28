@@ -49,6 +49,24 @@ class TestRunContextConfigField:
         )
         assert ctx.config is sentinel
 
+    def test_llm_router_defaults_to_none(self, tmp_path: Path):
+        """RunContext without llm_router= kwarg → llm_router is None (backward-compat)."""
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "spec.md",
+        )
+        assert ctx.llm_router is None
+
+    def test_llm_router_accepts_arbitrary_value(self, tmp_path: Path):
+        """RunContext.llm_router can hold any object (ModelRouter instance)."""
+        sentinel = object()
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "spec.md",
+            llm_router=sentinel,
+        )
+        assert ctx.llm_router is sentinel
+
 
 # ---------------------------------------------------------------------------
 # ReviewSpecHandler guard clause (gap #21)

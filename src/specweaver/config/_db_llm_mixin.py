@@ -74,14 +74,14 @@ class LlmProfilesMixin:
         """Update fields on an existing LLM profile."""
         if not kwargs:
             return
-            
+
         fields = []
         values = []
         for k, v in kwargs.items():
             fields.append(f"{k} = ?")
             values.append(v)
         values.append(profile_id)
-        
+
         sql = f"UPDATE llm_profiles SET {', '.join(fields)} WHERE id = ?"
         with self.connect() as conn:  # type: ignore[attr-defined]
             conn.execute(sql, tuple(values))
@@ -151,3 +151,51 @@ class LlmProfilesMixin:
                 (link["profile_id"],),
             ).fetchone()
             return dict(row) if row else None
+
+    def unlink_project_profile(self, project_name: str, role: str) -> bool:
+        """Remove a project-role → profile link.
+
+        Args:
+            project_name: Name of the project.
+            role: Role key (e.g. ``"task:implement"``).
+
+        Returns:
+            True if a row was deleted, False if no entry existed.
+        """
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            cursor = conn.execute(
+                "DELETE FROM project_llm_links WHERE project_name = ? AND role = ?",
+                (project_name, role),
+            )
+            return bool(cursor.rowcount > 0)
+
+    def get_project_routing_entries(
+        self, project_name: str,
+    ) -> list[dict[str, object]]:
+        """Return all per-task routing entries for a project.
+
+        Routing entries are those whose ``role`` column starts with ``"task:"``
+        (e.g. ``"task:implement"``, ``"task:review"``). Plain roles such as
+        ``"review"`` or ``"draft"`` are excluded.
+
+        Returns a list of dicts with keys: ``task_type``, ``profile_id``,
+        ``profile_name``.
+        """
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            rows = conn.execute(
+                "SELECT pll.role, pll.profile_id, lp.name AS profile_name "
+                "FROM project_llm_links pll "
+                "JOIN llm_profiles lp ON lp.id = pll.profile_id "
+                "WHERE pll.project_name = ? AND pll.role LIKE 'task:%' "
+                "ORDER BY pll.role",
+                (project_name,),
+            ).fetchall()
+            return [
+                {
+                    "task_type": row["role"][len("task:"):],
+                    "profile_id": row["profile_id"],
+                    "profile_name": row["profile_name"],
+                }
+                for row in rows
+            ]
+

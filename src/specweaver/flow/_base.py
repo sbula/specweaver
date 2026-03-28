@@ -56,6 +56,7 @@ class RunContext(BaseModel):
     workspace_roots: list[str] | None = None  # Override boundary roots (set by decomposition)
     api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
     db: Any = None  # Database | None — for telemetry flush (set by CLI/API)
+    llm_router: Any = None  # ModelRouter | None — per-task routing (3.12b)
 
 
 # ---------------------------------------------------------------------------

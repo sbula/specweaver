@@ -428,7 +428,7 @@ def config_set_provider(
     db = _core.get_db()
 
     from specweaver.llm.adapters import get_all_adapters
-    
+
     adapters = get_all_adapters()
     if provider not in adapters:
         _core.console.print(
@@ -438,14 +438,14 @@ def config_set_provider(
         raise typer.Exit(code=1)
 
     profile = db.get_project_profile(name, role)
-    
+
     # If the profile exists and is project-specific, just update it
     if profile and not profile["is_global"]:
         update_args = {"provider": provider}
         if model is not None:
             update_args["model"] = model
         db.update_llm_profile(int(str(profile["id"])), **update_args)
-        
+
         _core.console.print(
             f"[green]\u2713[/green] Updated existing custom profile for role [bold]{role}[/bold]. "
             f"Provider set to [bold]{provider}[/bold].",
@@ -454,15 +454,15 @@ def config_set_provider(
         # Clone or create a new local profile and link it
         profile_name = f"{name}-{role}-profile"
         _model = model or "default"
-        
+
         profile_id = db.create_llm_profile(
-            profile_name, 
-            provider=provider, 
-            model=_model, 
+            profile_name,
+            provider=provider,
+            model=_model,
             is_global=False,
         )
         db.link_project_profile(name, role, profile_id)
-        
+
         _core.console.print(
             f"[green]\u2713[/green] Created new local profile for role [bold]{role}[/bold]. "
             f"Provider set to [bold]{provider}[/bold].",

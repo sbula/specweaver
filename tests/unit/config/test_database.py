@@ -503,3 +503,97 @@ class TestGetLlmProfileByName:
         """Non-existent profile name returns None."""
         profile = db.get_llm_profile_by_name("nonexistent-profile")
         assert profile is None
+
+
+# ---------------------------------------------------------------------------
+# T5+T6 — unlink_project_profile + get_project_routing_entries (3.12b)
+# ---------------------------------------------------------------------------
+
+
+class TestRoutingDbMethods:
+    """New DB methods for 3.12b routing: unlink_project_profile + get_project_routing_entries."""
+
+    @pytest.fixture()
+    def db(self, tmp_path: Path):
+        from specweaver.config.database import Database
+        return Database(tmp_path / ".specweaver" / "specweaver.db")
+
+    @pytest.fixture()
+    def proj_with_links(self, db, tmp_path: Path):
+        """Project with two task: routing entries and one non-task entry."""
+        db.register_project("myapp", str(tmp_path))
+        pid_fast = db.create_llm_profile(
+            "gemini-fast", provider="gemini", model="gemini-3-flash-preview",
+            temperature=0.2, max_output_tokens=4096,
+        )
+        pid_pro = db.create_llm_profile(
+            "gemini-pro", provider="gemini", model="gemini-2.5-pro-preview-03-25",
+            temperature=0.5, max_output_tokens=8192,
+        )
+        pid_review = db.create_llm_profile(
+            "review-profile", provider="gemini", model="gemini-3-flash-preview",
+            temperature=0.3, max_output_tokens=4096,
+        )
+        db.link_project_profile("myapp", "task:implement", pid_fast)
+        db.link_project_profile("myapp", "task:plan", pid_pro)
+        db.link_project_profile("myapp", "review", pid_review)   # non-task: role
+        return db
+
+    # T5 — unlink_project_profile
+
+    def test_unlink_existing_entry_returns_true(self, proj_with_links) -> None:
+        """Unlinking an existing task: entry returns True and removes the row."""
+        db = proj_with_links
+        result = db.unlink_project_profile("myapp", "task:implement")
+        assert result is True
+        # Row is gone
+        profile = db.get_project_profile("myapp", "task:implement")
+        assert profile is None
+
+    def test_unlink_nonexistent_entry_returns_false(self, proj_with_links) -> None:
+        """Unlinking a role that has no link returns False without error."""
+        db = proj_with_links
+        result = db.unlink_project_profile("myapp", "task:review")
+        assert result is False
+
+    def test_unlink_does_not_affect_other_entries(self, proj_with_links) -> None:
+        """Unlinking one role leaves other roles intact."""
+        db = proj_with_links
+        db.unlink_project_profile("myapp", "task:implement")
+        profile = db.get_project_profile("myapp", "task:plan")
+        assert profile is not None
+
+    # T6 — get_project_routing_entries
+
+    def test_get_routing_entries_returns_task_rows(self, proj_with_links) -> None:
+        """Returns entries only for 'task:*' roles."""
+        db = proj_with_links
+        entries = db.get_project_routing_entries("myapp")
+        # Should contain implement and plan, not the plain 'review' role
+        task_types = [e["task_type"] for e in entries]
+        assert "implement" in task_types
+        assert "plan" in task_types
+
+    def test_get_routing_entries_excludes_non_task_roles(self, proj_with_links) -> None:
+        """Plain 'review' role (no 'task:' prefix) is not included."""
+        db = proj_with_links
+        entries = db.get_project_routing_entries("myapp")
+        task_types = [e["task_type"] for e in entries]
+        assert "review" not in task_types
+
+    def test_get_routing_entries_empty_when_none(self, db, tmp_path: Path) -> None:
+        """No task: links → returns empty list."""
+        db.register_project("empty-proj", str(tmp_path))
+        entries = db.get_project_routing_entries("empty-proj")
+        assert entries == []
+
+    def test_get_routing_entries_contains_profile_info(self, proj_with_links) -> None:
+        """Each entry dict contains task_type, profile_name, and profile_id."""
+        db = proj_with_links
+        entries = db.get_project_routing_entries("myapp")
+        assert len(entries) == 2
+        for entry in entries:
+            assert "task_type" in entry
+            assert "profile_name" in entry
+            assert "profile_id" in entry
+
