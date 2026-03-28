@@ -1,19 +1,20 @@
 ---
-description: Audit an implementation plan for open questions, assumptions, and ambiguities. Usage - /audit-implementation-plan <path-to-plan>
+description: Create or audit an implementation plan — research, audit, merge findings, consistency check. Usage - /implementation-plan <path-to-plan>
 ---
 
-# Audit Implementation Plan
+# Implementation Plan Workflow
 
 The user will provide a path to an implementation plan file as an argument after the slash command.
-For example: `/audit-implementation-plan docs/proposals/roadmap/phase_3/feature_3_6_implementation_plan.md`
+For example: `/implementation-plan docs/proposals/roadmap/phase_3/feature_3_12a_implementation_plan.md`
 
 If no path argument is provided, ask the user which implementation plan to audit.
 
 > [!CAUTION]
 > **MANDATORY SEQUENCING — DO NOT SKIP OR REORDER PHASES!**
 >
-> This workflow has 3 phases that MUST be executed **in strict order**.
+> This workflow has 5 phases that MUST be executed **in strict order**.
 > Every phase MUST be completed before moving to the next one.
+> The final deliverable is a **single self-contained implementation plan** — no separate audit report.
 
 ## Phase 1: Preparation
 
@@ -69,6 +70,7 @@ If no path argument is provided, ask the user which implementation plan to audit
      13. **Testing** — what's testable without real LLM calls, fixture strategy, mocking boundaries
      14. **Scope boundaries** — what's explicitly in each sub-phase vs deferred, risk of scope creep
      15. **Documentation** — what needs updating in README, quickstart, test coverage matrix, roadmap
+     16. **Import chains** — verify no circular imports are introduced; check module-level vs lazy imports
 
 2.5. **Do NOT answer any of the questions. Just list them all.**
 
@@ -94,6 +96,8 @@ If no path argument is provided, ask the user which implementation plan to audit
 
 3.3. **Acyclic Dependencies** — verify the proposed changes do NOT introduce
      circular imports. Dependencies must form a DAG pointing downward.
+     Trace the full import chain for any cross-module references,
+     distinguishing module-level imports from lazy (in-function) imports.
 
 3.4. **Common Closure** — if the plan modifies 3+ different modules for a single
      feature, ask: are those changes tightly coupled and should they be co-located?
@@ -112,3 +116,46 @@ If no path argument is provided, ask the user which implementation plan to audit
 > and **STOP. Wait for the user to respond** before doing anything else.
 > Architectural violations from Phase 3 should appear as CRITICAL items
 > at the TOP of the list.
+
+## Phase 4: Merge Findings Into Plan
+
+After the user has reviewed, answered, or accepted the audit findings:
+
+4.1. **Update the implementation plan** to incorporate all resolved findings.
+     - Findings that changed the design → update the relevant plan sections.
+     - Findings that are implementation caveats → add as inline `[!CAUTION]`,
+       `[!WARNING]`, or `[!NOTE]` alerts next to the relevant code/section.
+     - Findings that are deferred → add to the Backlog section.
+     - Findings that are rejected or not applicable → discard.
+
+4.2. **Do NOT create a separate audit report.** The implementation plan must be
+     the single self-contained document. Another agent or session must be able
+     to pick it up and implement it without needing any other context.
+
+4.3. Present the updated plan to the user for review.
+
+## Phase 5: Final Consistency Check
+
+After the audit findings are merged and the plan is updated, answer these
+three questions explicitly. Do NOT just assert "yes" — provide evidence.
+
+5.1. **Open questions**: Are there still any unresolved decisions or ambiguities?
+     If yes, list them. If no, state that all decisions are made and documented inline.
+
+5.2. **Architecture and future compatibility**: Does the plan respect all
+     `context.yaml` dependency rules? Does it support upcoming features on the
+     roadmap (downstream consumers like the next planned feature)? Verify:
+     - Import chains (no circular deps)
+     - `consumes`/`forbids` rules in all affected modules
+     - Compatibility with at least the next 2-3 features on the roadmap
+
+5.3. **Internal consistency**: Does the plan contradict itself anywhere?
+     Check that:
+     - Every file mentioned in "Proposed Changes" has correct `[NEW]`/`[MODIFY]`/`[DELETE]` tags
+     - Every DB migration is reflected in both `_schema.py` AND the affected mixin/database code
+     - Every new function/class mentioned in code snippets appears in the verification plan
+     - Test names match the code they claim to test
+
+> [!IMPORTANT]
+> Present the answers to all three questions to the user and **STOP. Wait for
+> approval** before proceeding to implementation.

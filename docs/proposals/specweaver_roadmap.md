@@ -51,6 +51,8 @@
 - ✅ Feature 3.8: Web Dashboard (`sw serve`) — TDD and pre-commit gate passed (HTMX, Jinja2, REST endpoints)
 - Feature 3.9: Containerization
 - ✅ Feature 3.12: Token & cost telemetry — TelemetryCollector, DB persistence, factory wrapping, task_type attribution, `sw usage`/`sw costs` CLI, runner + CLI + API flush integration. 3451 tests.
+- ⚙️ Feature 3.12a: Multi-provider adapter registry — auto-discovery, self-describing adapters, cost layering (code defaults → DB overrides)
+- Feature 3.12b: Static model routing — task-type → provider+model config, builds on 3.12a registry
 
 ---
 
@@ -76,15 +78,15 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10–3.12 (✅) → 3.13–3.18 → 3.19 (Pipeline Viz ⏸) → 3.20–3.23
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10–3.12 (✅) → 3.12a (Multi-Provider Registry) → 3.12b (Static Routing) → 3.13–3.18 → 3.19 (Pipeline Viz ⏸) → 3.20–3.23
 
 ---
 
 ### [Phase 4: Advanced Capabilities](roadmap/phase_4_advanced.md)
 
-Features from `future_capabilities_reference.md` that require significant engineering: symbol index, AST chunking, RAG, tiered access, multi-agent review, conversation summarization, mutation testing, Web UI.
+Features from `future_capabilities_reference.md` that require significant engineering: symbol index, AST chunking, RAG, tiered access, multi-agent review, conversation summarization, mutation testing, Web UI. Also includes LLM cost analytics sub-features that build on 3.12a's telemetry data.
 
-**Features**: 4.1 (Symbol Index) → 4.2 (AST Chunking) → 4.3 (RAG) → 4.4 (Access Rights) → 4.5 (Multi-Agent) → 4.5a–d (Cost Analytics, Artifact Lineage, Friction Detection, Routing Recommendations) → 4.6–4.10
+**Features**: 4.1 (Symbol Index) → 4.2 (AST Chunking) → 4.3 (RAG) → 4.4 (Access Rights) → 4.5 (Multi-Agent) → 4.5a (Task-Type Cost Analytics — spending dashboards, model comparison) → 4.5b (Artifact Lineage Graph — merges with 3.14) → 4.5c (Deterministic Friction Detection — diff-based upstream attribution) → 4.5d (Data-Driven Routing Recommendations — suggest model swaps) → 4.6–4.10
 
 ---
 
@@ -92,7 +94,7 @@ Features from `future_capabilities_reference.md` that require significant engine
 
 Persistent domain knowledge system: cross-service impact analysis, SLA-aware spec authoring, automated architectural consistency. Extends the in-memory topology graph (Phase 2) into a persistent, event-driven knowledge graph. Enhanced with hierarchical memory scoping, composite scoring (semantic + recency + importance), and LLM-powered memory consolidation (keep/update/delete/insert_new). _(informed by [CrewAI](https://github.com/crewAIInc/crewAI) memory architecture)_
 
-**Features**: 5.1 (Persistent Graph) → 5.2 (EDKG) → 5.3 (GC) → 5.4 (Hybrid RAG + Composite Scoring) → 5.5 (Provenance) → 5.5a (HITL Root-Cause Tagging) → 5.6 (Socratic Drafting) → 5.7 (Memory Consolidation) → 5.8 (🔬 Dynamic Routing + AI Arbiter)
+**Features**: 5.1 (Persistent Graph) → 5.2 (EDKG) → 5.3 (GC) → 5.4 (Hybrid RAG + Composite Scoring) → 5.5 (Provenance) → 5.5a (HITL Root-Cause Tagging — label failures for routing data) → 5.6 (Socratic Drafting) → 5.7 (Memory Consolidation) → 5.8 (🔬 Dynamic Routing + AI Arbiter — ALS scoring, auto model selection)
 
 ---
 
