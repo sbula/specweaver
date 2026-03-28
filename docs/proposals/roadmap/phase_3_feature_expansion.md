@@ -40,12 +40,46 @@ Order will be based on value and dependencies. Likely sequence:
 
 ## Process for Each Feature
 
-1. Write an isolation proposal (what, inputs, outputs, interfaces, scope)
-2. HITL approves the proposal
-3. Implement with tests
-4. Dogfood on SpecWeaver itself
-5. Validate
-6. Merge
+The full lifecycle is orchestrated by `/feature`. Individual stages can be invoked
+standalone for targeted work. The Design Document's Progress Tracker is the single
+source of truth for what is done and what remains across all sessions.
+
+### Full lifecycle (recommended)
+```
+/feature <feature_id>
+```
+
+### Individual stages (targeted use)
+```
+/design <feature_id>
+/implementation-plan <design_doc_path> [<sf_id>]
+/dev <impl_plan_path>
+/pre-commit
+```
+
+### Steps
+
+1. **`/design`** — Intake + research + FR/NFR + API validation + arch alignment + decompose
+   → Output: `docs/proposals/design/phase_3/<feature_id>_design.md` (Status: APPROVED)
+
+2. **`/implementation-plan`** (one run per sub-feature, in dependency order)
+   → Technical research + audit (16 categories) + arch check + HITL review + HITL approval
+   → Output: `docs/proposals/roadmap/phase_3/<feature_id>[_sf<N>]_implementation_plan.md`
+   → Updates: Progress Tracker in the Design Document
+
+3. **`/dev`** (one run per implementation plan)
+   → TDD (red → green → refactor) per task; `/pre-commit` + HITL gate at every commit boundary
+   → Updates: Progress Tracker in the Design Document
+
+4. **Commit** (HITL boundary — mandatory stop after each `/pre-commit` within `/dev`)
+
+5. **Dogfood + validate** (after all sub-features committed)
+
+6. **Merge**
+
+> [!NOTE]
+> Sub-features with no shared dependencies may run in parallel sessions.
+> Check the Progress Tracker in the Design Document before starting any session.
 
 ---
 

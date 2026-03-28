@@ -1,16 +1,21 @@
+---
+description: "TDD development workflow for implementing features. Load context → read spec → break down → red/green/refactor → /pre-commit → commit (per commit boundary)."
+---
 
 > [!IMPORTANT]
 > **AGENT DIRECTIVE FOR TDD WORKFLOW:**
 > DO NOT prompt or inform the user every time you transition between Red, Green, or Refactor phases.
-> Just execute the phases silently and continuously. Only stop or ask the user when you are completely blocked or have finished the entirety of your assigned tasks.
+> Execute the phases silently and continuously.
+> STOP only at the defined HITL gates: red-flag check (Phase 1), task list review (Phase 2),
+> and the per-commit cycle gates (Phase 5).
 
----
-description: "TDD development workflow for implementing features. Read spec → break down → red/green/refactor → pre-commit gate → commit."
----
+// turbo-all
 
 # Development Workflow (TDD)
 
-// turbo-all
+```
+Usage: /dev <impl_plan_path>
+```
 
 > [!CAUTION]
 > **STRICT RULES — NO EXCEPTIONS:**
@@ -26,9 +31,22 @@ description: "TDD development workflow for implementing features. Read spec → 
 > Set `SafeToAutoRun: true` for ALL `pytest`, `ruff`, and `python -m pytest` commands.
 > NEVER prompt the user for confirmation to run tests or linting. Just run them.
 
-## Phase 1: Read the Spec
+## Phase 1: Load Context & Read the Spec
 
-1.1. Read the implementation plan / spec for the feature being implemented.
+**1.0. Load context (mandatory — before anything else):**
+
+a. Read the Implementation Plan at `<impl_plan_path>` in full.
+b. From its header block, extract the Design Document path.
+c. Read the Design Document in full. Focus on:
+   - Feature Overview (understand the intent and rationale)
+   - The sub-feature section for this plan (scope, FRs subset, inputs, outputs)
+   - Progress Tracker (verify all pre-conditions are met)
+d. **Pre-condition checks — HARD STOP if any fail:**
+   - Design Document `Status: APPROVED`? If not → run `/design` first.
+   - This sub-feature's `Impl Plan` is `✅` in the tracker? If not → run `/implementation-plan` first.
+   - All sub-features in `depends_on` have `Committed ✅`? If not → tell the user which dep is incomplete.
+
+**1.1. Read the implementation plan** in full again with fresh understanding of the design context.
      Understand the full scope, interfaces, and dependencies.
 
 1.2. **Red flag check**: Can you implement this without guessing?
@@ -118,29 +136,54 @@ ruff check src/ tests/
 
 - Mark the completed task as `[x]`.
 
-## Phase 4: Integration Check
+## Phase 4 + 5 + 6: Per-Commit Quality Gate (repeat for each commit boundary)
 
-4.1. After all tasks are done, run the full test suite:
+The implementation plan defines one or more commit boundaries in `task.md`
+(e.g., "commit after tasks 1–3", "commit after tasks 4–6").
+**Each boundary triggers a full quality + commit cycle before the next task batch begins.**
+
+> [!CAUTION]
+> **HARD STOP RULE:** There is NO single pre-commit run at the end of `/dev`.
+> Every commit boundary gets its own `/pre-commit` + HITL gate.
+> 3 commit boundaries = 3 `/pre-commit` runs = 3 HITL commit stops.
+> Do NOT batch commits. Do NOT skip the pre-commit for intermediate commits.
+
+For **each commit boundary** in `task.md`, in order:
+
+**Step A — Complete the task batch (autonomous):**
+- Run all TDD tasks in this batch to completion (red → green → refactor).
+- Run the full test suite after the final task in this batch:
 // turbo
 ```
 python -m pytest --tb=short -q
 ```
+- Fix any regressions before proceeding to Step B.
 
-4.2. Fix any regressions immediately.
+**Step B — Pre-Commit Quality Gate (autonomous, gates may fire):**
+- Execute the full `/pre-commit` workflow (all 7 phases). This is MANDATORY.
+- Read `.agents/workflows/pre-commit.md` and follow all phases.
+- **STOP at Phase 1 HITL gate** if architectural violations are found.
+- **STOP at Phase 3 HITL gate** (test gap analysis — always fires).
+- Complete Phase 4 – 7 autonomously after user responds.
 
-## Phase 5: Pre-Commit Quality Gate
-
-5.1. Execute the full `/pre-commit` workflow autonomously. This is MANDATORY.
-     No commit is allowed without passing all 7 phases.
-
-## Phase 6: Commit Boundary (HITL)
+**Step C — Commit Boundary (HITL — mandatory hard stop):**
 
 > [!CAUTION]
-> **HARD STOP REQUIRED:** You MUST NOT proceed past a commit boundary autonomously.
+> **HARD STOP REQUIRED:** You MUST NOT proceed to the next task batch autonomously.
 
-6.1. When all tasks for a scheduled commit in `task.md` are complete (e.g., `commit 2`), **STOP execution**.
-6.2. Inform the user that the tasks and `/pre-commit` checks are complete.
-6.3. **WAIT** for the user to perform the commit or to give you explicit permission to proceed. Do absolutely nothing else until they respond.
+- **STOP execution.**
+- Inform the user:
+  - "Commit boundary N of M is ready. `/pre-commit` passed."
+  - Which tasks are included in this commit
+  - Current test count
+- **WAIT** for the user to commit or give explicit permission to proceed.
+- Do absolutely nothing else until they respond.
+- On commit confirmed: update `task.md`. Proceed to next task batch (Step A).
+
+**After the final commit boundary:**
+- Update the Progress Tracker in the Design Document:
+  `Dev ✅`, `Pre-Commit ✅`, `Committed ✅` for this sub-feature.
+- Update the Session Handoff paragraph in the Design Document.
 
 ---
 
