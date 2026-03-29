@@ -29,6 +29,7 @@ Usage: /dev <impl_plan_path>
 > [!IMPORTANT]
 > **All test and lint commands MUST run autonomously.**
 > Set `SafeToAutoRun: true` for ALL `pytest`, `ruff`, and `python -m pytest` commands.
+> **NO SHELL COMPOUNDING**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`). The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call.
 > NEVER prompt the user for confirmation to run tests or linting. Just run them.
 
 ## Phase 1: Load Context & Read the Spec

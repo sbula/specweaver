@@ -6,6 +6,7 @@ description: Run a pre-commit quality gate for the current feature before markin
 > [!IMPORTANT]
 > **Autonomy vs. HITL (Human In The Loop):**
 > - You MUST execute all underlying commands (e.g., running `pytest`, `ruff`, `mypy`) autonomously. Set `SafeToAutoRun: true`. NEVER ask permission to run a check.
+> - **NO SHELL COMPOUNDING**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`). The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call.
 > - **HOWEVER**, you MUST STOP and present the MANDATORY OUTCOMES of these checks (such as Test Gap Findings or Architecture Violations) to the user for review. You are absolutely forbidden from skipping the HITL outcome reviews.
 
 

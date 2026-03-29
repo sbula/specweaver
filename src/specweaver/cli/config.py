@@ -12,6 +12,7 @@ import typer
 from rich.table import Table
 
 from specweaver.cli import _core
+from specweaver.cli.config_routing import routing_app
 
 logger = logging.getLogger(__name__)
 
@@ -463,3 +464,8 @@ def config_set_provider(
             f"[green]\u2713[/green] Created new local profile for role [bold]{role}[/bold]. "
             f"Provider set to [bold]{provider}[/bold].",
         )
+
+
+# -- Model routing commands -------------------------------------------------
+
+config_app.add_typer(routing_app, name="routing")

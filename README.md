@@ -25,6 +25,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **UI Mockup Generation** — Auto-detects UI/Frontend requirements in specs and calls Google Stitch MCP to generate and attach visual mockups to standard implementation plans
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
 - **Multi-provider support** — Auto-discovering adapter registry supporting Gemini, OpenAI (GPT-5.4), Anthropic (Claude 4.6), Mistral (Small 4), and Qwen (3.5)
+- **Config-driven model routing** — Map task types (`implement`, `review`, `draft`, etc.) to specific LLM profiles for per-task model/temperature control
 
 ## Quickstart
 
@@ -198,6 +199,14 @@ docker compose up -d
 | `sw costs` | Show current cost settings (defaults + overrides) |
 | `sw costs set <model> <in> <out>` | Set a per-model cost override (USD/1k tokens) |
 | `sw costs reset <model>` | Remove a cost override, revert to defaults |
+
+### Model Routing
+
+| Command | Description |
+|---|---|
+| `sw config routing set <task_type> <profile>` | Route a task type to a specific LLM profile |
+| `sw config routing show` | Show the routing table for the active project |
+| `sw config routing clear [<task_type>]` | Clear routing entries (one or all) |
 
 ## Validation Rules
 

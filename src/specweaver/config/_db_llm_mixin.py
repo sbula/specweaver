@@ -202,7 +202,7 @@ class LlmProfilesMixin:
             rows = conn.execute(
                 "SELECT pll.role, pll.profile_id, lp.name AS profile_name "
                 "FROM project_llm_links pll "
-                "JOIN llm_profiles lp ON lp.id = pll.profile_id "
+                "LEFT JOIN llm_profiles lp ON lp.id = pll.profile_id "
                 "WHERE pll.project_name = ? AND pll.role LIKE 'task:%' "
                 "ORDER BY pll.role",
                 (project_name,),
@@ -211,7 +211,23 @@ class LlmProfilesMixin:
                 {
                     "task_type": row["role"][len("task:") :],
                     "profile_id": row["profile_id"],
-                    "profile_name": row["profile_name"],
+                    "profile_name": row["profile_name"] or "[unknown]",
                 }
                 for row in rows
             ]
+
+    def clear_all_project_routing(self, project_name: str) -> int:
+        """Delete ALL per-task routing entries for a project.
+
+        Unlike iterating ``get_project_routing_entries()`` (which JOINs on
+        ``llm_profiles`` and misses orphaned links), this directly deletes
+        all rows whose role starts with ``"task:"``.
+
+        Returns the number of rows deleted.
+        """
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            cursor = conn.execute(
+                "DELETE FROM project_llm_links WHERE project_name = ? AND role LIKE 'task:%'",
+                (project_name,),
+            )
+            return int(cursor.rowcount)
