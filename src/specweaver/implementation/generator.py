@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.llm.models import GenerationConfig, Message, Role
+from specweaver.llm.models import GenerationConfig, Message, ProjectMetadata, Role
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -80,6 +80,7 @@ class Generator:
         constitution: str | None = None,
         standards: str | None = None,
         plan: str | None = None,
+        project_metadata: ProjectMetadata | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -98,6 +99,7 @@ class Generator:
         builder = (
             PromptBuilder()
             .add_instructions(CODE_GEN_INSTRUCTIONS)
+            .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="reference")
         )
         if constitution:
@@ -139,6 +141,7 @@ class Generator:
         constitution: str | None = None,
         standards: str | None = None,
         plan: str | None = None,
+        project_metadata: ProjectMetadata | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -157,6 +160,7 @@ class Generator:
         builder = (
             PromptBuilder()
             .add_instructions(TEST_GEN_INSTRUCTIONS)
+            .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="reference")
         )
         if constitution:

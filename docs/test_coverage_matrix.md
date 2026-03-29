@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **3 568 collected** · 3 568 passed · 0 skipped · 116 source modules · 167 test files
+> **3 587 collected** · 3 587 passed · 0 skipped · 116 source modules · 168 test files
 > **Last updated**: 2026-03-29
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a

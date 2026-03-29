@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
     from specweaver.llm.mention_scanner.models import ResolvedMention
-    from specweaver.llm.models import TokenBudget
+    from specweaver.llm.models import ProjectMetadata, TokenBudget
 
 from specweaver.llm._prompt_constants import (
     _CONSTITUTION_PREAMBLE,
@@ -157,6 +157,38 @@ class PromptBuilder:
                 kind="context",
                 label=label,
                 tokens=self._count(text),
+            ),
+        )
+        return self
+
+    def add_project_metadata(
+        self,
+        metadata: ProjectMetadata | None,
+        *,
+        priority: int = 1,
+    ) -> PromptBuilder:
+        """Add project metadata (e.g. environment, safe config).
+
+        Args:
+            metadata: The ProjectMetadata DTO (ignored if None).
+            priority: Truncation priority. Default 1 (highly preferred).
+        """
+        if not metadata:
+            return self
+
+        import json
+
+        # We masquarade JSON as YAML block to avoid ruamel.yaml stream parsing overhead
+        raw_dict = metadata.model_dump()
+        yaml_content = f"project_metadata:\n{json.dumps(raw_dict, indent=2)}"
+
+        self._blocks.append(
+            _ContentBlock(
+                text=yaml_content,
+                priority=max(1, priority),
+                kind="project_metadata",
+                label="project_metadata",
+                tokens=self._count(yaml_content),
             ),
         )
         return self

@@ -141,6 +141,7 @@ class ReviewSpecHandler:
                 standards=context.standards,
                 mentioned_files=_get_prior_mentions(context),
                 on_tool_round=on_tool_round,
+                project_metadata=context.project_metadata,
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
@@ -226,6 +227,7 @@ class ReviewCodeHandler:
                 standards=context.standards,
                 mentioned_files=_get_prior_mentions(context),
                 on_tool_round=on_tool_round,
+                project_metadata=context.project_metadata,
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",

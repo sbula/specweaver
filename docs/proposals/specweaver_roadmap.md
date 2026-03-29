@@ -41,7 +41,7 @@
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
 **Phase 2 (Flow Engine)**: Steps 7–14 ✅
-**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅ | Feature 3.7 🔧 | Feature 3.8 ✅ | Feature 3.12 ✅ | Feature 3.12a ✅ | Feature 3.12b ✅ (3548 total tests)
+**Phase 3 (Features)**: Feature 3.1 ✅ | Feature 3.2 ✅ | Feature 3.3 ✅ | Feature 3.4 ✅ | Feature 3.7 🔧 | Feature 3.8 ✅ | Feature 3.12 ✅ | Feature 3.12a ✅ | Feature 3.12b ✅ | Feature 3.13 ✅ (3587 total tests)
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - ✅ Feature 3.5: Auto-discover standards from codebase _(Agent OS v3)_ — multi-language (Py/JS/TS), multi-scope, conditional LLM comparison
@@ -52,7 +52,8 @@
 - Feature 3.9: Containerization
 - ✅ Feature 3.12: Token & cost telemetry — TelemetryCollector, DB persistence, factory wrapping, task_type attribution, `sw usage`/`sw costs` CLI, runner + CLI + API flush integration. 3451 tests.
 - ✅ Feature 3.12a: Multi-provider adapter registry — auto-discovery, self-describing adapters (Commit 1 & 2 Completed: Registry, 2026 Models & Edge Cases)
-- ✅ Feature 3.12b: Static model routing — task-type → provider+model config, builds on 3.12a registry (3548 tests total)
+- ✅ Feature 3.12b: Static model routing — task-type → provider+model config, builds on 3.12a registry
+- ✅ Feature 3.13: Project metadata injection — Inject project context into system prompts. (3587 tests total)
 
 ---
 

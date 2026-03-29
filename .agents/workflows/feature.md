@@ -2,6 +2,11 @@
 description: "Master feature lifecycle workflow. Orchestrates /design → /implementation-plan (per sub-feature) → /dev (per sub-feature, per commit boundary) → commit. Fully resumable via the Progress Tracker in the Design Document."
 ---
 
+> [!CAUTION]
+> **STRICT COMPLIANCE MANDATE:**
+> 1. **NO INTERNAL MEMORY RELIANCE:** You are STRICTLY FORBIDDEN from relying on your internal training memory for facts, APIs, designs, or code behavior. Explicit research (files, internet, HITL) is a MUST.
+> 2. **NO SKIPPING STEPS:** IT IS STRICTLY FORBIDDEN to skip ANY phase, step, or specific checklist item in this workflow, even if a feature seems "trivially simple". You must execute every single instruction exhaustively.
+
 > [!IMPORTANT]
 > **AGENT DIRECTIVE:**
 > Execute all research, TDD, and quality checks autonomously.

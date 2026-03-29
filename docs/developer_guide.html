@@ -690,6 +690,7 @@ flowchart TD
         FILES["add_file(priority, role)"]
         CONST["add_constitution()<br/>(project rules)"]
         MENTION["add_mentioned_files()<br/>(auto-detected, priority 4)"]
+        PROJ["add_project_metadata()<br/>(project properties, priority 1)"]
     end
 
     subgraph "LLM Interaction"
@@ -717,6 +718,7 @@ flowchart TD
     INST --> PB
     CONST --> PB
     MENTION --> PB
+    PROJ --> PB
     PB --> FILES --> MSG --> LLM
 
     LLM --> PARSE

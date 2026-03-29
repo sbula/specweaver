@@ -57,6 +57,64 @@ class RunContext(BaseModel):
     api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
     db: Any = None  # Database | None — for telemetry flush (set by CLI/API)
     llm_router: Any = None  # ModelRouter | None — per-task routing (3.12b)
+    project_metadata: Any = None  # ProjectMetadata | None
+
+    def model_post_init(self, __context: Any) -> None:
+        """Inject ProjectMetadata into context execution strictly securely."""
+        if self.project_metadata is not None:
+            return
+
+        import platform
+        import sys
+
+        from specweaver.llm.models import ProjectMetadata, PromptSafeConfig
+
+
+        try:
+            target = f"Python {sys.version.split()[0]} on {platform.platform()}"
+        except Exception:
+            # Handoff Directive 3
+            target = "Unknown Environment"
+
+        try:
+            # Handoff Directive 2 fix (load_context_yaml does not exist)
+            import ruamel.yaml
+            ctx_path = self.project_path / "context.yaml"
+            if ctx_path.exists():
+                with ctx_path.open("r", encoding="utf-8") as f:
+                    data = ruamel.yaml.YAML(typ="safe").load(f)
+                archetype = data.get("archetype", "generic") if isinstance(data, dict) else "generic"
+            else:
+                archetype = "generic"
+        except Exception:
+            archetype = "generic"
+
+        rules = {}
+        if self.config and hasattr(self.config, "validation") and self.config.validation:
+            overrides = getattr(self.config.validation, "overrides", {})
+            if isinstance(overrides, dict):
+                rules = overrides
+
+        try:
+            provider = str(self.llm.provider_name) if hasattr(self.llm, "provider_name") else "unknown"
+            model_str = str(self.llm.model) if hasattr(self.llm, "model") else "unknown"
+        except Exception:
+            provider = "unknown"
+            model_str = "unknown"
+
+        safe_config = PromptSafeConfig(
+            llm_provider=provider,
+            llm_model=model_str,
+            validation_rules=rules,
+        )
+
+        self.project_metadata = ProjectMetadata(
+            project_name=self.project_path.name,
+            archetype=archetype,
+            language_target=target,
+            date_iso=_now_iso(),
+            safe_config=safe_config,
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -92,6 +92,7 @@ class GenerateCodeHandler:
                 topology_contexts=([context.topology] if context.topology else None),
                 constitution=context.constitution,
                 plan=context.plan,
+                project_metadata=context.project_metadata,
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
             return StepResult(
@@ -133,6 +134,7 @@ class GenerateTestsHandler:
                 topology_contexts=([context.topology] if context.topology else None),
                 constitution=context.constitution,
                 plan=context.plan,
+                project_metadata=context.project_metadata,
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
             return StepResult(
@@ -246,6 +248,7 @@ class PlanSpecHandler:
                 standards=context.standards,
                 stitch_mode=stitch_mode,
                 stitch_api_key=stitch_api_key,
+                project_metadata=context.project_metadata,
             )
 
             # Save plan YAML alongside the spec

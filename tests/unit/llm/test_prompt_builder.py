@@ -734,6 +734,66 @@ class TestAddConstitution:
 
 
 # ---------------------------------------------------------------------------
+# Project Metadata blocks
+# ---------------------------------------------------------------------------
+
+
+class TestAddProjectMetadata:
+    """Test project metadata rendering for Prompts."""
+
+    def test_project_metadata_renders_xml(self) -> None:
+        """Project metadata is serialized to YAML inside XML tags."""
+        from specweaver.llm.models import ProjectMetadata, PromptSafeConfig
+
+        metadata = ProjectMetadata(
+            project_name="test_project",
+            archetype="pure-logic",
+            language_target="python",
+            date_iso="2026-03-29T12:00:00Z",
+            safe_config=PromptSafeConfig(
+                llm_provider="test_provider",
+                llm_model="test_model",
+                validation_rules={"rule": "override"},
+            ),
+        )
+
+        result = PromptBuilder().add_project_metadata(metadata).build()
+
+        assert "<project_metadata>" in result
+        assert "</project_metadata>" in result
+        # Checks if it dumped json/yaml properly
+        assert '"llm_provider": "test_provider"' in result
+        assert '"llm_model": "test_model"' in result
+        assert '"project_name": "test_project"' in result
+        assert '"archetype": "pure-logic"' in result
+
+    def test_ignores_none_metadata(self) -> None:
+        """Passing None safely does nothing."""
+        result = PromptBuilder().add_instructions("Do it.").add_project_metadata(None).build()
+        assert "<project_metadata>" not in result
+        assert "Do it." in result
+
+    def test_sparse_metadata_safely_rendered(self) -> None:
+        """Handles empty or partially filled metadata."""
+        from specweaver.llm.models import ProjectMetadata, PromptSafeConfig
+
+        # Provide minimum valid metadata
+        metadata = ProjectMetadata(
+            project_name="unknown",
+            archetype="",
+            language_target="",
+            date_iso="",
+            safe_config=PromptSafeConfig(llm_provider="", llm_model=""),
+        )
+        result = PromptBuilder().add_project_metadata(metadata).build()
+
+        # It should render the XML block safely
+        assert "<project_metadata>" in result
+        assert "</project_metadata>" in result
+        # Check that it doesn't crash
+
+
+# ---------------------------------------------------------------------------
 # Render helpers (extracted from render_blocks)
 # ---------------------------------------------------------------------------
 

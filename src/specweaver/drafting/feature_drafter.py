@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from jinja2 import Template
 
-from specweaver.llm.models import GenerationConfig, Message, Role
+from specweaver.llm.models import GenerationConfig, Message, ProjectMetadata, Role
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -178,6 +178,7 @@ class FeatureDrafter:
         output_dir: Path,
         *,
         topology_contexts: list[TopologyContext] | None = None,
+        project_metadata: ProjectMetadata | None = None,
     ) -> Path:
         """Draft a Feature Spec interactively.
 
@@ -213,6 +214,7 @@ class FeatureDrafter:
                     section_prompt=section_def["prompt"],
                     user_input=user_input,
                     topology_contexts=section_topology,
+                    project_metadata=project_metadata,
                 )
 
             sections.append(
@@ -245,6 +247,7 @@ class FeatureDrafter:
         user_input: str,
         *,
         topology_contexts: list[TopologyContext] | None = None,
+        project_metadata: ProjectMetadata | None = None,
     ) -> str:
         """Generate content for a single spec section using the LLM."""
         from specweaver.llm.prompt_builder import PromptBuilder
@@ -256,7 +259,10 @@ class FeatureDrafter:
         )
 
         builder = (
-            PromptBuilder().add_instructions(instructions).add_context(user_input, "user_context")
+            PromptBuilder()
+            .add_instructions(instructions)
+            .add_project_metadata(project_metadata)
+            .add_context(user_input, "user_context")
         )
         if topology_contexts:
             builder.add_topology(topology_contexts)

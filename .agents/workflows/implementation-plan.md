@@ -2,6 +2,11 @@
 description: "Create or audit an implementation plan — research, audit, merge findings, consistency check. Usage - /implementation-plan <design_doc_path> [<sf_id>]"
 ---
 
+> [!CAUTION]
+> **STRICT COMPLIANCE MANDATE:**
+> 1. **NO INTERNAL MEMORY RELIANCE:** You are STRICTLY FORBIDDEN from relying on your internal training memory for facts, APIs, designs, or code behavior. Explicit research (files, internet, HITL) is a MUST.
+> 2. **NO SKIPPING STEPS:** IT IS STRICTLY FORBIDDEN to skip ANY phase, step, or specific checklist item in this workflow, even if a feature seems "trivially simple". You must execute every single instruction exhaustively.
+
 // turbo-all
 
 > [!IMPORTANT]

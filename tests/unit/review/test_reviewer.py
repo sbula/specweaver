@@ -300,3 +300,65 @@ Summary."""
         below = [f for f in result.findings if f.below_threshold]
         assert len(above) == 1  # only 90 is >= threshold
         assert len(below) == 2  # 30 and 50 are < 80
+
+# ---------------------------------------------------------------------------
+# Project Metadata injection
+# ---------------------------------------------------------------------------
+
+
+class TestReviewerProjectMetadata:
+    """Reviewer injects project_metadata into the PromptBuilder."""
+
+    @pytest.mark.asyncio
+    async def test_review_spec_injects_metadata(self) -> None:
+        from pathlib import Path
+        from unittest.mock import AsyncMock, patch
+
+        from specweaver.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
+
+        mock_llm = AsyncMock()
+        # Mock LLM generation output needs to be valid Review format
+        mock_llm.generate.return_value = LLMResponse(text="VERDICT: ACCEPTED\nSummary", model="test")
+
+        reviewer = Reviewer(llm=mock_llm)
+        metadata = ProjectMetadata(
+            project_name="injector_test",
+            archetype="pure-logic",
+            language_target="python",
+            date_iso="now",
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+        )
+
+        with patch("pathlib.Path.read_text", return_value="spec content"):
+            await reviewer.review_spec(Path("dummy.md"), project_metadata=metadata)
+
+        # Assert format correctly injected (prompt is in the USER message at index 1)
+        prompt = mock_llm.generate.call_args[0][0][1].content
+        assert "<project_metadata>" in prompt
+        assert '"project_name": "injector_test"' in prompt
+
+    @pytest.mark.asyncio
+    async def test_review_code_injects_metadata(self) -> None:
+        from pathlib import Path
+        from unittest.mock import AsyncMock, patch
+
+        from specweaver.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
+
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = LLMResponse(text="VERDICT: ACCEPTED\nSummary", model="test")
+
+        reviewer = Reviewer(llm=mock_llm)
+        metadata = ProjectMetadata(
+            project_name="injector_code_test",
+            archetype="script",
+            language_target="bash",
+            date_iso="now",
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+        )
+
+        with patch("pathlib.Path.read_text", return_value="code content"):
+            await reviewer.review_code(Path("dummy.md"), Path("dummy.py"), project_metadata=metadata)
+
+        prompt = mock_llm.generate.call_args[0][0][1].content
+        assert "<project_metadata>" in prompt
+        assert '"project_name": "injector_code_test"' in prompt

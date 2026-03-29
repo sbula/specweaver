@@ -65,21 +65,16 @@ def render_blocks(blocks: list[_ContentBlock]) -> str:
     """Render blocks into XML-tagged prompt text."""
     parts: list[str] = []
 
-    # Instructions first
-    instructions = [b for b in blocks if b.kind == "instructions"]
-    if instructions:
-        instr_text = "\n\n".join(b.text for b in instructions)
-        parts.append(f"<instructions>\n{instr_text}\n</instructions>")
-
-    # Constitution (after instructions, before topology)
-    constitutions = [b for b in blocks if b.kind == "constitution"]
-    if constitutions:
-        text = "\n\n".join(b.text for b in constitutions)
-        parts.append(f"<constitution>\n{text}\n</constitution>")
-
-    # Standards → Plan (tagged block pattern)
-    for kind, tag in [("standards", "standards"), ("plan", "plan")]:
-        rendered = _render_tagged_blocks(blocks, kind, tag)
+    # Render standard top-level tagged blocks in exact order
+    ordered_tags = [
+        "instructions",
+        "project_metadata",
+        "constitution",
+        "standards",
+        "plan",
+    ]
+    for tag in ordered_tags:
+        rendered = _render_tagged_blocks(blocks, tag, tag)
         if rendered:
             parts.append(rendered)
 

@@ -15,7 +15,7 @@ import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from specweaver.llm.models import GenerationConfig, Message, Role
+from specweaver.llm.models import GenerationConfig, Message, ProjectMetadata, Role
 from specweaver.planning.models import PlanArtifact
 
 if TYPE_CHECKING:
@@ -67,6 +67,7 @@ class Planner:
         standards: str | None = None,
         stitch_mode: str = "off",
         stitch_api_key: str = "",
+        project_metadata: ProjectMetadata | None = None,
     ) -> PlanArtifact:
         """Generate an implementation plan from spec content.
 
@@ -90,6 +91,7 @@ class Planner:
         builder = (
             PromptBuilder()
             .add_instructions("Generate an implementation plan for the following specification.")
+            .add_project_metadata(project_metadata)
             .add_instructions(
                 f"""## Output Schema
 Return a JSON object with these fields:

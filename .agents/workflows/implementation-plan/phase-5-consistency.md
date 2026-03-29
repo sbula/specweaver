@@ -18,8 +18,17 @@ three questions explicitly. Do NOT just assert "yes" — provide evidence.
 ---
 
 5.1. **Open questions**: Are there still any unresolved decisions or ambiguities?
-     - If yes: list them explicitly with their severity.
+     - If yes: list them explicitly with their severity. For each, you MUST provide:
+       - Options for resolution
+       - Pros / Cons of each option
+       - Impact / Consequences of each option
+       - Your specific proposal/recommendation
      - If no: state "All decisions are resolved and documented inline in the plan."
+
+5.1a. **Agent Handoff Risk**: If a new agent in a new session were to continue starting *only* with this document:
+      - Are there possible misunderstandings?
+      - Are there open points the new agent would have to guess or assume?
+      - Bring up your own critical questions that a fresh agent would stumble on.
 
 5.2. **Architecture and future compatibility**: Does the plan respect all
      `context.yaml` dependency rules and support upcoming roadmap features?

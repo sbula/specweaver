@@ -142,6 +142,32 @@ class TokenBudget(BaseModel):
         return f"{self.used:,} / {self.limit:,} ({self.usage_pct:.1f}%)"
 
 
+class PromptSafeConfig(BaseModel):
+    """A safe, strictly-typed subset of the active configuration.
+
+    This explicitly prevents accidental leaking of API keys or local paths
+    into the LLM context.
+    """
+
+    llm_model: str
+    llm_provider: str
+    validation_rules: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProjectMetadata(BaseModel):
+    """Metadata about the project, execution environment, and config.
+
+    Injected into all system prompts (Feature 3.13) to give the LLM context
+    about the target runtime and current constraints.
+    """
+
+    project_name: str
+    archetype: str
+    language_target: str
+    date_iso: str
+    safe_config: PromptSafeConfig
+
+
 # ---------------------------------------------------------------------------
 # Tool models — provider-agnostic abstractions for LLM function calling
 # ---------------------------------------------------------------------------

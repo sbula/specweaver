@@ -456,3 +456,38 @@ class TestPlannerStitchIntegration:
         assert plan.mockups
         assert len(plan.mockups) == 1
         assert "placeholder" in plan.mockups[0].preview_url
+
+# ---------------------------------------------------------------------------
+# Project Metadata injection
+# ---------------------------------------------------------------------------
+
+
+class TestPlannerProjectMetadata:
+    """Planner injects project_metadata into the PromptBuilder."""
+
+    @pytest.mark.asyncio()
+    async def test_generate_plan_injects_metadata(self) -> None:
+        from specweaver.llm.models import ProjectMetadata, PromptSafeConfig
+
+        llm = FakeLLM([_valid_plan_json()])
+        planner = Planner(llm=llm)
+        metadata = ProjectMetadata(
+            project_name="plan_test_meta",
+            archetype="pure-logic",
+            language_target="python",
+            date_iso="now",
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+        )
+
+        await planner.generate_plan(
+            spec_content="# Test Spec",
+            spec_path="test.md",
+            spec_name="Test",
+            project_metadata=metadata
+        )
+
+        # llm.messages_log[0] is the first generate call's messages list
+        # message 1 is the USER message containing the prompt
+        user_prompt = llm.messages_log[0][1].content
+        assert "<project_metadata>" in user_prompt
+        assert '"project_name": "plan_test_meta"' in user_prompt

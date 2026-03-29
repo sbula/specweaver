@@ -98,7 +98,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `llm/adapters/anthropic.py` — `AnthropicAdapter`: Anthropic SDK wrapper with full tool use.
 - `llm/adapters/mistral.py` — `MistralAdapter`: Mistral SDK wrapper.
 - `llm/adapters/qwen.py` — `QwenAdapter`: Qwen via OpenAI-compatible endpoint.
-- `llm/prompt_builder.py` — `PromptBuilder`: XML-tagged block assembly with token budgets. In `llm/` because prompt construction is part of the LLM abstraction.
+- `llm/prompt_builder.py` — `PromptBuilder`: XML-tagged block assembly with token budgets and metadata injection (`add_project_metadata`). In `llm/` because prompt construction is part of the LLM abstraction.
 - `llm/models.py` — `LLMResponse`, `ToolDefinition`, `TaskType`, `GenerationConfig`. Data models for the LLM contract.
 - `llm/telemetry.py` — `estimate_cost()`, `create_usage_record()`, `CostEntry`, `UsageRecord`. Pure-logic cost estimation with configurable pricing tables. In `llm/` because it's LLM-specific pricing logic. *(Feature 3.12)*
 - `llm/collector.py` — `TelemetryCollector`: decorator wrapping `LLMAdapter`, captures token usage per call. In `llm/` because it's an adapter-level concern. *(Feature 3.12)*

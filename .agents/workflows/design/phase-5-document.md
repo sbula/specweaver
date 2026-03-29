@@ -129,11 +129,22 @@ in any row and resume from there using the appropriate workflow.
 
 ## HITL Gate (Mandatory — Always Fires)
 
-5.4. Present the completed Design Document to the user.
+5.4. Before presenting the document to the user, evaluate and present the following critical reflection questions:
+     - **Open Questions**: Are there still open questions or unresolved ambiguities? If yes, provide for each:
+       - Options for resolution
+       - Pros / Cons of each option
+       - Impact / Consequences of each option
+       - Your specific proposal/recommendation
+     - **Agent Handoff Risk**: If a new agent in a new session were to continue starting *only* with this document:
+       - Are there possible misunderstandings?
+       - Are there open points the new agent would have to guess or assume?
+       - Bring up your own critical questions that a fresh agent would stumble on.
+
+5.5. Present the completed Design Document AND your answers to the reflection questions above to the user.
      **STOP. Wait for explicit approval.**
      Do NOT proceed to any implementation plan until the user confirms.
 
-5.5. On approval:
+5.6. On approval:
      - Set `Status: APPROVED` in the header block.
      - Update Session Handoff: replace "awaiting HITL approval" with "Design APPROVED on <date>."
      - Save the updated document.
