@@ -74,7 +74,7 @@ class StrangerTestRule(Rule):
         findings: list[Finding] = []
 
         # 1. File paths (contain / or \ with file extensions)
-        for match in re.finditer(r'[\w./\\]+\.(?:py|ts|js|java|go|rs|yaml|json|toml)\b', cleaned):
+        for match in re.finditer(r"[\w./\\]+\.(?:py|ts|js|java|go|rs|yaml|json|toml)\b", cleaned):
             line_num = _find_line(spec_text, match.group())
             findings.append(
                 Finding(
@@ -86,7 +86,7 @@ class StrangerTestRule(Rule):
             )
 
         # 2. Class.method references (e.g. `TaxCalculator.calculate()`)
-        for match in re.finditer(r'`([A-Z][a-zA-Z]+\.[a-z_][a-zA-Z_]*\(\))`', cleaned):
+        for match in re.finditer(r"`([A-Z][a-zA-Z]+\.[a-z_][a-zA-Z_]*\(\))`", cleaned):
             line_num = _find_line(spec_text, match.group(1))
             findings.append(
                 Finding(
@@ -98,7 +98,7 @@ class StrangerTestRule(Rule):
             )
 
         # 3. Dotted import paths (3+ segments, e.g. specweaver.validation.runner)
-        for match in re.finditer(r'`([a-z][a-z_]*(?:\.[a-z][a-z_]*){2,})`', cleaned):
+        for match in re.finditer(r"`([a-z][a-z_]*(?:\.[a-z][a-z_]*){2,})`", cleaned):
             line_num = _find_line(spec_text, match.group(1))
             findings.append(
                 Finding(
@@ -205,9 +205,7 @@ def _get_defined_terms(text: str) -> set[str]:
         defined.add(match.group(1))
 
     # Terms after "is a", "refers to", ":"
-    for match in re.finditer(
-        r"`([A-Z][a-zA-Z_]{3,})`\s*(?:is|refers|:|—)", text, re.MULTILINE
-    ):
+    for match in re.finditer(r"`([A-Z][a-zA-Z_]{3,})`\s*(?:is|refers|:|—)", text, re.MULTILINE):
         defined.add(match.group(1))
 
     return defined

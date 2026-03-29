@@ -84,8 +84,7 @@ class TestImplementFlow:
 
         # Mock LLM
         mock_adapter = _make_mock_adapter(
-            "def greet(name: str) -> str:\n"
-            '    return f"Hello {name}!"\n',
+            'def greet(name: str) -> str:\n    return f"Hello {name}!"\n',
         )
         mock_require.return_value = (
             MagicMock(),
@@ -201,9 +200,7 @@ class TestFullPipeline:
 
         # 3. Mock LLM and implement
         generated_code = (
-            "def add(a: int, b: int) -> int:\n"
-            '    """Add two integers."""\n'
-            "    return a + b\n"
+            'def add(a: int, b: int) -> int:\n    """Add two integers."""\n    return a + b\n'
         )
         mock_adapter = _make_mock_adapter(generated_code)
         mock_require.return_value = (
@@ -230,4 +227,3 @@ class TestFullPipeline:
         # C01 syntax should pass on valid generated code
         assert "C01" in result.output
         assert "PASS" in result.output
-

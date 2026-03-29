@@ -127,8 +127,7 @@ class TelemetryMixin:
                 "FROM llm_cost_overrides",
             ).fetchall()
             return {
-                r["model_pattern"]: (r["input_cost_per_1k"], r["output_cost_per_1k"])
-                for r in rows
+                r["model_pattern"]: (r["input_cost_per_1k"], r["output_cost_per_1k"]) for r in rows
             }
 
     def set_cost_override(

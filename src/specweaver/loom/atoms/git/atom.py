@@ -36,16 +36,23 @@ class GitAtom(Atom):
     """
 
     # All git commands that any GitAtom intent might need.
-    _ENGINE_WHITELIST: frozenset[str] = frozenset({
-        "add", "commit", "diff", "status",  # checkpoint
-        "switch",                             # isolate / restore
-        "restore",                            # discard_all
-        "reset",                              # rollback
-        "push",                               # publish
-        "checkout", "merge",                  # integrate
-        "fetch", "pull",                      # sync
-        "tag",                                # tag
-    })
+    _ENGINE_WHITELIST: frozenset[str] = frozenset(
+        {
+            "add",
+            "commit",
+            "diff",
+            "status",  # checkpoint
+            "switch",  # isolate / restore
+            "restore",  # discard_all
+            "reset",  # rollback
+            "push",  # publish
+            "checkout",
+            "merge",  # integrate
+            "fetch",
+            "pull",  # sync
+            "tag",  # tag
+        }
+    )
 
     def __init__(self, cwd: Path) -> None:
         self._executor = EngineGitExecutor(
@@ -79,8 +86,7 @@ class GitAtom(Atom):
         if handler is None:
             return AtomResult(
                 status=AtomStatus.FAILED,
-                message=f"Unknown intent: {intent!r}. "
-                        f"Known: {sorted(self._known_intents())}",
+                message=f"Unknown intent: {intent!r}. Known: {sorted(self._known_intents())}",
             )
 
         return handler(context)  # type: ignore[no-any-return]
@@ -88,11 +94,7 @@ class GitAtom(Atom):
     def _known_intents(self) -> set[str]:
         """Return the set of known intent names."""
         prefix = "_intent_"
-        return {
-            name[len(prefix):]
-            for name in dir(self)
-            if name.startswith(prefix)
-        }
+        return {name[len(prefix) :] for name in dir(self) if name.startswith(prefix)}
 
     # -- Intent implementations ----------------------------------------
 
@@ -281,7 +283,9 @@ class GitAtom(Atom):
 
         # Merge conflict — get conflicting files before abort
         conflict_result = self._executor.run(
-            "diff", "--name-only", "--diff-filter=U",
+            "diff",
+            "--name-only",
+            "--diff-filter=U",
         )
         conflict_files = conflict_result.stdout.strip()
 
@@ -302,8 +306,7 @@ class GitAtom(Atom):
 
         return AtomResult(
             status=AtomStatus.FAILED,
-            message=f"Merge conflict in {source} → {target}. "
-                    f"Files: {conflict_files}",
+            message=f"Merge conflict in {source} → {target}. Files: {conflict_files}",
             exports={"conflict_files": conflict_files.splitlines()},
         )
 

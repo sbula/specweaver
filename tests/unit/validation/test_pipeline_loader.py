@@ -76,13 +76,9 @@ steps:
   - name: s01
     rule: S01
 """
-        (pipelines_dir / "validation_spec_default.yaml").write_text(
-            yaml_content, encoding="utf-8"
-        )
+        (pipelines_dir / "validation_spec_default.yaml").write_text(yaml_content, encoding="utf-8")
 
-        pipeline = load_pipeline_yaml(
-            "validation_spec_default", project_dir=tmp_path
-        )
+        pipeline = load_pipeline_yaml("validation_spec_default", project_dir=tmp_path)
         # Project override has only 1 step
         assert len(pipeline.steps) == 1
         assert pipeline.description == "Project-specific spec validation"
@@ -99,13 +95,9 @@ remove:
   - s04_dependency_dir
   - s07_test_first
 """
-        (pipelines_dir / "my_custom_pipeline.yaml").write_text(
-            yaml_content, encoding="utf-8"
-        )
+        (pipelines_dir / "my_custom_pipeline.yaml").write_text(yaml_content, encoding="utf-8")
 
-        pipeline = load_pipeline_yaml(
-            "my_custom_pipeline", project_dir=tmp_path
-        )
+        pipeline = load_pipeline_yaml("my_custom_pipeline", project_dir=tmp_path)
         # 11 base steps - 2 removed = 9
         assert len(pipeline.steps) == 9
         names = [s.name for s in pipeline.steps]
@@ -155,7 +147,8 @@ class TestMalformedYaml:
         )
         # Model defaults steps to [], so this is valid
         pipeline = load_pipeline_yaml(
-            "validation_spec_default", project_dir=tmp_path,
+            "validation_spec_default",
+            project_dir=tmp_path,
         )
         assert pipeline.name == "validation_spec_default"
         assert pipeline.steps == []
@@ -172,7 +165,8 @@ class TestMalformedYaml:
         # If the model has a default, null → default
         try:
             pipeline = load_pipeline_yaml(
-                "validation_spec_default", project_dir=tmp_path,
+                "validation_spec_default",
+                project_dir=tmp_path,
             )
             # If it loads, steps should default to []
             assert pipeline.steps == [] or pipeline.steps is None
@@ -184,9 +178,8 @@ class TestMalformedYaml:
         pipelines_dir = tmp_path / ".specweaver" / "pipelines"
         pipelines_dir.mkdir(parents=True)
         (pipelines_dir / "validation_spec_default.yaml").write_text(
-            "", encoding="utf-8",
+            "",
+            encoding="utf-8",
         )
         with pytest.raises(TypeError):
             load_pipeline_yaml("validation_spec_default", project_dir=tmp_path)
-
-

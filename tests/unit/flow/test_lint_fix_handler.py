@@ -140,8 +140,10 @@ class TestLintFixReflectionLoop:
         # 1=initial(dirty), 2=auto_fix(partial), 3=re_lint(still dirty),
         # 4=re_lint_after_LLM(clean)
         mock_atom.run.side_effect = [
-            _dirty(3), _dirty(1), _dirty(1),  # initial + autofix + relint
-            _clean(),                          # after LLM fix
+            _dirty(3),
+            _dirty(1),
+            _dirty(1),  # initial + autofix + relint
+            _clean(),  # after LLM fix
         ]
 
         mock_llm = MagicMock()
@@ -181,9 +183,11 @@ class TestLintFixReflectionLoop:
         # 1=initial(dirty), 2=auto_fix, 3=re_lint(still dirty),
         # 4=after_LLM1(still dirty), 5=after_LLM2(clean)
         mock_atom.run.side_effect = [
-            _dirty(5), _dirty(3), _dirty(3),   # initial + autofix + relint
-            _dirty(1),                          # after LLM fix #1
-            _clean(),                           # after LLM fix #2
+            _dirty(5),
+            _dirty(3),
+            _dirty(3),  # initial + autofix + relint
+            _dirty(1),  # after LLM fix #1
+            _clean(),  # after LLM fix #2
         ]
 
         mock_llm = MagicMock()
@@ -208,7 +212,8 @@ class TestLintFixEdgeCases:
         mock_atom.run.return_value = _dirty()
 
         result = await _handler(mock_atom).execute(
-            _make_step(), _make_context(tmp_path, llm=None),
+            _make_step(),
+            _make_context(tmp_path, llm=None),
         )
 
         assert result.status == StepStatus.FAILED
@@ -221,7 +226,8 @@ class TestLintFixEdgeCases:
         mock_atom.run.return_value = _dirty()
 
         result = await _handler(mock_atom).execute(
-            _make_step(max_reflections=0), _make_context(tmp_path),
+            _make_step(max_reflections=0),
+            _make_context(tmp_path),
         )
 
         assert result.status == StepStatus.FAILED
@@ -238,7 +244,8 @@ class TestLintFixEdgeCases:
         _setup_code(tmp_path)
 
         result = await _handler(mock_atom).execute(
-            _make_step(), _make_context(tmp_path, llm=mock_llm),
+            _make_step(),
+            _make_context(tmp_path, llm=mock_llm),
         )
 
         assert result.status == StepStatus.ERROR
@@ -252,7 +259,39 @@ class TestLintFixEdgeCases:
 
         # Don't create any .py files — output dir is empty
         result = await _handler(mock_atom).execute(
-            _make_step(), _make_context(tmp_path),
+            _make_step(),
+            _make_context(tmp_path),
         )
 
         assert result.status == StepStatus.FAILED
+
+
+class TestLintFixInterface:
+    """Verify standard interface: generate(messages, config)."""
+
+    @pytest.mark.asyncio
+    async def test_llm_fix_uses_generate_with_messages_config(self, tmp_path: Path) -> None:
+        """LintFixHandler must use the (messages, config) signature."""
+        mock_atom = MagicMock()
+        mock_atom.run.side_effect = [_dirty(1), _dirty(1), _dirty(1), _clean()]
+
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock(return_value=MagicMock(text="fixed"))
+        _setup_code(tmp_path)
+
+        result = await _handler(mock_atom).execute(
+            _make_step(), _make_context(tmp_path, llm=mock_llm)
+        )
+
+        assert result.status == StepStatus.PASSED
+        mock_llm.generate.assert_called_once()
+        args, _kwargs = mock_llm.generate.call_args
+        # First arg should be a list of Messages
+        messages = args[0]
+        assert len(messages) == 1
+        assert messages[0].role == "user"
+
+        # Second arg should be GenerationConfig
+        config = args[1]
+        assert config.task_type == "check"
+        assert config.temperature == 0.1

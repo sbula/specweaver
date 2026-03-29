@@ -193,7 +193,8 @@ class TestCLIBehavioral:
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         # Ensure no key from any source
         monkeypatch.setattr(
-            os, "environ",
+            os,
+            "environ",
             {k: v for k, v in os.environ.items() if k != "GEMINI_API_KEY"},
         )
 
@@ -336,8 +337,7 @@ class TestCheckSetOverrides:
         spec = tmp_path / "spec.md"
         # This spec has weasel words (should, might, could)
         spec.write_text(
-            "## 1. Purpose\nDo X.\n\n"
-            "## 2. Contract\nShould work. Might fail. Could break.\n",
+            "## 1. Purpose\nDo X.\n\n## 2. Contract\nShould work. Might fail. Could break.\n",
             encoding="utf-8",
         )
         runner.invoke(app, ["init", "proj", "--path", str(tmp_path)])
@@ -345,8 +345,16 @@ class TestCheckSetOverrides:
         # With very high thresholds, S08 should pass (3 weasels < 999)
         result_lenient = runner.invoke(
             app,
-            ["check", str(spec), "--level", "component",
-             "--set", "S08.warn_threshold=999", "--set", "S08.fail_threshold=999"],
+            [
+                "check",
+                str(spec),
+                "--level",
+                "component",
+                "--set",
+                "S08.warn_threshold=999",
+                "--set",
+                "S08.fail_threshold=999",
+            ],
         )
 
         # Find S08 line in the output — it should show PASS not FAIL
@@ -447,8 +455,13 @@ class TestCheckStrictAndSetCombined:
         result = runner.invoke(
             app,
             [
-                "check", str(spec), "--level", "component",
-                "--strict", "--set", "S08.enabled=false",
+                "check",
+                str(spec),
+                "--level",
+                "component",
+                "--strict",
+                "--set",
+                "S08.enabled=false",
             ],
         )
         # S08 should be absent from output
@@ -465,10 +478,15 @@ class TestCheckStrictAndSetCombined:
         result = runner.invoke(
             app,
             [
-                "check", str(spec), "--level", "component",
+                "check",
+                str(spec),
+                "--level",
+                "component",
                 "--strict",
-                "--set", "S08.warn_threshold=999",
-                "--set", "S08.fail_threshold=999",
+                "--set",
+                "S08.warn_threshold=999",
+                "--set",
+                "S08.fail_threshold=999",
             ],
         )
         # S08 should PASS with high thresholds even in strict mode
@@ -596,12 +614,15 @@ class TestCheckSetOverrideEdgeCases:
         result = runner.invoke(
             app,
             [
-                "check", str(spec), "--level", "component",
-                "--set", "S08.enabled=false",
-                "--set", "S01.enabled=false",
+                "check",
+                str(spec),
+                "--level",
+                "component",
+                "--set",
+                "S08.enabled=false",
+                "--set",
+                "S01.enabled=false",
             ],
         )
         assert "S08" not in result.output
         assert "S01" not in result.output
-
-

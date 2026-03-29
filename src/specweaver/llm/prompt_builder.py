@@ -281,11 +281,7 @@ class PromptBuilder:
             max_files: Maximum number of mentioned files to add.  Default 5.
         """
         # Collect paths already in the builder to avoid duplicates
-        existing_paths = {
-            block.file_path
-            for block in self._blocks
-            if block.file_path
-        }
+        existing_paths = {block.file_path for block in self._blocks if block.file_path}
 
         added = 0
         for mention in mentions:

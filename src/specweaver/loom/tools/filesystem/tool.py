@@ -71,6 +71,7 @@ class FileSystemTool:
 
     def definitions(self) -> list[ToolDefinition]:
         from specweaver.loom.tools.filesystem.definitions import INTENT_DEFINITIONS
+
         return [d for name, d in INTENT_DEFINITIONS.items() if name in self.allowed_intents]
 
     # Intent methods
@@ -179,8 +180,10 @@ class FileSystemTool:
         if not resolved.is_dir():
             return ToolResult(status="error", message=f"Not a directory: {path}")
         from specweaver.loom.commons.filesystem.search import grep_content
+
         results = grep_content(
-            resolved.resolve(), pattern,
+            resolved.resolve(),
+            pattern,
             context_lines=context_lines,
             case_sensitive=case_sensitive,
             max_results=max_results,
@@ -211,8 +214,10 @@ class FileSystemTool:
         if not resolved.is_dir():
             return ToolResult(status="error", message=f"Not a directory: {path}")
         from specweaver.loom.commons.filesystem.search import find_by_glob
+
         results = find_by_glob(
-            resolved.resolve(), pattern,
+            resolved.resolve(),
+            pattern,
             file_type=file_type,
             max_results=max_results,
         )
@@ -447,9 +452,7 @@ class FileSystemTool:
             if (
                 self._path_matches_grant(normalized_path, grant_path, grant.recursive)
                 or self._path_matches_grant(check_path, grant_path, grant.recursive)
-            ) and (
-                best is None or mode_priority[grant.mode] > mode_priority[best]
-            ):
+            ) and (best is None or mode_priority[grant.mode] > mode_priority[best]):
                 best = grant.mode
 
         return best
@@ -490,7 +493,6 @@ class FileSystemTool:
             # Target IS the grant directory itself — match for list operations
             return True
         return depth == 1
-
 
     @staticmethod
     def _wrap(result: ExecutorResult) -> ToolResult:

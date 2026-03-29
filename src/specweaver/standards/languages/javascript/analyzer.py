@@ -152,7 +152,12 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
         elif node.type == "variable_declarator":
             name_node = node.child_by_field_name("name")
             value_node = node.child_by_field_name("value")
-            if name_node and name_node.text and value_node and value_node.type in ("arrow_function", "function", "function_expression"):
+            if (
+                name_node
+                and name_node.text
+                and value_node
+                and value_node.type in ("arrow_function", "function", "function_expression")
+            ):
                 return ("func", _classify_name(name_node.text.decode("utf-8")))
         elif node.type == "class_declaration":
             name_node = node.child_by_field_name("name")
@@ -251,7 +256,12 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                     sample_size += 1
                 elif node.type == "call_expression":
                     func = node.child_by_field_name("function")
-                    if func and func.type == "identifier" and func.text and func.text.decode("utf-8") == "require":
+                    if (
+                        func
+                        and func.type == "identifier"
+                        and func.text
+                        and func.text.decode("utf-8") == "require"
+                    ):
                         styles["commonjs"] += round(w)
                         sample_size += 1
 

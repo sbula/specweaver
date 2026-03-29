@@ -1,6 +1,5 @@
 """Core greeter logic — clean, typed, documented."""
 
-
 TEMPLATES: dict[str, str] = {
     "en": "Hello, {name}!",
     "de": "Hallo, {name}!",

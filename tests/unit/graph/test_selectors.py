@@ -79,15 +79,18 @@ def diamond(tmp_path: Path) -> Path:
 def shared_constraints(tmp_path: Path) -> Path:
     """Three modules with constraint overlap: A shares with B, not C."""
     _write_context(
-        tmp_path / "a", name="a",
+        tmp_path / "a",
+        name="a",
         constraints=["no-blocking", "stateless"],
     )
     _write_context(
-        tmp_path / "b", name="b",
+        tmp_path / "b",
+        name="b",
         constraints=["stateless", "idempotent"],
     )
     _write_context(
-        tmp_path / "c", name="c",
+        tmp_path / "c",
+        name="c",
         constraints=["idempotent"],
     )
     return tmp_path

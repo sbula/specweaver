@@ -96,7 +96,9 @@ class TestExecuteReview:
         mock_reviewer.review_spec = AsyncMock(return_value=expected)
 
         result = _execute_review(
-            mock_reviewer, spec_file, spec=None,
+            mock_reviewer,
+            spec_file,
+            spec=None,
         )
         assert result.verdict == ReviewVerdict.ACCEPTED
         mock_reviewer.review_spec.assert_called_once()
@@ -115,7 +117,9 @@ class TestExecuteReview:
         mock_reviewer.review_code = AsyncMock(return_value=expected)
 
         result = _execute_review(
-            mock_reviewer, code_file, spec=str(spec_file),
+            mock_reviewer,
+            code_file,
+            spec=str(spec_file),
         )
         assert result.verdict == ReviewVerdict.DENIED
         mock_reviewer.review_code.assert_called_once()
@@ -129,7 +133,9 @@ class TestExecuteReview:
 
         with pytest.raises(typer.Exit) as exc_info:
             _execute_review(
-                MagicMock(), code_file, spec="nonexistent_spec.md",
+                MagicMock(),
+                code_file,
+                spec="nonexistent_spec.md",
             )
         assert exc_info.value.exit_code == 1
 

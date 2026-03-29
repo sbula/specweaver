@@ -37,8 +37,8 @@ def _mock_db(tmp_path: Path, monkeypatch):
 
 # ── _resolve_spec_path edge cases ────────────────────────────────────────
 
-class TestResolveSpecPathEdgeCases:
 
+class TestResolveSpecPathEdgeCases:
     def test_module_with_underscores(self, tmp_path: Path) -> None:
         result = _resolve_spec_path("new_feature", "my_cool_service", tmp_path)
         assert result == tmp_path / "specs" / "my_cool_service_spec.md"
@@ -61,23 +61,25 @@ class TestResolveSpecPathEdgeCases:
 
 # ── _create_display ──────────────────────────────────────────────────────
 
-class TestCreateDisplayOptions:
 
+class TestCreateDisplayOptions:
     def test_verbose_flag(self) -> None:
         from specweaver.flow.display import RichPipelineDisplay
+
         display = _create_display(verbose=True)
         assert isinstance(display, RichPipelineDisplay)
 
     def test_json_overrides_verbose(self) -> None:
         from specweaver.flow.display import JsonPipelineDisplay
+
         display = _create_display(use_json=True, verbose=True)
         assert isinstance(display, JsonPipelineDisplay)
 
 
 # ── sw run — unit tests (mocked internals) ───────────────────────────────
 
-class TestRunPipelineMocked:
 
+class TestRunPipelineMocked:
     def test_run_with_failed_pipeline_exits_1(self, tmp_path: Path, monkeypatch) -> None:
         """A pipeline that ends FAILED should produce exit code 1."""
 
@@ -138,8 +140,8 @@ class TestRunPipelineMocked:
 
 # ── sw resume — unit tests ───────────────────────────────────────────────
 
-class TestResumeMocked:
 
+class TestResumeMocked:
     def test_resume_no_active_project_fails(self) -> None:
         result = runner.invoke(app, ["resume"])
         assert result.exit_code == 1
@@ -174,8 +176,8 @@ class TestResumeMocked:
 
 # ── sw pipelines ─────────────────────────────────────────────────────────
 
-class TestPipelinesCommand:
 
+class TestPipelinesCommand:
     def test_pipelines_output_contains_names(self) -> None:
         result = runner.invoke(app, ["pipelines"])
         assert result.exit_code == 0

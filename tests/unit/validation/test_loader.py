@@ -24,7 +24,7 @@ def _write_rule_file(directory: Path, filename: str, content: str) -> Path:
     return filepath
 
 
-_VALID_RULE = '''
+_VALID_RULE = """
 from specweaver.validation.models import Rule, RuleResult, Status
 from pathlib import Path
 
@@ -39,9 +39,9 @@ class SchemaCheckRule(Rule):
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
         return self._pass("ok")
-'''
+"""
 
-_VALID_RULE_2 = '''
+_VALID_RULE_2 = """
 from specweaver.validation.models import Rule, RuleResult, Status
 from pathlib import Path
 
@@ -56,7 +56,7 @@ class ApiContractRule(Rule):
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
         return self._pass("ok")
-'''
+"""
 
 _NON_RULE_MODULE = '''
 class NotARule:
@@ -64,11 +64,11 @@ class NotARule:
     pass
 '''
 
-_BROKEN_MODULE = '''
+_BROKEN_MODULE = """
 raise ImportError("intentionally broken")
-'''
+"""
 
-_BAD_PREFIX = '''
+_BAD_PREFIX = """
 from specweaver.validation.models import Rule, RuleResult, Status
 from pathlib import Path
 
@@ -83,7 +83,7 @@ class BadRule(Rule):
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
         return self._pass("ok")
-'''
+"""
 
 
 # ---------------------------------------------------------------------------

@@ -153,7 +153,8 @@ class TestConfigConstitutionMaxSize:
         """set-constitution-max-size → success."""
         _create_project(_mock_db)
         result = runner.invoke(
-            app, ["config", "set-constitution-max-size", "5000"],
+            app,
+            ["config", "set-constitution-max-size", "5000"],
         )
         assert result.exit_code == 0
         assert "5000" in result.output
@@ -286,7 +287,9 @@ class TestConfigSetProvider:
         runner.invoke(app, ["config", "set-provider", "mistral"])
 
         # Update it
-        result = runner.invoke(app, ["config", "set-provider", "anthropic", "--model", "claude-3-haiku"])
+        result = runner.invoke(
+            app, ["config", "set-provider", "anthropic", "--model", "claude-3-haiku"]
+        )
 
         assert result.exit_code == 0
         assert "Updated existing custom profile" in result.output

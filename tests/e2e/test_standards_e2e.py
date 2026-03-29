@@ -76,9 +76,7 @@ def _create_python_project(tmp_path: Path, name: str) -> Path:
     tests = project / "tests"
     tests.mkdir()
     (tests / "test_service.py").write_text(
-        "import pytest\n\n\n"
-        "def test_process_request():\n"
-        '    assert True  # placeholder\n',
+        "import pytest\n\n\ndef test_process_request():\n    assert True  # placeholder\n",
         encoding="utf-8",
     )
 
@@ -144,7 +142,9 @@ class TestStandardsInjectionE2E:
     """E2E: scan → review → verify standards in prompt."""
 
     def test_standards_reach_load_standards_content(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """After scan, _load_standards_content returns formatted text."""
         from specweaver.cli import _load_standards_content
@@ -162,8 +162,7 @@ class TestStandardsInjectionE2E:
             assert isinstance(content, str)
             assert len(content) > 0
             # Should contain formatted standard entries
-            assert ("python" in content or "SHOULD follow" in content
-                    or "snake" in content.lower())
+            assert "python" in content or "SHOULD follow" in content or "snake" in content.lower()
 
     def test_rescan_after_code_change(self, tmp_path: Path) -> None:
         """Re-scanning after changing code updates stored standards."""
@@ -178,10 +177,7 @@ class TestStandardsInjectionE2E:
         # Change all code to a different style
         src = project / "src" / "service.py"
         src.write_text(
-            "def processRequest(data):\n"
-            "    return data\n\n"
-            "def handleError(err):\n"
-            "    raise err\n",
+            "def processRequest(data):\n    return data\n\ndef handleError(err):\n    raise err\n",
             encoding="utf-8",
         )
 

@@ -66,17 +66,13 @@ class MistralAdapter(LLMAdapter):
                 raise ModelNotFoundError(str(e)) from e
         raise GenerationError(str(e)) from e
 
-    async def generate(
-        self, messages: list[Message], config: GenerationConfig
-    ) -> LLMResponse:
+    async def generate(self, messages: list[Message], config: GenerationConfig) -> LLMResponse:
         from specweaver.llm.models import LLMResponse, TokenUsage
 
         client = self._get_client()
         mistral_messages: list[dict[str, Any]] = []
         if config.system_instruction:
-            mistral_messages.append(
-                {"role": "system", "content": config.system_instruction}
-            )
+            mistral_messages.append({"role": "system", "content": config.system_instruction})
         for msg in messages:
             mistral_messages.append({"role": str(msg.role.value), "content": msg.content})
 
@@ -205,7 +201,9 @@ class MistralAdapter(LLMAdapter):
 
             if hasattr(response, "usage") and response.usage:
                 cumulative_usage.prompt_tokens += getattr(response.usage, "prompt_tokens", 0)
-                cumulative_usage.completion_tokens += getattr(response.usage, "completion_tokens", 0)
+                cumulative_usage.completion_tokens += getattr(
+                    response.usage, "completion_tokens", 0
+                )
                 cumulative_usage.total_tokens += getattr(response.usage, "total_tokens", 0)
 
             choice = response.choices[0]

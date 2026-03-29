@@ -74,7 +74,8 @@ class TestFindConstitution:
     """Tests for find_constitution()."""
 
     def test_finds_root_constitution(
-        self, project_with_constitution: Path,
+        self,
+        project_with_constitution: Path,
     ) -> None:
         """Finds CONSTITUTION.md at project root."""
         result = find_constitution(project_with_constitution)
@@ -91,14 +92,14 @@ class TestFindConstitution:
         assert result is None
 
     def test_returns_size_in_bytes(
-        self, project_with_constitution: Path,
+        self,
+        project_with_constitution: Path,
     ) -> None:
         """ConstitutionInfo.size reflects actual file size."""
         result = find_constitution(project_with_constitution)
         assert result is not None
         expected = len(
-            (project_with_constitution / CONSTITUTION_FILENAME)
-            .read_bytes(),
+            (project_with_constitution / CONSTITUTION_FILENAME).read_bytes(),
         )
         assert result.size == expected
 
@@ -115,7 +116,8 @@ class TestFindConstitutionWalkUp:
         """Service-level CONSTITUTION.md overrides root."""
         billing_spec = monorepo / "billing-svc" / "some_spec.md"
         result = find_constitution(
-            monorepo, spec_path=billing_spec,
+            monorepo,
+            spec_path=billing_spec,
         )
         assert result is not None
         assert "Billing Constitution" in result.content
@@ -125,7 +127,8 @@ class TestFindConstitutionWalkUp:
         """Service without CONSTITUTION.md inherits root."""
         analytics_spec = monorepo / "analytics-svc" / "some_spec.md"
         result = find_constitution(
-            monorepo, spec_path=analytics_spec,
+            monorepo,
+            spec_path=analytics_spec,
         )
         assert result is not None
         assert "Root Constitution" in result.content
@@ -140,7 +143,8 @@ class TestFindConstitutionWalkUp:
         assert "Root Constitution" in result.content
 
     def test_no_spec_path_uses_project_root(
-        self, project_with_constitution: Path,
+        self,
+        project_with_constitution: Path,
     ) -> None:
         """When spec_path is None, checks project root only."""
         result = find_constitution(project_with_constitution)
@@ -157,13 +161,16 @@ class TestFindConstitutionSize:
     """Tests for size enforcement behavior."""
 
     def test_oversized_loads_with_warning(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture,
+        self,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Constitution > max_size loads but logs WARNING."""
         (tmp_path / ".specweaver").mkdir()
         oversized = "x" * (DEFAULT_MAX_CONSTITUTION_SIZE + 100)
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            oversized, encoding="utf-8",
+            oversized,
+            encoding="utf-8",
         )
 
         with caplog.at_level(logging.WARNING):
@@ -177,7 +184,8 @@ class TestFindConstitutionSize:
         """Custom max_size is respected."""
         (tmp_path / ".specweaver").mkdir()
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            "x" * 100, encoding="utf-8",
+            "x" * 100,
+            encoding="utf-8",
         )
 
         # With a tiny limit, file loads with warning
@@ -186,13 +194,16 @@ class TestFindConstitutionSize:
         assert result.size == 100
 
     def test_exactly_at_limit_no_warning(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture,
+        self,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Constitution exactly at max_size does NOT warn."""
         (tmp_path / ".specweaver").mkdir()
         content = "x" * DEFAULT_MAX_CONSTITUTION_SIZE
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            content, encoding="utf-8",
+            content,
+            encoding="utf-8",
         )
 
         with caplog.at_level(logging.WARNING):
@@ -215,7 +226,8 @@ class TestFindConstitutionEncoding:
         (tmp_path / ".specweaver").mkdir()
         bom_content = "\ufeff# Constitution with BOM\n"
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            bom_content, encoding="utf-8-sig",
+            bom_content,
+            encoding="utf-8-sig",
         )
 
         result = find_constitution(tmp_path)
@@ -256,7 +268,8 @@ class TestFindAllConstitutions:
         assert results == []
 
     def test_root_only(
-        self, project_with_constitution: Path,
+        self,
+        project_with_constitution: Path,
     ) -> None:
         """Project with only root constitution → single result."""
         results = find_all_constitutions(project_with_constitution)
@@ -281,7 +294,8 @@ class TestCheckConstitution:
     """Tests for check_constitution() — CI gate."""
 
     def test_valid_passes(
-        self, project_with_constitution: Path,
+        self,
+        project_with_constitution: Path,
     ) -> None:
         """Valid constitution passes check with no errors."""
         path = project_with_constitution / CONSTITUTION_FILENAME
@@ -393,7 +407,8 @@ class TestConstitutionEdgeCases:
         project = tmp_path / "project"
         project.mkdir()
         (project / CONSTITUTION_FILENAME).write_text(
-            "# Root", encoding="utf-8",
+            "# Root",
+            encoding="utf-8",
         )
         # spec_path is outside project_path
         outside_spec = tmp_path / "other" / "spec.md"
@@ -405,7 +420,8 @@ class TestConstitutionEdgeCases:
     def test_deeply_nested_walk_up(self, tmp_path: Path) -> None:
         """Walk-up from 4 levels deep should still reach project root."""
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            "# Root rules", encoding="utf-8",
+            "# Root rules",
+            encoding="utf-8",
         )
         deep = tmp_path / "a" / "b" / "c" / "d"
         deep.mkdir(parents=True)
@@ -419,12 +435,14 @@ class TestConstitutionEdgeCases:
     def test_deeply_nested_mid_level_override(self, tmp_path: Path) -> None:
         """Constitution at a mid-level directory wins over root."""
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            "# Root", encoding="utf-8",
+            "# Root",
+            encoding="utf-8",
         )
         mid = tmp_path / "services" / "auth"
         mid.mkdir(parents=True)
         (mid / CONSTITUTION_FILENAME).write_text(
-            "# Auth rules", encoding="utf-8",
+            "# Auth rules",
+            encoding="utf-8",
         )
         deep_spec = mid / "specs" / "login_spec.md"
 
@@ -436,12 +454,14 @@ class TestConstitutionEdgeCases:
     def test_find_all_ignores_hidden_directories(self, tmp_path: Path) -> None:
         """find_all_constitutions skips hidden dirs like .git/."""
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            "# Root", encoding="utf-8",
+            "# Root",
+            encoding="utf-8",
         )
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
         (git_dir / CONSTITUTION_FILENAME).write_text(
-            "# Git junk", encoding="utf-8",
+            "# Git junk",
+            encoding="utf-8",
         )
 
         results = find_all_constitutions(tmp_path)
@@ -452,7 +472,8 @@ class TestConstitutionEdgeCases:
     def test_whitespace_only_constitution(self, tmp_path: Path) -> None:
         """Constitution with only whitespace loads as whitespace content."""
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            "   \n\n  \t  \n", encoding="utf-8",
+            "   \n\n  \t  \n",
+            encoding="utf-8",
         )
         result = find_constitution(tmp_path)
         assert result is not None
@@ -462,7 +483,8 @@ class TestConstitutionEdgeCases:
         """Constitution with unicode characters loads correctly."""
         content = "# Règles du Projet\n\nUtiliser des accents: é, ü, ñ, 中文\n"
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            content, encoding="utf-8",
+            content,
+            encoding="utf-8",
         )
         result = find_constitution(tmp_path)
         assert result is not None
@@ -489,7 +511,8 @@ class TestConstitutionEdgeCases:
         """Constitution one byte over max_size fails check."""
         path = tmp_path / CONSTITUTION_FILENAME
         path.write_text(
-            "x" * (DEFAULT_MAX_CONSTITUTION_SIZE + 1), encoding="utf-8",
+            "x" * (DEFAULT_MAX_CONSTITUTION_SIZE + 1),
+            encoding="utf-8",
         )
 
         errors = check_constitution(path, max_size=DEFAULT_MAX_CONSTITUTION_SIZE)
@@ -571,7 +594,10 @@ class TestGenerateConstitutionFromStandards:
     def test_creates_file_from_standards(self, tmp_path: Path) -> None:
         """Creates CONSTITUTION.md with standards data."""
         result = generate_constitution_from_standards(
-            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+            tmp_path,
+            "my-app",
+            _SAMPLE_STANDARDS,
+            ["python"],
         )
         assert result is not None
         assert result.exists()
@@ -582,7 +608,10 @@ class TestGenerateConstitutionFromStandards:
     def test_content_has_coding_standards(self, tmp_path: Path) -> None:
         """Generated file includes standards data."""
         generate_constitution_from_standards(
-            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+            tmp_path,
+            "my-app",
+            _SAMPLE_STANDARDS,
+            ["python"],
         )
         content = (tmp_path / CONSTITUTION_FILENAME).read_text()
         assert "snake_case" in content
@@ -591,16 +620,22 @@ class TestGenerateConstitutionFromStandards:
 
     def test_multi_language_tech_stack(self, tmp_path: Path) -> None:
         """Multiple languages are listed in tech stack."""
-        standards = [*_SAMPLE_STANDARDS, {
-            "scope": ".",
-            "language": "typescript",
-            "category": "naming",
-            "data": {"variable_style": "camelCase"},
-            "confidence": 0.90,
-            "confirmed_by": "hitl",
-        }]
+        standards = [
+            *_SAMPLE_STANDARDS,
+            {
+                "scope": ".",
+                "language": "typescript",
+                "category": "naming",
+                "data": {"variable_style": "camelCase"},
+                "confidence": 0.90,
+                "confirmed_by": "hitl",
+            },
+        ]
         generate_constitution_from_standards(
-            tmp_path, "my-app", standards, ["python", "typescript"],
+            tmp_path,
+            "my-app",
+            standards,
+            ["python", "typescript"],
         )
         content = (tmp_path / CONSTITUTION_FILENAME).read_text()
         assert "Python" in content
@@ -609,7 +644,10 @@ class TestGenerateConstitutionFromStandards:
     def test_empty_standards_falls_back_to_todo(self, tmp_path: Path) -> None:
         """Empty standards list falls back to TODO placeholders."""
         result = generate_constitution_from_standards(
-            tmp_path, "my-app", [], [],
+            tmp_path,
+            "my-app",
+            [],
+            [],
         )
         assert result is not None
         content = result.read_text()
@@ -622,7 +660,10 @@ class TestGenerateConstitutionFromStandards:
         path.write_text("# My custom constitution\nNo TODOs here.\n")
 
         result = generate_constitution_from_standards(
-            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+            tmp_path,
+            "my-app",
+            _SAMPLE_STANDARDS,
+            ["python"],
         )
         assert result is None
         assert "My custom constitution" in path.read_text()
@@ -635,7 +676,10 @@ class TestGenerateConstitutionFromStandards:
         assert "TODO" in original  # starter template
 
         result = generate_constitution_from_standards(
-            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+            tmp_path,
+            "my-app",
+            _SAMPLE_STANDARDS,
+            ["python"],
         )
         assert result is not None
         new_content = path.read_text()
@@ -648,7 +692,10 @@ class TestGenerateConstitutionFromStandards:
         path.write_text("# My custom constitution\n")
 
         result = generate_constitution_from_standards(
-            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+            tmp_path,
+            "my-app",
+            _SAMPLE_STANDARDS,
+            ["python"],
             force=True,
         )
         assert result is not None
@@ -660,7 +707,10 @@ class TestGenerateConstitutionFromStandards:
         assert not path.exists()
 
         result = generate_constitution_from_standards(
-            tmp_path, "my-app", _SAMPLE_STANDARDS, ["python"],
+            tmp_path,
+            "my-app",
+            _SAMPLE_STANDARDS,
+            ["python"],
         )
         assert result is not None
         assert path.exists()
@@ -675,7 +725,9 @@ class TestIsUnmodifiedStarterOSError:
     """Test is_unmodified_starter() handles OS-level read errors."""
 
     def test_oserror_on_read_returns_false(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """OSError during file read → returns False gracefully."""
         path = tmp_path / CONSTITUTION_FILENAME
@@ -742,13 +794,15 @@ class TestBuildStandardsSection:
 
         from specweaver.project.constitution import _build_standards_section
 
-        standards = [{
-            "scope": ".",
-            "language": "python",
-            "category": "naming",
-            "data": json.dumps({"style": "snake_case"}),
-            "confidence": 0.9,
-        }]
+        standards = [
+            {
+                "scope": ".",
+                "language": "python",
+                "category": "naming",
+                "data": json.dumps({"style": "snake_case"}),
+                "confidence": 0.9,
+            }
+        ]
         result = _build_standards_section(standards)
         assert "snake_case" in result
 
@@ -756,13 +810,15 @@ class TestBuildStandardsSection:
         """Standards with scope != '.' get [scope/lang] prefix."""
         from specweaver.project.constitution import _build_standards_section
 
-        standards = [{
-            "scope": "backend",
-            "language": "python",
-            "category": "naming",
-            "data": {"style": "snake_case"},
-            "confidence": 0.85,
-        }]
+        standards = [
+            {
+                "scope": "backend",
+                "language": "python",
+                "category": "naming",
+                "data": {"style": "snake_case"},
+                "confidence": 0.85,
+            }
+        ]
         result = _build_standards_section(standards)
         assert "[backend/python]" in result
 
@@ -770,13 +826,15 @@ class TestBuildStandardsSection:
         """Standards with scope == '.' get [lang] prefix."""
         from specweaver.project.constitution import _build_standards_section
 
-        standards = [{
-            "scope": ".",
-            "language": "python",
-            "category": "naming",
-            "data": {"style": "snake_case"},
-            "confidence": 0.85,
-        }]
+        standards = [
+            {
+                "scope": ".",
+                "language": "python",
+                "category": "naming",
+                "data": {"style": "snake_case"},
+                "confidence": 0.85,
+            }
+        ]
         result = _build_standards_section(standards)
         assert "[python]" in result
         assert "[./python]" not in result

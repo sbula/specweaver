@@ -22,7 +22,6 @@ from specweaver.validation.rules.code.c03_tests_pass import TestsPassRule
 
 
 class TestSyntaxValidRule:
-
     def test_rule_id(self) -> None:
         assert SyntaxValidRule().rule_id == "C01"
 
@@ -87,7 +86,6 @@ class TestSyntaxValidRule:
 
 
 class TestTestsExistRule:
-
     def test_rule_id(self) -> None:
         assert TestsExistRule().rule_id == "C02"
 
@@ -154,7 +152,6 @@ class TestTestsExistRule:
 
 
 class TestTestsPassRule:
-
     def test_rule_id(self) -> None:
         assert TestsPassRule().rule_id == "C03"
 

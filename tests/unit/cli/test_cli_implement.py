@@ -62,7 +62,9 @@ class TestImplementOutputPaths:
 
     @patch("specweaver.cli._helpers._require_llm_adapter")
     def test_output_files_created(
-        self, mock_require, tmp_path: Path,
+        self,
+        mock_require,
+        tmp_path: Path,
     ) -> None:
         """implement → creates code + test files."""
         project = _scaffold(tmp_path)
@@ -70,12 +72,14 @@ class TestImplementOutputPaths:
         spec.write_text("# Greeter Spec\n## 1. Purpose\nGreets.\n", encoding="utf-8")
 
         mock_require.return_value = (
-            MagicMock(), _make_mock_adapter("def greet(): pass\n"),
+            MagicMock(),
+            _make_mock_adapter("def greet(): pass\n"),
             MagicMock(temperature=0.7),
         )
 
         result = runner.invoke(
-            app, ["implement", str(spec), "--project", str(project)],
+            app,
+            ["implement", str(spec), "--project", str(project)],
         )
         assert result.exit_code == 0
         assert (project / "src" / "greeter.py").exists()
@@ -83,7 +87,9 @@ class TestImplementOutputPaths:
 
     @patch("specweaver.cli._helpers._require_llm_adapter")
     def test_spec_suffix_stripped(
-        self, mock_require, tmp_path: Path,
+        self,
+        mock_require,
+        tmp_path: Path,
     ) -> None:
         """'_spec' suffix stripped from output filenames."""
         project = _scaffold(tmp_path)
@@ -91,12 +97,14 @@ class TestImplementOutputPaths:
         spec.write_text("# Auth Spec\n## 1. Purpose\nAuth.\n", encoding="utf-8")
 
         mock_require.return_value = (
-            MagicMock(), _make_mock_adapter("pass\n"),
+            MagicMock(),
+            _make_mock_adapter("pass\n"),
             MagicMock(temperature=0.7),
         )
 
         result = runner.invoke(
-            app, ["implement", str(spec), "--project", str(project)],
+            app,
+            ["implement", str(spec), "--project", str(project)],
         )
         assert result.exit_code == 0
         assert (project / "src" / "auth_service.py").exists()
@@ -114,7 +122,8 @@ class TestImplementErrors:
     def test_missing_spec_exits_1(self, tmp_path: Path) -> None:
         """implement with nonexistent spec → exit 1."""
         result = runner.invoke(
-            app, ["implement", "nonexistent.md", "--project", str(tmp_path)],
+            app,
+            ["implement", "nonexistent.md", "--project", str(tmp_path)],
         )
         assert result.exit_code == 1
         assert "not found" in result.output.lower()

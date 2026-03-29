@@ -41,26 +41,31 @@ class TestPipelineLevelSelection:
     def _load(self, name: str):
         """Load a pipeline by name, triggering rule registration."""
         import specweaver.validation.rules.spec  # noqa: F401
+
         return load_pipeline_yaml(name)
 
     def test_component_level_loads_default_pipeline(self) -> None:
         """component level → validation_spec_default."""
         from specweaver.cli.validation import _resolve_pipeline_name
+
         assert _resolve_pipeline_name("component", None) == "validation_spec_default"
 
     def test_feature_level_loads_feature_pipeline(self) -> None:
         """feature level → validation_spec_feature."""
         from specweaver.cli.validation import _resolve_pipeline_name
+
         assert _resolve_pipeline_name("feature", None) == "validation_spec_feature"
 
     def test_code_level_loads_code_pipeline(self) -> None:
         """code level → validation_code_default."""
         from specweaver.cli.validation import _resolve_pipeline_name
+
         assert _resolve_pipeline_name("code", None) == "validation_code_default"
 
     def test_explicit_pipeline_overrides_level(self) -> None:
         """--pipeline always wins over --level."""
         from specweaver.cli.validation import _resolve_pipeline_name
+
         result = _resolve_pipeline_name("component", "validation_spec_library")
         assert result == "validation_spec_library"
 
@@ -152,14 +157,17 @@ class TestFeaturePipelineWithSettings:
 
     def _load_feature(self):
         import specweaver.validation.rules.spec  # noqa: F401
+
         return load_pipeline_yaml("validation_spec_feature")
 
     def test_settings_override_applies_to_feature_pipeline(self) -> None:
         """Settings override works on top of feature pipeline."""
         pipeline = self._load_feature()
-        settings = ValidationSettings(overrides={
-            "S08": RuleOverride(rule_id="S08", warn_threshold=99.0, fail_threshold=99.0),
-        })
+        settings = ValidationSettings(
+            overrides={
+                "S08": RuleOverride(rule_id="S08", warn_threshold=99.0, fail_threshold=99.0),
+            }
+        )
         applied = apply_settings_to_pipeline(pipeline, settings)
         s08_step = next(s for s in applied.steps if s.rule == "S08")
         assert s08_step.params.get("warn_threshold") == 99
@@ -167,9 +175,11 @@ class TestFeaturePipelineWithSettings:
     def test_disable_rule_in_feature_pipeline(self) -> None:
         """Disabling a rule works in the feature pipeline too."""
         pipeline = self._load_feature()
-        settings = ValidationSettings(overrides={
-            "S08": RuleOverride(rule_id="S08", enabled=False),
-        })
+        settings = ValidationSettings(
+            overrides={
+                "S08": RuleOverride(rule_id="S08", enabled=False),
+            }
+        )
         applied = apply_settings_to_pipeline(pipeline, settings)
         step_ids = {s.rule for s in applied.steps}
         assert "S08" not in step_ids

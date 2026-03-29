@@ -61,7 +61,8 @@ def scan_standards(
 
     # Filter out hidden dirs, node_modules, etc.
     source_files = [
-        f for f in source_files
+        f
+        for f in source_files
         if not any(p.startswith(".") or p == "node_modules" for p in f.parts)
     ]
 
@@ -95,4 +96,3 @@ def accept_standards(
         )
 
     return {"detail": f"Saved {len(body.standards)} standards for project '{body.project}'."}
-

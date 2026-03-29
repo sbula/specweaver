@@ -181,6 +181,7 @@ def migrate_legacy_config(
     from pathlib import Path
 
     from ruamel.yaml import YAML
+
     try:
         from ruamel.yaml import YAMLError  # type: ignore[attr-defined]
     except ImportError:

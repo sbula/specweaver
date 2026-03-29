@@ -116,4 +116,3 @@ def render_blocks(blocks: list[_ContentBlock]) -> str:
         parts.append(f"<reminder>\n{reminder_text}\n</reminder>")
 
     return "\n\n".join(parts)
-

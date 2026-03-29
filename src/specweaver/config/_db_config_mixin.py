@@ -95,7 +95,9 @@ class ConfigSettingsMixin:
             return int(row["constitution_max_size"])
 
     def set_constitution_max_size(
-        self, project_name: str, max_size: int,
+        self,
+        project_name: str,
+        max_size: int,
     ) -> None:
         """Set the constitution max size for a project (bytes).
 
@@ -107,10 +109,7 @@ class ConfigSettingsMixin:
             ValueError: If project not found or size is invalid.
         """
         if max_size <= 0:
-            msg = (
-                f"Invalid constitution max size {max_size}. "
-                "Must be positive."
-            )
+            msg = f"Invalid constitution max size {max_size}. Must be positive."
             raise ValueError(msg)
 
         with self.connect() as conn:  # type: ignore[attr-defined]
@@ -128,7 +127,8 @@ class ConfigSettingsMixin:
             )
             logger.debug(
                 "set_constitution_max_size: %s = %d bytes",
-                project_name, max_size,
+                project_name,
+                max_size,
             )
 
     # ------------------------------------------------------------------
@@ -156,7 +156,9 @@ class ConfigSettingsMixin:
             return str(row["auto_bootstrap_constitution"])
 
     def set_auto_bootstrap(
-        self, project_name: str, mode: str,
+        self,
+        project_name: str,
+        mode: str,
     ) -> None:
         """Set the auto-bootstrap mode for a project.
 
@@ -190,7 +192,8 @@ class ConfigSettingsMixin:
             )
             logger.debug(
                 "set_auto_bootstrap: %s = %s",
-                project_name, mode_lower,
+                project_name,
+                mode_lower,
             )
 
     # ------------------------------------------------------------------
@@ -218,7 +221,9 @@ class ConfigSettingsMixin:
             return str(row["stitch_mode"])
 
     def set_stitch_mode(
-        self, project_name: str, mode: str,
+        self,
+        project_name: str,
+        mode: str,
     ) -> None:
         """Set the stitch mode for a project.
 
@@ -252,5 +257,6 @@ class ConfigSettingsMixin:
             )
             logger.debug(
                 "set_stitch_mode: %s = %s",
-                project_name, mode_lower,
+                project_name,
+                mode_lower,
             )

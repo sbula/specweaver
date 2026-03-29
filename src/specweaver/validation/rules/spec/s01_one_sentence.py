@@ -64,6 +64,7 @@ class OneSentenceRule(Rule):
             self._header_pattern = header_pattern
         elif kind is not None:
             from specweaver.validation.spec_kind import _HEADER_PATTERNS
+
             self._header_pattern = _HEADER_PATTERNS.get(kind)
         else:
             self._header_pattern = None
@@ -119,8 +120,7 @@ class OneSentenceRule(Rule):
                     message=f"Spec has {h2_count} H2 sections (max recommended: {self._max_h2})",
                     severity=Severity.WARNING,
                     suggestion=(
-                        "Many sections may indicate multiple "
-                        "concerns. Consider decomposition."
+                        "Many sections may indicate multiple concerns. Consider decomposition."
                     ),
                 )
             )
@@ -150,4 +150,3 @@ class OneSentenceRule(Rule):
                 re.DOTALL | re.IGNORECASE,
             )
         return match.group(1).strip() if match else ""
-

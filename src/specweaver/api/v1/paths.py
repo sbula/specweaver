@@ -43,7 +43,9 @@ def resolve_project_root(project_name: str, db: Database) -> Path:
 
 
 def resolve_file_in_project(
-    file_path: str, project_name: str, db: Database,
+    file_path: str,
+    project_name: str,
+    db: Database,
 ) -> tuple[Path, Path]:
     """Validate and resolve a relative file path within a project.
 

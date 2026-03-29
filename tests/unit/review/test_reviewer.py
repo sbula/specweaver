@@ -160,6 +160,7 @@ class TestReviewerConfidenceThreshold:
 
     def test_default_threshold_is_80(self) -> None:
         """Default confidence_threshold is 80."""
+
         # Need a mock LLM
         class MockLLM:
             pass
@@ -299,4 +300,3 @@ Summary."""
         below = [f for f in result.findings if f.below_threshold]
         assert len(above) == 1  # only 90 is >= threshold
         assert len(below) == 2  # 30 and 50 are < 80
-

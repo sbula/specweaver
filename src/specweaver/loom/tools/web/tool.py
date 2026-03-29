@@ -122,12 +122,14 @@ class WebTool:
         import urllib.parse
         import urllib.request
 
-        params = urllib.parse.urlencode({
-            "key": self._api_key,
-            "cx": self._engine_id,
-            "q": query,
-            "num": min(max_results, 10),  # API max is 10
-        })
+        params = urllib.parse.urlencode(
+            {
+                "key": self._api_key,
+                "cx": self._engine_id,
+                "q": query,
+                "num": min(max_results, 10),  # API max is 10
+            }
+        )
         url = f"https://www.googleapis.com/customsearch/v1?{params}"
 
         try:
@@ -139,11 +141,13 @@ class WebTool:
 
             results: list[dict[str, Any]] = []
             for item in data.get("items", [])[:max_results]:
-                results.append({
-                    "title": item.get("title", ""),
-                    "snippet": item.get("snippet", ""),
-                    "url": item.get("link", ""),
-                })
+                results.append(
+                    {
+                        "title": item.get("title", ""),
+                        "snippet": item.get("snippet", ""),
+                        "url": item.get("link", ""),
+                    }
+                )
             return WebToolResult(status="success", data=results)
 
         except Exception as exc:
@@ -191,8 +195,8 @@ class WebTool:
     def definitions(self) -> list[ToolDefinition]:
         from specweaver.loom.tools.web.definitions import INTENT_DEFINITIONS
         from specweaver.loom.tools.web.tool import ROLE_INTENTS
-        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 
+        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 
     def _require_intent(self, intent: str) -> None:
         """Raise if the current role doesn't have this intent."""

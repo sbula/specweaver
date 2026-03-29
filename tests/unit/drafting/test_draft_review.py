@@ -394,9 +394,7 @@ class TestHITLProvider:
 
         assert result == "answer"
         calls = console.print.call_args_list
-        section_printed = any(
-            "Section:" in str(c) and "Purpose" in str(c) for c in calls
-        )
+        section_printed = any("Section:" in str(c) and "Purpose" in str(c) for c in calls)
         assert section_printed
 
     @patch("specweaver.context.hitl_provider.Prompt.ask")
@@ -686,10 +684,7 @@ class TestReviewerParseResponseRobustness:
         """Summary should be the last non-empty, non-VERDICT, non-finding line."""
         reviewer = Reviewer(llm=_make_mock_llm(""))
         result = reviewer._parse_response(
-            "VERDICT: ACCEPTED\n"
-            "Some preamble text.\n"
-            "- A finding\n"
-            "Overall conclusion here.",
+            "VERDICT: ACCEPTED\nSome preamble text.\n- A finding\nOverall conclusion here.",
         )
         assert result.summary == "Overall conclusion here."
 
@@ -697,9 +692,7 @@ class TestReviewerParseResponseRobustness:
         """Response with only VERDICT + findings and no summary text."""
         reviewer = Reviewer(llm=_make_mock_llm(""))
         result = reviewer._parse_response(
-            "VERDICT: DENIED\n"
-            "- Issue one\n"
-            "- Issue two",
+            "VERDICT: DENIED\n- Issue one\n- Issue two",
         )
         assert result.verdict == ReviewVerdict.DENIED
         assert len(result.findings) == 2
@@ -719,9 +712,7 @@ class TestReviewerParseResponseRobustness:
         """Finding lines with leading spaces before '- ' should still parse."""
         reviewer = Reviewer(llm=_make_mock_llm(""))
         result = reviewer._parse_response(
-            "VERDICT: DENIED\n"
-            "  - Indented finding\n"
-            "Regular text.",
+            "VERDICT: DENIED\n  - Indented finding\nRegular text.",
         )
         # Lines are stripped before checking for "- "
         assert len(result.findings) == 1
@@ -751,4 +742,3 @@ class TestDrafterAllSkipped:
         assert result.exists()
         content = result.read_text(encoding="utf-8")
         assert content.count("TODO") >= 5  # one per skipped section
-

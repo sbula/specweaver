@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 from specweaver.config.settings import RuleOverride, ValidationSettings
 
 if TYPE_CHECKING:
-
     from specweaver.config.database import Database
 
 # ---------------------------------------------------------------------------
@@ -35,7 +34,8 @@ class TestConfigCascade:
     def test_db_override_single_rule(self, sample_db: Database) -> None:
         """Set a rule override in DB → loading picks it up."""
         sample_db.set_validation_override(
-            "sample", "S08",
+            "sample",
+            "S08",
             fail_threshold=3.0,
         )
 
@@ -71,7 +71,8 @@ class TestConfigCascade:
         settings = sample_db.load_validation_settings("sample")
 
         settings.overrides["C07"] = RuleOverride(
-            rule_id="C07", enabled=False,
+            rule_id="C07",
+            enabled=False,
         )
 
         assert "C07" in settings.overrides
@@ -85,7 +86,8 @@ class TestConfigCascade:
         settings = sample_db.load_validation_settings("sample")
 
         settings.overrides["S08"] = RuleOverride(
-            rule_id="S08", fail_threshold=1.0,
+            rule_id="S08",
+            fail_threshold=1.0,
         )
 
         assert settings.overrides["C04"].warn_threshold == 2.0

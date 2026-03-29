@@ -61,8 +61,7 @@ class ConcreteExampleRule(Rule):
                     message="No Contract section found",
                     severity=Severity.ERROR,
                     suggestion=(
-                        "Add a '## 2. Contract' section with "
-                        "interface definitions and examples."
+                        "Add a '## 2. Contract' section with interface definitions and examples."
                     ),
                 )
             )

@@ -42,10 +42,12 @@ class DummyAdapter(LLMAdapter):
 class TestStandardsEnricher:
     async def test_skips_enrichment_if_confidence_high(self) -> None:
         adapter = DummyAdapter([])
-        adapter.generate = AsyncMock() # type: ignore
+        adapter.generate = AsyncMock()  # type: ignore
         enricher = StandardsEnricher(adapter)
 
-        res = CategoryResult(category="naming", dominant={"style": "snake"}, confidence=0.95, sample_size=10)
+        res = CategoryResult(
+            category="naming", dominant={"style": "snake"}, confidence=0.95, sample_size=10
+        )
 
         await enricher.enrich([res], "python", confidence_threshold=0.9)
 
@@ -56,7 +58,9 @@ class TestStandardsEnricher:
         adapter = DummyAdapter([json_resp])
         enricher = StandardsEnricher(adapter)
 
-        res = CategoryResult(category="naming", dominant={"style": "snake"}, confidence=0.5, sample_size=10)
+        res = CategoryResult(
+            category="naming", dominant={"style": "snake"}, confidence=0.5, sample_size=10
+        )
 
         await enricher.enrich([res], "python", confidence_threshold=0.9)
 
@@ -69,11 +73,13 @@ class TestStandardsEnricher:
         enricher = StandardsEnricher(adapter)
 
         # High confidence, but forced
-        res = CategoryResult(category="naming", dominant={"style": "snake"}, confidence=0.99, sample_size=10)
+        res = CategoryResult(
+            category="naming", dominant={"style": "snake"}, confidence=0.99, sample_size=10
+        )
 
         await enricher.enrich([res], "python", confidence_threshold=0.9, force_compare=True)
 
-        assert len(res.conflicts) == 0 # no conflicts added because is_conflict=False
+        assert len(res.conflicts) == 0  # no conflicts added because is_conflict=False
 
     async def test_handles_invalid_json_gracefully(self) -> None:
         # Invalid JSON missing quotes
@@ -81,7 +87,9 @@ class TestStandardsEnricher:
         adapter = DummyAdapter([json_resp])
         enricher = StandardsEnricher(adapter)
 
-        res = CategoryResult(category="naming", dominant={"style": "snake"}, confidence=0.5, sample_size=10)
+        res = CategoryResult(
+            category="naming", dominant={"style": "snake"}, confidence=0.5, sample_size=10
+        )
 
         # Should not raise exception
         await enricher.enrich([res], "python", confidence_threshold=0.9)

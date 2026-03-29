@@ -395,8 +395,10 @@ class TestEdgeCases:
         """context.yaml files at multiple nesting levels."""
         _write_context(tmp_path / "root_ctx", name="root", level="service")
         _write_context(
-            tmp_path / "root_ctx" / "child", name="child",
-            level="module", consumes=["root"],
+            tmp_path / "root_ctx" / "child",
+            name="child",
+            level="module",
+            consumes=["root"],
         )
         graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
         assert len(graph.nodes) == 2
@@ -529,15 +531,18 @@ class TestModulesSharingConstraints:
     def test_shared_constraint(self, tmp_path: Path) -> None:
         """Two modules with overlapping constraint lists."""
         _write_context(
-            tmp_path / "a", name="a",
+            tmp_path / "a",
+            name="a",
             constraints=["no-blocking", "stateless"],
         )
         _write_context(
-            tmp_path / "b", name="b",
+            tmp_path / "b",
+            name="b",
             constraints=["stateless", "idempotent"],
         )
         _write_context(
-            tmp_path / "c", name="c",
+            tmp_path / "c",
+            name="c",
             constraints=["idempotent"],
         )
         graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
@@ -604,8 +609,10 @@ class TestFormatContextSummary:
 
     def test_includes_purpose_and_archetype(self, tmp_path: Path) -> None:
         _write_context(
-            tmp_path / "svc", name="svc",
-            purpose="Auth service.", archetype="adapter",
+            tmp_path / "svc",
+            name="svc",
+            purpose="Auth service.",
+            archetype="adapter",
             constraints=["no-direct-db"],
         )
         _write_context(tmp_path / "cli", name="cli", consumes=["svc"])
@@ -755,4 +762,3 @@ class TestOperationalWarningsBoundary:
         graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
         result = graph.operational_warnings("nonexistent")
         assert isinstance(result, list)
-

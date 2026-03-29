@@ -69,9 +69,10 @@ class TestAnthropicAdapter:
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
             model="claude-3-7-sonnet-20250219",
-            tools=[ToolDefinition(name="test", description="desc")]
+            tools=[ToolDefinition(name="test", description="desc")],
         )
 
         mock_exec = AsyncMock()
@@ -99,10 +100,11 @@ class TestAnthropicAdapter:
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
             model="claude-4-6-sonnet",
             tools=[ToolDefinition(name="my_tool", description="desc")],
-            max_tool_rounds=2
+            max_tool_rounds=2,
         )
 
         mock_exec = AsyncMock()
@@ -122,6 +124,7 @@ class TestAnthropicAdapter:
             type = "tool_use"
             id = "t1"
             name = "my_tool"
+
             @property
             def input(self) -> dict:  # type: ignore
                 raise ValueError("Bad json")
@@ -143,9 +146,9 @@ class TestAnthropicAdapter:
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
-            model="claude-4-6-sonnet",
-            tools=[ToolDefinition(name="my_tool", description="desc")]
+            model="claude-4-6-sonnet", tools=[ToolDefinition(name="my_tool", description="desc")]
         )
 
         mock_exec = AsyncMock()

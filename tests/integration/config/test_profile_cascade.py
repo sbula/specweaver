@@ -39,7 +39,9 @@ class TestProfileDB:
     """Profile is stored as a name only — no DB override writes."""
 
     def test_set_domain_profile_stores_name(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """set_domain_profile stores the profile name, nothing else."""
         db.register_project("myapp", str(tmp_path))
@@ -47,7 +49,9 @@ class TestProfileDB:
         assert db.get_domain_profile("myapp") == "web-app"
 
     def test_set_domain_profile_does_not_write_overrides(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """set_domain_profile MUST NOT write any validation_overrides rows."""
         db.register_project("myapp", str(tmp_path))
@@ -59,7 +63,9 @@ class TestProfileDB:
         )
 
     def test_clear_domain_profile_clears_name_only(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """clear_domain_profile clears profile name but preserves per-rule overrides."""
         db.register_project("myapp", str(tmp_path))
@@ -77,7 +83,9 @@ class TestProfileDB:
         assert overrides[0]["rule_id"] == "S08"
 
     def test_profile_name_round_trips(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Profile name survives set → get → clear → get cycle."""
         db.register_project("myapp", str(tmp_path))
@@ -88,17 +96,22 @@ class TestProfileDB:
         assert db.get_domain_profile("myapp") is None
 
     def test_all_builtin_profiles_accepted(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Every built-in profile name can be activated without error."""
         from specweaver.config.profiles import list_profiles
+
         db.register_project("myapp", str(tmp_path))
         for p in list_profiles():
             db.set_domain_profile("myapp", p.name)
             assert db.get_domain_profile("myapp") == p.name
 
     def test_unknown_profile_raises(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """set_domain_profile raises ValueError for unknown profile names."""
         db.register_project("myapp", str(tmp_path))
@@ -110,7 +123,9 @@ class TestPerRuleOverrides:
     """Per-rule DB overrides are independent of profile."""
 
     def test_override_after_profile_is_additive(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Per-rule overrides added after set-profile accumulate in DB."""
         db.register_project("myapp", str(tmp_path))
@@ -123,7 +138,9 @@ class TestPerRuleOverrides:
         assert overrides[0]["fail_threshold"] == 3
 
     def test_override_survives_profile_switch(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Switching profile does not delete existing per-rule overrides."""
         db.register_project("myapp", str(tmp_path))
@@ -134,7 +151,9 @@ class TestPerRuleOverrides:
         assert any(o["rule_id"] == "S08" for o in overrides)
 
     def test_profile_doesnt_bleed_across_projects(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Profile on project A doesn't affect project B."""
         path_a = tmp_path / "a"
@@ -149,7 +168,9 @@ class TestPerRuleOverrides:
         assert db.get_validation_overrides("app-b") == []
 
     def test_disabled_rule_override(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Disabling a rule via config set is respected in settings."""
         db.register_project("myapp", str(tmp_path))
@@ -163,7 +184,9 @@ class TestProfileCascadeWithPipeline:
     """Profile pipeline + per-rule DB overrides cascade correctly."""
 
     def test_profile_overrides_picked_up_by_runner(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Pipeline executor uses DB overrides for rule construction.
 
@@ -192,7 +215,9 @@ class TestProfileCascadeWithPipeline:
         assert s05_step.params.get("fail_threshold") == 80
 
     def test_profile_overrides_for_code_rules(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Pipeline executor uses per-rule DB overrides for code rule construction."""
         import specweaver.validation.rules.code  # noqa: F401
@@ -218,7 +243,9 @@ class TestProfileCascadeWithPipeline:
         assert len(results) >= 4
 
     def test_profile_plus_spec_kind_cascade(
-        self, db: Database, tmp_path: Path,
+        self,
+        db: Database,
+        tmp_path: Path,
     ) -> None:
         """Profile DB overrides apply on top of kind presets.
 
@@ -251,5 +278,5 @@ class TestProfileCascadeWithPipeline:
 
         # DB override wins over kind preset
         s05_step = next(s for s in pipeline.steps if s.rule == "S05")
-        assert s05_step.params.get("warn_threshold") == 50   # DB override wins
-        assert s05_step.params.get("fail_threshold") == 80   # DB override wins
+        assert s05_step.params.get("warn_threshold") == 50  # DB override wins
+        assert s05_step.params.get("fail_threshold") == 80  # DB override wins

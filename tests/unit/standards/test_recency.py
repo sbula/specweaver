@@ -94,7 +94,8 @@ class TestComputeHalfLife:
         assert half_life == pytest.approx(180, abs=10)
 
     def test_mid_age_project_gets_proportional_half_life(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """A 5-year-old project should get ~600-day half-life."""
         f = tmp_path / "old.py"
@@ -102,6 +103,7 @@ class TestComputeHalfLife:
         # Mock mtime to 5 years ago
         five_years_ago = time.time() - (5 * 365 * 86400)
         import os
+
         os.utime(f, (five_years_ago, five_years_ago))
         half_life = compute_half_life(tmp_path)
         assert 500 < half_life < 700
@@ -112,6 +114,7 @@ class TestComputeHalfLife:
         f.write_text("pass")
         thirty_years_ago = time.time() - (30 * 365 * 86400)
         import os
+
         os.utime(f, (thirty_years_ago, thirty_years_ago))
         half_life = compute_half_life(tmp_path)
         assert half_life == pytest.approx(730, abs=10)
@@ -127,6 +130,7 @@ class TestComputeHalfLife:
         txt.write_text("hello")
         ten_years_ago = time.time() - (10 * 365 * 86400)
         import os
+
         os.utime(txt, (ten_years_ago, ten_years_ago))
 
         py = tmp_path / "new.py"
@@ -233,4 +237,3 @@ class TestFindOldestSourceMtime:
 
         mtime = _find_oldest_source_mtime(tmp_path)
         assert mtime is not None
-

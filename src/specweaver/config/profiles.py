@@ -39,9 +39,7 @@ logger = logging.getLogger(__name__)
 
 # Profiles that are reserved for internal use and must never appear in
 # the public listing (they are pipeline implementation details, not domains).
-_RESERVED_PIPELINE_NAMES = frozenset(
-    {"default", "feature", "code"}
-)
+_RESERVED_PIPELINE_NAMES = frozenset({"default", "feature", "code"})
 
 # Base name prefix used by all spec-level pipeline YAML files.
 _PIPELINE_PREFIX = "validation_spec_"
@@ -63,6 +61,7 @@ class DomainProfile:
 # ---------------------------------------------------------------------------
 # Discovery helpers
 # ---------------------------------------------------------------------------
+
 
 def _builtin_pipelines_dir() -> Path:
     """Return the path to the built-in pipelines directory."""
@@ -100,7 +99,7 @@ def _profile_name_from_yaml(path: Path) -> str | None:
     stem = path.stem  # e.g. "validation_spec_web_app"
     if not stem.startswith(_PIPELINE_PREFIX):
         return None
-    profile = stem[len(_PIPELINE_PREFIX):]  # e.g. "web_app"
+    profile = stem[len(_PIPELINE_PREFIX) :]  # e.g. "web_app"
     profile_hyphen = profile.replace("_", "-")  # e.g. "web-app"
     if profile_hyphen in _RESERVED_PIPELINE_NAMES:
         return None

@@ -19,24 +19,32 @@ GREP = ToolDefinition(
     parameters=[
         ToolParameter(name="pattern", type="string", description="Search pattern (text or regex)"),
         ToolParameter(
-            name="path", type="string",
+            name="path",
+            type="string",
             description="Relative path within workspace to search (default: workspace root)",
-            required=False, default=".",
+            required=False,
+            default=".",
         ),
         ToolParameter(
-            name="context_lines", type="integer",
+            name="context_lines",
+            type="integer",
             description="Number of context lines before/after each match",
-            required=False, default=3,
+            required=False,
+            default=3,
         ),
         ToolParameter(
-            name="case_sensitive", type="boolean",
+            name="case_sensitive",
+            type="boolean",
             description="Whether to perform case-sensitive search",
-            required=False, default=False,
+            required=False,
+            default=False,
         ),
         ToolParameter(
-            name="max_results", type="integer",
+            name="max_results",
+            type="integer",
             description="Maximum number of matches to return",
-            required=False, default=20,
+            required=False,
+            default=20,
         ),
     ],
 )
@@ -48,22 +56,30 @@ FIND_FILES = ToolDefinition(
         "Returns file paths, types, and sizes."
     ),
     parameters=[
-        ToolParameter(name="pattern", type="string", description="Glob pattern (e.g., '*.py', 'context.yaml')"),
         ToolParameter(
-            name="path", type="string",
-            description="Relative path within workspace to search (default: workspace root)",
-            required=False, default=".",
+            name="pattern", type="string", description="Glob pattern (e.g., '*.py', 'context.yaml')"
         ),
         ToolParameter(
-            name="type", type="string",
+            name="path",
+            type="string",
+            description="Relative path within workspace to search (default: workspace root)",
+            required=False,
+            default=".",
+        ),
+        ToolParameter(
+            name="type",
+            type="string",
             description="Filter by type: 'file', 'directory', or 'any'",
-            required=False, default="any",
+            required=False,
+            default="any",
             enum=["file", "directory", "any"],
         ),
         ToolParameter(
-            name="max_results", type="integer",
+            name="max_results",
+            type="integer",
             description="Maximum number of results to return",
-            required=False, default=30,
+            required=False,
+            default=30,
         ),
     ],
 )
@@ -76,14 +92,18 @@ READ_FILE = ToolDefinition(
         "different start_line/end_line."
     ),
     parameters=[
-        ToolParameter(name="path", type="string", description="Relative path to the file within workspace"),
         ToolParameter(
-            name="start_line", type="integer",
+            name="path", type="string", description="Relative path to the file within workspace"
+        ),
+        ToolParameter(
+            name="start_line",
+            type="integer",
             description="1-indexed start line (optional, default: beginning of file)",
             required=False,
         ),
         ToolParameter(
-            name="end_line", type="integer",
+            name="end_line",
+            type="integer",
             description="1-indexed end line (optional, default: end of file or line cap)",
             required=False,
         ),
@@ -98,19 +118,25 @@ LIST_DIRECTORY = ToolDefinition(
     ),
     parameters=[
         ToolParameter(
-            name="path", type="string",
+            name="path",
+            type="string",
             description="Relative path within workspace (default: workspace root)",
-            required=False, default=".",
+            required=False,
+            default=".",
         ),
         ToolParameter(
-            name="depth", type="integer",
+            name="depth",
+            type="integer",
             description="Maximum depth to descend into subdirectories",
-            required=False, default=2,
+            required=False,
+            default=2,
         ),
         ToolParameter(
-            name="max_entries", type="integer",
+            name="max_entries",
+            type="integer",
             description="Maximum total entries to return",
-            required=False, default=50,
+            required=False,
+            default=50,
         ),
     ],
 )

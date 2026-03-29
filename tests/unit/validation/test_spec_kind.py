@@ -111,21 +111,13 @@ class TestGetPresets:
         assert presets == {}
 
     # --- Unchanged rules return empty ---
-    @pytest.mark.parametrize(
-        "rule_id", ["S02", "S06", "S07", "S09", "S10", "S11"]
-    )
-    def test_unchanged_rules_return_empty_for_feature(
-        self, rule_id: str
-    ) -> None:
+    @pytest.mark.parametrize("rule_id", ["S02", "S06", "S07", "S09", "S10", "S11"])
+    def test_unchanged_rules_return_empty_for_feature(self, rule_id: str) -> None:
         presets = get_presets(rule_id, SpecKind.FEATURE)
         assert presets == {}
 
-    @pytest.mark.parametrize(
-        "rule_id", ["S02", "S06", "S07", "S09", "S10", "S11"]
-    )
-    def test_unchanged_rules_return_empty_for_component(
-        self, rule_id: str
-    ) -> None:
+    @pytest.mark.parametrize("rule_id", ["S02", "S06", "S07", "S09", "S10", "S11"])
+    def test_unchanged_rules_return_empty_for_component(self, rule_id: str) -> None:
         presets = get_presets(rule_id, SpecKind.COMPONENT)
         assert presets == {}
 
@@ -219,10 +211,7 @@ class TestHeaderPatternRegex:
         from specweaver.validation.spec_kind import _HEADER_PATTERNS
 
         pattern = _HEADER_PATTERNS[SpecKind.COMPONENT]
-        text = (
-            "## 1. Purpose\n\nFirst section.\n\n"
-            "## 2. Contract\n\nSecond section.\n"
-        )
+        text = "## 1. Purpose\n\nFirst section.\n\n## 2. Contract\n\nSecond section.\n"
         match = pattern.search(text)
         assert match is not None
         assert "First section" in match.group(1)

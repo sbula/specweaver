@@ -208,7 +208,9 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
     if created:
         logger.info(
             "scaffold_project: created %d item(s) in %s: %s",
-            len(created), project_path, ", ".join(created),
+            len(created),
+            project_path,
+            ", ".join(created),
         )
     else:
         logger.debug("scaffold_project: %s already scaffolded", project_path)

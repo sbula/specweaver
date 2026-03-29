@@ -226,8 +226,12 @@ class TestGenerateCodeHandler:
         src_dir = tmp_path / "src"
         src_dir.mkdir(exist_ok=True)
         mock_adapter = MagicMock()
-        mock_adapter.generate = AsyncMock(return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None))
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter)
+        mock_adapter.generate = AsyncMock(
+            return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None)
+        )
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
+        )
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
@@ -268,8 +272,14 @@ class TestGenerateTestsHandler:
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir(exist_ok=True)
         mock_adapter = MagicMock()
-        mock_adapter.generate = AsyncMock(return_value=MagicMock(text="```python\ndef test_x(): pass\n```", finish_reason=1, parsed=None))
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter)
+        mock_adapter.generate = AsyncMock(
+            return_value=MagicMock(
+                text="```python\ndef test_x(): pass\n```", finish_reason=1, parsed=None
+            )
+        )
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter
+        )
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
         handler = GenerateTestsHandler()
         mock_git.return_value = (0, "", "")
@@ -365,8 +375,7 @@ class TestValidateSpecHandlerKindWiring:
         """step.params['kind'] = 'feature' applies feature thresholds."""
         spec = tmp_path / "feature_spec.md"
         spec.write_text(
-            "# Sell Shares\n\n## Intent\n\n"
-            "Enable users to sell their shares. Users may want to.\n"
+            "# Sell Shares\n\n## Intent\n\nEnable users to sell their shares. Users may want to.\n"
         )
         ctx = RunContext(project_path=tmp_path, spec_path=spec)
         step = PipelineStep(
@@ -385,9 +394,7 @@ class TestValidateSpecHandlerKindWiring:
     async def test_invalid_kind_falls_back(self, tmp_path: Path) -> None:
         """Invalid kind string falls back to default (no crash)."""
         spec = tmp_path / "test_spec.md"
-        spec.write_text(
-            "# Test\n\n## 1. Purpose\n\nDoes one thing.\n"
-        )
+        spec.write_text("# Test\n\n## 1. Purpose\n\nDoes one thing.\n")
         ctx = RunContext(project_path=tmp_path, spec_path=spec)
         step = PipelineStep(
             name="val",

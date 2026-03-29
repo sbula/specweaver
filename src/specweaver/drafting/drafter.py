@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 class SectionDef(TypedDict, total=False):
     """A single spec section definition."""
+
     name: str
     heading: str
     question: str
@@ -43,8 +44,7 @@ SPEC_SECTIONS: list[SectionDef] = [
         "name": "Purpose",
         "heading": "## 1. Purpose",
         "question": (
-            "What does this component do? Describe its "
-            "single responsibility in one sentence."
+            "What does this component do? Describe its single responsibility in one sentence."
         ),
         "prompt": (
             "Based on the user's answer, write a clear, "
@@ -57,8 +57,7 @@ SPEC_SECTIONS: list[SectionDef] = [
         "name": "Contract",
         "heading": "## 2. Contract",
         "question": (
-            "What are the inputs, outputs, and data types? "
-            "Include code examples if possible."
+            "What are the inputs, outputs, and data types? Include code examples if possible."
         ),
         "prompt": (
             "Based on the user's answer, write a Contract "
@@ -71,10 +70,7 @@ SPEC_SECTIONS: list[SectionDef] = [
     {
         "name": "Protocol",
         "heading": "## 3. Protocol",
-        "question": (
-            "What are the step-by-step rules for how this "
-            "component processes its input?"
-        ),
+        "question": ("What are the step-by-step rules for how this component processes its input?"),
         "prompt": (
             "Based on the user's answer, write a Protocol "
             "section as a numbered list of processing steps. "
@@ -100,8 +96,7 @@ SPEC_SECTIONS: list[SectionDef] = [
         "name": "Boundaries",
         "heading": "## 5. Boundaries",
         "question": (
-            "What is NOT this component's responsibility? "
-            "What concerns belong to other components?"
+            "What is NOT this component's responsibility? What concerns belong to other components?"
         ),
         "prompt": (
             "Based on the user's answer, write a Boundaries "
@@ -114,12 +109,12 @@ SPEC_SECTIONS: list[SectionDef] = [
 
 # Instruction template for per-section LLM calls
 _SECTION_INSTRUCTION_TEMPLATE = (
-    'You are a technical specification writer. You are helping draft a '
+    "You are a technical specification writer. You are helping draft a "
     'component spec for "{name}".\n\n'
-    'Section: {section_name}\n'
-    '{section_prompt}\n\n'
-    'Write ONLY the content for this section. Do not include the heading.\n'
-    'Use markdown formatting. Be concrete and specific, not vague.'
+    "Section: {section_name}\n"
+    "{section_prompt}\n\n"
+    "Write ONLY the content for this section. Do not include the heading.\n"
+    "Use markdown formatting. Be concrete and specific, not vague."
 )
 
 # Template for the final spec file
@@ -200,11 +195,7 @@ class Drafter:
                 content = f"*TODO: Fill in {section_def['name']} section.*"
             else:
                 # Decide whether to inject topology for this section
-                section_topology = (
-                    topology_contexts
-                    if section_def.get("inject_topology")
-                    else None
-                )
+                section_topology = topology_contexts if section_def.get("inject_topology") else None
                 # Generate content with LLM
                 content = await self._generate_section(
                     name=name,
@@ -255,9 +246,7 @@ class Drafter:
         )
 
         builder = (
-            PromptBuilder()
-            .add_instructions(instructions)
-            .add_context(user_input, "user_context")
+            PromptBuilder().add_instructions(instructions).add_context(user_input, "user_context")
         )
         if topology_contexts:
             builder.add_topology(topology_contexts)

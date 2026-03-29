@@ -71,7 +71,8 @@ class ReviewerWebInterface:
 WebInterface = PlannerWebInterface | ReviewerWebInterface
 
 _ROLE_INTERFACE_MAP: dict[
-    str, type[PlannerWebInterface] | type[ReviewerWebInterface],
+    str,
+    type[PlannerWebInterface] | type[ReviewerWebInterface],
 ] = {
     "planner": PlannerWebInterface,
     "reviewer": ReviewerWebInterface,

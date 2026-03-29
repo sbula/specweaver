@@ -79,7 +79,9 @@ class TestLoadStandardsContent:
         assert _load_standards_content(Path(".")) is None
 
     def test_active_project_no_standards_returns_none(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Active project but no standards → returns None."""
         from specweaver.cli import _load_standards_content
@@ -88,7 +90,9 @@ class TestLoadStandardsContent:
         assert _load_standards_content(tmp_path) is None
 
     def test_returns_formatted_string(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """With standards in DB, returns formatted multi-line string."""
         from specweaver.cli import _load_standards_content
@@ -103,7 +107,9 @@ class TestLoadStandardsContent:
         assert "SHOULD follow" in result
 
     def test_multiple_standards_all_rendered(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Multiple standards are all included in output."""
         from specweaver.cli import _load_standards_content
@@ -117,7 +123,9 @@ class TestLoadStandardsContent:
         assert "docstrings" in result
 
     def test_data_as_json_string(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Handles data stored as JSON string (not dict)."""
         from specweaver.cli import _load_standards_content
@@ -139,7 +147,9 @@ class TestLoadStandardsContent:
         assert "grouped" in result
 
     def test_confidence_formatted_as_percent(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Confidence is formatted as percentage (e.g. 85%)."""
         from specweaver.cli import _load_standards_content
@@ -152,7 +162,9 @@ class TestLoadStandardsContent:
         assert "85%" in result
 
     def test_empty_data_dict(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Standard with empty data dict doesn't crash."""
         from specweaver.cli import _load_standards_content
@@ -186,13 +198,17 @@ class TestStandardsScan:
         assert result.exit_code != 0
 
     def test_scan_nonexistent_root(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """Scan with non-existent root path → error."""
         _init_project(_mock_db, "ghost", str(tmp_path))
         # Monkeypatch get_project to return a non-existent path
         monkeypatch.setattr(
-            _mock_db, "get_project",
+            _mock_db,
+            "get_project",
             lambda name: {"name": name, "root_path": "/nonexistent/path"},
         )
         result = runner.invoke(app, ["standards", "scan"])
@@ -200,7 +216,10 @@ class TestStandardsScan:
         assert "Error" in result.output or "does not exist" in result.output
 
     def test_scan_no_python_files(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """Scan with no Python files → shows message, exit 0."""
         _init_project(_mock_db, "nopy", str(tmp_path))
@@ -214,7 +233,10 @@ class TestStandardsScan:
         assert "No standards discovered" in result.output or "No Python files" in result.output
 
     def test_scan_saves_high_confidence(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """Scan saves categories with confidence >= 0.3."""
 
@@ -233,7 +255,10 @@ class TestStandardsScan:
         assert "Scan complete" in result.output
 
     def test_scan_skips_low_confidence(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """Scan skips categories with confidence < 0.3."""
         from specweaver.standards.analyzer import CategoryResult
@@ -244,13 +269,15 @@ class TestStandardsScan:
 
         # Mock scan to always return low confidence
         def mock_scan(self, files, hld):
-            return [CategoryResult(
-                category="test",
-                dominant={"style": "none"},
-                confidence=0.1,
-                sample_size=1,
-                language="python"
-            )]
+            return [
+                CategoryResult(
+                    category="test",
+                    dominant={"style": "none"},
+                    confidence=0.1,
+                    sample_size=1,
+                    language="python",
+                )
+            ]
 
         monkeypatch.setattr(
             "specweaver.standards.discovery.discover_files",
@@ -286,7 +313,9 @@ class TestStandardsShow:
         assert result.exit_code != 0
 
     def test_show_no_standards(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Show with no standards in DB → friendly message."""
         _init_project(_mock_db, "empty", str(tmp_path))
@@ -295,7 +324,9 @@ class TestStandardsShow:
         assert "No standards found" in result.output
 
     def test_show_displays_table(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Show with standards → renders table including data."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -307,7 +338,9 @@ class TestStandardsShow:
         assert "snake_case" in result.output
 
     def test_show_scope_filter(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Show with --scope filter."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -328,7 +361,9 @@ class TestStandardsShow:
         assert "errors" in result.output
 
     def test_show_scope_filter_no_match(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Show with --scope that matches nothing → friendly message."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -338,13 +373,16 @@ class TestStandardsShow:
         assert "No standards found" in result.output
 
     def test_show_language_filter(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Show with --language filter returns only matching."""
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj")
         result = runner.invoke(
-            app, ["standards", "show", "--language", "python"],
+            app,
+            ["standards", "show", "--language", "python"],
         )
         assert result.exit_code == 0
         assert "naming" in result.output
@@ -364,7 +402,10 @@ class TestStandardsEdgeCases:
     """Edge-case scenarios for standards CLI."""
 
     def test_scan_confidence_exactly_at_boundary(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """Scan with confidence exactly 0.3 → saved (< 0.3 is the skip)."""
         from specweaver.standards.analyzer import CategoryResult
@@ -380,13 +421,15 @@ class TestStandardsEdgeCases:
             call_count += 1
             # First: 0.3 (saved), rest: 0.29 (skipped)
             conf = 0.3 if call_count == 1 else 0.29
-            return [CategoryResult(
-                category="test_cat",
-                dominant={"style": "test"},
-                confidence=conf,
-                sample_size=1,
-                language="python"
-            )]
+            return [
+                CategoryResult(
+                    category="test_cat",
+                    dominant={"style": "test"},
+                    confidence=conf,
+                    sample_size=1,
+                    language="python",
+                )
+            ]
 
         monkeypatch.setattr(
             "specweaver.standards.discovery.discover_files",
@@ -403,7 +446,10 @@ class TestStandardsEdgeCases:
         assert len(standards) >= 1
 
     def test_scan_rescan_overwrites_existing(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """Re-scanning overwrites existing standards (upsert)."""
         _init_project(_mock_db, "rescan", str(tmp_path))
@@ -433,7 +479,9 @@ class TestStandardsEdgeCases:
         assert len(standards_after) <= len(standards_before) + 1
 
     def test_show_handles_dict_data_directly(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """show() handles data that's already a dict (not JSON string)."""
         _init_project(_mock_db, "dict_proj", str(tmp_path))
@@ -450,6 +498,7 @@ class TestStandardsEdgeCases:
         # Verify table rendered without crash (the dict was handled)
         assert "naming" in result.output
 
+
 # ---------------------------------------------------------------------------
 # Item 4: sw standards clear
 # ---------------------------------------------------------------------------
@@ -464,7 +513,9 @@ class TestStandardsClear:
         assert result.exit_code != 0
 
     def test_clear_all(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Clear all standards for the active project."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -477,7 +528,9 @@ class TestStandardsClear:
         assert len(_mock_db.get_standards("proj")) == 0
 
     def test_clear_scoped(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Clear only standards matching --scope."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -494,7 +547,8 @@ class TestStandardsClear:
         assert len(_mock_db.get_standards("proj")) == 3
 
         result = runner.invoke(
-            app, ["standards", "clear", "--scope", "backend"],
+            app,
+            ["standards", "clear", "--scope", "backend"],
         )
         assert result.exit_code == 0
         assert "backend" in result.output
@@ -504,7 +558,9 @@ class TestStandardsClear:
         assert all(s["scope"] == "." for s in remaining)
 
     def test_clear_when_empty(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Clear when no standards exist → success (idempotent)."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -532,9 +588,16 @@ class TestFileInScope:
 
         file_path = tmp_path / "backend" / "auth" / "login.py"
         scope_path = tmp_path / "backend" / "auth"
-        assert _file_in_scope(
-            file_path, scope_path, tmp_path, "backend/auth", [".", "backend/auth"],
-        ) is True
+        assert (
+            _file_in_scope(
+                file_path,
+                scope_path,
+                tmp_path,
+                "backend/auth",
+                [".", "backend/auth"],
+            )
+            is True
+        )
 
     def test_file_not_in_scope(self, tmp_path: Path) -> None:
         """File NOT under scope path → False."""
@@ -542,9 +605,16 @@ class TestFileInScope:
 
         file_path = tmp_path / "frontend" / "app.ts"
         scope_path = tmp_path / "backend"
-        assert _file_in_scope(
-            file_path, scope_path, tmp_path, "backend", [".", "backend"],
-        ) is False
+        assert (
+            _file_in_scope(
+                file_path,
+                scope_path,
+                tmp_path,
+                "backend",
+                [".", "backend"],
+            )
+            is False
+        )
 
     def test_root_scope_excludes_named_scope_files(self, tmp_path: Path) -> None:
         """Root scope '.' excludes files belonging to named scopes."""
@@ -553,9 +623,16 @@ class TestFileInScope:
         # File in backend/auth — should NOT be in root scope
         file_path = tmp_path / "backend" / "auth" / "login.py"
         scope_path = tmp_path
-        assert _file_in_scope(
-            file_path, scope_path, tmp_path, ".", [".", "backend/auth"],
-        ) is False
+        assert (
+            _file_in_scope(
+                file_path,
+                scope_path,
+                tmp_path,
+                ".",
+                [".", "backend/auth"],
+            )
+            is False
+        )
 
     def test_root_scope_includes_non_scoped_files(self, tmp_path: Path) -> None:
         """Root scope '.' includes files not in any named scope."""
@@ -563,9 +640,16 @@ class TestFileInScope:
 
         file_path = tmp_path / "setup.py"
         scope_path = tmp_path
-        assert _file_in_scope(
-            file_path, scope_path, tmp_path, ".", [".", "backend/auth"],
-        ) is True
+        assert (
+            _file_in_scope(
+                file_path,
+                scope_path,
+                tmp_path,
+                ".",
+                [".", "backend/auth"],
+            )
+            is True
+        )
 
     def test_root_scope_with_no_other_scopes(self, tmp_path: Path) -> None:
         """Root scope '.' with only root → all files belong to root."""
@@ -573,9 +657,16 @@ class TestFileInScope:
 
         file_path = tmp_path / "main.py"
         scope_path = tmp_path
-        assert _file_in_scope(
-            file_path, scope_path, tmp_path, ".", ["."],
-        ) is True
+        assert (
+            _file_in_scope(
+                file_path,
+                scope_path,
+                tmp_path,
+                ".",
+                ["."],
+            )
+            is True
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -592,7 +683,9 @@ class TestStandardsScopes:
         assert result.exit_code != 0
 
     def test_scopes_no_stored_scopes(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """scopes with no stored scopes → friendly message."""
         _init_project(_mock_db, "empty", str(tmp_path))
@@ -601,7 +694,9 @@ class TestStandardsScopes:
         assert "No scopes found" in result.output
 
     def test_scopes_renders_summary_table(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """scopes with standards → renders summary table."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -611,7 +706,9 @@ class TestStandardsScopes:
         assert "python" in result.output.lower()
 
     def test_scopes_multiple_scopes(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """scopes with multiple distinct scopes shows all."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -643,7 +740,10 @@ class TestScanScopeFlag:
     """Tests for the --scope flag on sw standards scan."""
 
     def test_scan_scope_flag(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """--scope limits scanning to a single scope."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -657,7 +757,8 @@ class TestScanScopeFlag:
         )
 
         result = runner.invoke(
-            app, ["standards", "scan", "--scope", "backend", "--no-review"],
+            app,
+            ["standards", "scan", "--scope", "backend", "--no-review"],
         )
         assert result.exit_code == 0
 
@@ -671,7 +772,10 @@ class TestConfirmedByAuditTrail:
     """Tests for confirmed_by='hitl' / None for scan with/without review."""
 
     def test_no_review_sets_confirmed_by_none(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """--no-review → saved standards have confirmed_by=None."""
         _init_project(_mock_db, "proj", str(tmp_path))
@@ -699,7 +803,9 @@ class TestSaveAcceptedStandards:
     """Unit tests for _save_accepted_standards helper."""
 
     def test_save_with_review_sets_hitl(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """no_review=False → confirmed_by='hitl'."""
         from specweaver.cli.standards import _save_accepted_standards
@@ -707,13 +813,15 @@ class TestSaveAcceptedStandards:
 
         _init_project(_mock_db, "proj", str(tmp_path))
         accepted = {
-            ".": [CategoryResult(
-                category="naming",
-                dominant={"style": "snake_case"},
-                confidence=0.9,
-                sample_size=5,
-                language="python",
-            )],
+            ".": [
+                CategoryResult(
+                    category="naming",
+                    dominant={"style": "snake_case"},
+                    confidence=0.9,
+                    sample_size=5,
+                    language="python",
+                )
+            ],
         }
         _save_accepted_standards(_mock_db, "proj", accepted, no_review=False)
         standards = _mock_db.get_standards("proj")
@@ -721,7 +829,9 @@ class TestSaveAcceptedStandards:
         assert standards[0]["confirmed_by"] == "hitl"
 
     def test_save_without_review_sets_none(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """no_review=True → confirmed_by=None."""
         from specweaver.cli.standards import _save_accepted_standards
@@ -729,13 +839,15 @@ class TestSaveAcceptedStandards:
 
         _init_project(_mock_db, "proj", str(tmp_path))
         accepted = {
-            ".": [CategoryResult(
-                category="naming",
-                dominant={"style": "snake_case"},
-                confidence=0.9,
-                sample_size=5,
-                language="python",
-            )],
+            ".": [
+                CategoryResult(
+                    category="naming",
+                    dominant={"style": "snake_case"},
+                    confidence=0.9,
+                    sample_size=5,
+                    language="python",
+                )
+            ],
         }
         _save_accepted_standards(_mock_db, "proj", accepted, no_review=True)
         standards = _mock_db.get_standards("proj")
@@ -756,17 +868,21 @@ class TestMaybeBootstrapConstitution:
         from specweaver.standards.analyzer import CategoryResult
 
         return {
-            ".": [CategoryResult(
-                category="naming",
-                dominant={"style": "snake_case"},
-                confidence=0.9,
-                sample_size=5,
-                language="python",
-            )],
+            ".": [
+                CategoryResult(
+                    category="naming",
+                    dominant={"style": "snake_case"},
+                    confidence=0.9,
+                    sample_size=5,
+                    language="python",
+                )
+            ],
         }
 
     def test_skips_when_user_edited_exists(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """User-edited CONSTITUTION.md → returns without action."""
         from specweaver.cli.standards import _maybe_bootstrap_constitution
@@ -789,7 +905,9 @@ class TestMaybeBootstrapConstitution:
         assert "My Custom Constitution" in content
 
     def test_auto_mode_creates_constitution(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """mode='auto' → auto-creates CONSTITUTION.md."""
         from specweaver.cli.standards import _maybe_bootstrap_constitution
@@ -811,7 +929,10 @@ class TestMaybeBootstrapConstitution:
         assert "Auto-Discovered" in content
 
     def test_off_mode_prints_hint(
-        self, tmp_path: Path, _mock_db, capsys,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        capsys,
     ) -> None:
         """mode='off' → prints hint about sw constitution bootstrap."""
         from specweaver.cli.standards import _maybe_bootstrap_constitution
@@ -833,7 +954,9 @@ class TestMaybeBootstrapConstitution:
         assert not (tmp_path / "CONSTITUTION.md").exists()
 
     def test_prompt_with_no_review_prints_hint(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """mode='prompt' + no_review → prints hint (no prompt)."""
         from specweaver.cli.standards import _maybe_bootstrap_constitution
@@ -855,7 +978,10 @@ class TestMaybeBootstrapConstitution:
         assert not (tmp_path / "CONSTITUTION.md").exists()
 
     def test_prompt_mode_user_accepts(
-        self, tmp_path: Path, _mock_db, monkeypatch,
+        self,
+        tmp_path: Path,
+        _mock_db,
+        monkeypatch,
     ) -> None:
         """mode='prompt' + user says yes → creates constitution."""
         from specweaver.cli.standards import _maybe_bootstrap_constitution

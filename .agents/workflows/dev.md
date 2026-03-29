@@ -117,6 +117,12 @@ python -m pytest tests/unit/test_foo.py -v --tb=long
 
 # Re-run only previously failed tests
 python -m pytest --lf -v --tb=long
+
+# Run test with debug logging enabled
+python -m pytest tests/unit/test_foo.py -s --log-cli-level=DEBUG
+
+# Run arbitrary python debug scripts (must be safe)
+python -c "..."
 ```
 
 Debug loop: read error → re-read source → fix → re-run failing test → repeat until green.
@@ -152,10 +158,12 @@ For **each commit boundary** in `task.md`, in order:
 
 **Step A — Complete the task batch (autonomous):**
 - Run all TDD tasks in this batch to completion (red → green → refactor).
-- Run the full test suite after the final task in this batch:
+- Run the full test suite after the final task in this batch hierarchically (fix failures before moving to the next level):
 // turbo
 ```
-python -m pytest --tb=short -q
+python -m pytest tests/unit --tb=short -q
+python -m pytest tests/integration --tb=short -q
+python -m pytest tests/e2e --tb=short -q
 ```
 - Fix any regressions before proceeding to Step B.
 

@@ -48,7 +48,6 @@ def serve(
         )
         raise typer.Exit(code=1) from None
 
-
     from specweaver.api.app import create_app
     from specweaver.config.database import Database
     from specweaver.config.paths import config_db_path

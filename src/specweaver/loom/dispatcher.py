@@ -46,7 +46,8 @@ class ToolDispatcher:
                 else:
                     logger.warning(
                         "Interface %s declared definition for %r but no handler exists.",
-                        interface.__class__.__name__, name,
+                        interface.__class__.__name__,
+                        name,
                     )
 
     def available_tools(self) -> list[ToolDefinition]:
@@ -131,6 +132,7 @@ class ToolDispatcher:
         if "web" in allowed_tools:
             # Provide WebTool directly if web search is enabled
             from specweaver.loom.tools.web.tool import WebTool
+
             # Note: The factory doesn't read env directly since it's a domain boundary.
             # but WebTool safely degrades if api_key isn't supplied (web_enabled=False).
             web_tool = WebTool(role=role)

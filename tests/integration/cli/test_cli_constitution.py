@@ -59,7 +59,8 @@ class TestConstitutionInit:
         assert not const.exists()
 
         result = runner.invoke(
-            app, ["constitution", "init", "--project", str(project_dir)],
+            app,
+            ["constitution", "init", "--project", str(project_dir)],
         )
         assert result.exit_code == 0
         assert (project_dir / "CONSTITUTION.md").exists()
@@ -69,7 +70,8 @@ class TestConstitutionInit:
         project_dir = _init_project(tmp_path)
         (project_dir / "CONSTITUTION.md").write_text("existing", encoding="utf-8")
         result = runner.invoke(
-            app, ["constitution", "init", "--project", str(project_dir)],
+            app,
+            ["constitution", "init", "--project", str(project_dir)],
         )
         assert result.exit_code == 1
         assert "already exists" in result.output.lower()
@@ -99,10 +101,12 @@ class TestConstitutionShow:
         """sw constitution show displays the file content."""
         project_dir = _init_project(tmp_path)
         (project_dir / "CONSTITUTION.md").write_text(
-            "# Constitution\n\nRule 1: Be nice.\n", encoding="utf-8",
+            "# Constitution\n\nRule 1: Be nice.\n",
+            encoding="utf-8",
         )
         result = runner.invoke(
-            app, ["constitution", "show", "--project", str(project_dir)],
+            app,
+            ["constitution", "show", "--project", str(project_dir)],
         )
         assert result.exit_code == 0
         assert "be nice" in result.output.lower()
@@ -115,7 +119,8 @@ class TestConstitutionShow:
         if const.exists():
             const.unlink()
         result = runner.invoke(
-            app, ["constitution", "show", "--project", str(project_dir)],
+            app,
+            ["constitution", "show", "--project", str(project_dir)],
         )
         assert result.exit_code == 1
         assert "no constitution" in result.output.lower()
@@ -141,10 +146,12 @@ class TestConstitutionCheck:
         """sw constitution check passes for small constitution."""
         project_dir = _init_project(tmp_path)
         (project_dir / "CONSTITUTION.md").write_text(
-            "# Constitution\n\nShort content.\n", encoding="utf-8",
+            "# Constitution\n\nShort content.\n",
+            encoding="utf-8",
         )
         result = runner.invoke(
-            app, ["constitution", "check", "--project", str(project_dir)],
+            app,
+            ["constitution", "check", "--project", str(project_dir)],
         )
         assert result.exit_code == 0
         assert "within" in result.output.lower() or "\u2713" in result.output
@@ -156,7 +163,8 @@ class TestConstitutionCheck:
         if const.exists():
             const.unlink()
         result = runner.invoke(
-            app, ["constitution", "check", "--project", str(project_dir)],
+            app,
+            ["constitution", "check", "--project", str(project_dir)],
         )
         assert result.exit_code == 1
         assert "no constitution" in result.output.lower()

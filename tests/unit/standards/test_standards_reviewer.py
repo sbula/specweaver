@@ -115,7 +115,8 @@ class TestEditAction:
         assert accepted["root"][0].dominant == {"function_style": "camelCase"}
 
     def test_edit_invalid_json_retries(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """Invalid JSON → retry prompt, then accept valid JSON."""
         results = {"root": [_make_result("naming")]}
@@ -168,7 +169,8 @@ class TestRescanDiff:
     """Re-scan shows diff between old and new standards."""
 
     def test_diff_shown_when_existing_standards(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """When existing standards differ from new, diff is shown."""
         results = {"root": [_make_result("naming", dominant={"style": "camelCase"})]}
@@ -207,7 +209,8 @@ class TestConflictHandling:
     """Scope inheritance conflicts with existing HITL decisions."""
 
     def test_already_confirmed_not_re_reviewed(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """Categories already confirmed_by='hitl' skip re-review."""
         results = {"root": [_make_result("naming")]}
@@ -230,7 +233,8 @@ class TestConflictHandling:
         assert len(accepted["root"]) == 1
 
     def test_hitl_confirmed_but_data_changed_prompts(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """HITL-confirmed category with CHANGED data → prompts for review."""
         results = {"root": [_make_result("naming", dominant={"style": "camelCase"})]}
@@ -252,7 +256,8 @@ class TestConflictHandling:
         assert len(accepted["root"]) == 1
 
     def test_existing_category_not_in_results(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """Existing category not in new results → no crash, no interaction."""
         results = {"root": [_make_result("naming")]}
@@ -281,7 +286,8 @@ class TestEditEdgeCases:
     """Additional edge cases for the edit action."""
 
     def test_edit_non_dict_json_retries(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """Edit with non-dict JSON (list) → retry, then accept valid dict."""
         results = {"root": [_make_result("naming")]}
@@ -300,7 +306,8 @@ class TestAcceptAllEdgeCases:
     """Edge cases for Accept All action."""
 
     def test_accept_all_on_first_category(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """Accept All on first category → all remaining accepted."""
         results = {
@@ -317,7 +324,8 @@ class TestAcceptAllEdgeCases:
         assert len(accepted["root"]) == 3
 
     def test_accept_all_on_last_category(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """Accept All on last category → just that one accepted (no remaining)."""
         results = {
@@ -338,7 +346,8 @@ class TestMultiScopeFlowEdgeCases:
     """Edge cases for multi-scope review flow."""
 
     def test_skip_scope_then_next_scope_proceeds(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """Skip scope → next scope still receives full review."""
         results = {
@@ -354,7 +363,8 @@ class TestMultiScopeFlowEdgeCases:
         assert len(accepted["beta"]) == 1
 
     def test_scope_review_order_is_sorted(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """Scopes are reviewed in sorted alphabetical order."""
         results = {
@@ -381,7 +391,8 @@ class TestShowMethods:
     """Tests for _show_category and _show_diff rendering."""
 
     def test_show_category_renders_without_crash(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """_show_category renders a Rich table without crashing."""
         result = _make_result("naming", confidence=0.85)
@@ -389,7 +400,8 @@ class TestShowMethods:
         reviewer._show_category("root", result)
 
     def test_show_diff_with_json_string_data(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """_show_diff handles data stored as JSON string (not dict)."""
         old = {
@@ -403,7 +415,8 @@ class TestShowMethods:
         reviewer._show_diff("root", "naming", old, new)
 
     def test_show_diff_with_dict_data(
-        self, reviewer: StandardsReviewer,
+        self,
+        reviewer: StandardsReviewer,
     ) -> None:
         """_show_diff handles data stored as dict directly."""
         old = {
@@ -415,4 +428,3 @@ class TestShowMethods:
         new = _make_result("naming", dominant={"style": "camelCase"})
         # Should not raise
         reviewer._show_diff("root", "naming", old, new)
-

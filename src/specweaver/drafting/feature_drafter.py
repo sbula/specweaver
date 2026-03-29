@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 class FeatureSectionDef(TypedDict, total=False):
     """A single feature spec section definition."""
+
     name: str
     heading: str
     question: str
@@ -115,14 +116,14 @@ FEATURE_SECTIONS: list[FeatureSectionDef] = [
 
 # Instruction template for per-section LLM calls
 _SECTION_INSTRUCTION_TEMPLATE = (
-    'You are a technical specification writer. You are helping draft a '
+    "You are a technical specification writer. You are helping draft a "
     'Feature Spec for "{name}".\n\n'
-    'Section: {section_name}\n'
-    '{section_prompt}\n\n'
-    'Write ONLY the content for this section. Do not include the heading.\n'
-    'Use markdown formatting. Be concrete and specific, not vague.\n'
-    'Do NOT reference file paths, class names, or import paths — '
-    'use service/module names only.'
+    "Section: {section_name}\n"
+    "{section_prompt}\n\n"
+    "Write ONLY the content for this section. Do not include the heading.\n"
+    "Use markdown formatting. Be concrete and specific, not vague.\n"
+    "Do NOT reference file paths, class names, or import paths — "
+    "use service/module names only."
 )
 
 # Template for the final spec file
@@ -204,11 +205,7 @@ class FeatureDrafter:
                 content = f"*TODO: Fill in {section_def['name']} section.*"
             else:
                 # Decide whether to inject topology for this section
-                section_topology = (
-                    topology_contexts
-                    if section_def.get("inject_topology")
-                    else None
-                )
+                section_topology = topology_contexts if section_def.get("inject_topology") else None
                 # Generate content with LLM
                 content = await self._generate_section(
                     name=name,
@@ -259,9 +256,7 @@ class FeatureDrafter:
         )
 
         builder = (
-            PromptBuilder()
-            .add_instructions(instructions)
-            .add_context(user_input, "user_context")
+            PromptBuilder().add_instructions(instructions).add_context(user_input, "user_context")
         )
         if topology_contexts:
             builder.add_topology(topology_contexts)

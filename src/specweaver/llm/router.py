@@ -37,12 +37,12 @@ class RouterResult(NamedTuple):
     handler's hardcoded default.
     """
 
-    adapter: Any           # LLMAdapter or TelemetryCollector proxy
+    adapter: Any  # LLMAdapter or TelemetryCollector proxy
     model: str
     temperature: float
     max_output_tokens: int
-    provider: str          # for logging / diagnostics
-    profile_name: str      # for logging / diagnostics
+    provider: str  # for logging / diagnostics
+    profile_name: str  # for logging / diagnostics
 
 
 class ModelRouter:
@@ -132,14 +132,10 @@ class ModelRouter:
 
                     try:
                         raw = self._db.get_cost_overrides()
-                        overrides = (
-                            {k: CostEntry(*v) for k, v in raw.items()} if raw else None
-                        )
+                        overrides = {k: CostEntry(*v) for k, v in raw.items()} if raw else None
                     except Exception:
                         overrides = None
-                    adapter = TelemetryCollector(
-                        adapter, self._telemetry_project, overrides
-                    )
+                    adapter = TelemetryCollector(adapter, self._telemetry_project, overrides)
                 self._cache[cache_key] = adapter
             except Exception:
                 logger.warning(

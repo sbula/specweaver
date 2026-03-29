@@ -92,6 +92,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
                 results.append(ext(parsed_files))
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Failed to extract with {ext.__name__}: {e}")
 
         return results
@@ -101,7 +102,8 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
     # ------------------------------------------------------------------
 
     def _extract_naming(
-        self, parsed_files: list[tuple[Path, float, ast.Module]],
+        self,
+        parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         func_styles: Counter[str] = Counter()
         class_styles: Counter[str] = Counter()
@@ -109,7 +111,6 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         sample_size = 0
 
         for _path, w, tree in parsed_files:
-
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                     if not node.name.startswith("_"):
@@ -132,20 +133,18 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         return CategoryResult(
             category="naming",
             dominant=dominant,
-            confidence=self._compute_confidence(func_styles)
-            if func_styles
-            else 0.0,
+            confidence=self._compute_confidence(func_styles) if func_styles else 0.0,
             sample_size=sample_size,
         )
 
     def _extract_error_handling(
-        self, parsed_files: list[tuple[Path, float, ast.Module]],
+        self,
+        parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
-
             for node in ast.walk(tree):
                 if isinstance(node, ast.ExceptHandler):
                     if node.type is None:
@@ -166,18 +165,17 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_type_hints(
-        self, parsed_files: list[tuple[Path, float, ast.Module]],
+        self,
+        parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         typed: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
-
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
-                    has_annotations = (
-                        node.returns is not None
-                        or any(a.annotation is not None for a in node.args.args)
+                    has_annotations = node.returns is not None or any(
+                        a.annotation is not None for a in node.args.args
                     )
                     typed["yes" if has_annotations else "no"] += round(w)
                     sample_size += 1
@@ -194,13 +192,13 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_docstrings(
-        self, parsed_files: list[tuple[Path, float, ast.Module]],
+        self,
+        parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         total_funcs = 0
         documented = 0
 
         for _path, _w, tree in parsed_files:
-
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                     total_funcs += 1
@@ -227,13 +225,13 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_imports(
-        self, parsed_files: list[tuple[Path, float, ast.Module]],
+        self,
+        parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         styles: Counter[str] = Counter()
         sample_size = 0
 
         for _path, w, tree in parsed_files:
-
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
                     styles["absolute"] += round(w)
@@ -257,7 +255,8 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         )
 
     def _extract_test_patterns(
-        self, parsed_files: list[tuple[Path, float, ast.Module]],
+        self,
+        parsed_files: list[tuple[Path, float, ast.Module]],
     ) -> CategoryResult:
         frameworks: Counter[str] = Counter()
         sample_size = 0
@@ -278,9 +277,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         return CategoryResult(
             category="test_patterns",
             dominant=dominant,
-            confidence=self._compute_confidence(frameworks)
-            if frameworks
-            else 0.0,
+            confidence=self._compute_confidence(frameworks) if frameworks else 0.0,
             sample_size=sample_size,
         )
 

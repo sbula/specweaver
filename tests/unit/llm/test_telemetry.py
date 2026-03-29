@@ -149,7 +149,11 @@ class TestCreateUsageRecord:
         )
         overrides = {"my-model": CostEntry(10.0, 20.0)}
         record = create_usage_record(
-            config, response, "custom", "proj", 100,
+            config,
+            response,
+            "custom",
+            "proj",
+            100,
             cost_overrides=overrides,
         )
         # (1000/1000)*10 + (1000/1000)*20 = 30

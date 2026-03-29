@@ -47,8 +47,11 @@ class ImplementerTestInterface:
     ) -> ToolResult:
         """Run tests."""
         return self._tool.run_tests(
-            target=target, kind=kind, scope=scope,
-            timeout=timeout, coverage=coverage,
+            target=target,
+            kind=kind,
+            scope=scope,
+            timeout=timeout,
+            coverage=coverage,
         )
 
     def run_linter(
@@ -90,8 +93,11 @@ class ReviewerTestInterface:
     ) -> ToolResult:
         """Run tests."""
         return self._tool.run_tests(
-            target=target, kind=kind, scope=scope,
-            timeout=timeout, coverage=coverage,
+            target=target,
+            kind=kind,
+            scope=scope,
+            timeout=timeout,
+            coverage=coverage,
         )
 
     def run_linter(self, target: str) -> ToolResult:

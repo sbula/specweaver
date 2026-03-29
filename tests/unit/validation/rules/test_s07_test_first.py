@@ -60,8 +60,8 @@ A simple greeter service.
 
 # ── _extract_contract() ──────────────────────────────────────────────────
 
-class TestExtractContract:
 
+class TestExtractContract:
     def test_extracts_numbered_header(self) -> None:
         result = _extract_contract(_GOOD_CONTRACT)
         assert result is not None
@@ -91,8 +91,8 @@ class TestExtractContract:
 
 # ── _analyse_contract() ─────────────────────────────────────────────────
 
-class TestAnalyseContract:
 
+class TestAnalyseContract:
     def test_detects_code_blocks(self) -> None:
         contract = "```python\ndef f(): pass\n```\nSome text.\n"
         has_code, _, _, _ = _analyse_contract(contract)
@@ -130,33 +130,37 @@ class TestAnalyseContract:
 
 # ── _testability_score() ─────────────────────────────────────────────────
 
-class TestTestabilityScore:
 
+class TestTestabilityScore:
     def test_max_score(self) -> None:
         score = _testability_score(
-            has_code=True, assertion_count=10, has_concrete=True, has_io=True)
+            has_code=True, assertion_count=10, has_concrete=True, has_io=True
+        )
         assert score == 12  # 3 + 5(cap) + 2 + 2
 
     def test_zero_score(self) -> None:
         score = _testability_score(
-            has_code=False, assertion_count=0, has_concrete=False, has_io=False)
+            has_code=False, assertion_count=0, has_concrete=False, has_io=False
+        )
         assert score == 0
 
     def test_code_only(self) -> None:
         score = _testability_score(
-            has_code=True, assertion_count=0, has_concrete=False, has_io=False)
+            has_code=True, assertion_count=0, has_concrete=False, has_io=False
+        )
         assert score == 3
 
     def test_assertion_cap_at_5(self) -> None:
         score = _testability_score(
-            has_code=False, assertion_count=100, has_concrete=False, has_io=False)
+            has_code=False, assertion_count=100, has_concrete=False, has_io=False
+        )
         assert score == 5  # capped
 
 
 # ── TestFirstRule.check() ────────────────────────────────────────────────
 
-class TestTestFirstRuleCheck:
 
+class TestTestFirstRuleCheck:
     def test_good_contract_passes(self) -> None:
         rule = TestFirstRule()
         result = rule.check(_GOOD_CONTRACT)

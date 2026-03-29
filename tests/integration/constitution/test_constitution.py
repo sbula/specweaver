@@ -36,7 +36,8 @@ class TestScaffoldConstitutionIntegration:
     """Scaffold creates constitution → find/check/PromptBuilder consume it."""
 
     def test_scaffold_creates_findable_constitution(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """scaffold_project creates CONSTITUTION.md that find_constitution discovers."""
         result = scaffold_project(tmp_path)
@@ -52,7 +53,8 @@ class TestScaffoldConstitutionIntegration:
         assert info.is_override is False
 
     def test_scaffold_constitution_passes_check(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Generated template passes check_constitution (within size budget)."""
         scaffold_project(tmp_path)
@@ -62,7 +64,8 @@ class TestScaffoldConstitutionIntegration:
         assert errors == [], f"Template constitution failed check: {errors}"
 
     def test_scaffold_constitution_fits_prompt_builder(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Generated constitution integrates with PromptBuilder."""
         from specweaver.llm.prompt_builder import PromptBuilder
@@ -84,7 +87,8 @@ class TestScaffoldConstitutionIntegration:
         assert info.content.strip() in result
 
     def test_scaffold_constitution_in_created_list(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """CONSTITUTION.md appears in ScaffoldResult.created."""
         result = scaffold_project(tmp_path)
@@ -157,11 +161,14 @@ class TestConstitutionLogging:
     """Verify that constitution operations produce expected log output."""
 
     def test_find_logs_info_on_success(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture,
+        self,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """find_constitution logs INFO when a constitution is found."""
         (tmp_path / CONSTITUTION_FILENAME).write_text(
-            "# Rules", encoding="utf-8",
+            "# Rules",
+            encoding="utf-8",
         )
         with caplog.at_level(logging.INFO, logger="specweaver.project.constitution"):
             find_constitution(tmp_path)
@@ -169,7 +176,9 @@ class TestConstitutionLogging:
         assert any("loaded" in r.message.lower() for r in caplog.records)
 
     def test_find_logs_debug_on_miss(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture,
+        self,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """find_constitution logs DEBUG when no constitution found."""
         with caplog.at_level(logging.DEBUG, logger="specweaver.project.constitution"):
@@ -178,7 +187,9 @@ class TestConstitutionLogging:
         assert any("no constitution" in r.message.lower() for r in caplog.records)
 
     def test_generate_logs_info_on_create(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture,
+        self,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """generate_constitution logs INFO when creating a new file."""
         with caplog.at_level(logging.INFO, logger="specweaver.project.constitution"):
@@ -187,7 +198,9 @@ class TestConstitutionLogging:
         assert any("generated" in r.message.lower() for r in caplog.records)
 
     def test_oversize_logs_warning(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture,
+        self,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """find_constitution logs WARNING for oversized constitutions."""
         (tmp_path / CONSTITUTION_FILENAME).write_text(

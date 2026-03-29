@@ -29,21 +29,21 @@ _ASSERTION_PATTERNS = [
     r"\braise\s+\w+Error\b",
     r"\braises?\b",
     r"\breturns?\s+\w+",
-    r"\→\s*\w+",     # → SomeType
-    r"->\s*\w+",     # -> SomeType
+    r"\→\s*\w+",  # → SomeType
+    r"->\s*\w+",  # -> SomeType
 ]
 
 # Patterns for concrete values
 _CONCRETE_VALUE_RE = re.compile(
-    r'(?:'
-    r'"[^"]+"|'        # quoted strings
-    r"'[^']+'|"        # single-quoted strings
-    r'\b\d+\b|'        # numbers
-    r'\bTrue\b|'       # booleans
-    r'\bFalse\b|'      #
-    r'\bNone\b|'       #
-    r'\bnull\b'        # null
-    r')'
+    r"(?:"
+    r'"[^"]+"|'  # quoted strings
+    r"'[^']+'|"  # single-quoted strings
+    r"\b\d+\b|"  # numbers
+    r"\bTrue\b|"  # booleans
+    r"\bFalse\b|"  #
+    r"\bNone\b|"  #
+    r"\bnull\b"  # null
+    r")"
 )
 
 
@@ -84,10 +84,12 @@ class TestFirstRule(Rule):
         if contract is None:
             return self._fail(
                 "No Contract section found. Tests cannot be derived without a contract.",
-                [Finding(
-                    message="Missing '## 2. Contract' or '## Contract' section",
-                    severity=Severity.ERROR,
-                )],
+                [
+                    Finding(
+                        message="Missing '## 2. Contract' or '## Contract' section",
+                        severity=Severity.ERROR,
+                    )
+                ],
             )
 
         has_code, assertion_count, has_concrete, has_io = _analyse_contract(contract)
@@ -95,7 +97,10 @@ class TestFirstRule(Rule):
 
         # Score: how testable is this contract?
         testability_score = _testability_score(
-            has_code, assertion_count, has_concrete, has_io,
+            has_code,
+            assertion_count,
+            has_concrete,
+            has_io,
         )
 
         if testability_score < self._fail_score:
@@ -112,9 +117,7 @@ class TestFirstRule(Rule):
                 findings,
             )
 
-        return self._pass(
-            f"Contract testability score: {testability_score}/12"
-        )
+        return self._pass(f"Contract testability score: {testability_score}/12")
 
 
 def _analyse_contract(
@@ -130,17 +133,21 @@ def _analyse_contract(
 
     has_concrete = bool(_CONCRETE_VALUE_RE.findall(contract))
 
-    has_io = bool(re.search(
-        r"(?:input|output|example|given|when|then|returns?)\s*:",
-        contract,
-        re.IGNORECASE,
-    ))
+    has_io = bool(
+        re.search(
+            r"(?:input|output|example|given|when|then|returns?)\s*:",
+            contract,
+            re.IGNORECASE,
+        )
+    )
 
     return has_code, assertion_count, has_concrete, has_io
 
 
 def _collect_findings(
-    has_code: bool, assertion_count: int, has_concrete: bool,
+    has_code: bool,
+    assertion_count: int,
+    has_concrete: bool,
 ) -> list[Finding]:
     """Build the list of findings from contract analysis results."""
     findings: list[Finding] = []
@@ -176,7 +183,10 @@ def _collect_findings(
 
 
 def _testability_score(
-    has_code: bool, assertion_count: int, has_concrete: bool, has_io: bool,
+    has_code: bool,
+    assertion_count: int,
+    has_concrete: bool,
+    has_io: bool,
 ) -> int:
     """Compute testability score (0-12) from contract analysis results."""
     score = 0

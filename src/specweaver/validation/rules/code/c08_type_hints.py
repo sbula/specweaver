@@ -66,8 +66,7 @@ class TypeHintsRule(Rule):
                 )
                 return self._fail(msg, findings)
             msg = (
-                f"{missing_hints}/{total_public} public "
-                f"functions missing type hints ({ratio:.0f}%)"
+                f"{missing_hints}/{total_public} public functions missing type hints ({ratio:.0f}%)"
             )
             return self._warn(msg, findings)
 

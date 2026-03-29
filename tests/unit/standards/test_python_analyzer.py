@@ -36,7 +36,8 @@ class TestAnalyzerInterface:
         assert analyzer.file_extensions() == {".py"}
 
     def test_supported_categories(
-        self, analyzer: PythonStandardsAnalyzer,
+        self,
+        analyzer: PythonStandardsAnalyzer,
     ) -> None:
         cats = analyzer.supported_categories()
         assert "naming" in cats
@@ -45,7 +46,6 @@ class TestAnalyzerInterface:
         assert "docstrings" in cats
         assert "import_patterns" in cats
         assert "test_patterns" in cats
-
 
 
 # ---------------------------------------------------------------------------
@@ -57,11 +57,14 @@ class TestNamingExtraction:
     """Test extraction of naming convention patterns."""
 
     def test_detects_snake_case_functions(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Should detect snake_case as dominant function naming style."""
         f = tmp_path / "code.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def get_user_name():
                 pass
 
@@ -70,7 +73,8 @@ class TestNamingExtraction:
 
             def create_new_record():
                 pass
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "naming"), None)
@@ -80,11 +84,14 @@ class TestNamingExtraction:
         assert result.confidence > 0.5
 
     def test_detects_class_naming(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Should detect PascalCase as dominant class naming style."""
         f = tmp_path / "models.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             class UserProfile:
                 pass
 
@@ -93,7 +100,8 @@ class TestNamingExtraction:
 
             class AbstractBaseModel:
                 pass
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "naming"), None)
@@ -102,7 +110,9 @@ class TestNamingExtraction:
         assert result.dominant.get("class_style") == "PascalCase"
 
     def test_empty_files_return_zero_confidence(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Empty files should produce zero sample_size."""
         f = tmp_path / "empty.py"
@@ -115,7 +125,8 @@ class TestNamingExtraction:
         assert result.sample_size == 0
 
     def test_no_files_returns_zero_sample(
-        self, analyzer: PythonStandardsAnalyzer,
+        self,
+        analyzer: PythonStandardsAnalyzer,
     ) -> None:
         """No files → zero sample size."""
         results = analyzer.extract_all([], 180)
@@ -136,11 +147,14 @@ class TestErrorHandlingExtraction:
     """Test extraction of error handling patterns."""
 
     def test_detects_specific_exceptions(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Should detect whether specific or bare exceptions are used."""
         f = tmp_path / "handlers.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def process():
                 try:
                     do_work()
@@ -148,7 +162,8 @@ class TestErrorHandlingExtraction:
                     handle_error()
                 except KeyError:
                     handle_key_error()
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "error_handling"), None)
@@ -158,11 +173,14 @@ class TestErrorHandlingExtraction:
         assert result.sample_size > 0
 
     def test_detects_bare_except(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Bare except blocks should be detected."""
         f = tmp_path / "sloppy.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def process():
                 try:
                     do_work()
@@ -172,7 +190,8 @@ class TestErrorHandlingExtraction:
                     do_more()
                 except:
                     pass
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "error_handling"), None)
@@ -190,11 +209,14 @@ class TestTypeHintsExtraction:
     """Test extraction of type hint usage patterns."""
 
     def test_detects_type_hints(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Should detect functions using type annotations."""
         f = tmp_path / "typed.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def greet(name: str) -> str:
                 return f"Hello, {name}"
 
@@ -203,7 +225,8 @@ class TestTypeHintsExtraction:
 
             def noop() -> None:
                 pass
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "type_hints"), None)
@@ -213,17 +236,21 @@ class TestTypeHintsExtraction:
         assert result.sample_size >= 3
 
     def test_detects_no_type_hints(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Untyped code should be detected."""
         f = tmp_path / "untyped.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def greet(name):
                 return f"Hello, {name}"
 
             def add(a, b):
                 return a + b
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "type_hints"), None)
@@ -241,11 +268,14 @@ class TestDocstringsExtraction:
     """Test extraction of docstring patterns."""
 
     def test_detects_docstrings_present(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Functions with docstrings should be detected."""
         f = tmp_path / "documented.py"
-        f.write_text(textwrap.dedent('''\
+        f.write_text(
+            textwrap.dedent('''\
             def greet(name):
                 """Greet a user by name."""
                 return f"Hello, {name}"
@@ -253,7 +283,8 @@ class TestDocstringsExtraction:
             def add(a, b):
                 """Add two numbers."""
                 return a + b
-        '''))
+        ''')
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "docstrings"), None)
@@ -262,17 +293,21 @@ class TestDocstringsExtraction:
         assert result.dominant.get("coverage") in ("high", "full")
 
     def test_detects_no_docstrings(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Functions without docstrings should be detected."""
         f = tmp_path / "undocumented.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def greet(name):
                 return f"Hello, {name}"
 
             def add(a, b):
                 return a + b
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "docstrings"), None)
@@ -290,16 +325,20 @@ class TestImportPatternsExtraction:
     """Test extraction of import style patterns."""
 
     def test_detects_absolute_imports(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Standard absolute imports should be detected."""
         f = tmp_path / "imports.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             import os
             import sys
             from pathlib import Path
             from collections import defaultdict
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "import_patterns"), None)
@@ -318,11 +357,14 @@ class TestTestPatternsExtraction:
     """Test extraction of test patterns (pytest vs unittest)."""
 
     def test_detects_pytest_style(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Pytest-style tests should be detected."""
         f = tmp_path / "test_foo.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             import pytest
 
             def test_addition():
@@ -334,7 +376,8 @@ class TestTestPatternsExtraction:
             class TestMath:
                 def test_multiply(self):
                     assert 2 * 3 == 6
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "test_patterns"), None)
@@ -343,7 +386,9 @@ class TestTestPatternsExtraction:
         assert result.dominant.get("framework") == "pytest"
 
     def test_no_test_files_returns_zero(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Non-test files should produce zero sample for test_patterns."""
         f = tmp_path / "app.py"
@@ -356,16 +401,20 @@ class TestTestPatternsExtraction:
         assert result.sample_size == 0
 
     def test_suffix_style_test_file_detected(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Files named *_test.py (suffix style) are included."""
         f = tmp_path / "math_test.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             import pytest
 
             def test_add():
                 assert 1 + 1 == 2
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "test_patterns"), None)
@@ -375,17 +424,21 @@ class TestTestPatternsExtraction:
         assert result.dominant.get("framework") == "pytest"
 
     def test_detects_unittest_framework(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """unittest-style tests should be detected."""
         f = tmp_path / "test_old.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             import unittest
 
             class TestOld(unittest.TestCase):
                 def test_one(self):
                     self.assertEqual(1, 1)
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "test_patterns"), None)
@@ -403,7 +456,9 @@ class TestHelperEdgeCases:
     """Test private helper edge cases."""
 
     def test_parse_file_with_syntax_error(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Files with SyntaxError are skipped (return None)."""
         f = tmp_path / "broken.py"
@@ -412,7 +467,9 @@ class TestHelperEdgeCases:
         assert result is None
 
     def test_parse_file_with_encoding_errors(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Files with encoding errors are handled via errors='replace'."""
         f = tmp_path / "binary_ish.py"
@@ -422,7 +479,10 @@ class TestHelperEdgeCases:
         assert result is not None
 
     def test_file_weight_oserror_uses_current_time(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path, monkeypatch,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """If stat() fails, _file_weight should use time.time()."""
 
@@ -437,7 +497,8 @@ class TestHelperEdgeCases:
         assert weight > 0.9
 
     def test_compute_confidence_empty_counter(
-        self, analyzer: PythonStandardsAnalyzer,
+        self,
+        analyzer: PythonStandardsAnalyzer,
     ) -> None:
         """Empty Counter → 0.0."""
         from collections import Counter
@@ -445,7 +506,8 @@ class TestHelperEdgeCases:
         assert analyzer._compute_confidence(Counter()) == 0.0
 
     def test_compute_confidence_unanimous(
-        self, analyzer: PythonStandardsAnalyzer,
+        self,
+        analyzer: PythonStandardsAnalyzer,
     ) -> None:
         """All votes for one style → confidence 1.0."""
         from collections import Counter
@@ -454,7 +516,8 @@ class TestHelperEdgeCases:
         assert analyzer._compute_confidence(c) == 1.0
 
     def test_compute_confidence_mixed(
-        self, analyzer: PythonStandardsAnalyzer,
+        self,
+        analyzer: PythonStandardsAnalyzer,
     ) -> None:
         """Mixed votes → confidence < 1.0."""
         from collections import Counter
@@ -518,17 +581,21 @@ class TestNamingEdgeCases:
     """Edge cases for _extract_naming."""
 
     def test_private_functions_excluded(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Functions starting with '_' are excluded from naming analysis."""
         f = tmp_path / "private.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def _internal():
                 pass
 
             def __double():
                 pass
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "naming"), None)
@@ -539,11 +606,14 @@ class TestNamingEdgeCases:
         assert result.dominant == {}
 
     def test_mixed_naming_lowers_confidence(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Mixed snake_case and camelCase should give confidence < 1.0."""
         f = tmp_path / "mixed.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def get_data():
                 pass
 
@@ -552,7 +622,8 @@ class TestNamingEdgeCases:
 
             def fetch_items():
                 pass
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "naming"), None)
@@ -563,7 +634,9 @@ class TestNamingEdgeCases:
         assert result.confidence < 1.0
 
     def test_no_classes_no_functions_empty_dominant(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """File with only module-level constants → empty dominant dict."""
         f = tmp_path / "constants.py"
@@ -586,7 +659,9 @@ class TestDocstringBoundaries:
     """Test docstring coverage boundary conditions."""
 
     def test_full_coverage_boundary(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Exactly 90% documented → 'full'."""
         f = tmp_path / "mostly_doc.py"
@@ -599,15 +674,15 @@ class TestDocstringBoundaries:
 
         results = analyzer.extract_all([f], 180)
 
-
         result = next((r for r in results if r.category == "docstrings"), None)
-
 
         assert result is not None, 'Category "docstrings" not found in results'
         assert result.dominant.get("coverage") == "full"
 
     def test_no_functions_at_all(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """File with no functions → sample_size=0, confidence=0.0."""
         f = tmp_path / "no_funcs.py"
@@ -631,15 +706,19 @@ class TestImportEdgeCases:
     """Edge cases for import pattern extraction."""
 
     def test_detects_relative_imports(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Relative imports should be detected."""
         f = tmp_path / "rel.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             from . import sibling
             from ..parent import base
             from .utils import helper
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "import_patterns"), None)
@@ -649,16 +728,20 @@ class TestImportEdgeCases:
         assert result.sample_size == 3
 
     def test_mixed_imports_absolute_dominant(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Mixed absolute + relative with absolute majority → 'absolute'."""
         f = tmp_path / "mixed_imports.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             import os
             import sys
             from pathlib import Path
             from . import local
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "import_patterns"), None)
@@ -668,7 +751,9 @@ class TestImportEdgeCases:
         assert result.confidence > 0.5
 
     def test_no_imports_returns_empty(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """File with no imports → empty dominant."""
         f = tmp_path / "no_imports.py"
@@ -691,7 +776,9 @@ class TestErrorHandlingEdgeCases:
     """Edge cases for error_handling extraction."""
 
     def test_no_try_except_returns_empty(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """File with no try/except → empty dominan, 0 samples."""
         f = tmp_path / "clean.py"
@@ -706,11 +793,14 @@ class TestErrorHandlingEdgeCases:
         assert result.confidence == 0.0
 
     def test_mixed_bare_and_specific(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """Mixed bare and specific except → 'specific' wins if majority."""
         f = tmp_path / "mixed_err.py"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             def a():
                 try:
                     pass
@@ -720,7 +810,8 @@ class TestErrorHandlingEdgeCases:
                     pass
                 except:
                     pass
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
 
         result = next((r for r in results if r.category == "error_handling"), None)
@@ -739,7 +830,9 @@ class TestExtractWithBrokenFiles:
     """Extraction should gracefully skip unparseable files."""
 
     def test_naming_skips_syntax_error_file(
-        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path,
+        self,
+        analyzer: PythonStandardsAnalyzer,
+        tmp_path: Path,
     ) -> None:
         """A SyntaxError file is skipped, valid files still analyzed."""
         good = tmp_path / "good.py"
@@ -749,11 +842,8 @@ class TestExtractWithBrokenFiles:
 
         results = analyzer.extract_all([good, bad], 180)
 
-
         result = next((r for r in results if r.category == "naming"), None)
-
 
         assert result is not None, 'Category "naming" not found in results'
         assert result.sample_size == 1
         assert result.dominant.get("function_style") == "snake_case"
-

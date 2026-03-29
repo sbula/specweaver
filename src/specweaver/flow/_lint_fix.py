@@ -38,7 +38,11 @@ class LintFixHandler:
         started = _now_iso()
         max_reflections: int = step.params.get("max_reflections", 3)
         target: str = step.params.get("target", "src/")
-        logger.debug("LintFixHandler: starting lint-fix loop (target=%s, max_reflections=%d)", target, max_reflections)
+        logger.debug(
+            "LintFixHandler: starting lint-fix loop (target=%s, max_reflections=%d)",
+            target,
+            max_reflections,
+        )
 
         atom = self._get_atom(context)
         reflections_used = 0
@@ -65,17 +69,16 @@ class LintFixHandler:
 
         # Phase 1: Try ruff auto-fix first (cheaper than LLM)
         logger.info("LintFixHandler: attempting ruff auto-fix on %d errors", last_error_count)
-        atom.run({
-            "intent": "run_linter",
-            "target": target,
-            "fix": True,
-        })
+        atom.run(
+            {
+                "intent": "run_linter",
+                "target": target,
+                "fix": True,
+            }
+        )
         # Re-lint to see what remains after auto-fix
         lint_result = atom.run({"intent": "run_linter", "target": target})
-        last_error_count = (
-            lint_result.exports.get("error_count", 0)
-            if lint_result.exports else 0
-        )
+        last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
         logger.debug("LintFixHandler: after auto-fix, %d errors remain", last_error_count)
 
         if last_error_count == 0:
@@ -122,14 +125,22 @@ class LintFixHandler:
 
             # Ask LLM to fix
             try:
-                logger.debug("LintFixHandler: LLM reflection %d/%d on '%s'", reflections_used + 1, max_reflections, code_files[0].name)
+                logger.debug(
+                    "LintFixHandler: LLM reflection %d/%d on '%s'",
+                    reflections_used + 1,
+                    max_reflections,
+                    code_files[0].name,
+                )
                 await self._llm_fix(
                     context.llm,
                     code_files[0],
                     lint_result.exports.get("errors", []) if lint_result.exports else [],
+                    context=context,
                 )
             except Exception as exc:
-                logger.exception("LintFixHandler: LLM fix failed on reflection %d", reflections_used + 1)
+                logger.exception(
+                    "LintFixHandler: LLM fix failed on reflection %d", reflections_used + 1
+                )
                 return StepResult(
                     status=StepStatus.ERROR,
                     error_message=str(exc),
@@ -146,8 +157,7 @@ class LintFixHandler:
             # Re-lint
             lint_result = atom.run({"intent": "run_linter", "target": target})
             last_error_count = (
-                lint_result.exports.get("error_count", 0)
-                if lint_result.exports else 0
+                lint_result.exports.get("error_count", 0) if lint_result.exports else 0
             )
 
             if last_error_count == 0:
@@ -164,7 +174,8 @@ class LintFixHandler:
         # Exhausted
         logger.warning(
             "LintFixHandler: exhausted after %d reflections, %d errors remain",
-            reflections_used, last_error_count,
+            reflections_used,
+            last_error_count,
         )
         return StepResult(
             status=StepStatus.FAILED,
@@ -173,7 +184,7 @@ class LintFixHandler:
                 "lint_errors_remaining": last_error_count,
             },
             error_message=f"Lint-fix exhausted after {reflections_used} reflections, "
-                          f"{last_error_count} errors remain",
+            f"{last_error_count} errors remain",
             started_at=started,
             completed_at=_now_iso(),
         )
@@ -181,6 +192,7 @@ class LintFixHandler:
     def _get_atom(self, context: RunContext) -> TestRunnerAtom:
         """Lazily create a TestRunnerAtom for the project."""
         from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+
         return TestRunnerAtom(cwd=context.project_path)
 
     def _find_code_files(self, context: RunContext) -> list[Path]:
@@ -194,8 +206,12 @@ class LintFixHandler:
         llm: Any,
         code_path: Path,
         lint_errors: list[dict[str, object]],
+        *,
+        context: RunContext,
     ) -> None:
         """Ask the LLM to fix lint errors in the given file."""
+        from specweaver.llm.models import GenerationConfig, Message, Role, TaskType
+
         code = code_path.read_text(encoding="utf-8")
         error_summary = "\n".join(
             f"- {e.get('file', '?')}:{e.get('line', '?')} [{e.get('code', '?')}] {e.get('message', '')}"
@@ -209,7 +225,43 @@ class LintFixHandler:
             f"Return ONLY the fixed Python code, no explanations."
         )
 
-        response = await llm.generate(prompt)
+        messages = [Message(role=Role.USER, content=prompt)]
+
+        # Base config from project default (fallback)
+        if context.config is not None:
+            base_config = GenerationConfig(
+                model=context.config.llm.model,
+                temperature=0.1,  # low creativity — fix, not invent
+                max_output_tokens=context.config.llm.max_output_tokens,
+                task_type=TaskType.CHECK,
+            )
+        else:
+            base_config = GenerationConfig(
+                model="gemini-3-flash-preview",
+                temperature=0.1,
+                max_output_tokens=4096,
+                task_type=TaskType.CHECK,
+            )
+
+        # Routing resolution — same pattern as all other handlers
+        routed = (
+            context.llm_router.get_for_task(TaskType.CHECK)
+            if getattr(context, "llm_router", None)
+            else None
+        )
+        adapter = routed.adapter if routed else llm
+        config = (
+            GenerationConfig(
+                model=routed.model,
+                temperature=routed.temperature,
+                max_output_tokens=routed.max_output_tokens,
+                task_type=TaskType.CHECK,
+            )
+            if routed
+            else base_config
+        )
+
+        response = await adapter.generate(messages, config)
 
         fixed_code = response.text.strip()
         # Strip markdown fences if present

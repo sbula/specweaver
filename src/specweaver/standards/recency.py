@@ -23,21 +23,31 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 # Extensions considered as "source files" for project age estimation.
-_SOURCE_EXTENSIONS = frozenset({
-    ".py", ".js", ".ts", ".jsx", ".tsx",
-    ".kt", ".kts",  # Kotlin
-    ".rs",           # Rust
-    ".go",           # Go
-    ".java",         # Java
-    ".rb",           # Ruby
-    ".cpp", ".c", ".h", ".hpp",  # C/C++
-    ".cs",           # C#
-    ".swift",        # Swift
-})
+_SOURCE_EXTENSIONS = frozenset(
+    {
+        ".py",
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".kt",
+        ".kts",  # Kotlin
+        ".rs",  # Rust
+        ".go",  # Go
+        ".java",  # Java
+        ".rb",  # Ruby
+        ".cpp",
+        ".c",
+        ".h",
+        ".hpp",  # C/C++
+        ".cs",  # C#
+        ".swift",  # Swift
+    }
+)
 
 # Half-life bounds (days).
-_MIN_HALF_LIFE = 180   # 6 months — young/fast-moving projects
-_MAX_HALF_LIFE = 730   # 2 years — legacy/stable projects
+_MIN_HALF_LIFE = 180  # 6 months — young/fast-moving projects
+_MAX_HALF_LIFE = 730  # 2 years — legacy/stable projects
 _HALF_LIFE_SCALE = 120  # days of half-life per year of project age
 
 

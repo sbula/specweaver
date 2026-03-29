@@ -140,8 +140,12 @@ See [TaxCalculator](src/billing/taxes/vat.py) for details.
         rule = StrangerTestRule(mode="abstraction_leak")
         result = rule.check(spec)
         assert result.status in (Status.WARN, Status.FAIL)
-        assert any("abstraction" in f.message.lower() or "file path" in f.message.lower()
-                    or ".py" in f.message for f in result.findings)
+        assert any(
+            "abstraction" in f.message.lower()
+            or "file path" in f.message.lower()
+            or ".py" in f.message
+            for f in result.findings
+        )
 
     def test_feature_flags_class_method(self) -> None:
         """Class.method references are abstraction leaks."""
@@ -155,8 +159,10 @@ The feature calls `TaxCalculator.calculate()` to compute taxes.
         rule = StrangerTestRule(mode="abstraction_leak")
         result = rule.check(spec)
         assert result.status in (Status.WARN, Status.FAIL)
-        assert any("abstraction" in f.message.lower() or "class" in f.message.lower()
-                    or "." in f.message for f in result.findings)
+        assert any(
+            "abstraction" in f.message.lower() or "class" in f.message.lower() or "." in f.message
+            for f in result.findings
+        )
 
     def test_feature_flags_import_paths(self) -> None:
         """Dotted import paths (3+ segments) are abstraction leaks."""
@@ -427,8 +433,7 @@ class TestS01EdgeCases:
         rule = OneSentenceRule(kind=SpecKind.FEATURE)
         result = rule.check("")
         assert result.status == Status.WARN
-        assert any("Intent" in f.message or "Could not find" in f.message
-                    for f in result.findings)
+        assert any("Intent" in f.message or "Could not find" in f.message for f in result.findings)
 
     def test_header_pattern_kwarg_overrides_kind(self) -> None:
         """Explicit header_pattern takes precedence over kind auto-resolve."""
@@ -561,5 +566,4 @@ class TestS01MaxH2WithFeatureKind:
         rule = OneSentenceRule(kind=SpecKind.FEATURE)
         result = rule.check(spec)
         assert result.status == Status.WARN
-        assert any("H2" in f.message or "section" in f.message.lower()
-                    for f in result.findings)
+        assert any("H2" in f.message or "section" in f.message.lower() for f in result.findings)

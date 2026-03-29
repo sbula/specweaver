@@ -37,15 +37,17 @@ class TestTelemetryRoundtrip:
         # Create a collector wrapping a mock adapter
         mock_adapter = MagicMock()
         mock_adapter.provider_name = "test-provider"
-        mock_adapter.generate = AsyncMock(return_value=LLMResponse(
-            text="hello",
-            model="test-model",
-            usage=TokenUsage(
-                prompt_tokens=100,
-                completion_tokens=50,
-                total_tokens=150,
-            ),
-        ))
+        mock_adapter.generate = AsyncMock(
+            return_value=LLMResponse(
+                text="hello",
+                model="test-model",
+                usage=TokenUsage(
+                    prompt_tokens=100,
+                    completion_tokens=50,
+                    total_tokens=150,
+                ),
+            )
+        )
 
         collector = TelemetryCollector(mock_adapter, "testproj")
 
@@ -81,7 +83,8 @@ class TestTelemetryRoundtrip:
             from specweaver.llm.factory import create_llm_adapter
 
             _settings, adapter, _config = create_llm_adapter(
-                db, telemetry_project="testproj",
+                db,
+                telemetry_project="testproj",
             )
 
         assert isinstance(adapter, TelemetryCollector)
@@ -100,7 +103,8 @@ class TestTelemetryRoundtrip:
             from specweaver.llm.factory import create_llm_adapter
 
             _settings, adapter, _config = create_llm_adapter(
-                db, telemetry_project=None,
+                db,
+                telemetry_project=None,
             )
 
         assert not isinstance(adapter, TelemetryCollector)

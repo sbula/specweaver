@@ -55,7 +55,8 @@ class TestCostsSet:
     def test_set_cost_override(self, _mock_db) -> None:
         """sw costs set MODEL INPUT OUTPUT → persists override."""
         result = runner.invoke(
-            app, ["costs", "set", "my-model", "0.005", "0.015"],
+            app,
+            ["costs", "set", "my-model", "0.005", "0.015"],
         )
 
         assert result.exit_code == 0
@@ -72,7 +73,8 @@ class TestCostsReset:
         _mock_db.set_cost_override("my-model", 0.01, 0.02)
 
         result = runner.invoke(
-            app, ["costs", "reset", "my-model"],
+            app,
+            ["costs", "reset", "my-model"],
         )
 
         assert result.exit_code == 0

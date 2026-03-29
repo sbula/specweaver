@@ -67,9 +67,12 @@ class TestReviewErrors:
         result = runner.invoke(
             app,
             [
-                "review", str(code),
-                "--spec", "nonexistent_spec.md",
-                "--project", str(project_dir),
+                "review",
+                str(code),
+                "--spec",
+                "nonexistent_spec.md",
+                "--project",
+                str(project_dir),
             ],
         )
         # Should fail at the LLM adapter step (no API key) or spec not found
@@ -77,7 +80,9 @@ class TestReviewErrors:
 
     @patch("specweaver.cli._helpers._require_llm_adapter")
     def test_review_spec_accepted(
-        self, mock_llm, tmp_path: Path,
+        self,
+        mock_llm,
+        tmp_path: Path,
     ) -> None:
         """sw review on a spec returns ACCEPTED verdict."""
         from specweaver.llm.models import GenerationConfig
@@ -113,7 +118,9 @@ class TestReviewErrors:
 
     @patch("specweaver.cli._helpers._require_llm_adapter")
     def test_review_spec_denied(
-        self, mock_llm, tmp_path: Path,
+        self,
+        mock_llm,
+        tmp_path: Path,
     ) -> None:
         """sw review on a spec returns DENIED with findings."""
         from specweaver.llm.models import GenerationConfig

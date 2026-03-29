@@ -26,21 +26,23 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Directories to skip unconditionally when walking (non-git fallback).
-_SKIP_DIRS = frozenset({
-    ".git",
-    "__pycache__",
-    "node_modules",
-    "venv",
-    ".venv",
-    ".tox",
-    ".mypy_cache",
-    ".pytest_cache",
-    "dist",
-    "build",
-    ".eggs",
-    ".ruff_cache",
-    ".nox",
-})
+_SKIP_DIRS = frozenset(
+    {
+        ".git",
+        "__pycache__",
+        "node_modules",
+        "venv",
+        ".venv",
+        ".tox",
+        ".mypy_cache",
+        ".pytest_cache",
+        "dist",
+        "build",
+        ".eggs",
+        ".ruff_cache",
+        ".nox",
+    }
+)
 
 
 def discover_files(project_path: Path) -> list[Path]:
@@ -126,10 +128,7 @@ def _walk_with_skips(project_path: Path) -> list[Path]:
 
     for root, dirs, filenames in os.walk(project_path):
         # Prune skipped directories in-place (modifies os.walk traversal)
-        dirs[:] = [
-            d for d in dirs
-            if d not in _SKIP_DIRS and not d.startswith(".")
-        ]
+        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS and not d.startswith(".")]
 
         for name in filenames:
             full = Path(root) / name

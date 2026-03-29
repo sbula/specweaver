@@ -57,8 +57,7 @@ class DoneDefinitionRule(Rule):
                     message="No 'Done Definition' section found",
                     severity=Severity.ERROR,
                     suggestion=(
-                        "Add a '## Done Definition' section with "
-                        "verifiable completion criteria."
+                        "Add a '## Done Definition' section with verifiable completion criteria."
                     ),
                 )
             )
@@ -83,8 +82,7 @@ class DoneDefinitionRule(Rule):
                     message="Done Definition section is empty",
                     severity=Severity.ERROR,
                     suggestion=(
-                        "Add specific, verifiable criteria "
-                        "(e.g., checkboxes, test requirements)."
+                        "Add specific, verifiable criteria (e.g., checkboxes, test requirements)."
                     ),
                 )
             )

@@ -115,9 +115,7 @@ class TestContextInferenceEdgeCases:
             encoding="utf-8",
         )
         (mod_dir / "client.py").write_text(
-            "import requests\n\n"
-            "class APIClient:\n"
-            "    pass\n",
+            "import requests\n\nclass APIClient:\n    pass\n",
             encoding="utf-8",
         )
 
@@ -137,9 +135,7 @@ class TestContextInferenceEdgeCases:
             encoding="utf-8",
         )
         (mod_dir / "logic.py").write_text(
-            "import json\nfrom pathlib import Path\n\n"
-            "def process() -> dict:\n"
-            "    return {}\n",
+            "import json\nfrom pathlib import Path\n\ndef process() -> dict:\n    return {}\n",
             encoding="utf-8",
         )
 
@@ -155,13 +151,11 @@ class TestContextInferenceEdgeCases:
         mod_dir.mkdir()
 
         (mod_dir / "__init__.py").write_text(
-            '"""Public API."""\n\n'
-            '__all__ = ["Client", "Config"]\n',
+            '"""Public API."""\n\n__all__ = ["Client", "Config"]\n',
             encoding="utf-8",
         )
         (mod_dir / "client.py").write_text(
-            "class Client:\n    pass\n\n"
-            "class _InternalHelper:\n    pass\n",
+            "class Client:\n    pass\n\nclass _InternalHelper:\n    pass\n",
             encoding="utf-8",
         )
 

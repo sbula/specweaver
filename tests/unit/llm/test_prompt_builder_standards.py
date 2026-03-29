@@ -26,8 +26,10 @@ class TestAddStandards:
 
         ctx = [
             TopologyContext(
-                name="svc", purpose="A service.",
-                archetype="pure-logic", relationship="direct dependency",
+                name="svc",
+                purpose="A service.",
+                archetype="pure-logic",
+                relationship="direct dependency",
             ),
         ]
         result = (
@@ -48,12 +50,7 @@ class TestAddStandards:
         """Standards renders before file contents."""
         f = tmp_path / "code.py"
         f.write_text("pass", encoding="utf-8")
-        result = (
-            PromptBuilder()
-            .add_standards("Standards text")
-            .add_file(f)
-            .build()
-        )
+        result = PromptBuilder().add_standards("Standards text").add_file(f).build()
 
         standards_pos = result.index("<standards>")
         file_pos = result.index("<file_contents>")
@@ -109,12 +106,7 @@ class TestAddStandards:
 
     def test_duplicate_add_standards(self) -> None:
         """Calling add_standards twice renders both in the block."""
-        result = (
-            PromptBuilder()
-            .add_standards("Convention A")
-            .add_standards("Convention B")
-            .build()
-        )
+        result = PromptBuilder().add_standards("Convention A").add_standards("Convention B").build()
         start = result.index("<standards>")
         end = result.index("</standards>")
         block = result[start:end]
@@ -129,8 +121,10 @@ class TestAddStandards:
         f.write_text("pass", encoding="utf-8")
         ctx = [
             TopologyContext(
-                name="svc", purpose="Test.",
-                archetype="pure-logic", relationship="dep",
+                name="svc",
+                purpose="Test.",
+                archetype="pure-logic",
+                relationship="dep",
             ),
         ]
         result = (
@@ -150,15 +144,7 @@ class TestAddStandards:
         stds_pos = result.index("<standards>")
         topo_pos = result.index("<topology>")
         file_pos = result.index("<file_contents>")
-        ctx_pos = result.index('<context label=')
+        ctx_pos = result.index("<context label=")
         reminder_pos = result.index("<reminder>")
 
-        assert (
-            instr_pos
-            < const_pos
-            < stds_pos
-            < topo_pos
-            < file_pos
-            < ctx_pos
-            < reminder_pos
-        )
+        assert instr_pos < const_pos < stds_pos < topo_pos < file_pos < ctx_pos < reminder_pos

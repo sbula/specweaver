@@ -76,8 +76,7 @@ class TestCheckEndpoint:
         proj, _ = _project_with_spec
         code = proj / "clean.py"
         code.write_text(
-            "def greet(name: str) -> str:\n"
-            '    return f"Hello {name}!"\n',
+            'def greet(name: str) -> str:\n    return f"Hello {name}!"\n',
             encoding="utf-8",
         )
         resp = client.post(

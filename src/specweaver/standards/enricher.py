@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class StandardComparison(BaseModel):
     """Pydantic model representing the LLM's structured comparison response."""
+
     industry_standard: str
     is_conflict: bool
     conflict_reason: str | None = None
@@ -79,7 +80,10 @@ Respond in pure JSON matching this schema:
 }}
 """
         messages = [
-            Message(role=Role.SYSTEM, content="You output pure JSON matching the requested schema without markdown blocks."),
+            Message(
+                role=Role.SYSTEM,
+                content="You output pure JSON matching the requested schema without markdown blocks.",
+            ),
             Message(role=Role.USER, content=prompt),
         ]
 

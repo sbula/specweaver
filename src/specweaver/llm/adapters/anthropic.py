@@ -64,9 +64,7 @@ class AnthropicAdapter(LLMAdapter):
             raise ModelNotFoundError(str(e)) from e
         raise GenerationError(str(e)) from e
 
-    def _convert_messages(
-        self, messages: list[Message]
-    ) -> list[dict[str, Any]]:
+    def _convert_messages(self, messages: list[Message]) -> list[dict[str, Any]]:
         anthropic_messages: list[dict[str, Any]] = []
         for msg in messages:
             # Anthropic only accepts "user" or "assistant" inside the messages array
@@ -74,9 +72,7 @@ class AnthropicAdapter(LLMAdapter):
             anthropic_messages.append({"role": role, "content": msg.content})
         return anthropic_messages
 
-    async def generate(
-        self, messages: list[Message], config: GenerationConfig
-    ) -> LLMResponse:
+    async def generate(self, messages: list[Message], config: GenerationConfig) -> LLMResponse:
         from specweaver.llm.models import LLMResponse, TokenUsage
 
         client = self._get_client()
@@ -170,8 +166,8 @@ class AnthropicAdapter(LLMAdapter):
     def _extract_text(self, content_blocks: list[Any]) -> str:
         text = ""
         for block in content_blocks:
-             if getattr(block, "type", "text") == "text" and hasattr(block, "text"):
-                 text += block.text
+            if getattr(block, "type", "text") == "text" and hasattr(block, "text"):
+                text += block.text
         return text
 
     def _apply_on_tool_round(
@@ -223,12 +219,14 @@ class AnthropicAdapter(LLMAdapter):
             try:
                 response = await client.messages.create(**kwargs)
             except Exception as e:
-                 self._handle_error(e)
+                self._handle_error(e)
 
             if hasattr(response, "usage") and response.usage:
                 cumulative_usage.prompt_tokens += response.usage.input_tokens
                 cumulative_usage.completion_tokens += response.usage.output_tokens
-                cumulative_usage.total_tokens += response.usage.input_tokens + response.usage.output_tokens
+                cumulative_usage.total_tokens += (
+                    response.usage.input_tokens + response.usage.output_tokens
+                )
 
             # Anthropic tool use works via stop_reason == "tool_use"
             if getattr(response, "stop_reason", None) != "tool_use":
@@ -249,7 +247,9 @@ class AnthropicAdapter(LLMAdapter):
 
             # The API requires us to supply exactly the assistant content format that was returned
             # Anthropic SDK message content blocks can just be appended as-is
-            await self._execute_anthropic_tools(tool_blocks, tool_executor, anthropic_messages, response.content)
+            await self._execute_anthropic_tools(
+                tool_blocks, tool_executor, anthropic_messages, response.content
+            )
 
         return LLMResponse(
             text="Max tool rounds exceeded.",

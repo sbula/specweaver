@@ -67,8 +67,14 @@ class _ParsedOutput(TypedDict):
 def _parse_pytest_output(stdout: str) -> _ParsedOutput:
     """Parse pytest --tb=short -q output into structured data."""
     result: _ParsedOutput = {
-        "passed": 0, "failed": 0, "errors": 0, "skipped": 0,
-        "total": 0, "duration": 0.0, "failures": [], "coverage_pct": None,
+        "passed": 0,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 0,
+        "duration": 0.0,
+        "failures": [],
+        "coverage_pct": None,
     }
 
     # Parse summary line
@@ -122,7 +128,11 @@ class PythonTestRunner(TestRunnerInterface):
         """Run pytest with the given parameters."""
         logger.debug(
             "PythonTestRunner.run_tests: target=%s kind=%s scope=%s timeout=%d coverage=%s",
-            target, kind, scope, timeout, coverage,
+            target,
+            kind,
+            scope,
+            timeout,
+            coverage,
         )
         cmd = ["python", "-m", "pytest", target, "--tb=short", "-q"]
 
@@ -149,13 +159,21 @@ class PythonTestRunner(TestRunnerInterface):
             )
         except subprocess.TimeoutExpired:
             elapsed = time.monotonic() - start
-            logger.warning("PythonTestRunner: pytest timed out after %ds (target=%s)", timeout, target)
+            logger.warning(
+                "PythonTestRunner: pytest timed out after %ds (target=%s)", timeout, target
+            )
             return TestRunResult(
-                passed=0, failed=0, errors=1, skipped=0, total=1,
-                failures=[TestFailure(
-                    nodeid="<timeout>",
-                    message=f"Test execution timed out after {timeout}s",
-                )],
+                passed=0,
+                failed=0,
+                errors=1,
+                skipped=0,
+                total=1,
+                failures=[
+                    TestFailure(
+                        nodeid="<timeout>",
+                        message=f"Test execution timed out after {timeout}s",
+                    )
+                ],
                 duration_seconds=elapsed,
             )
 
@@ -163,7 +181,11 @@ class PythonTestRunner(TestRunnerInterface):
         parsed = _parse_pytest_output(proc.stdout)
         logger.info(
             "PythonTestRunner: tests complete — passed=%d failed=%d errors=%d skipped=%d (%.2fs)",
-            parsed["passed"], parsed["failed"], parsed["errors"], parsed["skipped"], elapsed,
+            parsed["passed"],
+            parsed["failed"],
+            parsed["errors"],
+            parsed["skipped"],
+            elapsed,
         )
 
         return TestRunResult(
@@ -245,12 +267,14 @@ class PythonTestRunner(TestRunnerInterface):
         for err in raw_errors:
             loc = err.get("location", {})
             loc_dict = loc if isinstance(loc, dict) else {}
-            errors.append(LintError(
-                file=str(err.get("filename", "")),
-                line=int(str(loc_dict.get("row", 0))),
-                code=str(err.get("code", "")),
-                message=str(err.get("message", "")),
-            ))
+            errors.append(
+                LintError(
+                    file=str(err.get("filename", "")),
+                    line=int(str(loc_dict.get("row", 0))),
+                    code=str(err.get("code", "")),
+                    message=str(err.get("message", "")),
+                )
+            )
             if err.get("fix"):
                 fixable_count += 1
 
@@ -273,8 +297,13 @@ class PythonTestRunner(TestRunnerInterface):
         try:
             proc = subprocess.run(
                 [
-                    "python", "-m", "ruff", "check", target,
-                    "--select", "C90",
+                    "python",
+                    "-m",
+                    "ruff",
+                    "check",
+                    target,
+                    "--select",
+                    "C90",
                     f"--config=lint.mccabe.max-complexity={max_complexity}",
                     "--output-format=json",
                 ],
@@ -317,13 +346,15 @@ class PythonTestRunner(TestRunnerInterface):
                 complexity = int(match.group(1))
 
             loc_dict = loc if isinstance(loc, dict) else {}
-            violations.append(ComplexityViolation(
-                file=str(err.get("filename", "")),
-                line=int(str(loc_dict.get("row", 0))),
-                function=func_name,
-                complexity=complexity,
-                message=message,
-            ))
+            violations.append(
+                ComplexityViolation(
+                    file=str(err.get("filename", "")),
+                    line=int(str(loc_dict.get("row", 0))),
+                    function=func_name,
+                    complexity=complexity,
+                    message=message,
+                )
+            )
 
         return ComplexityRunResult(
             violation_count=len(violations),

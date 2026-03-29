@@ -194,5 +194,3 @@ class GateDecisionRequest(BaseModel):
         ...,
         description="Gate decision: 'approve' or 'reject'.",
     )
-
-

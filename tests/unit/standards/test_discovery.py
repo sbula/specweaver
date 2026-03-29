@@ -152,7 +152,8 @@ class TestGitLsFiles:
     """Tests for git ls-files integration (when .git/ exists)."""
 
     def test_git_discovered_files_respect_gitignore(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """In a git repo, gitignored files should be excluded."""
         # Initialize a real git repo
@@ -170,7 +171,9 @@ class TestGitLsFiles:
         assert "ignored.py" not in names
 
     def test_falls_back_to_walk_when_git_unavailable(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """If git is not available, should fall back to os.walk."""
         # Create a .git dir (looks like git repo) but mock git command to fail
@@ -178,7 +181,6 @@ class TestGitLsFiles:
         (tmp_path / "main.py").write_text("pass")
 
         import subprocess
-
 
         def mock_run(*args, **kwargs):
             raise FileNotFoundError("git not found")
@@ -264,7 +266,9 @@ class TestGitLsFilesIsolated:
     """Test _git_ls_files edge cases via monkeypatching subprocess."""
 
     def test_git_nonzero_exit_returns_none(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """git ls-files exits non-zero → returns None, falls back to walk."""
         import subprocess as sp
@@ -284,7 +288,9 @@ class TestGitLsFilesIsolated:
         assert files[0].name == "main.py"
 
     def test_git_timeout_returns_none(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """git ls-files times out → falls back to walk."""
         import subprocess as sp
@@ -303,7 +309,9 @@ class TestGitLsFilesIsolated:
         assert files[0].name == "main.py"
 
     def test_git_oserror_returns_none(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """git raises OSError (e.g. permission denied) → returns None."""
         import subprocess as sp
@@ -321,7 +329,9 @@ class TestGitLsFilesIsolated:
         assert files[0].name == "main.py"
 
     def test_git_output_with_deleted_file(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """git ls-files reports a file that no longer exists → skipped."""
         import subprocess as sp
@@ -332,8 +342,10 @@ class TestGitLsFilesIsolated:
 
         def mock_run(*_args, **_kw):
             return sp.CompletedProcess(
-                args=[], returncode=0,
-                stdout="exists.py\ndeleted.py\n", stderr="",
+                args=[],
+                returncode=0,
+                stdout="exists.py\ndeleted.py\n",
+                stderr="",
             )
 
         monkeypatch.setattr(sp, "run", mock_run)
@@ -344,7 +356,9 @@ class TestGitLsFilesIsolated:
         assert "deleted.py" not in names
 
     def test_git_output_with_blank_lines(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """Blank lines in git ls-files output are ignored."""
         import subprocess as sp
@@ -354,8 +368,10 @@ class TestGitLsFilesIsolated:
 
         def mock_run(*_args, **_kw):
             return sp.CompletedProcess(
-                args=[], returncode=0,
-                stdout="\n  \nmain.py\n\n", stderr="",
+                args=[],
+                returncode=0,
+                stdout="\n  \nmain.py\n\n",
+                stderr="",
             )
 
         monkeypatch.setattr(sp, "run", mock_run)
@@ -364,7 +380,9 @@ class TestGitLsFilesIsolated:
         assert len(files) == 1
 
     def test_git_success_returns_resolved_paths(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """Successful git ls-files returns resolved absolute paths."""
         import subprocess as sp
@@ -376,8 +394,10 @@ class TestGitLsFilesIsolated:
 
         def mock_run(*_args, **_kw):
             return sp.CompletedProcess(
-                args=[], returncode=0,
-                stdout="src/app.py\n", stderr="",
+                args=[],
+                returncode=0,
+                stdout="src/app.py\n",
+                stderr="",
             )
 
         monkeypatch.setattr(sp, "run", mock_run)
@@ -397,7 +417,9 @@ class TestApplySpecweaverignoreIsolated:
     """Test .specweaverignore edge cases."""
 
     def test_pathspec_not_installed_returns_files_unchanged(
-        self, tmp_path: Path, monkeypatch,
+        self,
+        tmp_path: Path,
+        monkeypatch,
     ) -> None:
         """If pathspec is not installed, files are returned unfiltered."""
         import builtins
@@ -422,7 +444,8 @@ class TestApplySpecweaverignoreIsolated:
         assert "generated.py" in names
 
     def test_file_outside_project_root_is_kept(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Files not relative to project root survive the filter (ValueError)."""
 
@@ -449,7 +472,8 @@ class TestApplySpecweaverignoreIsolated:
         assert "main.py" in names
 
     def test_specweaverignore_with_directory_pattern(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Directory glob patterns in .specweaverignore work."""
         gen = tmp_path / "generated"
@@ -466,7 +490,8 @@ class TestApplySpecweaverignoreIsolated:
         assert "manual.py" not in names
 
     def test_specweaverignore_negation_pattern(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Negation patterns (!pattern) should re-include files."""
         (tmp_path / "a.log").write_text("log")
@@ -481,4 +506,3 @@ class TestApplySpecweaverignoreIsolated:
         assert "main.py" in names
         assert "a.log" not in names
         assert "important.log" in names
-

@@ -208,7 +208,10 @@ class TestBundledTemplates:
         """Test that FileNotFoundError is successfully trapped and re-raised upon importlib throwing TypeError."""
         with pytest.raises(FileNotFoundError, match="Pipeline not found"):
             import importlib
-            with patch.object(importlib.resources, "as_file", side_effect=TypeError("mock type error")):
+
+            with patch.object(
+                importlib.resources, "as_file", side_effect=TypeError("mock type error")
+            ):
                 load_pipeline(Path("nonexistent_pipeline_name"))
 
 

@@ -69,6 +69,7 @@ class TestOpenAIAdapter:
     async def test_generate_auth_error(self) -> None:
         pytest.importorskip("openai")
         from openai import AuthenticationError as SDKAuthError
+
         adapter = OpenAIAdapter(api_key="bad")
         mock_client = MagicMock()
         mock_client.chat.completions.create = AsyncMock(
@@ -100,9 +101,9 @@ class TestOpenAIAdapter:
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
-            model="gpt-4o",
-            tools=[ToolDefinition(name="test", description="desc")]
+            model="gpt-4o", tools=[ToolDefinition(name="test", description="desc")]
         )
 
         mock_exec = AsyncMock()
@@ -134,10 +135,11 @@ class TestOpenAIAdapter:
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
             model="gpt-5.4",
             tools=[ToolDefinition(name="my_tool", description="desc")],
-            max_tool_rounds=2
+            max_tool_rounds=2,
         )
 
         mock_exec = AsyncMock()
@@ -176,13 +178,15 @@ class TestOpenAIAdapter:
         mock_response_2.usage = None
 
         mock_client = MagicMock()
-        mock_client.chat.completions.create = AsyncMock(side_effect=[mock_response_1, mock_response_2])
+        mock_client.chat.completions.create = AsyncMock(
+            side_effect=[mock_response_1, mock_response_2]
+        )
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
-            model="gpt-5.4",
-            tools=[ToolDefinition(name="my_tool", description="desc")]
+            model="gpt-5.4", tools=[ToolDefinition(name="my_tool", description="desc")]
         )
 
         mock_exec = AsyncMock()

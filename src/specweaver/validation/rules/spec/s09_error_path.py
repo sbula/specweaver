@@ -97,8 +97,7 @@ class ErrorPathRule(Rule):
                     message=f"Found {error_mentions} error keywords but no dedicated error section",
                     severity=Severity.WARNING,
                     suggestion=(
-                        "Consider adding an 'Error Handling' "
-                        "subsection to Policy (## 4. Policy)."
+                        "Consider adding an 'Error Handling' subsection to Policy (## 4. Policy)."
                     ),
                 )
             )

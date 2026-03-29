@@ -106,7 +106,9 @@ def find_constitution(
             info = _load_constitution(candidate, is_override=is_override, max_size=max_size)
             logger.info(
                 "Constitution loaded: %s (%d bytes, override=%s)",
-                info.path, info.size, info.is_override,
+                info.path,
+                info.size,
+                info.is_override,
             )
             return info
 
@@ -147,7 +149,8 @@ def find_all_constitutions(project_path: Path) -> list[ConstitutionInfo]:
 
     logger.info(
         "find_all_constitutions: found %d constitution(s) in %s",
-        len(results), project_path,
+        len(results),
+        project_path,
     )
     return results
 
@@ -185,12 +188,16 @@ def check_constitution(
         )
         logger.debug(
             "check_constitution: %s exceeds limit (%d > %d)",
-            path, size, max_size,
+            path,
+            size,
+            max_size,
         )
     else:
         logger.debug(
             "check_constitution: %s OK (%d bytes, limit %d)",
-            path, size, max_size,
+            path,
+            size,
+            max_size,
         )
 
     return errors
@@ -221,7 +228,8 @@ def generate_constitution(project_path: Path, project_name: str) -> Path:
     target.write_text(content, encoding="utf-8")
     logger.info(
         "Generated starter constitution: %s (%d bytes)",
-        target, len(content.encode("utf-8")),
+        target,
+        len(content.encode("utf-8")),
     )
 
     return target
@@ -313,7 +321,9 @@ def generate_constitution_from_standards(
     target.write_text(content, encoding="utf-8")
     logger.info(
         "Generated standards-based constitution: %s (%d bytes, %d standards)",
-        target, len(content.encode("utf-8")), len(standards),
+        target,
+        len(content.encode("utf-8")),
+        len(standards),
     )
 
     return target

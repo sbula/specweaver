@@ -38,7 +38,8 @@ def review_spec(
 
     try:
         _, adapter, gen_config = create_llm_adapter(
-            db, telemetry_project=body.project,
+            db,
+            telemetry_project=body.project,
         )
     except (LLMAdapterError, ValueError) as exc:
         raise SpecWeaverAPIError(
@@ -51,7 +52,9 @@ def review_spec(
 
     constitution = _load_constitution_content(project_root, spec_path=abs_path)
     standards = load_standards_content(
-        db, project_name=body.project, project_path=project_root,
+        db,
+        project_name=body.project,
+        project_path=project_root,
     )
 
     try:

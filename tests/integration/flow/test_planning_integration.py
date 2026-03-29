@@ -63,22 +63,24 @@ class FakeLLM:
 
 
 def _valid_plan_json() -> str:
-    return json.dumps({
-        "spec_path": "specs/login_spec.md",
-        "spec_name": "Login",
-        "spec_hash": "ignored",
-        "timestamp": "2026-03-22T10:00:00Z",
-        "file_layout": [
-            {"path": "src/login.py", "action": "create", "purpose": "Login handler"},
-        ],
-        "architecture": {
-            "module_layout": "flat",
-            "dependency_direction": "downward",
-            "archetype": "adapter",
-        },
-        "reasoning": "Simple adapter pattern.",
-        "confidence": 80,
-    })
+    return json.dumps(
+        {
+            "spec_path": "specs/login_spec.md",
+            "spec_name": "Login",
+            "spec_hash": "ignored",
+            "timestamp": "2026-03-22T10:00:00Z",
+            "file_layout": [
+                {"path": "src/login.py", "action": "create", "purpose": "Login handler"},
+            ],
+            "architecture": {
+                "module_layout": "flat",
+                "dependency_direction": "downward",
+                "archetype": "adapter",
+            },
+            "reasoning": "Simple adapter pattern.",
+            "confidence": 80,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -173,10 +175,14 @@ class TestPromptBuilderPlanIntegration:
         """I5: Plan positioned between <standards> and <topology> in built prompt."""
         from specweaver.graph.topology import TopologyContext
 
-        ctx = [TopologyContext(
-            name="svc", purpose="A service.",
-            archetype="pure-logic", relationship="direct dependency",
-        )]
+        ctx = [
+            TopologyContext(
+                name="svc",
+                purpose="A service.",
+                archetype="pure-logic",
+                relationship="direct dependency",
+            )
+        ]
         result = (
             PromptBuilder()
             .add_instructions("Instruction")
@@ -260,6 +266,7 @@ class TestPlanSpecHandlerFileSystem:
         assert result.status == StepStatus.PASSED
         plan_path_str = result.output["plan_path"]
         from pathlib import Path
+
         plan_path = Path(plan_path_str)
         assert plan_path.exists()
 
@@ -271,7 +278,9 @@ class TestPlanSpecHandlerFileSystem:
         assert len(restored.file_layout) >= 1
 
     @pytest.mark.asyncio()
-    async def test_handler_passes_stitch_mode_from_settings(self, tmp_path: Path, monkeypatch) -> None:
+    async def test_handler_passes_stitch_mode_from_settings(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
         """I8b: Handler accurately passes extracted mode & api key to Planner."""
         spec = tmp_path / "spec.md"
         spec.write_text("## Protocol\n\nUI content", encoding="utf-8")
@@ -283,18 +292,29 @@ class TestPlanSpecHandlerFileSystem:
 
         async def mock_generate_plan(self, **kwargs):
             mock_planner_called_with.update(kwargs)
-            return PlanArtifact(spec_path="x", spec_name="y", spec_hash="z", file_layout=[], timestamp="t", confidence=0)
+            return PlanArtifact(
+                spec_path="x",
+                spec_name="y",
+                spec_hash="z",
+                file_layout=[],
+                timestamp="t",
+                confidence=0,
+            )
 
         monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
 
         import specweaver.config.settings
+
         class MockStitchSettings:
             mode = "auto"
             api_key = "fake_key"
+
         class MockSettings:
             stitch = MockStitchSettings()
 
-        monkeypatch.setattr(specweaver.config.settings, "load_settings", lambda db, proj: MockSettings())
+        monkeypatch.setattr(
+            specweaver.config.settings, "load_settings", lambda db, proj: MockSettings()
+        )
 
         ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]))
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
@@ -318,13 +338,22 @@ class TestPlanSpecHandlerFileSystem:
 
         async def mock_generate_plan(self, **kwargs):
             mock_planner_called_with.update(kwargs)
-            return PlanArtifact(spec_path="x", spec_name="y", spec_hash="z", file_layout=[], timestamp="t", confidence=0)
+            return PlanArtifact(
+                spec_path="x",
+                spec_name="y",
+                spec_hash="z",
+                file_layout=[],
+                timestamp="t",
+                confidence=0,
+            )
 
         monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
 
         import specweaver.config.settings
+
         def raise_value_error(*args):
             raise ValueError("project missing")
+
         monkeypatch.setattr(specweaver.config.settings, "load_settings", raise_value_error)
 
         ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]))
@@ -337,18 +366,25 @@ class TestPlanSpecHandlerFileSystem:
         assert mock_planner_called_with.get("stitch_api_key") == ""
 
     @pytest.mark.asyncio()
-    async def test_handler_saves_mockup_to_yaml_when_stitch_auto(self, tmp_path: Path, monkeypatch) -> None:
+    async def test_handler_saves_mockup_to_yaml_when_stitch_auto(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
         """I8d: E2E Pipeline (Stitch Auto) saving YAML to disk with mockups."""
         spec = tmp_path / "spec.md"
         spec.write_text("## Protocol\n\nUI component with a button", encoding="utf-8")
 
         import specweaver.config.settings
+
         class MockStitchSettings:
             mode = "auto"
             api_key = "fake_key"
+
         class MockSettings:
             stitch = MockStitchSettings()
-        monkeypatch.setattr(specweaver.config.settings, "load_settings", lambda db, proj: MockSettings())
+
+        monkeypatch.setattr(
+            specweaver.config.settings, "load_settings", lambda db, proj: MockSettings()
+        )
 
         llm = FakeLLM([_valid_plan_json()])
         ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm)
@@ -365,18 +401,25 @@ class TestPlanSpecHandlerFileSystem:
         assert "Generated UI" in yaml_content
 
     @pytest.mark.asyncio()
-    async def test_handler_saves_no_mockup_to_yaml_when_stitch_off(self, tmp_path: Path, monkeypatch) -> None:
+    async def test_handler_saves_no_mockup_to_yaml_when_stitch_off(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
         """I8e: E2E Pipeline (Stitch Off) saving YAML to disk omits mockups."""
         spec = tmp_path / "spec.md"
         spec.write_text("## Protocol\n\nUI component", encoding="utf-8")
 
         import specweaver.config.settings
+
         class MockStitchSettings:
             mode = "off"
             api_key = ""
+
         class MockSettings:
             stitch = MockStitchSettings()
-        monkeypatch.setattr(specweaver.config.settings, "load_settings", lambda db, proj: MockSettings())
+
+        monkeypatch.setattr(
+            specweaver.config.settings, "load_settings", lambda db, proj: MockSettings()
+        )
 
         llm = FakeLLM([_valid_plan_json()])
         ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm)
@@ -389,7 +432,6 @@ class TestPlanSpecHandlerFileSystem:
         yaml_content = plan_path.read_text(encoding="utf-8")
 
         assert "mockups: []" in yaml_content
-
 
 
 # ---------------------------------------------------------------------------
@@ -413,8 +455,10 @@ class TestRunContextPlanFlowsToGenerator:
             return_value=MagicMock(text="x = 1\n", finish_reason=1, parsed=None),
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec,
-            output_dir=src_dir, llm=mock_llm,
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=src_dir,
+            llm=mock_llm,
             plan="## File Layout\n- src/test.py: main module",
         )
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -440,8 +484,10 @@ class TestRunContextPlanFlowsToGenerator:
             return_value=MagicMock(text="def test_x(): pass\n", finish_reason=1, parsed=None),
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec,
-            output_dir=tests_dir, llm=mock_llm,
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=tests_dir,
+            llm=mock_llm,
             plan="## Test Expectations\n- test_login: Check login flow",
         )
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
@@ -553,10 +599,14 @@ class TestRenderBlocksOrderPreserved:
 
         f = tmp_path / "code.py"
         f.write_text("x = 1", encoding="utf-8")
-        ctx = [TopologyContext(
-            name="mod", purpose="A module.", archetype="pure-logic",
-            relationship="direct consumer",
-        )]
+        ctx = [
+            TopologyContext(
+                name="mod",
+                purpose="A module.",
+                archetype="pure-logic",
+                relationship="direct consumer",
+            )
+        ]
 
         result = (
             PromptBuilder()
@@ -584,8 +634,14 @@ class TestRenderBlocksOrderPreserved:
         }
         order = sorted(positions.keys(), key=lambda k: positions[k])
         assert order == [
-            "instructions", "constitution", "standards", "plan",
-            "topology", "files", "context", "reminder",
+            "instructions",
+            "constitution",
+            "standards",
+            "plan",
+            "topology",
+            "files",
+            "context",
+            "reminder",
         ]
 
 
@@ -614,4 +670,3 @@ class TestPlannerRetryWithCleanJson:
 
         assert plan.spec_name == "Test"
         assert plan.confidence == 80
-

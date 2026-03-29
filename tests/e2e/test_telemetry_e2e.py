@@ -67,7 +67,11 @@ class FakeGeminiAdapter:
         )
 
     async def generate_with_tools(
-        self, messages, config, tool_executor, on_tool_round=None,
+        self,
+        messages,
+        config,
+        tool_executor,
+        on_tool_round=None,
     ) -> LLMResponse:
         return LLMResponse(
             text="E2E tools result",
@@ -92,20 +96,24 @@ class TestFullPipelineE2E:
         from specweaver.llm.factory import create_llm_adapter
 
         with patch(
-            "specweaver.llm.factory._get_adapter_class", return_value=FakeGeminiAdapter,
+            "specweaver.llm.factory._get_adapter_class",
+            return_value=FakeGeminiAdapter,
         ):
             _settings, adapter, gen_config = create_llm_adapter(
-                db, telemetry_project="e2e-proj",
+                db,
+                telemetry_project="e2e-proj",
             )
 
         assert isinstance(adapter, TelemetryCollector)
 
         # Generate two calls
         config1 = GenerationConfig(
-            model=gen_config.model, task_type=TaskType.DRAFT,
+            model=gen_config.model,
+            task_type=TaskType.DRAFT,
         )
         config2 = GenerationConfig(
-            model=gen_config.model, task_type=TaskType.REVIEW,
+            model=gen_config.model,
+            task_type=TaskType.REVIEW,
         )
         await adapter.generate([], config1)
         await adapter.generate([], config2)
@@ -144,17 +152,20 @@ class TestCostOverrideLifecycleE2E:
         db.set_cost_override("gemini-3-flash-preview", 100.0, 200.0)
 
         with patch(
-            "specweaver.llm.factory._get_adapter_class", return_value=FakeGeminiAdapter,
+            "specweaver.llm.factory._get_adapter_class",
+            return_value=FakeGeminiAdapter,
         ):
             _settings, adapter, gen_config = create_llm_adapter(
-                db, telemetry_project="e2e-proj",
+                db,
+                telemetry_project="e2e-proj",
             )
 
         assert isinstance(adapter, TelemetryCollector)
 
         # Generate — adapter returns 500 prompt + 200 completion tokens
         config = GenerationConfig(
-            model=gen_config.model, task_type=TaskType.IMPLEMENT,
+            model=gen_config.model,
+            task_type=TaskType.IMPLEMENT,
         )
         await adapter.generate([], config)
 

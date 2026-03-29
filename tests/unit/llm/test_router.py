@@ -129,9 +129,7 @@ class TestModelRouterNoRouting:
         result = router.get_for_task(TaskType.REVIEW)
         assert result is None
 
-    def test_returns_none_on_load_settings_value_error(
-        self, db_with_project: Any
-    ) -> None:
+    def test_returns_none_on_load_settings_value_error(self, db_with_project: Any) -> None:
         """ValueError from load_settings (no link) → None, no raise."""
         from specweaver.llm.models import TaskType
         from specweaver.llm.router import ModelRouter

@@ -62,7 +62,12 @@ def grep_content(
     rg_path = shutil.which("rg")
     if rg_path:
         results, truncated, warning = _grep_ripgrep(
-            rg_path, search_dir, pattern, context_lines, case_sensitive, max_results,
+            rg_path,
+            search_dir,
+            pattern,
+            context_lines,
+            case_sensitive,
+            max_results,
         )
     else:
         logger.info(
@@ -70,7 +75,11 @@ def grep_content(
             "Install ripgrep for better performance: https://github.com/BurntSushi/ripgrep",
         )
         results, truncated, warning = _grep_python(
-            search_dir, pattern, context_lines, case_sensitive, max_results,
+            search_dir,
+            pattern,
+            context_lines,
+            case_sensitive,
+            max_results,
         )
 
     if truncated or warning:
@@ -113,6 +122,7 @@ def _grep_ripgrep(
         return [], True, f"Search timed out after {TOOL_TIMEOUT_SECONDS}s"
 
     import json
+
     matches: list[dict[str, Any]] = []
     for line in result.stdout.splitlines():
         try:
@@ -124,11 +134,13 @@ def _grep_ripgrep(
                     rel_path = str(Path(file_path).relative_to(search_dir))
                 except ValueError:
                     rel_path = file_path
-                matches.append({
-                    "file": rel_path,
-                    "line_number": match_data["line_number"],
-                    "content": match_data["lines"]["text"].rstrip("\n"),
-                })
+                matches.append(
+                    {
+                        "file": rel_path,
+                        "line_number": match_data["line_number"],
+                        "content": match_data["lines"]["text"].rstrip("\n"),
+                    }
+                )
                 if len(matches) >= max_results:
                     break
         except (json.JSONDecodeError, KeyError):
@@ -176,13 +188,15 @@ def _grep_python(
                     rel_path = str(file_path.relative_to(search_dir))
                 except ValueError:
                     rel_path = str(file_path)
-                matches.append({
-                    "file": rel_path,
-                    "line_number": i + 1,
-                    "content": line,
-                    "context_before": lines[start:i],
-                    "context_after": lines[i + 1:end],
-                })
+                matches.append(
+                    {
+                        "file": rel_path,
+                        "line_number": i + 1,
+                        "content": line,
+                        "context_before": lines[start:i],
+                        "context_after": lines[i + 1 : end],
+                    }
+                )
                 if len(matches) >= max_results:
                     return matches, True, warning
 
@@ -257,9 +271,25 @@ def find_by_glob(
 def iter_text_files(directory: Path) -> list[Path]:
     """Iterate over text files in a directory, skipping binary and hidden files."""
     text_extensions = {
-        ".py", ".md", ".txt", ".yaml", ".yml", ".json", ".toml",
-        ".cfg", ".ini", ".rst", ".html", ".css", ".js", ".ts",
-        ".sh", ".bat", ".ps1", ".xml", ".csv",
+        ".py",
+        ".md",
+        ".txt",
+        ".yaml",
+        ".yml",
+        ".json",
+        ".toml",
+        ".cfg",
+        ".ini",
+        ".rst",
+        ".html",
+        ".css",
+        ".js",
+        ".ts",
+        ".sh",
+        ".bat",
+        ".ps1",
+        ".xml",
+        ".csv",
     }
     files: list[Path] = []
     try:

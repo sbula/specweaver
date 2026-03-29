@@ -60,13 +60,17 @@ def _sample_topology() -> list[TopologyContext]:
     ]
 
 
-def _make_spec(tmp_path: Path, content: str = "# Greet Service\n\n## 1. Purpose\n\nGreets users.") -> Path:
+def _make_spec(
+    tmp_path: Path, content: str = "# Greet Service\n\n## 1. Purpose\n\nGreets users."
+) -> Path:
     spec_file = tmp_path / "greet_service_spec.md"
     spec_file.write_text(content, encoding="utf-8")
     return spec_file
 
 
-def _make_code(tmp_path: Path, content: str = "def greet(name: str) -> str:\n    return f'Hello {name}'") -> Path:
+def _make_code(
+    tmp_path: Path, content: str = "def greet(name: str) -> str:\n    return f'Hello {name}'"
+) -> Path:
     code_file = tmp_path / "greet_service.py"
     code_file.write_text(content, encoding="utf-8")
     return code_file
@@ -374,15 +378,17 @@ class TestAutoBudgetScaling:
         builder = PromptBuilder(budget=budget)
         builder.add_instructions("Review this spec.")  # ~4 tokens
         builder.add_context("Small spec content.", "spec", priority=1)  # ~5 tokens
-        builder.add_topology([
-            TopologyContext(
-                name="auth",
-                purpose="Auth.",
-                archetype="adapter",
-                relationship="direct",
-                constraints=[],
-            ),
-        ])
+        builder.add_topology(
+            [
+                TopologyContext(
+                    name="auth",
+                    purpose="Auth.",
+                    archetype="adapter",
+                    relationship="direct",
+                    constraints=[],
+                ),
+            ]
+        )
 
         # Content is tiny relative to 10000 token budget
         # Auto-scaling should give topology more room (scale = 1.5)
@@ -401,15 +407,17 @@ class TestAutoBudgetScaling:
         budget = TokenBudget(limit=100)  # 100 tokens total
         builder = PromptBuilder(budget=budget)
         builder.add_instructions("x" * 400)  # ~100 tokens (>75% of 100)
-        builder.add_topology([
-            TopologyContext(
-                name="auth",
-                purpose="Auth.",
-                archetype="adapter",
-                relationship="direct",
-                constraints=[],
-            ),
-        ])
+        builder.add_topology(
+            [
+                TopologyContext(
+                    name="auth",
+                    purpose="Auth.",
+                    archetype="adapter",
+                    relationship="direct",
+                    constraints=[],
+                ),
+            ]
+        )
 
         prompt = builder.build()
         assert prompt
@@ -424,15 +432,17 @@ class TestAutoBudgetScaling:
         budget = TokenBudget(limit=10000)
         builder = PromptBuilder(budget=budget, budget_scale_factor=0.8)
         builder.add_instructions("Review this spec.")
-        builder.add_topology([
-            TopologyContext(
-                name="auth",
-                purpose="Auth.",
-                archetype="adapter",
-                relationship="direct",
-                constraints=[],
-            ),
-        ])
+        builder.add_topology(
+            [
+                TopologyContext(
+                    name="auth",
+                    purpose="Auth.",
+                    archetype="adapter",
+                    relationship="direct",
+                    constraints=[],
+                ),
+            ]
+        )
 
         builder.build()
         # Scale should stay at 0.8, not auto-computed
@@ -459,4 +469,3 @@ class TestAutoBudgetScaling:
         builder.build()
         # Scale should stay at default 1.0 (no topology to scale)
         assert builder._scale == 1.0
-

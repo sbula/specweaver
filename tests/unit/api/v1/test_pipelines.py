@@ -177,7 +177,6 @@ class TestGetRunStatus:
             assert data["pending_gate"] is True
             assert "Please approve this spec." in data["pending_gate_prompt"]
 
-
     def test_parked_run_exposes_pending_gate_string_output(self, client, tmp_path) -> None:
         """GET /runs/{id} correctly handles string outputs when creating pending_gate_prompt."""
         from unittest.mock import patch
@@ -214,7 +213,11 @@ class TestGetRunStatus:
         )
 
         from pathlib import Path
-        with patch.object(Path, "home", return_value=tmp_path), patch("specweaver.flow.store.StateStore") as mock_cls:
+
+        with (
+            patch.object(Path, "home", return_value=tmp_path),
+            patch("specweaver.flow.store.StateStore") as mock_cls,
+        ):
             mock_store = mock_cls.return_value
             mock_store.load_run.return_value = run
             resp = client.get("/api/v1/runs/test-run-3")
@@ -531,12 +534,11 @@ class TestMaxConcurrent:
         set_event_bridge(bridge)
 
         try:
-            with patch.object(Path, "home", return_value=tmp_path), patch(
-                "specweaver.flow.parser.load_pipeline"
-            ) as mock_load:
-                mock_load.return_value = type(
-                    "P", (), {"name": "test", "steps": []}
-                )()
+            with (
+                patch.object(Path, "home", return_value=tmp_path),
+                patch("specweaver.flow.parser.load_pipeline") as mock_load,
+            ):
+                mock_load.return_value = type("P", (), {"name": "test", "steps": []})()
                 resp = client.post(
                     "/api/v1/pipelines/validate_only/run",
                     json={"project": "myproject", "spec": "specs/test_spec.md"},
@@ -561,15 +563,15 @@ class TestStartRunResponse:
         mock_bridge.start_run = MagicMock()
         mock_bridge.make_event_callback = MagicMock(return_value=lambda *a, **kw: None)
 
-        with patch.object(Path, "home", return_value=tmp_path), patch(
-            "specweaver.api.app.get_event_bridge",
-            return_value=mock_bridge,
-        ), patch(
-            "specweaver.flow.parser.load_pipeline"
-        ) as mock_load:
-            mock_load.return_value = type(
-                "P", (), {"name": "test", "steps": []}
-            )()
+        with (
+            patch.object(Path, "home", return_value=tmp_path),
+            patch(
+                "specweaver.api.app.get_event_bridge",
+                return_value=mock_bridge,
+            ),
+            patch("specweaver.flow.parser.load_pipeline") as mock_load,
+        ):
+            mock_load.return_value = type("P", (), {"name": "test", "steps": []})()
 
             resp = client.post(
                 "/api/v1/pipelines/validate_only/run",
@@ -581,5 +583,3 @@ class TestStartRunResponse:
             assert "detail" in data
             assert len(data["run_id"]) > 0
             mock_bridge.start_run.assert_called_once()
-
-

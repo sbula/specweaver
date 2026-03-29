@@ -49,6 +49,7 @@ def load_rules_from_directory(
     """
     if registry is None:
         from specweaver.validation.registry import get_registry
+
         registry = get_registry()
 
     if not directory.is_dir():
@@ -134,7 +135,8 @@ def _load_rules_from_file(
         if not _D_PREFIX.match(rule_id):
             logger.warning(
                 "Custom rule '%s' from %s has invalid prefix (must match D\\d{2,3}), skipping",
-                rule_id, filepath,
+                rule_id,
+                filepath,
             )
             continue
 

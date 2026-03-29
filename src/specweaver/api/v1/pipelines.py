@@ -154,7 +154,9 @@ def get_run_status(
             # We look for a prompt/comment in the output of the paused step
             output = record.result.output
             if isinstance(output, dict):
-                data["pending_gate_prompt"] = output.get("comment") or output.get("prompt") or str(output)
+                data["pending_gate_prompt"] = (
+                    output.get("comment") or output.get("prompt") or str(output)
+                )
             else:
                 data["pending_gate_prompt"] = str(output)
 

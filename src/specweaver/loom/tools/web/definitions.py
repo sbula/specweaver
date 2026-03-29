@@ -16,9 +16,11 @@ WEB_SEARCH = ToolDefinition(
     parameters=[
         ToolParameter(name="query", type="string", description="Search query string"),
         ToolParameter(
-            name="max_results", type="integer",
+            name="max_results",
+            type="integer",
             description="Maximum number of search results to return",
-            required=False, default=5,
+            required=False,
+            default=5,
         ),
     ],
 )
@@ -32,9 +34,11 @@ READ_URL = ToolDefinition(
     parameters=[
         ToolParameter(name="url", type="string", description="URL to fetch and read"),
         ToolParameter(
-            name="max_chars", type="integer",
+            name="max_chars",
+            type="integer",
             description="Maximum characters of content to return",
-            required=False, default=10000,
+            required=False,
+            default=10000,
         ),
     ],
 )

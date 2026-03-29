@@ -117,7 +117,10 @@ class GeminiAdapter(LLMAdapter):
         system_instruction, contents = _messages_to_gemini(messages)
         logger.debug(
             "GeminiAdapter.generate: model=%s temp=%.2f max_tokens=%d messages=%d",
-            config.model, config.temperature, config.max_output_tokens, len(messages),
+            config.model,
+            config.temperature,
+            config.max_output_tokens,
+            len(messages),
         )
 
         gen_config = types.GenerateContentConfig(
@@ -183,7 +186,9 @@ class GeminiAdapter(LLMAdapter):
             )
             logger.debug(
                 "GeminiAdapter: tokens used — prompt=%d completion=%d total=%d",
-                usage.prompt_tokens, usage.completion_tokens, usage.total_tokens,
+                usage.prompt_tokens,
+                usage.completion_tokens,
+                usage.total_tokens,
             )
 
         # Determine finish reason
@@ -195,12 +200,18 @@ class GeminiAdapter(LLMAdapter):
                 fr_str = str(fr).lower()
                 if "safety" in fr_str or "block" in fr_str:
                     finish_reason = "content_filter"
-                    logger.warning("GeminiAdapter: response blocked by content filter (model=%s)", model)
+                    logger.warning(
+                        "GeminiAdapter: response blocked by content filter (model=%s)", model
+                    )
                 elif "max" in fr_str or "length" in fr_str:
                     finish_reason = "max_tokens"
-                    logger.warning("GeminiAdapter: response truncated at max_tokens (model=%s)", model)
+                    logger.warning(
+                        "GeminiAdapter: response truncated at max_tokens (model=%s)", model
+                    )
 
-        logger.info("GeminiAdapter.generate: model=%s finish=%s chars=%d", model, finish_reason, len(text))
+        logger.info(
+            "GeminiAdapter.generate: model=%s finish=%s chars=%d", model, finish_reason, len(text)
+        )
         return LLMResponse(
             text=text,
             model=model,
@@ -217,11 +228,13 @@ class GeminiAdapter(LLMAdapter):
         declarations = []
         for tool in tools:
             schema = tool.to_json_schema()
-            declarations.append(types.FunctionDeclaration(
-                name=tool.name,
-                description=tool.description,
-                parameters=schema if schema["properties"] else None,  # type: ignore[arg-type]
-            ))
+            declarations.append(
+                types.FunctionDeclaration(
+                    name=tool.name,
+                    description=tool.description,
+                    parameters=schema if schema["properties"] else None,  # type: ignore[arg-type]
+                )
+            )
         return [types.Tool(function_declarations=declarations)]
 
     def _extract_tool_calls(self, response: Any) -> list[ToolCall]:
@@ -257,10 +270,9 @@ class GeminiAdapter(LLMAdapter):
         for new_msg in messages[old_len:]:
             if new_msg.role != Role.SYSTEM:
                 role = "user" if new_msg.role == Role.USER else "model"
-                contents.append(types.Content(
-                    role=role,
-                    parts=[types.Part.from_text(text=new_msg.content)]
-                ))
+                contents.append(
+                    types.Content(role=role, parts=[types.Part.from_text(text=new_msg.content)])
+                )
 
     async def generate_with_tools(
         self,
@@ -296,12 +308,16 @@ class GeminiAdapter(LLMAdapter):
         for round_num in range(config.max_tool_rounds):
             logger.debug(
                 "GeminiAdapter.generate_with_tools: round %d/%d",
-                round_num + 1, config.max_tool_rounds,
+                round_num + 1,
+                config.max_tool_rounds,
             )
 
             if on_tool_round:
                 self._apply_on_tool_round(
-                    on_tool_round, round_num, messages, contents,
+                    on_tool_round,
+                    round_num,
+                    messages,
+                    contents,
                 )
 
             try:
@@ -321,7 +337,8 @@ class GeminiAdapter(LLMAdapter):
             if tool_calls:
                 logger.debug(
                     "GeminiAdapter: %d tool call(s) in round %d: %s",
-                    len(tool_calls), round_num + 1,
+                    len(tool_calls),
+                    round_num + 1,
                     [tc.name for tc in tool_calls],
                 )
                 tool_results = []
@@ -332,15 +349,18 @@ class GeminiAdapter(LLMAdapter):
 
                 # Append in Gemini-specific format (only here, inside the adapter)
                 contents.append(response.candidates[0].content)  # type: ignore[index,arg-type]
-                contents.append(types.Content(
-                    role="user",
-                    parts=[
-                        types.Part.from_function_response(
-                            name=tc.name, response=r,
-                        )
-                        for tc, r in tool_results
-                    ],
-                ))
+                contents.append(
+                    types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_function_response(
+                                name=tc.name,
+                                response=r,
+                            )
+                            for tc, r in tool_results
+                        ],
+                    )
+                )
             else:
                 # LLM produced final text response
                 resp = self._parse_response(response, config.model)
@@ -351,7 +371,8 @@ class GeminiAdapter(LLMAdapter):
         if total_calls > 5:
             logger.warning(
                 "GeminiAdapter: tool loop used %d LLM calls (max_rounds=%d)",
-                total_calls, config.max_tool_rounds,
+                total_calls,
+                config.max_tool_rounds,
             )
         resp = self._parse_response(response, config.model)
         resp.usage = cumulative_usage

@@ -104,6 +104,7 @@ def _get_rule_cls_for_step(rule_id: str) -> type | None:
     """Look up the rule class for a given rule_id from the global registry."""
     try:
         from specweaver.validation.registry import get_registry
+
         return get_registry().get(rule_id)
     except Exception:
         return None
@@ -135,12 +136,14 @@ def execute_validation_pipeline(
     """
     if registry is None:
         from specweaver.validation.registry import get_registry
+
         registry = get_registry()
 
     results: list[RuleResult] = []
     logger.debug(
         "execute_validation_pipeline: running '%s' (%d steps)",
-        pipeline.name, len(pipeline.steps),
+        pipeline.name,
+        len(pipeline.steps),
     )
 
     for step in pipeline.steps:
@@ -149,14 +152,17 @@ def execute_validation_pipeline(
         if rule_cls is None:
             logger.warning(
                 "execute_validation_pipeline: unknown rule '%s' in step '%s', skipping",
-                step.rule, step.name,
+                step.rule,
+                step.name,
             )
-            results.append(RuleResult(
-                rule_id=step.rule,
-                rule_name=step.name,
-                status=Status.FAIL,
-                message=f"Unknown rule '{step.rule}': not found in registry",
-            ))
+            results.append(
+                RuleResult(
+                    rule_id=step.rule,
+                    rule_name=step.name,
+                    status=Status.FAIL,
+                    message=f"Unknown rule '{step.rule}': not found in registry",
+                )
+            )
             continue
 
         try:
@@ -164,14 +170,17 @@ def execute_validation_pipeline(
         except Exception as exc:
             logger.exception(
                 "execute_validation_pipeline: failed to instantiate rule '%s' with params %s",
-                step.rule, step.params,
+                step.rule,
+                step.params,
             )
-            results.append(RuleResult(
-                rule_id=step.rule,
-                rule_name=step.name,
-                status=Status.FAIL,
-                message=f"Failed to instantiate rule '{step.rule}': {exc}",
-            ))
+            results.append(
+                RuleResult(
+                    rule_id=step.rule,
+                    rule_name=step.name,
+                    status=Status.FAIL,
+                    message=f"Failed to instantiate rule '{step.rule}': {exc}",
+                )
+            )
             continue
 
         try:
@@ -179,7 +188,8 @@ def execute_validation_pipeline(
         except Exception as exc:
             logger.exception(
                 "execute_validation_pipeline: rule '%s' (%s) crashed",
-                rule.rule_id, rule.name,
+                rule.rule_id,
+                rule.name,
             )
             result = RuleResult(
                 rule_id=rule.rule_id,
@@ -193,7 +203,10 @@ def execute_validation_pipeline(
     failed = sum(1 for r in results if r.status == Status.FAIL)
     logger.info(
         "execute_validation_pipeline: '%s' — %d rules, %d passed, %d failed",
-        pipeline.name, len(results), len(results) - failed, failed,
+        pipeline.name,
+        len(results),
+        len(results) - failed,
+        failed,
     )
     return results
 

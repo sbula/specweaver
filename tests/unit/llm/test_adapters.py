@@ -553,7 +553,10 @@ class TestGenerateWithTools:
         messages = [Message(role=Role.USER, content="Hello")]
 
         result = await LLMAdapter.generate_with_tools(
-            adapter, messages, config, AsyncMock(),
+            adapter,
+            messages,
+            config,
+            AsyncMock(),
         )
         assert result.text == "Fallback"
 
@@ -704,9 +707,11 @@ class TestGenerateWithToolsEdgeCases:
         messages = [Message(role=Role.USER, content="Search")]
 
         result = await adapter.generate_with_tools(
-            messages, config, mock_executor, on_tool_round=on_round,
+            messages,
+            config,
+            mock_executor,
+            on_tool_round=on_round,
         )
 
         assert result.text == "Done"
         assert callback_rounds == [0, 1]  # Called in both rounds
-

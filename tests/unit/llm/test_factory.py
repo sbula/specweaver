@@ -50,7 +50,8 @@ class TestFactoryTelemetryWrapping:
         db.set_active_project("test-proj")
 
         _settings, adapter, _config = create_llm_adapter(
-            db, telemetry_project="test-proj",
+            db,
+            telemetry_project="test-proj",
         )
         assert isinstance(adapter, TelemetryCollector)
 
@@ -77,7 +78,8 @@ class TestFactoryTelemetryWrapping:
         db.set_cost_override("gemini-3-flash-preview", 99.0, 199.0)
 
         _settings, adapter, _config = create_llm_adapter(
-            db, telemetry_project="test-proj",
+            db,
+            telemetry_project="test-proj",
         )
         assert isinstance(adapter, TelemetryCollector)
         assert adapter._cost_overrides is not None
@@ -99,7 +101,8 @@ class TestFactoryTelemetryWrapping:
         db.get_cost_overrides = MagicMock(side_effect=Exception("DB locked"))
 
         _settings, adapter, _config = create_llm_adapter(
-            db, telemetry_project="test-proj",
+            db,
+            telemetry_project="test-proj",
         )
         assert isinstance(adapter, TelemetryCollector)
         assert adapter._cost_overrides is None
@@ -110,12 +113,15 @@ class TestFactoryTelemetryWrapping:
 class TestFactoryProviderCapabilities:
     """Factory handles dynamic provider loading based on DB settings."""
 
-    @pytest.mark.parametrize("provider,adapter_cls_name,env_key", [
-        ("openai", "OpenAIAdapter", "OPENAI_API_KEY"),
-        ("anthropic", "AnthropicAdapter", "ANTHROPIC_API_KEY"),
-        ("mistral", "MistralAdapter", "MISTRAL_API_KEY"),
-        ("qwen", "QwenAdapter", "QWEN_API_KEY"),
-    ])
+    @pytest.mark.parametrize(
+        "provider,adapter_cls_name,env_key",
+        [
+            ("openai", "OpenAIAdapter", "OPENAI_API_KEY"),
+            ("anthropic", "AnthropicAdapter", "ANTHROPIC_API_KEY"),
+            ("mistral", "MistralAdapter", "MISTRAL_API_KEY"),
+            ("qwen", "QwenAdapter", "QWEN_API_KEY"),
+        ],
+    )
     def test_factory_loads_specific_provider(
         self, db: Any, provider: str, adapter_cls_name: str, env_key: str
     ) -> None:
@@ -151,4 +157,3 @@ class TestFactoryProviderCapabilities:
         assert isinstance(adapter, GeminiAdapter)
         assert settings.llm.provider == "gemini"
         assert config.model == "gemini-3-flash-preview"
-

@@ -25,7 +25,9 @@ class DraftSpecHandler:
 
         # If spec already exists, consider the draft step pre-completed
         if context.spec_path.exists():
-            logger.debug("DraftSpecHandler: spec already exists at '%s' — skipping", context.spec_path)
+            logger.debug(
+                "DraftSpecHandler: spec already exists at '%s' — skipping", context.spec_path
+            )
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"message": f"Spec already exists: {context.spec_path}"},
@@ -34,7 +36,9 @@ class DraftSpecHandler:
             )
 
         # Spec doesn't exist — park and tell the user
-        logger.info("DraftSpecHandler: spec not found at '%s' — parking for user input", context.spec_path)
+        logger.info(
+            "DraftSpecHandler: spec not found at '%s' — parking for user input", context.spec_path
+        )
         return StepResult(
             status=StepStatus.WAITING_FOR_INPUT,
             output={

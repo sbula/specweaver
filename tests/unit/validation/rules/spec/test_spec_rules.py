@@ -250,9 +250,21 @@ class TestS05DayTest:
         #          states*0.15, code_blocks*0.15
         # Use uppercase-only states (regex: `[A-Z][A-Z_]+`)
         states = [
-            "ACTIVE", "PENDING", "WAITING", "RUNNING", "FAILED",
-            "COMPLETED", "CANCELLED", "PAUSED", "TERMINATED", "STARTING",
-            "STOPPING", "IDLE", "BLOCKED", "READY", "PROCESSING",
+            "ACTIVE",
+            "PENDING",
+            "WAITING",
+            "RUNNING",
+            "FAILED",
+            "COMPLETED",
+            "CANCELLED",
+            "PAUSED",
+            "TERMINATED",
+            "STARTING",
+            "STOPPING",
+            "IDLE",
+            "BLOCKED",
+            "READY",
+            "PROCESSING",
         ]
         spec = "## 1. Purpose\n\nModerately complex component.\n"
         for i in range(30):
@@ -268,8 +280,6 @@ class TestS05DayTest:
     def test_rule_id(self) -> None:
         assert DayTestRule().rule_id == "S05"
         assert DayTestRule().name == "Day Test"
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -340,8 +350,8 @@ result = process(data)
         result = ConcreteExampleRule().check(spec)
         assert result.status == Status.WARN
         assert any(
-            "elsewhere" in f.message.lower() or "code" in f.message.lower()
-            for f in result.findings)
+            "elsewhere" in f.message.lower() or "code" in f.message.lower() for f in result.findings
+        )
 
     def test_no_code_blocks_and_no_examples_fails(self) -> None:
         """Contract has no code blocks and no example patterns."""
@@ -541,7 +551,8 @@ Service that handles timeouts and retries on failure.
         assert result.status == Status.WARN
         assert any(
             "error keywords" in f.message.lower() or "no dedicated" in f.message.lower()
-            for f in result.findings)
+            for f in result.findings
+        )
 
     def test_policy_with_error_keywords_passes(self) -> None:
         """Policy section containing error keywords should pass."""
@@ -638,5 +649,3 @@ The component is complete and robust.
 """
         result = DoneDefinitionRule().check(spec)
         assert result.status == Status.PASS
-
-

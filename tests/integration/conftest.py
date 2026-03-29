@@ -22,9 +22,7 @@ if TYPE_CHECKING:
 
 # Path to the static fixture project (relative to repo root)
 _FIXTURE_ROOT = (
-    __import__("pathlib").Path(__file__).resolve().parent.parent
-    / "fixtures"
-    / "sample_project"
+    __import__("pathlib").Path(__file__).resolve().parent.parent / "fixtures" / "sample_project"
 )
 
 

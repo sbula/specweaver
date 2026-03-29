@@ -42,7 +42,9 @@ def _ensure_discovered() -> None:
 
     # Recursively find all subclasses
     def _get_all_subclasses(cls: type[LLMAdapter]) -> list[type[LLMAdapter]]:
-        return cls.__subclasses__() + [g for s in cls.__subclasses__() for g in _get_all_subclasses(s)]
+        return cls.__subclasses__() + [
+            g for s in cls.__subclasses__() for g in _get_all_subclasses(s)
+        ]
 
     # Register all subclasses that were loaded
     for cls in set(_get_all_subclasses(LLMAdapter)):  # type: ignore[type-abstract]
@@ -83,5 +85,6 @@ def get_merged_default_costs() -> dict[str, "CostEntry"]:
                 if model not in merged:
                     merged[model] = cost
     return merged
+
 
 __all__ = ["get_adapter_class", "get_all_adapters", "get_merged_default_costs", "register_adapter"]

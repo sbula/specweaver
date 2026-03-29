@@ -64,13 +64,14 @@ class FileSystemAtom(Atom):
             )
 
         handler: Callable[[dict[str, Any]], AtomResult] | None = getattr(
-            self, f"_intent_{intent}", None,
+            self,
+            f"_intent_{intent}",
+            None,
         )
         if handler is None:
             return AtomResult(
                 status=AtomStatus.FAILED,
-                message=f"Unknown intent: {intent!r}. "
-                        f"Known: {sorted(self._known_intents())}",
+                message=f"Unknown intent: {intent!r}. Known: {sorted(self._known_intents())}",
             )
 
         return handler(context)
@@ -78,11 +79,7 @@ class FileSystemAtom(Atom):
     def _known_intents(self) -> set[str]:
         """Return the set of known intent names."""
         prefix = "_intent_"
-        return {
-            name[len(prefix):]
-            for name in dir(self)
-            if name.startswith(prefix)
-        }
+        return {name[len(prefix) :] for name in dir(self) if name.startswith(prefix)}
 
     # -- Intent implementations ----------------------------------------
 
@@ -145,6 +142,7 @@ class FileSystemAtom(Atom):
 
             # Write context.yaml
             from io import StringIO
+
             buf = StringIO()
             yaml.dump(ctx_data, buf)
             content = buf.getvalue()
@@ -267,13 +265,15 @@ class FileSystemAtom(Atom):
                 rel_path = str(ctx_file.parent.relative_to(self._cwd)).replace("\\", "/")
                 if rel_path == ".":
                     rel_path = ""
-                boundaries.append({
-                    "path": rel_path,
-                    "name": data.get("name", ""),
-                    "level": data.get("level", ""),
-                    "purpose": data.get("purpose", ""),
-                    "archetype": data.get("archetype", ""),
-                })
+                boundaries.append(
+                    {
+                        "path": rel_path,
+                        "name": data.get("name", ""),
+                        "level": data.get("level", ""),
+                        "purpose": data.get("purpose", ""),
+                        "archetype": data.get("archetype", ""),
+                    }
+                )
             except Exception:
                 continue  # skip malformed files
 
@@ -357,4 +357,3 @@ class FileSystemAtom(Atom):
                         f"{rel_path}: Consumes '{dep_path}' but no "
                         f"context.yaml found at {dep_path}/context.yaml",
                     )
-

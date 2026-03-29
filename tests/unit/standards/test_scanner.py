@@ -26,9 +26,7 @@ class DummyPythonAnalyzer(StandardsAnalyzer):
     def supported_categories(self) -> list[str]:
         return ["dummy_py"]
 
-    def extract_all(
-        self, files: list[Path], half_life_days: float
-    ) -> list[CategoryResult]:
+    def extract_all(self, files: list[Path], half_life_days: float) -> list[CategoryResult]:
         return [
             CategoryResult(
                 category="dummy_py",
@@ -49,9 +47,7 @@ class DummyJSAnalyzer(StandardsAnalyzer):
     def supported_categories(self) -> list[str]:
         return ["dummy_js"]
 
-    def extract_all(
-        self, files: list[Path], half_life_days: float
-    ) -> list[CategoryResult]:
+    def extract_all(self, files: list[Path], half_life_days: float) -> list[CategoryResult]:
         return [
             CategoryResult(
                 category="dummy_js",
@@ -91,9 +87,7 @@ class TestStandardsScanner:
         js_res = next(r for r in results if r.category == "dummy_js")
         assert js_res.sample_size == 1
 
-    def test_skips_unmapped_files_silently(
-        self, scanner: StandardsScanner, tmp_path: Path
-    ) -> None:
+    def test_skips_unmapped_files_silently(self, scanner: StandardsScanner, tmp_path: Path) -> None:
         txt = tmp_path / "note.md"
         txt.touch()
 

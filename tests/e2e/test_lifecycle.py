@@ -62,7 +62,7 @@ _DRAFT_SECTION_RESPONSES = [
     (
         "### Interface\n\n"
         "```python\n"
-        'def greet(name: str) -> str:\n'
+        "def greet(name: str) -> str:\n"
         '    """Return a greeting for the given name."""\n'
         "```\n\n"
         "### Examples\n\n"
@@ -76,8 +76,8 @@ _DRAFT_SECTION_RESPONSES = [
     # Protocol
     (
         "1. Accept a `name` parameter of type `str`.\n"
-        "2. If `name` is empty or whitespace-only, use `\"World\"` as default.\n"
-        "3. Return the string `\"Hello, {name}!\"`."
+        '2. If `name` is empty or whitespace-only, use `"World"` as default.\n'
+        '3. Return the string `"Hello, {name}!"`.'
     ),
     # Policy
     (
@@ -176,6 +176,7 @@ _CODE_REVIEW_RESPONSE = (
 # Helper: create a mock LLM adapter with sequenced responses
 # ---------------------------------------------------------------------------
 
+
 def _make_sequenced_llm(responses: list[str]) -> object:
     """Create a mock LLM that returns responses in sequence."""
     mock_llm = AsyncMock()
@@ -219,13 +220,15 @@ class TestFullLifecycle:
         draft_llm = _make_sequenced_llm(_DRAFT_SECTION_RESPONSES)
 
         # Mock HITL provider to return predefined answers
-        _mock_hitl_answers = iter([
-            "Returns a greeting for a given name",  # Purpose
-            "greet(name: str) -> str",  # Contract
-            "Accept name, default empty to World, format greeting",  # Protocol
-            "TypeError if name is not a string",  # Policy
-            "Internationalization is out of scope",  # Boundaries
-        ])
+        _mock_hitl_answers = iter(
+            [
+                "Returns a greeting for a given name",  # Purpose
+                "greet(name: str) -> str",  # Contract
+                "Accept name, default empty to World, format greeting",  # Protocol
+                "TypeError if name is not a string",  # Policy
+                "Internationalization is out of scope",  # Boundaries
+            ]
+        )
 
         async def _mock_ask(question: str, *, section: str = "") -> str:
             return next(_mock_hitl_answers, "")
@@ -263,8 +266,10 @@ class TestFullLifecycle:
             [
                 "check",
                 str(spec_path),
-                "--level", "component",
-                "--project", str(tmp_path),
+                "--level",
+                "component",
+                "--project",
+                str(tmp_path),
             ],
         )
         # Spec might not pass all rules, but the command should run
@@ -285,7 +290,8 @@ class TestFullLifecycle:
                 [
                     "review",
                     str(spec_path),
-                    "--project", str(tmp_path),
+                    "--project",
+                    str(tmp_path),
                 ],
             )
             assert result.exit_code == 0, f"review spec failed: {result.output}"
@@ -305,7 +311,8 @@ class TestFullLifecycle:
                 [
                     "implement",
                     str(spec_path),
-                    "--project", str(tmp_path),
+                    "--project",
+                    str(tmp_path),
                 ],
             )
             assert result.exit_code == 0, f"implement failed: {result.output}"
@@ -324,8 +331,10 @@ class TestFullLifecycle:
             [
                 "check",
                 str(code_path),
-                "--level", "code",
-                "--project", str(tmp_path),
+                "--level",
+                "code",
+                "--project",
+                str(tmp_path),
             ],
         )
         assert result.exit_code in (0, 1), f"check code crashed: {result.output}"
@@ -345,8 +354,10 @@ class TestFullLifecycle:
                 [
                     "review",
                     str(code_path),
-                    "--spec", str(spec_path),
-                    "--project", str(tmp_path),
+                    "--spec",
+                    str(spec_path),
+                    "--project",
+                    str(tmp_path),
                 ],
             )
             assert result.exit_code == 0, f"review code failed: {result.output}"
@@ -395,9 +406,11 @@ class TestLifecycleEdgeCases:
         spec.parent.mkdir(exist_ok=True)
         spec.write_text("# Bad spec\n\nNo details.", encoding="utf-8")
 
-        denied_llm = _make_sequenced_llm([
-            "VERDICT: DENIED\n- Missing examples\n- No error paths\nReject.",
-        ])
+        denied_llm = _make_sequenced_llm(
+            [
+                "VERDICT: DENIED\n- Missing examples\n- No error paths\nReject.",
+            ]
+        )
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
@@ -422,4 +435,3 @@ class TestLifecycleEdgeCases:
             ["check", str(spec), "--level", "invalid"],
         )
         assert result.exit_code != 0
-

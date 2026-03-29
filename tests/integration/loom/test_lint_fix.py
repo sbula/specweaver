@@ -128,9 +128,7 @@ class TestLintFixNoLLM:
         src.mkdir(parents=True, exist_ok=True)
         # E741 (ambiguous variable) is not auto-fixable
         (src / "unfixable.py").write_text(
-            "def foo() -> None:\n"
-            "    l = [1, 2, 3]\n"
-            "    print(l)\n",
+            "def foo() -> None:\n    l = [1, 2, 3]\n    print(l)\n",
             encoding="utf-8",
         )
 

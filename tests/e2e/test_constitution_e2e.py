@@ -133,18 +133,22 @@ class TestConstitutionE2E:
     )
 
     def _init_project_with_constitution(
-        self, tmp_path: Path, constitution_content: str | None = None,
+        self,
+        tmp_path: Path,
+        constitution_content: str | None = None,
     ) -> None:
         """Helper: init project and optionally overwrite constitution."""
         result = runner.invoke(
-            app, ["init", _unique_name("const"), "--path", str(tmp_path)],
+            app,
+            ["init", _unique_name("const"), "--path", str(tmp_path)],
         )
         assert result.exit_code == 0, f"init failed: {result.output}"
         assert (tmp_path / "CONSTITUTION.md").is_file()
 
         if constitution_content is not None:
             (tmp_path / "CONSTITUTION.md").write_text(
-                constitution_content, encoding="utf-8",
+                constitution_content,
+                encoding="utf-8",
             )
 
         # Create a minimal spec for review/implement
@@ -163,18 +167,22 @@ class TestConstitutionE2E:
         )
 
     def test_review_spec_includes_constitution_in_prompt(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """sw review sends constitution content to the LLM prompt."""
         self._init_project_with_constitution(
-            tmp_path, self._CUSTOM_CONSTITUTION,
+            tmp_path,
+            self._CUSTOM_CONSTITUTION,
         )
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, review_llm, GenerationConfig(model="mock"),
+                None,
+                review_llm,
+                GenerationConfig(model="mock"),
             )
             result = runner.invoke(
                 app,
@@ -190,11 +198,13 @@ class TestConstitutionE2E:
         )
 
     def test_review_code_includes_constitution_in_prompt(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """sw review --spec sends constitution content to the LLM prompt."""
         self._init_project_with_constitution(
-            tmp_path, self._CUSTOM_CONSTITUTION,
+            tmp_path,
+            self._CUSTOM_CONSTITUTION,
         )
         spec_path = tmp_path / "specs" / "widget_spec.md"
 
@@ -209,14 +219,19 @@ class TestConstitutionE2E:
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, review_llm, GenerationConfig(model="mock"),
+                None,
+                review_llm,
+                GenerationConfig(model="mock"),
             )
             result = runner.invoke(
                 app,
                 [
-                    "review", str(code_path),
-                    "--spec", str(spec_path),
-                    "--project", str(tmp_path),
+                    "review",
+                    str(code_path),
+                    "--spec",
+                    str(spec_path),
+                    "--project",
+                    str(tmp_path),
                 ],
             )
 
@@ -227,18 +242,22 @@ class TestConstitutionE2E:
         )
 
     def test_implement_includes_constitution_in_prompt(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """sw implement sends constitution to both code and test gen prompts."""
         self._init_project_with_constitution(
-            tmp_path, self._CUSTOM_CONSTITUTION,
+            tmp_path,
+            self._CUSTOM_CONSTITUTION,
         )
         spec_path = tmp_path / "specs" / "widget_spec.md"
         impl_llm, captured = _make_capturing_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, impl_llm, GenerationConfig(model="mock"),
+                None,
+                impl_llm,
+                GenerationConfig(model="mock"),
             )
             result = runner.invoke(
                 app,
@@ -254,7 +273,8 @@ class TestConstitutionE2E:
         )
 
     def test_custom_constitution_overrides_default(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Custom CONSTITUTION.md content replaces the default template."""
         self._init_project_with_constitution(tmp_path)  # default
@@ -262,14 +282,17 @@ class TestConstitutionE2E:
         assert "UNIQUE_MARKER" not in default_content  # sanity
 
         (tmp_path / "CONSTITUTION.md").write_text(
-            self._CUSTOM_CONSTITUTION, encoding="utf-8",
+            self._CUSTOM_CONSTITUTION,
+            encoding="utf-8",
         )
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, review_llm, GenerationConfig(model="mock"),
+                None,
+                review_llm,
+                GenerationConfig(model="mock"),
             )
             runner.invoke(
                 app,
@@ -280,7 +303,8 @@ class TestConstitutionE2E:
         assert "UNIQUE_MARKER_FOR_TEST_VERIFICATION" in all_prompts
 
     def test_no_constitution_file_means_no_injection(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """When CONSTITUTION.md is removed, no constitution appears in prompt."""
         self._init_project_with_constitution(tmp_path)
@@ -293,7 +317,9 @@ class TestConstitutionE2E:
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, review_llm, GenerationConfig(model="mock"),
+                None,
+                review_llm,
+                GenerationConfig(model="mock"),
             )
             result = runner.invoke(
                 app,
@@ -314,11 +340,13 @@ class TestConstitutionCLI:
         """sw constitution show prints the constitution file content."""
         runner.invoke(app, ["init", _unique_name("cshow"), "--path", str(tmp_path)])
         (tmp_path / "CONSTITUTION.md").write_text(
-            "# My Rules\n\nRule 1: Be nice.\n", encoding="utf-8",
+            "# My Rules\n\nRule 1: Be nice.\n",
+            encoding="utf-8",
         )
 
         result = runner.invoke(
-            app, ["constitution", "show", "--project", str(tmp_path)],
+            app,
+            ["constitution", "show", "--project", str(tmp_path)],
         )
         assert result.exit_code == 0, f"show failed: {result.output}"
         assert "My Rules" in result.output
@@ -330,7 +358,8 @@ class TestConstitutionCLI:
         (tmp_path / "CONSTITUTION.md").unlink(missing_ok=True)
 
         result = runner.invoke(
-            app, ["constitution", "show", "--project", str(tmp_path)],
+            app,
+            ["constitution", "show", "--project", str(tmp_path)],
         )
         assert result.exit_code == 1
         assert "No CONSTITUTION.md found" in result.output
@@ -340,13 +369,16 @@ class TestConstitutionCLI:
         runner.invoke(app, ["init", _unique_name("cchk"), "--path", str(tmp_path)])
 
         result = runner.invoke(
-            app, ["constitution", "check", "--project", str(tmp_path)],
+            app,
+            ["constitution", "check", "--project", str(tmp_path)],
         )
         assert result.exit_code == 0, f"check failed: {result.output}"
         assert "within size limits" in result.output
 
     def test_constitution_check_fail_oversize(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """sw constitution check fails when file exceeds DB-configured limit."""
         name = _unique_name("cchkfail")
@@ -358,11 +390,13 @@ class TestConstitutionCLI:
 
         # Write a > 10-byte constitution
         (tmp_path / "CONSTITUTION.md").write_text(
-            "This is way too long for 10 bytes.", encoding="utf-8",
+            "This is way too long for 10 bytes.",
+            encoding="utf-8",
         )
 
         result = runner.invoke(
-            app, ["constitution", "check", "--project", str(tmp_path)],
+            app,
+            ["constitution", "check", "--project", str(tmp_path)],
         )
         assert result.exit_code == 1
         assert "exceeds" in result.output.lower() or "\u2717" in result.output
@@ -373,7 +407,8 @@ class TestConstitutionCLI:
         (tmp_path / "CONSTITUTION.md").unlink(missing_ok=True)
 
         result = runner.invoke(
-            app, ["constitution", "check", "--project", str(tmp_path)],
+            app,
+            ["constitution", "check", "--project", str(tmp_path)],
         )
         assert result.exit_code == 1
         assert "No CONSTITUTION.md found" in result.output
@@ -386,7 +421,8 @@ class TestConstitutionCLI:
         assert not (tmp_path / "CONSTITUTION.md").exists()
 
         result = runner.invoke(
-            app, ["constitution", "init", "--project", str(tmp_path)],
+            app,
+            ["constitution", "init", "--project", str(tmp_path)],
         )
         assert result.exit_code == 0, f"init failed: {result.output}"
         assert (tmp_path / "CONSTITUTION.md").exists()
@@ -398,7 +434,8 @@ class TestConstitutionCLI:
         assert (tmp_path / "CONSTITUTION.md").exists()
 
         result = runner.invoke(
-            app, ["constitution", "init", "--project", str(tmp_path)],
+            app,
+            ["constitution", "init", "--project", str(tmp_path)],
         )
         assert result.exit_code == 1
         assert "already exists" in result.output
@@ -407,7 +444,8 @@ class TestConstitutionCLI:
         """sw constitution init --force overwrites existing file."""
         runner.invoke(app, ["init", _unique_name("cinitf"), "--path", str(tmp_path)])
         (tmp_path / "CONSTITUTION.md").write_text(
-            "OLD CONTENT", encoding="utf-8",
+            "OLD CONTENT",
+            encoding="utf-8",
         )
 
         result = runner.invoke(
@@ -419,7 +457,9 @@ class TestConstitutionCLI:
         assert "OLD CONTENT" not in content
 
     def test_config_set_get_constitution_max_size(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """sw config set/get-constitution-max-size round-trip."""
         name = _unique_name("cmaxsz")
@@ -437,7 +477,9 @@ class TestConstitutionCLI:
         assert "8192" in result.output
 
     def test_config_set_constitution_max_size_invalid(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """sw config set-constitution-max-size rejects negative values."""
         name = _unique_name("cmaxbad")
@@ -445,7 +487,4 @@ class TestConstitutionCLI:
         _mock_db.set_active_project(name)
 
         result = runner.invoke(app, ["config", "set-constitution-max-size", "-1"])
-        assert result.exit_code != 0, (
-            f"Expected failure for negative size, got: {result.output}"
-        )
-
+        assert result.exit_code != 0, f"Expected failure for negative size, got: {result.output}"

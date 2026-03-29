@@ -60,7 +60,8 @@ def load_pipeline_yaml(
         pipeline = resolve_pipeline(
             pipeline,
             base_loader=lambda base_name: load_pipeline_yaml(
-                base_name, project_dir=project_dir,
+                base_name,
+                project_dir=project_dir,
             ),
         )
 
@@ -91,10 +92,7 @@ def _load_raw_yaml(
     except (FileNotFoundError, ModuleNotFoundError, TypeError):
         pass
 
-    msg = (
-        f"Validation pipeline '{name}' not found. "
-        f"Searched in: packaged defaults"
-    )
+    msg = f"Validation pipeline '{name}' not found. Searched in: packaged defaults"
     if project_dir:
         msg += f", {project_dir / '.specweaver' / 'pipelines'}"
     raise FileNotFoundError(msg)

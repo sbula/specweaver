@@ -76,4 +76,3 @@ class TestInitConstitution:
         assert resp.status_code == 200
         # Verify file was created
         assert (proj / "CONSTITUTION.md").exists()
-

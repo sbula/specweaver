@@ -27,8 +27,10 @@ class TestPrintSummary:
 
     def _make_result(self, status: Status) -> RuleResult:
         return RuleResult(
-            rule_id="S01", rule_name="Test Rule",
-            status=status, message="msg",
+            rule_id="S01",
+            rule_name="Test Rule",
+            status=status,
+            message="msg",
         )
 
     def test_all_pass_no_exit(self) -> None:
@@ -113,7 +115,9 @@ class TestSelectTopologyContexts:
             return_value=[],
         ):
             result = _select_topology_contexts(
-                mock_graph, "mod_a", selector_name="nonexistent",
+                mock_graph,
+                "mod_a",
+                selector_name="nonexistent",
             )
         assert result is None
 
@@ -126,15 +130,21 @@ class TestSelectTopologyContexts:
         # Patch the selector to return empty
         with patch(
             "specweaver.cli._helpers._get_selector_map",
-            return_value={"direct": MagicMock(return_value=MagicMock(select=MagicMock(return_value=[])))},
+            return_value={
+                "direct": MagicMock(return_value=MagicMock(select=MagicMock(return_value=[])))
+            },
         ):
             from specweaver.graph.selectors import DirectNeighborSelector
 
             with patch.object(
-                DirectNeighborSelector, "select", return_value=[],
+                DirectNeighborSelector,
+                "select",
+                return_value=[],
             ):
                 result = _select_topology_contexts(
-                    mock_graph, "mod_a", selector_name="direct",
+                    mock_graph,
+                    "mod_a",
+                    selector_name="direct",
                 )
         assert result is None
 
@@ -254,7 +264,8 @@ class TestLoadStandardsContentScopeAware:
         mock_get_db.return_value = mock_db
 
         result = _load_standards_content(
-            _Path("/proj"), target_path=_Path("/proj/backend/auth/login.py"),
+            _Path("/proj"),
+            target_path=_Path("/proj/backend/auth/login.py"),
         )
         assert result is not None
         assert "python/naming" in result
@@ -271,12 +282,18 @@ class TestLoadStandardsContentScopeAware:
         mock_db.list_scopes.return_value = [".", "backend"]
 
         scope_std = {
-            "scope": "backend", "language": "python", "category": "naming",
-            "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+            "scope": "backend",
+            "language": "python",
+            "category": "naming",
+            "data": json.dumps({"style": "snake_case"}),
+            "confidence": 0.9,
         }
         root_std = {
-            "scope": ".", "language": "python", "category": "docstrings",
-            "data": json.dumps({"style": "google"}), "confidence": 0.85,
+            "scope": ".",
+            "language": "python",
+            "category": "docstrings",
+            "data": json.dumps({"style": "google"}),
+            "confidence": 0.85,
         }
 
         def get_standards_mock(name, scope=None):
@@ -290,7 +307,8 @@ class TestLoadStandardsContentScopeAware:
         mock_get_db.return_value = mock_db
 
         result = _load_standards_content(
-            _Path("/proj"), target_path=_Path("/proj/backend/app.py"),
+            _Path("/proj"),
+            target_path=_Path("/proj/backend/app.py"),
         )
         assert result is not None
         assert "naming" in result
@@ -308,14 +326,18 @@ class TestLoadStandardsContentScopeAware:
         mock_db.list_scopes.return_value = ["."]
         mock_db.get_standards.return_value = [
             {
-                "scope": ".", "language": "python", "category": "naming",
-                "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+                "scope": ".",
+                "language": "python",
+                "category": "naming",
+                "data": json.dumps({"style": "snake_case"}),
+                "confidence": 0.9,
             },
         ]
         mock_get_db.return_value = mock_db
 
         result = _load_standards_content(
-            _Path("/proj"), target_path=_Path("/proj/main.py"),
+            _Path("/proj"),
+            target_path=_Path("/proj/main.py"),
         )
         assert result is not None
         # Should contain naming exactly once
@@ -331,8 +353,11 @@ class TestLoadStandardsContentScopeAware:
         # Generate many standards to exceed limit
         mock_db.get_standards.return_value = [
             {
-                "scope": ".", "language": "python", "category": f"cat_{i}",
-                "data": json.dumps({"pattern": "x" * 100}), "confidence": 0.9,
+                "scope": ".",
+                "language": "python",
+                "category": f"cat_{i}",
+                "data": json.dumps({"pattern": "x" * 100}),
+                "confidence": 0.9,
             }
             for i in range(50)
         ]
@@ -354,8 +379,11 @@ class TestLoadStandardsContentScopeAware:
         mock_db.get_active_project.return_value = "proj"
         mock_db.get_standards.return_value = [
             {
-                "scope": ".", "language": "python", "category": "naming",
-                "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+                "scope": ".",
+                "language": "python",
+                "category": "naming",
+                "data": json.dumps({"style": "snake_case"}),
+                "confidence": 0.9,
             },
         ]
         mock_get_db.return_value = mock_db
@@ -376,12 +404,18 @@ class TestLoadStandardsContentScopeAware:
         mock_db.list_scopes.return_value = [".", "backend"]
 
         scope_std = {
-            "scope": "backend", "language": "python", "category": "naming",
-            "data": json.dumps({"scope_specific": "yes"}), "confidence": 0.9,
+            "scope": "backend",
+            "language": "python",
+            "category": "naming",
+            "data": json.dumps({"scope_specific": "yes"}),
+            "confidence": 0.9,
         }
         root_std = {
-            "scope": ".", "language": "python", "category": "docstrings",
-            "data": json.dumps({"root_standard": "yes"}), "confidence": 0.85,
+            "scope": ".",
+            "language": "python",
+            "category": "docstrings",
+            "data": json.dumps({"root_standard": "yes"}),
+            "confidence": 0.85,
         }
 
         def get_standards_mock(name, scope=None):
@@ -395,7 +429,8 @@ class TestLoadStandardsContentScopeAware:
         mock_get_db.return_value = mock_db
 
         result = _load_standards_content(
-            _Path("/proj"), target_path=_Path("/proj/backend/app.py"),
+            _Path("/proj"),
+            target_path=_Path("/proj/backend/app.py"),
         )
         assert result is not None
         # Scope-specific appears before root
@@ -412,8 +447,11 @@ class TestLoadStandardsContentScopeAware:
         mock_db.get_active_project.return_value = "proj"
         mock_db.get_standards.return_value = [
             {
-                "scope": ".", "language": "python", "category": "naming",
-                "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+                "scope": ".",
+                "language": "python",
+                "category": "naming",
+                "data": json.dumps({"style": "snake_case"}),
+                "confidence": 0.9,
             },
         ]
         mock_get_db.return_value = mock_db
@@ -432,8 +470,11 @@ class TestLoadStandardsContentScopeAware:
         mock_db.get_active_project.return_value = "proj"
         mock_db.get_standards.return_value = [
             {
-                "scope": "backend", "language": "python", "category": "naming",
-                "data": json.dumps({"style": "snake_case"}), "confidence": 0.9,
+                "scope": "backend",
+                "language": "python",
+                "category": "naming",
+                "data": json.dumps({"style": "snake_case"}),
+                "confidence": 0.9,
             },
         ]
         mock_get_db.return_value = mock_db
@@ -441,4 +482,3 @@ class TestLoadStandardsContentScopeAware:
         result = _load_standards_content(MagicMock())
         assert result is not None
         assert "[backend/python/naming]" in result
-

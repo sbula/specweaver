@@ -95,7 +95,9 @@ def _print_summary(results: list[RuleResult], *, strict: bool = False) -> None:
 
 
 def _require_llm_adapter(
-    project_path: Path, *, llm_role: str = "draft",
+    project_path: Path,
+    *,
+    llm_role: str = "draft",
 ) -> tuple[SpecWeaverSettings, GeminiAdapter, GenerationConfig]:
     """Create and validate an LLM adapter from project settings.
 
@@ -108,7 +110,9 @@ def _require_llm_adapter(
     project = db.get_active_project()
     try:
         return create_llm_adapter(
-            db, llm_role=llm_role, telemetry_project=project,
+            db,
+            llm_role=llm_role,
+            telemetry_project=project,
         )
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
@@ -152,12 +156,14 @@ def _get_selector_map() -> dict[str, type]:
             NHopConstraintSelector,
         )
 
-        _SELECTOR_MAP.update({
-            "direct": DirectNeighborSelector,
-            "nhop": NHopConstraintSelector,
-            "constraint": ConstraintOnlySelector,
-            "impact": ImpactWeightedSelector,
-        })
+        _SELECTOR_MAP.update(
+            {
+                "direct": DirectNeighborSelector,
+                "nhop": NHopConstraintSelector,
+                "constraint": ConstraintOnlySelector,
+                "impact": ImpactWeightedSelector,
+            }
+        )
     return _SELECTOR_MAP
 
 
@@ -198,14 +204,14 @@ def _select_topology_contexts(
 
     contexts = graph.format_context_summary(module_name, related)
     _core.console.print(
-        f"[dim]Topology: {len(contexts)} related module(s) "
-        f"via {selector_name} selector.[/dim]",
+        f"[dim]Topology: {len(contexts)} related module(s) via {selector_name} selector.[/dim]",
     )
     return contexts
 
 
 def _load_constitution_content(
-    project_path: Path, spec_path: Path | None = None,
+    project_path: Path,
+    spec_path: Path | None = None,
 ) -> str | None:
     """Load constitution content for the given project, or None."""
     from specweaver.project.constitution import find_constitution
@@ -232,6 +238,9 @@ def _load_standards_content(
         return None
 
     return load_standards_content(
-        db, active, project_path,
-        target_path=target_path, max_chars=max_chars,
+        db,
+        active,
+        project_path,
+        target_path=target_path,
+        max_chars=max_chars,
     )

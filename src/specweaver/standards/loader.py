@@ -55,9 +55,7 @@ def load_standards_content(
         # Load scope-specific standards
         scope_standards = db.get_standards(project_name, scope=scope)
         # Load root cross-cutting standards (if scope != ".")
-        root_standards = (
-            db.get_standards(project_name, scope=".") if scope != "." else []
-        )
+        root_standards = db.get_standards(project_name, scope=".") if scope != "." else []
     else:
         scope_standards = db.get_standards(project_name)
         root_standards = []
@@ -95,6 +93,6 @@ def load_standards_content(
 
     # Apply token cap — truncate from the end (root standards trimmed first)
     if len(text) > max_chars:
-        text = text[:max_chars - 15] + "\n[... truncated]"
+        text = text[: max_chars - 15] + "\n[... truncated]"
 
     return text

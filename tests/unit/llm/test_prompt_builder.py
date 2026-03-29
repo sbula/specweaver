@@ -125,12 +125,7 @@ class TestXMLTagStructure:
     """Verify correct XML tag nesting and attributes."""
 
     def test_multiple_instructions_merged(self) -> None:
-        result = (
-            PromptBuilder()
-            .add_instructions("Part A")
-            .add_instructions("Part B")
-            .build()
-        )
+        result = PromptBuilder().add_instructions("Part A").add_instructions("Part B").build()
         assert result.count("<instructions>") == 1
         assert "Part A" in result
         assert "Part B" in result
@@ -155,12 +150,7 @@ class TestXMLTagStructure:
         assert 'path="specification"' in result
 
     def test_multiple_context_blocks(self) -> None:
-        result = (
-            PromptBuilder()
-            .add_context("A", "first")
-            .add_context("B", "second")
-            .build()
-        )
+        result = PromptBuilder().add_context("A", "first").add_context("B", "second").build()
         assert result.count("<context ") == 2
         assert 'label="first"' in result
         assert 'label="second"' in result
@@ -341,7 +331,7 @@ class TestPromptBuilderEdgeCases:
         budget = TokenBudget(limit=100)
         result = (
             PromptBuilder(budget=budget)
-            .add_context("A" * 100, "small", priority=1)   # ~25 tokens
+            .add_context("A" * 100, "small", priority=1)  # ~25 tokens
             .add_context("B" * 1000, "large", priority=1)  # ~250 tokens
             .build()
         )
@@ -351,10 +341,7 @@ class TestPromptBuilderEdgeCases:
     def test_no_budget_means_no_truncation(self) -> None:
         """Without budget, even large content is never truncated."""
         result = (
-            PromptBuilder()
-            .add_instructions("I" * 10000)
-            .add_context("C" * 10000, "big")
-            .build()
+            PromptBuilder().add_instructions("I" * 10000).add_context("C" * 10000, "big").build()
         )
         assert "[truncated]" not in result
         assert len(result) > 15000
@@ -376,10 +363,7 @@ class TestPromptBuilderIntegration:
         )
 
         result = (
-            PromptBuilder()
-            .add_instructions("Review this spec.")
-            .add_file(spec, priority=1)
-            .build()
+            PromptBuilder().add_instructions("Review this spec.").add_file(spec, priority=1).build()
         )
 
         assert "<instructions>" in result
@@ -396,13 +380,7 @@ class TestPromptBuilderIntegration:
         md_file.write_text("# Readme", encoding="utf-8")
         json_file.write_text('{"key": "val"}', encoding="utf-8")
 
-        result = (
-            PromptBuilder()
-            .add_file(py_file)
-            .add_file(md_file)
-            .add_file(json_file)
-            .build()
-        )
+        result = PromptBuilder().add_file(py_file).add_file(md_file).add_file(json_file).build()
 
         assert 'language="python"' in result
         assert 'language="markdown"' in result
@@ -481,12 +459,7 @@ class TestReminder:
         assert instr_pos < file_pos < reminder_pos
 
     def test_multiple_reminders_merged(self) -> None:
-        result = (
-            PromptBuilder()
-            .add_reminder("First")
-            .add_reminder("Second")
-            .build()
-        )
+        result = PromptBuilder().add_reminder("First").add_reminder("Second").build()
         assert result.count("<reminder>") == 1
         assert "First" in result
         assert "Second" in result
@@ -550,13 +523,7 @@ class TestAddTopology:
                 relationship="direct consumer",
             ),
         ]
-        result = (
-            PromptBuilder()
-            .add_instructions("Review")
-            .add_topology(ctx)
-            .add_file(f)
-            .build()
-        )
+        result = PromptBuilder().add_instructions("Review").add_topology(ctx).add_file(f).build()
         topo_pos = result.index("<topology>")
         file_pos = result.index("<file_contents>")
         assert topo_pos < file_pos
@@ -584,11 +551,16 @@ class TestAddTopology:
         from specweaver.graph.topology import TopologyContext
 
         pb = PromptBuilder()
-        ret = pb.add_topology([
-            TopologyContext(
-                name="x", purpose="", archetype="", relationship="",
-            ),
-        ])
+        ret = pb.add_topology(
+            [
+                TopologyContext(
+                    name="x",
+                    purpose="",
+                    archetype="",
+                    relationship="",
+                ),
+            ]
+        )
         assert ret is pb
 
 
@@ -606,7 +578,7 @@ class TestBudgetScaling:
         budget = TokenBudget(limit=1000)
         result = (
             PromptBuilder(budget=budget, budget_scale_factor=0.5)
-            .add_instructions("I" * 40)   # ~10 tokens
+            .add_instructions("I" * 40)  # ~10 tokens
             .add_context("X" * 4000, "big", priority=1)  # ~1000 tokens
             .build()
         )
@@ -650,8 +622,10 @@ class TestAddConstitution:
 
         ctx = [
             TopologyContext(
-                name="svc", purpose="A service.",
-                archetype="pure-logic", relationship="direct dependency",
+                name="svc",
+                purpose="A service.",
+                archetype="pure-logic",
+                relationship="direct dependency",
             ),
         ]
         result = (
@@ -671,12 +645,7 @@ class TestAddConstitution:
         """Constitution renders before file contents."""
         f = tmp_path / "code.py"
         f.write_text("pass", encoding="utf-8")
-        result = (
-            PromptBuilder()
-            .add_constitution("Constitution text")
-            .add_file(f)
-            .build()
-        )
+        result = PromptBuilder().add_constitution("Constitution text").add_file(f).build()
 
         const_pos = result.index("<constitution>")
         file_pos = result.index("<file_contents>")
@@ -684,11 +653,7 @@ class TestAddConstitution:
 
     def test_preamble_included(self) -> None:
         """Fixed preamble is prepended to constitution content."""
-        result = (
-            PromptBuilder()
-            .add_constitution("My rules here.")
-            .build()
-        )
+        result = PromptBuilder().add_constitution("My rules here.").build()
         assert "non-negotiable" in result.lower()
         assert "constitution wins" in result.lower()
         assert "My rules here." in result
@@ -740,12 +705,7 @@ class TestAddConstitution:
 
     def test_duplicate_add_constitution(self) -> None:
         """Calling add_constitution twice renders both in the block."""
-        result = (
-            PromptBuilder()
-            .add_constitution("Rule A")
-            .add_constitution("Rule B")
-            .build()
-        )
+        result = PromptBuilder().add_constitution("Rule A").add_constitution("Rule B").build()
         # Both are joined inside a single <constitution> tag
         start = result.index("<constitution>")
         end = result.index("</constitution>")
@@ -805,8 +765,11 @@ class TestRenderMentioned:
 
         blocks = [
             _ContentBlock(
-                kind="mentioned", text="x = 1", label="src/main.py",
-                language="python", priority=1,
+                kind="mentioned",
+                text="x = 1",
+                label="src/main.py",
+                language="python",
+                priority=1,
             ),
         ]
         result = _render_mentioned(blocks)
@@ -823,10 +786,12 @@ class TestRenderMentioned:
 
         blocks = [
             _ContentBlock(
-                kind="file", text="pass", label="code.py",
-                language="python", priority=1,
+                kind="file",
+                text="pass",
+                label="code.py",
+                language="python",
+                priority=1,
             ),
         ]
         result = _render_mentioned(blocks)
         assert result is None
-

@@ -42,7 +42,8 @@ class TestConstitutionShow:
     def test_show_no_constitution(self, tmp_path: Path) -> None:
         """show with no CONSTITUTION.md → exit 1."""
         result = runner.invoke(
-            app, ["constitution", "show", "--project", str(tmp_path)],
+            app,
+            ["constitution", "show", "--project", str(tmp_path)],
         )
         assert result.exit_code == 1
         assert "No CONSTITUTION.md" in result.output
@@ -51,10 +52,12 @@ class TestConstitutionShow:
         """show with CONSTITUTION.md → displays content."""
         constitution = tmp_path / "CONSTITUTION.md"
         constitution.write_text(
-            "# Test Constitution\nBe good.\n", encoding="utf-8",
+            "# Test Constitution\nBe good.\n",
+            encoding="utf-8",
         )
         result = runner.invoke(
-            app, ["constitution", "show", "--project", str(tmp_path)],
+            app,
+            ["constitution", "show", "--project", str(tmp_path)],
         )
         assert result.exit_code == 0
         assert "Test Constitution" in result.output
@@ -71,7 +74,8 @@ class TestConstitutionCheck:
     def test_check_no_constitution(self, tmp_path: Path) -> None:
         """check with no CONSTITUTION.md → exit 1."""
         result = runner.invoke(
-            app, ["constitution", "check", "--project", str(tmp_path)],
+            app,
+            ["constitution", "check", "--project", str(tmp_path)],
         )
         assert result.exit_code == 1
         assert "No CONSTITUTION.md" in result.output
@@ -81,7 +85,8 @@ class TestConstitutionCheck:
         constitution = tmp_path / "CONSTITUTION.md"
         constitution.write_text("# Small\nOK.\n", encoding="utf-8")
         result = runner.invoke(
-            app, ["constitution", "check", "--project", str(tmp_path)],
+            app,
+            ["constitution", "check", "--project", str(tmp_path)],
         )
         assert result.exit_code == 0
         assert "within size limits" in result.output.lower() or "✓" in result.output
@@ -98,7 +103,8 @@ class TestConstitutionInit:
     def test_init_creates_file(self, tmp_path: Path) -> None:
         """init → creates CONSTITUTION.md."""
         result = runner.invoke(
-            app, ["constitution", "init", "--project", str(tmp_path)],
+            app,
+            ["constitution", "init", "--project", str(tmp_path)],
         )
         # May fail if no .specweaver dir; init may require scaffolding
         if result.exit_code == 0:
@@ -109,7 +115,8 @@ class TestConstitutionInit:
         constitution = tmp_path / "CONSTITUTION.md"
         constitution.write_text("existing\n", encoding="utf-8")
         result = runner.invoke(
-            app, ["constitution", "init", "--project", str(tmp_path)],
+            app,
+            ["constitution", "init", "--project", str(tmp_path)],
         )
         assert result.exit_code == 1
         assert "already exists" in result.output
@@ -119,7 +126,8 @@ class TestConstitutionInit:
         constitution = tmp_path / "CONSTITUTION.md"
         constitution.write_text("old content\n", encoding="utf-8")
         result = runner.invoke(
-            app, ["constitution", "init", "--force", "--project", str(tmp_path)],
+            app,
+            ["constitution", "init", "--force", "--project", str(tmp_path)],
         )
         assert result.exit_code == 0
         new_content = constitution.read_text(encoding="utf-8")
@@ -128,9 +136,12 @@ class TestConstitutionInit:
     def test_init_bad_project_path(self, tmp_path: Path) -> None:
         """init with invalid project → exit 1."""
         result = runner.invoke(
-            app, [
-                "constitution", "init",
-                "--project", str(tmp_path / "nonexistent"),
+            app,
+            [
+                "constitution",
+                "init",
+                "--project",
+                str(tmp_path / "nonexistent"),
             ],
         )
         assert result.exit_code == 1
@@ -178,7 +189,8 @@ class TestConstitutionBootstrap:
         """bootstrap with standards → creates CONSTITUTION.md."""
         self._seed_standards()
         result = runner.invoke(
-            app, ["constitution", "bootstrap", "--project", str(self.project_dir)],
+            app,
+            ["constitution", "bootstrap", "--project", str(self.project_dir)],
         )
         assert result.exit_code == 0
         assert (self.project_dir / "CONSTITUTION.md").exists()
@@ -188,7 +200,8 @@ class TestConstitutionBootstrap:
     def test_bootstrap_no_standards_exits(self, tmp_path: Path) -> None:
         """bootstrap with no standards → exit 1."""
         result = runner.invoke(
-            app, ["constitution", "bootstrap", "--project", str(self.project_dir)],
+            app,
+            ["constitution", "bootstrap", "--project", str(self.project_dir)],
         )
         assert result.exit_code == 1
         assert "No confirmed standards" in result.output
@@ -201,7 +214,8 @@ class TestConstitutionBootstrap:
             "# My Custom Constitution\nAll real content here.\n",
         )
         result = runner.invoke(
-            app, ["constitution", "bootstrap", "--project", str(self.project_dir)],
+            app,
+            ["constitution", "bootstrap", "--project", str(self.project_dir)],
         )
         assert result.exit_code == 1
         assert "already exists" in result.output
@@ -213,9 +227,13 @@ class TestConstitutionBootstrap:
             "# My Custom Constitution\n",
         )
         result = runner.invoke(
-            app, [
-                "constitution", "bootstrap", "--force",
-                "--project", str(self.project_dir),
+            app,
+            [
+                "constitution",
+                "bootstrap",
+                "--force",
+                "--project",
+                str(self.project_dir),
             ],
         )
         assert result.exit_code == 0
@@ -225,20 +243,25 @@ class TestConstitutionBootstrap:
     def test_bootstrap_bad_project_path(self, tmp_path: Path) -> None:
         """bootstrap with invalid project → exit 1."""
         result = runner.invoke(
-            app, [
-                "constitution", "bootstrap",
-                "--project", str(tmp_path / "nonexistent"),
+            app,
+            [
+                "constitution",
+                "bootstrap",
+                "--project",
+                str(tmp_path / "nonexistent"),
             ],
         )
         assert result.exit_code == 1
 
     def test_bootstrap_output_shows_count_and_languages(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """bootstrap output mentions standard count and languages."""
         self._seed_standards()
         result = runner.invoke(
-            app, ["constitution", "bootstrap", "--project", str(self.project_dir)],
+            app,
+            ["constitution", "bootstrap", "--project", str(self.project_dir)],
         )
         assert result.exit_code == 0
         assert "2" in result.output  # 2 standards

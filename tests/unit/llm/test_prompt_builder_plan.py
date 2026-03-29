@@ -17,11 +17,7 @@ class TestAddPlan:
 
     def test_add_plan_renders_plan_tags(self) -> None:
         """add_plan() renders <plan> tags in the output."""
-        result = (
-            PromptBuilder()
-            .add_plan("File layout: 3 files\nArchitecture: adapter")
-            .build()
-        )
+        result = PromptBuilder().add_plan("File layout: 3 files\nArchitecture: adapter").build()
         assert "<plan>" in result
         assert "</plan>" in result
         assert "File layout: 3 files" in result
@@ -44,8 +40,10 @@ class TestAddPlan:
 
         ctx = [
             TopologyContext(
-                name="svc", purpose="A service.",
-                archetype="pure-logic", relationship="direct dependency",
+                name="svc",
+                purpose="A service.",
+                archetype="pure-logic",
+                relationship="direct dependency",
             ),
         ]
         result = (

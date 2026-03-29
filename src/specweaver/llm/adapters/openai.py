@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     )
 
 
-
 class OpenAIAdapter(LLMAdapter):
     """Adapter for OpenAI models."""
 
@@ -73,9 +72,7 @@ class OpenAIAdapter(LLMAdapter):
     ) -> list[dict[str, Any]]:
         oai_messages: list[dict[str, Any]] = []
         if config.system_instruction:
-            oai_messages.append(
-                {"role": "system", "content": config.system_instruction}
-            )
+            oai_messages.append({"role": "system", "content": config.system_instruction})
         for msg in messages:
             oai_messages.append({"role": str(msg.role.value), "content": msg.content})
         return oai_messages
@@ -93,9 +90,7 @@ class OpenAIAdapter(LLMAdapter):
             for t in tools
         ]
 
-    async def generate(
-        self, messages: list[Message], config: GenerationConfig
-    ) -> LLMResponse:
+    async def generate(self, messages: list[Message], config: GenerationConfig) -> LLMResponse:
         from specweaver.llm.models import LLMResponse, TokenUsage
 
         client = self._get_client()

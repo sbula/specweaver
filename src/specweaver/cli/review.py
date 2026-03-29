@@ -71,7 +71,9 @@ def draft(
     # Load topology context for the new component (best-effort)
     topo_graph = _load_topology(project_path)
     topo_contexts = _select_topology_contexts(
-        topo_graph, name, selector_name=selector,
+        topo_graph,
+        name,
+        selector_name=selector,
     )
 
     _core.console.print(
@@ -143,7 +145,9 @@ def review(
     topo_graph = _load_topology(project_path)
     module_name = target_path.stem.removesuffix("_spec")
     topo_contexts = _select_topology_contexts(
-        topo_graph, module_name, selector_name=selector,
+        topo_graph,
+        module_name,
+        selector_name=selector,
     )
 
     _core.console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
@@ -151,9 +155,13 @@ def review(
 
     try:
         result = _execute_review(
-            reviewer, target_path, spec, topo_contexts,
+            reviewer,
+            target_path,
+            spec,
+            topo_contexts,
             constitution=_load_constitution_content(
-                project_path, spec_path=target_path,
+                project_path,
+                spec_path=target_path,
             ),
             standards=_load_standards_content(project_path, target_path=target_path),
         )
@@ -186,7 +194,8 @@ def _execute_review(
         try:
             return asyncio.run(
                 reviewer.review_code(
-                    target_path, spec_path,
+                    target_path,
+                    spec_path,
                     topology_contexts=topology_contexts,
                     constitution=constitution,
                     standards=standards,

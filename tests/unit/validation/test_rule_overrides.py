@@ -36,6 +36,7 @@ def _spec_with_weasels(count: int) -> str:
 # S01: One-Sentence — constructor overrides
 # ---------------------------------------------------------------------------
 
+
 class TestS01Configurable:
     def test_defaults_unchanged(self):
         rule = OneSentenceRule()
@@ -63,6 +64,7 @@ class TestS01Configurable:
 # S03: Stranger — constructor overrides
 # ---------------------------------------------------------------------------
 
+
 class TestS03Configurable:
     def test_defaults_unchanged(self):
         rule = StrangerTestRule()
@@ -78,6 +80,7 @@ class TestS03Configurable:
 # ---------------------------------------------------------------------------
 # S04: Dependency Dir — constructor overrides
 # ---------------------------------------------------------------------------
+
 
 class TestS04Configurable:
     def test_defaults_unchanged(self):
@@ -95,6 +98,7 @@ class TestS04Configurable:
 # S05: Day Test — constructor overrides
 # ---------------------------------------------------------------------------
 
+
 class TestS05Configurable:
     def test_defaults_unchanged(self):
         rule = DayTestRule()
@@ -111,6 +115,7 @@ class TestS05Configurable:
 # S07: Test-First — constructor overrides
 # ---------------------------------------------------------------------------
 
+
 class TestS07Configurable:
     def test_defaults_unchanged(self):
         rule = TestFirstRule()
@@ -126,6 +131,7 @@ class TestS07Configurable:
 # ---------------------------------------------------------------------------
 # S08: Ambiguity — constructor overrides
 # ---------------------------------------------------------------------------
+
 
 class TestS08Configurable:
     def test_defaults_unchanged(self):
@@ -155,6 +161,7 @@ class TestS08Configurable:
 # S11: Terminology — constructor overrides
 # ---------------------------------------------------------------------------
 
+
 class TestS11Configurable:
     def test_defaults_unchanged(self):
         rule = TerminologyRule()
@@ -170,6 +177,7 @@ class TestS11Configurable:
 # ---------------------------------------------------------------------------
 # C04: Coverage — already configurable, verify
 # ---------------------------------------------------------------------------
+
 
 class TestC04AlreadyConfigurable:
     def test_defaults_unchanged(self):
@@ -257,4 +265,3 @@ class TestRuleOverrideEdgeCases:
         rule = TerminologyRule(warn_threshold=0, fail_threshold=0)
         assert rule._warn_threshold == 0
         assert rule._fail_threshold == 0
-

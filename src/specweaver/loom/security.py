@@ -19,13 +19,16 @@ logger = logging.getLogger(__name__)
 
 class AccessMode(StrEnum):
     """Access level for a folder grant."""
+
     READ = "read"  # list, read, search
     WRITE = "write"  # read + write + edit
     FULL = "full"  # read + write + edit + create + delete
 
 
 # Permission hierarchy: which modes allow which operations
-MODE_ALLOWS_READ: frozenset[AccessMode] = frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
+MODE_ALLOWS_READ: frozenset[AccessMode] = frozenset(
+    {AccessMode.READ, AccessMode.WRITE, AccessMode.FULL}
+)
 MODE_ALLOWS_WRITE: frozenset[AccessMode] = frozenset({AccessMode.WRITE, AccessMode.FULL})
 MODE_ALLOWS_CREATE: frozenset[AccessMode] = frozenset({AccessMode.FULL})
 MODE_ALLOWS_DELETE: frozenset[AccessMode] = frozenset({AccessMode.FULL})
@@ -40,12 +43,10 @@ class FolderGrant:
         mode: Access level (READ, WRITE, or FULL).
         recursive: If True, grant covers all subdirectories.
     """
+
     path: str
     mode: AccessMode
     recursive: bool
-
-
-
 
 
 class WorkspaceBoundaryError(Exception):

@@ -26,6 +26,7 @@ from specweaver.cli.validation import _resolve_pipeline_name
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_db(profile_name: str | None = None) -> MagicMock:
     """Create a mock DB that returns the given profile name."""
     db = MagicMock()

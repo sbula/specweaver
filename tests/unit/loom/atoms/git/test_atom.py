@@ -54,8 +54,15 @@ class TestDispatch:
     def test_all_nine_intents_are_known(self, tmp_path: Path) -> None:
         atom = GitAtom(cwd=tmp_path)
         expected = {
-            "checkpoint", "isolate", "restore", "discard_all",
-            "rollback", "publish", "integrate", "sync", "tag",
+            "checkpoint",
+            "isolate",
+            "restore",
+            "discard_all",
+            "rollback",
+            "publish",
+            "integrate",
+            "sync",
+            "tag",
         }
         assert atom._known_intents() == expected
 
@@ -72,8 +79,12 @@ class TestCheckpoint:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # add
-                type("R", (), {"returncode": 1, "stdout": "", "stderr": ""})(),  # diff --staged --quiet (changes exist)
-                type("R", (), {"returncode": 0, "stdout": "[main abc] chk\n", "stderr": ""})(),  # commit
+                type(
+                    "R", (), {"returncode": 1, "stdout": "", "stderr": ""}
+                )(),  # diff --staged --quiet (changes exist)
+                type(
+                    "R", (), {"returncode": 0, "stdout": "[main abc] chk\n", "stderr": ""}
+                )(),  # commit
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "checkpoint", "message": "flow checkpoint"})
@@ -85,7 +96,9 @@ class TestCheckpoint:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # add
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # diff --staged --quiet (no changes)
+                type(
+                    "R", (), {"returncode": 0, "stdout": "", "stderr": ""}
+                )(),  # diff --staged --quiet (no changes)
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "checkpoint"})
@@ -94,7 +107,9 @@ class TestCheckpoint:
 
     def test_add_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": "add err"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 1, "stdout": "", "stderr": "add err"}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "checkpoint", "message": "x"})
         assert result.status == AtomStatus.FAILED
@@ -104,8 +119,12 @@ class TestCheckpoint:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # add
-                type("R", (), {"returncode": 1, "stdout": "", "stderr": ""})(),  # diff (has changes)
-                type("R", (), {"returncode": 1, "stdout": "", "stderr": "commit err"})(),  # commit fails
+                type(
+                    "R", (), {"returncode": 1, "stdout": "", "stderr": ""}
+                )(),  # diff (has changes)
+                type(
+                    "R", (), {"returncode": 1, "stdout": "", "stderr": "commit err"}
+                )(),  # commit fails
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "checkpoint", "message": "x"})
@@ -149,7 +168,9 @@ class TestIsolate:
 
     def test_branch_already_exists_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 128, "stdout": "", "stderr": "already exists"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 128, "stdout": "", "stderr": "already exists"}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "isolate", "branch": "flow/existing"})
         assert result.status == AtomStatus.FAILED
@@ -179,7 +200,9 @@ class TestRestore:
 
     def test_switch_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": "no such branch"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 1, "stdout": "", "stderr": "no such branch"}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "restore", "branch": "nonexistent"})
         assert result.status == AtomStatus.FAILED
@@ -226,7 +249,9 @@ class TestRollback:
 
     def test_no_commits_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 128, "stdout": "", "stderr": "unknown rev"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 128, "stdout": "", "stderr": "unknown rev"}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "rollback"})
         assert result.status == AtomStatus.FAILED
@@ -259,7 +284,9 @@ class TestPublish:
 
     def test_push_rejected(self, tmp_path: Path) -> None:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": "rejected"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 1, "stdout": "", "stderr": "rejected"}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "publish"})
         assert result.status == AtomStatus.FAILED
@@ -281,11 +308,13 @@ class TestIntegrate:
                 type("R", (), {"returncode": 0, "stdout": "Merge made\n", "stderr": ""})(),  # merge
             ]
             atom = GitAtom(cwd=tmp_path)
-            result = atom.run({
-                "intent": "integrate",
-                "source": "feat/login",
-                "target": "main",
-            })
+            result = atom.run(
+                {
+                    "intent": "integrate",
+                    "source": "feat/login",
+                    "target": "main",
+                }
+            )
         assert result.status == AtomStatus.SUCCESS
         assert "Merged" in result.message
         assert "merge_output" in result.exports
@@ -303,13 +332,17 @@ class TestIntegrate:
 
     def test_checkout_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": "no such branch"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 1, "stdout": "", "stderr": "no such branch"}
+            )()
             atom = GitAtom(cwd=tmp_path)
-            result = atom.run({
-                "intent": "integrate",
-                "source": "feat/x",
-                "target": "nonexistent",
-            })
+            result = atom.run(
+                {
+                    "intent": "integrate",
+                    "source": "feat/x",
+                    "target": "nonexistent",
+                }
+            )
         assert result.status == AtomStatus.FAILED
         assert "git checkout" in result.message
 
@@ -317,16 +350,22 @@ class TestIntegrate:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
-                type("R", (), {"returncode": 1, "stdout": "", "stderr": "CONFLICT"})(),  # merge fails
-                type("R", (), {"returncode": 0, "stdout": "app.py\n", "stderr": ""})(),  # diff --name-only
+                type(
+                    "R", (), {"returncode": 1, "stdout": "", "stderr": "CONFLICT"}
+                )(),  # merge fails
+                type(
+                    "R", (), {"returncode": 0, "stdout": "app.py\n", "stderr": ""}
+                )(),  # diff --name-only
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # merge --abort
             ]
             atom = GitAtom(cwd=tmp_path)
-            result = atom.run({
-                "intent": "integrate",
-                "source": "feat/x",
-                "target": "main",
-            })
+            result = atom.run(
+                {
+                    "intent": "integrate",
+                    "source": "feat/x",
+                    "target": "main",
+                }
+            )
         assert result.status == AtomStatus.FAILED
         assert "Merge conflict" in result.message
         assert "app.py" in result.exports.get("conflict_files", [])
@@ -335,17 +374,23 @@ class TestIntegrate:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
-                type("R", (), {"returncode": 1, "stdout": "", "stderr": "CONFLICT"})(),  # merge fails
-                type("R", (), {"returncode": 0, "stdout": "app.py\nutils.py\n", "stderr": ""})(),  # diff
+                type(
+                    "R", (), {"returncode": 1, "stdout": "", "stderr": "CONFLICT"}
+                )(),  # merge fails
+                type(
+                    "R", (), {"returncode": 0, "stdout": "app.py\nutils.py\n", "stderr": ""}
+                )(),  # diff
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # merge --abort
             ]
             atom = GitAtom(cwd=tmp_path)
-            result = atom.run({
-                "intent": "integrate",
-                "source": "feat/x",
-                "target": "main",
-                "on_conflict": "resolve",
-            })
+            result = atom.run(
+                {
+                    "intent": "integrate",
+                    "source": "feat/x",
+                    "target": "main",
+                    "on_conflict": "resolve",
+                }
+            )
         assert result.status == AtomStatus.RETRY
         assert result.exports["needs_conflict_resolver"] is True
         assert "app.py" in result.exports["conflict_files"]
@@ -375,7 +420,9 @@ class TestSync:
 
     def test_fetch_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": "network err"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 1, "stdout": "", "stderr": "network err"}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "sync"})
         assert result.status == AtomStatus.FAILED
@@ -385,7 +432,9 @@ class TestSync:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # fetch ok
-                type("R", (), {"returncode": 1, "stdout": "", "stderr": "CONFLICT"})(),  # pull fails
+                type(
+                    "R", (), {"returncode": 1, "stdout": "", "stderr": "CONFLICT"}
+                )(),  # pull fails
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # merge --abort
             ]
             atom = GitAtom(cwd=tmp_path)
@@ -400,11 +449,13 @@ class TestSync:
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
             ]
             atom = GitAtom(cwd=tmp_path)
-            result = atom.run({
-                "intent": "sync",
-                "remote": "upstream",
-                "branch": "develop",
-            })
+            result = atom.run(
+                {
+                    "intent": "sync",
+                    "remote": "upstream",
+                    "branch": "develop",
+                }
+            )
         assert result.status == AtomStatus.SUCCESS
         assert "upstream" in result.message
 
@@ -433,7 +484,9 @@ class TestTag:
 
     def test_tag_already_exists_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 128, "stdout": "", "stderr": "already exists"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 128, "stdout": "", "stderr": "already exists"}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "tag", "name": "v1.0"})
         assert result.status == AtomStatus.FAILED
@@ -458,10 +511,19 @@ class TestEdgeCases:
 
     def test_engine_whitelist_contains_all_needed_commands(self, tmp_path: Path) -> None:
         expected = {
-            "add", "commit", "diff", "status",
-            "switch", "restore", "reset",
-            "push", "checkout", "merge",
-            "fetch", "pull", "tag",
+            "add",
+            "commit",
+            "diff",
+            "status",
+            "switch",
+            "restore",
+            "reset",
+            "push",
+            "checkout",
+            "merge",
+            "fetch",
+            "pull",
+            "tag",
         }
         assert expected == GitAtom._ENGINE_WHITELIST
 
@@ -487,10 +549,12 @@ class TestEdgeCases:
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
             ]
             atom = GitAtom(cwd=tmp_path)
-            result = atom.run({
-                "intent": "integrate",
-                "source": "a",
-                "target": "b",
-                "on_conflict": "unknown_strategy",
-            })
+            result = atom.run(
+                {
+                    "intent": "integrate",
+                    "source": "a",
+                    "target": "b",
+                    "on_conflict": "unknown_strategy",
+                }
+            )
         assert result.status == AtomStatus.FAILED

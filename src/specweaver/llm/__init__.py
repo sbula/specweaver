@@ -6,3 +6,7 @@
 Provides a common async interface for LLM providers.
 MVP: Gemini only. Future: OpenAI, Anthropic, Mistral, Ollama, vLLM, Qwen.
 """
+
+from specweaver.llm.router import ModelRouter
+
+__all__ = ["ModelRouter"]

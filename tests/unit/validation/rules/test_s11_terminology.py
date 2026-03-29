@@ -16,8 +16,8 @@ from specweaver.validation.rules.spec.s11_terminology import (
 
 # ── Helper functions ─────────────────────────────────────────────────────
 
-class TestNormalizeTerm:
 
+class TestNormalizeTerm:
     def test_camel_case(self) -> None:
         assert _normalize_term("userId") == "userid"
 
@@ -35,7 +35,6 @@ class TestNormalizeTerm:
 
 
 class TestExtractCodeBlockContent:
-
     def test_extracts_fenced_blocks(self) -> None:
         text = "before\n```python\ncode here\n```\nafter\n"
         result = _extract_code_block_content(text)
@@ -53,7 +52,6 @@ class TestExtractCodeBlockContent:
 
 
 class TestExtractHeadingTerms:
-
     def test_extracts_backtick_terms(self) -> None:
         text = "## The `FlowEngine` Module\n\nSome text.\n"
         terms = _extract_heading_terms(text)
@@ -66,7 +64,6 @@ class TestExtractHeadingTerms:
 
 
 class TestFindLine:
-
     def test_finds_first_occurrence(self) -> None:
         text = "line one\nline two\n"
         assert _find_line(text, "two") == 2
@@ -77,8 +74,8 @@ class TestFindLine:
 
 # ── TerminologyRule.check() ──────────────────────────────────────────────
 
-class TestTerminologyRuleConsistency:
 
+class TestTerminologyRuleConsistency:
     def test_consistent_casing_passes(self) -> None:
         spec = "The `userId` field is used to identify the `userId` in the system.\n"
         rule = TerminologyRule()
@@ -124,7 +121,6 @@ class TestTerminologyRuleConsistency:
 
 
 class TestTerminologyRuleUndefined:
-
     def test_defined_in_heading_not_flagged(self) -> None:
         spec = "## The `FlowEngine`\n\nThe `FlowEngine` orchestrates steps.\n"
         rule = TerminologyRule()
@@ -132,10 +128,7 @@ class TestTerminologyRuleUndefined:
         assert result.status == Status.PASS
 
     def test_defined_in_code_block_not_flagged(self) -> None:
-        spec = (
-            "```python\nclass FlowEngine:\n    pass\n```\n\n"
-            "The `FlowEngine` runs pipelines.\n"
-        )
+        spec = "```python\nclass FlowEngine:\n    pass\n```\n\nThe `FlowEngine` runs pipelines.\n"
         rule = TerminologyRule()
         result = rule.check(spec)
         assert result.status == Status.PASS

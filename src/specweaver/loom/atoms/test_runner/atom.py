@@ -39,6 +39,7 @@ def _resolve_runner(language: str, cwd: Any) -> TestRunnerInterface:
     """
     if language == "python":
         from specweaver.loom.commons.test_runner.python import PythonTestRunner
+
         return PythonTestRunner(cwd=cwd)
 
     msg = f"Unsupported language: {language!r}. Supported: ['python']"
@@ -80,13 +81,14 @@ class TestRunnerAtom(Atom):
             )
 
         handler: Callable[[dict[str, Any]], AtomResult] | None = getattr(
-            self, f"_intent_{intent}", None,
+            self,
+            f"_intent_{intent}",
+            None,
         )
         if handler is None:
             return AtomResult(
                 status=AtomStatus.FAILED,
-                message=f"Unknown intent: {intent!r}. "
-                        f"Known: {sorted(self._known_intents())}",
+                message=f"Unknown intent: {intent!r}. Known: {sorted(self._known_intents())}",
             )
 
         return handler(context)
@@ -94,11 +96,7 @@ class TestRunnerAtom(Atom):
     def _known_intents(self) -> set[str]:
         """Return the set of known intent names."""
         prefix = "_intent_"
-        return {
-            name[len(prefix):]
-            for name in dir(self)
-            if name.startswith(prefix)
-        }
+        return {name[len(prefix) :] for name in dir(self) if name.startswith(prefix)}
 
     # -- Intent implementations ----------------------------------------
 
@@ -145,7 +143,7 @@ class TestRunnerAtom(Atom):
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message=f"{result.failed} failed, {result.errors} errors "
-                        f"out of {result.total} tests.",
+                f"out of {result.total} tests.",
                 exports=exports,
             )
 
@@ -223,7 +221,7 @@ class TestRunnerAtom(Atom):
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message=f"{result.violation_count} function(s) exceed complexity "
-                        f"threshold of {result.max_complexity}.",
+                f"threshold of {result.max_complexity}.",
                 exports=exports,
             )
 

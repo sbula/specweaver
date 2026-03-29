@@ -97,7 +97,10 @@ class StandardsReviewer:
                 # Prompt for action
                 action = self._prompt_action()
                 stop = self._handle_result_action(
-                    action, result, results, scope_accepted,
+                    action,
+                    result,
+                    results,
+                    scope_accepted,
                 )
                 if stop == "skip_scope":
                     skip_scope = True
@@ -107,17 +110,15 @@ class StandardsReviewer:
         return accepted
 
     def _should_auto_accept(
-        self, result: CategoryResult, existing_by_cat: dict[str, dict[str, object]],
+        self,
+        result: CategoryResult,
+        existing_by_cat: dict[str, dict[str, object]],
     ) -> bool:
         """Check if a result is unchanged and already HITL-confirmed."""
         old = existing_by_cat.get(result.category)
         if not old or old.get("confirmed_by") != "hitl":
             return False
-        old_data = (
-            json.loads(old["data"])
-            if isinstance(old["data"], str)
-            else old["data"]
-        )
+        old_data = json.loads(old["data"]) if isinstance(old["data"], str) else old["data"]
         return bool(old_data == result.dominant)
 
     def _handle_result_action(
@@ -134,7 +135,7 @@ class StandardsReviewer:
             # Accept all remaining in this scope
             scope_accepted.append(result)
             idx = all_results.index(result)
-            scope_accepted.extend(all_results[idx + 1:])
+            scope_accepted.extend(all_results[idx + 1 :])
             return "skip_scope"  # Break out of inner loop
         elif action == "e":
             edited = self._edit_data(result)
@@ -146,7 +147,9 @@ class StandardsReviewer:
         return None
 
     def _show_category(
-        self, scope: str, result: CategoryResult,
+        self,
+        scope: str,
+        result: CategoryResult,
     ) -> None:
         """Display a single category result."""
         table = Table(title=f"Scope: {scope}")
@@ -172,11 +175,7 @@ class StandardsReviewer:
         new: CategoryResult,
     ) -> None:
         """Show what changed between old and new standards."""
-        old_data = (
-            json.loads(old["data"])
-            if isinstance(old["data"], str)
-            else old["data"]
-        )
+        old_data = json.loads(old["data"]) if isinstance(old["data"], str) else old["data"]
         self._console.print(f"\n[bold]Diff for [{scope}/{category}]:[/bold]")
         self._console.print(f"  [red]Old: {old_data}[/red]")
         self._console.print(f"  [green]New: {new.dominant}[/green]")

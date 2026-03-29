@@ -28,9 +28,15 @@ class FakePassHandler:
     async def execute(self, step, context):
         return StepResult(status=StepStatus.PASSED, output={}, started_at="1", completed_at="2")
 
+
 class FakeHitlHandler:
     async def execute(self, step, context):
-        return StepResult(status=StepStatus.WAITING_FOR_INPUT, output={"message": "wait"}, started_at="1", completed_at="2")
+        return StepResult(
+            status=StepStatus.WAITING_FOR_INPUT,
+            output={"message": "wait"},
+            started_at="1",
+            completed_at="2",
+        )
 
 
 @pytest.mark.asyncio
@@ -52,9 +58,9 @@ async def test_display_integration_full_pipeline(tmp_path: Path) -> None:
                 name="review",
                 action=StepAction.REVIEW,
                 target=StepTarget.SPEC,
-                gate=GateDefinition(type=GateType.HITL, condition=GateCondition.ACCEPTED)
+                gate=GateDefinition(type=GateType.HITL, condition=GateCondition.ACCEPTED),
             ),
-        ]
+        ],
     )
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")

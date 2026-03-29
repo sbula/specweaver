@@ -44,7 +44,10 @@ def run_check(
 
     active = db.get_active_project()
     pipeline_name = resolve_pipeline_name(
-        body.level, body.pipeline, db=db, active_project=active,
+        body.level,
+        body.pipeline,
+        db=db,
+        active_project=active,
     )
 
     resolved = load_pipeline_yaml(pipeline_name, project_dir=project_root)

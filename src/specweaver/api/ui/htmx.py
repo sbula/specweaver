@@ -27,7 +27,26 @@ def _render_markdown(text: str | None) -> str:
     if not text:
         return ""
     html = markdown.markdown(text, extensions=["fenced_code", "tables"])
-    allowed_tags = bleach.ALLOWED_TAGS | {"p", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "div", "span", "br", "hr", "table", "thead", "tbody", "tr", "th", "td"}
+    allowed_tags = bleach.ALLOWED_TAGS | {
+        "p",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "pre",
+        "div",
+        "span",
+        "br",
+        "hr",
+        "table",
+        "thead",
+        "tbody",
+        "tr",
+        "th",
+        "td",
+    }
     return str(bleach.clean(html, tags=allowed_tags))
 
 
@@ -55,4 +74,3 @@ def submit_hitl_gate(
     response = HTMLResponse(content="")
     response.headers["HX-Refresh"] = "true"
     return response
-

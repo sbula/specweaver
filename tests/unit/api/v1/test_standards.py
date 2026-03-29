@@ -27,9 +27,9 @@ def _project_with_python(client, tmp_path):
     proj.mkdir()
     (proj / "src").mkdir()
     (proj / "src" / "example.py").write_text(
-        "\"\"\"Example module.\"\"\"\n\n\n"
+        '"""Example module."""\n\n\n'
         "def greet(name: str) -> str:\n"
-        "    \"\"\"Greet a user by name.\"\"\"\n"
+        '    """Greet a user by name."""\n'
         '    return f"Hello {name}!"\n',
         encoding="utf-8",
     )

@@ -66,8 +66,7 @@ class DataExtensionsMixin:
 
             # Check if override already exists
             existing = conn.execute(
-                "SELECT * FROM validation_overrides "
-                "WHERE project_name = ? AND rule_id = ?",
+                "SELECT * FROM validation_overrides WHERE project_name = ? AND rule_id = ?",
                 (project_name, rule_id),
             ).fetchone()
 
@@ -106,13 +105,14 @@ class DataExtensionsMixin:
                 )
 
     def get_validation_override(
-        self, project_name: str, rule_id: str,
+        self,
+        project_name: str,
+        rule_id: str,
     ) -> dict[str, object] | None:
         """Get a single validation override, or None if not set."""
         with self.connect() as conn:  # type: ignore[attr-defined]
             row = conn.execute(
-                "SELECT * FROM validation_overrides "
-                "WHERE project_name = ? AND rule_id = ?",
+                "SELECT * FROM validation_overrides WHERE project_name = ? AND rule_id = ?",
                 (project_name, rule_id),
             ).fetchone()
             return dict(row) if row else None
@@ -121,25 +121,26 @@ class DataExtensionsMixin:
         """Get all validation overrides for a project."""
         with self.connect() as conn:  # type: ignore[attr-defined]
             rows = conn.execute(
-                "SELECT * FROM validation_overrides "
-                "WHERE project_name = ? ORDER BY rule_id",
+                "SELECT * FROM validation_overrides WHERE project_name = ? ORDER BY rule_id",
                 (project_name,),
             ).fetchall()
             return [dict(r) for r in rows]
 
     def delete_validation_override(
-        self, project_name: str, rule_id: str,
+        self,
+        project_name: str,
+        rule_id: str,
     ) -> None:
         """Delete a validation override. Idempotent."""
         with self.connect() as conn:  # type: ignore[attr-defined]
             conn.execute(
-                "DELETE FROM validation_overrides "
-                "WHERE project_name = ? AND rule_id = ?",
+                "DELETE FROM validation_overrides WHERE project_name = ? AND rule_id = ?",
                 (project_name, rule_id),
             )
 
     def load_validation_settings(
-        self, project_name: str,
+        self,
+        project_name: str,
     ) -> ValidationSettings:
         """Load ValidationSettings from DB overrides for a project.
 
@@ -166,8 +167,12 @@ class DataExtensionsMixin:
             overrides[rule_id] = RuleOverride(
                 rule_id=rule_id,
                 enabled=bool(row["enabled"]),
-                warn_threshold=float(str(row["warn_threshold"])) if row["warn_threshold"] is not None else None,
-                fail_threshold=float(str(row["fail_threshold"])) if row["fail_threshold"] is not None else None,
+                warn_threshold=float(str(row["warn_threshold"]))
+                if row["warn_threshold"] is not None
+                else None,
+                fail_threshold=float(str(row["fail_threshold"]))
+                if row["fail_threshold"] is not None
+                else None,
             )
         return ValidationSettings(overrides=overrides)
 
@@ -228,9 +233,9 @@ class DataExtensionsMixin:
             )
 
         logger.info(
-            "Domain profile '%s' activated for project '%s' "
-            "(pipeline: validation_spec_%s.yaml)",
-            profile_name, project_name,
+            "Domain profile '%s' activated for project '%s' (pipeline: validation_spec_%s.yaml)",
+            profile_name,
+            project_name,
             profile_name.replace("-", "_"),
         )
 
@@ -255,8 +260,7 @@ class DataExtensionsMixin:
             )
 
         logger.info(
-            "Domain profile cleared for project '%s' "
-            "(per-rule overrides preserved)",
+            "Domain profile cleared for project '%s' (per-rule overrides preserved)",
             project_name,
         )
 
@@ -373,10 +377,7 @@ class DataExtensionsMixin:
                 If None, delete all standards for the project.
         """
         if scope is not None:
-            query = (
-                "DELETE FROM project_standards "
-                "WHERE project_name = ? AND scope = ?"
-            )
+            query = "DELETE FROM project_standards WHERE project_name = ? AND scope = ?"
             params: tuple[str, str] | tuple[str] = (project_name, scope)
         else:
             query = "DELETE FROM project_standards WHERE project_name = ?"

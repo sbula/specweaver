@@ -30,12 +30,28 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 #: Source file extensions recognized for scope detection.
-_SOURCE_EXTENSIONS: frozenset[str] = frozenset({
-    ".py", ".js", ".ts", ".jsx", ".tsx",
-    ".go", ".rs", ".java", ".kt", ".rb",
-    ".c", ".cpp", ".h", ".hpp", ".cs",
-    ".swift", ".scala", ".clj",
-})
+_SOURCE_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".py",
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".go",
+        ".rs",
+        ".java",
+        ".kt",
+        ".rb",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".cs",
+        ".swift",
+        ".scala",
+        ".clj",
+    }
+)
 
 
 def detect_scopes(project_path: Path) -> list[str]:

@@ -39,7 +39,8 @@ def project(tmp_path: Path) -> Path:
     """Create a project with files to operate on."""
     (tmp_path / "src" / "domain" / "billing").mkdir(parents=True)
     (tmp_path / "src" / "domain" / "billing" / "calc.py").write_text(
-        "def total(a, b): return a + b", encoding="utf-8",
+        "def total(a, b): return a + b",
+        encoding="utf-8",
     )
     (tmp_path / "specs").mkdir()
     (tmp_path / "specs" / "billing.md").write_text("# Billing\n", encoding="utf-8")
@@ -84,15 +85,28 @@ _ALL_METHODS = {
 }
 
 _IMPLEMENTER_METHODS = {
-    "read_file", "write_file", "edit_file", "create_file",
-    "delete_file", "list_directory", "search_content", "find_placement",
-    "grep", "find_files",
+    "read_file",
+    "write_file",
+    "edit_file",
+    "create_file",
+    "delete_file",
+    "list_directory",
+    "search_content",
+    "find_placement",
+    "grep",
+    "find_files",
 }
 _REVIEWER_METHODS = {"read_file", "list_directory", "search_content", "grep", "find_files"}
 _DRAFTER_METHODS = {
-    "read_file", "write_file", "create_file", "delete_file",
-    "list_directory", "search_content", "find_placement",
-    "grep", "find_files",
+    "read_file",
+    "write_file",
+    "create_file",
+    "delete_file",
+    "list_directory",
+    "search_content",
+    "find_placement",
+    "grep",
+    "find_files",
 }
 
 
@@ -182,7 +196,9 @@ class TestImplementerFunctional:
     def test_edit_file(self, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
         result = iface.edit_file(
-            "src/domain/billing/calc.py", old="return a + b", new="return a + b  # sum",
+            "src/domain/billing/calc.py",
+            old="return a + b",
+            new="return a + b  # sum",
         )
         assert result.status == "success"
 
@@ -253,4 +269,6 @@ class TestFactory:
     def test_return_type_is_union(self, project: Path) -> None:
         """Factory return type is the FileInterface union."""
         iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        assert isinstance(iface, (ImplementerFileInterface, ReviewerFileInterface, DrafterFileInterface))
+        assert isinstance(
+            iface, (ImplementerFileInterface, ReviewerFileInterface, DrafterFileInterface)
+        )

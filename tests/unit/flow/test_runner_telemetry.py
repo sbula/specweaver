@@ -161,7 +161,9 @@ class TestRunnerTelemetryFlush:
 
         # Create a parked run with one step
         PipelineStep(
-            name="s0", action=StepAction.VALIDATE, target=StepTarget.SPEC,
+            name="s0",
+            action=StepAction.VALIDATE,
+            target=StepTarget.SPEC,
         )
         run = PipelineRun(
             run_id="test-resume-id",
@@ -183,7 +185,8 @@ class TestRunnerTelemetryFlush:
             db=mock_db,
         )
         runner = PipelineRunner(
-            _pipeline(1), ctx,
+            _pipeline(1),
+            ctx,
             store=mock_store,
             registry=_registry(PassHandler()),
         )

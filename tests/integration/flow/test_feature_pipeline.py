@@ -139,6 +139,7 @@ class TestFeatureDecompositionPipelineIntegration:
         path = PIPELINES_DIR / "feature_decomposition.yaml"
         if not path.exists():
             import pytest
+
             pytest.skip(f"Pipeline YAML not found: {path}")
 
         data = yaml.load(path)
@@ -172,6 +173,7 @@ class TestFeatureDecompositionPipelineIntegration:
         path = PIPELINES_DIR / "feature_decomposition.yaml"
         if not path.exists():
             import pytest
+
             pytest.skip(f"Pipeline YAML not found: {path}")
 
         data = yaml.load(path)

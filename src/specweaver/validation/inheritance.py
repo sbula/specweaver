@@ -72,7 +72,9 @@ def resolve_pipeline(
 
     logger.debug(
         "Resolving pipeline '%s' from base '%s' (%d base steps)",
-        pipeline.name, pipeline.extends, len(base.steps),
+        pipeline.name,
+        pipeline.extends,
+        len(base.steps),
     )
 
     steps = copy.deepcopy(base.steps)

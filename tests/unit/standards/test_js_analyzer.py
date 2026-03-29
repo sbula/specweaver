@@ -43,11 +43,13 @@ class TestJSNamingExtraction:
         self, analyzer: JSStandardsAnalyzer, tmp_path: Path
     ) -> None:
         f = tmp_path / "code.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             function getUser() {}
             const setName = () => {};
             const process_data = function() {};
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         naming = next(r for r in results if r.category == "naming")
         assert naming.dominant.get("function_style") == "camelCase"
@@ -57,11 +59,13 @@ class TestJSNamingExtraction:
         self, analyzer: JSStandardsAnalyzer, tmp_path: Path
     ) -> None:
         f = tmp_path / "models.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             class UserProfile {}
             class DatabaseConnection {}
             class my_weird_class {}
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         naming = next(r for r in results if r.category == "naming")
         assert naming.dominant.get("class_style") == "PascalCase"
@@ -69,26 +73,25 @@ class TestJSNamingExtraction:
 
 
 class TestJSErrorHandlingExtraction:
-    def test_detects_bare_catch(
-        self, analyzer: JSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_detects_bare_catch(self, analyzer: JSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "handlers.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             try {
                 doSomething();
             } catch (e) {
                 console.error(e);
             }
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         err = next(r for r in results if r.category == "error_handling")
         assert err.dominant.get("exception_style") == "bare"
 
-    def test_detects_specific_catch(
-        self, analyzer: JSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_detects_specific_catch(self, analyzer: JSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "handlers.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             try {
                 doSomething();
             } catch (e) {
@@ -98,18 +101,18 @@ class TestJSErrorHandlingExtraction:
                     // handle
                 }
             }
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         err = next(r for r in results if r.category == "error_handling")
         assert err.dominant.get("exception_style") == "specific"
 
 
 class TestJSDocExtraction:
-    def test_detects_jsdoc_presence(
-        self, analyzer: JSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_detects_jsdoc_presence(self, analyzer: JSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "doc.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             /**
              * Greets a user.
              * @param {string} name
@@ -117,78 +120,79 @@ class TestJSDocExtraction:
             function greet(name) { return name; }
 
             function noDoc() {}
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         docs = next(r for r in results if r.category == "jsdoc")
         assert docs.dominant.get("coverage") == "high"
 
 
 class TestJSImportPatterns:
-    def test_detects_es6_modules(
-        self, analyzer: JSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_detects_es6_modules(self, analyzer: JSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "imports.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             import { something } from 'module';
             import os from 'os';
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         imports = next(r for r in results if r.category == "import_patterns")
         assert imports.dominant.get("style") == "es6"
 
-    def test_detects_commonjs(
-        self, analyzer: JSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_detects_commonjs(self, analyzer: JSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "req.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             const fs = require('fs');
             const path = require('path');
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         imports = next(r for r in results if r.category == "import_patterns")
         assert imports.dominant.get("style") == "commonjs"
 
 
 class TestJSAsyncPatterns:
-    def test_detects_async_await(
-        self, analyzer: JSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_detects_async_await(self, analyzer: JSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "async.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             async function fetchData() {
                 const res = await fetch(url);
             }
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         async_pat = next(r for r in results if r.category == "async_patterns")
         assert async_pat.dominant.get("style") == "async/await"
 
-    def test_detects_promises(
-        self, analyzer: JSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_detects_promises(self, analyzer: JSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "prom.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             function fetchData() {
                 return fetch(url).then(res => res.json()).catch(err => console.error(err));
             }
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         async_pat = next(r for r in results if r.category == "async_patterns")
         assert async_pat.dominant.get("style") == "promises"
 
 
 class TestJSTestPatterns:
-    def test_detects_jest(
-        self, analyzer: JSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_detects_jest(self, analyzer: JSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "app.test.js"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             describe('app', () => {
                 it('should work', () => {
                     expect(1).toBe(1);
                 });
             });
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         tests = next(r for r in results if r.category == "test_patterns")
         assert tests.dominant.get("framework") == "jest/mocha"

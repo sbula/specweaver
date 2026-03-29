@@ -45,11 +45,27 @@ class TestBuiltInRegistration:
     """Verify all 19 built-in rules are registered."""
 
     EXPECTED_SPEC_IDS: ClassVar[list[str]] = [
-        "S01", "S02", "S03", "S04", "S05", "S06",
-        "S07", "S08", "S09", "S10", "S11",
+        "S01",
+        "S02",
+        "S03",
+        "S04",
+        "S05",
+        "S06",
+        "S07",
+        "S08",
+        "S09",
+        "S10",
+        "S11",
     ]
     EXPECTED_CODE_IDS: ClassVar[list[str]] = [
-        "C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08",
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C06",
+        "C07",
+        "C08",
     ]
 
     def test_all_spec_rules_registered(self):
@@ -127,8 +143,7 @@ class TestRunnerRegistryIntegration:
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, "# Test")
         ids = sorted([r.rule_id for r in results])
-        assert ids == ["S01", "S02", "S03", "S04", "S05", "S06",
-                        "S07", "S08", "S09", "S10", "S11"]
+        assert ids == ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11"]
 
     def test_get_code_rules_without_subprocess(self):
         """Code default pipeline without subprocess rules returns 6 rules."""

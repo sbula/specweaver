@@ -58,29 +58,28 @@ class TestSchemaCreation:
 
     def test_all_tables_exist(self, db):
         """All 5 required tables are created."""
-        expected = {"projects", "llm_profiles", "project_llm_links",
-                    "active_state", "schema_version"}
+        expected = {
+            "projects",
+            "llm_profiles",
+            "project_llm_links",
+            "active_state",
+            "schema_version",
+        }
         with db.connect() as conn:
-            rows = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
+            rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
             tables = {r[0] for r in rows}
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
         """Schema version is 10 after v10 migration."""
         with db.connect() as conn:
-            row = conn.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
             assert row[0] == 10
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""
         with db.connect() as conn:
-            rows = conn.execute(
-                "SELECT name, is_global FROM llm_profiles ORDER BY name"
-            ).fetchall()
+            rows = conn.execute("SELECT name, is_global FROM llm_profiles ORDER BY name").fetchall()
         names = [r[0] for r in rows]
         assert "draft" in names
         assert "review" in names
@@ -99,9 +98,7 @@ class TestSchemaCreation:
     def test_draft_profile_higher_temperature(self, db):
         """Draft profile has higher temperature (0.7)."""
         with db.connect() as conn:
-            row = conn.execute(
-                "SELECT temperature FROM llm_profiles WHERE name='draft'"
-            ).fetchone()
+            row = conn.execute("SELECT temperature FROM llm_profiles WHERE name='draft'").fetchone()
         assert row[0] == pytest.approx(0.7)
 
     def test_search_profile_lowest_temperature(self, db):
@@ -131,28 +128,34 @@ class TestSchemaCreation:
 class TestProjectNameValidation:
     """Enforce ^[a-z0-9][a-z0-9_-]*$ for project names."""
 
-    @pytest.mark.parametrize("name", [
-        "myapp",
-        "my-app",
-        "my_app",
-        "app123",
-        "1st-project",
-        "a",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "myapp",
+            "my-app",
+            "my_app",
+            "app123",
+            "1st-project",
+            "a",
+        ],
+    )
     def test_valid_names(self, db, name: str):
         db.register_project(name, "/tmp/proj")
 
-    @pytest.mark.parametrize("name,reason", [
-        ("", "empty"),
-        ("My-App", "uppercase"),
-        ("my app", "space"),
-        ("-leading-hyphen", "starts with hyphen"),
-        ("_leading-underscore", "starts with underscore"),
-        ("my.app", "dot"),
-        ("my/app", "slash"),
-        ("my@app", "at sign"),
-        ("möbius", "non-ascii"),
-    ])
+    @pytest.mark.parametrize(
+        "name,reason",
+        [
+            ("", "empty"),
+            ("My-App", "uppercase"),
+            ("my app", "space"),
+            ("-leading-hyphen", "starts with hyphen"),
+            ("_leading-underscore", "starts with underscore"),
+            ("my.app", "dot"),
+            ("my/app", "slash"),
+            ("my@app", "at sign"),
+            ("möbius", "non-ascii"),
+        ],
+    )
     def test_invalid_names(self, db, name: str, reason: str):
         with pytest.raises(ValueError, match=r"[Ii]nvalid project name"):
             db.register_project(name, "/tmp/proj")
@@ -516,6 +519,7 @@ class TestRoutingDbMethods:
     @pytest.fixture()
     def db(self, tmp_path: Path):
         from specweaver.config.database import Database
+
         return Database(tmp_path / ".specweaver" / "specweaver.db")
 
     @pytest.fixture()
@@ -523,20 +527,29 @@ class TestRoutingDbMethods:
         """Project with two task: routing entries and one non-task entry."""
         db.register_project("myapp", str(tmp_path))
         pid_fast = db.create_llm_profile(
-            "gemini-fast", provider="gemini", model="gemini-3-flash-preview",
-            temperature=0.2, max_output_tokens=4096,
+            "gemini-fast",
+            provider="gemini",
+            model="gemini-3-flash-preview",
+            temperature=0.2,
+            max_output_tokens=4096,
         )
         pid_pro = db.create_llm_profile(
-            "gemini-pro", provider="gemini", model="gemini-2.5-pro-preview-03-25",
-            temperature=0.5, max_output_tokens=8192,
+            "gemini-pro",
+            provider="gemini",
+            model="gemini-2.5-pro-preview-03-25",
+            temperature=0.5,
+            max_output_tokens=8192,
         )
         pid_review = db.create_llm_profile(
-            "review-profile", provider="gemini", model="gemini-3-flash-preview",
-            temperature=0.3, max_output_tokens=4096,
+            "review-profile",
+            provider="gemini",
+            model="gemini-3-flash-preview",
+            temperature=0.3,
+            max_output_tokens=4096,
         )
         db.link_project_profile("myapp", "task:implement", pid_fast)
         db.link_project_profile("myapp", "task:plan", pid_pro)
-        db.link_project_profile("myapp", "review", pid_review)   # non-task: role
+        db.link_project_profile("myapp", "review", pid_review)  # non-task: role
         return db
 
     # T5 — unlink_project_profile
@@ -596,4 +609,3 @@ class TestRoutingDbMethods:
             assert "task_type" in entry
             assert "profile_name" in entry
             assert "profile_id" in entry
-

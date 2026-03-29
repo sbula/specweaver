@@ -422,7 +422,8 @@ class TestInitStandardsScanHint:
         project_dir.mkdir()
         (project_dir / "main.py").write_text("def main(): pass\n")
         result = runner.invoke(
-            app, ["init", "existproj", "--path", str(project_dir)],
+            app,
+            ["init", "existproj", "--path", str(project_dir)],
         )
         assert result.exit_code == 0
         assert "sw standards scan" in result.output
@@ -433,7 +434,8 @@ class TestInitStandardsScanHint:
         project_dir.mkdir()
         (project_dir / "app.ts").write_text("const x = 1;\n")
         result = runner.invoke(
-            app, ["init", "tsproj", "--path", str(project_dir)],
+            app,
+            ["init", "tsproj", "--path", str(project_dir)],
         )
         assert result.exit_code == 0
         assert "sw standards scan" in result.output
@@ -443,7 +445,8 @@ class TestInitStandardsScanHint:
         project_dir = tmp_path / "empty-proj"
         project_dir.mkdir()
         result = runner.invoke(
-            app, ["init", "emptyproj", "--path", str(project_dir)],
+            app,
+            ["init", "emptyproj", "--path", str(project_dir)],
         )
         assert result.exit_code == 0
         assert "sw standards scan" not in result.output
@@ -456,8 +459,8 @@ class TestInitStandardsScanHint:
         git_dir.mkdir(parents=True)
         (git_dir / "pre-commit.py").write_text("print('hook')\n")
         result = runner.invoke(
-            app, ["init", "hiddenproj", "--path", str(project_dir)],
+            app,
+            ["init", "hiddenproj", "--path", str(project_dir)],
         )
         assert result.exit_code == 0
         assert "sw standards scan" not in result.output
-

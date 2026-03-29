@@ -154,10 +154,14 @@ class TestRenderArchitecture:
 
     def test_unknown_archetype_warning(self) -> None:
         plan = PlanArtifact(
-            spec_path="test.md", spec_name="test", spec_hash="x",
-            file_layout=[], timestamp="2026-03-22T00:00:00Z",
+            spec_path="test.md",
+            spec_name="test",
+            spec_hash="x",
+            file_layout=[],
+            timestamp="2026-03-22T00:00:00Z",
             architecture=ArchitectureSection(
-                module_layout="custom", dependency_direction="lateral",
+                module_layout="custom",
+                dependency_direction="lateral",
                 archetype="event-sourcing",
             ),
         )
@@ -189,8 +193,11 @@ class TestRenderFileLayout:
     def test_moderate_complexity(self) -> None:
         files = [FileChange(path=f"f{i}.py", action="create", purpose="x") for i in range(10)]
         plan = PlanArtifact(
-            spec_path="t.md", spec_name="t", spec_hash="x",
-            file_layout=files, timestamp="2026-03-22T00:00:00Z",
+            spec_path="t.md",
+            spec_name="t",
+            spec_hash="x",
+            file_layout=files,
+            timestamp="2026-03-22T00:00:00Z",
         )
         md = render_plan_markdown(plan)
         assert "🟡 Moderate" in md
@@ -198,16 +205,22 @@ class TestRenderFileLayout:
     def test_high_complexity(self) -> None:
         files = [FileChange(path=f"f{i}.py", action="create", purpose="x") for i in range(20)]
         plan = PlanArtifact(
-            spec_path="t.md", spec_name="t", spec_hash="x",
-            file_layout=files, timestamp="2026-03-22T00:00:00Z",
+            spec_path="t.md",
+            spec_name="t",
+            spec_hash="x",
+            file_layout=files,
+            timestamp="2026-03-22T00:00:00Z",
         )
         md = render_plan_markdown(plan)
         assert "🔴 Consider splitting" in md
 
     def test_empty_file_layout(self) -> None:
         plan = PlanArtifact(
-            spec_path="t.md", spec_name="t", spec_hash="x",
-            file_layout=[], timestamp="2026-03-22T00:00:00Z",
+            spec_path="t.md",
+            spec_name="t",
+            spec_hash="x",
+            file_layout=[],
+            timestamp="2026-03-22T00:00:00Z",
         )
         md = render_plan_markdown(plan)
         assert "No files specified" in md
@@ -308,10 +321,14 @@ class TestRenderSectionEdgeCases:
     def test_architecture_no_patterns(self) -> None:
         """Architecture with patterns=None should omit the Patterns line."""
         plan = PlanArtifact(
-            spec_path="t.md", spec_name="t", spec_hash="x",
-            file_layout=[], timestamp="2026-03-22T00:00:00Z",
+            spec_path="t.md",
+            spec_name="t",
+            spec_hash="x",
+            file_layout=[],
+            timestamp="2026-03-22T00:00:00Z",
             architecture=ArchitectureSection(
-                module_layout="flat", dependency_direction="downward",
+                module_layout="flat",
+                dependency_direction="downward",
                 archetype="adapter",
             ),
         )
@@ -322,8 +339,11 @@ class TestRenderSectionEdgeCases:
     def test_tech_stack_no_alternatives(self) -> None:
         """Tech stack choice with no alternatives omits the '(vs. ...)' suffix."""
         plan = PlanArtifact(
-            spec_path="t.md", spec_name="t", spec_hash="x",
-            file_layout=[], timestamp="2026-03-22T00:00:00Z",
+            spec_path="t.md",
+            spec_name="t",
+            spec_hash="x",
+            file_layout=[],
+            timestamp="2026-03-22T00:00:00Z",
             tech_stack=[
                 TechStackChoice(
                     category="ORM",
@@ -341,11 +361,16 @@ class TestRenderSectionEdgeCases:
     def test_task_with_no_files(self) -> None:
         """Task without files should not render a Files: line."""
         plan = PlanArtifact(
-            spec_path="t.md", spec_name="t", spec_hash="x",
-            file_layout=[], timestamp="2026-03-22T00:00:00Z",
+            spec_path="t.md",
+            spec_name="t",
+            spec_hash="x",
+            file_layout=[],
+            timestamp="2026-03-22T00:00:00Z",
             tasks=[
                 ImplementationTask(
-                    name="Research", description="Read docs", files=[],
+                    name="Research",
+                    description="Read docs",
+                    files=[],
                 ),
             ],
         )
@@ -357,11 +382,16 @@ class TestRenderSectionEdgeCases:
     def test_task_with_no_dependencies(self) -> None:
         """Task without dependencies should not render a dependencies suffix."""
         plan = PlanArtifact(
-            spec_path="t.md", spec_name="t", spec_hash="x",
-            file_layout=[], timestamp="2026-03-22T00:00:00Z",
+            spec_path="t.md",
+            spec_name="t",
+            spec_hash="x",
+            file_layout=[],
+            timestamp="2026-03-22T00:00:00Z",
             tasks=[
                 ImplementationTask(
-                    name="Setup", description="Init project", files=[],
+                    name="Setup",
+                    description="Init project",
+                    files=[],
                 ),
             ],
         )

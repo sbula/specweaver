@@ -37,8 +37,7 @@ def config_set(
 
     if enabled is None and warn is None and fail is None:
         _core.console.print(
-            "[red]Error:[/red] Provide at least one of "
-            "--enabled/--no-enabled, --warn, --fail.",
+            "[red]Error:[/red] Provide at least one of --enabled/--no-enabled, --warn, --fail.",
         )
         raise typer.Exit(code=1)
 
@@ -178,8 +177,7 @@ def config_get_log_level() -> None:
 
     log_path = get_log_path(name)
     _core.console.print(
-        f"Log level for [bold]{name}[/bold]: [cyan]{level}[/cyan]\n"
-        f"Log file: [dim]{log_path}[/dim]",
+        f"Log level for [bold]{name}[/bold]: [cyan]{level}[/cyan]\nLog file: [dim]{log_path}[/dim]",
     )
 
 
@@ -216,8 +214,7 @@ def config_get_constitution_max_size() -> None:
         raise typer.Exit(code=1) from exc
 
     _core.console.print(
-        f"Constitution max size for [bold]{name}[/bold]: "
-        f"[cyan]{max_size}[/cyan] bytes",
+        f"Constitution max size for [bold]{name}[/bold]: [cyan]{max_size}[/cyan] bytes",
     )
 
 
@@ -265,7 +262,6 @@ def config_get_auto_bootstrap() -> None:
 
 
 # -- Domain profile commands ------------------------------------------------
-
 
 
 @config_app.command("profiles")
@@ -384,13 +380,11 @@ def config_get_profile() -> None:
 
     if profile_name:
         _core.console.print(
-            f"Active profile for [bold]{name}[/bold]: "
-            f"[cyan]{profile_name}[/cyan]",
+            f"Active profile for [bold]{name}[/bold]: [cyan]{profile_name}[/cyan]",
         )
     else:
         _core.console.print(
-            f"[dim]No domain profile set for [bold]{name}[/bold] "
-            f"(using defaults).[/dim]",
+            f"[dim]No domain profile set for [bold]{name}[/bold] (using defaults).[/dim]",
         )
 
 
@@ -421,7 +415,9 @@ def config_set_provider(
     provider: str = typer.Argument(help="LLM provider name (e.g., gemini, openai, anthropic)."),
     *,
     role: str = typer.Option("draft", help="Project role to set provider for."),
-    model: str | None = typer.Option(None, help="Optional model name to override the provider default."),
+    model: str | None = typer.Option(
+        None, help="Optional model name to override the provider default."
+    ),
 ) -> None:
     """Set the LLM provider for a specific project role (default: draft)."""
     name = _core._require_active_project()

@@ -136,5 +136,6 @@ class TestRuleAtom:
     def test_is_atom_subclass(self):
         """RuleAtom is a proper Atom subclass."""
         from specweaver.loom.atoms.base import Atom
+
         atom = RuleAtom(_PassingRule())
         assert isinstance(atom, Atom)

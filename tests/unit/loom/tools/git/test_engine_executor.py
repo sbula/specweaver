@@ -47,54 +47,90 @@ class TestLiftedRestrictions:
 
     def test_push_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"push"})
-        mock_result = type("R", (), {
-            "returncode": 0, "stdout": "ok\n", "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "ok\n",
+                "stderr": "",
+            },
+        )()
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("push")
         assert result.status == "success"
 
     def test_merge_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"merge"})
-        mock_result = type("R", (), {
-            "returncode": 0, "stdout": "", "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "",
+            },
+        )()
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("merge", "feat/login")
         assert result.status == "success"
 
     def test_pull_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"pull"})
-        mock_result = type("R", (), {
-            "returncode": 0, "stdout": "", "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "",
+            },
+        )()
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("pull")
         assert result.status == "success"
 
     def test_fetch_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"fetch"})
-        mock_result = type("R", (), {
-            "returncode": 0, "stdout": "", "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "",
+            },
+        )()
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("fetch")
         assert result.status == "success"
 
     def test_rebase_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"rebase"})
-        mock_result = type("R", (), {
-            "returncode": 0, "stdout": "", "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "",
+            },
+        )()
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("rebase", "main")
         assert result.status == "success"
 
     def test_tag_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"tag"})
-        mock_result = type("R", (), {
-            "returncode": 0, "stdout": "", "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "",
+            },
+        )()
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("tag", "v1.0")
         assert result.status == "success"
@@ -102,7 +138,8 @@ class TestLiftedRestrictions:
     def test_construction_with_blocked_commands_succeeds(self, tmp_path: Path) -> None:
         """GitExecutor would raise here, EngineGitExecutor should not."""
         executor = EngineGitExecutor(
-            cwd=tmp_path, whitelist={"push", "merge", "status"},
+            cwd=tmp_path,
+            whitelist={"push", "merge", "status"},
         )
         assert "push" in executor.whitelist
         assert "merge" in executor.whitelist
@@ -124,9 +161,15 @@ class TestWhitelistStillEnforced:
     def test_blocked_in_args_not_checked(self, tmp_path: Path) -> None:
         """EngineGitExecutor should NOT block 'merge' in args."""
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"log"})
-        mock_result = type("R", (), {
-            "returncode": 0, "stdout": "", "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "",
+            },
+        )()
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("log", "merge")
         assert result.status == "success"

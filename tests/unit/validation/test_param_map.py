@@ -52,9 +52,9 @@ from specweaver.validation.rules.spec.s08_ambiguity import AmbiguityRule
 from specweaver.validation.rules.spec.s11_terminology import TerminologyRule
 
 # Valid DB-settable column names
-_VALID_DB_KEYS = frozenset({"warn_threshold", "fail_threshold"} | {
-    f"extra:{k}" for k in ("max_h2",)
-})
+_VALID_DB_KEYS = frozenset(
+    {"warn_threshold", "fail_threshold"} | {f"extra:{k}" for k in ("max_h2",)}
+)
 
 
 # ===========================================================================
@@ -135,6 +135,7 @@ class TestS01ParamMap:
     def test_all_values_are_constructor_params(self) -> None:
         """Each PARAM_MAP value is a valid OneSentenceRule constructor param."""
         import inspect
+
         sig = inspect.signature(OneSentenceRule.__init__)
         for db_key, ctor_param in OneSentenceRule.PARAM_MAP.items():
             if not db_key.startswith("extra:"):
@@ -233,6 +234,7 @@ class TestC04ParamMap:
 
     def test_all_values_are_constructor_params(self) -> None:
         import inspect
+
         sig = inspect.signature(CoverageRule.__init__)
         for db_key, ctor_param in CoverageRule.PARAM_MAP.items():
             if not db_key.startswith("extra:"):
@@ -262,9 +264,9 @@ class TestAllRuleParamMapsValid:
         valid_simple_keys = {"warn_threshold", "fail_threshold"}
         for rule_id, rule_cls in self.CONFIGURABLE_RULES:
             for key in rule_cls.PARAM_MAP:
-                assert (
-                    key in valid_simple_keys or key.startswith("extra:")
-                ), f"{rule_id}.PARAM_MAP has unknown key '{key}'"
+                assert key in valid_simple_keys or key.startswith("extra:"), (
+                    f"{rule_id}.PARAM_MAP has unknown key '{key}'"
+                )
 
     def test_all_param_map_values_are_strings(self) -> None:
         for rule_id, rule_cls in self.CONFIGURABLE_RULES:
@@ -325,16 +327,19 @@ class TestBuildRuleKwargsEdgeCases:
 class TestGetRuleIdFromCls:
     """_get_rule_id_from_cls correctly resolves rule_id for all configurable rules."""
 
-    @pytest.mark.parametrize("rule_cls, expected_id", [
-        (OneSentenceRule, "S01"),
-        (StrangerTestRule, "S03"),
-        (DependencyDirectionRule, "S04"),
-        (DayTestRule, "S05"),
-        (TestFirstRule, "S07"),
-        (AmbiguityRule, "S08"),
-        (TerminologyRule, "S11"),
-        (CoverageRule, "C04"),
-    ])
+    @pytest.mark.parametrize(
+        "rule_cls, expected_id",
+        [
+            (OneSentenceRule, "S01"),
+            (StrangerTestRule, "S03"),
+            (DependencyDirectionRule, "S04"),
+            (DayTestRule, "S05"),
+            (TestFirstRule, "S07"),
+            (AmbiguityRule, "S08"),
+            (TerminologyRule, "S11"),
+            (CoverageRule, "C04"),
+        ],
+    )
     def test_rule_id_resolved(self, rule_cls: type, expected_id: str) -> None:
         assert _get_rule_id_from_cls(rule_cls) == expected_id
 

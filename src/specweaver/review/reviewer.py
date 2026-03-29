@@ -48,6 +48,7 @@ class ReviewFinding(BaseModel):
     confidence: int = 0
     below_threshold: bool = False
 
+
 class ReviewResult(BaseModel):
     """Result of an LLM review."""
 
@@ -229,7 +230,9 @@ class Reviewer:
                     update={"tools": self._tool_dispatcher.available_tools()},
                 )
                 response = await self._llm.generate_with_tools(
-                    messages, config, self._tool_dispatcher,
+                    messages,
+                    config,
+                    self._tool_dispatcher,
                     on_tool_round=on_tool_round,
                 )
             else:
@@ -245,7 +248,8 @@ class Reviewer:
         result = self._parse_response(response.text)
         logger.info(
             "Review result: verdict=%s, findings=%d",
-            result.verdict, len(result.findings),
+            result.verdict,
+            len(result.findings),
         )
         return result
 
@@ -274,7 +278,7 @@ class Reviewer:
                 message = line[2:].strip()
                 confidence = self._extract_confidence(message)
                 # Strip the confidence tag from the message
-                message = _re.sub(r'\s*\[confidence:\s*\d+\]', '', message).strip()
+                message = _re.sub(r"\s*\[confidence:\s*\d+\]", "", message).strip()
                 findings.append(
                     ReviewFinding(
                         message=message,
@@ -295,5 +299,5 @@ class Reviewer:
     @staticmethod
     def _extract_confidence(text: str) -> int:
         """Extract confidence score from [confidence: N] tag in text."""
-        match = _re.search(r'\[confidence:\s*(\d+)\]', text)
+        match = _re.search(r"\[confidence:\s*(\d+)\]", text)
         return int(match.group(1)) if match else 0

@@ -51,18 +51,22 @@ class TestValidationSettingsModel:
         assert vs.get_override("S01") is None
 
     def test_with_overrides(self):
-        vs = ValidationSettings(overrides={
-            "S08": RuleOverride(rule_id="S08", warn_threshold=5.0),
-        })
+        vs = ValidationSettings(
+            overrides={
+                "S08": RuleOverride(rule_id="S08", warn_threshold=5.0),
+            }
+        )
         assert vs.is_enabled("S08") is True
         override = vs.get_override("S08")
         assert override is not None
         assert override.warn_threshold == 5.0
 
     def test_disabled_rule(self):
-        vs = ValidationSettings(overrides={
-            "C01": RuleOverride(rule_id="C01", enabled=False),
-        })
+        vs = ValidationSettings(
+            overrides={
+                "C01": RuleOverride(rule_id="C01", enabled=False),
+            }
+        )
         assert vs.is_enabled("C01") is False
         assert vs.is_enabled("C02") is True  # not overridden → enabled
 
@@ -250,4 +254,3 @@ class TestDBValidationOverridesEdgeCases:
         overrides = db.get_validation_overrides("demo")
         rule_ids = [o["rule_id"] for o in overrides]
         assert rule_ids == sorted(rule_ids)
-

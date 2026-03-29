@@ -372,7 +372,9 @@ class TestExhaustiveInvisibility:
         ids=[f"{cls.__name__}.{m}" for cls, m in _INVISIBLE_CASES],
     )
     def test_method_is_invisible(
-        self, iface_cls: type, method: str,
+        self,
+        iface_cls: type,
+        method: str,
     ) -> None:
         assert not hasattr(iface_cls, method), (
             f"{iface_cls.__name__} exposes '{method}' but should not — "

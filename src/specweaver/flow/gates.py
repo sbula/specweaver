@@ -55,13 +55,18 @@ class GateEvaluator:
 
         # AUTO gate: check condition
         if self.passes(gate, result):
-            logger.debug("Gate on step '%s': condition %s PASSED", step_def.name, gate.condition.value)
+            logger.debug(
+                "Gate on step '%s': condition %s PASSED", step_def.name, gate.condition.value
+            )
             return "advance"
 
         # Gate failed — apply on_fail action
         logger.debug(
             "Gate on step '%s': condition %s FAILED (result_status=%s, on_fail=%s)",
-            step_def.name, gate.condition.value, result.status.value, gate.on_fail.value,
+            step_def.name,
+            gate.condition.value,
+            result.status.value,
+            gate.on_fail.value,
         )
         if gate.on_fail == OnFailAction.ABORT:
             run.fail_current_step(result)
@@ -74,7 +79,9 @@ class GateEvaluator:
             return self._handle_loop_back(gate, result, run, attempts)
 
         if gate.on_fail == OnFailAction.CONTINUE:
-            logger.debug("Gate on step '%s': on_fail=CONTINUE — advancing despite failure", step_def.name)
+            logger.debug(
+                "Gate on step '%s': on_fail=CONTINUE — advancing despite failure", step_def.name
+            )
             return "advance"
 
         return "advance"
@@ -128,7 +135,9 @@ class GateEvaluator:
         if attempts[step_idx] <= gate.max_retries:
             logger.info(
                 "Gate retry: step %d attempt %d/%d",
-                step_idx, attempts[step_idx], gate.max_retries,
+                step_idx,
+                attempts[step_idx],
+                gate.max_retries,
             )
             record = run.current_step_record()
             if record is not None:
@@ -136,7 +145,12 @@ class GateEvaluator:
                 record.attempt = attempts[step_idx] + 1
             return "retry"
         # Retries exhausted
-        logger.warning("Gate retry exhausted: step %d used %d/%d attempts", step_idx, attempts[step_idx], gate.max_retries)
+        logger.warning(
+            "Gate retry exhausted: step %d used %d/%d attempts",
+            step_idx,
+            attempts[step_idx],
+            gate.max_retries,
+        )
         run.fail_current_step(result)
         return "stop"
 
@@ -155,15 +169,26 @@ class GateEvaluator:
             if target_idx is not None:
                 logger.info(
                     "Gate loop-back: step %d → target step %d ('%s'), attempt %d/%d",
-                    step_idx, target_idx, gate.loop_target, attempts[step_idx], gate.max_retries,
+                    step_idx,
+                    target_idx,
+                    gate.loop_target,
+                    attempts[step_idx],
+                    gate.max_retries,
                 )
                 # Reset target step to PENDING
                 run.step_records[target_idx].status = StepStatus.PENDING
                 run.step_records[target_idx].result = None
                 run.current_step = target_idx
                 return "loop_back"
-            logger.warning("Gate loop-back: target step '%s' not found in pipeline", gate.loop_target)
+            logger.warning(
+                "Gate loop-back: target step '%s' not found in pipeline", gate.loop_target
+            )
         # Loop back exhausted
-        logger.warning("Gate loop-back exhausted: step %d used %d/%d attempts", step_idx, attempts[step_idx], gate.max_retries)
+        logger.warning(
+            "Gate loop-back exhausted: step %d used %d/%d attempts",
+            step_idx,
+            attempts[step_idx],
+            gate.max_retries,
+        )
         run.fail_current_step(result)
         return "stop"

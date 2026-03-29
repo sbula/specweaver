@@ -36,9 +36,7 @@ class TestPipelineRunRequest:
 
     def test_selector_override(self) -> None:
         """PipelineRunRequest.selector can be overridden."""
-        req = PipelineRunRequest(
-            project="myproj", spec="spec.md", selector="topological"
-        )
+        req = PipelineRunRequest(project="myproj", spec="spec.md", selector="topological")
         assert req.selector == "topological"
 
 

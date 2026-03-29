@@ -39,7 +39,8 @@ def project(tmp_path: Path) -> Path:
     # Source tree
     (tmp_path / "src" / "domain" / "billing").mkdir(parents=True)
     (tmp_path / "src" / "domain" / "billing" / "calc.py").write_text(
-        "def total(a, b): return a + b", encoding="utf-8",
+        "def total(a, b): return a + b",
+        encoding="utf-8",
     )
     (tmp_path / "src" / "domain" / "billing" / "context.yaml").write_text(
         "name: billing\nlevel: module\npurpose: Billing logic\narchetype: pure-logic\n",
@@ -47,7 +48,8 @@ def project(tmp_path: Path) -> Path:
     )
     (tmp_path / "src" / "shared" / "currency").mkdir(parents=True)
     (tmp_path / "src" / "shared" / "currency" / "rates.py").write_text(
-        "EUR = 1.0\nUSD = 1.1", encoding="utf-8",
+        "EUR = 1.0\nUSD = 1.1",
+        encoding="utf-8",
     )
     (tmp_path / "src" / "shared" / "currency" / "context.yaml").write_text(
         "name: currency\nlevel: module\npurpose: Currency exchange rates and conversion\narchetype: pure-logic\n",
@@ -59,11 +61,13 @@ def project(tmp_path: Path) -> Path:
     # Tests
     (tmp_path / "tests" / "unit" / "billing").mkdir(parents=True)
     (tmp_path / "tests" / "unit" / "billing" / "test_calc.py").write_text(
-        "def test_total(): assert True", encoding="utf-8",
+        "def test_total(): assert True",
+        encoding="utf-8",
     )
     # Root context
     (tmp_path / "context.yaml").write_text(
-        "name: test-project\nlevel: system\n", encoding="utf-8",
+        "name: test-project\nlevel: system\n",
+        encoding="utf-8",
     )
     return tmp_path
 
@@ -144,9 +148,16 @@ class TestRoleIntentMapping:
 
     def test_implementer_intents(self) -> None:
         expected = {
-            "read_file", "write_file", "edit_file", "create_file",
-            "delete_file", "list_directory", "search_content", "find_placement",
-            "grep", "find_files",
+            "read_file",
+            "write_file",
+            "edit_file",
+            "create_file",
+            "delete_file",
+            "list_directory",
+            "search_content",
+            "find_placement",
+            "grep",
+            "find_files",
         }
         assert ROLE_INTENTS["implementer"] == frozenset(expected)
 
@@ -156,9 +167,15 @@ class TestRoleIntentMapping:
 
     def test_drafter_intents(self) -> None:
         expected = {
-            "read_file", "write_file", "create_file", "delete_file",
-            "list_directory", "search_content", "find_placement",
-            "grep", "find_files",
+            "read_file",
+            "write_file",
+            "create_file",
+            "delete_file",
+            "list_directory",
+            "search_content",
+            "find_placement",
+            "grep",
+            "find_files",
         }
         assert ROLE_INTENTS["drafter"] == frozenset(expected)
 
@@ -252,7 +269,8 @@ class TestImplementerIntents:
     def test_write_file_in_test_boundary(self, implementer: FileSystemTool, project: Path) -> None:
         """Implementer can also write to test directory."""
         result = implementer.create_file(
-            "tests/unit/billing/test_invoice.py", "def test_it(): pass",
+            "tests/unit/billing/test_invoice.py",
+            "def test_it(): pass",
         )
         assert result.status == "success"
         assert (project / "tests/unit/billing/test_invoice.py").is_file()
@@ -489,21 +507,24 @@ class TestGrantBypassAttempts:
         """Agent has FULL on billing, READ on shared/currency. Tries to
         WRITE to shared via ../ from billing — must be blocked."""
         result = implementer.write_file(
-            "src/domain/billing/../../shared/currency/rates.py", "hacked",
+            "src/domain/billing/../../shared/currency/rates.py",
+            "hacked",
         )
         assert result.status == "error"
 
     def test_dotdot_write_escape(self, implementer: FileSystemTool) -> None:
         """Agent tries to WRITE outside grant via ../."""
         result = implementer.write_file(
-            "src/domain/billing/../../../specs/hacked.md", "hacked",
+            "src/domain/billing/../../../specs/hacked.md",
+            "hacked",
         )
         assert result.status == "error"
 
     def test_dotdot_to_root_context_yaml(self, implementer: FileSystemTool) -> None:
         """Agent tries to reach root context.yaml via ../."""
         result = implementer.write_file(
-            "src/domain/billing/../../../context.yaml", "hacked: true",
+            "src/domain/billing/../../../context.yaml",
+            "hacked: true",
         )
         assert result.status == "error"
 
@@ -524,7 +545,9 @@ class TestGrantBypassAttempts:
         assert result.status == "error"
 
     def test_dotdot_in_middle_of_granted_path(
-        self, executor: FileExecutor, project: Path,
+        self,
+        executor: FileExecutor,
+        project: Path,
     ) -> None:
         """src/domain/../domain/billing/calc.py normalizes INTO grant — should be allowed."""
         grants = [FolderGrant("src/domain/billing", AccessMode.FULL, recursive=True)]
@@ -605,7 +628,9 @@ class TestSearchContentRecursive:
     """search_content should support recursive subdirectory search."""
 
     def test_recursive_search_finds_nested_files(
-        self, executor: FileExecutor, project: Path,
+        self,
+        executor: FileExecutor,
+        project: Path,
     ) -> None:
         """Recursive search finds matches in subdirectories."""
         grants = [FolderGrant("src", AccessMode.READ, recursive=True)]
@@ -617,7 +642,8 @@ class TestSearchContentRecursive:
         assert any("calc.py" in f for f in found_files)
 
     def test_non_recursive_search_direct_children_only(
-        self, executor: FileExecutor,
+        self,
+        executor: FileExecutor,
     ) -> None:
         """Non-recursive search only searches direct children."""
         grants = [FolderGrant("src", AccessMode.READ, recursive=True)]
@@ -655,6 +681,7 @@ class TestPathTraversalEdgeCases:
     def test_empty_path_normalization(self, executor: FileExecutor) -> None:
         """Empty path normalizes to '' — no grant should cover it."""
         from specweaver.loom.tools.filesystem.tool import FileSystemTool as FSTool
+
         _ = FSTool(executor=executor, role="implementer", grants=[])
         assert FSTool._normalize_path("") == ""
 
@@ -666,11 +693,13 @@ class TestPathTraversalEdgeCases:
     def test_dot_path_normalization(self) -> None:
         """Single dot normalizes to empty string."""
         from specweaver.loom.tools.filesystem.tool import FileSystemTool as FSTool
+
         assert FSTool._normalize_path(".") == ""
 
     def test_dotdot_beyond_root(self) -> None:
         """Path that goes above root via .. should normalize safely."""
         from specweaver.loom.tools.filesystem.tool import FileSystemTool as FSTool
+
         # posixpath.normpath("a/../../b") == "../b"
         result = FSTool._normalize_path("a/../../b")
         assert ".." not in result or result.startswith("..")
@@ -684,7 +713,8 @@ class TestPathTraversalEdgeCases:
     def test_dotdot_escape_with_create(self, implementer: FileSystemTool) -> None:
         """Agent tries to create a file outside grants via .. traversal."""
         result = implementer.create_file(
-            "src/domain/billing/../../../evil.py", "import os; os.system('rm -rf /')",
+            "src/domain/billing/../../../evil.py",
+            "import os; os.system('rm -rf /')",
         )
         assert result.status == "error"
 
@@ -692,7 +722,8 @@ class TestPathTraversalEdgeCases:
         """Agent tries to edit a file outside grants via .. traversal."""
         result = implementer.edit_file(
             "src/domain/billing/../../../specs/billing_spec.md",
-            old="# Billing Spec", new="# HACKED",
+            old="# Billing Spec",
+            new="# HACKED",
         )
         assert result.status == "error"
 
@@ -704,7 +735,8 @@ class TestPathTraversalEdgeCases:
     def test_dotdot_escape_with_search(self, implementer: FileSystemTool) -> None:
         """Agent tries to search in a directory outside grants via .. traversal."""
         result = implementer.search_content(
-            "src/domain/billing/../../../specs", r".*",
+            "src/domain/billing/../../../specs",
+            r".*",
         )
         assert result.status == "error"
 
@@ -737,7 +769,8 @@ class TestSearchContentEdgeCases:
         assert "Invalid regex" in result.message
 
     def test_search_empty_pattern_matches_everything(
-        self, implementer: FileSystemTool,
+        self,
+        implementer: FileSystemTool,
     ) -> None:
         """Empty regex matches every line."""
         result = implementer.search_content("src/domain/billing", r"")

@@ -68,9 +68,7 @@ class TestPipelineSettingsThresholds:
         """S08 fail_threshold=0 causes FAIL on any ambiguous content."""
         settings = ValidationSettings(
             overrides={
-                "S08": RuleOverride(
-                    rule_id="S08", warn_threshold=0.0, fail_threshold=0.0
-                ),
+                "S08": RuleOverride(rule_id="S08", warn_threshold=0.0, fail_threshold=0.0),
             }
         )
         pipeline = apply_settings_to_pipeline(spec_pipeline, settings)
@@ -105,9 +103,7 @@ class TestPipelineSettingsThresholds:
         """S01 warn_threshold → warn_conjunctions via PARAM_MAP."""
         settings = ValidationSettings(
             overrides={
-                "S01": RuleOverride(
-                    rule_id="S01", warn_threshold=5.0, fail_threshold=10.0
-                ),
+                "S01": RuleOverride(rule_id="S01", warn_threshold=5.0, fail_threshold=10.0),
             }
         )
         pipeline = apply_settings_to_pipeline(spec_pipeline, settings)
@@ -137,9 +133,7 @@ class TestPipelineSettingsThresholds:
         """A rule with enabled=False + threshold should still be excluded."""
         settings = ValidationSettings(
             overrides={
-                "S08": RuleOverride(
-                    rule_id="S08", enabled=False, warn_threshold=99.0
-                ),
+                "S08": RuleOverride(rule_id="S08", enabled=False, warn_threshold=99.0),
             }
         )
         pipeline = apply_settings_to_pipeline(spec_pipeline, settings)
@@ -158,14 +152,10 @@ class TestPipelineSettingsThresholds:
 
     def test_empty_settings_unchanged_pipeline(self, spec_pipeline) -> None:
         """Empty ValidationSettings produces same pipeline as no settings."""
-        pipeline = apply_settings_to_pipeline(
-            spec_pipeline, ValidationSettings()
-        )
+        pipeline = apply_settings_to_pipeline(spec_pipeline, ValidationSettings())
         assert len(pipeline.steps) == len(spec_pipeline.steps)
 
-    def test_partial_override_only_affects_specified_field(
-        self, spec_pipeline
-    ) -> None:
+    def test_partial_override_only_affects_specified_field(self, spec_pipeline) -> None:
         """Overriding only warn_threshold merges with YAML fail_threshold."""
         settings = ValidationSettings(
             overrides={
@@ -187,27 +177,19 @@ class TestPipelineSettingsThresholds:
         step_ids = {s.rule for s in pipeline.steps}
         assert "C01" not in step_ids
 
-    def test_all_spec_rules_disabled_empty_pipeline(
-        self, spec_pipeline
-    ) -> None:
+    def test_all_spec_rules_disabled_empty_pipeline(self, spec_pipeline) -> None:
         """Disabling all spec rules produces an empty pipeline."""
         all_ids = [s.rule for s in spec_pipeline.steps]
-        overrides = {
-            rid: RuleOverride(rule_id=rid, enabled=False) for rid in all_ids
-        }
+        overrides = {rid: RuleOverride(rule_id=rid, enabled=False) for rid in all_ids}
         settings = ValidationSettings(overrides=overrides)
         pipeline = apply_settings_to_pipeline(spec_pipeline, settings)
         assert pipeline.steps == []
 
-    def test_s07_param_map_warn_threshold_to_warn_score(
-        self, spec_pipeline
-    ) -> None:
+    def test_s07_param_map_warn_threshold_to_warn_score(self, spec_pipeline) -> None:
         """S07 warn_threshold → warn_score via PARAM_MAP."""
         settings = ValidationSettings(
             overrides={
-                "S07": RuleOverride(
-                    rule_id="S07", warn_threshold=9.0, fail_threshold=2.0
-                ),
+                "S07": RuleOverride(rule_id="S07", warn_threshold=9.0, fail_threshold=2.0),
             }
         )
         pipeline = apply_settings_to_pipeline(spec_pipeline, settings)
@@ -231,9 +213,7 @@ class TestPipelineSettingsEdgeCases:
         result = apply_settings_to_pipeline(spec_pipeline, None)
         assert result is spec_pipeline
 
-    def test_execute_after_settings_produces_results(
-        self, spec_pipeline
-    ) -> None:
+    def test_execute_after_settings_produces_results(self, spec_pipeline) -> None:
         """Execution still returns results for remaining steps."""
         settings = ValidationSettings(
             overrides={
@@ -260,9 +240,7 @@ class TestPipelineSettingsEdgeCases:
         assert "C05" not in step_ids
         assert "C02" in step_ids
 
-    def test_override_for_non_threshold_rule_still_enables(
-        self, spec_pipeline
-    ) -> None:
+    def test_override_for_non_threshold_rule_still_enables(self, spec_pipeline) -> None:
         """S02 has no threshold params — override only controls enabled."""
         settings = ValidationSettings(
             overrides={
@@ -273,9 +251,7 @@ class TestPipelineSettingsEdgeCases:
         step_ids = {s.rule for s in pipeline.steps}
         assert "S02" not in step_ids
 
-    def test_threshold_override_for_non_threshold_rule_ignored(
-        self, spec_pipeline
-    ) -> None:
+    def test_threshold_override_for_non_threshold_rule_ignored(self, spec_pipeline) -> None:
         """S02 has no PARAM_MAP entries — threshold override safely ignored."""
         settings = ValidationSettings(
             overrides={

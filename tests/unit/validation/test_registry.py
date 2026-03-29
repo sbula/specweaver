@@ -77,6 +77,7 @@ class _CustomRule(Rule):
 def registry():
     """Return a fresh RuleRegistry instance (not the global singleton)."""
     from specweaver.validation.registry import RuleRegistry
+
     return RuleRegistry()
 
 
@@ -204,6 +205,7 @@ class TestGlobalRegistry:
     def test_get_registry_returns_same_instance(self):
         """get_registry() always returns the same instance."""
         from specweaver.validation.registry import get_registry
+
         r1 = get_registry()
         r2 = get_registry()
         assert r1 is r2
@@ -211,4 +213,5 @@ class TestGlobalRegistry:
     def test_get_registry_is_rule_registry(self):
         """get_registry() returns a RuleRegistry instance."""
         from specweaver.validation.registry import RuleRegistry, get_registry
+
         assert isinstance(get_registry(), RuleRegistry)

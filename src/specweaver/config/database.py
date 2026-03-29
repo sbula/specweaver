@@ -132,9 +132,12 @@ class Database(
                     (1, _now_iso()),
                 )
 
-            current_version = conn.execute(
-                "SELECT MAX(version) FROM schema_version",
-            ).fetchone()[0] or 0
+            current_version = (
+                conn.execute(
+                    "SELECT MAX(version) FROM schema_version",
+                ).fetchone()[0]
+                or 0
+            )
 
             self._apply_migrations(conn, current_version)
 
@@ -153,7 +156,8 @@ class Database(
 
     @staticmethod
     def _apply_migrations(
-        conn: sqlite3.Connection, current_version: int,
+        conn: sqlite3.Connection,
+        current_version: int,
     ) -> None:
         """Apply all pending schema migrations from _MIGRATIONS table."""
         for version, sql, description in _MIGRATIONS:
@@ -161,12 +165,13 @@ class Database(
                 with suppress(Exception):
                     conn.executescript(sql)
                 conn.execute(
-                    "INSERT OR REPLACE INTO schema_version "
-                    "(version, applied_at) VALUES (?, ?)",
+                    "INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, ?)",
                     (version, _now_iso()),
                 )
                 logger.info(
-                    "Database schema migrated to v%d (%s)", version, description,
+                    "Database schema migrated to v%d (%s)",
+                    version,
+                    description,
                 )
 
     # ------------------------------------------------------------------
@@ -190,7 +195,8 @@ class Database(
         with self.connect() as conn:
             # Check duplicate name
             existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?", (name,),
+                "SELECT name FROM projects WHERE name = ?",
+                (name,),
             ).fetchone()
             if existing:
                 msg = f"Project '{name}' already exists"
@@ -198,12 +204,12 @@ class Database(
 
             # Check duplicate path
             existing_path = conn.execute(
-                "SELECT name FROM projects WHERE root_path = ?", (root_path,),
+                "SELECT name FROM projects WHERE root_path = ?",
+                (root_path,),
             ).fetchone()
             if existing_path:
                 msg = (
-                    f"Path '{root_path}' is already registered "
-                    f"to project '{existing_path['name']}'"
+                    f"Path '{root_path}' is already registered to project '{existing_path['name']}'"
                 )
                 raise ValueError(msg)
 
@@ -228,7 +234,8 @@ class Database(
         """Get project info by name, or None if not found."""
         with self.connect() as conn:
             row = conn.execute(
-                "SELECT * FROM projects WHERE name = ?", (name,),
+                "SELECT * FROM projects WHERE name = ?",
+                (name,),
             ).fetchone()
             return dict(row) if row else None
 
@@ -248,7 +255,8 @@ class Database(
         """
         with self.connect() as conn:
             existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?", (name,),
+                "SELECT name FROM projects WHERE name = ?",
+                (name,),
             ).fetchone()
             if not existing:
                 msg = f"Project '{name}' not found"
@@ -273,7 +281,8 @@ class Database(
         """
         with self.connect() as conn:
             existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?", (name,),
+                "SELECT name FROM projects WHERE name = ?",
+                (name,),
             ).fetchone()
             if not existing:
                 msg = f"Project '{name}' not found"
@@ -285,10 +294,7 @@ class Database(
                 (new_path, name),
             ).fetchone()
             if path_owner:
-                msg = (
-                    f"Path '{new_path}' is already registered "
-                    f"to project '{path_owner['name']}'"
-                )
+                msg = f"Path '{new_path}' is already registered to project '{path_owner['name']}'"
                 raise ValueError(msg)
 
             conn.execute(
@@ -316,15 +322,15 @@ class Database(
         """
         with self.connect() as conn:
             existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?", (name,),
+                "SELECT name FROM projects WHERE name = ?",
+                (name,),
             ).fetchone()
             if not existing:
                 msg = f"Project '{name}' not found"
                 raise ValueError(msg)
 
             conn.execute(
-                "INSERT OR REPLACE INTO active_state (key, value) "
-                "VALUES ('active_project', ?)",
+                "INSERT OR REPLACE INTO active_state (key, value) VALUES ('active_project', ?)",
                 (name,),
             )
             conn.execute(

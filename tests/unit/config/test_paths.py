@@ -23,7 +23,9 @@ class TestSpecweaverRoot:
         result = specweaver_root()
         assert result == Path.home() / ".specweaver"
 
-    def test_env_var_overrides_default(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_env_var_overrides_default(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """SPECWEAVER_DATA_DIR env var takes precedence."""
         custom = tmp_path / "custom-sw"
         monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(custom))

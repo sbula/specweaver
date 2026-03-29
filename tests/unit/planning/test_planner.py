@@ -22,6 +22,7 @@ from specweaver.planning.planner import Planner
 @dataclass
 class _FakeResponse:
     """Minimal response matching LLMAdapter's return type."""
+
     text: str
 
 
@@ -51,22 +52,24 @@ def _valid_plan_json(
     spec_name: str = "Login",
     confidence: int = 80,
 ) -> str:
-    return json.dumps({
-        "spec_path": spec_path,
-        "spec_name": spec_name,
-        "spec_hash": "ignored",  # Planner overwrites this
-        "timestamp": "2026-03-22T10:00:00Z",
-        "file_layout": [
-            {"path": "src/login.py", "action": "create", "purpose": "Login handler"},
-        ],
-        "architecture": {
-            "module_layout": "flat",
-            "dependency_direction": "downward",
-            "archetype": "adapter",
-        },
-        "reasoning": "Simple adapter pattern.",
-        "confidence": confidence,
-    })
+    return json.dumps(
+        {
+            "spec_path": spec_path,
+            "spec_name": spec_name,
+            "spec_hash": "ignored",  # Planner overwrites this
+            "timestamp": "2026-03-22T10:00:00Z",
+            "file_layout": [
+                {"path": "src/login.py", "action": "create", "purpose": "Login handler"},
+            ],
+            "architecture": {
+                "module_layout": "flat",
+                "dependency_direction": "downward",
+                "archetype": "adapter",
+            },
+            "reasoning": "Simple adapter pattern.",
+            "confidence": confidence,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -137,10 +140,12 @@ class TestPlannerRetry:
     @pytest.mark.asyncio()
     async def test_retries_on_invalid_json(self) -> None:
         """First response is garbage, second is valid → succeeds."""
-        llm = FakeLLM([
-            "This is not JSON at all",
-            _valid_plan_json(),
-        ])
+        llm = FakeLLM(
+            [
+                "This is not JSON at all",
+                _valid_plan_json(),
+            ]
+        )
         planner = Planner(llm, max_retries=3)
 
         plan = await planner.generate_plan(
@@ -155,10 +160,12 @@ class TestPlannerRetry:
     @pytest.mark.asyncio()
     async def test_retry_injects_error_message(self) -> None:
         """On failure, retry prompt includes the error message."""
-        llm = FakeLLM([
-            "not json",
-            _valid_plan_json(),
-        ])
+        llm = FakeLLM(
+            [
+                "not json",
+                _valid_plan_json(),
+            ]
+        )
         planner = Planner(llm, max_retries=3)
 
         await planner.generate_plan(
@@ -176,11 +183,13 @@ class TestPlannerRetry:
     @pytest.mark.asyncio()
     async def test_all_retries_fail_raises(self) -> None:
         """All retries produce invalid JSON → ValueError."""
-        llm = FakeLLM([
-            "bad 1",
-            "bad 2",
-            "bad 3",
-        ])
+        llm = FakeLLM(
+            [
+                "bad 1",
+                "bad 2",
+                "bad 3",
+            ]
+        )
         planner = Planner(llm, max_retries=3)
 
         with pytest.raises(ValueError, match="failed after 3 attempts"):
@@ -357,7 +366,10 @@ class TestPlannerStitchIntegration:
             return None
 
         import specweaver.planning.ui_extractor
-        monkeypatch.setattr(specweaver.planning.ui_extractor, "extract_ui_requirements", mock_extract, raising=False)
+
+        monkeypatch.setattr(
+            specweaver.planning.ui_extractor, "extract_ui_requirements", mock_extract, raising=False
+        )
 
         plan = await planner.generate_plan(
             spec_content="## Protocol\n\nUI dashboard",
@@ -375,14 +387,19 @@ class TestPlannerStitchIntegration:
         mock_stitch_called = False
 
         class MockStitchClient:
-            def __init__(self, api_key): pass
+            def __init__(self, api_key):
+                pass
+
             def generate_mockup(self, desc):
                 nonlocal mock_stitch_called
                 mock_stitch_called = True
                 return []
 
         import specweaver.planning.planner
-        monkeypatch.setattr(specweaver.planning.planner, "StitchClient", MockStitchClient, raising=False)
+
+        monkeypatch.setattr(
+            specweaver.planning.planner, "StitchClient", MockStitchClient, raising=False
+        )
 
         # Content has no UI keywords
         plan = await planner.generate_plan(
@@ -404,11 +421,17 @@ class TestPlannerStitchIntegration:
                 self.references = []
 
         class MockStitchClient:
-            def __init__(self, api_key): pass
-            def generate_mockup(self, desc): return MockMockupResult()
+            def __init__(self, api_key):
+                pass
+
+            def generate_mockup(self, desc):
+                return MockMockupResult()
 
         import specweaver.planning.planner
-        monkeypatch.setattr(specweaver.planning.planner, "StitchClient", MockStitchClient, raising=False)
+
+        monkeypatch.setattr(
+            specweaver.planning.planner, "StitchClient", MockStitchClient, raising=False
+        )
 
         plan = await planner.generate_plan(
             spec_content="## Protocol\n\nUI dashboard",

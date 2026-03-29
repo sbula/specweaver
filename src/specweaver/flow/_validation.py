@@ -50,7 +50,9 @@ class ValidateSpecHandler:
             all_passed = len(failed) == 0
             logger.info(
                 "ValidateSpecHandler: %d rules executed, %d passed, %d failed",
-                len(results), len(results) - len(failed), len(failed),
+                len(results),
+                len(results) - len(failed),
+                len(failed),
             )
             return StepResult(
                 status=StepStatus.PASSED if all_passed else StepStatus.FAILED,
@@ -122,7 +124,10 @@ class ValidateCodeHandler:
             all_passed = len(failed) == 0
             logger.info(
                 "ValidateCodeHandler: %d rules executed, %d passed, %d failed (code=%s)",
-                len(results), len(results) - len(failed), len(failed), code_path.name,
+                len(results),
+                len(results) - len(failed),
+                len(failed),
+                code_path.name,
             )
             return StepResult(
                 status=StepStatus.PASSED if all_passed else StepStatus.FAILED,
@@ -187,15 +192,17 @@ class ValidateTestsHandler:
         logger.debug("ValidateTestsHandler: running %s tests in '%s'", kind, target)
 
         atom = self._get_atom(context)
-        result = atom.run({
-            "intent": "run_tests",
-            "target": target,
-            "kind": kind,
-            "scope": step.params.get("scope", ""),
-            "timeout": step.params.get("timeout", 120),
-            "coverage": step.params.get("coverage", False),
-            "coverage_threshold": step.params.get("coverage_threshold", 70),
-        })
+        result = atom.run(
+            {
+                "intent": "run_tests",
+                "target": target,
+                "kind": kind,
+                "scope": step.params.get("scope", ""),
+                "timeout": step.params.get("timeout", 120),
+                "coverage": step.params.get("coverage", False),
+                "coverage_threshold": step.params.get("coverage_threshold", 70),
+            }
+        )
 
         if result.status.value == "SUCCESS":
             logger.info("ValidateTestsHandler: tests PASSED (kind=%s, target=%s)", kind, target)
@@ -208,7 +215,9 @@ class ValidateTestsHandler:
 
         logger.warning(
             "ValidateTestsHandler: tests FAILED (kind=%s, target=%s): %s",
-            kind, target, result.message,
+            kind,
+            target,
+            result.message,
         )
         return StepResult(
             status=StepStatus.FAILED,
@@ -221,4 +230,5 @@ class ValidateTestsHandler:
     def _get_atom(self, context: RunContext) -> TestRunnerAtom:
         """Lazily create a TestRunnerAtom for the project."""
         from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+
         return TestRunnerAtom(cwd=context.project_path)

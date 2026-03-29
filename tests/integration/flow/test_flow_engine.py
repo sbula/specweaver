@@ -53,9 +53,12 @@ class _AlwaysPassHandler:
     """Handler that always returns PASSED."""
 
     async def execute(
-        self, step: PipelineStep, context: RunContext,
+        self,
+        step: PipelineStep,
+        context: RunContext,
     ) -> StepResult:
         from specweaver.flow.handlers import _now_iso
+
         started = _now_iso()
         return StepResult(
             status=StepStatus.PASSED,
@@ -69,9 +72,12 @@ class _AlwaysFailHandler:
     """Handler that always returns FAILED."""
 
     async def execute(
-        self, step: PipelineStep, context: RunContext,
+        self,
+        step: PipelineStep,
+        context: RunContext,
     ) -> StepResult:
         from specweaver.flow.handlers import _now_iso
+
         started = _now_iso()
         return StepResult(
             status=StepStatus.FAILED,
@@ -90,9 +96,12 @@ class _CountingHandler:
         self.fail_count = fail_count
 
     async def execute(
-        self, step: PipelineStep, context: RunContext,
+        self,
+        step: PipelineStep,
+        context: RunContext,
     ) -> StepResult:
         from specweaver.flow.handlers import _now_iso
+
         self.calls += 1
         started = _now_iso()
         if self.calls <= self.fail_count:
@@ -115,9 +124,12 @@ class _HITLHandler:
     """Handler that returns WAITING_FOR_INPUT."""
 
     async def execute(
-        self, step: PipelineStep, context: RunContext,
+        self,
+        step: PipelineStep,
+        context: RunContext,
     ) -> StepResult:
         from specweaver.flow.handlers import _now_iso
+
         started = _now_iso()
         return StepResult(
             status=StepStatus.WAITING_FOR_INPUT,

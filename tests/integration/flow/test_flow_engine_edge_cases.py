@@ -60,9 +60,7 @@ async def test_complex_edge_cases_scenario(temp_store: StateStore, tmp_path: Pat
                 action=StepAction.VALIDATE,
                 target=StepTarget.CODE,
                 gate=GateDefinition(
-                    condition=GateCondition.ALL_PASSED,
-                    on_fail=OnFailAction.RETRY,
-                    max_retries=1
+                    condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.RETRY, max_retries=1
                 ),
             ),
             # 3. Step that will park the pipeline definitively
@@ -70,10 +68,7 @@ async def test_complex_edge_cases_scenario(temp_store: StateStore, tmp_path: Pat
                 name="parking_step",
                 action=StepAction.REVIEW,
                 target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    condition=GateCondition.ACCEPTED,
-                    on_fail=OnFailAction.ABORT
-                ),
+                gate=GateDefinition(condition=GateCondition.ACCEPTED, on_fail=OnFailAction.ABORT),
             ),
         ],
     )
@@ -93,7 +88,13 @@ async def test_complex_edge_cases_scenario(temp_store: StateStore, tmp_path: Pat
     # We expect parking_step to either be not reached or PARKED/FAILED depending
     # on whether bouncing_step passed or failed validation.
 
-    assert str(run.status).split(".")[-1].lower() in ("completed", "parked", "failed", "aborted", "success")
+    assert str(run.status).split(".")[-1].lower() in (
+        "completed",
+        "parked",
+        "failed",
+        "aborted",
+        "success",
+    )
 
     # Ensure audit log captured the run's complexity
     audit_logs = temp_store.get_audit_log(run.run_id)
@@ -102,9 +103,9 @@ async def test_complex_edge_cases_scenario(temp_store: StateStore, tmp_path: Pat
 
     # Let's verify the display plugin wouldn't crash
     from specweaver.flow.display import RichPipelineDisplay
+
     display = RichPipelineDisplay()
     # Ensure starting and immediately stopping with a complex run works
     display("run_started", run=run)
     display("run_completed", run=run)
     display.stop()
-

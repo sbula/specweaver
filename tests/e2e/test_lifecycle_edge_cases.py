@@ -103,7 +103,6 @@ def _make_sequenced_llm(responses: list[str]) -> object:
     return mock_llm
 
 
-
 # ---------------------------------------------------------------------------
 # High Priority Edge Cases
 # ---------------------------------------------------------------------------
@@ -178,7 +177,8 @@ class TestHighPriorityEdgeCases:
                 [
                     "implement",
                     str(spec_path),
-                    "--project", str(tmp_path),
+                    "--project",
+                    str(tmp_path),
                 ],
             )
             # Command should fail
@@ -209,7 +209,8 @@ class TestHighPriorityEdgeCases:
                 [
                     "implement",
                     str(spec_path),
-                    "--project", str(tmp_path),
+                    "--project",
+                    str(tmp_path),
                 ],
             )
 
@@ -263,7 +264,8 @@ class TestHighPriorityEdgeCases:
                 [
                     "implement",
                     str(spec_path),
-                    "--project", str(tmp_path),
+                    "--project",
+                    str(tmp_path),
                 ],
             )
             assert result.exit_code == 0
@@ -351,9 +353,11 @@ class TestMediumPriorityEdgeCases:
         )
 
         # Step 1: Review → DENIED
-        denied_llm = _make_sequenced_llm([
-            "VERDICT: DENIED\n- Insufficient detail\n- Missing error paths",
-        ])
+        denied_llm = _make_sequenced_llm(
+            [
+                "VERDICT: DENIED\n- Insufficient detail\n- Missing error paths",
+            ]
+        )
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
@@ -382,7 +386,8 @@ class TestMediumPriorityEdgeCases:
                 [
                     "implement",
                     str(spec_path),
-                    "--project", str(tmp_path),
+                    "--project",
+                    str(tmp_path),
                 ],
             )
             # Implement should still work — review is advisory
@@ -412,7 +417,9 @@ class TestMediumPriorityEdgeCases:
         llm_a = _make_sequenced_llm([code_a, tests_a])
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, llm_a, GenerationConfig(model="mock"),
+                None,
+                llm_a,
+                GenerationConfig(model="mock"),
             )
             result_a = runner.invoke(
                 app,
@@ -433,7 +440,9 @@ class TestMediumPriorityEdgeCases:
         llm_b = _make_sequenced_llm([code_b, tests_b])
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, llm_b, GenerationConfig(model="mock"),
+                None,
+                llm_b,
+                GenerationConfig(model="mock"),
             )
             result_b = runner.invoke(
                 app,
@@ -485,8 +494,10 @@ class TestMediumPriorityEdgeCases:
             [
                 "check",
                 str(bad_file),
-                "--level", "code",
-                "--project", str(tmp_path),
+                "--level",
+                "code",
+                "--project",
+                str(tmp_path),
             ],
         )
 
@@ -525,22 +536,16 @@ class TestRealWorldEdgeCases:
         """User runs implement twice → second run overwrites with new code."""
         spec_path = self._init_and_create_spec(tmp_path)
 
-        code_v1 = (
-            '"""Version 1."""\n\n'
-            'def greet(name: str) -> str:\n'
-            '    return f"Hi, {name}"\n'
-        )
-        tests_v1 = (
-            '"""Tests v1."""\n\n'
-            "def test_greet() -> None:\n"
-            "    pass\n"
-        )
+        code_v1 = '"""Version 1."""\n\ndef greet(name: str) -> str:\n    return f"Hi, {name}"\n'
+        tests_v1 = '"""Tests v1."""\n\ndef test_greet() -> None:\n    pass\n'
 
         # First implement
         llm_v1 = _make_sequenced_llm([code_v1, tests_v1])
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, llm_v1, GenerationConfig(model="mock"),
+                None,
+                llm_v1,
+                GenerationConfig(model="mock"),
             )
             result = runner.invoke(
                 app,
@@ -555,19 +560,17 @@ class TestRealWorldEdgeCases:
         # Second implement with different code (user iterated on spec)
         code_v2 = (
             '"""Version 2 — improved."""\n\n'
-            'def greet(name: str) -> str:\n'
+            "def greet(name: str) -> str:\n"
             '    return f"Hello, {name}!"\n'
         )
-        tests_v2 = (
-            '"""Tests v2."""\n\n'
-            "def test_greet_v2() -> None:\n"
-            "    pass\n"
-        )
+        tests_v2 = '"""Tests v2."""\n\ndef test_greet_v2() -> None:\n    pass\n'
 
         llm_v2 = _make_sequenced_llm([code_v2, tests_v2])
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, llm_v2, GenerationConfig(model="mock"),
+                None,
+                llm_v2,
+                GenerationConfig(model="mock"),
             )
             result = runner.invoke(
                 app,
@@ -600,19 +603,15 @@ class TestRealWorldEdgeCases:
             "```"
         )
         fenced_tests = (
-            "```python\n"
-            '"""Tests."""\n'
-            "\n"
-            "\n"
-            "def test_greet() -> None:\n"
-            "    assert True\n"
-            "```"
+            '```python\n"""Tests."""\n\n\ndef test_greet() -> None:\n    assert True\n```'
         )
 
         fenced_llm = _make_sequenced_llm([fenced_code, fenced_tests])
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, fenced_llm, GenerationConfig(model="mock"),
+                None,
+                fenced_llm,
+                GenerationConfig(model="mock"),
             )
             result = runner.invoke(
                 app,
@@ -653,7 +652,9 @@ class TestRealWorldEdgeCases:
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
-                None, error_llm, GenerationConfig(model="mock"),
+                None,
+                error_llm,
+                GenerationConfig(model="mock"),
             )
             result = runner.invoke(
                 app,
@@ -666,5 +667,3 @@ class TestRealWorldEdgeCases:
         assert "ERROR" in result.output
         # Should contain the error message
         assert "Service unavailable" in result.output or "failed" in result.output.lower()
-
-

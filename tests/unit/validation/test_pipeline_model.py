@@ -88,12 +88,14 @@ class TestValidationPipeline:
             extends="validation_spec_default",
             override={"s05_day_test": {"params": {"warn_threshold": 80}}},
             remove=["s04_dependency_dir"],
-            add=[{
-                "name": "d01_schema",
-                "rule": "D01",
-                "after": "s03_stranger",
-                "params": {"strict_mode": True},
-            }],
+            add=[
+                {
+                    "name": "d01_schema",
+                    "rule": "D01",
+                    "after": "s03_stranger",
+                    "params": {"strict_mode": True},
+                }
+            ],
         )
         assert pipeline.extends == "validation_spec_default"
         assert "s05_day_test" in pipeline.override

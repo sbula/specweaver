@@ -178,7 +178,9 @@ class TestMixedPathGrantMatching:
 
     @pytest.mark.asyncio()
     async def test_relative_path_matches_absolute_grant(
-        self, executor: ToolDispatcher, project: Path,
+        self,
+        executor: ToolDispatcher,
+        project: Path,
     ) -> None:
         """A relative path like 'README.md' should match the absolute grant root."""
         result = await executor.execute("read_file", {"path": "README.md"})
@@ -186,20 +188,26 @@ class TestMixedPathGrantMatching:
 
     @pytest.mark.asyncio()
     async def test_absolute_path_matches_absolute_grant(
-        self, executor: ToolDispatcher, project: Path,
+        self,
+        executor: ToolDispatcher,
+        project: Path,
     ) -> None:
         """An absolute path that matches the grant root should work for grep."""
         result = await executor.execute(
-            "grep", {"path": str(project), "pattern": "hello"},
+            "grep",
+            {"path": str(project), "pattern": "hello"},
         )
         assert "results" in result
 
     @pytest.mark.asyncio()
     async def test_relative_subdir_matches_absolute_grant(
-        self, executor: ToolDispatcher, project: Path,
+        self,
+        executor: ToolDispatcher,
+        project: Path,
     ) -> None:
         """A relative subdir path like 'src' should match the absolute grant."""
         result = await executor.execute(
-            "find_files", {"path": "src", "pattern": "*.py"},
+            "find_files",
+            {"path": "src", "pattern": "*.py"},
         )
         assert "results" in result

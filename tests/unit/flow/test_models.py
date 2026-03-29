@@ -98,7 +98,7 @@ class TestValidStepCombinations:
             (StepAction.DRAFT, StepTarget.TESTS),
             (StepAction.GENERATE, StepTarget.SPEC),
             (StepAction.REVIEW, StepTarget.TESTS),
-            (StepAction.DECOMPOSE, StepTarget.SPEC),   # only feature can be decomposed
+            (StepAction.DECOMPOSE, StepTarget.SPEC),  # only feature can be decomposed
             (StepAction.DECOMPOSE, StepTarget.CODE),
         ],
     )

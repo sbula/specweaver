@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 class LLMAdapterError(Exception):
     """Raised when an LLM adapter cannot be created or validated."""
 
+
 def _get_adapter_class(provider: str) -> Any:
     """Return the adapter class for the given provider name."""
     from specweaver.llm.adapters import get_adapter_class, get_all_adapters
@@ -90,7 +91,9 @@ def create_llm_adapter(
     adapter: Any = adapter_cls(api_key=settings.llm.api_key or None)
 
     if not adapter.available():
-        env_key = getattr(adapter_cls, "api_key_env_var", f"{settings.llm.provider.upper()}_API_KEY")
+        env_key = getattr(
+            adapter_cls, "api_key_env_var", f"{settings.llm.provider.upper()}_API_KEY"
+        )
         msg = f"No API key configured for {settings.llm.provider}. Set {env_key} environment variable."
         raise LLMAdapterError(msg)
 
@@ -101,9 +104,9 @@ def create_llm_adapter(
 
         try:
             raw_overrides = db.get_cost_overrides()
-            cost_overrides = {
-                k: CostEntry(*v) for k, v in raw_overrides.items()
-            } if raw_overrides else None
+            cost_overrides = (
+                {k: CostEntry(*v) for k, v in raw_overrides.items()} if raw_overrides else None
+            )
         except Exception:
             cost_overrides = None
         adapter = TelemetryCollector(adapter, telemetry_project, cost_overrides)
@@ -115,4 +118,3 @@ def create_llm_adapter(
     )
 
     return settings, adapter, gen_config
-

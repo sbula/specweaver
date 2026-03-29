@@ -50,7 +50,11 @@ class TestImplementEndpoint:
     @patch("specweaver.implementation.generator.Generator.generate_code", new_callable=AsyncMock)
     @patch("specweaver.implementation.generator.Generator.generate_tests", new_callable=AsyncMock)
     def test_implement_returns_200(
-        self, mock_tests, mock_code, client, _project_with_spec,
+        self,
+        mock_tests,
+        mock_code,
+        client,
+        _project_with_spec,
     ) -> None:
         """Implement with mocked LLM → 200 with generated paths."""
         proj, spec = _project_with_spec

@@ -23,7 +23,9 @@ class TestReviewCommandFlush:
         from specweaver.review.reviewer import ReviewResult
 
         mock_review.return_value = ReviewResult(
-            verdict="accepted", summary="OK", findings=[],
+            verdict="accepted",
+            summary="OK",
+            findings=[],
         )
 
         # Create a spec file to review

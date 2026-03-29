@@ -58,6 +58,7 @@ class TestRunner:
     def test_spec_pipeline_has_eleven_rules(self) -> None:
         import specweaver.validation.rules.spec  # noqa: F401
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
         pipeline = load_pipeline_yaml("validation_spec_default")
         assert len(pipeline.steps) == 11
 
@@ -65,6 +66,7 @@ class TestRunner:
         import specweaver.validation.rules.spec  # noqa: F401
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, "## 1. Purpose\nSimple.\n")
         # No step should fail with 'not found in registry' (LLM rules excluded)
@@ -74,6 +76,7 @@ class TestRunner:
     def test_spec_pipeline_rules_are_present(self) -> None:
         import specweaver.validation.rules.spec  # noqa: F401
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
         pipeline = load_pipeline_yaml("validation_spec_default")
         ids = {s.rule for s in pipeline.steps}
         # All S01-S11 must be present
@@ -84,6 +87,7 @@ class TestRunner:
         import specweaver.validation.rules.spec  # noqa: F401
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, good_spec)
         assert len(results) == 11
@@ -141,6 +145,7 @@ class TestRunner:
         import specweaver.validation.rules.spec  # noqa: F401
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, good_spec)
         for r in results:
@@ -374,12 +379,12 @@ See [config](config.yaml) and [script](deploy.sh) for details.
         """Line numbers must be populated when threshold triggers findings."""
         spec = (
             "Line 1\n"
-            "See [a](a_spec.md) link.\n"             # line 2
-            "See [b](b_spec.md) link.\n"             # line 3
-            "See [c](c_spec.md) link.\n"             # line 4
-            "See [d](d_spec.md) link.\n"             # line 5
-            "See [e](e_spec.md) link.\n"             # line 6
-            "See [target](target_spec.md) link.\n"   # line 7
+            "See [a](a_spec.md) link.\n"  # line 2
+            "See [b](b_spec.md) link.\n"  # line 3
+            "See [c](c_spec.md) link.\n"  # line 4
+            "See [d](d_spec.md) link.\n"  # line 5
+            "See [e](e_spec.md) link.\n"  # line 6
+            "See [target](target_spec.md) link.\n"  # line 7
         )
         result = DependencyDirectionRule().check(spec)
         assert result.status in (Status.WARN, Status.FAIL)
@@ -434,8 +439,9 @@ The component does stuff.
 """
         result = TestFirstRule().check(spec)
         assert result.status in (Status.WARN, Status.FAIL)
-        assert any("testable" in f.message.lower() or "code" in f.message.lower()
-                    for f in result.findings)
+        assert any(
+            "testable" in f.message.lower() or "code" in f.message.lower() for f in result.findings
+        )
 
     def test_contract_with_code_but_no_assertions_warns(self) -> None:
         spec = """
@@ -571,8 +577,10 @@ This component uses `FlowEngine` and `StateManager` to process data.
 """
         result = TerminologyRule().check(spec)
         assert result.status in (Status.WARN, Status.FAIL)
-        assert any("undefined" in f.message.lower() or "not defined" in f.message.lower()
-                   for f in result.findings)
+        assert any(
+            "undefined" in f.message.lower() or "not defined" in f.message.lower()
+            for f in result.findings
+        )
 
     def test_defined_terms_not_flagged(self) -> None:
         """Terms defined in headers or code blocks should not be flagged."""
@@ -651,8 +659,11 @@ class TestS04DeadLinks:
         spec_file.write_text(spec_text, encoding="utf-8")
 
         result = DependencyDirectionRule().check(spec_text, spec_path=spec_file)
-        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
-                              or "not found" in f.message.lower()]
+        dead_link_findings = [
+            f
+            for f in result.findings
+            if "dead link" in f.message.lower() or "not found" in f.message.lower()
+        ]
         assert len(dead_link_findings) == 0
 
     def test_missing_link_warns(self, tmp_path: Path) -> None:
@@ -662,8 +673,11 @@ class TestS04DeadLinks:
         spec_file.write_text(spec_text, encoding="utf-8")
 
         result = DependencyDirectionRule().check(spec_text, spec_path=spec_file)
-        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
-                              or "not found" in f.message.lower()]
+        dead_link_findings = [
+            f
+            for f in result.findings
+            if "dead link" in f.message.lower() or "not found" in f.message.lower()
+        ]
         assert len(dead_link_findings) == 1
         assert dead_link_findings[0].severity == Severity.WARNING
 
@@ -671,8 +685,11 @@ class TestS04DeadLinks:
         """Without spec_path, dead link checking should be skipped."""
         spec_text = "See [missing](missing_spec.md) for details.\n"
         result = DependencyDirectionRule().check(spec_text, spec_path=None)
-        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
-                              or "not found" in f.message.lower()]
+        dead_link_findings = [
+            f
+            for f in result.findings
+            if "dead link" in f.message.lower() or "not found" in f.message.lower()
+        ]
         assert len(dead_link_findings) == 0
 
     def test_multiple_dead_links(self, tmp_path: Path) -> None:
@@ -686,8 +703,11 @@ class TestS04DeadLinks:
         spec_file.write_text(spec_text, encoding="utf-8")
 
         result = DependencyDirectionRule().check(spec_text, spec_path=spec_file)
-        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
-                              or "not found" in f.message.lower()]
+        dead_link_findings = [
+            f
+            for f in result.findings
+            if "dead link" in f.message.lower() or "not found" in f.message.lower()
+        ]
         assert len(dead_link_findings) == 3
 
     def test_mixed_existing_and_dead_links(self, tmp_path: Path) -> None:
@@ -695,13 +715,15 @@ class TestS04DeadLinks:
         (tmp_path / "auth_spec.md").write_text("# Auth", encoding="utf-8")
         spec_file = tmp_path / "my_spec.md"
         spec_text = (
-            "See [auth](auth_spec.md) for auth.\n"
-            "See [missing](missing_spec.md) for missing.\n"
+            "See [auth](auth_spec.md) for auth.\nSee [missing](missing_spec.md) for missing.\n"
         )
         spec_file.write_text(spec_text, encoding="utf-8")
 
         result = DependencyDirectionRule().check(spec_text, spec_path=spec_file)
-        dead_link_findings = [f for f in result.findings if "dead link" in f.message.lower()
-                              or "not found" in f.message.lower()]
+        dead_link_findings = [
+            f
+            for f in result.findings
+            if "dead link" in f.message.lower() or "not found" in f.message.lower()
+        ]
         assert len(dead_link_findings) == 1
         assert "missing_spec.md" in dead_link_findings[0].message

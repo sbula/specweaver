@@ -46,13 +46,18 @@ class TestReviewEndpointTelemetry:
 
     @patch("specweaver.review.reviewer.Reviewer.review_spec", new_callable=AsyncMock)
     def test_review_passes_telemetry_project(
-        self, mock_review, client, _project_with_spec,
+        self,
+        mock_review,
+        client,
+        _project_with_spec,
     ):
         """create_llm_adapter is called with telemetry_project='testproj'."""
         from specweaver.review.reviewer import ReviewResult
 
         mock_review.return_value = ReviewResult(
-            verdict="accepted", summary="OK", findings=[],
+            verdict="accepted",
+            summary="OK",
+            findings=[],
         )
         proj, spec = _project_with_spec
 
@@ -77,14 +82,19 @@ class TestReviewEndpointTelemetry:
 
     @patch("specweaver.review.reviewer.Reviewer.review_spec", new_callable=AsyncMock)
     def test_review_flushes_telemetry_collector(
-        self, mock_review, client, _project_with_spec,
+        self,
+        mock_review,
+        client,
+        _project_with_spec,
     ):
         """After review, if adapter is TelemetryCollector, flush() is called."""
         from specweaver.llm.collector import TelemetryCollector
         from specweaver.review.reviewer import ReviewResult
 
         mock_review.return_value = ReviewResult(
-            verdict="accepted", summary="OK", findings=[],
+            verdict="accepted",
+            summary="OK",
+            findings=[],
         )
         proj, spec = _project_with_spec
 
@@ -109,7 +119,9 @@ class TestImplementEndpointTelemetry:
     """POST /implement passes telemetry_project and flushes collector."""
 
     def test_implement_passes_telemetry_project(
-        self, client, _project_with_spec,
+        self,
+        client,
+        _project_with_spec,
     ):
         """create_llm_adapter is called with telemetry_project='testproj'."""
         proj, spec = _project_with_spec
@@ -142,7 +154,9 @@ class TestImplementEndpointTelemetry:
         assert kwargs.get("telemetry_project") == "testproj"
 
     def test_implement_flushes_telemetry_collector(
-        self, client, _project_with_spec,
+        self,
+        client,
+        _project_with_spec,
     ):
         """After implement, if adapter is TelemetryCollector, flush() is called."""
         from specweaver.llm.collector import TelemetryCollector

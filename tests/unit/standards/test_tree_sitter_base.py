@@ -77,9 +77,7 @@ class TestTreeSitterAnalyzer:
         assert res.dominant == {"status": "ok"}
         assert res.confidence == 1.0
 
-    def test_skips_files_with_read_errors(
-        self, analyzer: DummyJSAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_skips_files_with_read_errors(self, analyzer: DummyJSAnalyzer, tmp_path: Path) -> None:
         """Files that cannot be read (e.g. absent) should be skipped gracefully."""
         f = tmp_path / "missing.js"
         # We do not write the file, so path.read_bytes() will fail
@@ -88,10 +86,9 @@ class TestTreeSitterAnalyzer:
         assert len(results) == 1
         assert results[0].sample_size == 0
 
-    def test_extractor_failure_is_caught_safely(
-        self, tmp_path: Path
-    ) -> None:
+    def test_extractor_failure_is_caught_safely(self, tmp_path: Path) -> None:
         """If one extractor raises an exception, the pipeline should not completely crash."""
+
         class BuggyAnalyzer(DummyJSAnalyzer):
             def _extract_crash(self, parsed_files: list) -> CategoryResult:
                 raise ValueError("Oops!")

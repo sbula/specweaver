@@ -65,8 +65,8 @@ Returns results. Raises ValueError on bad input.
 
 # ── _extract_policy() ────────────────────────────────────────────────────
 
-class TestExtractPolicy:
 
+class TestExtractPolicy:
     def test_extracts_policy_section(self) -> None:
         result = _extract_policy(_GOOD_SPEC)
         assert "Invalid email" in result
@@ -78,8 +78,8 @@ class TestExtractPolicy:
 
 # ── ErrorPathRule.check() ────────────────────────────────────────────────
 
-class TestErrorPathRule:
 
+class TestErrorPathRule:
     def test_good_spec_passes(self) -> None:
         rule = ErrorPathRule()
         result = rule.check(_GOOD_SPEC)
@@ -90,8 +90,8 @@ class TestErrorPathRule:
         result = rule.check(_NO_ERROR_SPEC)
         assert result.status == Status.FAIL
         assert any(
-            "error" in f.message.lower() or "failure" in f.message.lower()
-            for f in result.findings)
+            "error" in f.message.lower() or "failure" in f.message.lower() for f in result.findings
+        )
 
     def test_keywords_without_section_warns(self) -> None:
         rule = ErrorPathRule()

@@ -94,9 +94,14 @@ class TestC03TestsPass:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=3, failed=0, errors=0, skipped=0, total=3,
+            passed=3,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=3,
         )
 
         rule = TestsPassRule()
@@ -123,9 +128,14 @@ class TestC03TestsPass:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestFailure, TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=0, failed=1, errors=0, skipped=0, total=1,
+            passed=0,
+            failed=1,
+            errors=0,
+            skipped=0,
+            total=1,
             failures=[TestFailure(nodeid="test_bad", message="assert False")],
         )
 
@@ -175,10 +185,15 @@ class TestC03TestsPass:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestFailure, TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         long_message = "x" * 1000
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=0, failed=1, errors=0, skipped=0, total=1,
+            passed=0,
+            failed=1,
+            errors=0,
+            skipped=0,
+            total=1,
             failures=[TestFailure(nodeid="test_x", message=long_message)],
         )
 
@@ -205,9 +220,14 @@ class TestC03TestsPass:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=0, failed=1, errors=0, skipped=0, total=1,
+            passed=0,
+            failed=1,
+            errors=0,
+            skipped=0,
+            total=1,
             failures=[],  # no failure details
         )
 
@@ -243,9 +263,14 @@ class TestC04Coverage:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=5, failed=0, errors=0, skipped=0, total=5,
+            passed=5,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=5,
             coverage_pct=95.0,
         )
 
@@ -266,9 +291,14 @@ class TestC04Coverage:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=5, failed=0, errors=0, skipped=0, total=5,
+            passed=5,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=5,
             coverage_pct=40.0,
         )
 
@@ -290,9 +320,14 @@ class TestC04Coverage:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=0, failed=0, errors=0, skipped=0, total=0,
+            passed=0,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=0,
             coverage_pct=None,
         )
 
@@ -332,9 +367,14 @@ class TestC04Coverage:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=5, failed=0, errors=0, skipped=0, total=5,
+            passed=5,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=5,
             coverage_pct=70.0,
         )
 
@@ -354,9 +394,14 @@ class TestC04Coverage:
         code.write_text("pass", encoding="utf-8")
 
         from specweaver.loom.commons.test_runner.interface import TestRunResult
+
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
-            passed=5, failed=0, errors=0, skipped=0, total=5,
+            passed=5,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=5,
             coverage_pct=69.0,
         )
 
@@ -526,6 +571,7 @@ class TestValidationRunnerFiltering:
         """Verify code pipeline step IDs include C01, C05 and also C03/C04."""
         import specweaver.validation.rules.code  # noqa: F401
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
         pipeline = load_pipeline_yaml("validation_code_default")
         ids = {s.rule for s in pipeline.steps}
         assert "C01" in ids
@@ -539,11 +585,14 @@ class TestValidationRunnerFiltering:
         from specweaver.config.settings import RuleOverride, ValidationSettings
         from specweaver.validation.executor import apply_settings_to_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
         pipeline = load_pipeline_yaml("validation_code_default")
-        settings = ValidationSettings(overrides={
-            "C03": RuleOverride(rule_id="C03", enabled=False),
-            "C04": RuleOverride(rule_id="C04", enabled=False),
-        })
+        settings = ValidationSettings(
+            overrides={
+                "C03": RuleOverride(rule_id="C03", enabled=False),
+                "C04": RuleOverride(rule_id="C04", enabled=False),
+            }
+        )
         pipeline = apply_settings_to_pipeline(pipeline, settings)
         ids = {s.rule for s in pipeline.steps}
         assert "C03" not in ids
@@ -556,6 +605,7 @@ class TestValidationRunnerFiltering:
         import specweaver.validation.rules.spec  # noqa: F401
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
         from specweaver.validation.registry import get_registry
+
         pipeline = load_pipeline_yaml("validation_spec_default")
         registry = get_registry()
         for step in pipeline.steps:
@@ -580,4 +630,3 @@ class TestValidationRunnerFiltering:
         assert len(results) == 1
         assert results[0].status == Status.FAIL
         assert "boom" in results[0].message
-

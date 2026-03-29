@@ -110,7 +110,10 @@ class StateStore:
         """
         logger.debug(
             "StateStore.save_run: run_id=%s status=%s step=%d/%d",
-            run.run_id, run.status.value, run.current_step, len(run.step_records),
+            run.run_id,
+            run.status.value,
+            run.current_step,
+            len(run.step_records),
         )
         records_json = json.dumps(
             [r.model_dump() for r in run.step_records],
@@ -145,7 +148,7 @@ class StateStore:
             if row is None:
                 logger.debug("StateStore.load_run: run_id=%s not found", run_id)
                 return None
-            logger.debug("StateStore.load_run: loaded run_id=%s status=%s", run_id, row['status'])
+            logger.debug("StateStore.load_run: loaded run_id=%s status=%s", run_id, row["status"])
             return _row_to_run(row)
 
     def get_latest_run(

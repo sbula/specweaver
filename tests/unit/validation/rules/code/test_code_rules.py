@@ -317,6 +317,7 @@ class TestCodeRulesPipeline:
     def test_code_pipeline_has_expected_rules(self) -> None:
         import specweaver.validation.rules.code  # noqa: F401
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
+
         pipeline = load_pipeline_yaml("validation_code_default")
         ids = {s.rule for s in pipeline.steps}
         assert "C01" in ids  # Subprocess rules included
@@ -336,10 +337,12 @@ class TestCodeRulesPipeline:
 
         # Load the code pipeline, but disable subprocess rules for unit test
         pipeline = load_pipeline_yaml("validation_code_default")
-        settings = ValidationSettings(overrides={
-            "C03": RuleOverride(rule_id="C03", enabled=False),
-            "C04": RuleOverride(rule_id="C04", enabled=False),
-        })
+        settings = ValidationSettings(
+            overrides={
+                "C03": RuleOverride(rule_id="C03", enabled=False),
+                "C04": RuleOverride(rule_id="C04", enabled=False),
+            }
+        )
         pipeline = apply_settings_to_pipeline(pipeline, settings)
         results = execute_validation_pipeline(pipeline, code)
 
@@ -479,5 +482,3 @@ class TestCLICodeCheck:
 
         assert result.exit_code == 1
         assert "FAIL" in result.output
-
-

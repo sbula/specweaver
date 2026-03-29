@@ -232,4 +232,3 @@ class ToolDispatcherProtocol(Protocol):
     async def execute(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Execute a tool call by name with arguments."""
         ...
-

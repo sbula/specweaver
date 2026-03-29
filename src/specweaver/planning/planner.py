@@ -133,7 +133,9 @@ Return ONLY the JSON object.""",
                     update={"tools": self._tool_dispatcher.available_tools()},
                 )
                 response = await self._llm.generate_with_tools(
-                    messages, config, self._tool_dispatcher,
+                    messages,
+                    config,
+                    self._tool_dispatcher,
                 )
             else:
                 response = await self._llm.generate(messages, self._config)
@@ -163,14 +165,17 @@ Return ONLY the JSON object.""",
                     plan.timestamp = datetime.now(UTC).isoformat()
                 logger.info(
                     "Planner: plan generated (attempt %d, confidence=%d, files=%d)",
-                    attempt, plan.confidence, len(plan.file_layout),
+                    attempt,
+                    plan.confidence,
+                    len(plan.file_layout),
                 )
                 return plan
             except (json.JSONDecodeError, Exception) as exc:
                 error_msg = str(exc)
                 logger.warning(
                     "Planner: attempt %d failed — %s",
-                    attempt, error_msg[:200],
+                    attempt,
+                    error_msg[:200],
                 )
                 # Add retry prompt for the next attempt
                 messages.append(Message(role=Role.ASSISTANT, content=raw))

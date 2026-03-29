@@ -207,18 +207,14 @@ class TestRunnerKindIntegration:
 
         s01 = next(r for r in results if r.rule_id == "S01")
         # Feature spec has ## Intent — S01 should find it and PASS (no conjunctions)
-        assert s01.status == Status.PASS, (
-            f"S01 should pass on clean feature spec: {s01.message}"
-        )
+        assert s01.status == Status.PASS, f"S01 should pass on clean feature spec: {s01.message}"
 
     def test_component_kind_uses_purpose_header(self) -> None:
         """S01 with kind=COMPONENT uses ## 1. Purpose header."""
         results = _run_spec_rules_with_kind(SpecKind.COMPONENT, _COMPONENT_SPEC)
 
         s01 = next(r for r in results if r.rule_id == "S01")
-        assert s01.status == Status.PASS, (
-            f"S01 should pass on clean component spec: {s01.message}"
-        )
+        assert s01.status == Status.PASS, f"S01 should pass on clean component spec: {s01.message}"
 
     def test_feature_pipeline_skips_s04(self) -> None:
         """Feature pipeline (validation_spec_feature.yaml) removes S04."""
@@ -241,10 +237,7 @@ class TestRunnerKindIntegration:
             f"S03 should detect abstraction leaks: {s03.message}"
         )
         assert len(s03.findings) > 0
-        assert any(
-            "leak" in f.message.lower() or "path" in f.message.lower()
-            for f in s03.findings
-        )
+        assert any("leak" in f.message.lower() or "path" in f.message.lower() for f in s03.findings)
 
     def test_same_spec_different_results_by_kind(self) -> None:
         """Same spec produces different results for FEATURE vs COMPONENT."""
@@ -265,14 +258,10 @@ class TestRunnerKindIntegration:
 
     def test_feature_conjunctions_fail_threshold(self) -> None:
         """Feature spec with many conjunctions in Intent → S01 FAIL."""
-        results = _run_spec_rules_with_kind(
-            SpecKind.FEATURE, _FEATURE_SPEC_MANY_CONJUNCTIONS
-        )
+        results = _run_spec_rules_with_kind(SpecKind.FEATURE, _FEATURE_SPEC_MANY_CONJUNCTIONS)
 
         s01 = next(r for r in results if r.rule_id == "S01")
-        assert s01.status == Status.FAIL, (
-            f"S01 should fail on many conjunctions: {s01.message}"
-        )
+        assert s01.status == Status.FAIL, f"S01 should fail on many conjunctions: {s01.message}"
         assert len(s01.findings) > 0
 
 
@@ -283,16 +272,16 @@ class TestRunnerSettingsOverrideIntegration:
         """Settings warn_threshold overrides kind preset for S05."""
         # Feature preset for S05: warn=60, fail=100 (from spec_kind.py)
         # Override: warn=999 (so lenient it will always PASS)
-        settings = ValidationSettings(overrides={
-            "S05": RuleOverride(rule_id="S05", warn_threshold=999),
-        })
+        settings = ValidationSettings(
+            overrides={
+                "S05": RuleOverride(rule_id="S05", warn_threshold=999),
+            }
+        )
         results = _run_spec_rules_with_kind(SpecKind.FEATURE, _FEATURE_SPEC, settings)
 
         s05 = next(r for r in results if r.rule_id == "S05")
         # With warn_threshold=999, almost any spec passes
-        assert s05.status == Status.PASS, (
-            f"S05 should pass with lenient override: {s05.message}"
-        )
+        assert s05.status == Status.PASS, f"S05 should pass with lenient override: {s05.message}"
 
     def test_none_kind_uses_defaults(self) -> None:
         """COMPONENT presets (close to defaults) produce results for all rules."""

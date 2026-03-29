@@ -51,8 +51,7 @@ def _apply_override(
             )
         except ValueError:
             _core.console.print(
-                f"[red]Error:[/red] Invalid threshold value: '{value}'. "
-                "Must be a number.",
+                f"[red]Error:[/red] Invalid threshold value: '{value}'. Must be a number.",
             )
             raise typer.Exit(code=1) from None
     else:
@@ -63,8 +62,7 @@ def _apply_override(
             )
         except ValueError:
             _core.console.print(
-                f"[red]Error:[/red] Invalid value for '{field}': '{value}'. "
-                "Must be a number.",
+                f"[red]Error:[/red] Invalid value for '{field}': '{value}'. Must be a number.",
             )
             raise typer.Exit(code=1) from None
 
@@ -116,7 +114,10 @@ def _resolve_pipeline_name(
     db = _core.get_db()
     try:
         return resolve_pipeline_name(
-            level, pipeline, db=db, active_project=active_project,
+            level,
+            pipeline,
+            db=db,
+            active_project=active_project,
         )
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
@@ -215,6 +216,7 @@ def check(
     settings = _load_check_settings(set_overrides)
     if settings is not None:
         from specweaver.validation.executor import apply_settings_to_pipeline
+
         resolved = apply_settings_to_pipeline(resolved, settings)
 
     results = execute_validation_pipeline(resolved, content, target_path)
@@ -267,9 +269,7 @@ def list_rules(
         for i, step in enumerate(resolved.steps, 1):
             params_str = ""
             if step.params:
-                params_str = "  " + " ".join(
-                    f"[dim]{k}={v}[/dim]" for k, v in step.params.items()
-                )
+                params_str = "  " + " ".join(f"[dim]{k}={v}[/dim]" for k, v in step.params.items())
             _core.console.print(f"  {i:>2}. [green]{step.rule}[/green]  {step.name}{params_str}")
 
         _core.console.print(f"\n  [dim]{len(resolved.steps)} rules total[/dim]")

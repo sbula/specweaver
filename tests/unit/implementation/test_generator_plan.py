@@ -34,7 +34,9 @@ class TestGeneratorPlanInjection:
 
     @pytest.mark.asyncio()
     async def test_generate_code_with_plan(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """generate_code with plan= injects <plan> block into prompt."""
         from specweaver.implementation.generator import Generator
@@ -45,7 +47,8 @@ class TestGeneratorPlanInjection:
 
         gen = Generator(llm=mock_llm)
         await gen.generate_code(
-            spec, output,
+            spec,
+            output,
             plan="## Tasks\n1. Create module\n2. Add tests",
         )
 
@@ -57,7 +60,9 @@ class TestGeneratorPlanInjection:
 
     @pytest.mark.asyncio()
     async def test_generate_tests_with_plan(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """generate_tests with plan= injects <plan> block into prompt."""
         from specweaver.implementation.generator import Generator
@@ -68,7 +73,8 @@ class TestGeneratorPlanInjection:
 
         gen = Generator(llm=mock_llm)
         await gen.generate_tests(
-            spec, output,
+            spec,
+            output,
             plan="## File Layout\n- src/auth.py: Auth handler",
         )
 
@@ -80,7 +86,9 @@ class TestGeneratorPlanInjection:
 
     @pytest.mark.asyncio()
     async def test_generate_code_without_plan(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """generate_code without plan= has no <plan> block."""
         from specweaver.implementation.generator import Generator

@@ -37,7 +37,9 @@ def pipeline_step() -> PipelineStep:
 
 
 @pytest.mark.asyncio
-async def test_validate_code_handler_empty_dir(run_context: RunContext, pipeline_step: PipelineStep) -> None:
+async def test_validate_code_handler_empty_dir(
+    run_context: RunContext, pipeline_step: PipelineStep
+) -> None:
     """ValidateCodeHandler gracefully fails when output directory has no Python files."""
     handler = ValidateCodeHandler()
     result = await handler.execute(pipeline_step, run_context)
@@ -46,7 +48,9 @@ async def test_validate_code_handler_empty_dir(run_context: RunContext, pipeline
 
 
 @pytest.mark.asyncio
-async def test_validate_code_handler_success_output(run_context: RunContext, pipeline_step: PipelineStep) -> None:
+async def test_validate_code_handler_success_output(
+    run_context: RunContext, pipeline_step: PipelineStep
+) -> None:
     """ValidateCodeHandler constructs proper output payloads when validation rules execute."""
     (run_context.output_dir / "foo.py").touch()
 
@@ -54,8 +58,22 @@ async def test_validate_code_handler_success_output(run_context: RunContext, pip
 
     with patch.object(handler, "_run_validation") as mock_run:
         mock_run.return_value = [
-            RuleResult(rule_id="r1", rule_name="rule1", status=RuleStatus.PASS, message="OK", line=1, file="foo.py"),
-            RuleResult(rule_id="r2", rule_name="rule2", status=RuleStatus.FAIL, message="Bad", line=2, file="foo.py"),
+            RuleResult(
+                rule_id="r1",
+                rule_name="rule1",
+                status=RuleStatus.PASS,
+                message="OK",
+                line=1,
+                file="foo.py",
+            ),
+            RuleResult(
+                rule_id="r2",
+                rule_name="rule2",
+                status=RuleStatus.FAIL,
+                message="Bad",
+                line=2,
+                file="foo.py",
+            ),
         ]
         result = await handler.execute(pipeline_step, run_context)
 
@@ -66,35 +84,48 @@ async def test_validate_code_handler_success_output(run_context: RunContext, pip
 
 
 @pytest.mark.asyncio
-async def test_generate_handlers_exception_wrapper(run_context: RunContext, pipeline_step: PipelineStep) -> None:
+async def test_generate_handlers_exception_wrapper(
+    run_context: RunContext, pipeline_step: PipelineStep
+) -> None:
     """GenerateCodeHandler and GenerateTestsHandler trap LLM generation faults."""
     run_context.llm = AsyncMock()
 
     code_handler = GenerateCodeHandler()
     test_handler = GenerateTestsHandler()
 
-    with patch("specweaver.implementation.generator.Generator.generate_code", side_effect=ValueError("LLM Crash")):
+    with patch(
+        "specweaver.implementation.generator.Generator.generate_code",
+        side_effect=ValueError("LLM Crash"),
+    ):
         result = await code_handler.execute(pipeline_step, run_context)
         assert result.status == StepStatus.ERROR
         assert "LLM Crash" in (result.error_message or "")
 
-    with patch("specweaver.implementation.generator.Generator.generate_tests", side_effect=ValueError("LLM Crash Tests")):
+    with patch(
+        "specweaver.implementation.generator.Generator.generate_tests",
+        side_effect=ValueError("LLM Crash Tests"),
+    ):
         result2 = await test_handler.execute(pipeline_step, run_context)
         assert result2.status == StepStatus.ERROR
         assert "LLM Crash Tests" in (result2.error_message or "")
 
 
 @pytest.mark.asyncio
-async def test_validate_tests_handler_lazy_atom(run_context: RunContext, pipeline_step: PipelineStep) -> None:
+async def test_validate_tests_handler_lazy_atom(
+    run_context: RunContext, pipeline_step: PipelineStep
+) -> None:
     """ValidateTestsHandler can instantiate its atom."""
     handler = ValidateTestsHandler()
     atom = handler._get_atom(run_context)
     from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+
     assert isinstance(atom, TestRunnerAtom)
 
 
 @pytest.mark.asyncio
-async def test_lint_fix_handler_missing_code(run_context: RunContext, pipeline_step: PipelineStep) -> None:
+async def test_lint_fix_handler_missing_code(
+    run_context: RunContext, pipeline_step: PipelineStep
+) -> None:
     """LintFixHandler safely aborts reflection if code files vanish."""
     run_context.llm = AsyncMock()
     handler = LintFixHandler()
@@ -119,7 +150,7 @@ async def test_lint_fix_handler_missing_code(run_context: RunContext, pipeline_s
 
 
 @pytest.mark.asyncio
-async def test_lint_fix_handler_ast_fences(tmp_path: Path) -> None:
+async def test_lint_fix_handler_ast_fences(tmp_path: Path, run_context: RunContext) -> None:
     """LintFixHandler strips markdown fences correctly."""
     handler = LintFixHandler()
     llm = AsyncMock()
@@ -128,7 +159,7 @@ async def test_lint_fix_handler_ast_fences(tmp_path: Path) -> None:
     code_path = tmp_path / "target.py"
     code_path.touch()
 
-    await handler._llm_fix(llm, code_path, [{"line": 1}])
+    await handler._llm_fix(llm, code_path, [{"line": 1}], context=run_context)
 
     fixed = code_path.read_text(encoding="utf-8")
     assert "print('fixed')" in fixed
@@ -136,7 +167,9 @@ async def test_lint_fix_handler_ast_fences(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_review_handlers_execution(run_context: RunContext, pipeline_step: PipelineStep) -> None:
+async def test_review_handlers_execution(
+    run_context: RunContext, pipeline_step: PipelineStep
+) -> None:
     """ReviewSpecHandler and ReviewCodeHandler execute their core LLM logic without crashing."""
     run_context.llm = AsyncMock()
     (run_context.output_dir / "foo.py").touch()

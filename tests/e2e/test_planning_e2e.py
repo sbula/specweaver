@@ -130,23 +130,25 @@ class TestFullPlanPipelineE2E:
         assert validate_result.status in (StepStatus.PASSED, StepStatus.FAILED)
 
         # 3. Plan spec (mock LLM returns valid plan JSON)
-        plan_json = json.dumps({
-            "spec_path": str(spec),
-            "spec_name": "Login",
-            "spec_hash": "auto",
-            "timestamp": "2026-03-22T12:00:00Z",
-            "file_layout": [
-                {"path": "src/auth/login.py", "action": "create", "purpose": "Login handler"},
-                {"path": "tests/test_login.py", "action": "create", "purpose": "Login tests"},
-            ],
-            "architecture": {
-                "module_layout": "auth/ service module",
-                "dependency_direction": "downward",
-                "archetype": "adapter",
-            },
-            "reasoning": "Standard adapter pattern for auth.",
-            "confidence": 85,
-        })
+        plan_json = json.dumps(
+            {
+                "spec_path": str(spec),
+                "spec_name": "Login",
+                "spec_hash": "auto",
+                "timestamp": "2026-03-22T12:00:00Z",
+                "file_layout": [
+                    {"path": "src/auth/login.py", "action": "create", "purpose": "Login handler"},
+                    {"path": "tests/test_login.py", "action": "create", "purpose": "Login tests"},
+                ],
+                "architecture": {
+                    "module_layout": "auth/ service module",
+                    "dependency_direction": "downward",
+                    "archetype": "adapter",
+                },
+                "reasoning": "Standard adapter pattern for auth.",
+                "confidence": 85,
+            }
+        )
         plan_llm = FakeLLM([plan_json])
 
         ctx_plan = RunContext(project_path=tmp_path, spec_path=spec, llm=plan_llm)
@@ -179,15 +181,18 @@ class TestFullPlanPipelineE2E:
         gen_llm.generate = AsyncMock(
             return_value=MagicMock(
                 text="class LoginHandler:\n    pass\n",
-                finish_reason=1, parsed=None,
+                finish_reason=1,
+                parsed=None,
             ),
         )
         src_dir = tmp_path / "src"
         src_dir.mkdir(exist_ok=True)
 
         ctx_generate = RunContext(
-            project_path=tmp_path, spec_path=spec,
-            output_dir=src_dir, llm=gen_llm,
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=src_dir,
+            llm=gen_llm,
             plan=plan_text,
         )
         step_generate = PipelineStep(
@@ -225,24 +230,24 @@ class TestPlanWithConstitutionAndStandardsE2E:
         # 1. Create spec
         spec = tmp_path / "auth_spec.md"
         spec.write_text(
-            "# Auth Component\n\n"
-            "## 1. Purpose\n\n"
-            "Provide authentication.\n",
+            "# Auth Component\n\n## 1. Purpose\n\nProvide authentication.\n",
             encoding="utf-8",
         )
 
         # 2. Plan spec via mock LLM
-        plan_json = json.dumps({
-            "spec_path": str(spec),
-            "spec_name": "Auth",
-            "spec_hash": "auto",
-            "timestamp": "2026-03-26T06:00:00Z",
-            "file_layout": [
-                {"path": "src/auth.py", "action": "create", "purpose": "Auth handler"},
-            ],
-            "reasoning": "Standard auth pattern.",
-            "confidence": 90,
-        })
+        plan_json = json.dumps(
+            {
+                "spec_path": str(spec),
+                "spec_name": "Auth",
+                "spec_hash": "auto",
+                "timestamp": "2026-03-26T06:00:00Z",
+                "file_layout": [
+                    {"path": "src/auth.py", "action": "create", "purpose": "Auth handler"},
+                ],
+                "reasoning": "Standard auth pattern.",
+                "confidence": 90,
+            }
+        )
 
         plan_llm = FakeLLM([plan_json])
         ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=plan_llm)
@@ -290,17 +295,19 @@ class TestPlannerCleanJsonE2E:
             encoding="utf-8",
         )
 
-        plan_json = json.dumps({
-            "spec_path": str(spec),
-            "spec_name": "Fenced",
-            "spec_hash": "auto",
-            "timestamp": "2026-03-26T06:00:00Z",
-            "file_layout": [
-                {"path": "src/fenced.py", "action": "create", "purpose": "Test module"},
-            ],
-            "reasoning": "Test the fence stripping.",
-            "confidence": 75,
-        })
+        plan_json = json.dumps(
+            {
+                "spec_path": str(spec),
+                "spec_name": "Fenced",
+                "spec_hash": "auto",
+                "timestamp": "2026-03-26T06:00:00Z",
+                "file_layout": [
+                    {"path": "src/fenced.py", "action": "create", "purpose": "Test module"},
+                ],
+                "reasoning": "Test the fence stripping.",
+                "confidence": 75,
+            }
+        )
         # LLM wraps the JSON in markdown fences
         fenced = f"```json\n{plan_json}\n```"
 
@@ -312,4 +319,3 @@ class TestPlannerCleanJsonE2E:
 
         assert result.status == StepStatus.PASSED
         assert result.output["confidence"] == 75
-

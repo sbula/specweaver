@@ -44,11 +44,13 @@ class TestTSTypesExtraction:
         self, analyzer: TSStandardsAnalyzer, tmp_path: Path
     ) -> None:
         f = tmp_path / "types.ts"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             interface User { name: string; }
             interface DB { host: string; }
             type ID = string | number;
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         types = next(r for r in results if r.category == "typescript_types")
         assert types.dominant.get("declaration") == "interface"
@@ -58,11 +60,13 @@ class TestTSTypesExtraction:
         self, analyzer: TSStandardsAnalyzer, tmp_path: Path
     ) -> None:
         f = tmp_path / "types.ts"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             type User = { name: string; };
             type DB = { host: string; };
             interface ID { val: string; }
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         types = next(r for r in results if r.category == "typescript_types")
         assert types.dominant.get("declaration") == "type_alias"
@@ -72,14 +76,14 @@ class TestTSTypesExtraction:
 class TestTSInheritance:
     """Verify that inherited JS extractors still run successfully on TS ASTs."""
 
-    def test_js_extractor_naming(
-        self, analyzer: TSStandardsAnalyzer, tmp_path: Path
-    ) -> None:
+    def test_js_extractor_naming(self, analyzer: TSStandardsAnalyzer, tmp_path: Path) -> None:
         f = tmp_path / "code.ts"
-        f.write_text(textwrap.dedent("""\
+        f.write_text(
+            textwrap.dedent("""\
             function getUser(): User {}
             class UserProfile implements User {}
-        """))
+        """)
+        )
         results = analyzer.extract_all([f], 180)
         naming = next(r for r in results if r.category == "naming")
         assert naming.dominant.get("function_style") == "camelCase"

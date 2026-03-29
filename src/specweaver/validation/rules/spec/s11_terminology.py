@@ -209,8 +209,7 @@ class TerminologyRule(Rule):
                     line=line_num,
                     severity=Severity.WARNING,
                     suggestion=(
-                        f"Add a definition for `{term}` in a "
-                        f"heading (### `{term}`) or code block."
+                        f"Add a definition for `{term}` in a heading (### `{term}`) or code block."
                     ),
                 )
             )

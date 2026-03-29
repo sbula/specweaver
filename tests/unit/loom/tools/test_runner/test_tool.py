@@ -37,7 +37,8 @@ class TestToolRoleGating:
     def test_implementer_can_run_tests(self, tmp_path: Path) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
-            status=AtomStatus.SUCCESS, message="ok",
+            status=AtomStatus.SUCCESS,
+            message="ok",
             exports={"passed": 5, "failed": 0, "total": 5},
         )
         tool = TestRunnerTool(atom=atom, role="implementer")
@@ -48,7 +49,8 @@ class TestToolRoleGating:
     def test_implementer_can_run_linter_with_fix(self, tmp_path: Path) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
-            status=AtomStatus.SUCCESS, message="ok",
+            status=AtomStatus.SUCCESS,
+            message="ok",
             exports={"error_count": 0, "errors": []},
         )
         tool = TestRunnerTool(atom=atom, role="implementer")
@@ -58,7 +60,8 @@ class TestToolRoleGating:
     def test_reviewer_can_run_tests(self, tmp_path: Path) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
-            status=AtomStatus.SUCCESS, message="ok",
+            status=AtomStatus.SUCCESS,
+            message="ok",
             exports={"passed": 3, "failed": 0, "total": 3},
         )
         tool = TestRunnerTool(atom=atom, role="reviewer")
@@ -74,7 +77,8 @@ class TestToolRoleGating:
     def test_reviewer_can_run_linter_readonly(self, tmp_path: Path) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
-            status=AtomStatus.SUCCESS, message="ok",
+            status=AtomStatus.SUCCESS,
+            message="ok",
             exports={"error_count": 0, "errors": []},
         )
         tool = TestRunnerTool(atom=atom, role="reviewer")
@@ -106,7 +110,8 @@ class TestInterfaces:
         ) as mock_atom_cls:
             mock_atom = MagicMock()
             mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS, message="ok",
+                status=AtomStatus.SUCCESS,
+                message="ok",
                 exports={"passed": 5, "total": 5},
             )
             mock_atom_cls.return_value = mock_atom
@@ -135,7 +140,8 @@ class TestInterfaces:
         ) as mock_atom_cls:
             mock_atom = MagicMock()
             mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS, message="ok",
+                status=AtomStatus.SUCCESS,
+                message="ok",
                 exports={"error_count": 0, "errors": []},
             )
             mock_atom_cls.return_value = mock_atom
@@ -158,7 +164,8 @@ class TestToolComplexityGating:
     def test_implementer_can_run_complexity(self) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
-            status=AtomStatus.SUCCESS, message="ok",
+            status=AtomStatus.SUCCESS,
+            message="ok",
             exports={"violation_count": 0, "max_complexity": 10, "violations": []},
         )
         tool = TestRunnerTool(atom=atom, role="implementer")
@@ -168,7 +175,8 @@ class TestToolComplexityGating:
     def test_reviewer_can_run_complexity(self) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
-            status=AtomStatus.SUCCESS, message="ok",
+            status=AtomStatus.SUCCESS,
+            message="ok",
             exports={"violation_count": 0, "max_complexity": 10, "violations": []},
         )
         tool = TestRunnerTool(atom=atom, role="reviewer")
@@ -178,7 +186,8 @@ class TestToolComplexityGating:
     def test_complexity_returns_error_on_violations(self) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
-            status=AtomStatus.FAILED, message="2 violations",
+            status=AtomStatus.FAILED,
+            message="2 violations",
             exports={"violation_count": 2, "max_complexity": 10, "violations": []},
         )
         tool = TestRunnerTool(atom=atom, role="implementer")
@@ -188,7 +197,8 @@ class TestToolComplexityGating:
     def test_complexity_passes_threshold(self) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
-            status=AtomStatus.SUCCESS, message="ok",
+            status=AtomStatus.SUCCESS,
+            message="ok",
             exports={"violation_count": 0, "max_complexity": 5, "violations": []},
         )
         tool = TestRunnerTool(atom=atom, role="implementer")
@@ -214,7 +224,8 @@ class TestInterfaceComplexity:
         ) as mock_atom_cls:
             mock_atom = MagicMock()
             mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS, message="ok",
+                status=AtomStatus.SUCCESS,
+                message="ok",
                 exports={"violation_count": 0, "max_complexity": 10, "violations": []},
             )
             mock_atom_cls.return_value = mock_atom
@@ -230,7 +241,8 @@ class TestInterfaceComplexity:
         ) as mock_atom_cls:
             mock_atom = MagicMock()
             mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS, message="ok",
+                status=AtomStatus.SUCCESS,
+                message="ok",
                 exports={"violation_count": 0, "max_complexity": 10, "violations": []},
             )
             mock_atom_cls.return_value = mock_atom
@@ -239,4 +251,3 @@ class TestInterfaceComplexity:
             result = iface.run_complexity(target="src/")
 
         assert result.status == "success"
-

@@ -37,8 +37,10 @@ def test_stitch_client_generate_mockup_exception(monkeypatch, caplog):
 
     # Force MockupResult creation to fail to simulate exception
     import specweaver.planning.models
+
     def raise_err(*args, **kwargs):
         raise ValueError("Simulated network error")
+
     monkeypatch.setattr(specweaver.planning.models, "MockupReference", raise_err)
 
     with caplog.at_level("WARNING"):

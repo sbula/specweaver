@@ -24,7 +24,12 @@ from specweaver.flow.store import StateStore
 
 class FakeHitlHandler:
     async def execute(self, step, context):
-        return StepResult(status=StepStatus.WAITING_FOR_INPUT, output={"message": "wait"}, started_at="1", completed_at="2")
+        return StepResult(
+            status=StepStatus.WAITING_FOR_INPUT,
+            output={"message": "wait"},
+            started_at="1",
+            completed_at="2",
+        )
 
 
 class FakePassHandler:
@@ -46,9 +51,13 @@ async def test_pipeline_halt_and_resume(tmp_path: Path) -> None:
         name="resume_test",
         steps=[
             PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC),
-            PipelineStep(name="review", action=StepAction.REVIEW, target=StepTarget.SPEC,
-                         gate=GateDefinition(type=GateType.HITL, condition=GateCondition.ACCEPTED)),
-        ]
+            PipelineStep(
+                name="review",
+                action=StepAction.REVIEW,
+                target=StepTarget.SPEC,
+                gate=GateDefinition(type=GateType.HITL, condition=GateCondition.ACCEPTED),
+            ),
+        ],
     )
 
     # Run 1: Should pass draft and park at review
@@ -74,5 +83,5 @@ async def test_pipeline_halt_and_resume(tmp_path: Path) -> None:
 
     # It should resume from step 1 (review), which now passes, and then complete
     assert run2.status == RunStatus.COMPLETED
-    assert run2.run_id == run1.run_id # Same run
-    assert run2.current_step == 2 # Completed all 2 steps
+    assert run2.run_id == run1.run_id  # Same run
+    assert run2.current_step == 2  # Completed all 2 steps

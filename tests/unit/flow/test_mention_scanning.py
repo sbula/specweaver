@@ -70,7 +70,8 @@ class TestResolveMentions:
         project = tmp_path / "my_project"
         project.mkdir()
         result = _resolve_mentions(
-            ["../other_project/secret.py"], project,
+            ["../other_project/secret.py"],
+            project,
         )
         assert result == []
 
@@ -108,7 +109,9 @@ class TestResolveMentions:
         f = root2 / "util.py"
         f.write_text("code")
         result = _resolve_mentions(
-            ["util.py"], root1, workspace_roots=[root2],
+            ["util.py"],
+            root1,
+            workspace_roots=[root2],
         )
         assert len(result) == 1
         assert result[0].resolved_path == f.resolve()

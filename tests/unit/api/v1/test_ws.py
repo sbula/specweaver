@@ -117,4 +117,3 @@ class TestWebSocket:
 
         # After context manager exits (disconnect), subscriber should be cleaned
         assert len(bridge._subscribers.get("test-run-5", [])) == 0
-

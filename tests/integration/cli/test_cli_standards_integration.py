@@ -258,7 +258,9 @@ class TestStandardsPromptInjection:
     """Integration: scan → _load_standards_content → formatted text."""
 
     def test_standards_roundtrip_to_prompt_text(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Scan, then _load_standards_content returns formatted text."""
         from specweaver.cli import _load_standards_content
@@ -304,4 +306,3 @@ class TestDiscoveryIntegration:
         assert "site.py" not in names
         assert "cached.pyc" not in names
         assert "index.js" not in names
-

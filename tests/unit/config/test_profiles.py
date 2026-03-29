@@ -258,8 +258,7 @@ class TestExtractDescription:
 
         yaml_file = tmp_path / "no_desc.yaml"
         yaml_file.write_text(
-            "name: validation_spec_example\n"
-            "extends: validation_spec_default\n",
+            "name: validation_spec_example\nextends: validation_spec_default\n",
             encoding="utf-8",
         )
         assert _extract_description(yaml_file) == ""

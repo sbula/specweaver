@@ -64,10 +64,8 @@ def init(
     has_source = any(
         f.suffix in source_exts
         for f in project_path.rglob("*")
-        if f.is_file() and not any(
-            p.startswith(".") or p == "__pycache__" or p == "node_modules"
-            for p in f.parts
-        )
+        if f.is_file()
+        and not any(p.startswith(".") or p == "__pycache__" or p == "node_modules" for p in f.parts)
     )
     if has_source:
         _core.console.print(
@@ -249,7 +247,9 @@ def scan() -> None:
         try:
             inferrer.infer_and_write(subdir)
             rel = subdir.relative_to(project_path)
-            _core.console.print(f"  [yellow]\u26a0[/yellow] {rel}/ \u2014 AUTO-GENERATED (review recommended)")
+            _core.console.print(
+                f"  [yellow]\u26a0[/yellow] {rel}/ \u2014 AUTO-GENERATED (review recommended)"
+            )
             generated += 1
         except Exception:
             rel = subdir.relative_to(project_path)

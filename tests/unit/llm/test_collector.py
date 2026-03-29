@@ -54,7 +54,9 @@ class FakeAdapter:
         self._call_count += 1
         return self._response
 
-    async def generate_with_tools(self, messages, config, tool_executor, on_tool_round=None) -> LLMResponse:
+    async def generate_with_tools(
+        self, messages, config, tool_executor, on_tool_round=None
+    ) -> LLMResponse:
         self._call_count += 1
         return self._response
 

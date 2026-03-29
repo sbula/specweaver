@@ -60,12 +60,14 @@ class FileExecutor:
     """
 
     # Files/directories that are NEVER writable by standard agents.
-    _PROTECTED_PATTERNS: frozenset[str] = frozenset({
-        "context.yaml",
-        ".env",
-        ".git",
-        ".specweaver",
-    })
+    _PROTECTED_PATTERNS: frozenset[str] = frozenset(
+        {
+            "context.yaml",
+            ".env",
+            ".git",
+            ".specweaver",
+        }
+    )
 
     def __init__(self, cwd: Path) -> None:
         if not cwd.exists():
@@ -296,7 +298,9 @@ class FileExecutor:
 
         resolved_dst = self._validate_path(dst)
         if resolved_dst is None:
-            return ExecutorResult(status="error", error=f"Destination path validation failed: {dst}")
+            return ExecutorResult(
+                status="error", error=f"Destination path validation failed: {dst}"
+            )
 
         if self._is_protected(src):
             return ExecutorResult(status="error", error=f"Protected source: {src}")

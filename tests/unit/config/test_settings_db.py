@@ -150,10 +150,7 @@ class TestAPIKeyFromEnv:
 
         # Integration test (Story 5)
         custom_id = db.create_llm_profile(
-            name="review",
-            is_global=False,
-            model="claude-3-opus",
-            provider="anthropic"
+            name="review", is_global=False, model="claude-3-opus", provider="anthropic"
         )
         db.link_project_profile("myapp", "review", custom_id)
 
@@ -169,10 +166,7 @@ class TestAPIKeyFromEnv:
         db.register_project("myapp", str(tmp_path / "proj"))
 
         custom_id = db.create_llm_profile(
-            name="review",
-            is_global=False,
-            model="claude-3-opus",
-            provider="anthropic"
+            name="review", is_global=False, model="claude-3-opus", provider="anthropic"
         )
         db.link_project_profile("myapp", "review", custom_id)
 
@@ -246,9 +240,7 @@ class TestLegacyMigration:
         sw_dir.mkdir()
         config_file = sw_dir / "config.yaml"
         config_file.write_text(
-            "llm:\n"
-            "  model: gemini-2.5-pro\n"
-            "  temperature: 0.5\n",
+            "llm:\n  model: gemini-2.5-pro\n  temperature: 0.5\n",
             encoding="utf-8",
         )
 
@@ -269,9 +261,7 @@ class TestLegacyMigration:
         sw_dir.mkdir()
         config_file = sw_dir / "config.yaml"
         config_file.write_text(
-            "llm:\n"
-            "  model: gpt-4o\n"
-            "  provider: openai\n",
+            "llm:\n  model: gpt-4o\n  provider: openai\n",
             encoding="utf-8",
         )
 
@@ -398,6 +388,7 @@ class TestStitchSettingsLoad:
 
     def test_stitch_api_key_from_env(self, db, monkeypatch, tmp_path: Path):
         from specweaver.config.settings import load_settings
+
         db.register_project("myapp", str(tmp_path))
         db.set_stitch_mode("myapp", "auto")
 
@@ -409,6 +400,7 @@ class TestStitchSettingsLoad:
 
     def test_stitch_api_key_whitespace_is_handled(self, db, monkeypatch, tmp_path: Path):
         from specweaver.config.settings import load_settings
+
         db.register_project("myapp", str(tmp_path))
 
         monkeypatch.setenv("STITCH_API_KEY", "   ")
@@ -484,7 +476,8 @@ class TestMigrateLegacyModelFallback:
         sw_dir = project_dir / ".specweaver"
         sw_dir.mkdir()
         (sw_dir / "config.yaml").write_text(
-            "llm:\n  temperature: 0.4\n", encoding="utf-8",
+            "llm:\n  temperature: 0.4\n",
+            encoding="utf-8",
         )
 
         result = migrate_legacy_config(db, "no-model", str(project_dir))

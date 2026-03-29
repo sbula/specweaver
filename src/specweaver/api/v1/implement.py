@@ -42,7 +42,8 @@ def implement_spec(
 
     try:
         _, adapter, gen_config = create_llm_adapter(
-            db, telemetry_project=body.project,
+            db,
+            telemetry_project=body.project,
         )
     except (LLMAdapterError, ValueError) as exc:
         raise SpecWeaverAPIError(
@@ -59,7 +60,9 @@ def implement_spec(
     topo_graph = _load_topology(project_root)
     module_name = spec_path.stem.removesuffix("_spec")
     topo_contexts = _select_topology_contexts(
-        topo_graph, module_name, selector_name=body.selector,
+        topo_graph,
+        module_name,
+        selector_name=body.selector,
     )
 
     # Derive output paths
@@ -69,14 +72,17 @@ def implement_spec(
 
     constitution = _load_constitution_content(project_root, spec_path=spec_path)
     standards = load_standards_content(
-        db, project_name=body.project, project_path=project_root,
+        db,
+        project_name=body.project,
+        project_path=project_root,
     )
 
     try:
         # Generate code
         asyncio.run(
             generator.generate_code(
-                spec_path, code_path,
+                spec_path,
+                code_path,
                 topology_contexts=topo_contexts,
                 constitution=constitution,
                 standards=standards,
@@ -86,7 +92,8 @@ def implement_spec(
         # Generate tests
         asyncio.run(
             generator.generate_tests(
-                spec_path, test_path,
+                spec_path,
+                test_path,
                 topology_contexts=topo_contexts,
                 constitution=constitution,
                 standards=standards,

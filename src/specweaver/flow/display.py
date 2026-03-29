@@ -224,8 +224,7 @@ class RichPipelineDisplay:
         self.stop()
         if run is not None:
             self._console.print(
-                f"\n[yellow bold]Pipeline parked[/yellow bold] at step "
-                f"[cyan]{step_name}[/cyan]",
+                f"\n[yellow bold]Pipeline parked[/yellow bold] at step [cyan]{step_name}[/cyan]",
             )
             self._console.print(
                 f"[dim]Resume with:[/dim] sw run --resume {run.run_id}",
@@ -310,11 +309,13 @@ class JsonPipelineDisplay:
 
     def start(self, pipeline_name: str, steps: list[tuple[str, str]]) -> None:
         """Emit pipeline start event."""
-        self._write({
-            "event": "pipeline_start",
-            "pipeline": pipeline_name,
-            "steps": [{"name": n, "description": d} for n, d in steps],
-        })
+        self._write(
+            {
+                "event": "pipeline_start",
+                "pipeline": pipeline_name,
+                "steps": [{"name": n, "description": d} for n, d in steps],
+            }
+        )
 
     def stop(self) -> None:
         """No-op for JSON backend."""

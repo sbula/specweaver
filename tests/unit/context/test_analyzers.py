@@ -29,23 +29,23 @@ def py_dir(tmp_path: Path) -> Path:
     pkg.mkdir()
     (pkg / "__init__.py").write_text('"""Price feed adapter for Binance WebSocket."""\n')
     (pkg / "client.py").write_text(
-        'from specweaver.config.settings import load_settings\n'
-        'from specweaver.llm.adapters.gemini import GeminiAdapter\n'
-        'import requests\n'
-        '\n'
-        'class PriceFeedClient:\n'
+        "from specweaver.config.settings import load_settings\n"
+        "from specweaver.llm.adapters.gemini import GeminiAdapter\n"
+        "import requests\n"
+        "\n"
+        "class PriceFeedClient:\n"
         '    """Connects to Binance and streams price data."""\n'
-        '    pass\n'
+        "    pass\n"
     )
     (pkg / "models.py").write_text(
-        'from __future__ import annotations\n'
-        '\n'
-        'class PriceUpdate:\n'
+        "from __future__ import annotations\n"
+        "\n"
+        "class PriceUpdate:\n"
         '    """A single price update event."""\n'
-        '    pass\n'
-        '\n'
-        'class _InternalHelper:\n'
-        '    pass\n'
+        "    pass\n"
+        "\n"
+        "class _InternalHelper:\n"
+        "    pass\n"
     )
     return pkg
 
@@ -83,14 +83,9 @@ def py_dir_with_all(tmp_path: Path) -> Path:
     pkg = tmp_path / "api"
     pkg.mkdir()
     (pkg / "__init__.py").write_text(
-        '"""Public API layer."""\n'
-        '\n'
-        '__all__ = ["Router", "Endpoint"]\n'
+        '"""Public API layer."""\n\n__all__ = ["Router", "Endpoint"]\n'
     )
-    (pkg / "router.py").write_text(
-        'class Router:\n    pass\n'
-        'class _RouteTable:\n    pass\n'
-    )
+    (pkg / "router.py").write_text("class Router:\n    pass\nclass _RouteTable:\n    pass\n")
     return pkg
 
 
@@ -210,9 +205,9 @@ class TestPythonAnalyzerArchetype:
         pkg.mkdir()
         (pkg / "__init__.py").write_text('"""Pure business logic."""\n')
         (pkg / "calc.py").write_text(
-            'from __future__ import annotations\n'
-            'def add(a: int, b: int) -> int:\n'
-            '    return a + b\n'
+            "from __future__ import annotations\n"
+            "def add(a: int, b: int) -> int:\n"
+            "    return a + b\n"
         )
         archetype = PythonAnalyzer().infer_archetype(pkg)
         assert archetype == "pure-logic"
@@ -259,9 +254,7 @@ class TestPythonAnalyzerEdgeCases:
         pkg = tmp_path / "multi"
         pkg.mkdir()
         (pkg / "__init__.py").write_text(
-            '"""First line of the docstring.\n\n'
-            'This is extra detail.\n'
-            'And more.\n"""\n'
+            '"""First line of the docstring.\n\nThis is extra detail.\nAnd more.\n"""\n'
         )
         purpose = PythonAnalyzer().extract_purpose(pkg)
         assert purpose == "First line of the docstring."
@@ -289,4 +282,3 @@ class TestPythonAnalyzerEdgeCases:
             "from specweaver.config.settings import load_settings\n"
         )
         assert PythonAnalyzer().infer_archetype(pkg) == "pure-logic"
-

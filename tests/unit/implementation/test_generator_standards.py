@@ -34,7 +34,9 @@ class TestGeneratorStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_generate_code_with_standards(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """generate_code with standards= injects into PromptBuilder."""
         from specweaver.implementation.generator import Generator
@@ -45,7 +47,8 @@ class TestGeneratorStandardsInjection:
 
         gen = Generator(llm=mock_llm)
         await gen.generate_code(
-            spec, output,
+            spec,
+            output,
             standards="Use snake_case for functions",
         )
 
@@ -57,7 +60,9 @@ class TestGeneratorStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_generate_code_without_standards(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """generate_code without standards= has no <standards> block."""
         from specweaver.implementation.generator import Generator
@@ -76,7 +81,9 @@ class TestGeneratorStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_generate_tests_with_standards(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """generate_tests with standards= injects into PromptBuilder."""
         from specweaver.implementation.generator import Generator
@@ -87,7 +94,8 @@ class TestGeneratorStandardsInjection:
 
         gen = Generator(llm=mock_llm)
         await gen.generate_tests(
-            spec, output,
+            spec,
+            output,
             standards="All functions must have docstrings",
         )
 
@@ -99,7 +107,9 @@ class TestGeneratorStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_generate_tests_without_standards(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """generate_tests without standards= has no <standards> block."""
         from specweaver.implementation.generator import Generator
@@ -118,7 +128,9 @@ class TestGeneratorStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_standards_and_constitution_both_injected(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """Both constitution and standards can be injected together."""
         from specweaver.implementation.generator import Generator
@@ -129,7 +141,8 @@ class TestGeneratorStandardsInjection:
 
         gen = Generator(llm=mock_llm)
         await gen.generate_code(
-            spec, output,
+            spec,
+            output,
             constitution="Be strict",
             standards="Use snake_case",
         )
@@ -144,7 +157,9 @@ class TestGeneratorStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_output_file_still_written(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """Standards injection doesn't break file writing."""
         from specweaver.implementation.generator import Generator
@@ -155,7 +170,8 @@ class TestGeneratorStandardsInjection:
 
         gen = Generator(llm=mock_llm)
         result = await gen.generate_code(
-            spec, output,
+            spec,
+            output,
             standards="Use type hints",
         )
 

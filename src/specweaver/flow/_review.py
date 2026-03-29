@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.flow._base import RunContext, _error_result, _now_iso
 from specweaver.flow.state import StepResult, StepStatus
@@ -23,23 +23,40 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _review_config_from_context(context: RunContext) -> GenerationConfig:
-    """Build GenerationConfig from RunContext, falling back to defaults."""
+def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]:
+    """Resolve the adapter and config for review, routing if enabled, else default."""
     from specweaver.llm.models import GenerationConfig, TaskType
 
-    if context.config is not None:
-        return GenerationConfig(
+    routed = (
+        context.llm_router.get_for_task(TaskType.REVIEW)
+        if getattr(context, "llm_router", None)
+        else None
+    )
+    adapter = routed.adapter if routed else context.llm
+
+    if routed:
+        config = GenerationConfig(
+            model=routed.model,
+            temperature=routed.temperature,
+            max_output_tokens=routed.max_output_tokens,
+            task_type=TaskType.REVIEW,
+        )
+    elif context.config is not None:
+        config = GenerationConfig(
             model=context.config.llm.model,
             temperature=0.3,
             max_output_tokens=context.config.llm.max_output_tokens,
             task_type=TaskType.REVIEW,
         )
-    return GenerationConfig(
-        model="gemini-3-flash-preview",
-        temperature=0.3,
-        max_output_tokens=4096,
-        task_type=TaskType.REVIEW,
-    )
+    else:
+        config = GenerationConfig(
+            model="gemini-3-flash-preview",
+            temperature=0.3,
+            max_output_tokens=4096,
+            task_type=TaskType.REVIEW,
+        )
+
+    return adapter, config
 
 
 def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | None:
@@ -83,14 +100,17 @@ class ReviewSpecHandler:
         try:
             from specweaver.review.reviewer import Reviewer
 
+            adapter, config = _resolve_review_routing(context)
             reviewer = Reviewer(
-                llm=context.llm,
-                config=_review_config_from_context(context),
+                llm=adapter,
+                config=config,
                 tool_dispatcher=_build_tool_dispatcher(context, role="reviewer"),
             )
+
             def on_tool_round(round_num: int, messages: list[Message]) -> None:
                 from specweaver.llm.mention_scanner import extract_mentions
                 from specweaver.llm.models import Message, Role
+
                 last_msg = messages[-1]
                 if last_msg.role == Role.ASSISTANT:
                     candidates = extract_mentions(last_msg.content)
@@ -100,16 +120,19 @@ class ReviewSpecHandler:
                             context.project_path,
                             workspace_roots=(
                                 [context.project_path / r for r in context.workspace_roots]
-                                if context.workspace_roots else None
-                            )
+                                if context.workspace_roots
+                                else None
+                            ),
                         )
                         if resolved:
                             for r in resolved:
                                 with contextlib.suppress(OSError):
-                                    messages.append(Message(
-                                        role=Role.USER,
-                                        content=f"Auto-resolved file `{r.original}`:\\n\\n```\\n{r.resolved_path.read_text('utf-8')}\\n```"
-                                    ))
+                                    messages.append(
+                                        Message(
+                                            role=Role.USER,
+                                            content=f"Auto-resolved file `{r.original}`:\\n\\n```\\n{r.resolved_path.read_text('utf-8')}\\n```",
+                                        )
+                                    )
 
             result = await reviewer.review_spec(
                 context.spec_path,
@@ -121,7 +144,8 @@ class ReviewSpecHandler:
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
-                result.verdict.value, len(result.findings),
+                result.verdict.value,
+                len(result.findings),
             )
 
             # 3.11: Scan LLM response for file mentions
@@ -160,15 +184,17 @@ class ReviewCodeHandler:
             if code_path is None:
                 return _error_result("No code file found for review", started)
 
+            adapter, config = _resolve_review_routing(context)
             reviewer = Reviewer(
-                llm=context.llm,
-                config=_review_config_from_context(context),
+                llm=adapter,
+                config=config,
                 tool_dispatcher=_build_tool_dispatcher(context, role="reviewer"),
             )
 
             def on_tool_round(round_num: int, messages: list[Message]) -> None:
                 from specweaver.llm.mention_scanner import extract_mentions
                 from specweaver.llm.models import Message, Role
+
                 last_msg = messages[-1]
                 if last_msg.role == Role.ASSISTANT:
                     candidates = extract_mentions(last_msg.content)
@@ -178,16 +204,19 @@ class ReviewCodeHandler:
                             context.project_path,
                             workspace_roots=(
                                 [context.project_path / r for r in context.workspace_roots]
-                                if context.workspace_roots else None
-                            )
+                                if context.workspace_roots
+                                else None
+                            ),
                         )
                         if resolved:
                             for r in resolved:
                                 with contextlib.suppress(OSError):
-                                    messages.append(Message(
-                                        role=Role.USER,
-                                        content=f"Auto-resolved file `{r.original}`:\\n\\n```\\n{r.resolved_path.read_text('utf-8')}\\n```"
-                                    ))
+                                    messages.append(
+                                        Message(
+                                            role=Role.USER,
+                                            content=f"Auto-resolved file `{r.original}`:\\n\\n```\\n{r.resolved_path.read_text('utf-8')}\\n```",
+                                        )
+                                    )
 
             result = await reviewer.review_code(
                 code_path,
@@ -200,7 +229,8 @@ class ReviewCodeHandler:
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",
-                result.verdict.value, len(result.findings),
+                result.verdict.value,
+                len(result.findings),
             )
 
             # 3.11: Scan LLM response for file mentions
@@ -328,7 +358,7 @@ def _resolve_mentions(
                 break  # Found a match for this candidate; next candidate
 
     # Prioritize specs, then cap
-    resolved.sort(key=lambda m: (0 if m.kind == "spec" else 1))
+    resolved.sort(key=lambda m: 0 if m.kind == "spec" else 1)
     return resolved[:max_files]
 
 

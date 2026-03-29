@@ -21,7 +21,9 @@ _core.app.add_typer(constitution_app, name="constitution")
 @constitution_app.command("show")
 def constitution_show(
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Path to the target project directory.",
     ),
 ) -> None:
@@ -43,8 +45,7 @@ def constitution_show(
         raise typer.Exit(code=1)
 
     _core.console.print(
-        f"[bold]Constitution:[/bold] {info.path}\n"
-        f"[dim]Size: {len(info.content)} bytes[/dim]\n",
+        f"[bold]Constitution:[/bold] {info.path}\n[dim]Size: {len(info.content)} bytes[/dim]\n",
     )
     _core.console.print(info.content)
 
@@ -52,7 +53,9 @@ def constitution_show(
 @constitution_app.command("check")
 def constitution_check(
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Path to the target project directory.",
     ),
 ) -> None:
@@ -102,11 +105,15 @@ def constitution_check(
 @constitution_app.command("init")
 def constitution_init(
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Path to the target project directory.",
     ),
     force: bool = typer.Option(
-        False, "--force", "-f",
+        False,
+        "--force",
+        "-f",
         help="Overwrite existing CONSTITUTION.md.",
     ),
 ) -> None:
@@ -142,11 +149,15 @@ def constitution_init(
 @constitution_app.command("bootstrap")
 def constitution_bootstrap(
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Path to the target project directory.",
     ),
     force: bool = typer.Option(
-        False, "--force", "-f",
+        False,
+        "--force",
+        "-f",
         help="Overwrite even a user-edited CONSTITUTION.md.",
     ),
 ) -> None:
@@ -185,7 +196,11 @@ def constitution_bootstrap(
 
     project_name = project_path.name.lower().replace(" ", "-")
     result = generate_constitution_from_standards(
-        project_path, project_name, standards, languages, force=force,
+        project_path,
+        project_name,
+        standards,
+        languages,
+        force=force,
     )
 
     if result is None:

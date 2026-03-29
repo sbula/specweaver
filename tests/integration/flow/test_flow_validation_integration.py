@@ -51,14 +51,20 @@ async def test_handler_adapter_integration(tmp_path: Path) -> None:
     out_dir.mkdir()
 
     mock_adapter = MagicMock()
-    mock_adapter.generate = AsyncMock(return_value=MagicMock(text="```python\ndef add(): pass\n```", finish_reason=1, parsed=None))
+    mock_adapter.generate = AsyncMock(
+        return_value=MagicMock(text="```python\ndef add(): pass\n```", finish_reason=1, parsed=None)
+    )
 
     # Mock a settings object for the handler to use
     mock_config = MagicMock()
     mock_config.project_config.output_dir = out_dir
-    mock_config.project_config.source_dir = tmp_path / "src" # Ensure source_dir is set for GitExecutor
+    mock_config.project_config.source_dir = (
+        tmp_path / "src"
+    )  # Ensure source_dir is set for GitExecutor
 
-    context = RunContext(project_path=tmp_path, spec_path=spec_path, output_dir=out_dir, llm=mock_adapter)
+    context = RunContext(
+        project_path=tmp_path, spec_path=spec_path, output_dir=out_dir, llm=mock_adapter
+    )
 
     step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
     handler = GenerateCodeHandler()

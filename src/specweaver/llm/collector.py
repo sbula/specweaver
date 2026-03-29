@@ -79,7 +79,10 @@ class TelemetryCollector:
         """Proxy ``generate_with_tools()`` — captures cumulative usage."""
         start = time.monotonic()
         response = await self._adapter.generate_with_tools(
-            messages, config, tool_executor, on_tool_round,
+            messages,
+            config,
+            tool_executor,
+            on_tool_round,
         )
         self._capture(config, response, time.monotonic() - start)
         return response
@@ -131,11 +134,16 @@ class TelemetryCollector:
         ``task_type`` is read from ``config.task_type`` (set per call
         by each handler), NOT from the constructor.
         """
-        self._records.append(create_usage_record(
-            config, response, self._adapter.provider_name,
-            self._project, int(elapsed * 1000),
-            cost_overrides=self._cost_overrides,
-        ))
+        self._records.append(
+            create_usage_record(
+                config,
+                response,
+                self._adapter.provider_name,
+                self._project,
+                int(elapsed * 1000),
+                cost_overrides=self._cost_overrides,
+            )
+        )
 
     # ------------------------------------------------------------------
     # Persistence
@@ -166,7 +174,9 @@ class TelemetryCollector:
         except Exception:
             logger.warning(
                 "Failed to flush %d telemetry records for project '%s'",
-                count, self._project, exc_info=True,
+                count,
+                self._project,
+                exc_info=True,
             )
         return count
 

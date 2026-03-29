@@ -70,7 +70,8 @@ class TestListRulesFiltered:
     def test_filter_by_spec_pipeline(self) -> None:
         """--pipeline validation_spec_default shows only spec rules."""
         result = runner.invoke(
-            app, ["list-rules", "--pipeline", "validation_spec_default"],
+            app,
+            ["list-rules", "--pipeline", "validation_spec_default"],
         )
         assert result.exit_code == 0
         assert "validation_spec_default" in result.output
@@ -80,7 +81,8 @@ class TestListRulesFiltered:
     def test_filter_by_code_pipeline(self) -> None:
         """--pipeline validation_code_default shows only code rules."""
         result = runner.invoke(
-            app, ["list-rules", "--pipeline", "validation_code_default"],
+            app,
+            ["list-rules", "--pipeline", "validation_code_default"],
         )
         assert result.exit_code == 0
         assert "validation_code_default" in result.output
@@ -90,7 +92,8 @@ class TestListRulesFiltered:
     def test_filter_by_feature_pipeline(self) -> None:
         """--pipeline validation_spec_feature shows feature rules (no S04)."""
         result = runner.invoke(
-            app, ["list-rules", "--pipeline", "validation_spec_feature"],
+            app,
+            ["list-rules", "--pipeline", "validation_spec_feature"],
         )
         assert result.exit_code == 0
         assert "validation_spec_feature" in result.output
@@ -101,7 +104,8 @@ class TestListRulesFiltered:
     def test_unknown_pipeline_shows_warning(self) -> None:
         """--pipeline with unknown name shows warning."""
         result = runner.invoke(
-            app, ["list-rules", "--pipeline", "nonexistent_pipeline"],
+            app,
+            ["list-rules", "--pipeline", "nonexistent_pipeline"],
         )
         assert result.exit_code == 0  # graceful, not a crash
         assert "not found" in result.output.lower()
@@ -109,7 +113,8 @@ class TestListRulesFiltered:
     def test_filter_by_profile_pipeline(self) -> None:
         """--pipeline validation_spec_web_app shows the web-app profile."""
         result = runner.invoke(
-            app, ["list-rules", "--pipeline", "validation_spec_web_app"],
+            app,
+            ["list-rules", "--pipeline", "validation_spec_web_app"],
         )
         assert result.exit_code == 0
         assert "validation_spec_web_app" in result.output
@@ -134,9 +139,7 @@ class TestListRulesProjectLocal:
 
         result = runner.invoke(
             app,
-            ["list-rules", "--pipeline", "validation_spec_default",
-             "--project", str(tmp_path)],
+            ["list-rules", "--pipeline", "validation_spec_default", "--project", str(tmp_path)],
         )
         assert result.exit_code == 0
         assert "1 rules total" in result.output  # only 1 rule in local override
-

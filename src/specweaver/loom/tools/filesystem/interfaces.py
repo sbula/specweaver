@@ -179,7 +179,8 @@ class DrafterFileInterface:
 # ---------------------------------------------------------------------------
 
 _ROLE_INTERFACE_MAP: dict[
-    str, type[ImplementerFileInterface] | type[ReviewerFileInterface] | type[DrafterFileInterface],
+    str,
+    type[ImplementerFileInterface] | type[ReviewerFileInterface] | type[DrafterFileInterface],
 ] = {
     "implementer": ImplementerFileInterface,
     "reviewer": ReviewerFileInterface,
@@ -187,11 +188,7 @@ _ROLE_INTERFACE_MAP: dict[
     "planner": ReviewerFileInterface,
 }
 
-FileInterface = (
-    ImplementerFileInterface
-    | ReviewerFileInterface
-    | DrafterFileInterface
-)
+FileInterface = ImplementerFileInterface | ReviewerFileInterface | DrafterFileInterface
 
 
 def create_filesystem_interface(

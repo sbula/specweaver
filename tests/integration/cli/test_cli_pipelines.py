@@ -141,8 +141,11 @@ class TestRunErrors:
         result = runner.invoke(
             app,
             [
-                "run", "validate_only", "nonexistent.md",
-                "--project", str(project_dir),
+                "run",
+                "validate_only",
+                "nonexistent.md",
+                "--project",
+                str(project_dir),
             ],
         )
         assert result.exit_code == 1
@@ -177,8 +180,11 @@ class TestRunErrors:
         result = runner.invoke(
             app,
             [
-                "run", "validate_only", str(spec),
-                "--project", str(project_dir),
+                "run",
+                "validate_only",
+                str(spec),
+                "--project",
+                str(project_dir),
             ],
         )
         # validate_only should complete (may pass or fail based on rules)

@@ -88,11 +88,15 @@ class TestGitExecutorExecution:
 
     def test_successful_command(self, tmp_path: Path) -> None:
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
-        mock_result = type("R", (), {
-            "returncode": 0,
-            "stdout": "nothing to commit\n",
-            "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "nothing to commit\n",
+                "stderr": "",
+            },
+        )()
 
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("status")
@@ -103,11 +107,15 @@ class TestGitExecutorExecution:
 
     def test_failed_command(self, tmp_path: Path) -> None:
         executor = GitExecutor(cwd=tmp_path, whitelist={"commit"})
-        mock_result = type("R", (), {
-            "returncode": 1,
-            "stdout": "",
-            "stderr": "nothing to commit\n",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 1,
+                "stdout": "",
+                "stderr": "nothing to commit\n",
+            },
+        )()
 
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("commit", "-m", "test")
@@ -143,13 +151,19 @@ class TestGitExecutorExecution:
 
     def test_cwd_passed_to_subprocess(self, tmp_path: Path) -> None:
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
-        mock_result = type("R", (), {
-            "returncode": 0,
-            "stdout": "",
-            "stderr": "",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "",
+            },
+        )()
 
-        with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result) as mock_run:
+        with patch(
+            "specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ) as mock_run:
             executor.run("status")
 
         cmd_args = mock_run.call_args[0][0]
@@ -200,6 +214,7 @@ class TestGitExecutorEdgeCases:
 
     def test_exit_code_minus_one_on_timeout(self, tmp_path: Path) -> None:
         import subprocess as sp
+
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
         with patch(
             "specweaver.loom.commons.git.executor.subprocess.run",
@@ -219,21 +234,33 @@ class TestGitExecutorEdgeCases:
 
     def test_args_are_passed_through(self, tmp_path: Path) -> None:
         executor = GitExecutor(cwd=tmp_path, whitelist={"log"})
-        mock_result = type("R", (), {
-            "returncode": 0, "stdout": "", "stderr": "",
-        })()
-        with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result) as mock_run:
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "",
+                "stderr": "",
+            },
+        )()
+        with patch(
+            "specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ) as mock_run:
             executor.run("log", "--oneline", "-n5", "--", "file.py")
         cmd_args = mock_run.call_args[0][0]
         assert cmd_args == ["git", "-C", str(tmp_path), "log", "--oneline", "-n5", "--", "file.py"]
 
     def test_stderr_preserved_on_failure(self, tmp_path: Path) -> None:
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
-        mock_result = type("R", (), {
-            "returncode": 128,
-            "stdout": "",
-            "stderr": "fatal: not a git repository",
-        })()
+        mock_result = type(
+            "R",
+            (),
+            {
+                "returncode": 128,
+                "stdout": "",
+                "stderr": "fatal: not a git repository",
+            },
+        )()
         with patch("specweaver.loom.commons.git.executor.subprocess.run", return_value=mock_result):
             result = executor.run("status")
         assert result.stderr == "fatal: not a git repository"

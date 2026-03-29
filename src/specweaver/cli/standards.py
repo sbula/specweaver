@@ -106,8 +106,7 @@ def standards_scan(
 
         # Filter files to this scope
         scope_files = [
-            f for f in all_files
-            if _file_in_scope(f, scope_path, project_path, s, scopes)
+            f for f in all_files if _file_in_scope(f, scope_path, project_path, s, scopes)
         ]
 
         if not scope_files:
@@ -125,7 +124,9 @@ def standards_scan(
             scope_results[s] = results
 
     if not scope_results:
-        _core.console.print("\n[yellow]No standards discovered above confidence threshold.[/yellow]")
+        _core.console.print(
+            "\n[yellow]No standards discovered above confidence threshold.[/yellow]"
+        )
         return
 
     # Load existing for re-scan diff
@@ -144,8 +145,7 @@ def standards_scan(
     saved = _save_accepted_standards(db, name, accepted, no_review=no_review)
 
     _core.console.print(
-        f"\n[bold]Scan complete[/bold]: {saved} standards saved "
-        f"for project [bold]{name}[/bold].",
+        f"\n[bold]Scan complete[/bold]: {saved} standards saved for project [bold]{name}[/bold].",
     )
 
     # Bootstrap hint: if standards were saved and no constitution exists
@@ -210,26 +210,22 @@ def _maybe_bootstrap_constitution(
     )
 
     constitution_path = project_path / CONSTITUTION_FILENAME
-    needs_bootstrap = (
-        not constitution_path.exists()
-        or is_unmodified_starter(constitution_path)
-    )
+    needs_bootstrap = not constitution_path.exists() or is_unmodified_starter(constitution_path)
 
     if not needs_bootstrap:
         return
 
     bootstrap_mode = db.get_auto_bootstrap(project_name)
-    languages = sorted({
-        r.language or "unknown"
-        for results in accepted.values()
-        for r in results
-    })
+    languages = sorted({r.language or "unknown" for results in accepted.values() for r in results})
 
     if bootstrap_mode == "auto":
         all_standards = db.get_standards(project_name)
         project_slug = project_path.name.lower().replace(" ", "-")
         result = generate_constitution_from_standards(
-            project_path, project_slug, all_standards, languages,
+            project_path,
+            project_slug,
+            all_standards,
+            languages,
         )
         if result:
             _core.console.print(
@@ -245,12 +241,14 @@ def _maybe_bootstrap_constitution(
             all_standards = db.get_standards(project_name)
             project_slug = project_path.name.lower().replace(" ", "-")
             result = generate_constitution_from_standards(
-                project_path, project_slug, all_standards, languages,
+                project_path,
+                project_slug,
+                all_standards,
+                languages,
             )
             if result:
                 _core.console.print(
-                    f"[green]\u2713[/green] CONSTITUTION.md bootstrapped: "
-                    f"[bold]{result}[/bold]",
+                    f"[green]\u2713[/green] CONSTITUTION.md bootstrapped: [bold]{result}[/bold]",
                 )
     else:
         # mode == "off" or (mode == "prompt" and no_review)
@@ -330,7 +328,11 @@ def standards_show(
     table.add_column("Confirmed")
 
     for s in standards:
-        data: dict[str, object] = json.loads(s["data"]) if isinstance(s["data"], str) else cast("dict[str, object]", s["data"])
+        data: dict[str, object] = (
+            json.loads(s["data"])
+            if isinstance(s["data"], str)
+            else cast("dict[str, object]", s["data"])
+        )
         patterns = ", ".join(f"{k}={v}" for k, v in data.items())
         conf_str = f"{float(str(s['confidence'])):.0%}"
         confirmed = str(s.get("confirmed_by") or "[dim]\u2014[/dim]")
@@ -363,8 +365,7 @@ def standards_clear(
 
     scope_msg = f" (scope: {scope})" if scope else ""
     _core.console.print(
-        f"[green]\u2713[/green] Standards cleared for project "
-        f"[bold]{name}[/bold]{scope_msg}.",
+        f"[green]\u2713[/green] Standards cleared for project [bold]{name}[/bold]{scope_msg}.",
     )
 
 
@@ -404,4 +405,3 @@ def standards_scopes() -> None:
         )
 
     _core.console.print(table)
-

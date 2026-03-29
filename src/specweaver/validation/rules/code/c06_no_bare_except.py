@@ -38,8 +38,7 @@ class NoBareExceptRule(Rule):
                 findings.append(
                     Finding(
                         message=(
-                            "Bare 'except:' clause — catches all "
-                            "exceptions including SystemExit"
+                            "Bare 'except:' clause — catches all exceptions including SystemExit"
                         ),
                         line=node.lineno,
                         severity=Severity.WARNING,

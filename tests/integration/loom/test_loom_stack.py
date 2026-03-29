@@ -187,10 +187,12 @@ class TestAtomToolStack:
         from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
 
         atom = TestRunnerAtom(cwd=sample_project)
-        result = atom.run({
-            "intent": "run_linter",
-            "target": str(lint_dir),
-        })
+        result = atom.run(
+            {
+                "intent": "run_linter",
+                "target": str(lint_dir),
+            }
+        )
 
         assert result.status.value == "FAILED"
         assert result.exports.get("error_count", 0) > 0
@@ -202,10 +204,12 @@ class TestAtomToolStack:
         from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
 
         atom = TestRunnerAtom(cwd=sample_project)
-        result = atom.run({
-            "intent": "run_complexity",
-            "target": str(clean_dir),
-        })
+        result = atom.run(
+            {
+                "intent": "run_complexity",
+                "target": str(clean_dir),
+            }
+        )
 
         assert result.status.value == "SUCCESS"
 

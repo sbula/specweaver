@@ -25,8 +25,10 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
         from specweaver.flow.state import PipelineRun
 
         # Mute adapter creation and pipeline loading
-        with patch("specweaver.cli._helpers._require_llm_adapter") as mock_adapter, \
-             patch("specweaver.flow.parser.load_pipeline") as mock_load_pipeline:
+        with (
+            patch("specweaver.cli._helpers._require_llm_adapter") as mock_adapter,
+            patch("specweaver.flow.parser.load_pipeline") as mock_load_pipeline,
+        ):
             # Fake the return
             fake_pr = MagicMock(spec=PipelineRun)
             fake_pr.status = RunStatus.COMPLETED
@@ -38,7 +40,9 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
             mock_pipeline.name = "dummy"
             mock_load_pipeline.return_value = mock_pipeline
 
-            result = runner.invoke(app, ["run", "dummy", str(tmp_path / "spec.md"), "--project", str(tmp_path)])
+            result = runner.invoke(
+                app, ["run", "dummy", str(tmp_path / "spec.md"), "--project", str(tmp_path)]
+            )
 
             # Should invoke without crashing
             if result.exit_code != 0:

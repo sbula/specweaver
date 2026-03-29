@@ -103,12 +103,14 @@ class TestWebSearch:
         import json
 
         mock_resp = MagicMock()
-        mock_resp.read.return_value = json.dumps({
-            "items": [
-                {"title": "Result 1", "snippet": "Snippet 1", "link": "http://example.com/1"},
-                {"title": "Result 2", "snippet": "Snippet 2", "link": "http://example.com/2"},
-            ]
-        }).encode("utf-8")
+        mock_resp.read.return_value = json.dumps(
+            {
+                "items": [
+                    {"title": "Result 1", "snippet": "Snippet 1", "link": "http://example.com/1"},
+                    {"title": "Result 2", "snippet": "Snippet 2", "link": "http://example.com/2"},
+                ]
+            }
+        ).encode("utf-8")
         mock_resp.__enter__ = MagicMock(return_value=mock_resp)
         mock_resp.__exit__ = MagicMock(return_value=False)
         mock_urlopen.return_value = mock_resp
@@ -124,7 +126,9 @@ class TestWebSearch:
     def test_max_results_respected(self, mock_urlopen: MagicMock) -> None:
         import json
 
-        items = [{"title": f"R{i}", "snippet": f"S{i}", "link": f"http://ex.com/{i}"} for i in range(10)]
+        items = [
+            {"title": f"R{i}", "snippet": f"S{i}", "link": f"http://ex.com/{i}"} for i in range(10)
+        ]
         mock_resp = MagicMock()
         mock_resp.read.return_value = json.dumps({"items": items}).encode("utf-8")
         mock_resp.__enter__ = MagicMock(return_value=mock_resp)

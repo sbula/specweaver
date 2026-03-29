@@ -64,7 +64,9 @@ def _render_tech_stack(plan: PlanArtifact) -> list[str]:
         "|----------|--------|-----------|",
     ]
     for ts in plan.tech_stack:
-        alts = f" (vs. {', '.join(ts.alternatives_considered)})" if ts.alternatives_considered else ""
+        alts = (
+            f" (vs. {', '.join(ts.alternatives_considered)})" if ts.alternatives_considered else ""
+        )
         parts.append(f"| {ts.category} | {ts.choice} | {ts.rationale}{alts} |")
     return parts
 
@@ -124,7 +126,9 @@ def _render_test_expectations(plan: PlanArtifact) -> list[str]:
         "|------|----------|----------|----------|",
     ]
     for te in plan.test_expectations:
-        parts.append(f"| {te.name} | {te.category} | `{te.function_under_test}` | {te.expected_behavior} |")
+        parts.append(
+            f"| {te.name} | {te.category} | `{te.function_under_test}` | {te.expected_behavior} |"
+        )
     return parts
 
 

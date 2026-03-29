@@ -34,7 +34,9 @@ class TestReviewerStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_review_spec_with_standards(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """review_spec with standards= injects into PromptBuilder."""
         from specweaver.review.reviewer import Reviewer
@@ -57,7 +59,9 @@ class TestReviewerStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_review_spec_without_standards(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """review_spec without standards= has no <standards> block."""
         from specweaver.review.reviewer import Reviewer
@@ -75,7 +79,9 @@ class TestReviewerStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_review_code_with_standards(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """review_code with standards= injects into PromptBuilder."""
         from specweaver.review.reviewer import Reviewer
@@ -87,7 +93,8 @@ class TestReviewerStandardsInjection:
 
         reviewer = Reviewer(llm=mock_llm)
         await reviewer.review_code(
-            code, spec,
+            code,
+            spec,
             standards="All functions must have docstrings",
         )
 
@@ -99,7 +106,9 @@ class TestReviewerStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_review_code_without_standards(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """review_code without standards= has no <standards> block."""
         from specweaver.review.reviewer import Reviewer
@@ -119,7 +128,9 @@ class TestReviewerStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_standards_and_constitution_both_injected(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """Both constitution and standards can be injected together."""
         from specweaver.review.reviewer import Reviewer
@@ -145,7 +156,9 @@ class TestReviewerStandardsInjection:
 
     @pytest.mark.asyncio()
     async def test_standards_rendered_in_correct_position(
-        self, tmp_path: Path, mock_llm,
+        self,
+        tmp_path: Path,
+        mock_llm,
     ) -> None:
         """Standards block appears between constitution and file contents."""
         from specweaver.review.reviewer import Reviewer

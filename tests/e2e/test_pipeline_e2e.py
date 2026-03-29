@@ -88,7 +88,9 @@ class TestRunPipelineE2E:
     """Execute real pipelines through the CLI."""
 
     def test_run_validate_only_completes(
-        self, project_with_spec: tuple[Path, Path], monkeypatch,
+        self,
+        project_with_spec: tuple[Path, Path],
+        monkeypatch,
     ) -> None:
         """sw run validate_only on a good spec → exit 0 or 1 (rule results)."""
         project_dir, spec = project_with_spec
@@ -108,7 +110,9 @@ class TestRunPipelineE2E:
         assert "S01" in result.output or "validate" in result.output.lower()
 
     def test_run_validate_only_json_output(
-        self, project_with_spec: tuple[Path, Path], monkeypatch,
+        self,
+        project_with_spec: tuple[Path, Path],
+        monkeypatch,
     ) -> None:
         """sw run validate_only --json produces NDJSON event output."""
         project_dir, spec = project_with_spec
@@ -127,7 +131,9 @@ class TestRunPipelineE2E:
         assert "{" in result.output  # at least some JSON
 
     def test_run_validate_only_verbose(
-        self, project_with_spec: tuple[Path, Path], monkeypatch,
+        self,
+        project_with_spec: tuple[Path, Path],
+        monkeypatch,
     ) -> None:
         """sw run validate_only --verbose produces detailed output."""
         project_dir, spec = project_with_spec
@@ -144,7 +150,9 @@ class TestRunPipelineE2E:
         assert result.exit_code in (0, 1)
 
     def test_run_nonexistent_spec_fails(
-        self, project_with_spec: tuple[Path, Path], monkeypatch,
+        self,
+        project_with_spec: tuple[Path, Path],
+        monkeypatch,
     ) -> None:
         """sw run validate_only on missing spec → exit 1."""
         project_dir, _ = project_with_spec
@@ -161,7 +169,9 @@ class TestRunPipelineE2E:
         assert result.exit_code == 1
 
     def test_run_invalid_pipeline_fails(
-        self, project_with_spec: tuple[Path, Path], monkeypatch,
+        self,
+        project_with_spec: tuple[Path, Path],
+        monkeypatch,
     ) -> None:
         """sw run with unknown pipeline → exit 1."""
         project_dir, spec = project_with_spec
@@ -187,7 +197,9 @@ class TestResumePipelineE2E:
     """Resume pipeline operations through the CLI."""
 
     def test_resume_nonexistent_id(
-        self, project_with_spec: tuple[Path, Path], monkeypatch,
+        self,
+        project_with_spec: tuple[Path, Path],
+        monkeypatch,
     ) -> None:
         """sw resume with garbage ID → exit 1."""
         project_dir, _ = project_with_spec
@@ -201,7 +213,9 @@ class TestResumePipelineE2E:
         assert result.exit_code == 1
 
     def test_resume_no_resumable_runs(
-        self, project_with_spec: tuple[Path, Path], monkeypatch,
+        self,
+        project_with_spec: tuple[Path, Path],
+        monkeypatch,
     ) -> None:
         """sw resume with no parked/failed runs → exit 0 with message."""
         project_dir, _ = project_with_spec
@@ -222,7 +236,6 @@ class TestResumePipelineE2E:
 
 
 class TestPipelinesE2E:
-
     def test_pipelines_lists_bundled(self) -> None:
         result = runner.invoke(app, ["pipelines"])
         assert result.exit_code == 0

@@ -217,4 +217,3 @@ class TestExecuteValidationPipeline:
         assert "instantiate" in results[0].message.lower() or "T03" in results[0].message
         # Second rule still runs
         assert results[1].status == Status.PASS
-

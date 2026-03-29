@@ -139,7 +139,9 @@ class TestDomainProfileCLI:
         # assert _mock_db.get_validation_overrides(name) == []
 
     def test_individual_override_on_top_of_profile(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Individual override on top of profile works."""
         name = _unique_name("proflayer")
@@ -157,7 +159,9 @@ class TestDomainProfileCLI:
         assert o["fail_threshold"] == 3
 
     def test_set_profile_then_check_spec(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """Full flow: set-profile → check spec works with profile thresholds."""
         name = _unique_name("profcheck")
@@ -175,14 +179,24 @@ class TestDomainProfileCLI:
             "# Test Spec\n\n## 1. Purpose\nA simple test spec.\n\n"
             "## 2. Requirements\n- Do something.\n",
         )
-        result = runner.invoke(app, [
-            "check", str(spec), "--level", "component", "--project", str(tmp_path),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "check",
+                str(spec),
+                "--level",
+                "component",
+                "--project",
+                str(tmp_path),
+            ],
+        )
         # Should run (may pass or warn, but not crash)
         assert result.exit_code in (0, 1), f"Crashed: {result.output}"
 
     def test_config_list_shows_profile_overrides(
-        self, tmp_path: Path, _mock_db,
+        self,
+        tmp_path: Path,
+        _mock_db,
     ) -> None:
         """After set-profile, config list doesn't show profile overrides.
 
@@ -205,4 +219,3 @@ class TestDomainProfileCLI:
         """sw config set-profile without active project shows error."""
         result = runner.invoke(app, ["config", "set-profile", "web-app"])
         assert result.exit_code != 0
-

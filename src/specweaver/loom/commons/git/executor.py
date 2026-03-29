@@ -41,14 +41,16 @@ class GitExecutor:
     """
 
     # Commands that are NEVER allowed, regardless of whitelist.
-    _BLOCKED_ALWAYS: frozenset[str] = frozenset({
-        "push",
-        "pull",
-        "fetch",
-        "merge",
-        "rebase",
-        "tag",
-    })
+    _BLOCKED_ALWAYS: frozenset[str] = frozenset(
+        {
+            "push",
+            "pull",
+            "fetch",
+            "merge",
+            "rebase",
+            "tag",
+        }
+    )
 
     def __init__(self, cwd: Path, whitelist: set[str]) -> None:
         # Validate no blocked commands snuck into the whitelist

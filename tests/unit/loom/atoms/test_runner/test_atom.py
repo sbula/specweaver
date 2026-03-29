@@ -68,16 +68,24 @@ class TestAtomRunTests:
     def test_run_tests_success(self, tmp_path: Path) -> None:
         atom = TestRunnerAtom(cwd=tmp_path)
         mock_result = TestRunResult(
-            passed=5, failed=0, errors=0, skipped=0, total=5,
-            failures=[], coverage_pct=None, duration_seconds=0.5,
+            passed=5,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=5,
+            failures=[],
+            coverage_pct=None,
+            duration_seconds=0.5,
         )
 
         with patch.object(atom._runner, "run_tests", return_value=mock_result):
-            result = atom.run({
-                "intent": "run_tests",
-                "target": "tests/",
-                "kind": "unit",
-            })
+            result = atom.run(
+                {
+                    "intent": "run_tests",
+                    "target": "tests/",
+                    "kind": "unit",
+                }
+            )
 
         assert result.status == AtomStatus.SUCCESS
         assert result.exports["passed"] == 5
@@ -86,15 +94,23 @@ class TestAtomRunTests:
     def test_run_tests_failures(self, tmp_path: Path) -> None:
         atom = TestRunnerAtom(cwd=tmp_path)
         mock_result = TestRunResult(
-            passed=3, failed=2, errors=0, skipped=0, total=5,
-            failures=[], coverage_pct=None, duration_seconds=1.0,
+            passed=3,
+            failed=2,
+            errors=0,
+            skipped=0,
+            total=5,
+            failures=[],
+            coverage_pct=None,
+            duration_seconds=1.0,
         )
 
         with patch.object(atom._runner, "run_tests", return_value=mock_result):
-            result = atom.run({
-                "intent": "run_tests",
-                "target": "tests/",
-            })
+            result = atom.run(
+                {
+                    "intent": "run_tests",
+                    "target": "tests/",
+                }
+            )
 
         assert result.status == AtomStatus.FAILED
         assert result.exports["failed"] == 2
@@ -108,16 +124,24 @@ class TestAtomRunTests:
     def test_run_tests_with_coverage(self, tmp_path: Path) -> None:
         atom = TestRunnerAtom(cwd=tmp_path)
         mock_result = TestRunResult(
-            passed=5, failed=0, errors=0, skipped=0, total=5,
-            failures=[], coverage_pct=85.0, duration_seconds=1.0,
+            passed=5,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=5,
+            failures=[],
+            coverage_pct=85.0,
+            duration_seconds=1.0,
         )
 
         with patch.object(atom._runner, "run_tests", return_value=mock_result):
-            result = atom.run({
-                "intent": "run_tests",
-                "target": "tests/",
-                "coverage": True,
-            })
+            result = atom.run(
+                {
+                    "intent": "run_tests",
+                    "target": "tests/",
+                    "coverage": True,
+                }
+            )
 
         assert result.status == AtomStatus.SUCCESS
         assert result.exports["coverage_pct"] == 85.0
@@ -134,14 +158,19 @@ class TestAtomRunLinter:
     def test_linter_clean(self, tmp_path: Path) -> None:
         atom = TestRunnerAtom(cwd=tmp_path)
         mock_result = LintRunResult(
-            error_count=0, fixable_count=0, fixed_count=0, errors=[],
+            error_count=0,
+            fixable_count=0,
+            fixed_count=0,
+            errors=[],
         )
 
         with patch.object(atom._runner, "run_linter", return_value=mock_result):
-            result = atom.run({
-                "intent": "run_linter",
-                "target": "src/",
-            })
+            result = atom.run(
+                {
+                    "intent": "run_linter",
+                    "target": "src/",
+                }
+            )
 
         assert result.status == AtomStatus.SUCCESS
         assert result.exports["error_count"] == 0
@@ -149,7 +178,9 @@ class TestAtomRunLinter:
     def test_linter_errors(self, tmp_path: Path) -> None:
         atom = TestRunnerAtom(cwd=tmp_path)
         mock_result = LintRunResult(
-            error_count=2, fixable_count=1, fixed_count=0,
+            error_count=2,
+            fixable_count=1,
+            fixed_count=0,
             errors=[
                 LintError(file="foo.py", line=10, code="E501", message="Line too long"),
                 LintError(file="bar.py", line=5, code="F401", message="Unused import"),
@@ -157,10 +188,12 @@ class TestAtomRunLinter:
         )
 
         with patch.object(atom._runner, "run_linter", return_value=mock_result):
-            result = atom.run({
-                "intent": "run_linter",
-                "target": "src/",
-            })
+            result = atom.run(
+                {
+                    "intent": "run_linter",
+                    "target": "src/",
+                }
+            )
 
         assert result.status == AtomStatus.FAILED
         assert result.exports["error_count"] == 2
@@ -184,14 +217,17 @@ class TestAtomRunComplexity:
     def test_complexity_clean(self, tmp_path: Path) -> None:
         atom = TestRunnerAtom(cwd=tmp_path)
         mock_result = ComplexityRunResult(
-            violation_count=0, max_complexity=10,
+            violation_count=0,
+            max_complexity=10,
         )
 
         with patch.object(atom._runner, "run_complexity", return_value=mock_result):
-            result = atom.run({
-                "intent": "run_complexity",
-                "target": "src/",
-            })
+            result = atom.run(
+                {
+                    "intent": "run_complexity",
+                    "target": "src/",
+                }
+            )
 
         assert result.status == AtomStatus.SUCCESS
         assert result.exports["violation_count"] == 0
@@ -204,21 +240,29 @@ class TestAtomRunComplexity:
             max_complexity=10,
             violations=[
                 ComplexityViolation(
-                    file="a.py", line=5, function="big_func",
-                    complexity=15, message="`big_func` is too complex (15 > 10)",
+                    file="a.py",
+                    line=5,
+                    function="big_func",
+                    complexity=15,
+                    message="`big_func` is too complex (15 > 10)",
                 ),
                 ComplexityViolation(
-                    file="b.py", line=20, function="huge_func",
-                    complexity=12, message="`huge_func` is too complex (12 > 10)",
+                    file="b.py",
+                    line=20,
+                    function="huge_func",
+                    complexity=12,
+                    message="`huge_func` is too complex (12 > 10)",
                 ),
             ],
         )
 
         with patch.object(atom._runner, "run_complexity", return_value=mock_result):
-            result = atom.run({
-                "intent": "run_complexity",
-                "target": "src/",
-            })
+            result = atom.run(
+                {
+                    "intent": "run_complexity",
+                    "target": "src/",
+                }
+            )
 
         assert result.status == AtomStatus.FAILED
         assert result.exports["violation_count"] == 2
@@ -234,16 +278,18 @@ class TestAtomRunComplexity:
     def test_complexity_custom_threshold(self, tmp_path: Path) -> None:
         atom = TestRunnerAtom(cwd=tmp_path)
         mock_result = ComplexityRunResult(
-            violation_count=0, max_complexity=5,
+            violation_count=0,
+            max_complexity=5,
         )
 
         with patch.object(atom._runner, "run_complexity", return_value=mock_result) as mock_fn:
-            result = atom.run({
-                "intent": "run_complexity",
-                "target": "src/",
-                "max_complexity": 5,
-            })
+            result = atom.run(
+                {
+                    "intent": "run_complexity",
+                    "target": "src/",
+                    "max_complexity": 5,
+                }
+            )
 
         assert result.status == AtomStatus.SUCCESS
         mock_fn.assert_called_once_with(target="src/", max_complexity=5)
-

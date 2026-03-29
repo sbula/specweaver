@@ -77,7 +77,9 @@ def run_rules(
     failed = sum(1 for r in results if r.status == Status.FAIL)
     logger.info(
         "run_rules: %d rules executed — %d passed, %d failed",
-        len(results), len(results) - failed, failed,
+        len(results),
+        len(results) - failed,
+        failed,
     )
     return results
 

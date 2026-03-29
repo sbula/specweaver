@@ -54,7 +54,11 @@ class FakeAdapter:
         return self._response
 
     async def generate_with_tools(
-        self, messages, config, tool_executor, on_tool_round=None,
+        self,
+        messages,
+        config,
+        tool_executor,
+        on_tool_round=None,
     ) -> LLMResponse:
         return self._response
 
@@ -153,10 +157,13 @@ class TestCostOverrideFlow:
         overrides = {k: CostEntry(*v) for k, v in raw.items()}
 
         collector = TelemetryCollector(
-            FakeAdapter(), project="proj", cost_overrides=overrides,
+            FakeAdapter(),
+            project="proj",
+            cost_overrides=overrides,
         )
         await collector.generate(
-            [], GenerationConfig(model="fake-model", task_type=TaskType.DRAFT),
+            [],
+            GenerationConfig(model="fake-model", task_type=TaskType.DRAFT),
         )
 
         record = collector.records[0]
@@ -175,11 +182,7 @@ class TestTaskTypeFlowThrough:
     @pytest.mark.asyncio
     async def test_review_task_type_survives_capture(self, db):
         """Story 26: task_type=REVIEW from config helper → collector record."""
-        from specweaver.flow._review import _review_config_from_context
-
-        context = _make_context()
-        config = _review_config_from_context(context)
-
+        config = GenerationConfig(model="fake-model", task_type=TaskType.REVIEW)
         collector = TelemetryCollector(FakeAdapter(), project="proj")
         await collector.generate([], config)
 
@@ -188,11 +191,7 @@ class TestTaskTypeFlowThrough:
     @pytest.mark.asyncio
     async def test_implement_task_type_survives_capture(self, db):
         """Story 27: task_type=IMPLEMENT from config helper → collector record."""
-        from specweaver.flow._generation import _gen_config_from_context
-
-        context = _make_context()
-        config = _gen_config_from_context(context)
-
+        config = GenerationConfig(model="fake-model", task_type=TaskType.IMPLEMENT)
         collector = TelemetryCollector(FakeAdapter(), project="proj")
         await collector.generate([], config)
 

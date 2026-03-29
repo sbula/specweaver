@@ -88,14 +88,16 @@ class TestRunnerTool:
         """Run tests (requires run_tests intent)."""
         self._require_intent("run_tests")
 
-        result = self._atom.run({
-            "intent": "run_tests",
-            "target": target,
-            "kind": kind,
-            "scope": scope,
-            "timeout": timeout,
-            "coverage": coverage,
-        })
+        result = self._atom.run(
+            {
+                "intent": "run_tests",
+                "target": target,
+                "kind": kind,
+                "scope": scope,
+                "timeout": timeout,
+                "coverage": coverage,
+            }
+        )
 
         return ToolResult(
             status="success" if result.status.value == "SUCCESS" else "error",
@@ -114,11 +116,13 @@ class TestRunnerTool:
         else:
             self._require_intent("run_linter")
 
-        result = self._atom.run({
-            "intent": "run_linter",
-            "target": target,
-            "fix": fix,
-        })
+        result = self._atom.run(
+            {
+                "intent": "run_linter",
+                "target": target,
+                "fix": fix,
+            }
+        )
 
         return ToolResult(
             status="success" if result.status.value == "SUCCESS" else "error",
@@ -132,8 +136,8 @@ class TestRunnerTool:
     def definitions(self) -> list[ToolDefinition]:
         from specweaver.loom.tools.test_runner.definitions import INTENT_DEFINITIONS
         from specweaver.loom.tools.test_runner.tool import ROLE_INTENTS
-        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 
+        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 
     def _require_intent(self, intent: str) -> None:
         """Raise if the current role doesn't have this intent."""
@@ -152,11 +156,13 @@ class TestRunnerTool:
         """Run complexity checks (requires run_complexity intent)."""
         self._require_intent("run_complexity")
 
-        result = self._atom.run({
-            "intent": "run_complexity",
-            "target": target,
-            "max_complexity": max_complexity,
-        })
+        result = self._atom.run(
+            {
+                "intent": "run_complexity",
+                "target": target,
+                "max_complexity": max_complexity,
+            }
+        )
 
         return ToolResult(
             status="success" if result.status.value == "SUCCESS" else "error",

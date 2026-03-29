@@ -38,7 +38,6 @@ class LLMAdapter(ABC):
     api_key_env_var: str = ""
     default_costs: ClassVar[dict[str, CostEntry]] = {}
 
-
     @abstractmethod
     async def generate(
         self,
@@ -152,4 +151,3 @@ class LLMAdapter(ABC):
             self.provider_name,
         )
         return await self.generate(messages, config)
-

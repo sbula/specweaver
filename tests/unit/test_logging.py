@@ -65,7 +65,8 @@ class TestSetupLogging:
     def test_creates_file_and_console_handlers(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("testprj")
         root = logging.getLogger("specweaver")
@@ -77,13 +78,12 @@ class TestSetupLogging:
     def test_file_handler_uses_correct_path(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("myprj")
         root = logging.getLogger("specweaver")
-        file_handlers = [
-            h for h in root.handlers if isinstance(h, RotatingFileHandler)
-        ]
+        file_handlers = [h for h in root.handlers if isinstance(h, RotatingFileHandler)]
         assert len(file_handlers) == 1
         assert "myprj" in file_handlers[0].baseFilename
         assert "specweaver.log" in file_handlers[0].baseFilename
@@ -91,70 +91,68 @@ class TestSetupLogging:
     def test_file_handler_uses_rotation_settings(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj")
         root = logging.getLogger("specweaver")
-        file_handler = next(
-            h for h in root.handlers if isinstance(h, RotatingFileHandler)
-        )
+        file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
         assert file_handler.maxBytes == MAX_BYTES
         assert file_handler.backupCount == BACKUP_COUNT
 
     def test_console_handler_at_warning_level(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj")
         root = logging.getLogger("specweaver")
         console_handler = next(
-            h for h in root.handlers
-            if isinstance(h, logging.StreamHandler)
-            and not isinstance(h, RotatingFileHandler)
+            h
+            for h in root.handlers
+            if isinstance(h, logging.StreamHandler) and not isinstance(h, RotatingFileHandler)
         )
         assert console_handler.level == logging.WARNING
 
     def test_file_handler_at_configured_level(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj", level="INFO")
         root = logging.getLogger("specweaver")
-        file_handler = next(
-            h for h in root.handlers if isinstance(h, RotatingFileHandler)
-        )
+        file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
         assert file_handler.level == logging.INFO
 
     def test_default_level_is_debug(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj")
         root = logging.getLogger("specweaver")
-        file_handler = next(
-            h for h in root.handlers if isinstance(h, RotatingFileHandler)
-        )
+        file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
         assert file_handler.level == logging.DEBUG
 
     def test_fallback_project_name_when_none(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging(None)
         root = logging.getLogger("specweaver")
-        file_handler = next(
-            h for h in root.handlers if isinstance(h, RotatingFileHandler)
-        )
+        file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
         assert "_global" in file_handler.baseFilename
 
     def test_idempotent_same_project(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj")
         setup_logging("proj")
@@ -165,33 +163,32 @@ class TestSetupLogging:
     def test_project_change_replaces_handlers(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj-a")
         setup_logging("proj-b")
         root = logging.getLogger("specweaver")
         assert len(root.handlers) == 2
-        file_handler = next(
-            h for h in root.handlers if isinstance(h, RotatingFileHandler)
-        )
+        file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
         assert "proj-b" in file_handler.baseFilename
 
     def test_invalid_level_falls_back_to_debug(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj", level="INVALID")
         root = logging.getLogger("specweaver")
-        file_handler = next(
-            h for h in root.handlers if isinstance(h, RotatingFileHandler)
-        )
+        file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
         assert file_handler.level == logging.DEBUG
 
     def test_log_format_is_consistent(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj")
         root = logging.getLogger("specweaver")
@@ -202,7 +199,8 @@ class TestSetupLogging:
     def test_creates_log_directory(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("newprj")
         log_dir = tmp_path / "logs" / "newprj"
@@ -211,7 +209,8 @@ class TestSetupLogging:
     def test_logs_are_written_to_file(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("writetest")
         logger = logging.getLogger("specweaver.test")
@@ -224,13 +223,12 @@ class TestSetupLogging:
     def test_case_insensitive_level(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj", level="info")
         root = logging.getLogger("specweaver")
-        file_handler = next(
-            h for h in root.handlers if isinstance(h, RotatingFileHandler)
-        )
+        file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
         assert file_handler.level == logging.INFO
 
 
@@ -245,7 +243,8 @@ class TestTeardownLogging:
     def test_removes_all_handlers(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj")
         assert len(logging.getLogger("specweaver").handlers) == 2
@@ -255,7 +254,8 @@ class TestTeardownLogging:
     def test_removes_project_tag(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir", lambda: _logs,
+            "specweaver.config.paths.logs_dir",
+            lambda: _logs,
         )
         setup_logging("proj")
         teardown_logging()
@@ -276,7 +276,11 @@ class TestLogLevels:
 
     def test_all_standard_levels_present(self):
         assert set(LOG_LEVELS.keys()) == {
-            "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL",
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "CRITICAL",
         }
 
     def test_values_are_correct(self):

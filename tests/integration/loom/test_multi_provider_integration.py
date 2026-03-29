@@ -62,10 +62,7 @@ async def test_openai_dispatcher_integration() -> None:
     mock_client.chat.completions.create = AsyncMock(side_effect=[mock_response_1, mock_response_2])
     adapter._client = mock_client
 
-    config = GenerationConfig(
-        model="gpt-4o",
-        tools=dispatcher.available_tools()
-    )
+    config = GenerationConfig(model="gpt-4o", tools=dispatcher.available_tools())
 
     result = await adapter.generate_with_tools([], config, dispatcher)
 
@@ -97,10 +94,7 @@ async def test_anthropic_dispatcher_integration() -> None:
     mock_client.messages.create = AsyncMock(side_effect=[mock_msg_1, mock_msg_2])
     adapter._client = mock_client
 
-    config = GenerationConfig(
-        model="claude-4-6-sonnet",
-        tools=dispatcher.available_tools()
-    )
+    config = GenerationConfig(model="claude-4-6-sonnet", tools=dispatcher.available_tools())
 
     result = await adapter.generate_with_tools([], config, dispatcher)
 
@@ -137,10 +131,7 @@ async def test_mistral_dispatcher_integration() -> None:
     mock_client.chat.complete_async = AsyncMock(side_effect=[mock_msg_1, mock_msg_2])
     adapter._client = mock_client
 
-    config = GenerationConfig(
-        model="mistral-large-latest",
-        tools=dispatcher.available_tools()
-    )
+    config = GenerationConfig(model="mistral-large-latest", tools=dispatcher.available_tools())
 
     result = await adapter.generate_with_tools([], config, dispatcher)
 
@@ -177,10 +168,7 @@ async def test_qwen_dispatcher_integration() -> None:
     mock_client.chat.completions.create = AsyncMock(side_effect=[mock_response_1, mock_response_2])
     adapter._client = mock_client
 
-    config = GenerationConfig(
-        model="qwen3-max",
-        tools=dispatcher.available_tools()
-    )
+    config = GenerationConfig(model="qwen3-max", tools=dispatcher.available_tools())
 
     result = await adapter.generate_with_tools([], config, dispatcher)
 

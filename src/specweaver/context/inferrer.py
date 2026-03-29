@@ -83,13 +83,17 @@ class ContextInferrer:
         # Skip if context.yaml already exists
         ctx_file = directory / "context.yaml"
         if ctx_file.is_file():
-            logger.debug("ContextInferrer: skipping '%s' — context.yaml already exists", directory.name)
+            logger.debug(
+                "ContextInferrer: skipping '%s' — context.yaml already exists", directory.name
+            )
             return InferenceResult(node=None, was_generated=False)
 
         # Skip if no analyzable source files
         analyzer = AnalyzerFactory.for_directory(directory)
         if analyzer is None:
-            logger.debug("ContextInferrer: skipping '%s' — no analyzable source files", directory.name)
+            logger.debug(
+                "ContextInferrer: skipping '%s' — no analyzable source files", directory.name
+            )
             return InferenceResult(node=None, was_generated=False)
 
         # Extract what we can
@@ -130,7 +134,10 @@ class ContextInferrer:
         ctx_file.write_text(content, encoding="utf-8")
         logger.info(
             "ContextInferrer: generated context.yaml for '%s' (level=%s, archetype=%s, exports=%d)",
-            name, level, archetype, len(exposes),
+            name,
+            level,
+            archetype,
+            len(exposes),
         )
 
         warnings = [

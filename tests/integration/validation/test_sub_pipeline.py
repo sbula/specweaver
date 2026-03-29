@@ -142,7 +142,8 @@ class TestFeatureSpecPipeline:
         assert s01_step.params["max_h2"] == 8
 
     def test_feature_pipeline_execute_produces_10_results(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Feature pipeline runs 10 rules (no S04)."""
         from specweaver.validation.executor import execute_validation_pipeline
@@ -240,9 +241,13 @@ class TestApplySettingsIntegration:
         assert s08_step.params["warn_threshold"] == 3  # YAML default
 
         settings = ValidationSettings(
-            overrides={"S08": RuleOverride(
-                rule_id="S08", warn_threshold=5, fail_threshold=12,
-            )},
+            overrides={
+                "S08": RuleOverride(
+                    rule_id="S08",
+                    warn_threshold=5,
+                    fail_threshold=12,
+                )
+            },
         )
         modified = apply_settings_to_pipeline(pipeline, settings)
 
@@ -273,7 +278,9 @@ class TestApplySettingsIntegration:
             overrides={
                 "S04": RuleOverride(rule_id="S04", enabled=False),
                 "S08": RuleOverride(
-                    rule_id="S08", warn_threshold=99, fail_threshold=99,
+                    rule_id="S08",
+                    warn_threshold=99,
+                    fail_threshold=99,
                 ),
             },
         )
@@ -296,9 +303,13 @@ class TestApplySettingsIntegration:
         original_count = len(pipeline.steps)
 
         settings = ValidationSettings(
-            overrides={"Z99": RuleOverride(
-                rule_id="Z99", warn_threshold=5, fail_threshold=10,
-            )},
+            overrides={
+                "Z99": RuleOverride(
+                    rule_id="Z99",
+                    warn_threshold=5,
+                    fail_threshold=10,
+                )
+            },
         )
         modified = apply_settings_to_pipeline(pipeline, settings)
         # Pipeline unchanged — Z99 override silently ignored
@@ -354,7 +365,8 @@ class TestProjectLocalPipeline:
         )
 
         pipeline = load_pipeline_yaml(
-            "validation_spec_default", project_dir=tmp_path,
+            "validation_spec_default",
+            project_dir=tmp_path,
         )
         assert len(pipeline.steps) == 2  # project override has only 2
         assert pipeline.steps[0].rule == "S01"
@@ -376,13 +388,16 @@ class TestProjectLocalPipeline:
 class TestProfilePipelines:
     """Integration: profile-specific pipelines resolve correctly."""
 
-    @pytest.mark.parametrize("profile", [
-        "validation_spec_web_app",
-        "validation_spec_library",
-        "validation_spec_microservice",
-        "validation_spec_data_pipeline",
-        "validation_spec_ml_model",
-    ])
+    @pytest.mark.parametrize(
+        "profile",
+        [
+            "validation_spec_web_app",
+            "validation_spec_library",
+            "validation_spec_microservice",
+            "validation_spec_data_pipeline",
+            "validation_spec_ml_model",
+        ],
+    )
     def test_profile_pipeline_loads_and_resolves(self, profile: str) -> None:
         """Every profile pipeline loads and resolves without error."""
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
@@ -391,15 +406,20 @@ class TestProfilePipelines:
         assert pipeline.name == profile
         assert len(pipeline.steps) > 0
 
-    @pytest.mark.parametrize("profile", [
-        "validation_spec_web_app",
-        "validation_spec_library",
-        "validation_spec_microservice",
-        "validation_spec_data_pipeline",
-        "validation_spec_ml_model",
-    ])
+    @pytest.mark.parametrize(
+        "profile",
+        [
+            "validation_spec_web_app",
+            "validation_spec_library",
+            "validation_spec_microservice",
+            "validation_spec_data_pipeline",
+            "validation_spec_ml_model",
+        ],
+    )
     def test_profile_pipeline_executes_without_crash(
-        self, profile: str, tmp_path: Path,
+        self,
+        profile: str,
+        tmp_path: Path,
     ) -> None:
         """Every profile pipeline executes against a good spec without crashing."""
         from specweaver.validation.executor import execute_validation_pipeline
@@ -423,7 +443,8 @@ class TestHandlerSubPipelineWiring:
     """Integration: handlers use the sub-pipeline path correctly."""
 
     def test_handler_default_uses_validation_spec_default(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """ValidateSpecHandler without kind runs validation_spec_default."""
         from specweaver.flow.handlers import ValidateSpecHandler
@@ -439,7 +460,8 @@ class TestHandlerSubPipelineWiring:
         assert "S04" in rule_ids
 
     def test_handler_feature_kind_uses_feature_pipeline(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """ValidateSpecHandler with kind_str='feature' runs feature pipeline."""
         from specweaver.flow.handlers import ValidateSpecHandler

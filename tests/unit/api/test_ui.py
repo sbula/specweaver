@@ -181,7 +181,10 @@ def test_get_dashboard_run_detail_string_output(client, tmp_path) -> None:
         updated_at="2026-01-01T00:00:01",
     )
 
-    with patch.object(Path, "home", return_value=tmp_path), patch("specweaver.flow.store.StateStore") as mock_cls:
+    with (
+        patch.object(Path, "home", return_value=tmp_path),
+        patch("specweaver.flow.store.StateStore") as mock_cls,
+    ):
         mock_store = mock_cls.return_value
         mock_store.load_run.return_value = run
 
@@ -243,10 +246,11 @@ def test_submit_hitl_gate(tmp_path) -> None:
 
     bridge = EventBridge()
 
-    with patch.object(Path, "home", return_value=tmp_path), \
-         patch.object(api_app, "get_event_bridge", return_value=bridge), \
-         patch.object(bridge, "start_run") as mock_start_run:
-
+    with (
+        patch.object(Path, "home", return_value=tmp_path),
+        patch.object(api_app, "get_event_bridge", return_value=bridge),
+        patch.object(bridge, "start_run") as mock_start_run,
+    ):
         state_dir = tmp_path / ".specweaver"
         state_dir.mkdir(exist_ok=True)
         store = StateStore(state_dir / "pipeline_state.db")
@@ -309,5 +313,3 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
         )
         assert resp.status_code == 400
         assert "fake-action" in resp.json()["detail"]
-
-

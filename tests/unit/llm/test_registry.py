@@ -20,6 +20,7 @@ from specweaver.llm.adapters.base import LLMAdapter
 
 class DummyAdapter(LLMAdapter):
     """A dummy adapter for testing."""
+
     provider_name = "dummy"
     api_key_env_var = "DUMMY_KEY"
     default_costs: ClassVar[dict] = {}
@@ -74,6 +75,7 @@ def test_ensure_discovered_swallows_syntax_error(mock_import):
     """If a dynamic adapter has a SyntaxError or other generic Exception, the registry shouldn't crash."""
     # Reset internal discovery state
     import specweaver.llm.adapters as registry_module
+
     registry_module._DISCOVERED = False
 
     # Force a SyntaxError unconditionally during dynamic import

@@ -51,7 +51,9 @@ class TestSelectTopologyContexts:
             return_value=set(),
         ):
             result = _select_topology_contexts(
-                mock_graph, "isolated_module", selector_name="direct",
+                mock_graph,
+                "isolated_module",
+                selector_name="direct",
             )
         assert result is None
 
@@ -66,12 +68,15 @@ class TestSelectTopologyContexts:
             return_value={"auth_service", "user_store"},
         ):
             result = _select_topology_contexts(
-                mock_graph, "greet_service", selector_name="direct",
+                mock_graph,
+                "greet_service",
+                selector_name="direct",
             )
 
         assert result == mock_contexts
         mock_graph.format_context_summary.assert_called_once_with(
-            "greet_service", {"auth_service", "user_store"},
+            "greet_service",
+            {"auth_service", "user_store"},
         )
 
     def test_unknown_selector_falls_back_to_direct(self) -> None:
@@ -84,7 +89,9 @@ class TestSelectTopologyContexts:
             return_value={"some_module"},
         ):
             result = _select_topology_contexts(
-                mock_graph, "greet_service", selector_name="nonexistent",
+                mock_graph,
+                "greet_service",
+                selector_name="nonexistent",
             )
 
         # Should still return contexts (falls back to DirectNeighborSelector)
@@ -100,7 +107,9 @@ class TestSelectTopologyContexts:
             return_value={"related_module"},
         ) as mock_select:
             _select_topology_contexts(
-                mock_graph, "greet_service", selector_name="nhop",
+                mock_graph,
+                "greet_service",
+                selector_name="nhop",
             )
         mock_select.assert_called_once()
 

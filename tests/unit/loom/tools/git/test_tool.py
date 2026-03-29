@@ -104,38 +104,48 @@ class TestWhitelistForRole:
 class TestConventionalCommits:
     """Commit messages must follow conventional commits format."""
 
-    @pytest.mark.parametrize("msg", [
-        "feat: add login endpoint",
-        "fix: correct null pointer",
-        "docs: update README",
-        "test: add coverage tests",
-        "chore: bump dependencies",
-        "refactor: extract helper",
-        "style: fix whitespace",
-        "perf: optimize query",
-        "ci: add GitHub Actions",
-        "build: update pyproject",
-        "feat(auth): add OAuth support",
-    ])
+    @pytest.mark.parametrize(
+        "msg",
+        [
+            "feat: add login endpoint",
+            "fix: correct null pointer",
+            "docs: update README",
+            "test: add coverage tests",
+            "chore: bump dependencies",
+            "refactor: extract helper",
+            "style: fix whitespace",
+            "perf: optimize query",
+            "ci: add GitHub Actions",
+            "build: update pyproject",
+            "feat(auth): add OAuth support",
+        ],
+    )
     def test_valid_messages(self, msg: str) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", exit_code=0),  # git add
-            ExecutorResult(status="success", stdout="1 file\n", exit_code=0),  # git diff --staged
-            ExecutorResult(status="success", stdout="committed\n", exit_code=0),  # git commit
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", exit_code=0),  # git add
+                ExecutorResult(
+                    status="success", stdout="1 file\n", exit_code=0
+                ),  # git diff --staged
+                ExecutorResult(status="success", stdout="committed\n", exit_code=0),  # git commit
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.commit(msg)
         assert result.status == "success"
 
-    @pytest.mark.parametrize("msg", [
-        "added login",
-        "Fix bug",
-        "FEAT: caps",
-        "",
-        "feat:",
-        "feat:missing space",
-        "random message",
-    ])
+    @pytest.mark.parametrize(
+        "msg",
+        [
+            "added login",
+            "Fix bug",
+            "FEAT: caps",
+            "",
+            "feat:",
+            "feat:missing space",
+            "random message",
+        ],
+    )
     def test_invalid_messages(self, msg: str) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         result = tool.commit(msg)
@@ -151,26 +161,32 @@ class TestConventionalCommits:
 class TestBranchNaming:
     """Branch names must follow <type>/<kebab-case> format."""
 
-    @pytest.mark.parametrize("name", [
-        "feat/add-login",
-        "fix/null-pointer",
-        "docs/update-readme",
-        "chore/bump-deps",
-        "refactor/extract-helper",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "feat/add-login",
+            "fix/null-pointer",
+            "docs/update-readme",
+            "chore/bump-deps",
+            "refactor/extract-helper",
+        ],
+    )
     def test_valid_names(self, name: str) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         result = tool.start_branch(name)
         assert result.status == "success"
 
-    @pytest.mark.parametrize("name", [
-        "main",
-        "feature/CamelCase",
-        "my-branch",
-        "feat/",
-        "feat/under_score",
-        "FEAT/caps",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "main",
+            "feature/CamelCase",
+            "my-branch",
+            "feat/",
+            "feat/under_score",
+            "FEAT/caps",
+        ],
+    )
     def test_invalid_names(self, name: str) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         result = tool.start_branch(name)
@@ -187,19 +203,27 @@ class TestCommitIntent:
     """commit() stages all, validates, and commits."""
 
     def test_nothing_to_commit(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", exit_code=0),  # git add
-            ExecutorResult(status="success", stdout="", exit_code=0),  # git diff --staged (empty)
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", exit_code=0),  # git add
+                ExecutorResult(
+                    status="success", stdout="", exit_code=0
+                ),  # git diff --staged (empty)
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.commit("feat: add stuff")
         assert result.status == "error"
         assert "Nothing to commit" in result.message
 
     def test_add_fails(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="add failed", exit_code=1,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="add failed",
+                exit_code=1,
+            )
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.commit("feat: add stuff")
         assert result.status == "error"
@@ -210,33 +234,43 @@ class TestSwitchBranchIntent:
     """switch_branch() auto-stashes, switches, then pops."""
 
     def test_clean_switch(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="", exit_code=0),  # status (clean)
-            ExecutorResult(status="success", exit_code=0),  # switch
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="", exit_code=0),  # status (clean)
+                ExecutorResult(status="success", exit_code=0),  # switch
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.switch_branch("feat/existing")
         assert result.status == "success"
 
     def test_dirty_switch_auto_stashes(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # status (dirty)
-            ExecutorResult(status="success", exit_code=0),  # stash
-            ExecutorResult(status="success", exit_code=0),  # switch
-            ExecutorResult(status="success", exit_code=0),  # stash pop
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(
+                    status="success", stdout="M file.py\n", exit_code=0
+                ),  # status (dirty)
+                ExecutorResult(status="success", exit_code=0),  # stash
+                ExecutorResult(status="success", exit_code=0),  # switch
+                ExecutorResult(status="success", exit_code=0),  # stash pop
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.switch_branch("feat/other")
         assert result.status == "success"
         assert executor.run.call_count == 4
 
     def test_switch_fails_restores_stash(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # status
-            ExecutorResult(status="success", exit_code=0),  # stash
-            ExecutorResult(status="error", stderr="no such branch", exit_code=1),  # switch fails
-            ExecutorResult(status="success", exit_code=0),  # stash pop (restore)
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # status
+                ExecutorResult(status="success", exit_code=0),  # stash
+                ExecutorResult(
+                    status="error", stderr="no such branch", exit_code=1
+                ),  # switch fails
+                ExecutorResult(status="success", exit_code=0),  # stash pop (restore)
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.switch_branch("feat/nonexistent")
         assert result.status == "error"
@@ -248,20 +282,24 @@ class TestInspectChangesIntent:
     """inspect_changes() shows status and diff."""
 
     def test_clean_tree(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="", exit_code=0),  # status
-            ExecutorResult(status="success", stdout="", exit_code=0),  # diff
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="", exit_code=0),  # status
+                ExecutorResult(status="success", stdout="", exit_code=0),  # diff
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.inspect_changes()
         assert result.status == "success"
         assert "clean" in result.message
 
     def test_dirty_tree(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # status
-            ExecutorResult(status="success", stdout="+line\n", exit_code=0),  # diff
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # status
+                ExecutorResult(status="success", stdout="+line\n", exit_code=0),  # diff
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.inspect_changes()
         assert "Status" in result.data
@@ -276,56 +314,60 @@ class TestInspectChangesIntent:
 class TestWrongRoleBlocksAllIntents:
     """Systematic: every role is blocked from every other role's intents."""
 
-    @pytest.mark.parametrize("intent,args", [
-        ("history", (5,)),
-        ("show_commit", ("abc123",)),
-        ("blame", ("file.py",)),
-        ("compare", ("main", "dev")),
-        ("list_branches", ()),
-    ])
-    def test_implementer_cannot_use_reviewer_intents(
-        self, intent: str, args: tuple
-    ) -> None:
+    @pytest.mark.parametrize(
+        "intent,args",
+        [
+            ("history", (5,)),
+            ("show_commit", ("abc123",)),
+            ("blame", ("file.py",)),
+            ("compare", ("main", "dev")),
+            ("list_branches", ()),
+        ],
+    )
+    def test_implementer_cannot_use_reviewer_intents(self, intent: str, args: tuple) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
 
-    @pytest.mark.parametrize("intent,args", [
-        ("file_history", ("file.py", 5)),
-        ("show_old", ("file.py", "HEAD~1")),
-        ("search_history", ("bug",)),
-        ("reflog", (10,)),
-    ])
-    def test_implementer_cannot_use_debugger_intents(
-        self, intent: str, args: tuple
-    ) -> None:
+    @pytest.mark.parametrize(
+        "intent,args",
+        [
+            ("file_history", ("file.py", 5)),
+            ("show_old", ("file.py", "HEAD~1")),
+            ("search_history", ("bug",)),
+            ("reflog", (10,)),
+        ],
+    )
+    def test_implementer_cannot_use_debugger_intents(self, intent: str, args: tuple) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
 
-    @pytest.mark.parametrize("intent,args", [
-        ("commit", ("feat: nope",)),
-        ("inspect_changes", ()),
-        ("discard", ("file.py",)),
-        ("uncommit", ()),
-        ("start_branch", ("feat/nope",)),
-        ("switch_branch", ("feat/nope",)),
-    ])
-    def test_reviewer_cannot_use_write_intents(
-        self, intent: str, args: tuple
-    ) -> None:
+    @pytest.mark.parametrize(
+        "intent,args",
+        [
+            ("commit", ("feat: nope",)),
+            ("inspect_changes", ()),
+            ("discard", ("file.py",)),
+            ("uncommit", ()),
+            ("start_branch", ("feat/nope",)),
+            ("switch_branch", ("feat/nope",)),
+        ],
+    )
+    def test_reviewer_cannot_use_write_intents(self, intent: str, args: tuple) -> None:
         tool = GitTool(executor=_make_executor(), role="reviewer")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
 
-    @pytest.mark.parametrize("intent,args", [
-        ("uncommit", ()),
-        ("start_branch", ("feat/nope",)),
-        ("switch_branch", ("feat/nope",)),
-    ])
-    def test_drafter_blocked_from_branch_and_uncommit(
-        self, intent: str, args: tuple
-    ) -> None:
+    @pytest.mark.parametrize(
+        "intent,args",
+        [
+            ("uncommit", ()),
+            ("start_branch", ("feat/nope",)),
+            ("switch_branch", ("feat/nope",)),
+        ],
+    )
+    def test_drafter_blocked_from_branch_and_uncommit(self, intent: str, args: tuple) -> None:
         tool = GitTool(executor=_make_executor(), role="drafter")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
@@ -359,10 +401,12 @@ class TestErrorMessagesForAgent:
         assert "history" in str(exc_info.value)
 
     def test_nothing_to_commit_is_clear(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", exit_code=0),
-            ExecutorResult(status="success", stdout="", exit_code=0),
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", exit_code=0),
+                ExecutorResult(status="success", stdout="", exit_code=0),
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.commit("feat: add stuff")
         assert "Nothing to commit" in result.message
@@ -377,20 +421,28 @@ class TestCommitFailureAtEachStep:
     """commit() can fail at add, diff, or commit — each handled differently."""
 
     def test_git_add_fails(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="permission denied", exit_code=1,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="permission denied",
+                exit_code=1,
+            )
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.commit("feat: add stuff")
         assert result.status == "error"
         assert "git add failed" in result.message
 
     def test_git_commit_step_fails(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", exit_code=0),  # add OK
-            ExecutorResult(status="success", stdout="1 file\n", exit_code=0),  # diff OK
-            ExecutorResult(status="error", stderr="author identity unknown", exit_code=128),  # commit FAIL
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", exit_code=0),  # add OK
+                ExecutorResult(status="success", stdout="1 file\n", exit_code=0),  # diff OK
+                ExecutorResult(
+                    status="error", stderr="author identity unknown", exit_code=128
+                ),  # commit FAIL
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.commit("feat: add stuff")
         assert result.status == "error"
@@ -401,9 +453,13 @@ class TestDiscardFailure:
     """discard() returns error when git restore fails."""
 
     def test_restore_nonexistent_file(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="pathspec 'nope.py' did not match", exit_code=1,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="pathspec 'nope.py' did not match",
+                exit_code=1,
+            )
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.discard("nope.py")
         assert result.status == "error"
@@ -414,9 +470,13 @@ class TestUncommitFailure:
     """uncommit() returns error when git reset fails."""
 
     def test_reset_on_initial_commit(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="HEAD~1: unknown revision", exit_code=128,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="HEAD~1: unknown revision",
+                exit_code=128,
+            )
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.uncommit()
         assert result.status == "error"
@@ -427,9 +487,13 @@ class TestStartBranchFailure:
     """start_branch() handles git switch -c failure."""
 
     def test_branch_already_exists(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="already exists", exit_code=128,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="already exists",
+                exit_code=128,
+            )
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.start_branch("feat/existing-one")
         assert result.status == "error"
@@ -440,22 +504,26 @@ class TestSwitchBranchEdgeCases:
     """switch_branch() edge cases."""
 
     def test_stash_fails_on_dirty_tree(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # dirty
-            ExecutorResult(status="error", stderr="stash failed", exit_code=1),  # stash FAIL
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # dirty
+                ExecutorResult(status="error", stderr="stash failed", exit_code=1),  # stash FAIL
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.switch_branch("feat/other")
         assert result.status == "error"
         assert "git stash failed" in result.message
 
     def test_stash_pop_fails_after_switch(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # dirty
-            ExecutorResult(status="success", exit_code=0),  # stash OK
-            ExecutorResult(status="success", exit_code=0),  # switch OK
-            ExecutorResult(status="error", stderr="CONFLICT", exit_code=1),  # pop FAIL
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),  # dirty
+                ExecutorResult(status="success", exit_code=0),  # stash OK
+                ExecutorResult(status="success", exit_code=0),  # switch OK
+                ExecutorResult(status="error", stderr="CONFLICT", exit_code=1),  # pop FAIL
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.switch_branch("feat/conflict")
         assert result.status == "error"
@@ -471,25 +539,37 @@ class TestReviewerIntentErrors:
     """Reviewer intents return errors from git gracefully."""
 
     def test_show_commit_bad_hash(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="bad object deadbeef", exit_code=128,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="bad object deadbeef",
+                exit_code=128,
+            )
+        )
         tool = GitTool(executor=executor, role="reviewer")
         result = tool.show_commit("deadbeef")
         assert result.status == "error"
 
     def test_blame_nonexistent_file(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="no such path 'nope.py'", exit_code=128,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="no such path 'nope.py'",
+                exit_code=128,
+            )
+        )
         tool = GitTool(executor=executor, role="reviewer")
         result = tool.blame("nope.py")
         assert result.status == "error"
 
     def test_compare_nonexistent_branch(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="unknown revision", exit_code=128,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="unknown revision",
+                exit_code=128,
+            )
+        )
         tool = GitTool(executor=executor, role="reviewer")
         result = tool.compare("main", "nonexistent")
         assert result.status == "error"
@@ -499,26 +579,38 @@ class TestDebuggerIntentErrors:
     """Debugger intents return errors from git gracefully."""
 
     def test_file_history_nonexistent_file(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="does not have any commits yet", exit_code=128,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="does not have any commits yet",
+                exit_code=128,
+            )
+        )
         tool = GitTool(executor=executor, role="debugger")
         result = tool.file_history("nope.py")
         assert result.status == "error"
 
     def test_show_old_bad_revision(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="error", stderr="path not found", exit_code=128,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="error",
+                stderr="path not found",
+                exit_code=128,
+            )
+        )
         tool = GitTool(executor=executor, role="debugger")
         result = tool.show_old("file.py", rev="HEAD~999")
         assert result.status == "error"
 
     def test_search_history_no_results(self) -> None:
         """No results is success with empty data, not an error."""
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="success", stdout="", exit_code=0,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="success",
+                stdout="",
+                exit_code=0,
+            )
+        )
         tool = GitTool(executor=executor, role="debugger")
         result = tool.search_history("nonexistent-string")
         assert result.status == "success"
@@ -535,12 +627,14 @@ class TestToolResult:
 
     def test_frozen(self) -> None:
         from specweaver.loom.tools.git.tool import ToolResult
+
         r = ToolResult(status="success", message="ok")
         with pytest.raises(AttributeError):
             r.status = "error"  # type: ignore[misc]
 
     def test_default_data_is_empty(self) -> None:
         from specweaver.loom.tools.git.tool import ToolResult
+
         r = ToolResult(status="success", message="ok")
         assert r.data == ""
 
@@ -581,6 +675,7 @@ class TestWhitelistForRoleCompleteness:
         which lifts the blocked-commands restriction.
         """
         from specweaver.loom.commons.git.executor import GitExecutor
+
         blocked = GitExecutor._BLOCKED_ALWAYS
         agent_roles = {r for r in ROLE_INTENTS if r != "conflict_resolver"}
         for role in agent_roles:
@@ -604,30 +699,29 @@ class TestConfigConsistency:
 
     def test_all_role_intents_have_commands(self) -> None:
         from specweaver.loom.tools.git.tool import INTENT_COMMANDS
+
         for role, intents in ROLE_INTENTS.items():
             for intent in intents:
                 assert intent in INTENT_COMMANDS, (
-                    f"Role {role!r} has intent {intent!r} "
-                    f"not in INTENT_COMMANDS"
+                    f"Role {role!r} has intent {intent!r} not in INTENT_COMMANDS"
                 )
 
     def test_all_intents_in_intent_commands_are_used_by_a_role(self) -> None:
         from specweaver.loom.tools.git.tool import INTENT_COMMANDS
+
         all_role_intents = set()
         for intents in ROLE_INTENTS.values():
             all_role_intents |= intents
         for intent in INTENT_COMMANDS:
             assert intent in all_role_intents, (
-                f"INTENT_COMMANDS has orphan intent {intent!r} "
-                f"not used by any role"
+                f"INTENT_COMMANDS has orphan intent {intent!r} not used by any role"
             )
 
     def test_all_intent_methods_exist_on_git_tool(self) -> None:
         from specweaver.loom.tools.git.tool import INTENT_COMMANDS
+
         for intent in INTENT_COMMANDS:
-            assert hasattr(GitTool, intent), (
-                f"GitTool is missing method for intent {intent!r}"
-            )
+            assert hasattr(GitTool, intent), f"GitTool is missing method for intent {intent!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -639,43 +733,51 @@ class TestExecutorCallVerification:
     """Verify the correct git commands are sent to the executor."""
 
     def test_commit_calls_add_diff_commit(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", exit_code=0),
-            ExecutorResult(status="success", stdout="1 file\n", exit_code=0),
-            ExecutorResult(status="success", stdout="ok\n", exit_code=0),
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", exit_code=0),
+                ExecutorResult(status="success", stdout="1 file\n", exit_code=0),
+                ExecutorResult(status="success", stdout="ok\n", exit_code=0),
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         tool.commit("feat: add stuff")
         calls = [c.args[0] for c in executor.run.call_args_list]
         assert calls == ["add", "diff", "commit"]
 
     def test_switch_branch_clean_calls_status_switch(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="", exit_code=0),
-            ExecutorResult(status="success", exit_code=0),
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="", exit_code=0),
+                ExecutorResult(status="success", exit_code=0),
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         tool.switch_branch("feat/other")
         calls = [c.args[0] for c in executor.run.call_args_list]
         assert calls == ["status", "switch"]
 
     def test_switch_branch_dirty_calls_status_stash_switch_pop(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),
-            ExecutorResult(status="success", exit_code=0),
-            ExecutorResult(status="success", exit_code=0),
-            ExecutorResult(status="success", exit_code=0),
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="M file.py\n", exit_code=0),
+                ExecutorResult(status="success", exit_code=0),
+                ExecutorResult(status="success", exit_code=0),
+                ExecutorResult(status="success", exit_code=0),
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         tool.switch_branch("feat/other")
         calls = [c.args[0] for c in executor.run.call_args_list]
         assert calls == ["status", "stash", "switch", "stash"]
 
     def test_inspect_changes_calls_status_diff(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", stdout="", exit_code=0),
-            ExecutorResult(status="success", stdout="", exit_code=0),
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", stdout="", exit_code=0),
+                ExecutorResult(status="success", stdout="", exit_code=0),
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         tool.inspect_changes()
         calls = [c.args[0] for c in executor.run.call_args_list]
@@ -691,11 +793,13 @@ class TestSuccessPathData:
     """Successful intents return correct data to the agent."""
 
     def test_commit_returns_git_output(self) -> None:
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", exit_code=0),
-            ExecutorResult(status="success", stdout="1 file changed\n", exit_code=0),
-            ExecutorResult(status="success", stdout="[main abc1234] feat: hi\n", exit_code=0),
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", exit_code=0),
+                ExecutorResult(status="success", stdout="1 file changed\n", exit_code=0),
+                ExecutorResult(status="success", stdout="[main abc1234] feat: hi\n", exit_code=0),
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         result = tool.commit("feat: hi")
         assert result.status == "success"
@@ -720,27 +824,39 @@ class TestSuccessPathData:
         assert "feat/new-feature" in result.message
 
     def test_history_returns_log_data(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="success", stdout="abc1234 feat: hi\ndef5678 fix: bye\n", exit_code=0,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="success",
+                stdout="abc1234 feat: hi\ndef5678 fix: bye\n",
+                exit_code=0,
+            )
+        )
         tool = GitTool(executor=executor, role="reviewer")
         result = tool.history(2)
         assert result.status == "success"
         assert "abc1234" in result.data
 
     def test_list_branches_returns_data(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="success", stdout="* main\n  feat/login\n", exit_code=0,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="success",
+                stdout="* main\n  feat/login\n",
+                exit_code=0,
+            )
+        )
         tool = GitTool(executor=executor, role="reviewer")
         result = tool.list_branches()
         assert result.status == "success"
         assert "main" in result.data
 
     def test_reflog_returns_data(self) -> None:
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="success", stdout="abc HEAD@{0}: commit: feat: hi\n", exit_code=0,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="success",
+                stdout="abc HEAD@{0}: commit: feat: hi\n",
+                exit_code=0,
+            )
+        )
         tool = GitTool(executor=executor, role="debugger")
         result = tool.reflog(5)
         assert result.status == "success"
@@ -757,11 +873,13 @@ class TestGitToolAdditionalEdgeCases:
 
     def test_commit_with_multiline_message(self) -> None:
         """Multiline commit messages are rejected (conventional commit uses first line only)."""
-        executor = _make_executor(run_side_effect=[
-            ExecutorResult(status="success", exit_code=0),
-            ExecutorResult(status="success", stdout="1 file\n", exit_code=0),
-            ExecutorResult(status="success", stdout="ok\n", exit_code=0),
-        ])
+        executor = _make_executor(
+            run_side_effect=[
+                ExecutorResult(status="success", exit_code=0),
+                ExecutorResult(status="success", stdout="1 file\n", exit_code=0),
+                ExecutorResult(status="success", stdout="ok\n", exit_code=0),
+            ]
+        )
         tool = GitTool(executor=executor, role="implementer")
         # Conventional commit regex may reject newlines
         result = tool.commit("feat: add login\n\nDetailed description here.")
@@ -777,18 +895,26 @@ class TestGitToolAdditionalEdgeCases:
 
     def test_history_n_zero(self) -> None:
         """history(n=0) should still call git log (may return empty)."""
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="success", stdout="", exit_code=0,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="success",
+                stdout="",
+                exit_code=0,
+            )
+        )
         tool = GitTool(executor=executor, role="reviewer")
         result = tool.history(0)
         assert result.status == "success"
 
     def test_history_negative_n(self) -> None:
         """history(n=-1) — invalid count, should not crash."""
-        executor = _make_executor(run_returns=ExecutorResult(
-            status="success", stdout="", exit_code=0,
-        ))
+        executor = _make_executor(
+            run_returns=ExecutorResult(
+                status="success",
+                stdout="",
+                exit_code=0,
+            )
+        )
         tool = GitTool(executor=executor, role="reviewer")
         result = tool.history(-1)
         assert result.status in ("success", "error")
@@ -804,5 +930,3 @@ class TestGitToolAdditionalEdgeCases:
         tool = GitTool(executor=_make_executor(), role="implementer")
         result = tool.start_branch("feat/add--login")
         assert result.status == "success"
-
-

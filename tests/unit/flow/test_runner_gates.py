@@ -142,16 +142,18 @@ class TestGateConditions:
         """AUTO gate with COMPLETED condition passes when step passes."""
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="validate",
-                action=StepAction.VALIDATE,
-                target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    type=GateType.AUTO,
-                    condition=GateCondition.COMPLETED,
-                    on_fail=OnFailAction.ABORT,
-                ),
-            )],
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(
+                        type=GateType.AUTO,
+                        condition=GateCondition.COMPLETED,
+                        on_fail=OnFailAction.ABORT,
+                    ),
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
@@ -166,16 +168,18 @@ class TestGateConditions:
         """AUTO gate with COMPLETED condition fails when step fails."""
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="validate",
-                action=StepAction.VALIDATE,
-                target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    type=GateType.AUTO,
-                    condition=GateCondition.COMPLETED,
-                    on_fail=OnFailAction.ABORT,
-                ),
-            )],
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(
+                        type=GateType.AUTO,
+                        condition=GateCondition.COMPLETED,
+                        on_fail=OnFailAction.ABORT,
+                    ),
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, FailHandler())
@@ -190,16 +194,18 @@ class TestGateConditions:
         """AUTO gate with ALL_PASSED condition passes when status is PASSED."""
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="validate",
-                action=StepAction.VALIDATE,
-                target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    type=GateType.AUTO,
-                    condition=GateCondition.ALL_PASSED,
-                    on_fail=OnFailAction.ABORT,
-                ),
-            )],
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(
+                        type=GateType.AUTO,
+                        condition=GateCondition.ALL_PASSED,
+                        on_fail=OnFailAction.ABORT,
+                    ),
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
@@ -214,16 +220,18 @@ class TestGateConditions:
         """AUTO gate with ACCEPTED condition passes when verdict is accepted."""
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="review",
-                action=StepAction.REVIEW,
-                target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    type=GateType.AUTO,
-                    condition=GateCondition.ACCEPTED,
-                    on_fail=OnFailAction.ABORT,
-                ),
-            )],
+            steps=[
+                PipelineStep(
+                    name="review",
+                    action=StepAction.REVIEW,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(
+                        type=GateType.AUTO,
+                        condition=GateCondition.ACCEPTED,
+                        on_fail=OnFailAction.ABORT,
+                    ),
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.REVIEW, StepTarget.SPEC, AcceptHandler())
@@ -238,16 +246,18 @@ class TestGateConditions:
         """AUTO gate with ACCEPTED condition aborts when verdict is denied."""
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="review",
-                action=StepAction.REVIEW,
-                target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    type=GateType.AUTO,
-                    condition=GateCondition.ACCEPTED,
-                    on_fail=OnFailAction.ABORT,
-                ),
-            )],
+            steps=[
+                PipelineStep(
+                    name="review",
+                    action=StepAction.REVIEW,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(
+                        type=GateType.AUTO,
+                        condition=GateCondition.ACCEPTED,
+                        on_fail=OnFailAction.ABORT,
+                    ),
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.REVIEW, StepTarget.SPEC, DenyHandler())
@@ -262,15 +272,17 @@ class TestGateConditions:
         """HITL gate always parks the run for human approval."""
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="review",
-                action=StepAction.REVIEW,
-                target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    type=GateType.HITL,
-                    condition=GateCondition.ACCEPTED,
-                ),
-            )],
+            steps=[
+                PipelineStep(
+                    name="review",
+                    action=StepAction.REVIEW,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(
+                        type=GateType.HITL,
+                        condition=GateCondition.ACCEPTED,
+                    ),
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.REVIEW, StepTarget.SPEC, AcceptHandler())
@@ -295,17 +307,19 @@ class TestRetryLogic:
         handler = CountingHandler(fail_count=1)
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="validate",
-                action=StepAction.VALIDATE,
-                target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    type=GateType.AUTO,
-                    condition=GateCondition.COMPLETED,
-                    on_fail=OnFailAction.RETRY,
-                    max_retries=3,
-                ),
-            )],
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(
+                        type=GateType.AUTO,
+                        condition=GateCondition.COMPLETED,
+                        on_fail=OnFailAction.RETRY,
+                        max_retries=3,
+                    ),
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, handler)
@@ -322,17 +336,19 @@ class TestRetryLogic:
         handler = CountingHandler(fail_count=100)  # always fails
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="validate",
-                action=StepAction.VALIDATE,
-                target=StepTarget.SPEC,
-                gate=GateDefinition(
-                    type=GateType.AUTO,
-                    condition=GateCondition.COMPLETED,
-                    on_fail=OnFailAction.RETRY,
-                    max_retries=2,
-                ),
-            )],
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(
+                        type=GateType.AUTO,
+                        condition=GateCondition.COMPLETED,
+                        on_fail=OnFailAction.RETRY,
+                        max_retries=2,
+                    ),
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, handler)
@@ -523,12 +539,14 @@ class TestNoGate:
         """Without a gate, failure stops the pipeline (backwards compat)."""
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="validate",
-                action=StepAction.VALIDATE,
-                target=StepTarget.SPEC,
-                # No gate!
-            )],
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                    # No gate!
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, FailHandler())
@@ -543,11 +561,13 @@ class TestNoGate:
         """Without a gate, success advances normally."""
         pipeline = PipelineDefinition(
             name="test",
-            steps=[PipelineStep(
-                name="validate",
-                action=StepAction.VALIDATE,
-                target=StepTarget.SPEC,
-            )],
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                )
+            ],
         )
         registry = StepHandlerRegistry()
         registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
@@ -557,32 +577,43 @@ class TestNoGate:
 
         assert run.status == RunStatus.COMPLETED
 
+
 class TestGateEdgeCases:
     """Tests covering defensive edge cases in GateEvaluator."""
 
     def test_passes_unhandled_condition(self, tmp_path: Path) -> None:
         from specweaver.flow.gates import GateEvaluator
         from specweaver.flow.models import PipelineDefinition
+
         pipeline = PipelineDefinition(name="p", steps=[])
         evaluator = GateEvaluator(pipeline)
 
-        gate = GateDefinition.model_construct(condition="UNKNOWN_ENUM_VALUE", on_fail=OnFailAction.ABORT) # type: ignore
-        result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
+        gate = GateDefinition.model_construct(
+            condition="UNKNOWN_ENUM_VALUE", on_fail=OnFailAction.ABORT
+        )  # type: ignore
+        result = StepResult(
+            status=StepStatus.FAILED, output={}, started_at="now", completed_at="now"
+        )
         assert evaluator.passes(gate, result) is True
 
     def test_find_step_index_not_found(self, tmp_path: Path) -> None:
         from specweaver.flow.gates import GateEvaluator
         from specweaver.flow.models import PipelineDefinition
+
         pipeline = PipelineDefinition(name="p", steps=[])
         evaluator = GateEvaluator(pipeline)
         assert evaluator.find_step_index("imaginary_step") is None
 
     def test_inject_feedback_dynamic_init(self) -> None:
         from specweaver.flow.gates import GateEvaluator
+
         class MockContext:
             pass
+
         context = MockContext()
-        result = StepResult(status=StepStatus.FAILED, output={"foo": "bar"}, started_at="now", completed_at="now")
+        result = StepResult(
+            status=StepStatus.FAILED, output={"foo": "bar"}, started_at="now", completed_at="now"
+        )
         GateEvaluator.inject_feedback(context, "a", "b", result)
         assert hasattr(context, "feedback")
         assert context.feedback["b"]["findings"] == {"foo": "bar"}
@@ -591,10 +622,15 @@ class TestGateEdgeCases:
         from specweaver.flow.gates import GateEvaluator
         from specweaver.flow.models import PipelineDefinition
         from specweaver.flow.state import PipelineRun
+
         pipeline = PipelineDefinition(name="p", steps=[])
         evaluator = GateEvaluator(pipeline)
-        gate = GateDefinition(condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.LOOP_BACK, loop_target="none")
-        result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
+        gate = GateDefinition(
+            condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.LOOP_BACK, loop_target="none"
+        )
+        result = StepResult(
+            status=StepStatus.FAILED, output={}, started_at="now", completed_at="now"
+        )
         run = PipelineRun.model_construct(pipeline_name="p", steps=[])
 
         action = evaluator._handle_loop_back(gate, result, run, {0: 0})
@@ -605,10 +641,15 @@ class TestGateEdgeCases:
         from specweaver.flow.gates import GateEvaluator
         from specweaver.flow.models import PipelineDefinition
         from specweaver.flow.state import PipelineRun
+
         pipeline = PipelineDefinition(name="p", steps=[])
         evaluator = GateEvaluator(pipeline)
-        gate = GateDefinition(condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.RETRY, max_retries=5)
-        result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
+        gate = GateDefinition(
+            condition=GateCondition.ALL_PASSED, on_fail=OnFailAction.RETRY, max_retries=5
+        )
+        result = StepResult(
+            status=StepStatus.FAILED, output={}, started_at="now", completed_at="now"
+        )
         # Empty step records array, simulating record is None fetch
         run = PipelineRun.model_construct(pipeline_name="p", steps=[])
         run.step_records = []

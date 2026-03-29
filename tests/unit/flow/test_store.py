@@ -323,11 +323,15 @@ class TestStoreEdgeCases:
 
         # Manually corrupt the DB payload
         conn = store.connect()
-        conn.execute("UPDATE pipeline_runs SET step_records = ? WHERE run_id = ?", ("{bad_json:", "run-corrupt"))
+        conn.execute(
+            "UPDATE pipeline_runs SET step_records = ? WHERE run_id = ?",
+            ("{bad_json:", "run-corrupt"),
+        )
         conn.commit()
         conn.close()
 
         import json
+
         try:
             loaded = store.load_run("run-corrupt")
             assert loaded is None

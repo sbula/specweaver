@@ -59,8 +59,7 @@ class EventBridge:
 
         if self.active_count >= self._max_concurrent:
             msg = (
-                f"Max concurrent runs reached ({self._max_concurrent}). "
-                "Wait for a run to complete."
+                f"Max concurrent runs reached ({self._max_concurrent}). Wait for a run to complete."
             )
             raise RuntimeError(msg)
 
@@ -83,7 +82,12 @@ class EventBridge:
                 raise
 
         self._tasks[run_id] = asyncio.create_task(_wrapper())
-        logger.info("Started background run %s (%d/%d active)", run_id, self.active_count, self._max_concurrent)
+        logger.info(
+            "Started background run %s (%d/%d active)",
+            run_id,
+            self.active_count,
+            self._max_concurrent,
+        )
 
     def make_event_callback(self, run_id: str) -> Any:
         """Create an on_event callback that broadcasts to subscribers.
@@ -151,7 +155,9 @@ class EventBridge:
         """
         queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue(maxsize=100)
         self._subscribers.setdefault(run_id, []).append(queue)
-        logger.debug("Subscriber added for run %s (total: %d)", run_id, len(self._subscribers[run_id]))
+        logger.debug(
+            "Subscriber added for run %s (total: %d)", run_id, len(self._subscribers[run_id])
+        )
         return queue
 
     def unsubscribe(self, run_id: str, queue: asyncio.Queue[dict[str, Any] | None]) -> None:

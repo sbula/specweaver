@@ -50,7 +50,15 @@ class LlmProfilesMixin:
                 "INSERT INTO llm_profiles "
                 "(name, is_global, model, temperature, max_output_tokens, response_format, provider) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (name, int(is_global), model, temperature, max_output_tokens, response_format, provider),
+                (
+                    name,
+                    int(is_global),
+                    model,
+                    temperature,
+                    max_output_tokens,
+                    response_format,
+                    provider,
+                ),
             )
             return cursor.lastrowid  # type: ignore[no-any-return]
 
@@ -58,7 +66,8 @@ class LlmProfilesMixin:
         """Get an LLM profile by ID, or None if not found."""
         with self.connect() as conn:  # type: ignore[attr-defined]
             row = conn.execute(
-                "SELECT * FROM llm_profiles WHERE id = ?", (profile_id,),
+                "SELECT * FROM llm_profiles WHERE id = ?",
+                (profile_id,),
             ).fetchone()
             return dict(row) if row else None
 
@@ -66,7 +75,8 @@ class LlmProfilesMixin:
         """Get an LLM profile by name, or None if not found."""
         with self.connect() as conn:  # type: ignore[attr-defined]
             row = conn.execute(
-                "SELECT * FROM llm_profiles WHERE name = ?", (name,),
+                "SELECT * FROM llm_profiles WHERE name = ?",
+                (name,),
             ).fetchone()
             return dict(row) if row else None
 
@@ -100,7 +110,10 @@ class LlmProfilesMixin:
             return [dict(r) for r in rows]
 
     def link_project_profile(
-        self, project_name: str, role: str, profile_id: int,
+        self,
+        project_name: str,
+        role: str,
+        profile_id: int,
     ) -> None:
         """Link (or re-link) a project role to an LLM profile.
 
@@ -110,7 +123,8 @@ class LlmProfilesMixin:
         with self.connect() as conn:  # type: ignore[attr-defined]
             # Verify project exists
             proj = conn.execute(
-                "SELECT name FROM projects WHERE name = ?", (project_name,),
+                "SELECT name FROM projects WHERE name = ?",
+                (project_name,),
             ).fetchone()
             if not proj:
                 msg = f"Project '{project_name}' not found"
@@ -118,7 +132,8 @@ class LlmProfilesMixin:
 
             # Verify profile exists
             profile = conn.execute(
-                "SELECT id FROM llm_profiles WHERE id = ?", (profile_id,),
+                "SELECT id FROM llm_profiles WHERE id = ?",
+                (profile_id,),
             ).fetchone()
             if not profile:
                 msg = f"Profile ID {profile_id} not found"
@@ -131,7 +146,9 @@ class LlmProfilesMixin:
             )
 
     def get_project_profile(
-        self, project_name: str, role: str,
+        self,
+        project_name: str,
+        role: str,
     ) -> dict[str, object] | None:
         """Get the resolved LLM profile for a project + role.
 
@@ -139,8 +156,7 @@ class LlmProfilesMixin:
         """
         with self.connect() as conn:  # type: ignore[attr-defined]
             link = conn.execute(
-                "SELECT profile_id FROM project_llm_links "
-                "WHERE project_name = ? AND role = ?",
+                "SELECT profile_id FROM project_llm_links WHERE project_name = ? AND role = ?",
                 (project_name, role),
             ).fetchone()
             if not link:
@@ -170,7 +186,8 @@ class LlmProfilesMixin:
             return bool(cursor.rowcount > 0)
 
     def get_project_routing_entries(
-        self, project_name: str,
+        self,
+        project_name: str,
     ) -> list[dict[str, object]]:
         """Return all per-task routing entries for a project.
 
@@ -192,10 +209,9 @@ class LlmProfilesMixin:
             ).fetchall()
             return [
                 {
-                    "task_type": row["role"][len("task:"):],
+                    "task_type": row["role"][len("task:") :],
                     "profile_id": row["profile_id"],
                     "profile_name": row["profile_name"],
                 }
                 for row in rows
             ]
-

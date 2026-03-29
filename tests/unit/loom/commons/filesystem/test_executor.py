@@ -480,13 +480,17 @@ class TestConstructorValidation:
 class TestEngineFileExecutor:
     """EngineFileExecutor bypasses protected patterns but keeps security."""
 
-    def test_write_context_yaml_allowed(self, engine_executor: EngineFileExecutor, project: Path) -> None:
+    def test_write_context_yaml_allowed(
+        self, engine_executor: EngineFileExecutor, project: Path
+    ) -> None:
         """Engine can write to context.yaml."""
         result = engine_executor.write("context.yaml", "name: updated\nlevel: system\n")
         assert result.status == "success"
         assert "updated" in (project / "context.yaml").read_text()
 
-    def test_delete_context_yaml_allowed(self, engine_executor: EngineFileExecutor, project: Path) -> None:
+    def test_delete_context_yaml_allowed(
+        self, engine_executor: EngineFileExecutor, project: Path
+    ) -> None:
         """Engine can delete context.yaml."""
         result = engine_executor.delete("context.yaml")
         assert result.status == "success"
@@ -503,7 +507,9 @@ class TestEngineFileExecutor:
         assert result.status == "error"
 
     @pytest.mark.skipif(os.name == "nt", reason="Symlinks require admin on Windows")
-    def test_symlinks_still_blocked(self, engine_executor: EngineFileExecutor, project: Path) -> None:
+    def test_symlinks_still_blocked(
+        self, engine_executor: EngineFileExecutor, project: Path
+    ) -> None:
         """Engine still blocks symlinks (always a security risk)."""
         target = Path("/tmp/engine_test.txt")
         target.write_text("test", encoding="utf-8")

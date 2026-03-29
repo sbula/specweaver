@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 def _get_state_store() -> StateStore:
     """Get the pipeline state store (lazy import)."""
     from specweaver.flow.store import StateStore
+
     return StateStore(state_db_path())
 
 
@@ -71,9 +72,11 @@ def _create_display(
     """Create the appropriate display backend."""
     if use_json:
         from specweaver.flow.display import JsonPipelineDisplay
+
         return JsonPipelineDisplay()
 
     from specweaver.flow.display import RichPipelineDisplay
+
     return RichPipelineDisplay(console=_core.console, verbose=verbose)
 
 
@@ -169,12 +172,14 @@ def run_pipeline(
         _core.console.print(f"[red]Error:[/red] {exc}")
         if verbose:
             import traceback
+
             _core.console.print(f"[dim]{traceback.format_exc()}[/dim]")
         raise typer.Exit(code=1) from None
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         if verbose:
             import traceback
+
             _core.console.print(f"[dim]{traceback.format_exc()}[/dim]")
         raise typer.Exit(code=1) from None
     except Exception as exc:
@@ -184,6 +189,7 @@ def run_pipeline(
         )
         if verbose:
             import traceback
+
             _core.console.print(f"[dim]{traceback.format_exc()}[/dim]")
         raise typer.Exit(code=1) from None
 
@@ -226,15 +232,23 @@ def _execute_run(  # noqa: C901
     display = _create_display(use_json=json_output, verbose=verbose)
 
     # Build run context
+    from specweaver.llm.router import ModelRouter
+
     context = RunContext(
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
         constitution=_load_constitution_content(
-            project_path, spec_path=spec_path,
+            project_path,
+            spec_path=spec_path,
         ),
         standards=_load_standards_content(project_path, target_path=spec_path),
         db=_core.get_db(),
+    )
+    context.llm_router = ModelRouter(
+        db=_core.get_db(),
+        project_name=project_path.name,
+        telemetry_project=project_path.name,
     )
 
     # Wire up LLM if needed (non-validate-only pipelines)
@@ -245,8 +259,7 @@ def _execute_run(  # noqa: C901
         except (typer.Exit, SystemExit):
             if pipeline_def.name != "validate_only":
                 _core.console.print(
-                    "[yellow]Warning:[/yellow] No LLM configured. "
-                    "LLM-dependent steps will fail.",
+                    "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
                 )
 
     # Load topology
@@ -254,7 +267,9 @@ def _execute_run(  # noqa: C901
     if topo_graph:
         module_name = spec_path.stem.removesuffix("_spec")
         topo_contexts = _select_topology_contexts(
-            topo_graph, module_name, selector_name=selector,
+            topo_graph,
+            module_name,
+            selector_name=selector,
         )
         context.topology = topo_contexts
 
@@ -270,10 +285,7 @@ def _execute_run(  # noqa: C901
     )
 
     # Initialize display
-    step_info = [
-        (step.name, step.description or "")
-        for step in pipeline_def.steps
-    ]
+    step_info = [(step.name, step.description or "") for step in pipeline_def.steps]
     display.start(pipeline_def.name, step_info)
 
     try:
@@ -373,6 +385,8 @@ def resume(
     pipeline_def = load_pipeline(Path(run_state.pipeline_name))
 
     # Build context from stored state
+    from specweaver.llm.router import ModelRouter
+
     project_path = resolve_project_path(None)
     spec_path = Path(run_state.spec_path)
 
@@ -381,10 +395,16 @@ def resume(
         spec_path=spec_path,
         output_dir=project_path / "src",
         constitution=_load_constitution_content(
-            project_path, spec_path=spec_path,
+            project_path,
+            spec_path=spec_path,
         ),
         standards=_load_standards_content(project_path, target_path=spec_path),
         db=_core.get_db(),
+    )
+    context.llm_router = ModelRouter(
+        db=_core.get_db(),
+        project_name=project_path.name,
+        telemetry_project=project_path.name,
     )
 
     display = _create_display(use_json=json_output, verbose=verbose)
@@ -396,10 +416,7 @@ def resume(
         on_event=display,
     )
 
-    step_info = [
-        (step.name, step.description or "")
-        for step in pipeline_def.steps
-    ]
+    step_info = [(step.name, step.description or "") for step in pipeline_def.steps]
     display.start(pipeline_def.name, step_info)
 
     try:
@@ -407,8 +424,7 @@ def resume(
     except KeyboardInterrupt:
         display.stop()
         _core.console.print(
-            "\n[yellow]Interrupted.[/yellow] "
-            f"[dim]Resume with: sw resume {run_state.run_id}[/dim]",
+            f"\n[yellow]Interrupted.[/yellow] [dim]Resume with: sw resume {run_state.run_id}[/dim]",
         )
         raise typer.Exit(code=130) from None
     except Exception:

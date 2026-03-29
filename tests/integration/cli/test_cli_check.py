@@ -111,8 +111,7 @@ class TestCheckCodeFlow:
         """Clean Python code should pass syntax and type hint checks."""
         code = tmp_path / "clean.py"
         code.write_text(
-            "def greet(name: str) -> str:\n"
-            '    return f"Hello {name}!"\n',
+            'def greet(name: str) -> str:\n    return f"Hello {name}!"\n',
             encoding="utf-8",
         )
 
@@ -145,11 +144,7 @@ class TestCheckCodeFlow:
         """Code with bare excepts should trigger C06 warning."""
         code = tmp_path / "bare.py"
         code.write_text(
-            "def foo() -> None:\n"
-            "    try:\n"
-            "        pass\n"
-            "    except:\n"
-            "        pass\n",
+            "def foo() -> None:\n    try:\n        pass\n    except:\n        pass\n",
             encoding="utf-8",
         )
 
@@ -167,9 +162,7 @@ class TestCheckCodeFlow:
         """Code with TODOs should trigger C07 warning."""
         code = tmp_path / "todos.py"
         code.write_text(
-            "# TODO: implement this\n"
-            "def foo() -> None:\n"
-            "    pass\n",
+            "# TODO: implement this\ndef foo() -> None:\n    pass\n",
             encoding="utf-8",
         )
 
@@ -187,10 +180,7 @@ class TestCheckCodeFlow:
         """Code missing type hints should trigger C08."""
         code = tmp_path / "nohints.py"
         code.write_text(
-            "def foo():\n"
-            "    return 42\n"
-            "def bar():\n"
-            "    return 'hi'\n",
+            "def foo():\n    return 42\ndef bar():\n    return 'hi'\n",
             encoding="utf-8",
         )
 
@@ -282,8 +272,10 @@ class TestEdgeCases:
             app,
             [
                 "check",
-                "--level", "component",
-                "--pipeline", "validation_spec_feature",
+                "--level",
+                "component",
+                "--pipeline",
+                "validation_spec_feature",
                 str(spec),
             ],
         )
@@ -423,4 +415,3 @@ class TestFeatureLevelCheck:
         # Should produce S01 and other rule output
         assert "S01" in result.output
         assert "Feature" in result.output
-

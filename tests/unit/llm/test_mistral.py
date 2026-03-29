@@ -78,9 +78,9 @@ class TestMistralAdapter:
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
-            model="mistral-large-latest",
-            tools=[ToolDefinition(name="test", description="desc")]
+            model="mistral-large-latest", tools=[ToolDefinition(name="test", description="desc")]
         )
 
         mock_exec = AsyncMock()
@@ -114,10 +114,11 @@ class TestMistralAdapter:
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
             model="mistral-large-latest",
             tools=[ToolDefinition(name="my_tool", description="desc")],
-            max_tool_rounds=2
+            max_tool_rounds=2,
         )
 
         mock_exec = AsyncMock()
@@ -159,9 +160,9 @@ class TestMistralAdapter:
         adapter._client = mock_client
 
         from specweaver.llm.models import ToolDefinition
+
         config = GenerationConfig(
-            model="mistral-large-latest",
-            tools=[ToolDefinition(name="my_tool", description="desc")]
+            model="mistral-large-latest", tools=[ToolDefinition(name="my_tool", description="desc")]
         )
 
         mock_exec = AsyncMock()

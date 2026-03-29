@@ -53,8 +53,14 @@ class TestResultTypes:
 
     def test_test_run_result_no_coverage(self) -> None:
         result = TestRunResult(
-            passed=5, failed=0, errors=0, skipped=0, total=5,
-            failures=[], coverage_pct=None, duration_seconds=0.5,
+            passed=5,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=5,
+            failures=[],
+            coverage_pct=None,
+            duration_seconds=0.5,
         )
         assert result.coverage_pct is None
 
@@ -87,7 +93,10 @@ class TestResultTypes:
 
     def test_complexity_violation_fields(self) -> None:
         v = ComplexityViolation(
-            file="foo.py", line=10, function="bar", complexity=15,
+            file="foo.py",
+            line=10,
+            function="bar",
+            complexity=15,
             message="`bar` is too complex (15 > 10)",
         )
         assert v.file == "foo.py"
@@ -102,7 +111,10 @@ class TestResultTypes:
 
     def test_complexity_run_result_with_violations(self) -> None:
         v = ComplexityViolation(
-            file="a.py", line=5, function="big", complexity=12,
+            file="a.py",
+            line=5,
+            function="big",
+            complexity=12,
             message="`big` is too complex (12 > 10)",
         )
         result = ComplexityRunResult(violation_count=1, max_complexity=10, violations=[v])
@@ -159,8 +171,7 @@ class TestPythonTestRunnerTests:
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = (
-            "FAILED tests/test_foo.py::test_bar - assert 1 == 2\n"
-            "3 passed, 2 failed in 1.20s\n"
+            "FAILED tests/test_foo.py::test_bar - assert 1 == 2\n3 passed, 2 failed in 1.20s\n"
         )
         mock_result.stderr = ""
 
@@ -187,10 +198,7 @@ class TestPythonTestRunnerTests:
         runner = PythonTestRunner(cwd=tmp_path)
         mock_result = MagicMock()
         mock_result.returncode = 0
-        mock_result.stdout = (
-            "5 passed in 0.50s\n"
-            "TOTAL                  100     15     85%\n"
-        )
+        mock_result.stdout = "5 passed in 0.50s\nTOTAL                  100     15     85%\n"
         mock_result.stderr = ""
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
@@ -255,10 +263,22 @@ class TestPythonTestRunnerLinter:
         import json
 
         runner = PythonTestRunner(cwd=tmp_path)
-        lint_output = json.dumps([
-            {"filename": "foo.py", "location": {"row": 10}, "code": "E501", "message": "Line too long"},
-            {"filename": "bar.py", "location": {"row": 5}, "code": "F401", "message": "Unused import"},
-        ])
+        lint_output = json.dumps(
+            [
+                {
+                    "filename": "foo.py",
+                    "location": {"row": 10},
+                    "code": "E501",
+                    "message": "Line too long",
+                },
+                {
+                    "filename": "bar.py",
+                    "location": {"row": 5},
+                    "code": "F401",
+                    "message": "Unused import",
+                },
+            ]
+        )
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = lint_output
@@ -323,14 +343,16 @@ class TestPythonTestRunnerComplexity:
         import json
 
         runner = PythonTestRunner(cwd=tmp_path)
-        ruff_output = json.dumps([
-            {
-                "filename": "runner.py",
-                "location": {"row": 124},
-                "code": "C901",
-                "message": "`_execute_loop` is too complex (12 > 10)",
-            },
-        ])
+        ruff_output = json.dumps(
+            [
+                {
+                    "filename": "runner.py",
+                    "location": {"row": 124},
+                    "code": "C901",
+                    "message": "`_execute_loop` is too complex (12 > 10)",
+                },
+            ]
+        )
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stdout = ruff_output
@@ -370,4 +392,3 @@ class TestPythonTestRunnerComplexity:
             result = runner.run_complexity(target="src/")
 
         assert result.violation_count == 0  # Should not crash
-

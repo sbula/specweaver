@@ -33,7 +33,8 @@ def project(tmp_path: Path) -> Path:
     """Minimal project with some existing structure."""
     (tmp_path / "src" / "domain" / "billing").mkdir(parents=True)
     (tmp_path / "src" / "domain" / "billing" / "calc.py").write_text(
-        "def total(a, b): return a + b", encoding="utf-8",
+        "def total(a, b): return a + b",
+        encoding="utf-8",
     )
     (tmp_path / "src" / "domain" / "billing" / "context.yaml").write_text(
         "name: billing\nlevel: module\npurpose: Billing logic\narchetype: pure-logic\n",
@@ -84,34 +85,38 @@ class TestScaffoldIntent:
     """scaffold creates directory structure with context.yaml files."""
 
     def test_scaffold_creates_directories(self, atom: FileSystemAtom, project: Path) -> None:
-        result = atom.run({
-            "intent": "scaffold",
-            "boundaries": [
-                {
-                    "path": "src/domain/payments",
-                    "name": "payments",
-                    "level": "module",
-                    "purpose": "Payment processing",
-                    "archetype": "orchestrator",
-                },
-            ],
-        })
+        result = atom.run(
+            {
+                "intent": "scaffold",
+                "boundaries": [
+                    {
+                        "path": "src/domain/payments",
+                        "name": "payments",
+                        "level": "module",
+                        "purpose": "Payment processing",
+                        "archetype": "orchestrator",
+                    },
+                ],
+            }
+        )
         assert result.status == AtomStatus.SUCCESS
         assert (project / "src" / "domain" / "payments").is_dir()
 
     def test_scaffold_creates_context_yaml(self, atom: FileSystemAtom, project: Path) -> None:
-        atom.run({
-            "intent": "scaffold",
-            "boundaries": [
-                {
-                    "path": "src/domain/payments",
-                    "name": "payments",
-                    "level": "module",
-                    "purpose": "Payment processing",
-                    "archetype": "orchestrator",
-                },
-            ],
-        })
+        atom.run(
+            {
+                "intent": "scaffold",
+                "boundaries": [
+                    {
+                        "path": "src/domain/payments",
+                        "name": "payments",
+                        "level": "module",
+                        "purpose": "Payment processing",
+                        "archetype": "orchestrator",
+                    },
+                ],
+            }
+        )
         ctx = project / "src" / "domain" / "payments" / "context.yaml"
         assert ctx.is_file()
         content = ctx.read_text(encoding="utf-8")
@@ -120,31 +125,51 @@ class TestScaffoldIntent:
         assert "Payment processing" in content
 
     def test_scaffold_multiple_boundaries(self, atom: FileSystemAtom, project: Path) -> None:
-        result = atom.run({
-            "intent": "scaffold",
-            "boundaries": [
-                {"path": "src/infra/db", "name": "db", "level": "module",
-                 "purpose": "Database access", "archetype": "adapter"},
-                {"path": "src/infra/cache", "name": "cache", "level": "module",
-                 "purpose": "Caching layer", "archetype": "adapter"},
-            ],
-        })
+        result = atom.run(
+            {
+                "intent": "scaffold",
+                "boundaries": [
+                    {
+                        "path": "src/infra/db",
+                        "name": "db",
+                        "level": "module",
+                        "purpose": "Database access",
+                        "archetype": "adapter",
+                    },
+                    {
+                        "path": "src/infra/cache",
+                        "name": "cache",
+                        "level": "module",
+                        "purpose": "Caching layer",
+                        "archetype": "adapter",
+                    },
+                ],
+            }
+        )
         assert result.status == AtomStatus.SUCCESS
         assert (project / "src" / "infra" / "db" / "context.yaml").is_file()
         assert (project / "src" / "infra" / "cache" / "context.yaml").is_file()
 
     def test_scaffold_does_not_overwrite_existing_context(
-        self, atom: FileSystemAtom, project: Path,
+        self,
+        atom: FileSystemAtom,
+        project: Path,
     ) -> None:
         """If context.yaml already exists, scaffold does NOT overwrite it."""
-        result = atom.run({
-            "intent": "scaffold",
-            "boundaries": [
-                {"path": "src/domain/billing", "name": "billing-v2",
-                 "level": "module", "purpose": "New billing",
-                 "archetype": "pure-logic"},
-            ],
-        })
+        result = atom.run(
+            {
+                "intent": "scaffold",
+                "boundaries": [
+                    {
+                        "path": "src/domain/billing",
+                        "name": "billing-v2",
+                        "level": "module",
+                        "purpose": "New billing",
+                        "archetype": "pure-logic",
+                    },
+                ],
+            }
+        )
         assert result.status == AtomStatus.SUCCESS
         # Original content preserved
         content = (project / "src/domain/billing/context.yaml").read_text()
@@ -156,33 +181,44 @@ class TestScaffoldIntent:
         assert result.status == AtomStatus.FAILED
 
     def test_scaffold_exports_created_paths(self, atom: FileSystemAtom) -> None:
-        result = atom.run({
-            "intent": "scaffold",
-            "boundaries": [
-                {"path": "src/new", "name": "new", "level": "module",
-                 "purpose": "New module", "archetype": "pure-logic"},
-            ],
-        })
+        result = atom.run(
+            {
+                "intent": "scaffold",
+                "boundaries": [
+                    {
+                        "path": "src/new",
+                        "name": "new",
+                        "level": "module",
+                        "purpose": "New module",
+                        "archetype": "pure-logic",
+                    },
+                ],
+            }
+        )
         assert "created_paths" in result.exports
 
     def test_scaffold_with_consumes_and_forbids(
-        self, atom: FileSystemAtom, project: Path,
+        self,
+        atom: FileSystemAtom,
+        project: Path,
     ) -> None:
         """Scaffold writes consumes/forbids into context.yaml."""
-        atom.run({
-            "intent": "scaffold",
-            "boundaries": [
-                {
-                    "path": "src/domain/taxes",
-                    "name": "taxes",
-                    "level": "module",
-                    "purpose": "Tax calcs",
-                    "archetype": "pure-logic",
-                    "consumes": ["shared/currency"],
-                    "forbids": ["infra/*"],
-                },
-            ],
-        })
+        atom.run(
+            {
+                "intent": "scaffold",
+                "boundaries": [
+                    {
+                        "path": "src/domain/taxes",
+                        "name": "taxes",
+                        "level": "module",
+                        "purpose": "Tax calcs",
+                        "archetype": "pure-logic",
+                        "consumes": ["shared/currency"],
+                        "forbids": ["infra/*"],
+                    },
+                ],
+            }
+        )
         content = (project / "src/domain/taxes/context.yaml").read_text()
         assert "shared/currency" in content
         assert "infra/*" in content
@@ -198,11 +234,13 @@ class TestBackupRestoreIntents:
 
     def test_backup_file(self, atom: FileSystemAtom, project: Path) -> None:
         (project / ".specweaver" / "backups").mkdir(parents=True)
-        result = atom.run({
-            "intent": "backup",
-            "source": "src/domain/billing/calc.py",
-            "backup_dir": ".specweaver/backups",
-        })
+        result = atom.run(
+            {
+                "intent": "backup",
+                "source": "src/domain/billing/calc.py",
+                "backup_dir": ".specweaver/backups",
+            }
+        )
         assert result.status == AtomStatus.SUCCESS
         # Backup file exists somewhere in backup_dir
         backups = list((project / ".specweaver" / "backups").iterdir())
@@ -210,33 +248,39 @@ class TestBackupRestoreIntents:
 
     def test_backup_nonexistent_file_fails(self, atom: FileSystemAtom, project: Path) -> None:
         (project / ".specweaver" / "backups").mkdir(parents=True)
-        result = atom.run({
-            "intent": "backup",
-            "source": "nonexistent.py",
-            "backup_dir": ".specweaver/backups",
-        })
+        result = atom.run(
+            {
+                "intent": "backup",
+                "source": "nonexistent.py",
+                "backup_dir": ".specweaver/backups",
+            }
+        )
         assert result.status == AtomStatus.FAILED
 
     def test_restore_file(self, atom: FileSystemAtom, project: Path) -> None:
         """Backup then restore should return original content."""
         (project / ".specweaver" / "backups").mkdir(parents=True)
         # Backup
-        backup_result = atom.run({
-            "intent": "backup",
-            "source": "src/domain/billing/calc.py",
-            "backup_dir": ".specweaver/backups",
-        })
+        backup_result = atom.run(
+            {
+                "intent": "backup",
+                "source": "src/domain/billing/calc.py",
+                "backup_dir": ".specweaver/backups",
+            }
+        )
         backup_path = backup_result.exports["backup_path"]
 
         # Modify original
         (project / "src/domain/billing/calc.py").write_text("CORRUPTED", encoding="utf-8")
 
         # Restore
-        result = atom.run({
-            "intent": "restore",
-            "source": backup_path,
-            "target": "src/domain/billing/calc.py",
-        })
+        result = atom.run(
+            {
+                "intent": "restore",
+                "source": backup_path,
+                "target": "src/domain/billing/calc.py",
+            }
+        )
         assert result.status == AtomStatus.SUCCESS
         assert "total" in (project / "src/domain/billing/calc.py").read_text()
 
@@ -287,11 +331,14 @@ class TestValidateBoundariesIntent:
         assert result.status == AtomStatus.SUCCESS
 
     def test_invalid_context_yaml_reports_errors(
-        self, atom: FileSystemAtom, project: Path,
+        self,
+        atom: FileSystemAtom,
+        project: Path,
     ) -> None:
         """A context.yaml missing required 'name' field should be flagged."""
         (project / "src" / "domain" / "billing" / "context.yaml").write_text(
-            "level: module\n", encoding="utf-8",  # missing 'name'
+            "level: module\n",
+            encoding="utf-8",  # missing 'name'
         )
         result = atom.run({"intent": "validate_boundaries"})
         # Could be SUCCESS with warnings, or FAILED — depends on severity
@@ -299,7 +346,9 @@ class TestValidateBoundariesIntent:
         assert len(errors) > 0
 
     def test_invalid_consumes_reference(
-        self, atom: FileSystemAtom, project: Path,
+        self,
+        atom: FileSystemAtom,
+        project: Path,
     ) -> None:
         """A context.yaml that consumes a nonexistent path should be flagged."""
         (project / "src" / "domain" / "billing" / "context.yaml").write_text(
@@ -311,13 +360,16 @@ class TestValidateBoundariesIntent:
         assert any("nonexistent" in e for e in errors)
 
     def test_valid_consumes_reference(
-        self, atom: FileSystemAtom, project: Path,
+        self,
+        atom: FileSystemAtom,
+        project: Path,
     ) -> None:
         """A context.yaml that consumes an existing path should NOT be flagged."""
         # Create a module that billing consumes
         (project / "src" / "shared" / "currency").mkdir(parents=True)
         (project / "src" / "shared" / "currency" / "context.yaml").write_text(
-            "name: currency\nlevel: module\n", encoding="utf-8",
+            "name: currency\nlevel: module\n",
+            encoding="utf-8",
         )
         (project / "src" / "domain" / "billing" / "context.yaml").write_text(
             "name: billing\nlevel: module\nconsumes:\n  - src/shared/currency\n",

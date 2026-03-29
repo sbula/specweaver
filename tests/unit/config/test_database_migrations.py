@@ -46,9 +46,7 @@ class TestSchemaV2Migration:
     def test_context_limit_default_value(self, db):
         """Default context_limit is 128000."""
         with db.connect() as conn:
-            rows = conn.execute(
-                "SELECT context_limit FROM llm_profiles"
-            ).fetchall()
+            rows = conn.execute("SELECT context_limit FROM llm_profiles").fetchall()
         for row in rows:
             assert row[0] == 128_000
 
@@ -79,9 +77,7 @@ class TestSchemaV2Migration:
             row = conn2.execute(
                 "SELECT context_limit FROM llm_profiles WHERE name='review'"
             ).fetchone()
-            version = conn2.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
         assert version[0] == 10  # V2, V3, V4, V5, V6, V7, V8 all applied
@@ -93,9 +89,7 @@ class TestSchemaV2Migration:
         Database(db_path)
         db2 = Database(db_path)  # should not raise
         with db2.connect() as conn:
-            version = conn.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            version = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert version[0] == 10  # V2, V3, V4, V5, V6, V7, V8 all applied
 
 
@@ -117,8 +111,11 @@ class TestValidationOverrideUpsert:
         """Set an override, then load it back."""
         db.register_project("proj", str(tmp_path / "proj"))
         db.set_validation_override(
-            "proj", "S01",
-            enabled=True, warn_threshold=5.0, fail_threshold=3.0,
+            "proj",
+            "S01",
+            enabled=True,
+            warn_threshold=5.0,
+            fail_threshold=3.0,
         )
         settings = db.load_validation_settings("proj")
         assert "S01" in settings.overrides
@@ -129,8 +126,11 @@ class TestValidationOverrideUpsert:
         """Updating only warn_threshold should preserve fail_threshold."""
         db.register_project("proj", str(tmp_path / "proj"))
         db.set_validation_override(
-            "proj", "S02",
-            enabled=True, warn_threshold=8.0, fail_threshold=5.0,
+            "proj",
+            "S02",
+            enabled=True,
+            warn_threshold=8.0,
+            fail_threshold=5.0,
         )
         # Update only warn_threshold
         db.set_validation_override("proj", "S02", warn_threshold=6.0)
@@ -165,9 +165,7 @@ class TestSchemaV3Migration:
         """log_level column is present after migration."""
         db.register_project("myapp", str(tmp_path))
         with db.connect() as conn:
-            row = conn.execute(
-                "SELECT log_level FROM projects WHERE name='myapp'"
-            ).fetchone()
+            row = conn.execute("SELECT log_level FROM projects WHERE name='myapp'").fetchone()
         assert row is not None
 
     def test_log_level_default_is_debug(self, db, tmp_path: Path):
@@ -217,8 +215,7 @@ class TestSchemaV3Migration:
         conn.executescript(_SCHEMA_V1)
         conn.executescript(_SCHEMA_V2)
         conn.execute(
-            "INSERT INTO schema_version (version, applied_at) "
-            "VALUES (2, '2026-01-01T00:00:00Z')"
+            "INSERT INTO schema_version (version, applied_at) VALUES (2, '2026-01-01T00:00:00Z')"
         )
         conn.execute(
             "INSERT INTO projects (name, root_path, created_at, last_used_at) "
@@ -231,9 +228,7 @@ class TestSchemaV3Migration:
         db = Database(db_path)
         assert db.get_log_level("legacy") == "DEBUG"  # default from ALTER
         with db.connect() as conn2:
-            version = conn2.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert version[0] == 10  # v3, v4, v5, v6, v7, v8 all applied
 
 
@@ -280,9 +275,7 @@ class TestSchemaV4Migration:
     def test_schema_version_is_4(self, db):
         """Schema version is at least 4 after v4 migration (v5 also applied)."""
         with db.connect() as conn:
-            row = conn.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
             assert row[0] >= 4
 
     def test_set_constitution_max_size_negative_raises(self, db, tmp_path: Path):
@@ -334,8 +327,7 @@ class TestSchemaV3ToV4Upgrade:
         conn.executescript(_SCHEMA_V2)
         conn.executescript(_SCHEMA_V3)
         conn.execute(
-            "INSERT INTO schema_version (version, applied_at) "
-            "VALUES (3, '2026-01-01T00:00:00Z')"
+            "INSERT INTO schema_version (version, applied_at) VALUES (3, '2026-01-01T00:00:00Z')"
         )
         conn.execute(
             "INSERT INTO projects (name, root_path, created_at, last_used_at, log_level) "
@@ -349,9 +341,7 @@ class TestSchemaV3ToV4Upgrade:
         assert db.get_constitution_max_size("legacy") == 5120  # default from ALTER
         assert db.get_log_level("legacy") == "INFO"  # preserved from v3
         with db.connect() as conn2:
-            version = conn2.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert version[0] == 10  # v4, v5, v6, v7, v8 all applied
 
 
@@ -389,7 +379,9 @@ class TestDomainProfile:
         assert db.get_domain_profile("myapp") is None
 
     def test_set_domain_profile_does_not_write_overrides(
-        self, db, tmp_path: Path,
+        self,
+        db,
+        tmp_path: Path,
     ):
         """set_domain_profile MUST NOT write validation_overrides rows.
 
@@ -409,7 +401,9 @@ class TestDomainProfile:
         assert overrides[0]["rule_id"] in {"S08", "C04"}
 
     def test_set_domain_profile_does_not_clear_previous_overrides(
-        self, db, tmp_path: Path,
+        self,
+        db,
+        tmp_path: Path,
     ):
         """Switching profiles preserves all per-rule DB overrides."""
         db.register_project("myapp", str(tmp_path))
@@ -421,7 +415,9 @@ class TestDomainProfile:
         assert any(o["rule_id"] == "S11" for o in overrides)
 
     def test_clear_domain_profile_preserves_overrides(
-        self, db, tmp_path: Path,
+        self,
+        db,
+        tmp_path: Path,
     ):
         """clear_domain_profile only clears the profile name, not overrides."""
         db.register_project("myapp", str(tmp_path))
@@ -484,9 +480,7 @@ class TestDomainProfile:
     def test_schema_version_is_latest(self, db):
         """Schema version is 9 after all migrations."""
         with db.connect() as conn:
-            row = conn.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
             assert row[0] == 10
 
 
@@ -517,8 +511,7 @@ class TestSchemaV4ToV5Upgrade:
         conn.executescript(_SCHEMA_V3)
         conn.executescript(_SCHEMA_V4)
         conn.execute(
-            "INSERT INTO schema_version (version, applied_at) "
-            "VALUES (4, '2026-01-01T00:00:00Z')"
+            "INSERT INTO schema_version (version, applied_at) VALUES (4, '2026-01-01T00:00:00Z')"
         )
         conn.execute(
             "INSERT INTO projects (name, root_path, created_at, last_used_at, "
@@ -534,9 +527,7 @@ class TestSchemaV4ToV5Upgrade:
         assert db.get_domain_profile("legacy") is None  # default
         assert db.get_constitution_max_size("legacy") == 5120  # preserved
         with db.connect() as conn2:
-            version = conn2.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert version[0] == 10  # v5, v6, v7, v8 all applied
 
 

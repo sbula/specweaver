@@ -59,7 +59,8 @@ class RuleAtom(Atom):
         except Exception as exc:
             logger.exception(
                 "RuleAtom: rule '%s' (%s) crashed",
-                self._rule.rule_id, self._rule.name,
+                self._rule.rule_id,
+                self._rule.name,
             )
             return AtomResult(
                 status=AtomStatus.FAILED,
@@ -67,10 +68,7 @@ class RuleAtom(Atom):
                 exports={},
             )
 
-        atom_status = (
-            AtomStatus.FAILED if result.status == Status.FAIL
-            else AtomStatus.SUCCESS
-        )
+        atom_status = AtomStatus.FAILED if result.status == Status.FAIL else AtomStatus.SUCCESS
 
         return AtomResult(
             status=atom_status,

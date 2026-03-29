@@ -65,7 +65,8 @@ class TestDetectScopes:
         assert "." in scopes
 
     def test_l1_dir_with_subscopes_not_itself_a_scope(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """L1 dir with sub-scopes is NOT itself a scope (no double-counting)."""
         backend = tmp_path / "backend"
@@ -99,7 +100,8 @@ class TestDetectScopes:
         (tmp_path / ".git" / "HEAD").write_text("ref: refs/heads/main")
         (tmp_path / "node_modules" / "react").mkdir(parents=True)
         (tmp_path / "node_modules" / "react" / "index.js").write_text(
-            "pass", encoding="utf-8",
+            "pass",
+            encoding="utf-8",
         )
         (tmp_path / "__pycache__").mkdir()
         (tmp_path / "__pycache__" / "mod.cpython-313.pyc").write_text("pass")
@@ -363,7 +365,8 @@ class TestDetectScopesMixedLayouts:
     """Tests for mixed L1-only and L1/L2 scope layouts."""
 
     def test_l1_with_subscope_and_own_source_files(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """L1 dir with sub-scopes AND own source files → only sub-scopes."""
         backend = tmp_path / "backend"
@@ -402,4 +405,3 @@ class TestDetectScopesMixedLayouts:
         assert "backend/payments" in scopes  # L2
         assert "backend" not in scopes  # L1 with sub-scopes excluded
         assert "." in scopes  # Root always present
-

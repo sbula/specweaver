@@ -121,4 +121,3 @@ def create_app(
         return RedirectResponse(url="/dashboard")
 
     return app
-

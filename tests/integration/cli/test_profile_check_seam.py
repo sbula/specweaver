@@ -85,9 +85,15 @@ class TestProfileAwareCheckSeam:
         name, _ = _project
         _mock_db.set_domain_profile(name, "library")
 
-        result = runner.invoke(app, [
-            "check", str(_spec_file), "--level", "component",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "check",
+                str(_spec_file),
+                "--level",
+                "component",
+            ],
+        )
         # Should succeed (maybe warnings, but not crash)
         assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
         # Profile is still stored
@@ -103,9 +109,15 @@ class TestProfileAwareCheckSeam:
         name, _ = _project
         _mock_db.set_domain_profile(name, "web-app")
 
-        result = runner.invoke(app, [
-            "check", str(_spec_file), "--level", "component",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "check",
+                str(_spec_file),
+                "--level",
+                "component",
+            ],
+        )
         assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
 
     def test_check_without_profile_uses_default_pipeline(
@@ -119,9 +131,15 @@ class TestProfileAwareCheckSeam:
         name, _ = _project
         assert _mock_db.get_domain_profile(name) is None
 
-        result = runner.invoke(app, [
-            "check", str(_spec_file), "--level", "component",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "check",
+                str(_spec_file),
+                "--level",
+                "component",
+            ],
+        )
         assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
 
 
@@ -143,12 +161,17 @@ class TestExplicitPipelineOverridesProfile:
         name, _ = _project
         _mock_db.set_domain_profile(name, "web-app")
 
-        result = runner.invoke(app, [
-            "check",
-            str(_spec_file),
-            "--level", "component",
-            "--pipeline", "validation_spec_default",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "check",
+                str(_spec_file),
+                "--level",
+                "component",
+                "--pipeline",
+                "validation_spec_default",
+            ],
+        )
         # Should use validation_spec_default (not web-app), but shouldn't crash
         assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
 
@@ -162,7 +185,13 @@ class TestExplicitPipelineOverridesProfile:
         name, _ = _project
         _mock_db.set_domain_profile(name, "microservice")
 
-        result = runner.invoke(app, [
-            "check", str(_spec_file), "--level", "feature",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "check",
+                str(_spec_file),
+                "--level",
+                "feature",
+            ],
+        )
         assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"

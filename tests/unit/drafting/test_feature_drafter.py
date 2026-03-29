@@ -194,9 +194,7 @@ class TestFeatureDrafterEdgeCases:
         return context
 
     @pytest.mark.asyncio()
-    async def test_llm_exception_propagates(
-        self, mock_context: AsyncMock, tmp_path: Path
-    ) -> None:
+    async def test_llm_exception_propagates(self, mock_context: AsyncMock, tmp_path: Path) -> None:
         """If LLM raises mid-draft, exception propagates (no partial file)."""
         llm = AsyncMock()
         llm.generate = AsyncMock(side_effect=RuntimeError("LLM down"))

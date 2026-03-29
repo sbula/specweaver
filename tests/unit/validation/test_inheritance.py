@@ -316,10 +316,14 @@ class TestCircularExtends:
     def test_indirect_circular_chain(self):
         """A extends B extends A raises ValueError."""
         pipeline_a = ValidationPipeline(
-            name="pipeline_a", steps=[], extends="pipeline_b",
+            name="pipeline_a",
+            steps=[],
+            extends="pipeline_b",
         )
         pipeline_b = ValidationPipeline(
-            name="pipeline_b", steps=[], extends="pipeline_a",
+            name="pipeline_b",
+            steps=[],
+            extends="pipeline_a",
         )
 
         def _loader(name: str) -> ValidationPipeline:
@@ -357,10 +361,14 @@ class TestCircularExtends:
             steps=[ValidationStep(name="s01", rule="S01")],
         )
         parent = ValidationPipeline(
-            name="parent", steps=[], extends="grandparent",
+            name="parent",
+            steps=[],
+            extends="grandparent",
         )
         child = ValidationPipeline(
-            name="child", steps=[], extends="parent",
+            name="child",
+            steps=[],
+            extends="parent",
         )
 
         pipelines = {"grandparent": grandparent, "parent": parent}
@@ -423,4 +431,3 @@ class TestDuplicateStepNames:
         assert len(dups) == 2
         assert dups[0].params["x"] == 99
         assert dups[1].params["x"] == 2
-

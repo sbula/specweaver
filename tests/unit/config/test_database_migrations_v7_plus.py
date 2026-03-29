@@ -118,8 +118,7 @@ class TestSchemaV6ToV7Upgrade:
         conn.executescript(_SCHEMA_V5)
         conn.executescript(_SCHEMA_V6)
         conn.execute(
-            "INSERT INTO schema_version (version, applied_at) "
-            "VALUES (6, '2026-01-01T00:00:00Z')"
+            "INSERT INTO schema_version (version, applied_at) VALUES (6, '2026-01-01T00:00:00Z')"
         )
         conn.execute(
             "INSERT INTO projects (name, root_path, created_at, last_used_at, "
@@ -136,9 +135,7 @@ class TestSchemaV6ToV7Upgrade:
         assert db.get_log_level("legacy") == "INFO"  # preserved
         assert db.get_constitution_max_size("legacy") == 5120  # preserved
         with db.connect() as conn2:
-            version = conn2.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert version[0] == 10
 
 
@@ -174,8 +171,7 @@ class TestSchemaV7ToV8Upgrade:
         conn.executescript(_SCHEMA_V6)
         conn.executescript(_SCHEMA_V7)
         conn.execute(
-            "INSERT INTO schema_version (version, applied_at) "
-            "VALUES (7, '2026-01-01T00:00:00Z')"
+            "INSERT INTO schema_version (version, applied_at) VALUES (7, '2026-01-01T00:00:00Z')"
         )
         conn.execute(
             "INSERT INTO projects (name, root_path, created_at, last_used_at, "
@@ -190,9 +186,7 @@ class TestSchemaV7ToV8Upgrade:
         db = Database(db_path)
         assert db.get_stitch_mode("legacy") == "off"  # default from ALTER
         with db.connect() as conn2:
-            version = conn2.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert version[0] == 10
 
 
@@ -230,17 +224,14 @@ class TestSchemaV8ToV9Upgrade:
         conn.executescript(_SCHEMA_V7)
         conn.executescript(_SCHEMA_V8)
         conn.execute(
-            "INSERT INTO schema_version (version, applied_at) "
-            "VALUES (8, '2026-01-01T00:00:00Z')"
+            "INSERT INTO schema_version (version, applied_at) VALUES (8, '2026-01-01T00:00:00Z')"
         )
         conn.commit()
         conn.close()
 
         db = Database(db_path)
         with db.connect() as conn2:
-            version = conn2.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
             tables = conn2.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' "
                 "AND name IN ('llm_usage_log', 'llm_cost_overrides')"
@@ -255,18 +246,20 @@ class TestUsageLogCrud:
     """Tests for log_usage() and query methods."""
 
     def test_log_usage_insert(self, db):
-        db.log_usage({
-            "timestamp": "2026-03-27T00:00:00Z",
-            "project_name": "proj",
-            "task_type": "draft",
-            "model": "gemini-3-flash-preview",
-            "provider": "gemini",
-            "prompt_tokens": 100,
-            "completion_tokens": 50,
-            "total_tokens": 150,
-            "estimated_cost_usd": 0.0003,
-            "duration_ms": 500,
-        })
+        db.log_usage(
+            {
+                "timestamp": "2026-03-27T00:00:00Z",
+                "project_name": "proj",
+                "task_type": "draft",
+                "model": "gemini-3-flash-preview",
+                "provider": "gemini",
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150,
+                "estimated_cost_usd": 0.0003,
+                "duration_ms": 500,
+            }
+        )
         with db.connect() as conn:
             rows = conn.execute("SELECT * FROM llm_usage_log").fetchall()
         assert len(rows) == 1
@@ -274,57 +267,93 @@ class TestUsageLogCrud:
 
     def test_log_usage_multiple_rows(self, db):
         for i in range(3):
-            db.log_usage({
-                "timestamp": f"2026-03-27T00:0{i}:00Z",
-                "project_name": "proj",
-                "task_type": "review",
-                "model": "model-x",
-                "provider": "p",
-            })
+            db.log_usage(
+                {
+                    "timestamp": f"2026-03-27T00:0{i}:00Z",
+                    "project_name": "proj",
+                    "task_type": "review",
+                    "model": "model-x",
+                    "provider": "p",
+                }
+            )
         with db.connect() as conn:
             count = conn.execute("SELECT COUNT(*) FROM llm_usage_log").fetchone()[0]
         assert count == 3
 
     def test_get_usage_summary_all(self, db):
-        db.log_usage({
-            "timestamp": "2026-03-27T00:00:00Z",
-            "project_name": "p1",
-            "task_type": "draft",
-            "model": "model-a",
-            "provider": "x",
-            "total_tokens": 100,
-            "estimated_cost_usd": 0.01,
-        })
-        db.log_usage({
-            "timestamp": "2026-03-27T00:01:00Z",
-            "project_name": "p1",
-            "task_type": "draft",
-            "model": "model-a",
-            "provider": "x",
-            "total_tokens": 200,
-            "estimated_cost_usd": 0.02,
-        })
+        db.log_usage(
+            {
+                "timestamp": "2026-03-27T00:00:00Z",
+                "project_name": "p1",
+                "task_type": "draft",
+                "model": "model-a",
+                "provider": "x",
+                "total_tokens": 100,
+                "estimated_cost_usd": 0.01,
+            }
+        )
+        db.log_usage(
+            {
+                "timestamp": "2026-03-27T00:01:00Z",
+                "project_name": "p1",
+                "task_type": "draft",
+                "model": "model-a",
+                "provider": "x",
+                "total_tokens": 200,
+                "estimated_cost_usd": 0.02,
+            }
+        )
         result = db.get_usage_summary()
         assert len(result) == 1
         assert result[0]["call_count"] == 2
         assert result[0]["total_tokens"] == 300
 
     def test_get_usage_summary_filtered_by_project(self, db):
-        db.log_usage({"timestamp": "2026-03-27T00:00:00Z", "project_name": "p1",
-                      "task_type": "draft", "model": "m", "provider": "x"})
-        db.log_usage({"timestamp": "2026-03-27T00:01:00Z", "project_name": "p2",
-                      "task_type": "draft", "model": "m", "provider": "x"})
+        db.log_usage(
+            {
+                "timestamp": "2026-03-27T00:00:00Z",
+                "project_name": "p1",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+            }
+        )
+        db.log_usage(
+            {
+                "timestamp": "2026-03-27T00:01:00Z",
+                "project_name": "p2",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+            }
+        )
         result = db.get_usage_summary(project="p1")
         assert len(result) == 1
         assert result[0]["call_count"] == 1
 
     def test_get_usage_by_task_type(self, db):
-        db.log_usage({"timestamp": "2026-03-27T00:00:00Z", "project_name": "p1",
-                      "task_type": "draft", "model": "m", "provider": "x",
-                      "total_tokens": 100, "estimated_cost_usd": 0.01})
-        db.log_usage({"timestamp": "2026-03-27T00:01:00Z", "project_name": "p1",
-                      "task_type": "review", "model": "m", "provider": "x",
-                      "total_tokens": 200, "estimated_cost_usd": 0.03})
+        db.log_usage(
+            {
+                "timestamp": "2026-03-27T00:00:00Z",
+                "project_name": "p1",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+                "total_tokens": 100,
+                "estimated_cost_usd": 0.01,
+            }
+        )
+        db.log_usage(
+            {
+                "timestamp": "2026-03-27T00:01:00Z",
+                "project_name": "p1",
+                "task_type": "review",
+                "model": "m",
+                "provider": "x",
+                "total_tokens": 200,
+                "estimated_cost_usd": 0.03,
+            }
+        )
         result = db.get_usage_by_task_type("p1")
         assert len(result) == 2
         types = {r["task_type"] for r in result}
@@ -383,12 +412,28 @@ class TestUsageLogGaps:
 
     def test_get_usage_summary_since_filter(self, db):
         """Story 1: get_usage_summary filters by 'since' timestamp."""
-        db.log_usage({"timestamp": "2026-03-01T00:00:00Z", "project_name": "p1",
-                      "task_type": "draft", "model": "m", "provider": "x",
-                      "total_tokens": 100, "estimated_cost_usd": 0.01})
-        db.log_usage({"timestamp": "2026-03-20T00:00:00Z", "project_name": "p1",
-                      "task_type": "draft", "model": "m", "provider": "x",
-                      "total_tokens": 200, "estimated_cost_usd": 0.02})
+        db.log_usage(
+            {
+                "timestamp": "2026-03-01T00:00:00Z",
+                "project_name": "p1",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+                "total_tokens": 100,
+                "estimated_cost_usd": 0.01,
+            }
+        )
+        db.log_usage(
+            {
+                "timestamp": "2026-03-20T00:00:00Z",
+                "project_name": "p1",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+                "total_tokens": 200,
+                "estimated_cost_usd": 0.02,
+            }
+        )
         result = db.get_usage_summary(since="2026-03-15T00:00:00Z")
         assert len(result) == 1
         assert result[0]["call_count"] == 1
@@ -396,12 +441,33 @@ class TestUsageLogGaps:
 
     def test_get_usage_summary_combined_project_and_since(self, db):
         """Story 20: both project AND since filters applied together."""
-        db.log_usage({"timestamp": "2026-03-01T00:00:00Z", "project_name": "p1",
-                      "task_type": "draft", "model": "m", "provider": "x"})
-        db.log_usage({"timestamp": "2026-03-20T00:00:00Z", "project_name": "p1",
-                      "task_type": "draft", "model": "m", "provider": "x"})
-        db.log_usage({"timestamp": "2026-03-20T00:00:00Z", "project_name": "p2",
-                      "task_type": "draft", "model": "m", "provider": "x"})
+        db.log_usage(
+            {
+                "timestamp": "2026-03-01T00:00:00Z",
+                "project_name": "p1",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+            }
+        )
+        db.log_usage(
+            {
+                "timestamp": "2026-03-20T00:00:00Z",
+                "project_name": "p1",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+            }
+        )
+        db.log_usage(
+            {
+                "timestamp": "2026-03-20T00:00:00Z",
+                "project_name": "p2",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+            }
+        )
 
         result = db.get_usage_summary(project="p1", since="2026-03-15T00:00:00Z")
         assert len(result) == 1
@@ -409,14 +475,16 @@ class TestUsageLogGaps:
 
     def test_log_usage_missing_optional_keys_uses_defaults(self, db):
         """Story 21: log_usage with only required keys — optionals default to 0."""
-        db.log_usage({
-            "timestamp": "2026-03-27T00:00:00Z",
-            "project_name": "proj",
-            "task_type": "draft",
-            "model": "m",
-            "provider": "x",
-            # No prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd, duration_ms
-        })
+        db.log_usage(
+            {
+                "timestamp": "2026-03-27T00:00:00Z",
+                "project_name": "proj",
+                "task_type": "draft",
+                "model": "m",
+                "provider": "x",
+                # No prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd, duration_ms
+            }
+        )
         with db.connect() as conn:
             row = conn.execute("SELECT * FROM llm_usage_log").fetchone()
         assert row["prompt_tokens"] == 0
@@ -441,17 +509,13 @@ class TestSchemaV10Migration:
     def test_provider_column_exists(self, db):
         """provider column is present on llm_profiles after migration."""
         with db.connect() as conn:
-            row = conn.execute(
-                "SELECT provider FROM llm_profiles WHERE name='review'"
-            ).fetchone()
+            row = conn.execute("SELECT provider FROM llm_profiles WHERE name='review'").fetchone()
         assert row is not None
 
     def test_provider_default_is_gemini(self, db):
         """Default provider on seed profiles is 'gemini'."""
         with db.connect() as conn:
-            rows = conn.execute(
-                "SELECT provider FROM llm_profiles"
-            ).fetchall()
+            rows = conn.execute("SELECT provider FROM llm_profiles").fetchall()
         for row in rows:
             assert row[0] == "gemini"
 
@@ -487,9 +551,7 @@ class TestSchemaV10Migration:
     def test_schema_version_is_10(self, db):
         """Schema version is 10 after all migrations."""
         with db.connect() as conn:
-            row = conn.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert row[0] == 10
 
     def test_v9_to_v10_upgrade(self, db_path: Path):
@@ -521,8 +583,7 @@ class TestSchemaV10Migration:
         conn.executescript(_SCHEMA_V8)
         conn.executescript(_SCHEMA_V9)
         conn.execute(
-            "INSERT INTO schema_version (version, applied_at) "
-            "VALUES (9, '2026-01-01T00:00:00Z')"
+            "INSERT INTO schema_version (version, applied_at) VALUES (9, '2026-01-01T00:00:00Z')"
         )
         # Insert a v9 profile (no provider column)
         conn.execute(
@@ -536,13 +597,8 @@ class TestSchemaV10Migration:
 
         db = Database(db_path)
         with db.connect() as conn2:
-            row = conn2.execute(
-                "SELECT provider FROM llm_profiles WHERE name='review'"
-            ).fetchone()
-            version = conn2.execute(
-                "SELECT MAX(version) FROM schema_version"
-            ).fetchone()
+            row = conn2.execute("SELECT provider FROM llm_profiles WHERE name='review'").fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
 
         assert row[0] == "gemini"  # default from ALTER TABLE
         assert version[0] == 10
-

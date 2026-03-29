@@ -76,19 +76,29 @@ class TestRichPipelineDisplay:
         display = RichPipelineDisplay()
         display.start("test_pipe", [("step_0", "")])
         display("step_started", step_idx=0, step_name="step_0", total_steps=1)
-        display("step_completed", step_idx=0, step_name="step_0", total_steps=1,
-                result=StepResult(status=StepStatus.PASSED,
-                    started_at="2026-01-01T00:00:00Z",
-                    completed_at="2026-01-01T00:00:01Z"))
+        display(
+            "step_completed",
+            step_idx=0,
+            step_name="step_0",
+            total_steps=1,
+            result=StepResult(
+                status=StepStatus.PASSED,
+                started_at="2026-01-01T00:00:00Z",
+                completed_at="2026-01-01T00:00:01Z",
+            ),
+        )
         assert display._steps[0].status == "passed"
         display.stop()
 
     def test_step_failed_marks_failed(self) -> None:
         display = RichPipelineDisplay()
         display.start("test_pipe", [("step_0", "")])
-        result = StepResult(status=StepStatus.FAILED, error_message="Boom",
-                            started_at="2026-01-01T00:00:00Z",
-                            completed_at="2026-01-01T00:00:01Z")
+        result = StepResult(
+            status=StepStatus.FAILED,
+            error_message="Boom",
+            started_at="2026-01-01T00:00:00Z",
+            completed_at="2026-01-01T00:00:01Z",
+        )
         display("step_failed", step_idx=0, step_name="step_0", total_steps=1, result=result)
         assert display._steps[0].status == "failed"
         assert display._steps[0].note == "Boom"
@@ -242,6 +252,7 @@ class TestResolveSpecPath:
 
     def test_existing_file_returned_directly(self, tmp_path) -> None:
         from specweaver.cli import _resolve_spec_path
+
         spec = tmp_path / "my_spec.md"
         spec.write_text("# Test")
         result = _resolve_spec_path("validate_only", str(spec), tmp_path)
@@ -249,11 +260,13 @@ class TestResolveSpecPath:
 
     def test_new_feature_derives_from_module_name(self, tmp_path) -> None:
         from specweaver.cli import _resolve_spec_path
+
         result = _resolve_spec_path("new_feature", "greet_service", tmp_path)
         assert result == tmp_path / "specs" / "greet_service_spec.md"
 
     def test_relative_path_to_project(self, tmp_path) -> None:
         from specweaver.cli import _resolve_spec_path
+
         relative = tmp_path / "specs" / "calc.md"
         relative.parent.mkdir(parents=True, exist_ok=True)
         relative.write_text("# Calc")
@@ -262,8 +275,10 @@ class TestResolveSpecPath:
 
     def test_nonexistent_falls_back_to_literal(self, tmp_path) -> None:
         from specweaver.cli import _resolve_spec_path
+
         result = _resolve_spec_path("validate_only", "does_not_exist.md", tmp_path)
         from pathlib import Path
+
         assert result == Path("does_not_exist.md")
 
 
@@ -277,6 +292,7 @@ class TestDisplayEdgeCases:
 
     def test_rich_render_returns_table(self) -> None:
         from rich.table import Table
+
         display = RichPipelineDisplay()
         display.start("test_pipe", [("step_0", "Desc")])
         table = display._render()
@@ -357,11 +373,13 @@ class TestCLIRunEdgeCases:
 
     def test_create_display_json(self) -> None:
         from specweaver.cli import _create_display
+
         display = _create_display(use_json=True)
         assert isinstance(display, JsonPipelineDisplay)
 
     def test_create_display_rich(self) -> None:
         from specweaver.cli import _create_display
+
         display = _create_display(use_json=False, verbose=True)
         assert isinstance(display, RichPipelineDisplay)
 
@@ -378,6 +396,7 @@ class TestCLIRunEdgeCases:
         from specweaver.flow.display import RichPipelineDisplay
         from specweaver.flow.models import PipelineStep
         from specweaver.flow.state import PipelineRun, StepResult, StepStatus
+
         display = RichPipelineDisplay()
         step = PipelineStep.model_construct(name="validate", action="validate+spec", gates=[])
         run = PipelineRun.model_construct(run_id="mock", pipeline_name="test", steps=[step])
@@ -391,7 +410,9 @@ class TestCLIRunEdgeCases:
 
         # 3. _on_step_failed missing result completely, or result.error_message is None
         display("step_failed", step_idx=0, result=None)
-        empty_result = StepResult(status=StepStatus.FAILED, output={}, started_at="now", completed_at="now")
+        empty_result = StepResult(
+            status=StepStatus.FAILED, output={}, started_at="now", completed_at="now"
+        )
         display("step_failed", step_idx=0, result=empty_result)
 
         # 4. _on_gate_result bounds safety

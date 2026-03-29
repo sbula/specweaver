@@ -95,7 +95,6 @@ class ToolResult:
     data: str = ""  # stdout or combined output
 
 
-
 class GitToolError(Exception):
     """Raised when a GitTool operation is blocked or invalid."""
 
@@ -125,11 +124,12 @@ class GitTool:
     def allowed_intents(self) -> frozenset[str]:
         """Intents available for this role."""
         return self._allowed
+
     def definitions(self) -> list[ToolDefinition]:
         from specweaver.loom.tools.git.definitions import INTENT_DEFINITIONS
         from specweaver.loom.tools.git.tool import ROLE_INTENTS
-        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 
+        return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 
     def _require_intent(self, intent: str) -> None:
         """Raise if the current role doesn't have this intent."""

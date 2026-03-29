@@ -84,6 +84,7 @@ def _is_cycle(scc: list[str], forward: dict[str, set[str]]) -> bool:
         return True
     return len(scc) == 1 and scc[0] in forward.get(scc[0], set())
 
+
 class TopologyGraph:
     """In-memory directed graph built from context.yaml files.
 
@@ -119,8 +120,7 @@ class TopologyGraph:
                     self._reverse.setdefault(dep, set()).add(name)
                 else:
                     self._warnings.append(
-                        f"Module '{name}' consumes '{dep}' but no "
-                        f"context.yaml found for '{dep}'."
+                        f"Module '{name}' consumes '{dep}' but no context.yaml found for '{dep}'."
                     )
 
     @property
@@ -153,7 +153,9 @@ class TopologyGraph:
         yaml = YAML()
         nodes: dict[str, TopologyNode] = {}
         warnings: list[str] = []
-        logger.debug("TopologyGraph.from_project: scanning '%s' (auto_infer=%s)", project_root, auto_infer)
+        logger.debug(
+            "TopologyGraph.from_project: scanning '%s' (auto_infer=%s)", project_root, auto_infer
+        )
 
         for ctx_file in sorted(project_root.rglob("context.yaml")):
             try:
@@ -207,7 +209,8 @@ class TopologyGraph:
 
         logger.info(
             "TopologyGraph: built graph with %d nodes, %d warnings",
-            len(nodes), len(warnings),
+            len(nodes),
+            len(warnings),
         )
         return cls(nodes, warnings)
 
@@ -221,11 +224,7 @@ class TopologyGraph:
         from specweaver.context.inferrer import ContextInferrer
 
         inferrer = ContextInferrer()
-        known_dirs = {
-            n.yaml_path.parent
-            for n in nodes.values()
-            if n.yaml_path is not None
-        }
+        known_dirs = {n.yaml_path.parent for n in nodes.values() if n.yaml_path is not None}
 
         for subdir in sorted(project_root.rglob("*")):
             if not subdir.is_dir():

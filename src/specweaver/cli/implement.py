@@ -65,7 +65,9 @@ def implement(
     topo_graph = _load_topology(project_path)
     module_name = spec_path.stem.removesuffix("_spec")
     topo_contexts = _select_topology_contexts(
-        topo_graph, module_name, selector_name=selector,
+        topo_graph,
+        module_name,
+        selector_name=selector,
     )
 
     # Derive output paths from spec name
@@ -81,13 +83,13 @@ def implement(
         f"\n[bold]Implementing:[/bold] {spec_path.name}",
     )
     _core.console.print(
-        f"  [dim]Code:[/dim]  {code_path}\n"
-        f"  [dim]Tests:[/dim] {test_path}\n",
+        f"  [dim]Code:[/dim]  {code_path}\n  [dim]Tests:[/dim] {test_path}\n",
     )
 
     # Load constitution for this project
     constitution_content = _load_constitution_content(
-        project_path, spec_path=spec_path,
+        project_path,
+        spec_path=spec_path,
     )
     standards_content = _load_standards_content(project_path, target_path=spec_path)
 
@@ -96,7 +98,8 @@ def implement(
         _core.console.print("[dim]Generating implementation code...[/dim]")
         asyncio.run(
             generator.generate_code(
-                spec_path, code_path,
+                spec_path,
+                code_path,
                 topology_contexts=topo_contexts,
                 constitution=constitution_content,
                 standards=standards_content,
@@ -108,7 +111,8 @@ def implement(
         _core.console.print("[dim]Generating test file...[/dim]")
         asyncio.run(
             generator.generate_tests(
-                spec_path, test_path,
+                spec_path,
+                test_path,
                 topology_contexts=topo_contexts,
                 constitution=constitution_content,
                 standards=standards_content,

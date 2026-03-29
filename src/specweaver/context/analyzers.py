@@ -21,29 +21,132 @@ from typing import ClassVar
 
 # Known standard library top-level modules (subset for heuristic).
 # Used to distinguish external vs internal imports.
-_STDLIB_TOP_MODULES = frozenset({
-    "__future__", "abc", "argparse", "ast", "asyncio", "base64",
-    "builtins", "calendar", "codecs", "collections", "concurrent",
-    "configparser", "contextlib", "copy", "csv", "ctypes", "dataclasses",
-    "datetime", "decimal", "difflib", "dis", "email", "encodings",
-    "enum", "errno", "faulthandler", "fileinput", "fnmatch",
-    "fractions", "ftplib", "functools", "gc", "getpass", "gettext",
-    "glob", "gzip", "hashlib", "heapq", "hmac", "html", "http",
-    "importlib", "inspect", "io", "ipaddress", "itertools", "json",
-    "keyword", "linecache", "locale", "logging", "lzma", "math",
-    "mimetypes", "multiprocessing", "numbers", "operator", "os",
-    "pathlib", "pdb", "pickle", "pkgutil", "platform", "pprint",
-    "profile", "pstats", "py_compile", "queue", "random", "re",
-    "readline", "reprlib", "runpy", "sched", "secrets", "select",
-    "shelve", "shlex", "shutil", "signal", "site", "smtplib",
-    "socket", "socketserver", "sqlite3", "ssl", "stat", "statistics",
-    "string", "struct", "subprocess", "sys", "sysconfig", "tempfile",
-    "test", "textwrap", "threading", "time", "timeit", "token",
-    "tokenize", "tomllib", "trace", "traceback", "tracemalloc",
-    "turtle", "types", "typing", "unicodedata", "unittest", "urllib",
-    "uuid", "venv", "warnings", "wave", "weakref", "webbrowser",
-    "xml", "xmlrpc", "zipfile", "zipimport", "zlib",
-})
+_STDLIB_TOP_MODULES = frozenset(
+    {
+        "__future__",
+        "abc",
+        "argparse",
+        "ast",
+        "asyncio",
+        "base64",
+        "builtins",
+        "calendar",
+        "codecs",
+        "collections",
+        "concurrent",
+        "configparser",
+        "contextlib",
+        "copy",
+        "csv",
+        "ctypes",
+        "dataclasses",
+        "datetime",
+        "decimal",
+        "difflib",
+        "dis",
+        "email",
+        "encodings",
+        "enum",
+        "errno",
+        "faulthandler",
+        "fileinput",
+        "fnmatch",
+        "fractions",
+        "ftplib",
+        "functools",
+        "gc",
+        "getpass",
+        "gettext",
+        "glob",
+        "gzip",
+        "hashlib",
+        "heapq",
+        "hmac",
+        "html",
+        "http",
+        "importlib",
+        "inspect",
+        "io",
+        "ipaddress",
+        "itertools",
+        "json",
+        "keyword",
+        "linecache",
+        "locale",
+        "logging",
+        "lzma",
+        "math",
+        "mimetypes",
+        "multiprocessing",
+        "numbers",
+        "operator",
+        "os",
+        "pathlib",
+        "pdb",
+        "pickle",
+        "pkgutil",
+        "platform",
+        "pprint",
+        "profile",
+        "pstats",
+        "py_compile",
+        "queue",
+        "random",
+        "re",
+        "readline",
+        "reprlib",
+        "runpy",
+        "sched",
+        "secrets",
+        "select",
+        "shelve",
+        "shlex",
+        "shutil",
+        "signal",
+        "site",
+        "smtplib",
+        "socket",
+        "socketserver",
+        "sqlite3",
+        "ssl",
+        "stat",
+        "statistics",
+        "string",
+        "struct",
+        "subprocess",
+        "sys",
+        "sysconfig",
+        "tempfile",
+        "test",
+        "textwrap",
+        "threading",
+        "time",
+        "timeit",
+        "token",
+        "tokenize",
+        "tomllib",
+        "trace",
+        "traceback",
+        "tracemalloc",
+        "turtle",
+        "types",
+        "typing",
+        "unicodedata",
+        "unittest",
+        "urllib",
+        "uuid",
+        "venv",
+        "warnings",
+        "wave",
+        "weakref",
+        "webbrowser",
+        "xml",
+        "xmlrpc",
+        "zipfile",
+        "zipimport",
+        "zlib",
+    }
+)
 
 
 class LanguageAnalyzer(ABC):
@@ -158,7 +261,9 @@ class PythonAnalyzer(LanguageAnalyzer):
                 continue
 
             for node in ast.iter_child_nodes(tree):
-                if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and not node.name.startswith("_"):
+                if isinstance(
+                    node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+                ) and not node.name.startswith("_"):
                     symbols.add(node.name)
 
         return sorted(symbols)
@@ -191,12 +296,16 @@ class PythonAnalyzer(LanguageAnalyzer):
         for node in ast.iter_child_nodes(tree):
             if isinstance(node, ast.Assign):
                 for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == "__all__" and isinstance(node.value, (ast.List, ast.Tuple)):
-                            return [
-                                elt.value
-                                for elt in node.value.elts
-                                if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
-                            ]
+                    if (
+                        isinstance(target, ast.Name)
+                        and target.id == "__all__"
+                        and isinstance(node.value, (ast.List, ast.Tuple))
+                    ):
+                        return [
+                            elt.value
+                            for elt in node.value.elts
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+                        ]
         return None
 
 
