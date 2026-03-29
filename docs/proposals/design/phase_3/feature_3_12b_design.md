@@ -402,15 +402,14 @@ Topological execution order: SF-1, then SF-2. Linear — no parallelism.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | ModelRouter + DB + handler integration | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-1 | ModelRouter + DB + handler integration | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | CLI routing commands | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ---
 
 ## Session Handoff
 
-**Current status**: SF-1 Implementation Plan APPROVED. Ready for development.
-**Next step**: Run `/dev docs/proposals/roadmap/phase_3/feature_3_12b_sf1_implementation_plan.md`
+**Current status**: SF-1 fully implemented, tested, committed (3548 tests green).
+**Next step**: Run `/implementation-plan docs/proposals/design/phase_3/feature_3_12b_design.md sf-2`
 **If resuming mid-feature**: Read Progress Tracker. Find first ⬜ in the Dev/Pre-Commit/Committed columns.
-For SF-1: run `/dev` against the SF-1 impl plan.
 For SF-2: run `/implementation-plan` for SF-2 first, then `/dev`.
