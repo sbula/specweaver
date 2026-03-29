@@ -93,13 +93,23 @@ def _make_sequenced_llm(responses: list[str]) -> object:
     mock_llm.available.return_value = True
     mock_llm.provider_name = "mock"
 
+    captured_prompts = []
     response_iter = iter(responses)
 
-    async def _generate(messages: object, config: object = None) -> LLMResponse:
-        text = next(response_iter, "VERDICT: ACCEPTED\nAll good.")
+    async def _generate(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
+        for msg in messages:
+            if hasattr(msg, "content"):
+                captured_prompts.append(msg.content)
+
+        try:
+            text = next(response_iter)
+        except StopIteration:
+            text = "VERDICT: ACCEPTED\nEnd of mocked responses."
+
         return LLMResponse(text=text, model="mock")
 
     mock_llm.generate = _generate
+    mock_llm.generate_with_tools = _generate
     return mock_llm
 
 
@@ -150,6 +160,8 @@ class TestHighPriorityEdgeCases:
         async def _generate_or_fail(
             messages: object,
             config: object = None,
+            dispatcher: object = None,
+            on_tool_round: object = None,
         ) -> LLMResponse:
             nonlocal call_count
             call_count += 1
@@ -165,6 +177,7 @@ class TestHighPriorityEdgeCases:
         failing_llm = AsyncMock()
         failing_llm.available.return_value = True
         failing_llm.generate = _generate_or_fail
+        failing_llm.generate_with_tools = _generate_or_fail
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (
@@ -336,6 +349,9 @@ class TestMediumPriorityEdgeCases:
                 for f in filenames:
                     if f.endswith("_spec.md"):
                         full = os.path.join(dirpath, f)
+                        # Ignore the framework's own templates
+                        if ".specweaver" in full and "templates" in full:
+                            continue
                         assert full.startswith(
                             str(specs_dir),
                         ), f"Spec file escaped specs dir: {full}"
@@ -642,13 +658,14 @@ class TestRealWorldEdgeCases:
         error_llm = AsyncMock()
         error_llm.available.return_value = True
 
-        async def _crash(messages: object, config: object = None) -> None:
+        async def _crash(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> None:
             from specweaver.llm.errors import GenerationError
 
             msg = "Service unavailable"
             raise GenerationError(msg)
 
         error_llm.generate = _crash
+        error_llm.generate_with_tools = _crash
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (

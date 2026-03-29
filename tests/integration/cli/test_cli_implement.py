@@ -86,8 +86,10 @@ class TestImplementFlow:
         mock_adapter = _make_mock_adapter(
             'def greet(name: str) -> str:\n    return f"Hello {name}!"\n',
         )
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "test-model"
         mock_require.return_value = (
-            MagicMock(),
+            mock_settings,
             mock_adapter,
             MagicMock(temperature=0.7),
         )
@@ -120,8 +122,10 @@ class TestImplementFlow:
         spec.write_text("# Auth Spec\n## 1. Purpose\nAuth.", encoding="utf-8")
 
         mock_adapter = _make_mock_adapter("pass\n")
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "test-model"
         mock_require.return_value = (
-            MagicMock(),
+            mock_settings,
             mock_adapter,
             MagicMock(temperature=0.7),
         )
@@ -203,8 +207,10 @@ class TestFullPipeline:
             'def add(a: int, b: int) -> int:\n    """Add two integers."""\n    return a + b\n'
         )
         mock_adapter = _make_mock_adapter(generated_code)
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "test-model"
         mock_require.return_value = (
-            MagicMock(),
+            mock_settings,
             mock_adapter,
             MagicMock(temperature=0.7),
         )

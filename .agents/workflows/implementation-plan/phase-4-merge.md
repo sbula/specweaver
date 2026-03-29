@@ -2,6 +2,9 @@
 description: "Phase 4: Merge Findings — present the full combined audit list to HITL, then merge resolved findings into the plan."
 ---
 
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**
 > Presenting the findings is MANDATORY. This gate ALWAYS fires.

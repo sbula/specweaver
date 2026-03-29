@@ -9,7 +9,6 @@ import json
 import logging
 
 import pytest
-from rich.console import Console
 
 from specweaver.logging import setup_logging, teardown_logging
 
@@ -27,7 +26,7 @@ def test_logging_routing_and_format(tmp_path, monkeypatch, capsys):
     # 1. Setup mock directories
     _logs = tmp_path / "logs"
     monkeypatch.setattr("specweaver.config.paths.logs_dir", lambda: _logs)
-    
+
     # 2. Force Rich to not use colors and not paginate so capsys can capture deterministic output
     monkeypatch.setattr("rich.console.Console.is_terminal", property(lambda self: False))
     monkeypatch.setattr("rich.console.Console.color_system", property(lambda self: None))

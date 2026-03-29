@@ -1,0 +1,47 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\steve\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\development\pitbula\specweaver
+configfile: pyproject.toml
+plugins: anyio-4.8.0, asyncio-1.3.0, cov-7.0.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 36 items
+
+tests/integration/flow/test_planning_integration.py::TestPlannerToRenderer::test_planner_output_renders_to_markdown PASSED [  2%]
+tests/integration/flow/test_planning_integration.py::TestPlanArtifactSerialization::test_yaml_round_trip PASSED [  5%]
+tests/integration/flow/test_planning_integration.py::TestPlanArtifactSerialization::test_json_round_trip PASSED [  8%]
+tests/integration/flow/test_planning_integration.py::TestPromptBuilderPlanIntegration::test_add_plan_then_build_has_plan_tags PASSED [ 11%]
+tests/integration/flow/test_planning_integration.py::TestPromptBuilderPlanIntegration::test_plan_between_standards_and_topology PASSED [ 13%]
+tests/integration/flow/test_planning_integration.py::TestGeneratorPlanIntegration::test_generate_code_plan_in_prompt PASSED [ 16%]
+tests/integration/flow/test_planning_integration.py::TestGeneratorPlanIntegration::test_generate_tests_plan_in_prompt PASSED [ 19%]
+tests/integration/flow/test_planning_integration.py::TestPlanSpecHandlerFileSystem::test_handler_creates_loadable_plan_yaml PASSED [ 22%]
+tests/integration/flow/test_planning_integration.py::TestPlanSpecHandlerFileSystem::test_handler_passes_stitch_mode_from_settings PASSED [ 25%]
+tests/integration/flow/test_planning_integration.py::TestPlanSpecHandlerFileSystem::test_handler_valueerror_fallback PASSED [ 27%]
+tests/integration/flow/test_planning_integration.py::TestPlanSpecHandlerFileSystem::test_handler_saves_mockup_to_yaml_when_stitch_auto PASSED [ 30%]
+tests/integration/flow/test_planning_integration.py::TestPlanSpecHandlerFileSystem::test_handler_saves_no_mockup_to_yaml_when_stitch_off PASSED [ 33%]
+tests/integration/flow/test_planning_integration.py::TestRunContextPlanFlowsToGenerator::test_generate_code_handler_passes_plan PASSED [ 36%]
+tests/integration/flow/test_planning_integration.py::TestRunContextPlanFlowsToGenerator::test_generate_tests_handler_passes_plan PASSED [ 38%]
+tests/integration/flow/test_planning_integration.py::TestRegistryPlanSpec::test_registry_has_plan_spec PASSED [ 41%]
+tests/integration/flow/test_planning_integration.py::TestRenderFilesInPipeline::test_files_in_full_render_pipeline PASSED [ 44%]
+tests/integration/flow/test_planning_integration.py::TestPlannerWithConstitutionAndStandards::test_planner_constitution_and_standards_in_prompt PASSED [ 47%]
+tests/integration/flow/test_planning_integration.py::TestRenderBlocksOrderPreserved::test_full_render_order_with_all_block_types PASSED [ 50%]
+tests/integration/flow/test_planning_integration.py::TestPlannerRetryWithCleanJson::test_retry_with_markdown_fenced_json PASSED [ 52%]
+tests/integration/cli/test_cli_check.py::TestInitCheckFlow::test_init_then_check_good_spec PASSED [ 55%]
+tests/integration/cli/test_cli_check.py::TestInitCheckFlow::test_init_then_check_bad_spec PASSED [ 58%]
+tests/integration/cli/test_cli_check.py::TestCheckCodeFlow::test_check_clean_code_passes PASSED [ 61%]
+tests/integration/cli/test_cli_check.py::TestCheckCodeFlow::test_check_broken_code_fails PASSED [ 63%]
+tests/integration/cli/test_cli_check.py::TestCheckCodeFlow::test_check_code_with_bare_except PASSED [ 66%]
+tests/integration/cli/test_cli_check.py::TestCheckCodeFlow::test_check_code_with_todos PASSED [ 69%]
+tests/integration/cli/test_cli_check.py::TestCheckCodeFlow::test_check_code_missing_type_hints PASSED [ 72%]
+tests/integration/cli/test_cli_check.py::TestEdgeCases::test_check_nonexistent_file PASSED [ 75%]
+tests/integration/cli/test_cli_check.py::TestEdgeCases::test_check_invalid_level PASSED [ 77%]
+tests/integration/cli/test_cli_check.py::TestEdgeCases::test_check_empty_spec PASSED [ 80%]
+tests/integration/cli/test_cli_check.py::TestEdgeCases::test_check_empty_code PASSED [ 83%]
+tests/integration/cli/test_cli_check.py::TestEdgeCases::test_pipeline_overrides_level PASSED [ 86%]
+tests/integration/cli/test_cli_check.py::TestEdgeCases::test_non_utf8_binary_file PASSED [ 88%]
+tests/integration/cli/test_cli_check.py::TestFeatureLevelCheck::test_feature_level_good_spec_passes PASSED [ 91%]
+tests/integration/cli/test_cli_check.py::TestFeatureLevelCheck::test_feature_level_spec_with_leaks PASSED [ 94%]
+tests/integration/cli/test_cli_check.py::TestFeatureLevelCheck::test_feature_vs_component_different_results PASSED [ 97%]
+tests/integration/cli/test_cli_check.py::TestFeatureLevelCheck::test_feature_level_empty_spec PASSED [100%]
+
+============================= 36 passed in 7.55s ==============================

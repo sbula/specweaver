@@ -140,10 +140,11 @@ def _make_llm(responses: list[str]) -> object:
     mock_llm.provider_name = "mock"
     it = iter(responses)
 
-    async def _generate(messages: object, config: object = None) -> LLMResponse:
+    async def _generate(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
         return LLMResponse(text=next(it, "VERDICT: ACCEPTED\nDone."), model="mock")
 
     mock_llm.generate = _generate
+    mock_llm.generate_with_tools = _generate
     return mock_llm
 
 
@@ -282,12 +283,13 @@ class TestNewFeatureLlmErrorMidPipeline:
         crash_llm.available.return_value = True
         crash_llm.provider_name = "mock"
 
-        async def _crash(messages: object, config: object = None) -> None:
+        async def _crash(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> None:
             from specweaver.llm.errors import GenerationError
 
             raise GenerationError("Service overloaded — try again later")
 
         crash_llm.generate = _crash
+        crash_llm.generate_with_tools = _crash
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (None, crash_llm, GenerationConfig(model="mock"))
@@ -343,11 +345,12 @@ class TestNewFeatureWithConstitution:
         mock_llm.available.return_value = True
         mock_llm.provider_name = "mock"
 
-        async def _capture_and_respond(messages: object, config: object = None) -> LLMResponse:
+        async def _capture_and_respond(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
             captured_messages.extend(messages)
             return LLMResponse(text="VERDICT: ACCEPTED\nSpec meets constitution.", model="mock")
 
         mock_llm.generate = _capture_and_respond
+        mock_llm.generate_with_tools = _capture_and_respond
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))

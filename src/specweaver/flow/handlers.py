@@ -32,6 +32,7 @@ from specweaver.flow._generation import (
 )
 from specweaver.flow._lint_fix import LintFixHandler
 from specweaver.flow._review import ReviewCodeHandler, ReviewSpecHandler
+from specweaver.flow._standards import EnrichStandardsHandler
 from specweaver.flow._validation import (
     ValidateCodeHandler,
     ValidateSpecHandler,
@@ -41,6 +42,7 @@ from specweaver.flow.models import StepAction, StepTarget
 
 __all__ = [
     "DraftSpecHandler",
+    "EnrichStandardsHandler",
     "GenerateCodeHandler",
     "GenerateTestsHandler",
     "LintFixHandler",
@@ -76,6 +78,7 @@ class StepHandlerRegistry:
             (StepAction.GENERATE, StepTarget.TESTS): GenerateTestsHandler(),
             (StepAction.LINT_FIX, StepTarget.CODE): LintFixHandler(),
             (StepAction.PLAN, StepTarget.SPEC): PlanSpecHandler(),
+            (StepAction.ENRICH, StepTarget.STANDARDS): EnrichStandardsHandler(),
         }
 
     def get(

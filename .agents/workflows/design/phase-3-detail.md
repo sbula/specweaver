@@ -2,6 +2,9 @@
 description: "Phase 3: Feature Detail — define FRs/NFRs, validate external APIs, and verify architectural alignment. HITL gates fire on gaps, incompatibilities, or any Architectural Switch."
 ---
 
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**
 > Derive and validate autonomously. Three categories of HITL gate:

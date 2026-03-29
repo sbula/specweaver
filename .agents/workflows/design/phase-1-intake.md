@@ -2,6 +2,9 @@
 description: "Phase 1: Intake — read the feature entry and clarify scope with HITL if needed."
 ---
 
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**
 > Read and analyze autonomously. STOP only if the feature description has gaps.

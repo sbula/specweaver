@@ -1,6 +1,10 @@
 ---
 description: "Phase 5: Run the full test suite — all tests must pass."
 ---
+
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 // turbo-all
 
 > [!IMPORTANT]
@@ -22,17 +26,17 @@ description: "Phase 5: Run the full test suite — all tests must pass."
 
 5.1. Run **Unit** Tests:
      ```
-     python -m pytest tests/unit --tb=short -q
+     python run_unit_tests.py
      ```
 
 5.2. Run **Integration** Tests:
      ```
-     python -m pytest tests/integration --tb=short -q
+     python run_integ_tests.py
      ```
 
 5.3. Run **End-to-End (E2E)** Tests:
      ```
-     python -m pytest tests/e2e --tb=short -q
+     python run_e2e_tests.py
      ```
 
 > [!IMPORTANT]

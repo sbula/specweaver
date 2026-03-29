@@ -1,6 +1,10 @@
 ---
 description: "Phase 7: Write a walkthrough artifact documenting changes, tests, and HITL gate decisions."
 ---
+
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 // turbo-all
 
 > [!IMPORTANT]

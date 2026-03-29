@@ -50,11 +50,18 @@ def _make_mock_llm(response: str = "VERDICT: ACCEPTED\nAll good.") -> object:
     mock_llm = AsyncMock()
     mock_llm.available.return_value = True
     mock_llm.provider_name = "mock"
+    captured_prompts = []
+    response_iter = iter([response])
 
-    async def _generate(messages: object, config: object = None) -> LLMResponse:
-        return LLMResponse(text=response, model="mock")
+    async def _generate(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
+        for msg in messages:
+            if hasattr(msg, "content"):
+                captured_prompts.append(msg.content)
+        text = next(response_iter, "VERDICT: ACCEPTED\nAll good.")
+        return LLMResponse(text=text, model="mock")
 
     mock_llm.generate = _generate
+    mock_llm.generate_with_tools = _generate
     return mock_llm
 
 

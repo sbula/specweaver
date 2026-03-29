@@ -182,14 +182,24 @@ def _make_sequenced_llm(responses: list[str]) -> object:
     mock_llm = AsyncMock()
     mock_llm.available.return_value = True
     mock_llm.provider_name = "mock"
+    captured_prompts = []
 
     response_iter = iter(responses)
 
-    async def _generate(messages: object, config: object = None) -> LLMResponse:
-        text = next(response_iter, "VERDICT: ACCEPTED\nAll good.")
+    async def _generate(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
+        for msg in messages:
+            if hasattr(msg, "content"):
+                captured_prompts.append(msg.content)
+
+        try:
+            text = next(response_iter)
+        except StopIteration:
+            text = "VERDICT: ACCEPTED\nEnd of mocked responses."
+
         return LLMResponse(text=text, model="mock")
 
     mock_llm.generate = _generate
+    mock_llm.generate_with_tools = _generate
     return mock_llm
 
 

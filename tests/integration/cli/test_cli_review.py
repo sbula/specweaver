@@ -86,7 +86,6 @@ class TestReviewErrors:
     ) -> None:
         """sw review on a spec returns ACCEPTED verdict."""
         from specweaver.llm.models import GenerationConfig
-        from specweaver.review.reviewer import ReviewResult, ReviewVerdict
 
         project_dir = _init_project(tmp_path)
         spec = project_dir / "specs" / "greeter_spec.md"
@@ -97,22 +96,22 @@ class TestReviewErrors:
             encoding="utf-8",
         )
 
+        from specweaver.llm.models import LLMResponse
+
         mock_adapter = AsyncMock()
         mock_adapter.available.return_value = True
+
+        async def _accepted(*args, **kwargs):
+            return LLMResponse(text="VERDICT: ACCEPTED\nLooks good.", model="test-model")
+
+        mock_adapter.generate_with_tools = _accepted
         gen_config = GenerationConfig(model="test-model")
         mock_llm.return_value = (None, mock_adapter, gen_config)
 
-        accepted = ReviewResult(
-            verdict=ReviewVerdict.ACCEPTED,
-            summary="Looks good.",
-            findings=[],
+        result = runner.invoke(
+            app,
+            ["review", str(spec), "--project", str(project_dir)],
         )
-
-        with patch("specweaver.cli.review.asyncio.run", return_value=accepted):
-            result = runner.invoke(
-                app,
-                ["review", str(spec), "--project", str(project_dir)],
-            )
         assert result.exit_code == 0
         assert "ACCEPTED" in result.output
 
@@ -124,31 +123,36 @@ class TestReviewErrors:
     ) -> None:
         """sw review on a spec returns DENIED with findings."""
         from specweaver.llm.models import GenerationConfig
-        from specweaver.review.reviewer import ReviewFinding, ReviewResult, ReviewVerdict
 
         project_dir = _init_project(tmp_path)
         spec = project_dir / "specs" / "bad_spec.md"
         spec.write_text("Not a real spec.", encoding="utf-8")
 
+        from specweaver.llm.models import LLMResponse
+
         mock_adapter = AsyncMock()
         mock_adapter.available.return_value = True
+
+        async def _denied(*args, **kwargs):
+            return LLMResponse(
+                text="VERDICT: DENIED\nMissing sections.\n\n"
+                     "### Findings\n"
+                     "| Section | Issue | Remedy |\n"
+                     "| 2. Contract | No type hints | Add type hints |\n",
+                model="test-model",
+            )
+
+        mock_adapter.generate_with_tools = _denied
         gen_config = GenerationConfig(model="test-model")
         mock_llm.return_value = (None, mock_adapter, gen_config)
 
-        denied = ReviewResult(
-            verdict=ReviewVerdict.DENIED,
-            summary="Missing sections.",
-            findings=[ReviewFinding(message="No Purpose section")],
+        result = runner.invoke(
+            app,
+            ["review", str(spec), "--project", str(project_dir)],
         )
-
-        with patch("specweaver.cli.review.asyncio.run", return_value=denied):
-            result = runner.invoke(
-                app,
-                ["review", str(spec), "--project", str(project_dir)],
-            )
         assert result.exit_code == 1
         assert "DENIED" in result.output
-        assert "No Purpose section" in result.output
+        assert "No type hints" in result.output
 
 
 # ---------------------------------------------------------------------------

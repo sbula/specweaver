@@ -71,8 +71,11 @@ class TestImplementOutputPaths:
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text("# Greeter Spec\n## 1. Purpose\nGreets.\n", encoding="utf-8")
 
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "gemini-2.5-pro"
+
         mock_require.return_value = (
-            MagicMock(),
+            mock_settings,
             _make_mock_adapter("def greet(): pass\n"),
             MagicMock(temperature=0.7),
         )
@@ -96,8 +99,11 @@ class TestImplementOutputPaths:
         spec = project / "specs" / "auth_service_spec.md"
         spec.write_text("# Auth Spec\n## 1. Purpose\nAuth.\n", encoding="utf-8")
 
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "gemini-2.5-pro"
+
         mock_require.return_value = (
-            MagicMock(),
+            mock_settings,
             _make_mock_adapter("pass\n"),
             MagicMock(temperature=0.7),
         )

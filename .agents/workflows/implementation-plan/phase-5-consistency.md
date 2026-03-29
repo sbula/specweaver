@@ -2,6 +2,9 @@
 description: "Phase 5: Final Consistency Check — answer three evidence-backed questions and get mandatory HITL approval before implementation begins."
 ---
 
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**
 > Answer the three questions autonomously with evidence.

@@ -27,7 +27,7 @@ _core.app.add_typer(standards_app, name="standards")
 
 
 @standards_app.command("scan")
-def standards_scan(
+def standards_scan(  # noqa: C901
     scope: str | None = typer.Option(
         None,
         "--scope",
@@ -54,11 +54,8 @@ def standards_scan(
 
     from specweaver.config.settings import load_settings
     from specweaver.llm.adapters.gemini import GeminiAdapter
-    from specweaver.llm.models import GenerationConfig
     from specweaver.standards.discovery import discover_files
-    from specweaver.standards.enricher import StandardsEnricher
     from specweaver.standards.reviewer import StandardsReviewer
-    from specweaver.standards.scanner import StandardsScanner
     from specweaver.standards.scope_detector import detect_scopes
 
     name = _core._require_active_project()
@@ -86,17 +83,16 @@ def standards_scan(
     # Discover all files once
     all_files = discover_files(project_path)
 
+    from specweaver.flow._base import RunContext
+    from specweaver.flow.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.flow.runner import PipelineRunner
+    from specweaver.flow.state import StepStatus
+
     settings = load_settings(db, name)
     adapter = GeminiAdapter(api_key=settings.llm.api_key or None)
-    gen_config = GenerationConfig(
-        model=settings.llm.model,
-        temperature=settings.llm.temperature,
-        max_output_tokens=settings.llm.max_output_tokens,
-    )
 
-    scanner = StandardsScanner()
-    enricher = StandardsEnricher(adapter, config=gen_config)
-    half_life_days = 90.0
+    # We use a dummy spec_path since standards scanning is project/scope-wide
+    dummy_spec = project_path / "CONSTITUTION.md"
 
     # Scan each scope
     scope_results: dict[str, list[CategoryResult]] = {}
@@ -116,12 +112,34 @@ def standards_scan(
             f"  Scope [cyan]{s}[/cyan]: {len(scope_files)} source files",
         )
 
-        raw_results = scanner.scan(scope_files, half_life_days)
-        results = [r for r in raw_results if r.confidence >= 0.3]
+        pipeline = PipelineDefinition.create_single_step(
+            name=f"enrich_scope_{s}",
+            action=StepAction.ENRICH,
+            target=StepTarget.STANDARDS,
+            description=f"Enrich standards for scope {s}",
+            params={
+                "scope_files": scope_files,
+                "half_life_days": 90.0,
+                "compare": compare,
+            }
+        )
 
-        if results:
-            asyncio.run(enricher.enrich(results, language="auto", force_compare=compare))
-            scope_results[s] = results
+        context = RunContext(
+            project_path=project_path,
+            spec_path=dummy_spec,
+            llm=adapter,
+            config=settings,
+            db=db,
+        )
+
+        runner = PipelineRunner(pipeline, context)
+        run_state = asyncio.run(runner.run())
+
+        last_record = run_state.step_records[-1] if run_state.step_records else None
+        if last_record and last_record.status == StepStatus.PASSED and last_record.result:
+            results = last_record.result.output.get("results", [])
+            if results:
+                scope_results[s] = results
 
     if not scope_results:
         _core.console.print(

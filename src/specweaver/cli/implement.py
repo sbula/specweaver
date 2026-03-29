@@ -54,12 +54,14 @@ def implement(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.implementation.generator import Generator
+    from specweaver.flow._base import RunContext
+    from specweaver.flow.models import PipelineDefinition, PipelineStep, StepAction, StepTarget
+    from specweaver.flow.runner import PipelineRunner
+    from specweaver.flow.state import StepStatus
 
-    _, adapter, gen_config = _helpers._require_llm_adapter(project_path)
-    gen_config.temperature = 0.2  # Low temperature for code
-
-    generator = Generator(llm=adapter, config=gen_config)
+    settings, adapter, _ = _helpers._require_llm_adapter(project_path)
+    if settings and getattr(settings, "llm", None):
+        settings.llm.temperature = 0.2  # Low temperature for code
 
     # Load topology context for the implementation target
     topo_graph = _load_topology(project_path)
@@ -93,37 +95,49 @@ def implement(
     )
     standards_content = _load_standards_content(project_path, target_path=spec_path)
 
-    try:
-        # Generate code
-        _core.console.print("[dim]Generating implementation code...[/dim]")
-        asyncio.run(
-            generator.generate_code(
-                spec_path,
-                code_path,
-                topology_contexts=topo_contexts,
-                constitution=constitution_content,
-                standards=standards_content,
+    pipeline = PipelineDefinition(
+        name="implement_spec",
+        description=f"Implement spec {spec_path.name}",
+        steps=[
+            PipelineStep(
+                name="generate_code",
+                action=StepAction.GENERATE,
+                target=StepTarget.CODE,
             ),
-        )
-        _core.console.print(f"  [green]\u2713[/green] {code_path}")
-
-        # Generate tests
-        _core.console.print("[dim]Generating test file...[/dim]")
-        asyncio.run(
-            generator.generate_tests(
-                spec_path,
-                test_path,
-                topology_contexts=topo_contexts,
-                constitution=constitution_content,
-                standards=standards_content,
+            PipelineStep(
+                name="generate_tests",
+                action=StepAction.GENERATE,
+                target=StepTarget.TESTS,
             ),
-        )
-        _core.console.print(f"  [green]\u2713[/green] {test_path}")
-    finally:
-        from specweaver.llm.collector import TelemetryCollector
+        ]
+    )
 
-        if isinstance(adapter, TelemetryCollector):
-            adapter.flush(_core.get_db())
+    context = RunContext(
+        project_path=project_path,
+        spec_path=spec_path,
+        llm=adapter,
+        config=settings,
+        topology=topo_contexts,
+        constitution=constitution_content,
+        standards=standards_content,
+        db=_core.get_db(),
+    )
+
+    _core.console.print("[dim]Executing implementation pipeline...[/dim]")
+    runner = PipelineRunner(pipeline, context)
+    run_state = asyncio.run(runner.run())
+
+    if run_state.status != "completed":
+        _core.console.print("[red]Pipeline failed or parked.[/red]")
+        raise typer.Exit(code=1)
+
+    for record in run_state.step_records:
+        if record.status == StepStatus.PASSED and record.result:
+            generated_path = record.result.output.get("generated_path")
+            if generated_path:
+                _core.console.print(f"  [green]\u2713[/green] {generated_path}")
+        else:
+            _core.console.print(f"  [red]\u2717[/red] Failed step: {record.step_name}")
 
     _core.console.print(
         "\n[green]Implementation complete![/green]\n"

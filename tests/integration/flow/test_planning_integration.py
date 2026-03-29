@@ -303,7 +303,10 @@ class TestPlanSpecHandlerFileSystem:
 
         monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
 
-        import specweaver.config.settings
+
+        class MockLlmSettings:
+            model = "mock-model"
+            max_output_tokens = 4096
 
         class MockStitchSettings:
             mode = "auto"
@@ -311,12 +314,9 @@ class TestPlanSpecHandlerFileSystem:
 
         class MockSettings:
             stitch = MockStitchSettings()
+            llm = MockLlmSettings()
 
-        monkeypatch.setattr(
-            specweaver.config.settings, "load_settings", lambda db, proj: MockSettings()
-        )
-
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]))
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]), config=MockSettings())
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -349,14 +349,8 @@ class TestPlanSpecHandlerFileSystem:
 
         monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
 
-        import specweaver.config.settings
-
-        def raise_value_error(*args):
-            raise ValueError("project missing")
-
-        monkeypatch.setattr(specweaver.config.settings, "load_settings", raise_value_error)
-
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]))
+        # Just test the fallback case: config is missing or lacks stitch
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]), config=None)
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -373,7 +367,10 @@ class TestPlanSpecHandlerFileSystem:
         spec = tmp_path / "spec.md"
         spec.write_text("## Protocol\n\nUI component with a button", encoding="utf-8")
 
-        import specweaver.config.settings
+
+        class MockLlmSettings:
+            model = "mock-model"
+            max_output_tokens = 4096
 
         class MockStitchSettings:
             mode = "auto"
@@ -381,13 +378,10 @@ class TestPlanSpecHandlerFileSystem:
 
         class MockSettings:
             stitch = MockStitchSettings()
-
-        monkeypatch.setattr(
-            specweaver.config.settings, "load_settings", lambda db, proj: MockSettings()
-        )
+            llm = MockLlmSettings()
 
         llm = FakeLLM([_valid_plan_json()])
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm)
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm, config=MockSettings())
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -408,7 +402,10 @@ class TestPlanSpecHandlerFileSystem:
         spec = tmp_path / "spec.md"
         spec.write_text("## Protocol\n\nUI component", encoding="utf-8")
 
-        import specweaver.config.settings
+
+        class MockLlmSettings:
+            model = "mock-model"
+            max_output_tokens = 4096
 
         class MockStitchSettings:
             mode = "off"
@@ -416,13 +413,10 @@ class TestPlanSpecHandlerFileSystem:
 
         class MockSettings:
             stitch = MockStitchSettings()
-
-        monkeypatch.setattr(
-            specweaver.config.settings, "load_settings", lambda db, proj: MockSettings()
-        )
+            llm = MockLlmSettings()
 
         llm = FakeLLM([_valid_plan_json()])
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm)
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=llm, config=MockSettings())
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()

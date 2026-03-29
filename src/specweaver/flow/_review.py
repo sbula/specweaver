@@ -7,13 +7,13 @@ from __future__ import annotations
 
 import contextlib
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.flow._base import RunContext, _error_result, _now_iso
 from specweaver.flow.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
-    from pathlib import Path
 
     from specweaver.flow.models import PipelineStep
     from specweaver.llm.mention_scanner.models import ResolvedMention
@@ -181,7 +181,9 @@ class ReviewCodeHandler:
         try:
             from specweaver.review.reviewer import Reviewer
 
-            code_path = self._find_code_path(context)
+            target_param = step.params.get("target_path") if step.params else None
+            code_path = Path(target_param) if target_param else self._find_code_path(context)
+
             if code_path is None:
                 return _error_result("No code file found for review", started)
 

@@ -104,7 +104,7 @@ def _make_capturing_llm(
     captured_prompts: list[str] = []
     response_iter = iter(responses)
 
-    async def _generate(messages: object, config: object = None) -> LLMResponse:
+    async def _generate(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
         for msg in messages:
             if hasattr(msg, "content"):
                 captured_prompts.append(msg.content)
@@ -112,6 +112,7 @@ def _make_capturing_llm(
         return LLMResponse(text=text, model="mock")
 
     mock_llm.generate = _generate
+    mock_llm.generate_with_tools = _generate
     return mock_llm, captured_prompts
 
 

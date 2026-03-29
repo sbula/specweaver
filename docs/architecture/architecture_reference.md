@@ -169,6 +169,10 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.12a Multi-Provider Adapter Registry** — `llm/adapters/__init__.py` (auto-discovery registry scanning package at import), `llm/adapters/base.py` (self-describing adapter ABC), `config/settings.py` (`provider` field). Lives in `llm/adapters/` (adapter archetype) to support dynamic provider creation without central maps.
 
+**3.13 Project Metadata Injection** — `llm/prompt_builder.py` updated to inject system data (project name, OS, archetype) ensuring robust reasoning references across LLM boundaries.
+
+**3.13a Unified Runner Architecture** — The `PipelineRunner` (`flow/runner.py`) is now universally used to execute not just full YAML workflows but simple single-shot tasks (`sw review`, `sw draft`, `sw standards scan`) through dynamically constructed 1-step `PipelineDefinition` objects via `create_single_step()`. This removed disjoint telemetry-flushing and state management logic out of `cli/` and into the robust `flow/` engine.
+
 ### How Features Map to Lifecycle Layers
 
 ```

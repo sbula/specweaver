@@ -1,6 +1,10 @@
 ---
 description: "Phase 1: Architecture verification — verify layer placement, dependency direction, and archetype compliance."
 ---
+
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 // turbo-all
 
 > [!IMPORTANT]

@@ -79,11 +79,11 @@ No external blueprint references are strictly required, though this follows the 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Universal Logging Reform | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-2 | Unified CLI Runner | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Universal Logging Reform | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Unified CLI Runner | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Impl Plan APPROVED.
-**Next step**: Run `/dev docs/proposals/roadmap/phase_3/feature_3_13a_sf1_implementation_plan.md`
+**Current status**: SF-1 Committed. SF-2 Impl Plan PENDING.
+**Next step**: Run `/implementation-plan docs/proposals/design/phase_3/feature_3_13a_design.md SF-2` to audit and approve the SF-2 implementation plan.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

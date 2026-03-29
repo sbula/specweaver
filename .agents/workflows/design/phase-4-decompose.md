@@ -2,6 +2,9 @@
 description: "Phase 4: Decompose — split the feature into self-contained, agent-sized sub-features and build a dependency graph. Fully autonomous, no HITL."
 ---
 
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 > [!IMPORTANT]
 > **This phase is fully autonomous. No HITL.**
 > Apply the rules consistently. Document your reasoning.

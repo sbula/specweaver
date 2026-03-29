@@ -21,8 +21,7 @@ from specweaver.cli._helpers import (
 from specweaver.project.discovery import resolve_project_path
 
 if TYPE_CHECKING:
-    from specweaver.graph.topology import TopologyContext
-    from specweaver.review.reviewer import Reviewer, ReviewResult
+    from specweaver.review.reviewer import ReviewResult
 
 
 @_core.app.command()
@@ -58,15 +57,12 @@ def draft(
         raise typer.Exit(code=1)
 
     from specweaver.context.hitl_provider import HITLProvider
-    from specweaver.drafting.drafter import Drafter
+    from specweaver.flow._base import RunContext
+    from specweaver.flow.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.flow.runner import PipelineRunner
+    from specweaver.flow.state import StepStatus
 
-    _, adapter, gen_config = _helpers._require_llm_adapter(project_path)
-
-    drafter = Drafter(
-        llm=adapter,
-        context_provider=HITLProvider(console=_core.console),
-        config=gen_config,
-    )
+    settings, adapter, _ = _helpers._require_llm_adapter(project_path)
 
     # Load topology context for the new component (best-effort)
     topo_graph = _load_topology(project_path)
@@ -81,15 +77,33 @@ def draft(
         "[dim]Answer questions below. Press Enter to skip.[/dim]\n",
     )
 
-    try:
-        result_path = asyncio.run(
-            drafter.draft(name, specs_dir, topology_contexts=topo_contexts),
-        )
-    finally:
-        from specweaver.llm.collector import TelemetryCollector
+    pipeline = PipelineDefinition.create_single_step(
+        name="draft_spec",
+        action=StepAction.DRAFT,
+        target=StepTarget.SPEC,
+        description=f"Draft spec for {name}",
+    )
 
-        if isinstance(adapter, TelemetryCollector):
-            adapter.flush(_core.get_db())
+    context = RunContext(
+        project_path=project_path,
+        spec_path=spec_path,
+        llm=adapter,
+        config=settings,
+        context_provider=HITLProvider(console=_core.console),
+        topology=topo_contexts,
+        db=_core.get_db(),
+    )
+
+    runner = PipelineRunner(pipeline, context)
+    run_state = asyncio.run(runner.run())
+
+    last_record = run_state.step_records[-1] if run_state.step_records else None
+
+    if last_record and last_record.status == StepStatus.PASSED and last_record.result:
+        result_path = last_record.result.output.get("path", spec_path)
+    else:
+        # If parked or failed, printing a simple message and exiting
+        raise typer.Exit(code=1)
 
     _core.console.print(f"\n[green]Spec drafted:[/green] {result_path}")
     _core.console.print("[dim]Run 'sw check' to validate the drafted spec.[/dim]")
@@ -134,12 +148,13 @@ def review(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.review.reviewer import Reviewer
+    from specweaver.flow._base import RunContext
+    from specweaver.flow.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.flow.runner import PipelineRunner
 
-    _, adapter, gen_config = _helpers._require_llm_adapter(project_path)
-    gen_config.temperature = 0.3  # Lower for reviews
-
-    reviewer = Reviewer(llm=adapter, config=gen_config)
+    settings, adapter, _ = _helpers._require_llm_adapter(project_path)
+    if settings and getattr(settings, "llm", None):
+        settings.llm.temperature = 0.3  # Lower for reviews
 
     # Load topology context for the review target
     topo_graph = _load_topology(project_path)
@@ -153,73 +168,76 @@ def review(
     _core.console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
     _core.console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
 
-    try:
-        result = _execute_review(
-            reviewer,
-            target_path,
-            spec,
-            topo_contexts,
-            constitution=_load_constitution_content(
-                project_path,
-                spec_path=target_path,
-            ),
-            standards=_load_standards_content(project_path, target_path=target_path),
-        )
-    finally:
-        from specweaver.llm.collector import TelemetryCollector
-
-        if isinstance(adapter, TelemetryCollector):
-            adapter.flush(_core.get_db())
-
-    _display_review_result(result)
-
-
-def _execute_review(
-    reviewer: Reviewer,
-    target_path: Path,
-    spec: str | None,
-    topology_contexts: list[TopologyContext] | None = None,
-    *,
-    constitution: str | None = None,
-    standards: str | None = None,
-) -> ReviewResult:
-    """Run the appropriate review (spec or code)."""
-    from specweaver.review.reviewer import ReviewResult, ReviewVerdict
-
     if spec:
         spec_path = Path(spec)
         if not spec_path.exists():
             _core.console.print(f"[red]Error:[/red] Spec not found: {spec}")
             raise typer.Exit(code=1)
+
+        action = StepAction.REVIEW
+        target_kind = StepTarget.CODE
+        actual_spec_path = spec_path
+        params = {"target_path": str(target_path)}
+    else:
+        action = StepAction.REVIEW
+        target_kind = StepTarget.SPEC
+        actual_spec_path = target_path
+        params = {}
+
+    pipeline = PipelineDefinition.create_single_step(
+        name="review_target",
+        action=action,
+        target=target_kind,
+        description=f"Review {target_path.name}",
+        params=params,
+    )
+
+    context = RunContext(
+        project_path=project_path,
+        spec_path=actual_spec_path,
+        llm=adapter,
+        config=settings,
+        topology=topo_contexts,
+        constitution=_load_constitution_content(project_path, spec_path=actual_spec_path),
+        standards=_load_standards_content(project_path, target_path=target_path),
+        db=_core.get_db(),
+    )
+
+    runner = PipelineRunner(pipeline, context)
+    run_state = asyncio.run(runner.run())
+
+    last_record = run_state.step_records[-1] if run_state.step_records else None
+
+    from specweaver.review.reviewer import ReviewFinding, ReviewResult, ReviewVerdict
+
+    if last_record and last_record.result:
+        out = last_record.result.output
+        verdict_str = out.get("verdict", "error")
         try:
-            return asyncio.run(
-                reviewer.review_code(
-                    target_path,
-                    spec_path,
-                    topology_contexts=topology_contexts,
-                    constitution=constitution,
-                    standards=standards,
-                ),
-            )
-        except Exception as exc:
-            return ReviewResult(
-                verdict=ReviewVerdict.ERROR,
-                summary=f"Review failed: {exc}",
-            )
-    try:
-        return asyncio.run(
-            reviewer.review_spec(
-                target_path,
-                topology_contexts=topology_contexts,
-                constitution=constitution,
-                standards=standards,
-            ),
+            verdict = ReviewVerdict(verdict_str)
+        except ValueError:
+            verdict = ReviewVerdict.ERROR
+
+        raw_findings = out.get("findings", [])
+        findings = [
+            ReviewFinding(**f) if isinstance(f, dict) else f
+            for f in raw_findings
+        ]
+
+        result = ReviewResult(
+            verdict=verdict,
+            summary=out.get("summary", last_record.result.error_message),
+            findings=findings,
         )
-    except Exception as exc:
-        return ReviewResult(
+    else:
+        result = ReviewResult(
             verdict=ReviewVerdict.ERROR,
-            summary=f"Review failed: {exc}",
+            summary="Review failed: pipeline did not produce a valid result.",
         )
+
+    _display_review_result(result)
+
+
 
 
 def _display_review_result(result: ReviewResult) -> None:

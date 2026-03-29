@@ -34,6 +34,7 @@ class StepAction(enum.StrEnum):
     LINT_FIX = "lint_fix"
     DECOMPOSE = "decompose"
     PLAN = "plan"
+    ENRICH = "enrich"
 
 
 class StepTarget(enum.StrEnum):
@@ -43,6 +44,7 @@ class StepTarget(enum.StrEnum):
     CODE = "code"
     TESTS = "tests"
     FEATURE = "feature"
+    STANDARDS = "standards"
 
 
 class GateType(enum.StrEnum):
@@ -90,6 +92,8 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.DECOMPOSE, StepTarget.FEATURE),
         # Planning pipeline combos
         (StepAction.PLAN, StepTarget.SPEC),
+        # Standards pipeline combos
+        (StepAction.ENRICH, StepTarget.STANDARDS),
     }
 )
 
@@ -173,6 +177,41 @@ class PipelineDefinition(BaseModel):
             if step.name == name:
                 return step
         return None
+
+    @classmethod
+    def create_single_step(
+        cls,
+        name: str,
+        action: StepAction,
+        target: StepTarget,
+        gate: GateDefinition | None = None,
+        params: dict[str, Any] | None = None,
+        description: str = "",
+    ) -> PipelineDefinition:
+        """Create an in-memory 1-step pipeline.
+
+        Args:
+            name: Unique identifier for the step.
+            action: Primary action verb.
+            target: Primary target noun.
+            gate: Optional gate that controls flow after this step.
+            params: Optional execution parameters.
+            description: Human-readable context.
+        """
+        step = PipelineStep(
+            name=name,
+            action=action,
+            target=target,
+            params=params or {},
+            gate=gate,
+            description=description,
+        )
+        return cls(
+            name=f"single_step_{name}",
+            description=f"Auto-generated single-step pipeline for {name}",
+            version="1.0",
+            steps=[step],
+        )
 
     def validate_flow(self) -> list[str]:
         """Validate pipeline integrity.

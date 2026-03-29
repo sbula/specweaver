@@ -32,11 +32,13 @@ class TestStepAction:
         assert StepAction.VALIDATE == "validate"
         assert StepAction.REVIEW == "review"
         assert StepAction.GENERATE == "generate"
+        assert StepAction.LINT_FIX == "lint_fix"
         assert StepAction.DECOMPOSE == "decompose"
         assert StepAction.PLAN == "plan"
+        assert StepAction.ENRICH == "enrich"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 7
+        assert len(StepAction) == 8
 
 
 # ---------------------------------------------------------------------------
@@ -52,9 +54,10 @@ class TestStepTarget:
         assert StepTarget.CODE == "code"
         assert StepTarget.TESTS == "tests"
         assert StepTarget.FEATURE == "feature"
+        assert StepTarget.STANDARDS == "standards"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 4
+        assert len(StepTarget) == 5
 
 
 # ---------------------------------------------------------------------------
@@ -66,7 +69,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 13
+        assert len(VALID_STEP_COMBINATIONS) == 14
 
     @pytest.mark.parametrize(
         ("action", "target"),
@@ -86,6 +89,8 @@ class TestValidStepCombinations:
             (StepAction.DECOMPOSE, StepTarget.FEATURE),
             # Planning combos
             (StepAction.PLAN, StepTarget.SPEC),
+            # Standards combos
+            (StepAction.ENRICH, StepTarget.STANDARDS),
         ],
     )
     def test_valid_combination(self, action: StepAction, target: StepTarget) -> None:
@@ -268,6 +273,29 @@ class TestPipelineDefinition:
     def test_get_step_not_found(self) -> None:
         p = self._make_pipeline()
         assert p.get_step("nonexistent") is None
+
+    def test_create_single_step(self) -> None:
+        """create_single_step returns a valid 1-step pipeline."""
+        gate = GateDefinition(condition=GateCondition.COMPLETED, on_fail=OnFailAction.ABORT)
+        params = {"key": "value"}
+        p = PipelineDefinition.create_single_step(
+            name="test_single_step",
+            action=StepAction.ENRICH,
+            target=StepTarget.STANDARDS,
+            gate=gate,
+            params=params,
+            description="A test single step"
+        )
+        assert p.name == "single_step_test_single_step"
+        assert len(p.steps) == 1
+        step = p.steps[0]
+        assert step.name == "test_single_step"
+        assert step.action == StepAction.ENRICH
+        assert step.target == StepTarget.STANDARDS
+        assert step.gate == gate
+        assert step.params == params
+        assert step.description == "A test single step"
+        assert p.validate_flow() == []
 
     # -- validate_flow --
 

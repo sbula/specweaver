@@ -33,10 +33,13 @@ class TestReviewCommandFlush:
         spec.write_text("# Test Spec\n", encoding="utf-8")
 
         mock_collector = MagicMock(spec=TelemetryCollector)
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "gemini-2.5-pro"
+
         with (
             patch(
                 "specweaver.cli._helpers._require_llm_adapter",
-                return_value=(MagicMock(), mock_collector, MagicMock()),
+                return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch(
                 "specweaver.project.discovery.resolve_project_path",
@@ -65,10 +68,13 @@ class TestImplementCommandFlush:
         spec.write_text("# Test Spec\n", encoding="utf-8")
 
         mock_collector = MagicMock(spec=TelemetryCollector)
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "gemini-2.5-pro"
+
         with (
             patch(
                 "specweaver.cli._helpers._require_llm_adapter",
-                return_value=(MagicMock(), mock_collector, MagicMock()),
+                return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch(
                 "specweaver.project.discovery.resolve_project_path",
@@ -104,10 +110,13 @@ class TestDraftCommandFlush:
         mock_draft.return_value = tmp_path / "result.md"
 
         mock_collector = MagicMock(spec=TelemetryCollector)
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "gemini-2.5-pro"
+
         with (
             patch(
                 "specweaver.cli._helpers._require_llm_adapter",
-                return_value=(MagicMock(), mock_collector, MagicMock()),
+                return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch(
                 "specweaver.project.discovery.resolve_project_path",

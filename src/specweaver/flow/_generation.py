@@ -229,13 +229,12 @@ class PlanSpecHandler:
             )
 
             try:
-                from specweaver.cli._core import get_db
-                from specweaver.config.settings import load_settings
-
-                db = get_db()
-                settings = load_settings(db, context.project_path.name)
-                stitch_mode = settings.stitch.mode
-                stitch_api_key = settings.stitch.api_key
+                if context.config and hasattr(context.config, "stitch"):
+                    stitch_mode = context.config.stitch.mode
+                    stitch_api_key = context.config.stitch.api_key
+                else:
+                    stitch_mode = "off"
+                    stitch_api_key = ""
             except Exception:
                 stitch_mode = "off"
                 stitch_api_key = ""

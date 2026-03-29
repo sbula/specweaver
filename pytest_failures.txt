@@ -1,0 +1,18 @@
+FAILED tests/e2e/test_constitution_e2e.py::TestConstitutionE2E::test_review_spec_includes_constitution_in_prompt
+FAILED tests/e2e/test_constitution_e2e.py::TestConstitutionE2E::test_review_code_includes_constitution_in_prompt
+FAILED tests/e2e/test_constitution_e2e.py::TestConstitutionE2E::test_custom_constitution_overrides_default
+FAILED tests/e2e/test_constitution_e2e.py::TestConstitutionE2E::test_no_constitution_file_means_no_injection
+FAILED tests/e2e/test_lifecycle.py::TestFullLifecycle::test_full_pipeline - A...
+FAILED tests/e2e/test_lifecycle_edge_cases.py::TestMediumPriorityEdgeCases::test_path_traversal_in_component_name
+FAILED tests/e2e/test_lifecycle_edge_cases.py::TestRealWorldEdgeCases::test_llm_error_during_review_shows_error_verdict
+FAILED tests/e2e/test_new_feature_e2e.py::TestNewFeatureLlmErrorMidPipeline::test_new_feature_llm_error_mid_pipeline
+FAILED tests/e2e/test_new_feature_e2e.py::TestNewFeatureWithConstitution::test_new_feature_with_constitution
+FAILED tests/e2e/test_topology_e2e.py::TestReviewWithNhopSelector::test_review_with_nhop_selector
+FAILED tests/e2e/test_topology_e2e.py::TestReviewWithImpactSelector::test_review_with_impact_selector
+FAILED tests/e2e/test_topology_e2e.py::TestReviewWithNoTopology::test_review_with_no_topology
+FAILED tests/e2e/test_topology_e2e.py::TestReviewWithNoTopology::test_review_with_all_selector_types_no_topology
+FAILED tests/integration/cli/test_cli_implement.py::TestImplementFlow::test_implement_generates_files
+FAILED tests/integration/cli/test_cli_implement.py::TestImplementFlow::test_implement_spec_suffix_removal
+FAILED tests/integration/cli/test_cli_implement.py::TestFullPipeline::test_full_pipeline
+FAILED tests/integration/cli/test_cli_review.py::TestReviewErrors::test_review_spec_accepted
+FAILED tests/integration/cli/test_cli_review.py::TestReviewErrors::test_review_spec_denied

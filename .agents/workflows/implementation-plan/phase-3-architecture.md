@@ -2,6 +2,9 @@
 description: "Phase 3: Architecture Verification — verify layer placement, dependency direction, and archetype compliance for every proposed change. No HITL. Feeds Phase 4."
 ---
 
+> [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
 > [!IMPORTANT]
 > **This phase is fully autonomous. No HITL.**
 > All violations discovered here are appended to the Phase 2 audit list

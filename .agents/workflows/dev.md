@@ -3,6 +3,9 @@ description: "TDD development workflow for implementing features. Load context �
 ---
 
 > [!CAUTION]
+> **NO SHELL COMPOUNDING & NO PIPES**: You are strictly forbidden from combining commands using shell operators (`&&`, `||`, `;`, `|`, `>`) or using inline scripts like `python -c`. The secure sandbox blocks these and demands HITL approval. Execute EACH command as a SEPARATE `run_command` tool call or write a `.py` script and run it.
+
+> [!CAUTION]
 > **STRICT COMPLIANCE MANDATE:**
 > 1. **NO INTERNAL MEMORY RELIANCE:** You are STRICTLY FORBIDDEN from relying on your internal training memory for facts, APIs, designs, or code behavior. Explicit research (files, internet, HITL) is a MUST.
 > 2. **NO SKIPPING STEPS:** IT IS STRICTLY FORBIDDEN to skip ANY phase, step, or specific checklist item in this workflow, even if a feature seems "trivially simple". You must execute every single instruction exhaustively.
@@ -127,8 +130,9 @@ python -m pytest --lf -v --tb=long
 # Run test with debug logging enabled
 python -m pytest tests/unit/test_foo.py -s --log-cli-level=DEBUG
 
-# Run arbitrary python debug scripts (must be safe)
-python -c "..."
+# Run arbitrary python debug scripts via file (must be safe)
+# write your script to debug.py then run:
+python debug.py
 ```
 
 Debug loop: read error → re-read source → fix → re-run failing test → repeat until green.
@@ -167,9 +171,9 @@ For **each commit boundary** in `task.md`, in order:
 - Run the full test suite after the final task in this batch hierarchically (fix failures before moving to the next level):
 // turbo
 ```
-python -m pytest tests/unit --tb=short -q
-python -m pytest tests/integration --tb=short -q
-python -m pytest tests/e2e --tb=short -q
+python run_unit_tests.py
+python run_integ_tests.py
+python run_e2e_tests.py
 ```
 - Fix any regressions before proceeding to Step B.
 
