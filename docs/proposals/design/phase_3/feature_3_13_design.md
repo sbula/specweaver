@@ -77,12 +77,9 @@ Single feature.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Metadata Injection | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Metadata Injection | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED on 2026-03-29.
-**Next step**: To begin the technical planning phase, run:
-`/implementation-plan docs/proposals/design/phase_3/feature_3_13_design.md SF-1`
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate workflow.
+**Current status**: Feature 3.13 COMPLETE and COMMITTED on 2026-03-29.
+**Next step**: Proceed to the next feature on the roadmap (`feature_3_13a` or `feature_3_14`).
