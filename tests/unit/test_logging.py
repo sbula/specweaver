@@ -5,15 +5,16 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import pytest
+from rich.logging import RichHandler
 
 from specweaver.logging import (
     BACKUP_COUNT,
-    LOG_FORMAT,
     LOG_LEVELS,
     MAX_BYTES,
     get_log_path,
@@ -28,6 +29,65 @@ def _clean_logging():
     teardown_logging()
     yield
     teardown_logging()
+
+
+# ---------------------------------------------------------------------------
+# JSONFormatter
+# ---------------------------------------------------------------------------
+
+
+class TestJSONFormatter:
+    """Tests for JSONFormatter."""
+
+    def test_format_valid_json(self):
+        from specweaver.logging import JSONFormatter
+
+        formatter = JSONFormatter()
+        record = logging.LogRecord(
+            name="test.logger",
+            level=logging.INFO,
+            pathname="test.py",
+            lineno=10,
+            msg="Hello %s",
+            args=("world",),
+            exc_info=None,
+        )
+        output = formatter.format(record)
+
+        parsed = json.loads(output)
+        assert "timestamp" in parsed
+        assert parsed["levelname"] == "INFO"
+        assert parsed["name"] == "test.logger"
+        assert parsed["message"] == "Hello world"
+        assert "exc_info" not in parsed
+
+    def test_format_includes_exc_info(self):
+        import sys
+
+        from specweaver.logging import JSONFormatter
+
+        formatter = JSONFormatter()
+
+        try:
+            _ = 1 / 0
+        except ZeroDivisionError:
+            exc_info = sys.exc_info()
+
+        record = logging.LogRecord(
+            name="test.logger",
+            level=logging.ERROR,
+            pathname="test.py",
+            lineno=20,
+            msg="Failed",
+            args=(),
+            exc_info=exc_info,
+        )
+
+        output = formatter.format(record)
+        parsed = json.loads(output)
+
+        assert "exc_info" in parsed
+        assert "ZeroDivisionError" in parsed["exc_info"]
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +133,7 @@ class TestSetupLogging:
         assert len(root.handlers) == 2
         handler_types = {type(h) for h in root.handlers}
         assert RotatingFileHandler in handler_types
-        assert logging.StreamHandler in handler_types
+        assert RichHandler in handler_types
 
     def test_file_handler_uses_correct_path(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
@@ -111,7 +171,7 @@ class TestSetupLogging:
         console_handler = next(
             h
             for h in root.handlers
-            if isinstance(h, logging.StreamHandler) and not isinstance(h, RotatingFileHandler)
+            if isinstance(h, RichHandler)
         )
         assert console_handler.level == logging.WARNING
 
@@ -184,7 +244,8 @@ class TestSetupLogging:
         file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
         assert file_handler.level == logging.DEBUG
 
-    def test_log_format_is_consistent(self, tmp_path, monkeypatch):
+    def test_log_formatters_are_configured_correctly(self, tmp_path, monkeypatch):
+        from specweaver.logging import JSONFormatter
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
             "specweaver.config.paths.logs_dir",
@@ -192,9 +253,14 @@ class TestSetupLogging:
         )
         setup_logging("proj")
         root = logging.getLogger("specweaver")
-        for handler in root.handlers:
-            assert handler.formatter is not None
-            assert handler.formatter._fmt == LOG_FORMAT
+
+        file_handler = next(h for h in root.handlers if isinstance(h, RotatingFileHandler))
+        assert isinstance(file_handler.formatter, JSONFormatter)
+
+        console_handler = next(h for h in root.handlers if isinstance(h, RichHandler))
+        assert console_handler.formatter is not None
+        assert console_handler.formatter._fmt == "%(message)s"
+        assert console_handler.formatter.datefmt == "[%X]"
 
     def test_creates_log_directory(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"

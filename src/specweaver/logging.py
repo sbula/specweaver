@@ -23,9 +23,12 @@ Then in any module::
 
 from __future__ import annotations
 
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
+from rich.logging import RichHandler
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -68,6 +71,22 @@ _GLOBAL_PROJECT = "_global"
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+
+class JSONFormatter(logging.Formatter):
+    """Formats log records as JSON strings."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format the specified record as a JSON string."""
+        log_dict = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "levelname": record.levelname,
+            "name": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            log_dict["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(log_dict)
 
 
 def get_log_path(project_name: str) -> Path:
@@ -122,7 +141,7 @@ def setup_logging(
     root_logger.handlers.clear()
     root_logger.setLevel(logging.DEBUG)  # Let handlers filter
 
-    formatter = logging.Formatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+    json_formatter = JSONFormatter()
 
     # --- File handler ---
     log_path = get_log_path(project_name)
@@ -134,13 +153,13 @@ def setup_logging(
         encoding="utf-8",
     )
     file_handler.setLevel(file_level)
-    file_handler.setFormatter(formatter)
+    file_handler.setFormatter(json_formatter)
     root_logger.addHandler(file_handler)
 
     # --- Console handler (stderr, WARNING+ only) ---
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.WARNING)
-    console_handler.setFormatter(formatter)
+    console_handler = RichHandler(level=logging.WARNING, rich_tracebacks=True)
+    console_formatter = logging.Formatter("%(message)s", datefmt="[%X]")
+    console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
 
     # Tag the logger so we can detect idempotent re-calls

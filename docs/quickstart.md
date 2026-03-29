@@ -210,7 +210,7 @@ sw config get-log-level
 sw config set-log-level debug
 ```
 
-File logs capture **DEBUG** level (full detail); console output shows only **WARNING+**.
+File logs capture **DEBUG** level (JSON formatted); console output shows only **WARNING+** (Rich formatted).
 
 ## Managing Multiple Projects
 

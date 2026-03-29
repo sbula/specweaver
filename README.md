@@ -247,7 +247,7 @@ docker compose up -d
 
 ├── src/specweaver/
 │   ├── cli/                    # Typer CLI package (13 submodules)
-│   ├── logging.py              # Logging setup (RotatingFileHandler, per-project logs)
+│   ├── logging.py              # Logging setup (JSON file output, Rich console UI)
 │   ├── config/                 # SQLite database, settings, migrations
 │   ├── context/                # Context providers (HITL, inferrer, analyzers)
 │   ├── drafting/               # Interactive spec drafter
@@ -270,7 +270,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 3587+ tests (unit, integration, E2E)
+├── tests/                      # 3588+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

@@ -10,7 +10,7 @@ To run all tests across all layers (Unit, Integration, E2E), use the root comman
 ```bash
 pytest
 ```
-*Tip:* To see shorter output, you can use: `pytest -q` (quiet) or `pytest -v` (verbose).
+*Tip:* To see shorter output, you can use: `pytest -q` (quiet) or `pytest -v` (verbose). For deep debugging of failures, inspect the `logs/<project_name>/specweaver.log` which outputs full NDJSON tracebacks.
 
 ## 2. Running Specific Testing Layers
 SpecWeaver organizes tests into distinct layers. You can run them separately or combine them by passing multiple test paths.

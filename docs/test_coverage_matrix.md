@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **3 587 collected** · 3 587 passed · 0 skipped · 116 source modules · 168 test files
+> **3 588 collected** · 3 588 passed · 0 skipped · 116 source modules · 168 test files
 > **Last updated**: 2026-03-29
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -14,7 +14,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Total stories / use cases catalogued | 229 |
 | Fully covered (✅ at all applicable layers) | 113 |
 | Missing **unit** tests | 49 |
-| Missing **integration** tests | 57 |
+| Missing **integration** tests | 56 |
 | Missing **both** unit + integration | 37 |
 | Missing **e2e** tests | 4 |
 | Missing **performance** tests | 3 |
@@ -45,8 +45,8 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `standards/` | 11 | 172 | 0 | 4 | 176 |
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
-| `logging.py` | 1 | 22 | 0 | 0 | 22 |
-| **Total** | **115** | **2 992** | **243** | **82** | **3 488** |
+| `logging.py` | 1 | 22 | 1 | 0 | 23 |
+| **Total** | **115** | **2 992** | **244** | **82** | **3 489** |
 
 
 ---
