@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -13,6 +14,9 @@ import typer
 from rich.table import Table
 
 from specweaver.cli import _core
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from specweaver.config.database import Database

@@ -14,6 +14,7 @@ into the DB via migrate_legacy_config().
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING, Literal
 
@@ -21,6 +22,8 @@ from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from specweaver.config.database import Database
+
+logger = logging.getLogger(__name__)
 
 
 class LLMSettings(BaseModel):
@@ -98,22 +101,27 @@ def load_settings(
     Raises:
         ValueError: If project is not registered.
     """
+    logger.debug("load_settings called for project=%s, role=%s", project_name, llm_role)
     proj = db.get_project(project_name)
     if not proj:
+        logger.error("Project '%s' not found in database", project_name)
         msg = f"Project '{project_name}' not found"
         raise ValueError(msg)
 
     profile = db.get_project_profile(project_name, llm_role)
 
     if not profile:
+        logger.info("No profile for project=%s role=%s, falling back to system-default", project_name, llm_role)
         profile = db.get_llm_profile_by_name("system-default")
 
     if not profile:
+        logger.error("System default profile not found; cannot load settings for '%s'", project_name)
         msg = f"System default profile not found in database. Cannot load settings for '{project_name}'."
         raise ValueError(msg)
 
     provider_val = str(profile.get("provider", "gemini"))
     env_key = f"{provider_val.upper()}_API_KEY"
+    logger.debug("Resolved provider=%s for project=%s", provider_val, project_name)
 
     llm = LLMSettings(
         model=str(profile["model"]),
@@ -150,10 +158,13 @@ def load_settings_for_active(
     Raises:
         ValueError: If no project is active.
     """
+    logger.debug("load_settings_for_active called with role=%s", llm_role)
     active = db.get_active_project()
     if not active:
+        logger.error("No active project found")
         msg = "No active project. Run 'sw init <name> --path <path>' first."
         raise ValueError(msg)
+    logger.debug("Active project resolved to '%s'", active)
     return load_settings(db, active, llm_role=llm_role)
 
 
@@ -187,13 +198,16 @@ def migrate_legacy_config(
     except ImportError:
         YAMLError = Exception  # noqa: N806
 
+    logger.debug("migrate_legacy_config called for project=%s, path=%s", project_name, project_path)
     config_file = Path(project_path) / ".specweaver" / "config.yaml"
     if not config_file.is_file():
+        logger.debug("No legacy config.yaml found at %s", config_file)
         return False
 
     # Check if project already exists (before parsing)
     existing = db.get_project(project_name)
     if existing:
+        logger.error("Project '%s' already exists in database", project_name)
         msg = f"Project '{project_name}' already exists"
         raise ValueError(msg)
 
@@ -202,6 +216,7 @@ def migrate_legacy_config(
     try:
         data = yaml.load(config_file)
     except YAMLError:
+        logger.exception("Failed to parse legacy config at %s", config_file)
         data = {}
 
     if not isinstance(data, dict):
@@ -238,4 +253,5 @@ def migrate_legacy_config(
     for role in ("review", "draft", "search"):
         db.link_project_profile(project_name, role, profile_id)
 
+    logger.info("Migrated legacy config for project '%s' (provider=%s, model=%s)", project_name, provider, model)
     return True

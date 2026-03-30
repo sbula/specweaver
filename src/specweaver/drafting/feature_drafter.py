@@ -12,6 +12,7 @@ Output: a *_feature_spec.md file in the target directory.
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC
 from typing import TYPE_CHECKING, TypedDict
 
@@ -25,6 +26,8 @@ if TYPE_CHECKING:
     from specweaver.context.provider import ContextProvider
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class FeatureSectionDef(TypedDict, total=False):
@@ -193,6 +196,7 @@ class FeatureDrafter:
         from datetime import datetime
 
         sections: list[dict[str, str]] = []
+        logger.debug("FeatureDrafter.draft: starting for name=%s, output=%s", name, output_dir)
 
         for section_def in FEATURE_SECTIONS:
             # Ask the user for context

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -15,6 +16,8 @@ from specweaver.llm.errors import (
     RateLimitError,
 )
 from specweaver.llm.telemetry import CostEntry
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -95,6 +98,7 @@ class OpenAIAdapter(LLMAdapter):
 
         client = self._get_client()
         oai_messages = self._convert_messages(messages, config)
+        logger.debug("OpenAIAdapter.generate: model=%s, messages=%d", config.model, len(messages))
 
         kwargs: dict[str, Any] = {
             "model": config.model,

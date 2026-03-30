@@ -130,6 +130,7 @@ def _scan_profiles(project_dir: Path | None = None) -> list[DomainProfile]:
             description = _extract_description(yaml_file)
             seen[name] = DomainProfile(name=name, description=description)
 
+    logger.debug("Profile scan found %d profiles", len(seen))
     return sorted(seen.values(), key=lambda p: p.name)
 
 
@@ -148,6 +149,7 @@ def profile_exists(
         name: Profile name (e.g. ``"web-app"``).
         project_dir: Optional project root for custom pipeline lookup.
     """
+    logger.debug("profile_exists check for name=%s", name)
     return get_profile(name, project_dir=project_dir) is not None
 
 
@@ -163,6 +165,7 @@ def get_profile(
         name: Profile name (e.g. ``"web-app"``).
         project_dir: Optional project root for custom pipeline lookup.
     """
+    logger.debug("get_profile called for name=%s", name)
     if not name:
         return None
     normalised = name.lower().replace("_", "-")
@@ -196,6 +199,7 @@ def list_profiles(project_dir: Path | None = None) -> list[DomainProfile]:
     Args:
         project_dir: Optional project root for custom pipeline discovery.
     """
+    logger.debug("list_profiles called")
     return _scan_profiles(project_dir)
 
 

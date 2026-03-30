@@ -17,10 +17,13 @@ Security controls:
 from __future__ import annotations
 
 import contextlib
+import logging
 import os
 import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -141,7 +144,10 @@ class FileExecutor:
             return ExecutorResult(status="error", error=f"Path validation failed: {path}")
 
         if self._is_protected(path):
+            logger.warning("FileExecutor.write: attempt to write protected file '%s'", path)
             return ExecutorResult(status="error", error=f"Protected file: {path}")
+
+        logger.debug("FileExecutor.write: writing %d bytes to '%s'", len(content), path)
 
         tmp_path = resolved.with_suffix(f".tmp.{uuid.uuid4()}")
         try:
@@ -175,7 +181,10 @@ class FileExecutor:
             return ExecutorResult(status="error", error=f"File not found: {path}")
 
         if resolved.is_dir():
+            logger.warning("FileExecutor.delete: attempt to delete directory '%s'", path)
             return ExecutorResult(status="error", error=f"Cannot delete directory: {path}")
+
+        logger.debug("FileExecutor.delete: deleting file '%s'", path)
 
         try:
             resolved.unlink()
@@ -197,7 +206,10 @@ class FileExecutor:
             return ExecutorResult(status="error", error=f"Path validation failed: {path}")
 
         if self._is_protected(path):
+            logger.warning("FileExecutor.mkdir: attempt to create protected path '%s'", path)
             return ExecutorResult(status="error", error=f"Protected path: {path}")
+
+        logger.debug("FileExecutor.mkdir: ensuring directory '%s'", path)
 
         try:
             resolved.mkdir(parents=True, exist_ok=True)
@@ -306,10 +318,13 @@ class FileExecutor:
             return ExecutorResult(status="error", error=f"Protected source: {src}")
 
         if self._is_protected(dst):
+            logger.warning("FileExecutor.move: attempt to move to protected destination '%s'", dst)
             return ExecutorResult(status="error", error=f"Protected destination: {dst}")
 
         if not resolved_src.exists():
             return ExecutorResult(status="error", error=f"Source not found: {src}")
+
+        logger.debug("FileExecutor.move: moving '%s' -> '%s'", src, dst)
 
         try:
             resolved_dst.parent.mkdir(parents=True, exist_ok=True)

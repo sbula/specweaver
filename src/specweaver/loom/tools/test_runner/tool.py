@@ -9,8 +9,11 @@ Agents receive a role-specific interface that exposes only allowed operations.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.llm.models import ToolDefinition
@@ -87,6 +90,7 @@ class TestRunnerTool:
     ) -> ToolResult:
         """Run tests (requires run_tests intent)."""
         self._require_intent("run_tests")
+        logger.debug("TestRunnerTool.run_tests: target=%s, kind=%s", target, kind)
 
         result = self._atom.run(
             {
@@ -115,6 +119,8 @@ class TestRunnerTool:
             self._require_intent("run_linter_fix")
         else:
             self._require_intent("run_linter")
+
+        logger.debug("TestRunnerTool.run_linter: target=%s, fix=%r", target, fix)
 
         result = self._atom.run(
             {
@@ -155,6 +161,7 @@ class TestRunnerTool:
     ) -> ToolResult:
         """Run complexity checks (requires run_complexity intent)."""
         self._require_intent("run_complexity")
+        logger.debug("TestRunnerTool.run_complexity: target=%s", target)
 
         result = self._atom.run(
             {

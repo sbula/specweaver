@@ -53,6 +53,7 @@ def load_pipeline_yaml(
     Raises:
         FileNotFoundError: If the pipeline YAML is not found.
     """
+    logger.debug("load_pipeline_yaml called for name=%s", name)
     raw = _load_raw_yaml(name, project_dir=project_dir)
     pipeline = ValidationPipeline(**raw)
 
@@ -125,6 +126,7 @@ def resolve_pipeline_name(
     Raises:
         ValueError: If the level is unknown.
     """
+    logger.debug("resolve_pipeline_name: level=%s, pipeline=%s", level, pipeline)
     if pipeline:
         return pipeline
     if level == "feature":
@@ -143,5 +145,6 @@ def resolve_pipeline_name(
                 if profile_name:
                     return profile_to_pipeline_name(profile_name)
         return "validation_spec_default"
+    logger.warning("resolve_pipeline_name: unknown level '%s'", level)
     msg = f"Unknown validation level '{level}'. Use 'feature', 'component', or 'code'."
     raise ValueError(msg)

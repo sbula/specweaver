@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -14,6 +15,8 @@ from specweaver.llm.errors import (
     RateLimitError,
 )
 from specweaver.llm.telemetry import CostEntry
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -70,6 +73,7 @@ class MistralAdapter(LLMAdapter):
         from specweaver.llm.models import LLMResponse, TokenUsage
 
         client = self._get_client()
+        logger.debug("MistralAdapter.generate: model=%s, messages=%d", config.model, len(messages))
         mistral_messages: list[dict[str, Any]] = []
         if config.system_instruction:
             mistral_messages.append({"role": "system", "content": config.system_instruction})

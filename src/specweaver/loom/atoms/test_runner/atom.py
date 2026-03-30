@@ -12,10 +12,13 @@ is supported, but the interface allows future language support.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
 from specweaver.loom.atoms.base import Atom, AtomResult, AtomStatus
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -75,10 +78,13 @@ class TestRunnerAtom(Atom):
         """
         intent = context.get("intent")
         if intent is None:
+            logger.error("TestRunnerAtom.run: missing 'intent' in context")
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message="Missing 'intent' in context.",
             )
+
+        logger.info("TestRunnerAtom.run: dispatching intent '%s'", intent)
 
         handler: Callable[[dict[str, Any]], AtomResult] | None = getattr(
             self,

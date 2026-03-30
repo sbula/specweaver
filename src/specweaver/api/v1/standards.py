@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path  # noqa: TC003 -- runtime for rglob
 
 from fastapi import APIRouter, Depends, Query
@@ -16,6 +17,9 @@ from specweaver.api.v1.schemas import (  # noqa: TC001 -- runtime for FastAPI
     ScanRequest,
 )
 from specweaver.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
+
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter()
 

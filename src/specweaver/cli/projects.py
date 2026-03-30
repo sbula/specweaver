@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import typer
@@ -13,6 +14,9 @@ from rich.table import Table
 from specweaver.cli import _core
 from specweaver.project.discovery import resolve_project_path
 from specweaver.project.scaffold import scaffold_project
+
+logger = logging.getLogger(__name__)
+
 
 
 @_core.app.command()

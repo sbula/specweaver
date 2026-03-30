@@ -63,6 +63,7 @@ class RuleRegistry:
                 f"Invalid category '{category}' for rule '{rule_id}'. "
                 f"Must be one of: {sorted(_VALID_CATEGORIES)}"
             )
+            logger.warning("register: invalid category '%s' for rule '%s'", category, rule_id)
             raise ValueError(msg)
 
         if rule_id in self._rules:
@@ -72,6 +73,7 @@ class RuleRegistry:
                 f"({existing_cls.__name__}). Cannot re-register "
                 f"with {rule_class.__name__}."
             )
+            logger.warning("register: rule '%s' already registered as %s", rule_id, existing_cls.__name__)
             raise ValueError(msg)
 
         self._rules[rule_id] = (rule_class, category)

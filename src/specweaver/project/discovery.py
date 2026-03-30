@@ -11,8 +11,11 @@ Resolution priority:
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def resolve_project_path(
@@ -35,11 +38,14 @@ def resolve_project_path(
         NotADirectoryError: If the resolved path is a file, not a directory.
     """
     if project_arg is not None:
+        logger.debug("resolve_project_path: using --project flag: %s", project_arg)
         raw_path = project_arg
     elif "SW_PROJECT" in os.environ:
+        logger.debug("resolve_project_path: using SW_PROJECT env var: %s", os.environ["SW_PROJECT"])
         raw_path = os.environ["SW_PROJECT"]
     else:
         # Default to current working directory
+        logger.debug("resolve_project_path: falling back to cwd")
         return (cwd or Path.cwd()).resolve()
 
     # Resolve relative to cwd if provided, otherwise absolute
@@ -50,6 +56,7 @@ def resolve_project_path(
     resolved = path.resolve()
 
     if not resolved.exists():
+        logger.error("resolve_project_path: path does not exist: %s", resolved)
         msg = f"Project path does not exist: {resolved}"
         raise FileNotFoundError(msg)
 

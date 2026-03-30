@@ -61,6 +61,7 @@ class DataExtensionsMixin:
                 (project_name,),
             ).fetchone()
             if not proj:
+                logger.warning("set_validation_override: project '%s' not found", project_name)
                 msg = f"Project '{project_name}' not found"
                 raise ValueError(msg)
 
@@ -157,6 +158,7 @@ class DataExtensionsMixin:
 
         proj = self.get_project(project_name)  # type: ignore[attr-defined]
         if not proj:
+            logger.warning("load_validation_settings: project '%s' not found", project_name)
             msg = f"Project '{project_name}' not found"
             raise ValueError(msg)
 
@@ -216,6 +218,7 @@ class DataExtensionsMixin:
 
         proj = self.get_project(project_name)  # type: ignore[attr-defined]
         if not proj:
+            logger.warning("set_domain_profile: project '%s' not found", project_name)
             msg = f"Project '{project_name}' not found"
             raise ValueError(msg)
 
@@ -224,6 +227,7 @@ class DataExtensionsMixin:
                 f"Unknown profile '{profile_name}'. "
                 "Use 'sw config profiles' to see available profiles."
             )
+            logger.warning("set_domain_profile: unknown profile '%s'", profile_name)
             raise ValueError(msg)
 
         with self.connect() as conn:  # type: ignore[attr-defined]

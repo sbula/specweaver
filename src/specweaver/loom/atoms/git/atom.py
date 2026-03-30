@@ -12,10 +12,13 @@ All commands run on the target project directory via EngineGitExecutor.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.loom.atoms.base import Atom, AtomResult, AtomStatus
 from specweaver.loom.commons.git.engine_executor import EngineGitExecutor
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -77,10 +80,13 @@ class GitAtom(Atom):
         """
         intent = context.get("intent")
         if intent is None:
+            logger.error("GitAtom.run: missing 'intent' in context")
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message="Missing 'intent' in context.",
             )
+
+        logger.info("GitAtom.run: dispatching intent '%s'", intent)
 
         handler = getattr(self, f"_intent_{intent}", None)
         if handler is None:

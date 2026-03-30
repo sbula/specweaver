@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter
 
 from specweaver.api.v1 import (
@@ -18,6 +20,9 @@ from specweaver.api.v1 import (
     validation,
     ws,
 )
+
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(projects.router, tags=["projects"])

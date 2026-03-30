@@ -95,6 +95,7 @@ class WorkspaceBoundary:
             f"Path '{resolved}' is outside workspace boundaries "
             f"(roots: {[str(r) for r in self.roots]})"
         )
+        logger.warning("WorkspaceBoundary.validate_path: %s", msg)
         raise WorkspaceBoundaryError(msg)
 
     def resolve_relative(self, relative: str) -> Path:

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import bleach  # type: ignore
@@ -15,6 +16,9 @@ from fastapi.templating import Jinja2Templates
 
 from specweaver.api.deps import get_db
 from specweaver.config.database import Database  # noqa: TC001
+
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter(tags=["UI", "HTMX"])
 

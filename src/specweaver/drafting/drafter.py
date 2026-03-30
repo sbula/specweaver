@@ -13,6 +13,7 @@ Output: a complete _spec.md file in the target project's specs/ directory.
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC
 from typing import TYPE_CHECKING, TypedDict
 
@@ -26,6 +27,8 @@ if TYPE_CHECKING:
     from specweaver.context.provider import ContextProvider
     from specweaver.graph.topology import TopologyContext
     from specweaver.llm.adapters.base import LLMAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class SectionDef(TypedDict, total=False):
@@ -183,6 +186,7 @@ class Drafter:
         from datetime import datetime
 
         sections: list[dict[str, str]] = []
+        logger.debug("Drafter.draft: starting for name=%s, output=%s", name, output_dir)
 
         for section_def in SPEC_SECTIONS:
             # Ask the user for context

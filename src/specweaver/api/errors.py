@@ -5,8 +5,13 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import Request  # noqa: TC002 -- used at runtime by FastAPI
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
+
 
 
 class SpecWeaverAPIError(Exception):

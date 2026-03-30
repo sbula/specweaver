@@ -5,9 +5,14 @@
 
 from __future__ import annotations
 
+import logging
+
 import typer
 
 from specweaver.cli import _core
+
+logger = logging.getLogger(__name__)
+
 
 
 @_core.app.command()

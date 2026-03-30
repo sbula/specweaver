@@ -20,6 +20,9 @@ from specweaver import __version__
 from specweaver.config.database import Database
 from specweaver.config.paths import config_db_path
 
+logger = logging.getLogger(__name__)
+
+
 app = typer.Typer(
     name="sw",
     help="SpecWeaver \u2014 Specification-driven development lifecycle tool.",

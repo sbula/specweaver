@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -19,6 +20,9 @@ from specweaver.cli._helpers import (
     _select_topology_contexts,
 )
 from specweaver.project.discovery import resolve_project_path
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from specweaver.review.reviewer import ReviewResult

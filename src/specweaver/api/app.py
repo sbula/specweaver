@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from importlib.metadata import version
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -17,6 +18,9 @@ from specweaver.api.errors import SpecWeaverAPIError, specweaver_error_handler
 from specweaver.api.ui import htmx as ui_htmx
 from specweaver.api.ui import routes as ui_routes
 from specweaver.api.v1 import health, router
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from specweaver.api.event_bridge import EventBridge

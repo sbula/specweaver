@@ -49,6 +49,12 @@ def load_standards_content(
     """
     from specweaver.standards.scope_detector import _resolve_scope
 
+    logger.debug(
+        "load_standards_content: project=%s, target=%s, max_chars=%d",
+        project_name,
+        target_path,
+        max_chars,
+    )
     if target_path is not None:
         known_scopes = db.list_scopes(project_name)
         scope = _resolve_scope(target_path, project_path, known_scopes)

@@ -30,6 +30,13 @@ class TelemetryMixin:
         Args:
             record: Dict with keys matching ``UsageRecord.model_dump()``.
         """
+        logger.debug(
+            "log_usage: project=%s, task=%s, model=%s, tokens=%s",
+            record.get("project_name"),
+            record.get("task_type"),
+            record.get("model"),
+            record.get("total_tokens", 0),
+        )
         with self.connect() as conn:  # type: ignore[attr-defined]
             conn.execute(
                 "INSERT INTO llm_usage_log "
@@ -151,6 +158,12 @@ class TelemetryMixin:
                 "VALUES (?, ?, ?, ?)",
                 (model_pattern, input_cost_per_1k, output_cost_per_1k, now),
             )
+        logger.debug(
+            "set_cost_override: pattern=%s, input=$%.4f/1k, output=$%.4f/1k",
+            model_pattern,
+            input_cost_per_1k,
+            output_cost_per_1k,
+        )
 
     def delete_cost_override(self, model_pattern: str) -> None:
         """Remove a cost override, reverting to built-in pricing.

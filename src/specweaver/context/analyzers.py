@@ -15,9 +15,12 @@ language — they just use the interface.
 from __future__ import annotations
 
 import ast
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path  # noqa: TC003 — used at runtime, not just type hints
 from typing import ClassVar
+
+logger = logging.getLogger(__name__)
 
 # Known standard library top-level modules (subset for heuristic).
 # Used to distinguish external vs internal imports.
@@ -217,6 +220,7 @@ class PythonAnalyzer(LanguageAnalyzer):
         try:
             tree = ast.parse(init_file.read_text(encoding="utf-8"))
         except SyntaxError:
+            logger.debug("SyntaxError parsing %s, skipping purpose extraction", init_file)
             return None
 
         docstring = ast.get_docstring(tree)
@@ -277,6 +281,7 @@ class PythonAnalyzer(LanguageAnalyzer):
         for imp in imports:
             top = imp.split(".")[0]
             if top not in _STDLIB_TOP_MODULES and not top.startswith("specweaver"):
+                logger.debug("Inferred archetype 'adapter' for %s (external import: %s)", directory.name, top)
                 return "adapter"
 
         return "pure-logic"
@@ -330,5 +335,7 @@ class AnalyzerFactory:
         """
         for analyzer in cls._analyzers:
             if analyzer.detect(directory):
+                logger.debug("AnalyzerFactory resolved %s for %s", type(analyzer).__name__, directory)
                 return analyzer
+        logger.debug("No analyzer detected for %s", directory)
         return None

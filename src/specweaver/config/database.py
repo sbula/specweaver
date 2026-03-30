@@ -103,6 +103,7 @@ class Database(
     def __init__(self, db_path: str | Path) -> None:
         self._db_path = Path(db_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        logger.debug("Database initialized at %s", self._db_path)
         self._ensure_schema()
 
     def connect(self) -> sqlite3.Connection:
@@ -190,6 +191,7 @@ class Database(
                 already registered to another project.
         """
         _validate_project_name(name)
+        logger.debug("register_project called for name=%s, path=%s", name, root_path)
         now = _now_iso()
 
         with self.connect() as conn:
@@ -199,6 +201,7 @@ class Database(
                 (name,),
             ).fetchone()
             if existing:
+                logger.warning("register_project failed: name '%s' already exists", name)
                 msg = f"Project '{name}' already exists"
                 raise ValueError(msg)
 
@@ -208,6 +211,11 @@ class Database(
                 (root_path,),
             ).fetchone()
             if existing_path:
+                logger.warning(
+                    "register_project failed: path '%s' already registered to '%s'",
+                    root_path,
+                    existing_path["name"],
+                )
                 msg = (
                     f"Path '{root_path}' is already registered to project '{existing_path['name']}'"
                 )
@@ -259,6 +267,7 @@ class Database(
                 (name,),
             ).fetchone()
             if not existing:
+                logger.warning("remove_project failed: '%s' not found", name)
                 msg = f"Project '{name}' not found"
                 raise ValueError(msg)
 
@@ -285,6 +294,7 @@ class Database(
                 (name,),
             ).fetchone()
             if not existing:
+                logger.warning("update_project_path failed: '%s' not found", name)
                 msg = f"Project '{name}' not found"
                 raise ValueError(msg)
 
@@ -326,6 +336,7 @@ class Database(
                 (name,),
             ).fetchone()
             if not existing:
+                logger.warning("set_active_project failed: '%s' not found", name)
                 msg = f"Project '{name}' not found"
                 raise ValueError(msg)
 

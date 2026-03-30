@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -12,6 +13,9 @@ import typer
 
 from specweaver.cli import _core
 from specweaver.cli._helpers import _display_results, _print_summary
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from specweaver.config.settings import ValidationSettings

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query
@@ -18,6 +19,9 @@ from specweaver.api.v1.schemas import (
 )
 from specweaver.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.config.paths import state_db_path
+
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter()
 

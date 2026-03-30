@@ -61,6 +61,7 @@ class StandardsReviewer:
             Rejected categories are excluded.
         """
         if not scope_results:
+            logger.debug("review: no scope_results, returning empty")
             return {}
 
         accepted: dict[str, list[CategoryResult]] = {}
@@ -107,6 +108,8 @@ class StandardsReviewer:
 
             accepted[scope] = scope_accepted
 
+        total = sum(len(v) for v in accepted.values())
+        logger.debug("review: completed, %d accepted across %d scopes", total, len(accepted))
         return accepted
 
     def _should_auto_accept(

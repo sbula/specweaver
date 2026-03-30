@@ -12,6 +12,7 @@ Uses EngineFileExecutor — no protected pattern restrictions.
 
 from __future__ import annotations
 
+import logging
 import shutil
 from typing import TYPE_CHECKING, Any
 
@@ -19,6 +20,8 @@ from ruamel.yaml import YAML
 
 from specweaver.loom.atoms.base import Atom, AtomResult, AtomStatus
 from specweaver.loom.commons.filesystem.executor import EngineFileExecutor
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -58,10 +61,13 @@ class FileSystemAtom(Atom):
         """
         intent = context.get("intent")
         if intent is None:
+            logger.error("FileSystemAtom.run: missing 'intent' in context")
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message="Missing 'intent' in context.",
             )
+
+        logger.info("FileSystemAtom.run: dispatching intent '%s'", intent)
 
         handler: Callable[[dict[str, Any]], AtomResult] | None = getattr(
             self,

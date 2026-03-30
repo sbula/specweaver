@@ -13,12 +13,15 @@ Resolution order for ``load_pipeline()``:
 from __future__ import annotations
 
 import importlib.resources
+import logging
 from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
 from ruamel.yaml import YAML
 
 from specweaver.flow.models import PipelineDefinition
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -39,6 +42,7 @@ def load_pipeline(path: Path) -> PipelineDefinition:
         ValueError: If the YAML is invalid or doesn't match the schema.
     """
     resolved = _resolve_path(path)
+    logger.debug("load_pipeline: loading from resolved path '%s'", resolved)
     yaml = YAML(typ="safe")
     data = yaml.load(resolved.read_text(encoding="utf-8"))
 

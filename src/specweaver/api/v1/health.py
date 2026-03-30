@@ -5,11 +5,15 @@
 
 from __future__ import annotations
 
+import logging
 from importlib.metadata import version
 
 from fastapi import APIRouter
 
 from specweaver.api.v1.schemas import HealthResponse
+
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter()
 

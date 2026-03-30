@@ -27,6 +27,13 @@ class EnrichStandardsHandler:
         half_life_days = float(step.params.get("half_life_days", 90.0))
         compare = bool(step.params.get("compare", False))
 
+        logger.debug(
+            "EnrichStandardsHandler: scanning %d explicit scope files (half_life=%.1f days, compare=%r)",
+            len(scope_files),
+            half_life_days,
+            compare,
+        )
+
         from specweaver.standards.enricher import StandardsEnricher
         from specweaver.standards.scanner import StandardsScanner
 
@@ -35,6 +42,7 @@ class EnrichStandardsHandler:
         results = [r for r in raw_results if r.confidence >= 0.3]
 
         if not results:
+            logger.debug("EnrichStandardsHandler: no drift violations met confidence threshold")
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"results": []},
@@ -43,6 +51,7 @@ class EnrichStandardsHandler:
             )
 
         if not context.llm:
+            logger.error("EnrichStandardsHandler: context.llm is missing")
             return _error_result("No LLM adapter provided for standards enrichment", started)
 
         from specweaver.llm.models import GenerationConfig
@@ -58,8 +67,10 @@ class EnrichStandardsHandler:
         enricher = StandardsEnricher(context.llm, config=gen_config)
 
         try:
+            logger.info("EnrichStandardsHandler: generating fix instructions for %d violations", len(results))
             await enricher.enrich(results, language="auto", force_compare=compare)
         except Exception as exc:
+            logger.error("EnrichStandardsHandler: operation failed — %s", exc)
             return _error_result(f"Standards enrichment failed: {exc}", started)
 
         return StepResult(

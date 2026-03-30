@@ -5,11 +5,16 @@
 
 from __future__ import annotations
 
+import logging
+
 import typer
 from rich.table import Table
 
 from specweaver.cli import _core
 from specweaver.llm.models import TaskType
+
+logger = logging.getLogger(__name__)
+
 
 # Derive valid values from the single source of truth (TaskType enum).
 # Exclude UNKNOWN — it is not user-configurable.

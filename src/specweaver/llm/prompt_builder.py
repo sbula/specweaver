@@ -23,6 +23,7 @@ Usage::
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -38,6 +39,8 @@ from specweaver.llm._prompt_constants import (
     _CONSTITUTION_PREAMBLE,
     detect_language,
 )
+
+logger = logging.getLogger(__name__)
 
 # Internal content blocks
 
@@ -362,6 +365,11 @@ class PromptBuilder:
             return ""
 
         blocks = list(self._blocks)
+        logger.debug(
+            "PromptBuilder.build: %d blocks, budget=%s",
+            len(blocks),
+            self._budget.limit if self._budget else "unlimited",
+        )
 
         if self._budget is not None:
             if self._auto_scale:

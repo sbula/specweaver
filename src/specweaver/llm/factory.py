@@ -68,6 +68,7 @@ def create_llm_adapter(
     from specweaver.llm.models import GenerationConfig
 
     try:
+        logger.debug("create_llm_adapter: loading settings for role=%s", llm_role)
         settings = load_settings_for_active(db, llm_role=llm_role)
     except ValueError:
         # Fallback: try loading from env with defaults
@@ -94,6 +95,7 @@ def create_llm_adapter(
         env_key = getattr(
             adapter_cls, "api_key_env_var", f"{settings.llm.provider.upper()}_API_KEY"
         )
+        logger.warning("create_llm_adapter: adapter not available for %s", settings.llm.provider)
         msg = f"No API key configured for {settings.llm.provider}. Set {env_key} environment variable."
         raise LLMAdapterError(msg)
 
@@ -117,4 +119,10 @@ def create_llm_adapter(
         max_output_tokens=settings.llm.max_output_tokens,
     )
 
+    logger.debug(
+        "create_llm_adapter: created %s adapter, model=%s, telemetry=%s",
+        settings.llm.provider,
+        settings.llm.model,
+        telemetry_project or "off",
+    )
     return settings, adapter, gen_config

@@ -8,10 +8,14 @@ Uses Rich prompts to ask the user questions and collect answers.
 
 from __future__ import annotations
 
+import logging
+
 from rich.console import Console
 from rich.prompt import Prompt
 
 from specweaver.context.provider import ContextProvider
+
+logger = logging.getLogger(__name__)
 
 
 class HITLProvider(ContextProvider):
@@ -41,4 +45,5 @@ class HITLProvider(ContextProvider):
             self._console.print(f"\n[dim]Section: {section}[/dim]")
         self._console.print(f"[bold cyan]?[/bold cyan] {question}")
         answer = Prompt.ask("[dim](press Enter to skip)[/dim]", default="", console=self._console)
+        logger.debug("HITL response received, length=%d chars", len(answer.strip()))
         return answer.strip()

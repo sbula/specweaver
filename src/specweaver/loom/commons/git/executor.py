@@ -9,9 +9,12 @@ The working directory is set at construction time by the setup/config, not by th
 
 from __future__ import annotations
 
+import logging
 import subprocess
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -88,6 +91,7 @@ class GitExecutor:
         """
         if command in self._BLOCKED_ALWAYS:
             msg = f"Command 'git {command}' is permanently blocked"
+            logger.error("GitExecutor.run: blocked command attempted: %s", command)
             raise GitExecutorError(msg)
 
         if command not in self._whitelist:
@@ -95,6 +99,7 @@ class GitExecutor:
                 f"Command 'git {command}' is not in the whitelist. "
                 f"Allowed: {sorted(self._whitelist)}"
             )
+            logger.error("GitExecutor.run: non-whitelisted command attempted: %s", command)
             raise GitExecutorError(msg)
 
         # Reject any args that try to sneak in blocked commands
@@ -102,7 +107,10 @@ class GitExecutor:
         for arg in args:
             if arg in self._BLOCKED_ALWAYS:
                 msg = f"Blocked command 'git {arg}' found in arguments"
+                logger.error("GitExecutor.run: blocked arg attempted: %s", arg)
                 raise GitExecutorError(msg)
+
+        logger.debug("GitExecutor.run: executing 'git %s %s'", command, " ".join(args))
 
         cmd = ["git", "-C", str(self._cwd), command, *args]
 

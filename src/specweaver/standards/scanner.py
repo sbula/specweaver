@@ -65,9 +65,15 @@ class StandardsScanner:
         # 3. Execute extract_all on each active analyzer
         results: list[CategoryResult] = []
         for analyzer, grouped_files in analyzer_to_files.items():
+            logger.debug(
+                "scan: running %s on %d files",
+                type(analyzer).__name__,
+                len(grouped_files),
+            )
             lang_results = analyzer.extract_all(grouped_files, half_life_days)
             for res in lang_results:
                 res.language = analyzer.language_name()
             results.extend(lang_results)
 
+        logger.debug("scan: completed, %d category results", len(results))
         return results

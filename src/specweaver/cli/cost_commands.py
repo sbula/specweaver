@@ -5,11 +5,16 @@
 
 from __future__ import annotations
 
+import logging
+
 import typer
 from rich.table import Table
 
 from specweaver.cli import _core
 from specweaver.llm.telemetry import get_default_cost_table
+
+logger = logging.getLogger(__name__)
+
 
 costs_app = typer.Typer(
     name="costs",

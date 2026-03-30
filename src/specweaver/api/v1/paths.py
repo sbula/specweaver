@@ -5,10 +5,14 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path, PurePosixPath
 
 from specweaver.api.errors import SpecWeaverAPIError
 from specweaver.config.database import Database  # noqa: TC001 -- runtime
+
+logger = logging.getLogger(__name__)
+
 
 
 def validate_relative_path(file_path: str) -> None:

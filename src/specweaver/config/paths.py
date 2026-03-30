@@ -18,8 +18,11 @@ Usage::
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def specweaver_root() -> Path:
@@ -33,6 +36,7 @@ def specweaver_root() -> Path:
     """
     override = os.environ.get("SPECWEAVER_DATA_DIR", "").strip()
     if override:
+        logger.debug("Using SPECWEAVER_DATA_DIR override: %s", override)
         return Path(override)
     return Path.home() / ".specweaver"
 

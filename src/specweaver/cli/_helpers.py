@@ -5,12 +5,16 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import typer
 from rich.table import Table
 
 from specweaver.cli import _core
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from pathlib import Path

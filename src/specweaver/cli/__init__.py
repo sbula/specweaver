@@ -57,6 +57,8 @@ def _app_callback(
 # ---------------------------------------------------------------------------
 # Import submodules so their commands auto-register on ``app``
 # ---------------------------------------------------------------------------
+
+
 from specweaver.cli import (  # noqa: E402, F401
     _helpers,
     config,
@@ -88,3 +90,5 @@ from specweaver.cli.pipelines import (  # noqa: E402, F401
     _create_display,
     _resolve_spec_path,
 )
+
+

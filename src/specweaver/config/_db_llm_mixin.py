@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class LlmProfilesMixin:
     """Methods for LLM profile CRUD and project-role linking.
@@ -22,6 +26,7 @@ class LlmProfilesMixin:
         Args:
             global_only: If True, only return global (shared) profiles.
         """
+        logger.debug("list_llm_profiles called, global_only=%s", global_only)
         with self.connect() as conn:  # type: ignore[attr-defined]
             if global_only:
                 rows = conn.execute(
@@ -45,6 +50,7 @@ class LlmProfilesMixin:
         provider: str = "gemini",
     ) -> int:
         """Create an LLM profile. Returns the new profile ID."""
+        logger.debug("create_llm_profile called, name=%s, model=%s, provider=%s", name, model, provider)
         with self.connect() as conn:  # type: ignore[attr-defined]
             cursor = conn.execute(
                 "INSERT INTO llm_profiles "
@@ -82,6 +88,7 @@ class LlmProfilesMixin:
 
     def update_llm_profile(self, profile_id: int, **kwargs: object) -> None:
         """Update fields on an existing LLM profile."""
+        logger.debug("update_llm_profile called, profile_id=%s, fields=%s", profile_id, list(kwargs.keys()))
         if not kwargs:
             return
 
@@ -127,6 +134,7 @@ class LlmProfilesMixin:
                 (project_name,),
             ).fetchone()
             if not proj:
+                logger.warning("link_project_profile failed: project '%s' not found", project_name)
                 msg = f"Project '{project_name}' not found"
                 raise ValueError(msg)
 
@@ -136,6 +144,7 @@ class LlmProfilesMixin:
                 (profile_id,),
             ).fetchone()
             if not profile:
+                logger.warning("link_project_profile failed: profile ID %s not found", profile_id)
                 msg = f"Profile ID {profile_id} not found"
                 raise ValueError(msg)
 

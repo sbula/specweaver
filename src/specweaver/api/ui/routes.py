@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import bleach  # type: ignore
@@ -17,6 +18,9 @@ from specweaver.api.deps import get_db
 from specweaver.api.v1.projects import list_projects
 from specweaver.config.database import Database  # noqa: TC001
 from specweaver.config.paths import state_db_path
+
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter(tags=["UI"])
 

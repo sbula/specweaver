@@ -16,6 +16,9 @@ from specweaver.cli.config_routing import routing_app
 
 logger = logging.getLogger(__name__)
 
+
+logger = logging.getLogger(__name__)
+
 config_app = typer.Typer(
     name="config",
     help="Manage per-project validation rule overrides.",

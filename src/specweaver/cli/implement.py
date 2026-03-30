@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 
 import typer
@@ -18,6 +19,9 @@ from specweaver.cli._helpers import (
     _select_topology_contexts,
 )
 from specweaver.project.discovery import resolve_project_path
+
+logger = logging.getLogger(__name__)
+
 
 
 @_core.app.command()

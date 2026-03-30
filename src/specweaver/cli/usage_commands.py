@@ -5,10 +5,15 @@
 
 from __future__ import annotations
 
+import logging
+
 import typer
 from rich.table import Table
 
 from specweaver.cli import _core
+
+logger = logging.getLogger(__name__)
+
 
 usage_app = typer.Typer(
     name="usage",

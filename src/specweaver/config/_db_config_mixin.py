@@ -36,6 +36,7 @@ class ConfigSettingsMixin:
                 (project_name,),
             ).fetchone()
             if not row:
+                logger.warning("get_log_level: project '%s' not found", project_name)
                 msg = f"Project '{project_name}' not found"
                 raise ValueError(msg)
             return str(row["log_level"])
@@ -56,6 +57,7 @@ class ConfigSettingsMixin:
                 f"Invalid log level '{level}'. "
                 f"Must be one of: {', '.join(sorted(self._VALID_LOG_LEVELS))}"
             )
+            logger.warning("set_log_level: invalid level '%s'", level)
             raise ValueError(msg)
 
         with self.connect() as conn:  # type: ignore[attr-defined]

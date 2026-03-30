@@ -13,6 +13,7 @@ Each intent method checks:
 
 from __future__ import annotations
 
+import logging
 import os
 import posixpath
 import re
@@ -31,6 +32,8 @@ from specweaver.loom.tools.filesystem.models import (
     FileSystemToolError,
     ToolResult,
 )
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.llm.models import ToolDefinition
@@ -88,6 +91,7 @@ class FileSystemTool:
     def write_file(self, path: str, content: str) -> ToolResult:
         """Overwrite a file's contents."""
         self._require_intent("write_file")
+        logger.debug("FileSystemTool.write_file: checking grant for %s", path)
         err = self._check_grant(path, MODE_ALLOWS_WRITE)
         if err:
             return err
@@ -97,6 +101,7 @@ class FileSystemTool:
     def create_file(self, path: str, content: str) -> ToolResult:
         """Create a new file (fails if exists)."""
         self._require_intent("create_file")
+        logger.debug("FileSystemTool.create_file: checking grant for %s", path)
         err = self._check_grant(path, MODE_ALLOWS_CREATE)
         if err:
             return err
@@ -110,6 +115,7 @@ class FileSystemTool:
     def delete_file(self, path: str) -> ToolResult:
         """Delete a file."""
         self._require_intent("delete_file")
+        logger.debug("FileSystemTool.delete_file: checking grant for %s", path)
         err = self._check_grant(path, MODE_ALLOWS_DELETE)
         if err:
             return err
@@ -125,6 +131,7 @@ class FileSystemTool:
             new: Replacement string.
         """
         self._require_intent("edit_file")
+        logger.debug("FileSystemTool.edit_file: checking grant for %s", path)
         err = self._check_grant(path, MODE_ALLOWS_WRITE)
         if err:
             return err
