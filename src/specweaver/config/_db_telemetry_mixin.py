@@ -42,8 +42,8 @@ class TelemetryMixin:
                 "INSERT INTO llm_usage_log "
                 "(timestamp, project_name, task_type, model, provider, "
                 "prompt_tokens, completion_tokens, total_tokens, "
-                "estimated_cost, duration_ms) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "estimated_cost, duration_ms, run_id) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     record["timestamp"],
                     record["project_name"],
@@ -55,6 +55,7 @@ class TelemetryMixin:
                     record.get("total_tokens", 0),
                     record.get("estimated_cost_usd", 0.0),
                     record.get("duration_ms", 0),
+                    record.get("run_id", ""),
                 ),
             )
 

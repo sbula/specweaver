@@ -50,7 +50,9 @@ class LlmProfilesMixin:
         provider: str = "gemini",
     ) -> int:
         """Create an LLM profile. Returns the new profile ID."""
-        logger.debug("create_llm_profile called, name=%s, model=%s, provider=%s", name, model, provider)
+        logger.debug(
+            "create_llm_profile called, name=%s, model=%s, provider=%s", name, model, provider
+        )
         with self.connect() as conn:  # type: ignore[attr-defined]
             cursor = conn.execute(
                 "INSERT INTO llm_profiles "
@@ -88,7 +90,9 @@ class LlmProfilesMixin:
 
     def update_llm_profile(self, profile_id: int, **kwargs: object) -> None:
         """Update fields on an existing LLM profile."""
-        logger.debug("update_llm_profile called, profile_id=%s, fields=%s", profile_id, list(kwargs.keys()))
+        logger.debug(
+            "update_llm_profile called, profile_id=%s, fields=%s", profile_id, list(kwargs.keys())
+        )
         if not kwargs:
             return
 

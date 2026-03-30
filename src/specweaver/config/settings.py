@@ -111,11 +111,17 @@ def load_settings(
     profile = db.get_project_profile(project_name, llm_role)
 
     if not profile:
-        logger.info("No profile for project=%s role=%s, falling back to system-default", project_name, llm_role)
+        logger.info(
+            "No profile for project=%s role=%s, falling back to system-default",
+            project_name,
+            llm_role,
+        )
         profile = db.get_llm_profile_by_name("system-default")
 
     if not profile:
-        logger.error("System default profile not found; cannot load settings for '%s'", project_name)
+        logger.error(
+            "System default profile not found; cannot load settings for '%s'", project_name
+        )
         msg = f"System default profile not found in database. Cannot load settings for '{project_name}'."
         raise ValueError(msg)
 
@@ -253,5 +259,10 @@ def migrate_legacy_config(
     for role in ("review", "draft", "search"):
         db.link_project_profile(project_name, role, profile_id)
 
-    logger.info("Migrated legacy config for project '%s' (provider=%s, model=%s)", project_name, provider, model)
+    logger.info(
+        "Migrated legacy config for project '%s' (provider=%s, model=%s)",
+        project_name,
+        provider,
+        model,
+    )
     return True

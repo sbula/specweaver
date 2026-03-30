@@ -223,10 +223,7 @@ def review(
             verdict = ReviewVerdict.ERROR
 
         raw_findings = out.get("findings", [])
-        findings = [
-            ReviewFinding(**f) if isinstance(f, dict) else f
-            for f in raw_findings
-        ]
+        findings = [ReviewFinding(**f) if isinstance(f, dict) else f for f in raw_findings]
 
         result = ReviewResult(
             verdict=verdict,
@@ -240,8 +237,6 @@ def review(
         )
 
     _display_review_result(result)
-
-
 
 
 def _display_review_result(result: ReviewResult) -> None:

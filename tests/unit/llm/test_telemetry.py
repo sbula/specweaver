@@ -98,7 +98,11 @@ class TestCreateUsageRecord:
     """create_usage_record() factory tests."""
 
     def test_all_fields_populated(self):
-        config = GenerationConfig(model="gemini-3-flash-preview", task_type=TaskType.REVIEW)
+        config = GenerationConfig(
+            model="gemini-3-flash-preview",
+            task_type=TaskType.REVIEW,
+            run_id="test-run-123",
+        )
         response = LLMResponse(
             text="result",
             model="gemini-3-flash-preview",
@@ -115,6 +119,13 @@ class TestCreateUsageRecord:
         assert record.total_tokens == 150
         assert record.estimated_cost_usd > 0
         assert record.duration_ms == 1234
+        assert record.run_id == "test-run-123"
+
+    def test_run_id_populated(self):
+        config = GenerationConfig(model="gemini", run_id="my-uuid-1234")
+        response = LLMResponse(text="", model="gemini")
+        record = create_usage_record(config, response, "gemini", "proj", 0)
+        assert record.run_id == "my-uuid-1234"
 
     def test_unknown_task_type_default(self):
         config = GenerationConfig(model="gemini-3-flash-preview")

@@ -281,7 +281,9 @@ class PythonAnalyzer(LanguageAnalyzer):
         for imp in imports:
             top = imp.split(".")[0]
             if top not in _STDLIB_TOP_MODULES and not top.startswith("specweaver"):
-                logger.debug("Inferred archetype 'adapter' for %s (external import: %s)", directory.name, top)
+                logger.debug(
+                    "Inferred archetype 'adapter' for %s (external import: %s)", directory.name, top
+                )
                 return "adapter"
 
         return "pure-logic"
@@ -335,7 +337,9 @@ class AnalyzerFactory:
         """
         for analyzer in cls._analyzers:
             if analyzer.detect(directory):
-                logger.debug("AnalyzerFactory resolved %s for %s", type(analyzer).__name__, directory)
+                logger.debug(
+                    "AnalyzerFactory resolved %s for %s", type(analyzer).__name__, directory
+                )
                 return analyzer
         logger.debug("No analyzer detected for %s", directory)
         return None

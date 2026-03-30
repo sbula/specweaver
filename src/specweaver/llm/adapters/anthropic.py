@@ -80,7 +80,9 @@ class AnthropicAdapter(LLMAdapter):
 
         client = self._get_client()
         anthropic_messages = self._convert_messages(messages)
-        logger.debug("AnthropicAdapter.generate: model=%s, messages=%d", config.model, len(messages))
+        logger.debug(
+            "AnthropicAdapter.generate: model=%s, messages=%d", config.model, len(messages)
+        )
 
         kwargs: dict[str, Any] = {
             "model": config.model,

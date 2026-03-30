@@ -1,7 +1,7 @@
 # Test Coverage Matrix
 
-> **3 605 collected** · 3 589 passed · 0 skipped · 116 source modules · 168 test files
-> **Last updated**: 2026-03-29
+> **3 607 collected** · 3 607 passed · 0 skipped · 120 source modules · 168 test files
+> **Last updated**: 2026-03-30
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
 
@@ -30,13 +30,13 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Package | Src Files | Unit | Integ | E2E | Total |
 |---------|----------:|-----:|------:|----:|------:|
 | `cli/` | 13 | 269 | 94 | 38 | 401 |
-| `config/` | 3 | 237 | 20 | 0 | 257 |
+| `config/` | 4 | 241 | 20 | 0 | 261 |
 | `context/` | 4 | 53 | 8 | 7 | 68 |
 | `drafting/` | 3 | 113 | 0 | 0 | 113 |
-| `flow/` | 8 | 300 | 35 | 13 | 348 |
+| `flow/` | 8 | 301 | 35 | 13 | 349 |
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
-| `llm/` | 13 | 285 | 10 | 2 | 297 |
+| `llm/` | 13 | 286 | 10 | 2 | 298 |
 | `loom/` | 15 | 571 | 14 | 0 | 585 |
 | `planning/` | 3 | 79 | 3 | 2 | 84 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
@@ -46,7 +46,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 1 | 0 | 23 |
-| **Total** | **115** | **2 992** | **244** | **82** | **3 489** |
+| **Total** | **116** | **2 998** | **244** | **82** | **3 495** |
 
 
 ---
@@ -265,8 +265,20 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Concurrent access (two connections) | ❌ | ❌ | ⚪ | ❌ | WAL assumed safe |
 | Schema migration on upgrade | ❌ | ❌ | ⚪ | ⚪ | Only initial schema tested |
 | Schema v6→v7 migration (`auto_bootstrap_constitution`) | ✅ | ⚪ | ⚪ | ⚪ | Column exists, default 'prompt' |
+| Schema V11 migration with `run_id` and `artifact_events` | ✅ | ✅ | ⚪ | ⚪ | Tested |
 
-### 2.2 `profiles.py`
+### 2.2 `_db_lineage_mixin.py` (Feature 3.14)
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `log_artifact_event()` normal entry | ✅ | ➖ | ➖ | ⚪ | Pending flow integration in CB2 |
+| `log_artifact_event()` missing parent | ✅ | ➖ | ➖ | ⚪ | Pending |
+| `log_artifact_event()` empty artifact_id/run_id/event | ✅ | ➖ | ➖ | ⚪ | Raises ValueError |
+| `log_artifact_event()` None constraint | ✅ | ➖ | ➖ | ⚪ | Raises ValueError |
+| `get_artifact_history()` valid / empty | ✅ | ➖ | ➖ | ⚪ | Pending |
+| `get_children()` valid / empty | ✅ | ➖ | ➖ | ⚪ | Pending |
+
+### 2.3 `profiles.py`
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|

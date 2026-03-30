@@ -31,15 +31,13 @@ class TestDrafterProjectMetadata:
             archetype="pure-logic",
             language_target="python",
             date_iso="now",
-            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test"),
         )
 
         # We need to mock write_text so it doesn't actually write to disk!
         with patch.object(Path, "write_text"):
             await drafter.draft(
-                name="test_component",
-                output_dir=Path("fake_dir"),
-                project_metadata=metadata
+                name="test_component", output_dir=Path("fake_dir"), project_metadata=metadata
             )
 
         prompt = mock_llm.generate.call_args[0][0][0].content

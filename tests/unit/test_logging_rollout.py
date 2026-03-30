@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import logging
 
-
 # ---------------------------------------------------------------------------
 # Batch 1: Core Infrastructure (config/, context/, project/)
 # ---------------------------------------------------------------------------
@@ -45,8 +44,7 @@ class TestBatch1LoggingRollout:
                 pass  # expected — we only care about the log
 
         assert any(
-            "load_settings" in r.message and r.levelno == logging.DEBUG
-            for r in caplog.records
+            "load_settings" in r.message and r.levelno == logging.DEBUG for r in caplog.records
         ), "load_settings() should emit a DEBUG-level entry log"
 
     def test_paths_module_has_logger(self):

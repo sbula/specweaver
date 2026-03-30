@@ -234,6 +234,7 @@ class LintFixHandler:
                 temperature=0.1,  # low creativity — fix, not invent
                 max_output_tokens=context.config.llm.max_output_tokens,
                 task_type=TaskType.CHECK,
+                run_id=getattr(context, "run_id", "") or "",
             )
         else:
             base_config = GenerationConfig(
@@ -241,6 +242,7 @@ class LintFixHandler:
                 temperature=0.1,
                 max_output_tokens=4096,
                 task_type=TaskType.CHECK,
+                run_id=getattr(context, "run_id", "") or "",
             )
 
         # Routing resolution — same pattern as all other handlers
@@ -256,6 +258,7 @@ class LintFixHandler:
                 temperature=routed.temperature,
                 max_output_tokens=routed.max_output_tokens,
                 task_type=TaskType.CHECK,
+                run_id=getattr(context, "run_id", "") or "",
             )
             if routed
             else base_config

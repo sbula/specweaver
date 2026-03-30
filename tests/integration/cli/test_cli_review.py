@@ -136,9 +136,9 @@ class TestReviewErrors:
         async def _denied(*args, **kwargs):
             return LLMResponse(
                 text="VERDICT: DENIED\nMissing sections.\n\n"
-                     "### Findings\n"
-                     "| Section | Issue | Remedy |\n"
-                     "| 2. Contract | No type hints | Add type hints |\n",
+                "### Findings\n"
+                "| Section | Issue | Remedy |\n"
+                "| 2. Contract | No type hints | Add type hints |\n",
                 model="test-model",
             )
 

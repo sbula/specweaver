@@ -284,7 +284,7 @@ class TestPipelineDefinition:
             target=StepTarget.STANDARDS,
             gate=gate,
             params=params,
-            description="A test single step"
+            description="A test single step",
         )
         assert p.name == "single_step_test_single_step"
         assert len(p.steps) == 1

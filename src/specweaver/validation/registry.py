@@ -73,7 +73,9 @@ class RuleRegistry:
                 f"({existing_cls.__name__}). Cannot re-register "
                 f"with {rule_class.__name__}."
             )
-            logger.warning("register: rule '%s' already registered as %s", rule_id, existing_cls.__name__)
+            logger.warning(
+                "register: rule '%s' already registered as %s", rule_id, existing_cls.__name__
+            )
             raise ValueError(msg)
 
         self._rules[rule_id] = (rule_class, category)

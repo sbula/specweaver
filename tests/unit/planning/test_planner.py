@@ -457,6 +457,7 @@ class TestPlannerStitchIntegration:
         assert len(plan.mockups) == 1
         assert "placeholder" in plan.mockups[0].preview_url
 
+
 # ---------------------------------------------------------------------------
 # Project Metadata injection
 # ---------------------------------------------------------------------------
@@ -476,14 +477,14 @@ class TestPlannerProjectMetadata:
             archetype="pure-logic",
             language_target="python",
             date_iso="now",
-            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test"),
         )
 
         await planner.generate_plan(
             spec_content="# Test Spec",
             spec_path="test.md",
             spec_name="Test",
-            project_metadata=metadata
+            project_metadata=metadata,
         )
 
         # llm.messages_log[0] is the first generate call's messages list

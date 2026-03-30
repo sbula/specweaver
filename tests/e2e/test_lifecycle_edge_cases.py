@@ -96,7 +96,12 @@ def _make_sequenced_llm(responses: list[str]) -> object:
     captured_prompts = []
     response_iter = iter(responses)
 
-    async def _generate(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
+    async def _generate(
+        messages: object,
+        config: object = None,
+        dispatcher: object = None,
+        on_tool_round: object = None,
+    ) -> LLMResponse:
         for msg in messages:
             if hasattr(msg, "content"):
                 captured_prompts.append(msg.content)
@@ -658,7 +663,12 @@ class TestRealWorldEdgeCases:
         error_llm = AsyncMock()
         error_llm.available.return_value = True
 
-        async def _crash(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> None:
+        async def _crash(
+            messages: object,
+            config: object = None,
+            dispatcher: object = None,
+            on_tool_round: object = None,
+        ) -> None:
             from specweaver.llm.errors import GenerationError
 
             msg = "Service unavailable"

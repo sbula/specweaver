@@ -303,7 +303,6 @@ class TestPlanSpecHandlerFileSystem:
 
         monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
 
-
         class MockLlmSettings:
             model = "mock-model"
             max_output_tokens = 4096
@@ -316,7 +315,9 @@ class TestPlanSpecHandlerFileSystem:
             stitch = MockStitchSettings()
             llm = MockLlmSettings()
 
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=FakeLLM([]), config=MockSettings())
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, llm=FakeLLM([]), config=MockSettings()
+        )
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
 
         handler = PlanSpecHandler()
@@ -367,7 +368,6 @@ class TestPlanSpecHandlerFileSystem:
         spec = tmp_path / "spec.md"
         spec.write_text("## Protocol\n\nUI component with a button", encoding="utf-8")
 
-
         class MockLlmSettings:
             model = "mock-model"
             max_output_tokens = 4096
@@ -401,7 +401,6 @@ class TestPlanSpecHandlerFileSystem:
         """I8e: E2E Pipeline (Stitch Off) saving YAML to disk omits mockups."""
         spec = tmp_path / "spec.md"
         spec.write_text("## Protocol\n\nUI component", encoding="utf-8")
-
 
         class MockLlmSettings:
             model = "mock-model"

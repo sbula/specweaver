@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
     from specweaver.flow.models import PipelineStep
 
+
 def test_single_step_pipeline_executes_smoothly(tmp_path: Path) -> None:
     """PipelineRunner successfully executes a dynamically compiled single_step."""
     from unittest.mock import MagicMock
@@ -27,7 +28,7 @@ def test_single_step_pipeline_executes_smoothly(tmp_path: Path) -> None:
         action=StepAction.DRAFT,
         target=StepTarget.SPEC,
         description="A simple single step to verify runner plumbing",
-        params={"foo": "bar"}
+        params={"foo": "bar"},
     )
 
     # We must patch StepHandlerRegistry or use a fake handler because we don't want to actually draft
@@ -39,19 +40,15 @@ def test_single_step_pipeline_executes_smoothly(tmp_path: Path) -> None:
             import datetime
 
             from specweaver.flow.state import StepResult, StepStatus
+
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"msg": "success", "params": step.params},
                 started_at=datetime.datetime.now(datetime.UTC).isoformat(),
-                completed_at=datetime.datetime.now(datetime.UTC).isoformat()
+                completed_at=datetime.datetime.now(datetime.UTC).isoformat(),
             )
 
-
-    context = RunContext(
-        project_path=tmp_path,
-        spec_path=tmp_path / "dummy.md",
-        config=MagicMock()
-    )
+    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "dummy.md", config=MagicMock())
 
     registry = StepHandlerRegistry()
     registry.register(StepAction.DRAFT, StepTarget.SPEC, DummyHandler())

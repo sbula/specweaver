@@ -58,6 +58,8 @@ class RunContext(BaseModel):
     db: Any = None  # Database | None — for telemetry flush (set by CLI/API)
     llm_router: Any = None  # ModelRouter | None — per-task routing (3.12b)
     project_metadata: Any = None  # ProjectMetadata | None
+    run_id: str | None = None
+    step_records: list[dict[str, Any]] | None = None
 
     def model_post_init(self, __context: Any) -> None:
         """Inject ProjectMetadata into context execution strictly securely."""
@@ -69,7 +71,6 @@ class RunContext(BaseModel):
 
         from specweaver.llm.models import ProjectMetadata, PromptSafeConfig
 
-
         try:
             target = f"Python {sys.version.split()[0]} on {platform.platform()}"
         except Exception:
@@ -79,11 +80,14 @@ class RunContext(BaseModel):
         try:
             # Handoff Directive 2 fix (load_context_yaml does not exist)
             import ruamel.yaml
+
             ctx_path = self.project_path / "context.yaml"
             if ctx_path.exists():
                 with ctx_path.open("r", encoding="utf-8") as f:
                     data = ruamel.yaml.YAML(typ="safe").load(f)
-                archetype = data.get("archetype", "generic") if isinstance(data, dict) else "generic"
+                archetype = (
+                    data.get("archetype", "generic") if isinstance(data, dict) else "generic"
+                )
             else:
                 archetype = "generic"
         except Exception:
@@ -96,7 +100,9 @@ class RunContext(BaseModel):
                 rules = overrides
 
         try:
-            provider = str(self.llm.provider_name) if hasattr(self.llm, "provider_name") else "unknown"
+            provider = (
+                str(self.llm.provider_name) if hasattr(self.llm, "provider_name") else "unknown"
+            )
             model_str = str(self.llm.model) if hasattr(self.llm, "model") else "unknown"
         except Exception:
             provider = "unknown"

@@ -28,11 +28,13 @@ class TestGeneratorProjectMetadata:
             archetype="pure-logic",
             language_target="python",
             date_iso="now",
-            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test"),
         )
 
         with patch("pathlib.Path.read_text", return_value="spec content"):
-            await generator.generate_code(Path("dummy.md"), Path("out.py"), project_metadata=metadata)
+            await generator.generate_code(
+                Path("dummy.md"), Path("out.py"), project_metadata=metadata
+            )
 
         prompt = mock_llm.generate.call_args[0][0][1].content
         assert "<project_metadata>" in prompt
@@ -49,7 +51,7 @@ class TestGeneratorProjectMetadata:
             archetype="pure-logic",
             language_target="python",
             date_iso="now",
-            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test"),
         )
 
         with patch("pathlib.Path.read_text", return_value="content"):

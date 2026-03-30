@@ -44,6 +44,7 @@ def _resolve_generation_routing(
             temperature=routed.temperature,
             max_output_tokens=routed.max_output_tokens,
             task_type=resolved_type,
+            run_id=getattr(context, "run_id", "") or "",
         )
     elif context.config is not None:
         config = GenerationConfig(
@@ -51,6 +52,7 @@ def _resolve_generation_routing(
             temperature=temperature,
             max_output_tokens=context.config.llm.max_output_tokens,
             task_type=resolved_type,
+            run_id=getattr(context, "run_id", "") or "",
         )
     else:
         # Fallback: no config set (e.g. test harness)
@@ -59,6 +61,7 @@ def _resolve_generation_routing(
             temperature=temperature,
             max_output_tokens=4096,
             task_type=resolved_type,
+            run_id=getattr(context, "run_id", "") or "",
         )
 
     return adapter, config
@@ -177,6 +180,7 @@ class PlanSpecHandler:
                 temperature=routed.temperature,
                 max_output_tokens=routed.max_output_tokens,
                 task_type=TaskType.PLAN,
+                run_id=getattr(context, "run_id", "") or "",
             )
         elif context.config is not None:
             config = GenerationConfig(
@@ -184,6 +188,7 @@ class PlanSpecHandler:
                 temperature=0.3,
                 max_output_tokens=context.config.llm.max_output_tokens,
                 task_type=TaskType.PLAN,
+                run_id=getattr(context, "run_id", "") or "",
             )
         else:
             # Fallback
@@ -192,6 +197,7 @@ class PlanSpecHandler:
                 temperature=0.3,
                 max_output_tokens=4096,
                 task_type=TaskType.PLAN,
+                run_id=getattr(context, "run_id", "") or "",
             )
 
         return adapter, config

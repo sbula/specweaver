@@ -14,7 +14,6 @@ from specweaver.flow._base import RunContext, _error_result, _now_iso
 from specweaver.flow.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
-
     from specweaver.flow.models import PipelineStep
     from specweaver.llm.mention_scanner.models import ResolvedMention
     from specweaver.llm.models import GenerationConfig, Message
@@ -40,6 +39,7 @@ def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]
             temperature=routed.temperature,
             max_output_tokens=routed.max_output_tokens,
             task_type=TaskType.REVIEW,
+            run_id=getattr(context, "run_id", "") or "",
         )
     elif context.config is not None:
         config = GenerationConfig(
@@ -47,6 +47,7 @@ def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]
             temperature=0.3,
             max_output_tokens=context.config.llm.max_output_tokens,
             task_type=TaskType.REVIEW,
+            run_id=getattr(context, "run_id", "") or "",
         )
     else:
         config = GenerationConfig(
@@ -54,6 +55,7 @@ def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]
             temperature=0.3,
             max_output_tokens=4096,
             task_type=TaskType.REVIEW,
+            run_id=getattr(context, "run_id", "") or "",
         )
 
     return adapter, config

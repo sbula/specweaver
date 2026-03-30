@@ -23,7 +23,6 @@ from specweaver.project.discovery import resolve_project_path
 logger = logging.getLogger(__name__)
 
 
-
 @_core.app.command()
 def implement(
     spec: str = typer.Argument(
@@ -113,7 +112,7 @@ def implement(
                 action=StepAction.GENERATE,
                 target=StepTarget.TESTS,
             ),
-        ]
+        ],
     )
 
     context = RunContext(

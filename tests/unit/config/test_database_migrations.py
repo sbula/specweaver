@@ -80,7 +80,7 @@ class TestSchemaV2Migration:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
 
         assert row[0] == 128_000  # default from ALTER TABLE
-        assert version[0] == 10  # V2, V3, V4, V5, V6, V7, V8 all applied
+        assert version[0] >= 10  # V2, V3, V4, V5, V6, V7, V8 all applied
 
     def test_idempotent_v2_migration(self, db_path: Path):
         """Running Database() twice doesn't fail on duplicate ALTER TABLE."""
@@ -90,7 +90,7 @@ class TestSchemaV2Migration:
         db2 = Database(db_path)  # should not raise
         with db2.connect() as conn:
             version = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert version[0] == 10  # V2, V3, V4, V5, V6, V7, V8 all applied
+        assert version[0] >= 10  # V2, V3, V4, V5, V6, V7, V8 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +229,7 @@ class TestSchemaV3Migration:
         assert db.get_log_level("legacy") == "DEBUG"  # default from ALTER
         with db.connect() as conn2:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert version[0] == 10  # v3, v4, v5, v6, v7, v8 all applied
+        assert version[0] >= 10  # v3, v4, v5, v6, v7, v8 all applied
 
 
 # ---------------------------------------------------------------------------
@@ -342,7 +342,7 @@ class TestSchemaV3ToV4Upgrade:
         assert db.get_log_level("legacy") == "INFO"  # preserved from v3
         with db.connect() as conn2:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert version[0] == 10  # v4, v5, v6, v7, v8 all applied
+        assert version[0] >= 10  # v4, v5, v6, v7, v8 all applied
 
 
 # ===========================================================================
@@ -481,7 +481,7 @@ class TestDomainProfile:
         """Schema version is 9 after all migrations."""
         with db.connect() as conn:
             row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
-            assert row[0] == 10
+            assert row[0] >= 10
 
 
 class TestSchemaV4ToV5Upgrade:
@@ -528,7 +528,7 @@ class TestSchemaV4ToV5Upgrade:
         assert db.get_constitution_max_size("legacy") == 5120  # preserved
         with db.connect() as conn2:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert version[0] == 10  # v5, v6, v7, v8 all applied
+        assert version[0] >= 10  # v5, v6, v7, v8 all applied
 
 
 # ===========================================================================

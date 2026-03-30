@@ -26,6 +26,7 @@ from pathlib import Path
 
 from specweaver.config._db_config_mixin import ConfigSettingsMixin
 from specweaver.config._db_extensions_mixin import DataExtensionsMixin
+from specweaver.config._db_lineage_mixin import LineageMixin
 from specweaver.config._db_llm_mixin import LlmProfilesMixin
 from specweaver.config._db_telemetry_mixin import TelemetryMixin
 from specweaver.config._schema import (
@@ -40,6 +41,7 @@ from specweaver.config._schema import (
     SCHEMA_V8,
     SCHEMA_V9,
     SCHEMA_V10,
+    SCHEMA_V11,
 )
 
 # Backward-compatible aliases (tests import with underscore prefix)
@@ -53,6 +55,7 @@ _SCHEMA_V7 = SCHEMA_V7
 _SCHEMA_V8 = SCHEMA_V8
 _SCHEMA_V9 = SCHEMA_V9
 _SCHEMA_V10 = SCHEMA_V10
+_SCHEMA_V11 = SCHEMA_V11
 _DEFAULT_PROFILES = DEFAULT_PROFILES
 
 logger = logging.getLogger(__name__)
@@ -70,6 +73,7 @@ _MIGRATIONS: list[tuple[int, str, str]] = [
     (8, SCHEMA_V8, "stitch_mode"),
     (9, SCHEMA_V9, "llm_usage_log, llm_cost_overrides"),
     (10, SCHEMA_V10, "llm_profiles.provider"),
+    (11, SCHEMA_V11, "artifact_events & usage correlation"),
 ]
 
 
@@ -90,6 +94,7 @@ def _validate_project_name(name: str) -> None:
 class Database(
     ConfigSettingsMixin,
     DataExtensionsMixin,
+    LineageMixin,
     LlmProfilesMixin,
     TelemetryMixin,
 ):

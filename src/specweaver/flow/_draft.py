@@ -55,7 +55,9 @@ class DraftSpecHandler:
             completed_at=_now_iso(),
         )
 
-    async def _execute_drafting(self, step: PipelineStep, context: RunContext, started: str) -> StepResult:
+    async def _execute_drafting(
+        self, step: PipelineStep, context: RunContext, started: str
+    ) -> StepResult:
         """Execute the actual interactive Drafter."""
         from specweaver.drafting.drafter import Drafter
         from specweaver.llm.models import GenerationConfig
@@ -66,6 +68,7 @@ class DraftSpecHandler:
                 model=context.config.llm.model,
                 temperature=context.config.llm.temperature,
                 max_output_tokens=context.config.llm.max_output_tokens,
+                run_id=getattr(context, "run_id", "") or "",
             )
 
         drafter = Drafter(
@@ -80,11 +83,7 @@ class DraftSpecHandler:
         topology_contexts = context.topology if isinstance(context.topology, list) else None
 
         try:
-            result_path = await drafter.draft(
-                name,
-                specs_dir,
-                topology_contexts=topology_contexts
-            )
+            result_path = await drafter.draft(name, specs_dir, topology_contexts=topology_contexts)
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"message": f"Spec drafted: {result_path}", "path": str(result_path)},
@@ -93,4 +92,5 @@ class DraftSpecHandler:
             )
         except Exception as exc:
             from specweaver.flow._base import _error_result
+
             return _error_result(f"Drafting failed: {exc}", started)

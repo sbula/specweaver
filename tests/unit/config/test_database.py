@@ -64,6 +64,7 @@ class TestSchemaCreation:
             "project_llm_links",
             "active_state",
             "schema_version",
+            "artifact_events",
         }
         with db.connect() as conn:
             rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
@@ -71,10 +72,25 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 10 after v10 migration."""
+        """Schema version is 11 after v11 migration."""
         with db.connect() as conn:
             row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
-            assert row[0] == 10
+            assert row[0] == 11
+
+    def test_artifact_events_table_exists(self, db):
+        """The artifact_events table is created in v11."""
+        with db.connect() as conn:
+            rows = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='artifact_events'"
+            ).fetchall()
+        assert len(rows) == 1
+
+    def test_llm_usage_log_has_run_id(self, db):
+        """The llm_usage_log table has a run_id column in v11."""
+        with db.connect() as conn:
+            rows = conn.execute("PRAGMA table_info(llm_usage_log)").fetchall()
+            columns = [r["name"] for r in rows]
+        assert "run_id" in columns
 
     def test_default_llm_profiles_seeded(self, db):
         """Three global LLM profiles are seeded: review, draft, search."""

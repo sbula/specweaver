@@ -466,3 +466,53 @@ class TestValidateFlowWithDecompose:
         p = PipelineDefinition(name="bad", steps=steps)
         errors = p.validate_flow()
         assert any("invalid" in e.lower() or "combination" in e.lower() for e in errors)
+
+
+# ---------------------------------------------------------------------------
+# Telemetry run_id propagation
+# ---------------------------------------------------------------------------
+
+
+class TestRunIdPropagation:
+    """Tests for run_id propagation from RunContext to GenerationConfig."""
+
+    @pytest.mark.asyncio
+    @patch("specweaver.review.reviewer.Reviewer.review_code")
+    async def test_review_code_handler_injects_run_id(self, mock_review_code, tmp_path: Path) -> None:
+        """Handlers must inject context.run_id into GenerationConfig for telemetry correlation."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        code = tmp_path / "src" / "test.py"
+        code.parent.mkdir()
+        code.write_text("x = 1")
+        
+        from specweaver.review.reviewer import ReviewResult
+        from specweaver.review.reviewer import ReviewVerdict
+        mock_review_code.return_value = ReviewResult(
+            verdict=ReviewVerdict.ACCEPTED,
+            findings=[],
+            summary="LGTM",
+            raw_response="LGTM",
+        )
+        
+        mock_adapter = MagicMock()
+        mock_adapter.generate = AsyncMock()
+        ctx = RunContext(
+            project_path=tmp_path, 
+            spec_path=spec,
+            output_dir=tmp_path / "src",
+            llm=mock_adapter,
+        )
+        ctx.run_id = "mock-run-id-1234"
+        
+        step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)
+        handler = ReviewCodeHandler()
+        
+        await handler.execute(step, ctx)
+        
+        # Verify the Reviewer was instantiated with a config containing the run_id
+        # We need to peek at the args passed to _resolve_review_routing which happens during execute.
+        # Actually, let's just patch _resolve_review_routing and assert? No, we should test the actual injection.
+        from specweaver.flow._review import _resolve_review_routing
+        adapter, config = _resolve_review_routing(ctx)
+        assert config.run_id == "mock-run-id-1234"

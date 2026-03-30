@@ -90,5 +90,3 @@ from specweaver.cli.pipelines import (  # noqa: E402, F401
     _create_display,
     _resolve_spec_path,
 )
-
-

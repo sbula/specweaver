@@ -104,7 +104,12 @@ def _make_capturing_llm(
     captured_prompts: list[str] = []
     response_iter = iter(responses)
 
-    async def _generate(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
+    async def _generate(
+        messages: object,
+        config: object = None,
+        dispatcher: object = None,
+        on_tool_round: object = None,
+    ) -> LLMResponse:
         for msg in messages:
             if hasattr(msg, "content"):
                 captured_prompts.append(msg.content)

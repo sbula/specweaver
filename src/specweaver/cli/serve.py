@@ -14,7 +14,6 @@ from specweaver.cli import _core
 logger = logging.getLogger(__name__)
 
 
-
 @_core.app.command()
 def serve(
     port: int = typer.Option(

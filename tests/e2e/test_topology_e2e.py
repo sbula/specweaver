@@ -53,7 +53,12 @@ def _make_mock_llm(response: str = "VERDICT: ACCEPTED\nAll good.") -> object:
     captured_prompts = []
     response_iter = iter([response])
 
-    async def _generate(messages: object, config: object = None, dispatcher: object = None, on_tool_round: object = None) -> LLMResponse:
+    async def _generate(
+        messages: object,
+        config: object = None,
+        dispatcher: object = None,
+        on_tool_round: object = None,
+    ) -> LLMResponse:
         for msg in messages:
             if hasattr(msg, "content"):
                 captured_prompts.append(msg.content)

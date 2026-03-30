@@ -14,7 +14,6 @@ from specweaver.config.database import Database  # noqa: TC001 -- runtime
 logger = logging.getLogger(__name__)
 
 
-
 def validate_relative_path(file_path: str) -> None:
     """Reject absolute paths and directory traversals.
 

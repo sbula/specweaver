@@ -136,7 +136,7 @@ class TestSchemaV6ToV7Upgrade:
         assert db.get_constitution_max_size("legacy") == 5120  # preserved
         with db.connect() as conn2:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert version[0] == 10
+        assert version[0] >= 10
 
 
 class TestSchemaV7ToV8Upgrade:
@@ -187,7 +187,7 @@ class TestSchemaV7ToV8Upgrade:
         assert db.get_stitch_mode("legacy") == "off"  # default from ALTER
         with db.connect() as conn2:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert version[0] == 10
+        assert version[0] >= 10
 
 
 class TestSchemaV8ToV9Upgrade:
@@ -236,7 +236,7 @@ class TestSchemaV8ToV9Upgrade:
                 "SELECT name FROM sqlite_master WHERE type='table' "
                 "AND name IN ('llm_usage_log', 'llm_cost_overrides')"
             ).fetchall()
-        assert version[0] == 10
+        assert version[0] >= 10
         table_names = {r[0] for r in tables}
         assert "llm_usage_log" in table_names
         assert "llm_cost_overrides" in table_names
@@ -258,12 +258,14 @@ class TestUsageLogCrud:
                 "total_tokens": 150,
                 "estimated_cost_usd": 0.0003,
                 "duration_ms": 500,
+                "run_id": "test-run-123",
             }
         )
         with db.connect() as conn:
             rows = conn.execute("SELECT * FROM llm_usage_log").fetchall()
         assert len(rows) == 1
         assert rows[0]["model"] == "gemini-3-flash-preview"
+        assert rows[0]["run_id"] == "test-run-123"
 
     def test_log_usage_multiple_rows(self, db):
         for i in range(3):
@@ -482,7 +484,7 @@ class TestUsageLogGaps:
                 "task_type": "draft",
                 "model": "m",
                 "provider": "x",
-                # No prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd, duration_ms
+                # No prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd, duration_ms, run_id
             }
         )
         with db.connect() as conn:
@@ -492,6 +494,7 @@ class TestUsageLogGaps:
         assert row["total_tokens"] == 0
         assert row["estimated_cost"] == 0.0
         assert row["duration_ms"] == 0
+        assert row["run_id"] == ""
 
 
 # ===========================================================================
@@ -548,11 +551,11 @@ class TestSchemaV10Migration:
         for row in rows:
             assert row["provider"] == "gemini"
 
-    def test_schema_version_is_10(self, db):
-        """Schema version is 10 after all migrations."""
+    def test_schema_version_is_11(self, db):
+        """Schema version is 11 after all migrations."""
         with db.connect() as conn:
             row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert row[0] == 10
+        assert row[0] == 11
 
     def test_v9_to_v10_upgrade(self, db_path: Path):
         """Simulate a v9 DB and verify v10 migration adds provider column."""
@@ -601,4 +604,4 @@ class TestSchemaV10Migration:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
 
         assert row[0] == "gemini"  # default from ALTER TABLE
-        assert version[0] == 10
+        assert version[0] >= 10

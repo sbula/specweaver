@@ -52,6 +52,7 @@ class UsageRecord(BaseModel):
     total_tokens: int = 0
     estimated_cost_usd: float = 0.0
     duration_ms: int = 0
+    run_id: str = ""
 
 
 def estimate_cost(
@@ -120,4 +121,5 @@ def create_usage_record(
         total_tokens=response.usage.total_tokens,
         estimated_cost_usd=cost,
         duration_ms=duration_ms,
+        run_id=config.run_id,
     )

@@ -28,7 +28,7 @@ Output: `docs/proposals/design/phase<X>/<feature_id>_design.md`
 > [!CAUTION]
 > **MANDATORY SEQUENCING — DO NOT SKIP OR REORDER PHASES.**
 >
-> This workflow has 5 phases that MUST be executed in strict order.
+> This workflow has 6 phases that MUST be executed in strict order.
 > Every phase MUST be completed before moving to the next one.
 >
 > **Before starting each phase:**
@@ -36,10 +36,10 @@ Output: `docs/proposals/design/phase<X>/<feature_id>_design.md`
 > 2. Complete every step in that phase before moving on.
 > 3. Never skip a phase, even if the feature seems simple.
 >
-> **Phases 1, 3, and 5 have HITL gates** — you MUST stop and wait for the user.
+> **Phases 1, 3, and 6 have HITL gates** — you MUST stop and wait for the user.
 > Phase 1 gate fires only if the feature description is ambiguous.
 > Phase 3 gates fire on gaps, API conflicts, or architectural switches.
-> Phase 5 gate fires always — the design MUST be approved before planning begins.
+> Phase 6 gate fires always — the design MUST be approved before planning begins.
 
 ## Phases
 
@@ -49,6 +49,7 @@ Output: `docs/proposals/design/phase<X>/<feature_id>_design.md`
 | **2** | `.agents/workflows/design/phase-2-research.md` | Parallel: codebase + internet research | No |
 | **3** | `.agents/workflows/design/phase-3-detail.md` | FR/NFR + API validation + arch alignment | ⚠️ On gap or arch switch |
 | **4** | `.agents/workflows/design/phase-4-decompose.md` | Sub-feature breakdown + dependency graph | No |
-| **5** | `.agents/workflows/design/phase-5-document.md` | Write design.md + HITL approval | ⚠️ Always |
+| **5** | `.agents/workflows/design/phase-5-document.md` | Write design.md | No |
+| **6** | `.agents/workflows/design/phase-6-consistency.md` | Final checks + HITL approval | ⚠️ Always |
 
 Execute each phase by reading its file and following the instructions exactly.

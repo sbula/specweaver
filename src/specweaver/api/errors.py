@@ -13,7 +13,6 @@ from fastapi.responses import JSONResponse
 logger = logging.getLogger(__name__)
 
 
-
 class SpecWeaverAPIError(Exception):
     """Base API error with structured error_code field."""
 

@@ -1,4 +1,3 @@
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -7,4 +6,3 @@ logger = logging.getLogger(__name__)
 # Licensed under the MIT License. See LICENSE file in the project root.
 
 """SpecWeaver REST API — FastAPI server for external UIs and CI/CD."""
-

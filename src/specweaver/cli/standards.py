@@ -125,7 +125,7 @@ def standards_scan(  # noqa: C901
                 "scope_files": scope_files,
                 "half_life_days": 90.0,
                 "compare": compare,
-            }
+            },
         )
 
         context = RunContext(

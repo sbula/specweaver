@@ -67,6 +67,21 @@ class ErrorHandler:
         raise RuntimeError(msg)
 
 
+class ContextInjectionHandler:
+    """Passes context attributes back as output."""
+
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        return StepResult(
+            status=StepStatus.PASSED,
+            output={
+                "run_id": context.run_id,
+                "step_records_len": len(context.step_records) if context.step_records else 0,
+            },
+            started_at="2026-01-01T00:00:00Z",
+            completed_at="2026-01-01T00:00:01Z",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -138,6 +153,21 @@ class TestPipelineRunnerSuccess:
 
         result = await runner.run()
         assert result.run_id  # non-empty UUID
+
+    @pytest.mark.asyncio
+    async def test_run_injects_state_into_context(self, tmp_path: Path) -> None:
+        pipeline = _make_pipeline(step_count=1)
+        ctx = _make_context(tmp_path)
+        registry = _make_registry(ContextInjectionHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry)
+
+        result = await runner.run()
+        assert result.status == RunStatus.COMPLETED
+
+        # Verify handler got the injected state
+        output = result.step_records[0].result.output
+        assert output["run_id"] == result.run_id
+        assert output["step_records_len"] == 1
 
 
 class TestPipelineRunnerFailure:

@@ -45,8 +45,10 @@ def test_enrich_standards_success(mock_context: RunContext) -> None:
         },
     )
 
-    with patch("specweaver.standards.scanner.StandardsScanner") as mock_scanner_cls, \
-         patch("specweaver.standards.enricher.StandardsEnricher") as mock_enricher_cls:
+    with (
+        patch("specweaver.standards.scanner.StandardsScanner") as mock_scanner_cls,
+        patch("specweaver.standards.enricher.StandardsEnricher") as mock_enricher_cls,
+    ):
         # Mock scanner
         mock_scanner = mock_scanner_cls.return_value
         mock_raw_result = MagicMock()
@@ -61,7 +63,9 @@ def test_enrich_standards_success(mock_context: RunContext) -> None:
 
         assert result.status == StepStatus.PASSED
         mock_scanner.scan.assert_called_once_with(["src/main.py"], 90.0)
-        mock_enricher.enrich.assert_called_once_with([mock_raw_result], language="auto", force_compare=False)
+        mock_enricher.enrich.assert_called_once_with(
+            [mock_raw_result], language="auto", force_compare=False
+        )
         assert result.output == {"results": [mock_raw_result]}
 
 
@@ -75,8 +79,10 @@ def test_enrich_standards_no_results(mock_context: RunContext) -> None:
         params={"scope_files": [], "compare": False},
     )
 
-    with patch("specweaver.standards.scanner.StandardsScanner") as mock_scanner_cls, \
-         patch("specweaver.standards.enricher.StandardsEnricher") as mock_enricher_cls:
+    with (
+        patch("specweaver.standards.scanner.StandardsScanner") as mock_scanner_cls,
+        patch("specweaver.standards.enricher.StandardsEnricher") as mock_enricher_cls,
+    ):
         mock_scanner = mock_scanner_cls.return_value
         mock_scanner.scan.return_value = []
         mock_enricher = mock_enricher_cls.return_value

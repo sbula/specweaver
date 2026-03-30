@@ -168,11 +168,7 @@ class TestSetupLogging:
         )
         setup_logging("proj")
         root = logging.getLogger("specweaver")
-        console_handler = next(
-            h
-            for h in root.handlers
-            if isinstance(h, RichHandler)
-        )
+        console_handler = next(h for h in root.handlers if isinstance(h, RichHandler))
         assert console_handler.level == logging.WARNING
 
     def test_file_handler_at_configured_level(self, tmp_path, monkeypatch):
@@ -246,6 +242,7 @@ class TestSetupLogging:
 
     def test_log_formatters_are_configured_correctly(self, tmp_path, monkeypatch):
         from specweaver.logging import JSONFormatter
+
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
             "specweaver.config.paths.logs_dir",

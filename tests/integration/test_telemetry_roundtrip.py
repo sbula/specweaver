@@ -52,10 +52,11 @@ class TestTelemetryRoundtrip:
         collector = TelemetryCollector(mock_adapter, "testproj")
 
         # Call generate — should capture one record
-        config = GenerationConfig(model="test-model", temperature=0.7)
+        config = GenerationConfig(model="test-model", temperature=0.7, run_id="mock-run-id-123")
         await collector.generate([], config)
 
         assert len(collector.records) == 1
+        assert collector.records[0].run_id == "mock-run-id-123"
 
         # Flush to DB
         count = collector.flush(db)
@@ -68,6 +69,12 @@ class TestTelemetryRoundtrip:
         assert len(rows) == 1
         assert rows[0]["total_tokens"] == 150
         assert rows[0]["call_count"] == 1
+
+        with db.connect() as conn:
+            cursor = conn.execute("SELECT run_id FROM llm_usage_log WHERE project_name = 'testproj'")
+            row = cursor.fetchone()
+            assert row is not None
+            assert row["run_id"] == "mock-run-id-123"
 
     @pytest.mark.asyncio
     async def test_factory_creates_collector_when_project_set(self, tmp_path: Path):

@@ -69,6 +69,7 @@ class GenerationConfig(BaseModel):
     tools: list[ToolDefinition] | None = None  # Provider-agnostic tool definitions
     max_tool_rounds: int = 5  # Max agentic loop iterations
     task_type: TaskType = TaskType.UNKNOWN  # Telemetry metadata (3.12)
+    run_id: str = ""  # Telemetry lineage correlation (3.14)
     # Future: top_p, stop_sequences, seed
 
 

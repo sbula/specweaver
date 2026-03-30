@@ -301,6 +301,7 @@ Summary."""
         assert len(above) == 1  # only 90 is >= threshold
         assert len(below) == 2  # 30 and 50 are < 80
 
+
 # ---------------------------------------------------------------------------
 # Project Metadata injection
 # ---------------------------------------------------------------------------
@@ -318,7 +319,9 @@ class TestReviewerProjectMetadata:
 
         mock_llm = AsyncMock()
         # Mock LLM generation output needs to be valid Review format
-        mock_llm.generate.return_value = LLMResponse(text="VERDICT: ACCEPTED\nSummary", model="test")
+        mock_llm.generate.return_value = LLMResponse(
+            text="VERDICT: ACCEPTED\nSummary", model="test"
+        )
 
         reviewer = Reviewer(llm=mock_llm)
         metadata = ProjectMetadata(
@@ -326,7 +329,7 @@ class TestReviewerProjectMetadata:
             archetype="pure-logic",
             language_target="python",
             date_iso="now",
-            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test"),
         )
 
         with patch("pathlib.Path.read_text", return_value="spec content"):
@@ -345,7 +348,9 @@ class TestReviewerProjectMetadata:
         from specweaver.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
 
         mock_llm = AsyncMock()
-        mock_llm.generate.return_value = LLMResponse(text="VERDICT: ACCEPTED\nSummary", model="test")
+        mock_llm.generate.return_value = LLMResponse(
+            text="VERDICT: ACCEPTED\nSummary", model="test"
+        )
 
         reviewer = Reviewer(llm=mock_llm)
         metadata = ProjectMetadata(
@@ -353,11 +358,13 @@ class TestReviewerProjectMetadata:
             archetype="script",
             language_target="bash",
             date_iso="now",
-            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test")
+            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test"),
         )
 
         with patch("pathlib.Path.read_text", return_value="code content"):
-            await reviewer.review_code(Path("dummy.md"), Path("dummy.py"), project_metadata=metadata)
+            await reviewer.review_code(
+                Path("dummy.md"), Path("dummy.py"), project_metadata=metadata
+            )
 
         prompt = mock_llm.generate.call_args[0][0][1].content
         assert "<project_metadata>" in prompt

@@ -62,12 +62,16 @@ class EnrichStandardsHandler:
                 model=context.config.llm.model,
                 temperature=context.config.llm.temperature,
                 max_output_tokens=context.config.llm.max_output_tokens,
+                run_id=getattr(context, "run_id", "") or "",
             )
 
         enricher = StandardsEnricher(context.llm, config=gen_config)
 
         try:
-            logger.info("EnrichStandardsHandler: generating fix instructions for %d violations", len(results))
+            logger.info(
+                "EnrichStandardsHandler: generating fix instructions for %d violations",
+                len(results),
+            )
             await enricher.enrich(results, language="auto", force_compare=compare)
         except Exception as exc:
             logger.error("EnrichStandardsHandler: operation failed — %s", exc)

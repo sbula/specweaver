@@ -20,6 +20,7 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch):
     from specweaver.config.database import Database
+
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
     return db
@@ -50,7 +51,7 @@ class TestReviewCommand:
             status=StepStatus.PASSED,
             output={"verdict": "accepted", "summary": "Looks good."},
             started_at="2023-01-01T00:00:00Z",
-            completed_at="2023-01-01T00:01:00Z"
+            completed_at="2023-01-01T00:01:00Z",
         )
         mock_run.return_value = PipelineRun(
             run_id="idx",
@@ -60,7 +61,9 @@ class TestReviewCommand:
             status="completed",
             started_at="2023-01-01T00:00:00Z",
             updated_at="2023-01-01T00:00:00Z",
-            step_records=[StepRecord(step_name="review_target", status=StepStatus.PASSED, result=mock_result)]
+            step_records=[
+                StepRecord(step_name="review_target", status=StepStatus.PASSED, result=mock_result)
+            ],
         )
 
         result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
@@ -85,10 +88,10 @@ class TestReviewCommand:
             output={
                 "verdict": "denied",
                 "summary": "Missing sections.",
-                "findings": [{"severity": "high", "message": "No Purpose"}]
+                "findings": [{"severity": "high", "message": "No Purpose"}],
             },
             started_at="2023-01-01T00:00:00Z",
-            completed_at="2023-01-01T00:01:00Z"
+            completed_at="2023-01-01T00:01:00Z",
         )
         mock_run.return_value = PipelineRun(
             run_id="idx",
@@ -98,7 +101,9 @@ class TestReviewCommand:
             status="completed",
             started_at="2023-01-01T00:00:00Z",
             updated_at="2023-01-01T00:00:00Z",
-            step_records=[StepRecord(step_name="review_target", status=StepStatus.PASSED, result=mock_result)]
+            step_records=[
+                StepRecord(step_name="review_target", status=StepStatus.PASSED, result=mock_result)
+            ],
         )
 
         result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
@@ -122,7 +127,7 @@ class TestReviewCommand:
             status=StepStatus.FAILED,
             error_message="API Error",
             started_at="2023-01-01T00:00:00Z",
-            completed_at="2023-01-01T00:01:00Z"
+            completed_at="2023-01-01T00:01:00Z",
         )
         mock_run.return_value = PipelineRun(
             run_id="idx",
@@ -132,7 +137,9 @@ class TestReviewCommand:
             status="parked",
             started_at="2023-01-01T00:00:00Z",
             updated_at="2023-01-01T00:00:00Z",
-            step_records=[StepRecord(step_name="review_target", status=StepStatus.FAILED, result=mock_result)]
+            step_records=[
+                StepRecord(step_name="review_target", status=StepStatus.FAILED, result=mock_result)
+            ],
         )
 
         result = runner.invoke(app, ["review", str(spec), "--project", str(project)])

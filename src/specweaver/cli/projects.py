@@ -18,7 +18,6 @@ from specweaver.project.scaffold import scaffold_project
 logger = logging.getLogger(__name__)
 
 
-
 @_core.app.command()
 def init(
     name: str = typer.Argument(

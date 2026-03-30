@@ -121,3 +121,18 @@ CREATE TABLE IF NOT EXISTS llm_cost_overrides (
 SCHEMA_V10 = """\
 ALTER TABLE llm_profiles ADD COLUMN provider TEXT NOT NULL DEFAULT 'gemini';
 """
+
+SCHEMA_V11 = """\
+CREATE TABLE IF NOT EXISTS artifact_events (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    artifact_id TEXT NOT NULL,
+    parent_id   TEXT,
+    run_id      TEXT NOT NULL,
+    event_type  TEXT NOT NULL,
+    timestamp   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_lineage_parent ON artifact_events(parent_id);
+CREATE INDEX IF NOT EXISTS idx_lineage_artifact ON artifact_events(artifact_id);
+
+ALTER TABLE llm_usage_log ADD COLUMN run_id TEXT DEFAULT '';
+"""
