@@ -40,27 +40,6 @@ def _unique_name(prefix: str = "nf") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-@pytest.fixture(autouse=True)
-def _mock_db(tmp_path: Path, monkeypatch):
-    """Patch get_db() to use a temp DB for all e2e tests."""
-    from specweaver.config.database import Database
-
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
-    return db
-
-
-@pytest.fixture()
-def _mock_state_db(tmp_path: Path, monkeypatch):
-    """Patch the pipeline state DB path to use tmp_path."""
-    _state_path = tmp_path / ".specweaver" / "pipeline_state.db"
-    monkeypatch.setattr(
-        "specweaver.config.paths.state_db_path",
-        lambda: _state_path,
-    )
-
-
-# ─── Shared spec content ────────────────────────────────────────────────────
 
 _GOOD_SPEC = """\
 # calculator

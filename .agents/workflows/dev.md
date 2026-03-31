@@ -131,8 +131,8 @@ python -m pytest --lf -v --tb=long
 python -m pytest tests/unit/test_foo.py -s --log-cli-level=DEBUG
 
 # Run arbitrary python debug scripts via file (must be safe)
-# write your script to debug.py then run:
-python debug.py
+# write your script to .tmp/debug.py then run:
+python .tmp/debug.py
 ```
 
 Debug loop: read error → re-read source → fix → re-run failing test → repeat until green.
@@ -180,9 +180,11 @@ python run_e2e_tests.py
 **Step B — Pre-Commit Quality Gate (autonomous, gates may fire):**
 - Execute the full `/pre-commit` workflow (all 7 phases). This is MANDATORY.
 - Read `.agents/workflows/pre-commit.md` and follow all phases.
+- **CRITICAL**: You MUST update `task.md` line-by-line as you execute EACH phase of `/pre-commit`.
+- **CRITICAL**: Do NOT act autonomously for Phase 4. Wait for user input from the Phase 3 HITL gate, and then you MUST implement the tests they approved/requested in Phase 4.
 - **STOP at Phase 1 HITL gate** if architectural violations are found.
 - **STOP at Phase 3 HITL gate** (test gap analysis — always fires).
-- Complete Phase 4 – 7 autonomously after user responds.
+- Complete Phase 4 – 7 step-by-step after the user responds, updating `task.md` at every single step.
 
 **Step C — Commit Boundary (HITL — mandatory hard stop):**
 
@@ -220,3 +222,4 @@ python run_e2e_tests.py
 | **Pre-commit gate** | Mandatory before every commit. No exceptions. |
 | **Commit Boundaries** | Hard stop at every commit. Wait for human. Do not bypass. |
 | **Tests run freely** | `SafeToAutoRun: true` for all test/lint commands. No exceptions. |
+| **Temporary Files** | Use the project's `.tmp` directory for all temporary scripts, debug files, or scratchpads. Maintain and clean it up. |

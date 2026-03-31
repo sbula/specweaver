@@ -79,4 +79,6 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
      - Any issues discovered during the analysis
 
 > [!CAUTION]
-> **MANDATORY HITL OUTCOME REVIEW:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories to the user. You MUST NOT proceed to Phase 4 (implementing tests) until the user explicitly reviews and approves the test gaps. Do not assume they look okay or skip this gate.
+> **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories to the user. 
+> You MUST YIELD YOUR TURN. A yield means making ZERO further tool calls. You must end your response and wait for the user to type a reply in the chat.
+> You MUST NOT proceed to Phase 4 (implementing tests) synchronously in the same turn. Do not assume they look okay or skip this gate.

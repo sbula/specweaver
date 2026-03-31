@@ -23,20 +23,22 @@ description: "Phase 5: Run the full test suite — all tests must pass."
 > You MUST run the tests in the exact order below.
 > Do NOT proceed to the next test level if there are ANY failures in the current level.
 > Fix all failures before advancing to the next command. All commands must be run autonomously.
+> 
+> **STRICT ANTI-CACHING RULE:** You MUST physically execute every single one of these `run_command` tools right now. NEVER assume tests pass because you ran `pytest` five minutes ago. You are in a strict pre-commit gate, and the laws of the gate require a fresh run.
 
 5.1. Run **Unit** Tests:
      ```
-     python run_unit_tests.py
+     python -m pytest tests/unit/
      ```
 
 5.2. Run **Integration** Tests:
      ```
-     python run_integ_tests.py
+     python -m pytest tests/integration/
      ```
 
 5.3. Run **End-to-End (E2E)** Tests:
      ```
-     python run_e2e_tests.py
+     python -m pytest tests/e2e/
      ```
 
 > [!IMPORTANT]

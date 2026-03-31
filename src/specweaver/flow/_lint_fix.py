@@ -213,6 +213,9 @@ class LintFixHandler:
         from specweaver.llm.models import GenerationConfig, Message, Role, TaskType
 
         code = code_path.read_text(encoding="utf-8")
+        from specweaver.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
+        artifact_uuid = extract_artifact_uuid(code)
+
         error_summary = "\n".join(
             f"- {e.get('file', '?')}:{e.get('line', '?')} [{e.get('code', '?')}] {e.get('message', '')}"
             for e in lint_errors
@@ -224,6 +227,11 @@ class LintFixHandler:
             f"## Current Code\n```python\n{code}\n```\n\n"
             f"Return ONLY the fixed Python code, no explanations."
         )
+
+        if artifact_uuid:
+            tag_str = wrap_artifact_tag(artifact_uuid, "python")
+            if tag_str:
+                prompt += f"\n\nIMPORTANT: You MUST include the exact string '{tag_str}' physically at the very top of your output file."
 
         messages = [Message(role=Role.USER, content=prompt)]
 
@@ -273,4 +281,18 @@ class LintFixHandler:
             lines = [line for line in lines if not line.startswith("```")]
             fixed_code = "\n".join(lines)
 
+        # Safety fallback
+        if artifact_uuid and not extract_artifact_uuid(fixed_code):
+            tag_str = wrap_artifact_tag(artifact_uuid, "python")
+            if tag_str:
+                fixed_code = tag_str + "\n" + fixed_code
+
         code_path.write_text(fixed_code + "\n", encoding="utf-8")
+
+        if artifact_uuid and getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
+            context.db.log_artifact_event(
+                artifact_id=artifact_uuid,
+                parent_id=None,
+                run_id=getattr(context, "run_id", "") or "",
+                event_type="lint_fixed",
+            )

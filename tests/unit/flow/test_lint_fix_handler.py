@@ -295,3 +295,66 @@ class TestLintFixInterface:
         config = args[1]
         assert config.task_type == "check"
         assert config.temperature == 0.1
+
+class TestLintFixArtifactLineage:
+    """Verify artifact lineage tagging and logging during fix loops."""
+
+    @pytest.mark.asyncio
+    async def test_lint_fix_extracts_and_injects_uuid(self, tmp_path: Path) -> None:
+        """Handler must extract an existing file tag and inject instruction to preserve it."""
+        mock_atom = MagicMock()
+        mock_atom.run.side_effect = [_dirty(1), _dirty(1), _dirty(1), _clean()]
+
+        out = tmp_path / "output"
+        out.mkdir(exist_ok=True)
+        py_file = out / "foo.py"
+        valid_uuid = "11111111-2222-3333-4444-999999999999"
+        py_file.write_text(f"# sw-artifact: {valid_uuid}\ndef bad(): pass\n", encoding="utf-8")
+
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock(return_value=MagicMock(text="fixed"))
+
+        ctx = _make_context(tmp_path, llm=mock_llm)
+        result = await _handler(mock_atom).execute(_make_step(), ctx)
+
+        assert result.status == StepStatus.PASSED
+        mock_llm.generate.assert_called_once()
+        args, _kwargs = mock_llm.generate.call_args
+        prompt = args[0][0].content
+
+        # Verify the UUID injection rule is physically present in the LLM prompt
+        assert valid_uuid in prompt
+        assert "physically at the very top" in prompt
+
+    @pytest.mark.asyncio
+    async def test_lint_fix_logs_events_to_db(self, tmp_path: Path) -> None:
+        """Handler must log a lint_fixed event to context.db if an artifact_uuid is present."""
+        mock_atom = MagicMock()
+        mock_atom.run.side_effect = [_dirty(1), _dirty(1), _dirty(1), _clean()]
+
+        out = tmp_path / "output"
+        out.mkdir(exist_ok=True)
+        py_file = out / "foo.py"
+        valid_uuid = "22222222-2222-3333-4444-999999999999"
+        py_file.write_text(f"# sw-artifact: {valid_uuid}\ndef bad(): pass\n", encoding="utf-8")
+
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock(return_value=MagicMock(text="fixed"))
+
+        ctx = _make_context(tmp_path, llm=mock_llm)
+        ctx.db = MagicMock()
+        ctx.run_id = "test-run-1"
+
+        result = await _handler(mock_atom).execute(_make_step(), ctx)
+
+        assert result.status == StepStatus.PASSED
+
+        # Verify DB logging was called
+        assert ctx.db.log_artifact_event.call_count == 1
+        ctx.db.log_artifact_event.assert_called_with(
+            artifact_id=valid_uuid,
+            parent_id=None,
+            run_id="test-run-1",
+            event_type="lint_fixed"
+        )
+

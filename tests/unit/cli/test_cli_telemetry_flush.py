@@ -126,6 +126,7 @@ class TestDraftCommandFlush:
         ):
             # Ensure specs dir exists and target doesn't
             (tmp_path / "specs").mkdir(exist_ok=True)
+            (tmp_path / "result.md").write_text("# content", encoding="utf-8")
 
             from specweaver.cli.review import draft
 

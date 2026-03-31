@@ -624,7 +624,10 @@ Tool stack ─────▶ runtime: enforces agent permissions
 
 | Violation | Where | Rule Broken | Status |
 |-----------|-------|-------------|--------|
-| *(none)* | — | — | All previously known violations resolved in Feature 3.11a |
+| `loom/*` consumed by `llm` | `src/specweaver/llm/prompt_builder.py` | `llm` archetype `context.yaml` explicitly `forbids: specweaver/loom/*` | FIXED (CB-2 Gate Phase 1) |
+
+> **Resolved in Feature 3.14 (Artifact Tagging Engine)**
+> The implementation plan for SF-2 explicitly instructed `prompt_builder.py` to import `wrap_artifact_tag` from `specweaver.loom.commons.lineage`. However, `llm/` strictly forbids all imports from `loom/`. I resolved this by immediately relocating `lineage.py` into the `llm` module natively (`specweaver/llm/lineage.py`) and exposing its utilities via `llm/context.yaml`.
 
 > **Resolved in Feature 3.11a:**
 > - Deleted `loom/commons/research/` entirely

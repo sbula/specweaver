@@ -14,6 +14,7 @@ from specweaver.flow.handlers import (
     DraftSpecHandler,
     GenerateCodeHandler,
     GenerateTestsHandler,
+    PlanSpecHandler,
     ReviewCodeHandler,
     ReviewSpecHandler,
     RunContext,
@@ -232,12 +233,88 @@ class TestGenerateCodeHandler:
         ctx = RunContext(
             project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
         )
+        ctx.run_id = "test-run"
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert "generated_path" in result.output
+        assert result.artifact_uuid is not None
+
+    @pytest.mark.asyncio
+    @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
+    async def test_generate_code_extracts_existing_uuid(self, mock_git, tmp_path: Path) -> None:
+        """Verifies UUID extraction from an existing file before overwriting."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        src_dir = tmp_path / "src"
+        src_dir.mkdir(exist_ok=True)
+        py_file = src_dir / "test.py"
+        valid_uuid = "11111111-2222-3333-4444-555555555555"
+        py_file.write_text(f"# sw-artifact: {valid_uuid}\nprint('old')\n")
+        mock_adapter = MagicMock()
+        mock_adapter.generate = AsyncMock(
+            return_value=MagicMock(text="```python\nprint('new')\n```", finish_reason=1, parsed=None)
+        )
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
+        )
+        ctx.run_id = "test-run"
+        step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
+        handler = GenerateCodeHandler()
+        mock_git.return_value = (0, "", "")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+        assert result.artifact_uuid == "11111111-2222-3333-4444-555555555555"
+
+    @pytest.mark.asyncio
+    @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
+    async def test_generate_code_mints_new_uuid_if_missing(self, mock_git, tmp_path: Path) -> None:
+        """Verifies handler mints tracking UUID when file exists but lacks sw-artifact tag."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        src_dir = tmp_path / "src"
+        src_dir.mkdir(exist_ok=True)
+        py_file = src_dir / "test.py"
+        py_file.write_text("print('old code, no tag')\n")
+        mock_adapter = MagicMock()
+        mock_adapter.generate = AsyncMock(
+            return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None)
+        )
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
+        )
+        ctx.run_id = "test-run"
+        step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
+        handler = GenerateCodeHandler()
+        mock_git.return_value = (0, "", "")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+        assert result.artifact_uuid is not None
+
+    @pytest.mark.asyncio
+    @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
+    async def test_generate_code_without_db(self, mock_git, tmp_path: Path) -> None:
+        """Verifies handler gracefully skips lineage linkage if context.db is absent."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        src_dir = tmp_path / "src"
+        src_dir.mkdir(exist_ok=True)
+        mock_adapter = MagicMock()
+        mock_adapter.generate = AsyncMock(
+            return_value=MagicMock(text="```python\npass\n```", finish_reason=1, parsed=None)
+        )
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
+        )
+        # deliberately NOT setting ctx.db
+        step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
+        handler = GenerateCodeHandler()
+        mock_git.return_value = (0, "", "")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+        assert result.artifact_uuid is not None
 
 
 # ---------------------------------------------------------------------------
@@ -280,12 +357,172 @@ class TestGenerateTestsHandler:
         ctx = RunContext(
             project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter
         )
+        ctx.run_id = "test-run"
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
         handler = GenerateTestsHandler()
         mock_git.return_value = (0, "", "")
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert "generated_path" in result.output
+        assert result.artifact_uuid is not None
+
+    @pytest.mark.asyncio
+    @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
+    async def test_generate_tests_extracts_existing_uuid(self, mock_git, tmp_path: Path) -> None:
+        """Verifies UUID extraction from an existing test file before overwriting."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir(exist_ok=True)
+        py_file = tests_dir / "test_test.py"
+        valid_uuid = "11111111-2222-3333-4444-666666666666"
+        py_file.write_text(f"# sw-artifact: {valid_uuid}\nprint('old')\n")
+        mock_adapter = MagicMock()
+        mock_adapter.generate = AsyncMock(
+            return_value=MagicMock(text="```python\nprint('new')\n```", finish_reason=1, parsed=None)
+        )
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter
+        )
+        ctx.run_id = "test-run"
+        step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
+        handler = GenerateTestsHandler()
+        mock_git.return_value = (0, "", "")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+        assert result.artifact_uuid == "11111111-2222-3333-4444-666666666666"
+
+    @pytest.mark.asyncio
+    @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
+    async def test_generate_tests_without_db(self, mock_git, tmp_path: Path) -> None:
+        """Verifies test generator gracefully skips lineage linkage if context.db is absent."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir(exist_ok=True)
+        mock_adapter = MagicMock()
+        mock_adapter.generate = AsyncMock(
+            return_value=MagicMock(text="```python\npass\n```", finish_reason=1, parsed=None)
+        )
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter
+        )
+        ctx.db = None
+        step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
+        handler = GenerateTestsHandler()
+        mock_git.return_value = (0, "", "")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+        assert result.artifact_uuid is not None
+
+# ---------------------------------------------------------------------------
+# PlanSpecHandler
+# ---------------------------------------------------------------------------
+
+
+class TestPlanSpecHandler:
+    """Tests for the plan+spec handler."""
+
+    @pytest.mark.asyncio
+    async def test_plan_spec_no_llm(self, tmp_path: Path) -> None:
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+        )
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+        handler = PlanSpecHandler()
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.ERROR
+        assert "llm" in result.error_message.lower()
+
+    @pytest.mark.asyncio
+    @patch("specweaver.planning.planner.Planner.generate_plan")
+    async def test_plan_spec_success_path_with_uuid(self, mock_create, tmp_path: Path) -> None:
+        """Verifies plan generation mints UUID and saves YAML."""
+        spec = tmp_path / "test_spec.md"
+        valid_uuid = "11111111-2222-3333-4444-888888888888"
+        spec.write_text(f"# sw-artifact: {valid_uuid}\nTest\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        ctx.db = MagicMock()
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+        handler = PlanSpecHandler()
+
+        from specweaver.planning.models import PlanArtifact
+        mock_create.return_value = PlanArtifact(
+            spec_path="test.md",
+            spec_name="test",
+            spec_hash="hash",
+            file_layout=[],
+            timestamp="2026-01-01T00:00:00Z"
+        )
+
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+        assert result.artifact_uuid is not None
+        assert "plan_path" in result.output
+
+        # Verify it was written to disk with UUID tag
+        import pathlib
+        plan_yaml = pathlib.Path(result.output["plan_path"])
+        assert plan_yaml.exists()
+        content = plan_yaml.read_text(encoding="utf-8")
+        assert f"# sw-artifact: {result.artifact_uuid}" in content
+
+        # Verify db was called with correct parent_id
+        ctx.db.log_artifact_event.assert_called_with(
+            artifact_id=result.artifact_uuid,
+            parent_id="11111111-2222-3333-4444-888888888888",
+            run_id="",
+            event_type="generated_plan"
+        )
+
+    @pytest.mark.asyncio
+    @patch("specweaver.planning.planner.Planner.generate_plan")
+    async def test_plan_spec_derives_parent_from_run_id(self, mock_create, tmp_path: Path) -> None:
+        """If spec lacks a tag, parent_id falls back to run_id."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# No tag here\nTest\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        ctx.db = MagicMock()
+        ctx.run_id = "test-run-123"
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+        handler = PlanSpecHandler()
+
+        from specweaver.planning.models import PlanArtifact
+        mock_create.return_value = PlanArtifact(
+            spec_path="test.md",
+            spec_name="test",
+            spec_hash="hash",
+            file_layout=[],
+            timestamp="2026-01-01T00:00:00Z"
+        )
+
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.PASSED
+
+        ctx.db.log_artifact_event.assert_called_with(
+            artifact_id=result.artifact_uuid,
+            parent_id="test-run-123",
+            run_id="test-run-123",
+            event_type="generated_plan"
+        )
+
+    @pytest.mark.asyncio
+    @patch("specweaver.planning.planner.Planner.generate_plan")
+    async def test_plan_spec_planner_exception(self, mock_create, tmp_path: Path) -> None:
+        """Verifies handler catches planner exceptions and returns a clean error."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
+        handler = PlanSpecHandler()
+
+        mock_create.side_effect = Exception("Planner crashed")
+        result = await handler.execute(step, ctx)
+        assert result.status == StepStatus.ERROR
+        assert "Planner crashed" in result.error_message
 
 
 # ---------------------------------------------------------------------------
@@ -317,6 +554,33 @@ class TestDraftSpecHandler:
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.WAITING_FOR_INPUT
         assert "sw draft" in result.output["message"]
+
+    @pytest.mark.asyncio
+    @patch("specweaver.drafting.drafter.Drafter.draft")
+    async def test_draft_spec_creates_uuid(self, mock_draft: AsyncMock, tmp_path: Path) -> None:
+        """If drafting succeeds, StepResult contains a generated artifact_uuid."""
+        spec = tmp_path / "test_spec.md"
+        ctx = RunContext(project_path=tmp_path, spec_path=spec)
+        ctx.llm = AsyncMock()
+        ctx.context_provider = AsyncMock()
+
+        # mock drafter output: it should write the file when called.
+        async def mock_draft_side_effect(*args, **kwargs):
+            spec.write_text("Hello spec", encoding="utf-8")
+            return spec
+
+        mock_draft.side_effect = mock_draft_side_effect
+
+        step = PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC)
+        handler = DraftSpecHandler()
+        result = await handler.execute(step, ctx)
+
+        assert result.status == StepStatus.PASSED
+        assert result.artifact_uuid is not None
+
+        # Also ensure it wrote the uuid to the spec
+        content = spec.read_text(encoding="utf-8")
+        assert "<!-- sw-artifact:" in content
 
 
 # ---------------------------------------------------------------------------
@@ -485,34 +749,33 @@ class TestRunIdPropagation:
         code = tmp_path / "src" / "test.py"
         code.parent.mkdir()
         code.write_text("x = 1")
-        
-        from specweaver.review.reviewer import ReviewResult
-        from specweaver.review.reviewer import ReviewVerdict
+
+        from specweaver.review.reviewer import ReviewResult, ReviewVerdict
         mock_review_code.return_value = ReviewResult(
             verdict=ReviewVerdict.ACCEPTED,
             findings=[],
             summary="LGTM",
             raw_response="LGTM",
         )
-        
+
         mock_adapter = MagicMock()
         mock_adapter.generate = AsyncMock()
         ctx = RunContext(
-            project_path=tmp_path, 
+            project_path=tmp_path,
             spec_path=spec,
             output_dir=tmp_path / "src",
             llm=mock_adapter,
         )
         ctx.run_id = "mock-run-id-1234"
-        
+
         step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)
         handler = ReviewCodeHandler()
-        
+
         await handler.execute(step, ctx)
-        
+
         # Verify the Reviewer was instantiated with a config containing the run_id
         # We need to peek at the args passed to _resolve_review_routing which happens during execute.
         # Actually, let's just patch _resolve_review_routing and assert? No, we should test the actual injection.
         from specweaver.flow._review import _resolve_review_routing
-        adapter, config = _resolve_review_routing(ctx)
+        _, config = _resolve_review_routing(ctx)
         assert config.run_id == "mock-run-id-1234"

@@ -28,11 +28,14 @@ class DraftSpecHandler:
             logger.debug(
                 "DraftSpecHandler: spec already exists at '%s' — skipping", context.spec_path
             )
+            from specweaver.llm.lineage import extract_artifact_uuid
+            artifact_uuid = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"message": f"Spec already exists: {context.spec_path}"},
                 started_at=started,
                 completed_at=_now_iso(),
+                artifact_uuid=artifact_uuid,
             )
 
         # Spec doesn't exist. If we have a context provider (HITL), do the drafting.
@@ -84,11 +87,35 @@ class DraftSpecHandler:
 
         try:
             result_path = await drafter.draft(name, specs_dir, topology_contexts=topology_contexts)
+
+            import uuid
+
+            from specweaver.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
+
+            artifact_uuid = None
+            if result_path.exists():
+                artifact_uuid = extract_artifact_uuid(result_path.read_text(encoding="utf-8"))
+            if not artifact_uuid:
+                artifact_uuid = str(uuid.uuid4())
+                tag_str = wrap_artifact_tag(artifact_uuid, "markdown")
+                if tag_str:
+                    content = result_path.read_text(encoding="utf-8")
+                    result_path.write_text(tag_str + "\n" + content, encoding="utf-8")
+
+            if getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
+                context.db.log_artifact_event(
+                    artifact_id=artifact_uuid,
+                    parent_id=None,
+                    run_id=getattr(context, "run_id", "") or "",
+                    event_type="drafted_spec",
+                )
+
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"message": f"Spec drafted: {result_path}", "path": str(result_path)},
                 started_at=started,
                 completed_at=_now_iso(),
+                artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
             from specweaver.flow._base import _error_result

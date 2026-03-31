@@ -9,6 +9,8 @@ description: Run a pre-commit quality gate for the current feature before markin
 > **STRICT COMPLIANCE MANDATE:**
 > 1. **NO INTERNAL MEMORY RELIANCE:** You are STRICTLY FORBIDDEN from relying on your internal training memory for facts, APIs, designs, or code behavior. Explicit research (files, internet, HITL) is a MUST.
 > 2. **NO SKIPPING STEPS:** IT IS STRICTLY FORBIDDEN to skip ANY phase, step, or specific checklist item in this workflow, even if a feature seems "trivially simple". You must execute every single instruction exhaustively.
+> 3. **NO RELIANCE ON PAST RUNS:** You are STRICTLY FORBIDDEN from relying on tests, lints, or architecture checks that you ran *before* starting this `/pre-commit` workflow. If you ran `pytest` 5 minutes ago, it DOES NOT MATTER. You **MUST** physically re-run every command required by Phases 1-7 identically from scratch every single time this gate is entered. "I already know it passes" is an unacceptable excuse.
+> 4. **USE .tmp FOR SCRATCHPADS:** All temporary files, debug scripts, or generated data must be stored in the project's `.tmp/` directory. Keep the project root clean.
 
 // turbo-all
 
@@ -39,10 +41,19 @@ file size, and documentation.
 >
 > **Phases 1 and 3 have HITL gates** — you MUST stop and present findings
 > to the user. Do NOT continue until the user responds.
->
+> 
+> > [!CAUTION]
+> > **WHAT "HITL GATE" TECHNICALLY MEANS FOR AI AGENTS:**
+> > A "HITL Gate" is a HARD STOP where you MUST yield your turn. 
+> > This means you are **FORBIDDEN** from making *any* further tool calls (e.g., executing commands, writing files, or moving to the next Phase) during the current cycle.
+> > You MUST literally stop thinking, return a text response to the user, and wait for them to reply in the chat before you do ANYTHING else. If you string together Phase 3 and Phase 4 in a single chain of tool calls, you have violated the HITL Gate.
+> 
 > If you catch yourself about to run `pytest` or "verify everything works"
 > before completing Phase 3 and Phase 4 — **STOP immediately**.
 > That is Phase 5. You are skipping phases.
+> 
+> **CRITICAL:** AI Agents have a known tendency to skip Phase 4 (Implement Missing Tests).
+> This is UNACCEPTABLE. You MUST explicitly write tests for every gap and branch you find.
 
 ## Phases
 
@@ -53,7 +64,7 @@ Execute each phase by reading and following the instructions in its workflow fil
 | **1** | `.agents/workflows/pre-commit/phase-1-architecture.md` | Architecture verification | ⚠️ Yes (step 1.9) |
 | **2** | `.agents/workflows/pre-commit/phase-2-code-quality.md` | Code quality checks (ruff, mypy, complexity, file size) | No |
 | **3** | `.agents/workflows/pre-commit/phase-3-test-gap.md` | Test gap analysis (coverage matrix + test stories) | ⚠️ Yes (step 3.8) |
-| **4** | `.agents/workflows/pre-commit/phase-4-implement-tests.md` | Implement missing tests | No |
+| **4** | `.agents/workflows/pre-commit/phase-4-implement-tests.md` | Implement missing tests | ⚠️ Yes (step 4.1b) |
 | **5** | `.agents/workflows/pre-commit/phase-5-test-suite.md` | Run full test suite | No |
 | **6** | `.agents/workflows/pre-commit/phase-6-documentation.md` | Documentation updates | No |
 | **7** | `.agents/workflows/pre-commit/phase-7-walkthrough.md` | Write walkthrough artifact | No |

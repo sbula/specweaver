@@ -69,10 +69,12 @@ class TestStepResult:
             status=StepStatus.PASSED,
             started_at="2026-03-14T18:00:00Z",
             completed_at="2026-03-14T18:00:01Z",
+            artifact_uuid="fake-uuid-1234",
         )
         assert result.status == StepStatus.PASSED
         assert result.output == {}
         assert result.error_message == ""
+        assert result.artifact_uuid == "fake-uuid-1234"
 
     def test_failed_result_with_error(self) -> None:
         result = StepResult(

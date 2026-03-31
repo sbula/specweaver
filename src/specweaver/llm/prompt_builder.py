@@ -346,6 +346,26 @@ class PromptBuilder:
             added += 1
         return self
 
+    def add_artifact_tagging(
+        self,
+        artifact_id: str,
+        language: str,
+    ) -> PromptBuilder:
+        """Inject an artifact lineage tag instruction.
+
+        Formats the artifact ID using the language's native comment syntax
+        and instructs the LLM to place it physically at the very top of the output.
+        If the language is unsupported, no tag instruction is added.
+        """
+        from specweaver.llm.lineage import wrap_artifact_tag
+
+        tag = wrap_artifact_tag(artifact_id, language)
+        if tag is not None:
+            self.add_instructions(
+                f"You MUST include the exact string '{tag}' physically at the very top of your output file."
+            )
+        return self
+
     # Build
 
     def build(self) -> str:

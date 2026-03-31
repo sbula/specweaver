@@ -1,7 +1,7 @@
 # Test Coverage Matrix
 
-> **3 607 collected** · 3 607 passed · 0 skipped · 120 source modules · 168 test files
-> **Last updated**: 2026-03-30
+> **3 625 collected** · 3 616 passed · 9 skipped · 120 source modules · 168 test files
+> **Last updated**: 2026-03-31
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
 
@@ -37,7 +37,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
 | `llm/` | 13 | 286 | 10 | 2 | 298 |
-| `loom/` | 15 | 571 | 14 | 0 | 585 |
+| `loom/` | 15 | 579 | 14 | 0 | 593 |
 | `planning/` | 3 | 79 | 3 | 2 | 84 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
 | `research/` | 4 | 59 | 0 | 0 | 59 |
@@ -46,7 +46,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 1 | 0 | 23 |
-| **Total** | **116** | **2 998** | **244** | **82** | **3 495** |
+| **Total** | **116** | **3 006** | **244** | **82** | **3 503** |
 
 
 ---
@@ -534,6 +534,9 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `add_mentioned_files()` respects max_files cap | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
 | `add_mentioned_files()` handles read failure | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
 | `add_mentioned_files()` empty list → no blocks | ✅ | ❌ | ⚪ | ⚪ | Feature 3.11 |
+| `add_artifact_tagging()` instruction added | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.14 |
+| `add_artifact_tagging()` supports truncation (priority 0) | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.14 |
+| `add_artifact_tagging()` unsupported lang fallback | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.14 |
 
 ### 8.6 `mention_scanner/scanner.py` *(Feature 3.11)*
 
@@ -648,6 +651,16 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | DB method exceptions handled gracefully | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12b SF-1, via T4 |
 | Profile temperature wins over handler default | ✅ | ❌ | ❌ | ⚪ | Feature 3.12b SF-1, via T3 |
 | Caches adapter securely per project | ✅ | ❌ | ❌ | ⚪ | Feature 3.12b SF-1 |
+
+### 8.14 `lineage.py` *(Feature 3.14 SF-2)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `extract_artifact_uuid()` regex matching | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.14 |
+| `extract_artifact_uuid()` multiple tags | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.14 |
+| `wrap_artifact_tag()` supported languages | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.14 |
+| `wrap_artifact_tag()` sql language mapping | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.14 |
+| `wrap_artifact_tag()` unsupported languages | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.14 |
 
 ---
 

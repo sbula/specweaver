@@ -64,6 +64,7 @@ class StepResult(BaseModel):
 
     status: StepStatus
     output: dict[str, Any] = Field(default_factory=dict)
+    artifact_uuid: str | None = None
     error_message: str = ""
     started_at: str
     completed_at: str

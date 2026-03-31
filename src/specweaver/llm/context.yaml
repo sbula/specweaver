@@ -31,6 +31,8 @@ exposes:
   - TaskType
   - TelemetryCollector
   - UsageRecord
+  - extract_artifact_uuid
+  - wrap_artifact_tag
 
 # -- Operational Metadata --------------------------------------------------
 operational:

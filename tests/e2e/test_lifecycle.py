@@ -37,21 +37,7 @@ def _unique_name(prefix: str = "test") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-@pytest.fixture(autouse=True)
-def _mock_db(tmp_path, monkeypatch):
-    """Patch get_db() to use a temp DB for all e2e tests."""
-    from specweaver.config.database import Database
 
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
-    return db
-
-
-# ---------------------------------------------------------------------------
-# Realistic mock LLM responses for each pipeline stage
-# ---------------------------------------------------------------------------
-
-# Drafter: 5 sections will be generated
 _DRAFT_SECTION_RESPONSES = [
     # Purpose
     (

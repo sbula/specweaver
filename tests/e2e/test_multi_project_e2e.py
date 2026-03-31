@@ -32,15 +32,6 @@ def _unique_name(prefix: str = "mp") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-@pytest.fixture(autouse=True)
-def _mock_db(tmp_path: Path, monkeypatch):
-    """Patch get_db() to use a temp DB for all e2e tests."""
-    from specweaver.config.database import Database
-
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
-    return db
-
 
 def _init_project(tmp_path: Path, name: str) -> Path:
     """Helper: create a sub-directory and init a project there."""

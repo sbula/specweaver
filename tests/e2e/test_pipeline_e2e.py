@@ -23,16 +23,6 @@ from specweaver.cli import app
 runner = CliRunner()
 
 
-@pytest.fixture(autouse=True)
-def _mock_db(tmp_path: Path, monkeypatch):
-    """Patch get_db() to use a temp DB for all e2e tests."""
-    from specweaver.config.database import Database
-
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
-    return db
-
-
 @pytest.fixture()
 def project_with_spec(tmp_path: Path) -> tuple[Path, Path]:
     """Create an initialized project with a valid spec file."""

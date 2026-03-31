@@ -33,19 +33,6 @@ def _unique_name(prefix: str = "vp") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-@pytest.fixture(autouse=True)
-def _mock_db(tmp_path: Path, monkeypatch):
-    """Patch get_db() to use a temp DB for all e2e tests."""
-    from specweaver.config.database import Database
-
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.cli._core.get_db", lambda: db)
-    return db
-
-
-# ---------------------------------------------------------------------------
-# Shared spec content — a well-formed document that passes most rules
-# ---------------------------------------------------------------------------
 
 _GOOD_SPEC = """\
 # greet_service

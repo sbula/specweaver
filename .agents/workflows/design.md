@@ -9,6 +9,7 @@ description: "Feature design workflow. Intake → Research → Feature Detail �
 > **STRICT COMPLIANCE MANDATE:**
 > 1. **NO INTERNAL MEMORY RELIANCE:** You are STRICTLY FORBIDDEN from relying on your internal training memory for facts, APIs, designs, or code behavior. Explicit research (files, internet, HITL) is a MUST.
 > 2. **NO SKIPPING STEPS:** IT IS STRICTLY FORBIDDEN to skip ANY phase, step, or specific checklist item in this workflow, even if a feature seems "trivially simple". You must execute every single instruction exhaustively.
+> 3. **USE .tmp FOR SCRATCHPADS:** All temporary files, debug scripts, or generated data must be stored in the project's `.tmp/` directory. Keep the project root clean.
 
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**

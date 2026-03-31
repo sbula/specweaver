@@ -82,9 +82,9 @@ description: "Phase 1: Architecture verification — verify layer placement, dep
 
 > [!CAUTION]
 > **HARD GATE:** If Phase 1 found ANY architecture violations, you MUST
-> use `notify_user` to present them and WAIT for the user's response.
-> Do NOT proceed to Phase 2 without explicit user confirmation.
-> If NO violations were found, you may proceed directly to Phase 2.
+> present them to the user AND YIELD YOUR TURN.
+> Yielding your turn means making ZERO further tool calls. You must literally stop your chain of thought, end the message, and wait for the user to type a reply in the chat. Do NOT proceed to Phase 2.
+> If NO violations were found, you may proceed directly to Phase 2 without yielding.
 
 > [!IMPORTANT]
 > **CHECKPOINT:** Phase 1 is complete. Update `task.md`.

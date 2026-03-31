@@ -81,6 +81,7 @@ class Generator:
         standards: str | None = None,
         plan: str | None = None,
         project_metadata: ProjectMetadata | None = None,
+        artifact_uuid: str | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -90,6 +91,9 @@ class Generator:
             topology_contexts: Optional topology context from the project graph.
             constitution: Optional constitution content to inject.
             standards: Optional project standards to inject.
+            plan: Optional implementation plan injected.
+            project_metadata: Optional explicit environment boundary target context for models.
+            artifact_uuid: Optional UUID string to tag the code with.
 
         Returns:
             Path to the generated code file.
@@ -98,6 +102,12 @@ class Generator:
 
         builder = (
             PromptBuilder()
+        )
+        if artifact_uuid:
+            builder.add_artifact_tagging(artifact_uuid, "python")
+
+        builder = (
+            builder
             .add_instructions(CODE_GEN_INSTRUCTIONS)
             .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="reference")
@@ -142,6 +152,7 @@ class Generator:
         standards: str | None = None,
         plan: str | None = None,
         project_metadata: ProjectMetadata | None = None,
+        artifact_uuid: str | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -151,6 +162,9 @@ class Generator:
             topology_contexts: Optional topology context from the project graph.
             constitution: Optional constitution content to inject.
             standards: Optional project standards to inject.
+            plan: Optional implementation plan injected.
+            project_metadata: Optional explicit environment boundary target context for models.
+            artifact_uuid: Optional UUID string to tag the test code with.
 
         Returns:
             Path to the generated test file.
@@ -159,6 +173,12 @@ class Generator:
 
         builder = (
             PromptBuilder()
+        )
+        if artifact_uuid:
+            builder.add_artifact_tagging(artifact_uuid, "python")
+
+        builder = (
+            builder
             .add_instructions(TEST_GEN_INSTRUCTIONS)
             .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="reference")

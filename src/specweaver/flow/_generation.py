@@ -13,6 +13,8 @@ from specweaver.flow._review import _build_tool_dispatcher
 from specweaver.flow.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.flow.models import PipelineStep
     from specweaver.llm.models import GenerationConfig, TaskType
 
@@ -89,6 +91,22 @@ class GenerateCodeHandler:
                 context.spec_path.name,
             )
 
+            import uuid
+
+            from specweaver.llm.lineage import extract_artifact_uuid
+
+            parent_id = None
+            if context.spec_path.exists():
+                parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
+            if not parent_id:
+                parent_id = getattr(context, "run_id", "") or ""
+
+            artifact_uuid = None
+            if output_path.exists():
+                artifact_uuid = extract_artifact_uuid(output_path.read_text(encoding="utf-8"))
+            if not artifact_uuid:
+                artifact_uuid = str(uuid.uuid4())
+
             generated = await generator.generate_code(
                 context.spec_path,
                 output_path,
@@ -96,13 +114,24 @@ class GenerateCodeHandler:
                 constitution=context.constitution,
                 plan=context.plan,
                 project_metadata=context.project_metadata,
+                artifact_uuid=artifact_uuid,
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
+
+            if getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
+                context.db.log_artifact_event(
+                    artifact_id=artifact_uuid,
+                    parent_id=parent_id,
+                    run_id=getattr(context, "run_id", "") or "",
+                    event_type="generated_code",
+                )
+
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"generated_path": str(generated)},
                 started_at=started,
                 completed_at=_now_iso(),
+                artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
             logger.exception("GenerateCodeHandler: unhandled exception during code generation")
@@ -131,6 +160,22 @@ class GenerateTestsHandler:
                 context.spec_path.name,
             )
 
+            import uuid
+
+            from specweaver.llm.lineage import extract_artifact_uuid
+
+            parent_id = None
+            if context.spec_path.exists():
+                parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
+            if not parent_id:
+                parent_id = getattr(context, "run_id", "") or ""
+
+            artifact_uuid = None
+            if output_path.exists():
+                artifact_uuid = extract_artifact_uuid(output_path.read_text(encoding="utf-8"))
+            if not artifact_uuid:
+                artifact_uuid = str(uuid.uuid4())
+
             generated = await generator.generate_tests(
                 context.spec_path,
                 output_path,
@@ -138,13 +183,24 @@ class GenerateTestsHandler:
                 constitution=context.constitution,
                 plan=context.plan,
                 project_metadata=context.project_metadata,
+                artifact_uuid=artifact_uuid,
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
+
+            if getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
+                context.db.log_artifact_event(
+                    artifact_id=artifact_uuid,
+                    parent_id=parent_id,
+                    run_id=getattr(context, "run_id", "") or "",
+                    event_type="generated_tests",
+                )
+
             return StepResult(
                 status=StepStatus.PASSED,
                 output={"generated_path": str(generated)},
                 started_at=started,
                 completed_at=_now_iso(),
+                artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
             logger.exception("GenerateTestsHandler: unhandled exception during test generation")
@@ -202,6 +258,64 @@ class PlanSpecHandler:
 
         return adapter, config
 
+    async def _generate_plan_artifact(self, planner: Any, context: RunContext, spec_content: str) -> tuple[Path, str, Any]:
+        """Helper to generate and save the plan artifact."""
+        import io
+        import uuid
+
+        from ruamel.yaml import YAML
+
+        from specweaver.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
+
+        try:
+            if context.config and hasattr(context.config, "stitch"):
+                stitch_mode = context.config.stitch.mode
+                stitch_api_key = context.config.stitch.api_key
+            else:
+                stitch_mode = "off"
+                stitch_api_key = ""
+        except Exception:
+            stitch_mode = "off"
+            stitch_api_key = ""
+
+        plan_artifact = await planner.generate_plan(
+            spec_content=spec_content,
+            spec_path=str(context.spec_path),
+            spec_name=context.spec_path.stem.replace("_spec", "").replace("_", " ").title(),
+            constitution=context.constitution,
+            standards=context.standards,
+            stitch_mode=stitch_mode,
+            stitch_api_key=stitch_api_key,
+            project_metadata=context.project_metadata,
+        )
+
+        plan_path = context.spec_path.with_name(context.spec_path.stem + "_plan.yaml")
+
+        artifact_uuid = None
+        if plan_path.exists():
+            artifact_uuid = extract_artifact_uuid(plan_path.read_text(encoding="utf-8"))
+        if not artifact_uuid:
+            artifact_uuid = str(uuid.uuid4())
+
+        yaml = YAML()
+        yaml.default_flow_style = False
+        buf = io.StringIO()
+        yaml.dump(plan_artifact.model_dump(), buf)
+
+        content = buf.getvalue()
+        tag_str = wrap_artifact_tag(artifact_uuid, "yaml")
+        if tag_str:
+            content = tag_str + "\n" + content
+
+        plan_path.write_text(content, encoding="utf-8")
+        logger.info(
+            "PlanSpecHandler: plan saved to '%s' (confidence=%d)",
+            plan_path,
+            plan_artifact.confidence,
+        )
+        return plan_path, artifact_uuid, plan_artifact
+
+
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
         if context.llm is None:
@@ -234,46 +348,25 @@ class PlanSpecHandler:
                 max_retries,
             )
 
-            try:
-                if context.config and hasattr(context.config, "stitch"):
-                    stitch_mode = context.config.stitch.mode
-                    stitch_api_key = context.config.stitch.api_key
-                else:
-                    stitch_mode = "off"
-                    stitch_api_key = ""
-            except Exception:
-                stitch_mode = "off"
-                stitch_api_key = ""
-
-            plan_artifact = await planner.generate_plan(
-                spec_content=spec_content,
-                spec_path=str(context.spec_path),
-                spec_name=context.spec_path.stem.replace("_spec", "").replace("_", " ").title(),
-                constitution=context.constitution,
-                standards=context.standards,
-                stitch_mode=stitch_mode,
-                stitch_api_key=stitch_api_key,
-                project_metadata=context.project_metadata,
+            plan_path, artifact_uuid, plan_artifact = await self._generate_plan_artifact(
+                planner, context, spec_content
             )
 
-            # Save plan YAML alongside the spec
-            plan_path = context.spec_path.with_name(
-                context.spec_path.stem + "_plan.yaml",
-            )
-            import io
+            from specweaver.llm.lineage import extract_artifact_uuid
 
-            from ruamel.yaml import YAML
+            parent_id = None
+            if context.spec_path.exists():
+                parent_id = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
+            if not parent_id:
+                parent_id = getattr(context, "run_id", "") or ""
 
-            yaml = YAML()
-            yaml.default_flow_style = False
-            buf = io.StringIO()
-            yaml.dump(plan_artifact.model_dump(), buf)
-            plan_path.write_text(buf.getvalue(), encoding="utf-8")
-            logger.info(
-                "PlanSpecHandler: plan saved to '%s' (confidence=%d)",
-                plan_path,
-                plan_artifact.confidence,
-            )
+            if getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
+                context.db.log_artifact_event(
+                    artifact_id=artifact_uuid,
+                    parent_id=parent_id,
+                    run_id=getattr(context, "run_id", "") or "",
+                    event_type="generated_plan",
+                )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -284,6 +377,7 @@ class PlanSpecHandler:
                 },
                 started_at=started,
                 completed_at=_now_iso(),
+                artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
             logger.exception("PlanSpecHandler: unhandled exception during plan generation")
