@@ -39,6 +39,12 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.21** | Multi-spec pipeline fan-out | _(from 3.1 analysis)_ | Sub-pipeline spawning: decomposition outputs N component specs, each runs its own L3 pipeline. Parent pipeline waits for all children. Sequential first, parallel later. Depends on 3.1. |
 | **3.22** | Structured output schemas | _(new)_ | Declarative JSON schemas for pipeline results (validation, review, generation). Same data renders as Rich console (CLI), cards (Web UI), or inline decorations (IDE). Prerequisite for 3.8 dashboard and 3.23 VS Code extension. _(inspired by [Google A2UI](https://github.com/google/A2UI))_ |
 | **3.23** | **VS Code extension** | _(new)_ | Thin extension that calls `sw serve` REST endpoints. Tree view for registered projects, inline review verdicts, "Approve/Reject" buttons in status bar, pipeline progress panel. Depends on 3.7 (API) and 3.22 (structured schemas). Later: IntelliJ/Eclipse adapters use the same REST API with different UI wrappers. |
+| **3.24** | Protocol & Schema Analyzers | _(new)_ | Native parsing of `.proto` (gRPC), `openapi.yaml`, and AsyncAPI files to catch contract drift across polyglot microservices. |
+| **3.25** | Archetype-Based Rule Sets | _(new)_ | Auto-provisioned rules for specific architectural profiles (`kotlin-service`, `rust-worker`) to enforce framework-specific standards inherently. |
+| **3.26** | Topology Provider Abstraction | _(new)_ | Toggle between local `SQLite/BM25` (Bicycle mode) and heavy Sidecars like `FalkorDB + VectorDB` (Rocket mode) to map cross-service topologies based on project size. |
+| **3.27** | Symbolic Math Validation | _(new)_ | Specialized rules to formally verify mathematical/ML calculations (e.g., FinBERT, trading algorithms) generated in execution code. |
+| **3.28** | Reverse-Weaving (`sw capture`) | _(new)_ | Archaeology tool for brownfield adoption. Uses AST "Skeleton Extraction" (signatures + Javadocs) to draft baseline `Spec.md` contracts from legacy DB/Java code. |
+| **3.29** | External Context Providers | _(new)_ | Arbitrary script injections (e.g., `dump_db_schema.py`) via `context/providers.py` to pipe live environment schema (like a 900-table DB) into LLM prompts without polluting the core. |
 
 ## Process for Each Feature
 

@@ -2,7 +2,7 @@
 
 - **Feature ID**: 3.14
 - **Phase**: 3
-- **Status**: APPROVED
+- **Status**: COMPLETE
 - **Design Doc**: docs/proposals/design/phase_3/feature_3_14_design.md
 
 ## Feature Overview
@@ -103,11 +103,10 @@ Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per fil
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | DB & Flow | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Tagging | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-3 | Verification CLI | SF-2 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Tagging | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-3 | Verification CLI | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-3 Implementation Plan APPROVED.
-**Next step**: Run `/dev docs/proposals/roadmap/phase_3/feature_3_14_sf3_implementation_plan.md` for SF-3.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
+**Current status**: Feature complete. Ready for dogfood + merge.
+**Next step**: Move to Feature 3.15 (Automated iterative decomposition).
