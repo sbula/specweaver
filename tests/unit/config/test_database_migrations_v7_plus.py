@@ -551,11 +551,11 @@ class TestSchemaV10Migration:
         for row in rows:
             assert row["provider"] == "gemini"
 
-    def test_schema_version_is_11(self, db):
-        """Schema version is 11 after all migrations."""
+    def test_schema_version_is_12(self, db):
+        """Schema version is 12 after all migrations."""
         with db.connect() as conn:
             row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert row[0] == 11
+        assert row[0] == 12
 
     def test_v9_to_v10_upgrade(self, db_path: Path):
         """Simulate a v9 DB and verify v10 migration adds provider column."""
@@ -605,3 +605,66 @@ class TestSchemaV10Migration:
 
         assert row[0] == "gemini"  # default from ALTER TABLE
         assert version[0] >= 10
+
+
+class TestSchemaV11ToV12Upgrade:
+    """Simulate opening a V11 DB and verify V12 migration adds model_id column."""
+
+    @pytest.fixture()
+    def db_path(self, tmp_path: Path) -> Path:
+        return tmp_path / "upgrade_v11_v12.db"
+
+    def test_v11_to_v12_upgrade(self, db_path: Path):
+        """Simulate a v11 DB and verify v12 migration adds model_id column with default."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import (
+            _SCHEMA_V1,
+            _SCHEMA_V2,
+            _SCHEMA_V3,
+            _SCHEMA_V4,
+            _SCHEMA_V5,
+            _SCHEMA_V6,
+            _SCHEMA_V7,
+            _SCHEMA_V8,
+            _SCHEMA_V9,
+            SCHEMA_V10,
+            SCHEMA_V11,
+            Database,
+        )
+
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.executescript(_SCHEMA_V3)
+        conn.executescript(_SCHEMA_V4)
+        conn.executescript(_SCHEMA_V5)
+        conn.executescript(_SCHEMA_V6)
+        conn.executescript(_SCHEMA_V7)
+        conn.executescript(_SCHEMA_V8)
+        conn.executescript(_SCHEMA_V9)
+        conn.executescript(SCHEMA_V10)
+        conn.executescript(SCHEMA_V11)
+
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) VALUES (11, '2026-01-01T00:00:00Z')"
+        )
+
+        # Insert a v11 artifact event (no model_id column)
+        conn.execute(
+            "INSERT INTO artifact_events "
+            "(artifact_id, parent_id, run_id, event_type, timestamp) "
+            "VALUES ('uuid-test-11', NULL, 'run-1', 'test_event', '2026-01-01T00:00:00Z')"
+        )
+        conn.commit()
+        conn.close()
+
+        # Opening with Database will trigger migration to v12
+        db = Database(db_path)
+        with db.connect() as conn2:
+            row = conn2.execute("SELECT model_id FROM artifact_events WHERE artifact_id='uuid-test-11'").fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
+
+        assert row[0] == "unknown"  # constraint default from ALTER TABLE
+        assert version[0] >= 12

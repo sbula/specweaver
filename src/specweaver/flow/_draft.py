@@ -108,6 +108,7 @@ class DraftSpecHandler:
                     parent_id=None,
                     run_id=getattr(context, "run_id", "") or "",
                     event_type="drafted_spec",
+                    model_id=gen_config.model if gen_config else "unknown",
                 )
 
             return StepResult(

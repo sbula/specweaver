@@ -295,4 +295,5 @@ class LintFixHandler:
                 parent_id=None,
                 run_id=getattr(context, "run_id", "") or "",
                 event_type="lint_fixed",
+                model_id=config.model if config else "unknown",
             )

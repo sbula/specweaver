@@ -124,6 +124,7 @@ class GenerateCodeHandler:
                     parent_id=parent_id,
                     run_id=getattr(context, "run_id", "") or "",
                     event_type="generated_code",
+                    model_id=config.model,
                 )
 
             return StepResult(
@@ -193,6 +194,7 @@ class GenerateTestsHandler:
                     parent_id=parent_id,
                     run_id=getattr(context, "run_id", "") or "",
                     event_type="generated_tests",
+                    model_id=config.model,
                 )
 
             return StepResult(
@@ -366,6 +368,7 @@ class PlanSpecHandler:
                     parent_id=parent_id,
                     run_id=getattr(context, "run_id", "") or "",
                     event_type="generated_plan",
+                    model_id=config.model,
                 )
 
             return StepResult(

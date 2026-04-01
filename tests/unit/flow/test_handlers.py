@@ -237,10 +237,22 @@ class TestGenerateCodeHandler:
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
+
+        # Ensure ctx.db is set up so log_artifact_event gets called
+        ctx.db = MagicMock()
+
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert "generated_path" in result.output
         assert result.artifact_uuid is not None
+
+        ctx.db.log_artifact_event.assert_called_with(
+            artifact_id=result.artifact_uuid,
+            parent_id="test-run",
+            run_id="test-run",
+            event_type="generated_code",
+            model_id="gemini-3-flash-preview"
+        )
 
     @pytest.mark.asyncio
     @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
@@ -264,9 +276,20 @@ class TestGenerateCodeHandler:
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
+
+        ctx.db = MagicMock()
+
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert result.artifact_uuid == "11111111-2222-3333-4444-555555555555"
+
+        ctx.db.log_artifact_event.assert_called_with(
+            artifact_id="11111111-2222-3333-4444-555555555555",
+            parent_id="test-run",
+            run_id="test-run",
+            event_type="generated_code",
+            model_id="gemini-3-flash-preview"
+        )
 
     @pytest.mark.asyncio
     @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
@@ -361,10 +384,21 @@ class TestGenerateTestsHandler:
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
         handler = GenerateTestsHandler()
         mock_git.return_value = (0, "", "")
+
+        ctx.db = MagicMock()
+
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert "generated_path" in result.output
         assert result.artifact_uuid is not None
+
+        ctx.db.log_artifact_event.assert_called_with(
+            artifact_id=result.artifact_uuid,
+            parent_id="test-run",
+            run_id="test-run",
+            event_type="generated_tests",
+            model_id="gemini-3-flash-preview"
+        )
 
     @pytest.mark.asyncio
     @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
@@ -470,12 +504,13 @@ class TestPlanSpecHandler:
         content = plan_yaml.read_text(encoding="utf-8")
         assert f"# sw-artifact: {result.artifact_uuid}" in content
 
-        # Verify db was called with correct parent_id
+        # Verify db was called with correct parent_id and model_id
         ctx.db.log_artifact_event.assert_called_with(
             artifact_id=result.artifact_uuid,
             parent_id="11111111-2222-3333-4444-888888888888",
             run_id="",
-            event_type="generated_plan"
+            event_type="generated_plan",
+            model_id="gemini-3-flash-preview"
         )
 
     @pytest.mark.asyncio
@@ -506,7 +541,8 @@ class TestPlanSpecHandler:
             artifact_id=result.artifact_uuid,
             parent_id="test-run-123",
             run_id="test-run-123",
-            event_type="generated_plan"
+            event_type="generated_plan",
+            model_id="gemini-3-flash-preview"
         )
 
     @pytest.mark.asyncio
@@ -573,6 +609,10 @@ class TestDraftSpecHandler:
 
         step = PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC)
         handler = DraftSpecHandler()
+
+        ctx.db = MagicMock()
+        ctx.run_id = "test-run"
+
         result = await handler.execute(step, ctx)
 
         assert result.status == StepStatus.PASSED
@@ -581,6 +621,14 @@ class TestDraftSpecHandler:
         # Also ensure it wrote the uuid to the spec
         content = spec.read_text(encoding="utf-8")
         assert "<!-- sw-artifact:" in content
+
+        ctx.db.log_artifact_event.assert_called_with(
+            artifact_id=result.artifact_uuid,
+            parent_id=None,
+            run_id="test-run",
+            event_type="drafted_spec",
+            model_id="unknown"
+        )
 
 
 # ---------------------------------------------------------------------------

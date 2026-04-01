@@ -20,7 +20,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli import app

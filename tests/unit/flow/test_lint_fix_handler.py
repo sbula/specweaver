@@ -355,6 +355,7 @@ class TestLintFixArtifactLineage:
             artifact_id=valid_uuid,
             parent_id=None,
             run_id="test-run-1",
-            event_type="lint_fixed"
+            event_type="lint_fixed",
+            model_id="gemini-3-flash-preview"
         )
 

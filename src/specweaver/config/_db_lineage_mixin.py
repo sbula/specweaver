@@ -36,6 +36,7 @@ class LineageMixin:
         parent_id: str | None,
         run_id: str,
         event_type: str,
+        model_id: str,
     ) -> None:
         """Log a creation or modification event for an artifact."""
         if not artifact_id or not artifact_id.strip():
@@ -44,22 +45,25 @@ class LineageMixin:
             raise ValueError("run_id cannot be empty")
         if not event_type or not event_type.strip():
             raise ValueError("event_type cannot be empty")
+        if not model_id or not model_id.strip():
+            raise ValueError("model_id cannot be empty")
 
         with self.connect() as conn:
             conn.execute(
                 """
                 INSERT INTO artifact_events (
-                    artifact_id, parent_id, run_id, event_type, timestamp
-                ) VALUES (?, ?, ?, ?, ?)
+                    artifact_id, parent_id, run_id, event_type, model_id, timestamp
+                ) VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (artifact_id, parent_id, run_id, event_type, _now_iso()),
+                (artifact_id, parent_id, run_id, event_type, model_id, _now_iso()),
             )
             logger.debug(
-                "Logged artifact event %s for %s (parent=%s, run=%s)",
+                "Logged artifact event %s for %s (parent=%s, run=%s, model=%s)",
                 event_type,
                 artifact_id,
                 parent_id,
                 run_id,
+                model_id,
             )
 
     def get_artifact_history(self, artifact_id: str) -> list[dict[str, Any]]:

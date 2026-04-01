@@ -1,6 +1,9 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from specweaver.config.database import Database
+
 
 @pytest.fixture(autouse=True)
 def _isolate_env(tmp_path: Path, monkeypatch):

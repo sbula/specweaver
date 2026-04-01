@@ -142,7 +142,8 @@ def _build_result_label(level: str, pipeline: str | None, pipeline_name: str) ->
 @_core.app.command()
 def check(
     target: str = typer.Argument(
-        help="Path to the spec or code file to check.",
+        "",
+        help="Path to the spec or code file to check. Optional if using --lineage.",
     ),
     level: str = typer.Option(
         "component",
@@ -174,6 +175,11 @@ def check(
         "--set",
         help="One-off override: RULE.FIELD=VALUE (e.g. S08.fail_threshold=5).",
     ),
+    lineage: bool = typer.Option(
+        False,
+        "--lineage",
+        help="Run a scan over the project's source tree to detect files missing lineage tags (orphans).",
+    ),
 ) -> None:
     """Run validation rules against a spec or code file.
 
@@ -192,8 +198,34 @@ def check(
     from specweaver.validation.executor import execute_validation_pipeline
     from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
+    if lineage:
+        from specweaver.cli.lineage import check_lineage
+
+        db = _core.get_db()
+        active = db.get_active_project()
+
+        if project:
+            proj_path = Path(project)
+        elif active:
+            proj_data = db.get_project(active)
+            proj_path = Path(proj_data["path"]) if proj_data else Path.cwd()
+        else:
+            proj_path = Path.cwd()
+
+        src_dir = proj_path / "src"
+
+        orphans = check_lineage(src_dir)
+        if orphans:
+            _core.console.print("[red]Lineage Tracking Error:[/red] Missing '# sw-artifact:' tags.")
+            for orphan in orphans:
+                _core.console.print(f"  - {orphan}")
+            raise typer.Exit(code=1)
+
+        _core.console.print("[green]Lineage scan passed.[/green] All files correctly tagged.")
+        return
+
     target_path = Path(target)
-    if not target_path.exists():
+    if not target or not target_path.exists():
         _core.console.print(f"[red]Error:[/red] File not found: {target}")
         raise typer.Exit(code=1)
 

@@ -104,10 +104,10 @@ Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per fil
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | DB & Flow | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Tagging | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-3 | Verification CLI | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Verification CLI | SF-2 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Implementation Plan APPROVED.
-**Next step**: Run:
+**Current status**: SF-3 Implementation Plan APPROVED.
+**Next step**: Run `/dev docs/proposals/roadmap/phase_3/feature_3_14_sf3_implementation_plan.md` for SF-3.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

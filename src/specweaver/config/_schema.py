@@ -136,3 +136,7 @@ CREATE INDEX IF NOT EXISTS idx_lineage_artifact ON artifact_events(artifact_id);
 
 ALTER TABLE llm_usage_log ADD COLUMN run_id TEXT DEFAULT '';
 """
+
+SCHEMA_V12 = """\
+ALTER TABLE artifact_events ADD COLUMN model_id TEXT NOT NULL DEFAULT 'unknown';
+"""

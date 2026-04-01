@@ -72,10 +72,10 @@ class TestSchemaCreation:
         assert expected.issubset(tables)
 
     def test_schema_version_is_latest(self, db):
-        """Schema version is 11 after v11 migration."""
+        """Schema version is 12 after v12 migration."""
         with db.connect() as conn:
             row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
-            assert row[0] == 11
+            assert row[0] == 12
 
     def test_artifact_events_table_exists(self, db):
         """The artifact_events table is created in v11."""

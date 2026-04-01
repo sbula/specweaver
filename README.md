@@ -119,6 +119,7 @@ docker compose up -d
 | `sw check <file> --level component` | Validate a component spec against S01–S11 with component-level thresholds |
 | `sw check <file> --level code` | Validate code against C01–C08 rules |
 | `sw check --pipeline <name>` | Use a specific validation pipeline (overrides `--level`) |
+| `sw check --lineage` | Run a scan over the project's source tree to detect orphaned (untagged) code files |
 | `sw check --strict` | Treat warnings as failures (exit code 1) |
 | `sw check --set RULE.FIELD=VALUE` | One-off threshold override (e.g. `S08.fail_threshold=5`) |
 | `sw review <file>` | AI-powered spec or code review (confidence-scored findings) |
@@ -270,7 +271,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C08)
-├── tests/                      # 3645+ tests (unit, integration, E2E)
+├── tests/                      # 3659+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

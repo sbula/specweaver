@@ -130,6 +130,14 @@ Feature-level validation differs from component-level:
 
 The override cascade: code defaults → kind presets → project DB overrides → `--set` flags.
 
+## 5c. Validate Artifact Lineage (Optional)
+
+You can scan the project to ensure no Python files are missing their `# sw-artifact:` traceability tags:
+
+```bash
+sw check --lineage --project ./my-project
+```
+
 ## 6. Review the Spec with AI
 
 ```bash

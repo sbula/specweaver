@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli import app
