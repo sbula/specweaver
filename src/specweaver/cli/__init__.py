@@ -65,6 +65,7 @@ from specweaver.cli import (  # noqa: E402, F401
     constitution,
     cost_commands,
     implement,
+    lineage,
     pipelines,
     projects,
     review,

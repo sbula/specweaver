@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **3 625 collected** · 3 616 passed · 9 skipped · 120 source modules · 168 test files
+> **3 669 collected** · 3 669 passed · 0 skipped · 122 source modules · 170 test files
 > **Last updated**: 2026-03-31
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -222,21 +222,12 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 ### 1.11 `cost_commands.py` *(Feature 3.12)*
 
-
-
 | Story | Unit | Integ | E2E | Perf | Notes |
-
 |-------|:----:|:-----:|:---:|:----:|-------|
-
 | `costs` shows defaults | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
-
 | `costs` shows overrides | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
-
 | `costs set` override | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
-
 | `costs reset` override | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
-
-
 
 ### 1.12 `validation.py`
 
@@ -246,6 +237,15 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `_resolve_pipeline_name` — all precedence branches | ✅ | ✅ | ✅ | ⚪ | Profile-override E2E: set-profile then check |
 | `check()` main entry | ✅ | ✅ | ✅ | ⚪ | — |
 | `list_rules()` | ✅ | ✅ | ⚪ | ⚪ | — |
+| `check(--lineage)` orphan checking | ✅ | ✅ | ⚪ | ⚪ | Feature 3.14 SF-1 |
+
+### 1.13 `lineage.py` *(Feature 3.14 SF-3)*
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `tag` invokes logic | ✅ | ✅ | ✅ | ⚪ | Tests database insertion + valid IDs |
+| `tree` extraction + rendering | ✅ | ✅ | ✅ | ⚪ | Circular protection handling + E2E string trace |
+| Graceful fallbacks for missing db refs / empty files | ✅ | ✅ | ⚪ | ⚪ | Target exceptions cleanly raised |
 
 ---
 

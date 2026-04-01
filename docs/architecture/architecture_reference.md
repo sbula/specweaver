@@ -102,6 +102,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `llm/models.py` — `LLMResponse`, `ToolDefinition`, `TaskType`, `GenerationConfig`. Data models for the LLM contract.
 - `llm/telemetry.py` — `estimate_cost()`, `create_usage_record()`, `CostEntry`, `UsageRecord`. Pure-logic cost estimation with configurable pricing tables. In `llm/` because it's LLM-specific pricing logic. *(Feature 3.12)*
 - `llm/collector.py` — `TelemetryCollector`: decorator wrapping `LLMAdapter`, captures token usage per call. In `llm/` because it's an adapter-level concern. *(Feature 3.12)*
+- `cli/lineage.py` — Lineage tagging and tree exploration CLI commands (`sw lineage tag`, `sw lineage tree`). In `cli/` because it's an end-user presentation layer for artifact databases. *(Feature 3.14)*
 - `llm/factory.py` — `create_llm_adapter()`: factory function that creates adapter + optional `TelemetryCollector` wrapping. Loads cost overrides from DB. *(Feature 3.12)*
 - `config/_db_telemetry_mixin.py` — `TelemetryMixin`: DB persistence for `llm_usage_log` + `llm_cost_overrides` tables. In `config/` because it's a DB mixin. *(Feature 3.12)*
 

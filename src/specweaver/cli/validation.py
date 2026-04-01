@@ -208,7 +208,7 @@ def check(
             proj_path = Path(project)
         elif active:
             proj_data = db.get_project(active)
-            proj_path = Path(proj_data["path"]) if proj_data else Path.cwd()
+            proj_path = Path(str(proj_data["root_path"])) if proj_data else Path.cwd()
         else:
             proj_path = Path.cwd()
 

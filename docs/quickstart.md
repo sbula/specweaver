@@ -138,6 +138,20 @@ You can scan the project to ensure no Python files are missing their `# sw-artif
 sw check --lineage --project ./my-project
 ```
 
+## 5d. Tag and Trace Lineage (Optional)
+
+Inject missing traceability tags or log manual edits directly:
+
+```bash
+sw lineage tag src/my_app/core.py --author human
+```
+
+View the upstream spec origins and downstream modifications of any artifact:
+
+```bash
+sw lineage tree src/my_app/core.py
+```
+
 ## 6. Review the Spec with AI
 
 ```bash
