@@ -35,6 +35,7 @@ class StepAction(enum.StrEnum):
     DECOMPOSE = "decompose"
     PLAN = "plan"
     ENRICH = "enrich"
+    DETECT = "detect"
 
 
 class StepTarget(enum.StrEnum):
@@ -45,6 +46,7 @@ class StepTarget(enum.StrEnum):
     TESTS = "tests"
     FEATURE = "feature"
     STANDARDS = "standards"
+    DRIFT = "drift"
 
 
 class GateType(enum.StrEnum):
@@ -94,6 +96,8 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.PLAN, StepTarget.SPEC),
         # Standards pipeline combos
         (StepAction.ENRICH, StepTarget.STANDARDS),
+        # Validation drift combos
+        (StepAction.DETECT, StepTarget.DRIFT),
     }
 )
 

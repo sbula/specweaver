@@ -25,6 +25,7 @@ from specweaver.flow._base import (  # noqa: F401
 
 # Re-export all handler implementations
 from specweaver.flow._draft import DraftSpecHandler
+from specweaver.flow._drift import DriftCheckHandler
 from specweaver.flow._generation import (
     GenerateCodeHandler,
     GenerateTestsHandler,
@@ -42,6 +43,7 @@ from specweaver.flow.models import StepAction, StepTarget
 
 __all__ = [
     "DraftSpecHandler",
+    "DriftCheckHandler",
     "EnrichStandardsHandler",
     "GenerateCodeHandler",
     "GenerateTestsHandler",
@@ -79,6 +81,7 @@ class StepHandlerRegistry:
             (StepAction.LINT_FIX, StepTarget.CODE): LintFixHandler(),
             (StepAction.PLAN, StepTarget.SPEC): PlanSpecHandler(),
             (StepAction.ENRICH, StepTarget.STANDARDS): EnrichStandardsHandler(),
+            (StepAction.DETECT, StepTarget.DRIFT): DriftCheckHandler(),
         }
 
     def get(
