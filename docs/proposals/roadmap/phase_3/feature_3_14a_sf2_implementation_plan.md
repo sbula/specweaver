@@ -4,7 +4,7 @@
 - **Design Document**: docs/proposals/design/phase_3/feature_3_14a_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
 - **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_14a_sf2_implementation_plan.md
-- **Status**: DRAFT
+- **Status**: COMPLETED
 
 ## Goal Description
 Expose the previously built AST Drift Engine (SF-1) through the SpecWeaver CLI via the `sw drift` command. It integrates the pure-logic `detect_drift` capabilities into the intelligent execution flow (`flow/` layer), fetching the necessary lineage UUIDs, locating the parent Spec/Plan, doing the check, and optionally invoking an LLM via `--analyze` to root-cause any detected AST drifts. 

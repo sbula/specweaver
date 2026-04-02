@@ -87,7 +87,7 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | AST Drift Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Flow Integration & CLI | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Flow Integration & CLI | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
