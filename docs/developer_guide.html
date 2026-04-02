@@ -561,11 +561,12 @@ flowchart LR
         C06["C06 No Bare Except<br/>No except: pass"]
         C07["C07 No Orphan TODO<br/>No untracked TODOs"]
         C08["C08 Type Hints<br/>Functions annotated"]
+        C09["C09 Method Drift<br/>AST Signature Match (SF-1)"]
     end
 
     CODE["module.py"] --> C01 & C02 & C05
     CODE --> C03 & C04
-    CODE --> C06 & C07 & C08
+    CODE --> C06 & C07 & C08 & C09
   </pre>
 </div>
 

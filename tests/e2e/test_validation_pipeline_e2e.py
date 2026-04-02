@@ -337,3 +337,24 @@ class TestCodeValidationPipeline:
         assert "C06" in result.output or "C07" in result.output, (
             f"Expected C06 or C07 violation in output:\n{result.output}"
         )
+
+
+# ===========================================================================
+# Test 19: AST Drift Engine validates pipeline boundaries (Pending SF-2)
+# ===========================================================================
+
+
+class TestCodeValidationDriftEngine:
+    """sw check --level code interfaces with the AST Drift Engine."""
+
+    import pytest
+    @pytest.mark.skip(reason="Pending SF-2 Flow Integration")
+    def test_code_validation_method_drift(self, tmp_path: Path) -> None:
+        """E5: ValidateCodeHandler FAILs when the generated codebase drops a planned method."""
+        pass  # SF-2 target
+
+    import pytest
+    @pytest.mark.skip(reason="Pending SF-2 Flow Integration")
+    def test_code_validation_workspace_drift(self, tmp_path: Path) -> None:
+        """E6: ValidateCodeHandler FAILs when the generated codebase is missing an entire file."""
+        pass  # SF-2 target

@@ -55,6 +55,23 @@ class RuleResult(BaseModel):
     message: str = ""
 
 
+class DriftFinding(BaseModel):
+    """A structural gap between expected AST signatures and actual AST."""
+
+    severity: Severity = Severity.ERROR
+    node_type: str  # e.g., 'function', 'class'
+    description: str
+    expected_signature: str
+    actual_signature: str | None = None
+
+
+class DriftReport(BaseModel):
+    """High-level summary of AST drift findings."""
+
+    is_drifted: bool = False
+    findings: list[DriftFinding] = Field(default_factory=list)
+
+
 class Rule(ABC):
     """Abstract base class for all validation rules.
 

@@ -16,6 +16,7 @@ from specweaver.planning.models import (
     ConstraintNote,
     FileChange,
     ImplementationTask,
+    MethodSignature,
     MockupReference,
     PlanArtifact,
     TechStackChoice,
@@ -199,6 +200,35 @@ class TestConstraintNote:
 
 
 # ---------------------------------------------------------------------------
+# MethodSignature
+# ---------------------------------------------------------------------------
+
+
+class TestMethodSignature:
+    """MethodSignature represents an expected AST function signature."""
+
+    def test_construction(self) -> None:
+        m = MethodSignature(
+            name="detect_drift",
+            parameters=["ast: tree_sitter.Tree", "plan: PlanArtifact"],
+            return_type="DriftReport",
+        )
+        assert m.name == "detect_drift"
+        assert m.parameters == ["ast: tree_sitter.Tree", "plan: PlanArtifact"]
+        assert m.return_type == "DriftReport"
+
+    def test_serialization_round_trip(self) -> None:
+        m = MethodSignature(
+            name="get_users",
+            parameters=[],
+            return_type="list[User]",
+        )
+        data = m.model_dump()
+        m2 = MethodSignature.model_validate(data)
+        assert m2.return_type == "list[User]"
+
+
+# ---------------------------------------------------------------------------
 # ImplementationTask
 # ---------------------------------------------------------------------------
 
@@ -208,12 +238,24 @@ class TestImplementationTask:
 
     def test_minimal_construction(self) -> None:
         t = ImplementationTask(
+            sequence_number=1,
             name="Create auth module",
             description="Set up authentication module skeleton",
             files=["src/auth/__init__.py", "src/auth/login.py"],
         )
         assert t.name == "Create auth module"
+        assert t.sequence_number == 1
         assert len(t.files) == 2
+        assert t.expected_signatures == {}
+
+    def test_sequence_number_default(self) -> None:
+        """Legacy JSON defaults sequence_number to 0."""
+        t = ImplementationTask(
+            name="Legacy block",
+            description="Has no sequence number",
+            files=[],
+        )
+        assert t.sequence_number == 0
 
     def test_dependencies_default_empty(self) -> None:
         t = ImplementationTask(

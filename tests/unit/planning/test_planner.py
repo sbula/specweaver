@@ -241,6 +241,23 @@ class TestPlannerContext:
         user_msg = first_call_msgs[-1]
         assert "PEP 8" in user_msg.content
 
+    @pytest.mark.asyncio()
+    async def test_expected_signatures_in_prompt(self) -> None:
+        """The LLM must be explicitly told to generate expected_signatures."""
+        llm = FakeLLM([_valid_plan_json()])
+        planner = Planner(llm, max_retries=1)
+
+        await planner.generate_plan(
+            spec_content="# Test",
+            spec_path="test.md",
+            spec_name="Test",
+        )
+
+        first_call_msgs = llm.messages_log[0]
+        user_msg = first_call_msgs[-1]
+        assert "expected_signatures" in user_msg.content
+        assert "MethodSignature" in user_msg.content
+
 
 # ---------------------------------------------------------------------------
 # Test: _clean_json edge cases

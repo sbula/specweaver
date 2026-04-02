@@ -48,7 +48,7 @@ class AnthropicAdapter(LLMAdapter):
 
     def _get_client(self) -> Any:
         if self._client is None:
-            import anthropic  # type: ignore
+            import anthropic
 
             self._client = anthropic.AsyncAnthropic(api_key=self._api_key)
         return self._client

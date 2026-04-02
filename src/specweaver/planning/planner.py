@@ -104,7 +104,7 @@ Return a JSON object with these fields:
 - architecture (object|null): module_layout, dependency_direction, archetype, patterns
 - tech_stack (list): category, choice, rationale, alternatives_considered
 - constraints (list): source, constraint, impact
-- tasks (list): name, description, files, dependencies
+- tasks (list): sequence_number (int), name, description, files, dependencies, expected_signatures (dict mapping file_path to list of MethodSignature: name, list of parameter strings, return_type)
 - test_expectations (list): name, description, function_under_test, input_summary, expected_behavior, category ("happy"|"error"|"boundary")
 - reasoning (str): your chain-of-thought
 - confidence (int): 0-100

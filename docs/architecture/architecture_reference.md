@@ -174,6 +174,8 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.13a Unified Runner Architecture** — The `PipelineRunner` (`flow/runner.py`) is now universally used to execute not just full YAML workflows but simple single-shot tasks (`sw review`, `sw draft`, `sw standards scan`) through dynamically constructed 1-step `PipelineDefinition` objects via `create_single_step()`. This removed disjoint telemetry-flushing and state management logic out of `cli/` and into the robust `flow/` engine.
 
+**3.14a AST Drift Engine (SF-1)** — Built on native `tree-sitter`, the Validation engine now structurally inspects the workspace against Plan expectations, performing drift detection by natively extracting AST signatures. Located in `validation/drift_detector.py` since it is a pure validation module used by code check rules to prevent agent drift.
+
 ### How Features Map to Lifecycle Layers
 
 ```

@@ -212,14 +212,14 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
     """sw lineage tree <file> should read the UUID from the sw-artifact tag."""
     target_file = tmp_path / "test_file.py"
     target_file.write_text("# sw-artifact: filebase-uuid-999\n", encoding="utf-8")
-    
+
     with patch("specweaver.cli.lineage.get_db") as mock_get_db:
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_db.get_artifact_history.return_value = []
-        
+
         result = runner.invoke(app, ["tree", str(target_file)])
-        
+
         assert result.exit_code == 0
         assert "filebase-uuid-999" in result.output
         mock_db.get_artifact_history.assert_called_with("filebase-uuid-999")
@@ -231,7 +231,7 @@ def test_tree_command_graceful_missing_history():
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_db.get_artifact_history.return_value = []
-        
+
         result = runner.invoke(app, ["tree", "unknown-uuid"])
         assert result.exit_code == 0
         assert "Lineage Graph (Root: unknown-uuid)" in result.output
@@ -243,12 +243,12 @@ def test_tree_command_handles_circular_references():
     with patch("specweaver.cli.lineage.get_db") as mock_get_db:
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
-        
+
         # history always returns something so it's a valid node
         mock_db.get_artifact_history.return_value = [
             {"artifact_id": "loop-uuid", "parent_id": None, "event_type": "manual", "model_id": "human"}
         ]
-        
+
         # get_children returns a cycle referencing each other
         def mock_children(uid):
             if uid == "loop-a":
@@ -256,9 +256,9 @@ def test_tree_command_handles_circular_references():
             if uid == "loop-b":
                 return [{"artifact_id": "loop-a", "parent_id": "loop-b", "event_type": "manual", "model_id": "human"}]
             return []
-        
+
         mock_db.get_children.side_effect = mock_children
-        
+
         result = runner.invoke(app, ["tree", "loop-a"])
         assert result.exit_code == 0
         assert "Circular reference: loop-a" in result.output

@@ -1,7 +1,7 @@
 # Test Coverage Matrix
 
-> **3 669 collected** · 3 669 passed · 0 skipped · 122 source modules · 170 test files
-> **Last updated**: 2026-03-31
+> **3 671 collected** · 3 671 passed · 0 skipped · 123 source modules · 171 test files
+> **Last updated**: 2026-04-02
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
 
@@ -920,6 +920,17 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | Rule registry | ✅ | ✅ | ⚪ | ⚪ | — |
 | Custom D-prefix rule loading | ✅ | ⚪ | ⚪ | ⚪ | — |
 | Sub-pipeline `extends` circular guard | ✅ | ⚪ | ⚪ | ⚪ | — |
+
+### 13.5 AST Drift Engine (Feature 3.14a)
+
+| Story | Unit | Integ | E2E | Perf | Notes |
+|-------|:----:|:-----:|:---:|:----:|-------|
+| `detect_workspace_drift` / layout validation | ✅ | ⚪ | ⚪ | ⚪ | No integ needed |
+| `detect_drift` none ast gracefully | ✅ | ⚪ | ⚪ | ⚪ | Empty safety |
+| `_extract_signatures` decors & async | ⚪ | ✅ | ⚪ | ⚪ | Tree-sitter core parsing |
+| `_clean_expected_params` strips decorators (*args) | ✅ | ✅ | ⚪ | ⚪ | Dynamic parameter matching |
+| `cxx_method_drift` code loopback on missed method | ⚪ | ⚪ | ❌ | ⚪ | SF-2 required (E2E skipped) |
+| `cxx_workspace_drift` missing layout file | ⚪ | ⚪ | ❌ | ⚪ | SF-2 required (E2E skipped) |
 
 ### 13.4 `logging.py`
 

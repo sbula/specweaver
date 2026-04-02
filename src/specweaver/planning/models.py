@@ -96,20 +96,38 @@ class ConstraintNote(BaseModel):
     impact: str
 
 
+class MethodSignature(BaseModel):
+    """Expected AST method signature for an implementation task.
+
+    Attributes:
+        name: Function or method name.
+        parameters: List of exact parameter definitions (e.g., 'ast: tree_sitter.Tree').
+        return_type: Expected return type hint string.
+    """
+
+    name: str
+    parameters: list[str] = Field(default_factory=list)
+    return_type: str
+
+
 class ImplementationTask(BaseModel):
     """An ordered implementation step.
 
     Attributes:
+        sequence_number: Chronological execution order (defaults to 0 for legacy).
         name: Short task name.
         description: What to do in this step.
         files: Which files this task touches.
         dependencies: Task names that must complete first.
+        expected_signatures: Strict AST enforcement signatures.
     """
 
+    sequence_number: int = 0
     name: str
     description: str
     files: list[str]
     dependencies: list[str] = Field(default_factory=list)
+    expected_signatures: dict[str, list[MethodSignature]] = Field(default_factory=dict)
 
 
 class TestExpectation(BaseModel):
