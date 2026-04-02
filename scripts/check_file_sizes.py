@@ -26,12 +26,15 @@ from pathlib import Path
 SRC_WARN = 450
 SRC_ERROR = 600
 TEST_SCALE = 1.5
-TEST_WARN = int(SRC_WARN * TEST_SCALE)   # 675
+TEST_WARN = int(SRC_WARN * TEST_SCALE)  # 675
 TEST_ERROR = int(SRC_ERROR * TEST_SCALE)  # 900
 
 
 def _check_dir(
-    root: Path, search_dir: str, warn: int, error: int,
+    root: Path,
+    search_dir: str,
+    warn: int,
+    error: int,
 ) -> tuple[int, int]:
     """Check all .py files in a directory. Returns (errors, warnings)."""
     errs = warns = 0

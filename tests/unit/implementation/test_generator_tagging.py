@@ -46,6 +46,7 @@ async def test_generator_injects_uuid_to_prompt(tmp_path: Path) -> None:
     assert "12345678-1234-1234-1234-123456789abc" in user_prompt
     assert "sw-artifact:" in user_prompt
 
+
 @pytest.mark.asyncio
 async def test_generator_tests_injects_uuid_to_prompt(tmp_path: Path) -> None:
     """generate_tests translates artifact_uuid to a prompt instruction."""

@@ -20,7 +20,9 @@ def test_lineage_tag_integration_real_db(tmp_path, monkeypatch):
     test_file.write_text("def foo():\n    pass\n", encoding="utf-8")
 
     # Act
-    result = runner.invoke(app, ["lineage", "tag", str(test_file), "--author", "integration_test_model"])
+    result = runner.invoke(
+        app, ["lineage", "tag", str(test_file), "--author", "integration_test_model"]
+    )
 
     # Assert
     assert result.exit_code == 0

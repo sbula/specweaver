@@ -214,6 +214,7 @@ class LintFixHandler:
 
         code = code_path.read_text(encoding="utf-8")
         from specweaver.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
+
         artifact_uuid = extract_artifact_uuid(code)
 
         error_summary = "\n".join(
@@ -289,7 +290,11 @@ class LintFixHandler:
 
         code_path.write_text(fixed_code + "\n", encoding="utf-8")
 
-        if artifact_uuid and getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
+        if (
+            artifact_uuid
+            and getattr(context, "db", None)
+            and hasattr(context.db, "log_artifact_event")
+        ):
             context.db.log_artifact_event(
                 artifact_id=artifact_uuid,
                 parent_id=None,

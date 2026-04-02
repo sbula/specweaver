@@ -43,14 +43,17 @@ from specweaver.flow.store import StateStore
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 class _FakeFailingReviewHandler:
     """A review handler that fails once, then passes, triggering one loop-back."""
+
     def __init__(self):
         self.calls = 0
 
     async def execute(self, step, context):
         from specweaver.flow.handlers import _now_iso
         from specweaver.flow.state import StepResult
+
         self.calls += 1
         return StepResult(
             status=StepStatus.FAILED if self.calls == 1 else StepStatus.PASSED,
@@ -67,9 +70,11 @@ def lineage_db(tmp_path: Path) -> Database:
     db = Database(db_path)
     return db
 
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 @patch("specweaver.drafting.drafter.Drafter.draft")
@@ -86,11 +91,15 @@ async def test_lineage_tracking_flow_database(
 
     # Drafter makes a tagged spec
     async def _mock_draft(*args, **kwargs):
-        spec.write_text("# sw-artifact: 11111111-2222-3333-4444-555555555555\nContent", encoding="utf-8")
+        spec.write_text(
+            "# sw-artifact: 11111111-2222-3333-4444-555555555555\nContent", encoding="utf-8"
+        )
         return spec
+
     mock_draft.side_effect = _mock_draft
 
     mock_llm = MagicMock()
+
     async def _mock_llm_generate(messages, config):
         # find the tag in the prompt
         tag = ""
@@ -101,6 +110,7 @@ async def test_lineage_tracking_flow_database(
                         tag = line.split("'")[1] if "'" in line else line
                         break
         return MagicMock(text=f"```python\n{tag}\nprint(1)\n```")
+
     mock_llm.generate = AsyncMock(side_effect=_mock_llm_generate)
 
     ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_llm)
@@ -113,7 +123,7 @@ async def test_lineage_tracking_flow_database(
         steps=[
             PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC),
             PipelineStep(name="gen_code", action=StepAction.GENERATE, target=StepTarget.CODE),
-        ]
+        ],
     )
 
     registry = StepHandlerRegistry()
@@ -129,7 +139,9 @@ async def test_lineage_tracking_flow_database(
 
     # Verify DB contains the events
     with lineage_db.connect() as conn:
-        rows = conn.execute("SELECT artifact_id, parent_id, event_type FROM artifact_events ORDER BY timestamp ASC").fetchall()
+        rows = conn.execute(
+            "SELECT artifact_id, parent_id, event_type FROM artifact_events ORDER BY timestamp ASC"
+        ).fetchall()
 
         # We expect two hits: draft, then code gen
         assert len(rows) == 2
@@ -147,17 +159,18 @@ async def test_lineage_tracking_flow_database(
 
 @pytest.mark.asyncio
 @patch("specweaver.loom.commons.git.executor.GitExecutor.run")
-async def test_loop_back_preservation(
-    mock_git, tmp_path: Path, lineage_db: Database
-) -> None:
+async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Database) -> None:
     """Verify Code UUID is preserved when pipeline loops back and regenerates code."""
     spec = tmp_path / "specs" / "feature.md"
     src_dir = tmp_path / "src"
     src_dir.mkdir(parents=True, exist_ok=True)
     spec.parent.mkdir(parents=True, exist_ok=True)
-    spec.write_text("# sw-artifact: 11111111-2222-3333-4444-555555555555\nContent", encoding="utf-8")
+    spec.write_text(
+        "# sw-artifact: 11111111-2222-3333-4444-555555555555\nContent", encoding="utf-8"
+    )
 
     mock_llm = MagicMock()
+
     async def _mock_llm_generate(messages, config):
         # find the tag in the prompt
         tag = ""
@@ -168,6 +181,7 @@ async def test_loop_back_preservation(
                         tag = line.split("'")[1] if "'" in line else line
                         break
         return MagicMock(text=f"```python\n{tag}\nprint(1)\n```")
+
     mock_llm.generate = AsyncMock(side_effect=_mock_llm_generate)
 
     ctx = RunContext(project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_llm)
@@ -189,9 +203,9 @@ async def test_loop_back_preservation(
                     on_fail=OnFailAction.LOOP_BACK,
                     loop_target="gen_code",
                     max_retries=2,
-                )
+                ),
             ),
-        ]
+        ],
     )
 
     registry = StepHandlerRegistry()
@@ -208,7 +222,9 @@ async def test_loop_back_preservation(
     # Since it failed review once and looped back, we should have TWO code generations in DB.
     # But crucially, they should have the EXACT SAME artifact_uuid because the second run extracted it from the file!
     with lineage_db.connect() as conn:
-        rows = conn.execute("SELECT artifact_id, parent_id, event_type FROM artifact_events WHERE event_type='generated_code' ORDER BY timestamp ASC").fetchall()
+        rows = conn.execute(
+            "SELECT artifact_id, parent_id, event_type FROM artifact_events WHERE event_type='generated_code' ORDER BY timestamp ASC"
+        ).fetchall()
 
         assert len(rows) == 2
         gen1_id = rows[0]["artifact_id"]

@@ -296,6 +296,7 @@ class TestLintFixInterface:
         assert config.task_type == "check"
         assert config.temperature == 0.1
 
+
 class TestLintFixArtifactLineage:
     """Verify artifact lineage tagging and logging during fix loops."""
 
@@ -356,6 +357,5 @@ class TestLintFixArtifactLineage:
             parent_id=None,
             run_id="test-run-1",
             event_type="lint_fixed",
-            model_id="gemini-3-flash-preview"
+            model_id="gemini-3-flash-preview",
         )
-

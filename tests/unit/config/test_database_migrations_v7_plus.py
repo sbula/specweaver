@@ -663,7 +663,9 @@ class TestSchemaV11ToV12Upgrade:
         # Opening with Database will trigger migration to v12
         db = Database(db_path)
         with db.connect() as conn2:
-            row = conn2.execute("SELECT model_id FROM artifact_events WHERE artifact_id='uuid-test-11'").fetchone()
+            row = conn2.execute(
+                "SELECT model_id FROM artifact_events WHERE artifact_id='uuid-test-11'"
+            ).fetchone()
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
 
         assert row[0] == "unknown"  # constraint default from ALTER TABLE

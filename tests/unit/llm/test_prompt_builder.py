@@ -855,6 +855,3 @@ class TestRenderMentioned:
         ]
         result = _render_mentioned(blocks)
         assert result is None
-
-
-

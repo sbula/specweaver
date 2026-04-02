@@ -80,8 +80,8 @@ def _extract_param_names(parameters_node: Any) -> list[str]:  # noqa: C901
                         params.append(subchild.text.decode("utf-8"))
                         break
         elif child.type == "dictionary_splat_pattern" or child.type == "list_splat_pattern":
-             # kwargs / args
-             for subchild in child.children:
+            # kwargs / args
+            for subchild in child.children:
                 if subchild.type == "identifier":
                     params.append(subchild.text.decode("utf-8"))
                     break
@@ -190,7 +190,7 @@ def detect_drift(file_ast: Any, plan: PlanArtifactProtocol, file_path: str) -> D
                         node_type="function",
                         description=f"Parameter drift in {expected_name}: Expected {expected_param_list}, Actual {actual_param_list}",
                         expected_signature=", ".join(expected_param_list),
-                        actual_signature=", ".join(actual_param_list)
+                        actual_signature=", ".join(actual_param_list),
                     )
                 )
 
@@ -215,7 +215,9 @@ def detect_drift(file_ast: Any, plan: PlanArtifactProtocol, file_path: str) -> D
     return DriftReport(is_drifted=is_drifted, findings=findings)
 
 
-def detect_workspace_drift(plan: PlanArtifactProtocol, present_file_paths: set[str]) -> list[DriftFinding]:
+def detect_workspace_drift(
+    plan: PlanArtifactProtocol, present_file_paths: set[str]
+) -> list[DriftFinding]:
     """Detect missing or entirely unauthorized files across the workspace purely via layout."""
     findings = []
 

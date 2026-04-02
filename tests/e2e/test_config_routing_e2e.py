@@ -34,7 +34,6 @@ def _unique_name(prefix: str = "test-route") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 class TestConfigRoutingE2E:
     """E2E tests for sw config routing commands."""
 

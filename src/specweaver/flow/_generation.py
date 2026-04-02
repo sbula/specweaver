@@ -260,7 +260,9 @@ class PlanSpecHandler:
 
         return adapter, config
 
-    async def _generate_plan_artifact(self, planner: Any, context: RunContext, spec_content: str) -> tuple[Path, str, Any]:
+    async def _generate_plan_artifact(
+        self, planner: Any, context: RunContext, spec_content: str
+    ) -> tuple[Path, str, Any]:
         """Helper to generate and save the plan artifact."""
         import io
         import uuid
@@ -316,7 +318,6 @@ class PlanSpecHandler:
             plan_artifact.confidence,
         )
         return plan_path, artifact_uuid, plan_artifact
-
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()

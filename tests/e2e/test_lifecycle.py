@@ -36,7 +36,6 @@ def _unique_name(prefix: str = "test") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 _DRAFT_SECTION_RESPONSES = [
     # Purpose
     (

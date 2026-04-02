@@ -10,9 +10,11 @@ from specweaver.validation.models import Severity
 try:
     import tree_sitter
     import tree_sitter_python
+
     HAS_TREE_SITTER = True
 except Exception as e:
     import builtins
+
     builtins.print(f"IMPORT ERROR: {e}")
     HAS_TREE_SITTER = False
 
@@ -25,7 +27,13 @@ class MockMethodSignature:
 
 
 class MockImplementationTask:
-    def __init__(self, sequence_number: int, name: str, files: list[str], expected_signatures: dict[str, list[MockMethodSignature]]):
+    def __init__(
+        self,
+        sequence_number: int,
+        name: str,
+        files: list[str],
+        expected_signatures: dict[str, list[MockMethodSignature]],
+    ):
         self.sequence_number = sequence_number
         self.name = name
         self.files = files
@@ -83,11 +91,17 @@ def decorated_func():
                 expected_signatures={
                     "src/app.py": [
                         MockMethodSignature(name="simple_function", parameters=["a_param"]),
-                        MockMethodSignature(name="my_async_func", parameters=["x", "z"]), # 'z' instead of 'y' to cause drift WARNING
+                        MockMethodSignature(
+                            name="my_async_func", parameters=["x", "z"]
+                        ),  # 'z' instead of 'y' to cause drift WARNING
                         MockMethodSignature(name="MyClass"),
                         MockMethodSignature(name="public_method", parameters=["data: dict"]),
-                        MockMethodSignature(name="missing_function", parameters=[]), # Missing ERROR
-                        MockMethodSignature(name="splat_func", parameters=["*args: list", "**kwargs: dict"]),
+                        MockMethodSignature(
+                            name="missing_function", parameters=[]
+                        ),  # Missing ERROR
+                        MockMethodSignature(
+                            name="splat_func", parameters=["*args: list", "**kwargs: dict"]
+                        ),
                         MockMethodSignature(name="decorated_func", parameters=[]),
                     ]
                 },

@@ -33,7 +33,6 @@ def _unique_name(prefix: str = "test") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 class TestDomainProfileCLI:
     """E2E tests for sw config profile commands."""
 

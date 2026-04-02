@@ -30,7 +30,6 @@ def _unique_name(prefix: str = "std") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 def _create_python_project(tmp_path: Path, name: str) -> Path:
     """Create a realistic Python project for e2e testing."""
     project = tmp_path / name

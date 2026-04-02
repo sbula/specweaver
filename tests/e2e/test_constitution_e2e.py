@@ -35,7 +35,6 @@ def _unique_name(prefix: str = "test") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 _SPEC_REVIEW_RESPONSE = (
     "VERDICT: ACCEPTED\n"
     "- Clear single responsibility\n"

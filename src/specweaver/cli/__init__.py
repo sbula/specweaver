@@ -64,6 +64,7 @@ from specweaver.cli import (  # noqa: E402, F401
     config,
     constitution,
     cost_commands,
+    drift,
     implement,
     lineage,
     pipelines,

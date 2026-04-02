@@ -34,7 +34,6 @@ def _unique_name(prefix: str = "topo") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 def _make_mock_llm(response: str = "VERDICT: ACCEPTED\nAll good.") -> object:
     """Create a minimal mock LLM adapter."""
     mock_llm = AsyncMock()

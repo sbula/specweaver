@@ -3,7 +3,6 @@
 
 """Tests for validation models."""
 
-
 from specweaver.validation.models import DriftFinding, DriftReport
 
 

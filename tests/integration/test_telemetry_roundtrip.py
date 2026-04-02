@@ -71,7 +71,9 @@ class TestTelemetryRoundtrip:
         assert rows[0]["call_count"] == 1
 
         with db.connect() as conn:
-            cursor = conn.execute("SELECT run_id FROM llm_usage_log WHERE project_name = 'testproj'")
+            cursor = conn.execute(
+                "SELECT run_id FROM llm_usage_log WHERE project_name = 'testproj'"
+            )
             row = cursor.fetchone()
             assert row is not None
             assert row["run_id"] == "mock-run-id-123"

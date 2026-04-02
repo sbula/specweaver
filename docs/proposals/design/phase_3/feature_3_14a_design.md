@@ -86,10 +86,10 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | AST Drift Engine | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
-| SF-2 | Flow Integration & CLI | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | AST Drift Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Flow Integration & CLI | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Pre-Commit QUALITY GATE passed for SF-1. Awaiting Commit boundary.
-**Next step**: Complete Phase 8 (Commit Boundary) for SF-1, then proceed to SF-2.
+**Current status**: Implementation Plan APPROVED for SF-2. Ready for Flow Validation & CLI development.
+**Next step**: Run TDD workflow: `/dev docs/proposals/roadmap/phase_3/feature_3_14a_sf2_implementation_plan.md`

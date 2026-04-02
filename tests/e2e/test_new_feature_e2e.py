@@ -39,7 +39,6 @@ def _unique_name(prefix: str = "nf") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 _GOOD_SPEC = """\
 # calculator
 

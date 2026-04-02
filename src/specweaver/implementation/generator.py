@@ -100,15 +100,12 @@ class Generator:
         """
         from specweaver.llm.prompt_builder import PromptBuilder
 
-        builder = (
-            PromptBuilder()
-        )
+        builder = PromptBuilder()
         if artifact_uuid:
             builder.add_artifact_tagging(artifact_uuid, "python")
 
         builder = (
-            builder
-            .add_instructions(CODE_GEN_INSTRUCTIONS)
+            builder.add_instructions(CODE_GEN_INSTRUCTIONS)
             .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="reference")
         )
@@ -171,15 +168,12 @@ class Generator:
         """
         from specweaver.llm.prompt_builder import PromptBuilder
 
-        builder = (
-            PromptBuilder()
-        )
+        builder = PromptBuilder()
         if artifact_uuid:
             builder.add_artifact_tagging(artifact_uuid, "python")
 
         builder = (
-            builder
-            .add_instructions(TEST_GEN_INSTRUCTIONS)
+            builder.add_instructions(TEST_GEN_INSTRUCTIONS)
             .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="reference")
         )

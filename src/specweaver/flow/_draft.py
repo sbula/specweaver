@@ -29,6 +29,7 @@ class DraftSpecHandler:
                 "DraftSpecHandler: spec already exists at '%s' — skipping", context.spec_path
             )
             from specweaver.llm.lineage import extract_artifact_uuid
+
             artifact_uuid = extract_artifact_uuid(context.spec_path.read_text(encoding="utf-8"))
             return StepResult(
                 status=StepStatus.PASSED,

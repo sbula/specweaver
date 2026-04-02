@@ -32,7 +32,6 @@ def _unique_name(prefix: str = "vp") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 _GOOD_SPEC = """\
 # greet_service
 
@@ -347,14 +346,109 @@ class TestCodeValidationPipeline:
 class TestCodeValidationDriftEngine:
     """sw check --level code interfaces with the AST Drift Engine."""
 
-    import pytest
-    @pytest.mark.skip(reason="Pending SF-2 Flow Integration")
     def test_code_validation_method_drift(self, tmp_path: Path) -> None:
-        """E5: ValidateCodeHandler FAILs when the generated codebase drops a planned method."""
-        pass  # SF-2 target
+        """E5: Validate sw drift check FAILs when the generated codebase drops a planned method."""
+        project_dir, _spec = _init_project_with_spec(tmp_path)
 
-    import pytest
-    @pytest.mark.skip(reason="Pending SF-2 Flow Integration")
+        # Write a plan.yaml
+        plan_path = project_dir / "plan.yaml"
+        plan_path.write_text("""
+spec_path: "specs/greet_service_spec.md"
+spec_name: "Test"
+spec_hash: "123"
+timestamp: "2026-01-01T00:00:00Z"
+file_layout:
+  - path: "src/greet.py"
+    action: "create"
+    purpose: "Greeting module"
+tasks:
+  - sequence_number: 1
+    name: "Task 1"
+    description: "Do it"
+    files: ["src/greet.py"]
+    dependencies: []
+    expected_signatures:
+      "src/greet.py":
+        - name: "missing_method"
+          parameters: []
+          return_type: "None"
+""")
+        code_file = project_dir / "src" / "greet.py"
+        code_file.parent.mkdir(parents=True, exist_ok=True)
+        code_file.write_text("def unrelated():\n    pass\n")
+
+        result = runner.invoke(
+            app,
+            ["drift", "check", str(code_file), "--plan", str(plan_path), "--project", str(project_dir)]
+        )
+        assert result.exit_code == 1
+        assert "AST Drift Detected" in result.stdout
+        assert "missing_method" in result.stdout
+
     def test_code_validation_workspace_drift(self, tmp_path: Path) -> None:
-        """E6: ValidateCodeHandler FAILs when the generated codebase is missing an entire file."""
-        pass  # SF-2 target
+        """E6: Validate sw drift check FAILs when the generated codebase is missing an entire file."""
+        project_dir, _spec = _init_project_with_spec(tmp_path)
+
+        plan_path = project_dir / "plan.yaml"
+        plan_path.write_text("""
+spec_path: "specs/greet_service_spec.md"
+spec_name: "Test"
+spec_hash: "123"
+timestamp: "2026-01-01T00:00:00Z"
+file_layout:
+  - path: "src/missing.py"
+    action: "create"
+    purpose: "Test"
+tasks:
+  - sequence_number: 1
+    name: "missing"
+    description: "m"
+    files: ["src/missing.py"]
+""")
+        # Target file does not exist
+        missing_file = project_dir / "src" / "missing.py"
+        result = runner.invoke(
+            app,
+            ["drift", "check", str(missing_file), "--plan", str(plan_path), "--project", str(project_dir)]
+        )
+        assert result.exit_code == 1
+        assert "File not found" in result.stdout
+
+    def test_code_validation_parameter_drift(self, tmp_path: Path) -> None:
+        """E7: Validate sw drift check raises WARNING end-to-end for mismatched parameters."""
+        project_dir, _spec = _init_project_with_spec(tmp_path)
+
+        plan_path = project_dir / "plan.yaml"
+        plan_path.write_text("""
+spec_path: "specs/greet_service_spec.md"
+spec_name: "Test"
+spec_hash: "123"
+timestamp: "2026-01-01T00:00:00Z"
+file_layout:
+  - path: "src/greet.py"
+    action: "create"
+    purpose: "Greeting module"
+tasks:
+  - sequence_number: 1
+    name: "Task 1"
+    description: "Do it"
+    files: ["src/greet.py"]
+    dependencies: []
+    expected_signatures:
+      "src/greet.py":
+        - name: "my_func"
+          parameters: ["x"]
+          return_type: "int"
+""")
+        code_file = project_dir / "src" / "greet.py"
+        code_file.parent.mkdir(parents=True, exist_ok=True)
+        # Differing parameters (y instead of x)
+        code_file.write_text("def my_func(y) -> int:\n    return 0\n")
+
+        result = runner.invoke(
+            app,
+            ["drift", "check", str(code_file), "--plan", str(plan_path), "--project", str(project_dir)]
+        )
+        assert result.exit_code == 0
+        assert "Warnings for greet.py" in result.stdout
+        assert "warning" in result.stdout

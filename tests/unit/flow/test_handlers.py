@@ -251,7 +251,7 @@ class TestGenerateCodeHandler:
             parent_id="test-run",
             run_id="test-run",
             event_type="generated_code",
-            model_id="gemini-3-flash-preview"
+            model_id="gemini-3-flash-preview",
         )
 
     @pytest.mark.asyncio
@@ -267,7 +267,9 @@ class TestGenerateCodeHandler:
         py_file.write_text(f"# sw-artifact: {valid_uuid}\nprint('old')\n")
         mock_adapter = MagicMock()
         mock_adapter.generate = AsyncMock(
-            return_value=MagicMock(text="```python\nprint('new')\n```", finish_reason=1, parsed=None)
+            return_value=MagicMock(
+                text="```python\nprint('new')\n```", finish_reason=1, parsed=None
+            )
         )
         ctx = RunContext(
             project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
@@ -288,7 +290,7 @@ class TestGenerateCodeHandler:
             parent_id="test-run",
             run_id="test-run",
             event_type="generated_code",
-            model_id="gemini-3-flash-preview"
+            model_id="gemini-3-flash-preview",
         )
 
     @pytest.mark.asyncio
@@ -397,7 +399,7 @@ class TestGenerateTestsHandler:
             parent_id="test-run",
             run_id="test-run",
             event_type="generated_tests",
-            model_id="gemini-3-flash-preview"
+            model_id="gemini-3-flash-preview",
         )
 
     @pytest.mark.asyncio
@@ -413,7 +415,9 @@ class TestGenerateTestsHandler:
         py_file.write_text(f"# sw-artifact: {valid_uuid}\nprint('old')\n")
         mock_adapter = MagicMock()
         mock_adapter.generate = AsyncMock(
-            return_value=MagicMock(text="```python\nprint('new')\n```", finish_reason=1, parsed=None)
+            return_value=MagicMock(
+                text="```python\nprint('new')\n```", finish_reason=1, parsed=None
+            )
         )
         ctx = RunContext(
             project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter
@@ -448,6 +452,7 @@ class TestGenerateTestsHandler:
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert result.artifact_uuid is not None
+
 
 # ---------------------------------------------------------------------------
 # PlanSpecHandler
@@ -484,12 +489,13 @@ class TestPlanSpecHandler:
         handler = PlanSpecHandler()
 
         from specweaver.planning.models import PlanArtifact
+
         mock_create.return_value = PlanArtifact(
             spec_path="test.md",
             spec_name="test",
             spec_hash="hash",
             file_layout=[],
-            timestamp="2026-01-01T00:00:00Z"
+            timestamp="2026-01-01T00:00:00Z",
         )
 
         result = await handler.execute(step, ctx)
@@ -499,6 +505,7 @@ class TestPlanSpecHandler:
 
         # Verify it was written to disk with UUID tag
         import pathlib
+
         plan_yaml = pathlib.Path(result.output["plan_path"])
         assert plan_yaml.exists()
         content = plan_yaml.read_text(encoding="utf-8")
@@ -510,7 +517,7 @@ class TestPlanSpecHandler:
             parent_id="11111111-2222-3333-4444-888888888888",
             run_id="",
             event_type="generated_plan",
-            model_id="gemini-3-flash-preview"
+            model_id="gemini-3-flash-preview",
         )
 
     @pytest.mark.asyncio
@@ -526,12 +533,13 @@ class TestPlanSpecHandler:
         handler = PlanSpecHandler()
 
         from specweaver.planning.models import PlanArtifact
+
         mock_create.return_value = PlanArtifact(
             spec_path="test.md",
             spec_name="test",
             spec_hash="hash",
             file_layout=[],
-            timestamp="2026-01-01T00:00:00Z"
+            timestamp="2026-01-01T00:00:00Z",
         )
 
         result = await handler.execute(step, ctx)
@@ -542,7 +550,7 @@ class TestPlanSpecHandler:
             parent_id="test-run-123",
             run_id="test-run-123",
             event_type="generated_plan",
-            model_id="gemini-3-flash-preview"
+            model_id="gemini-3-flash-preview",
         )
 
     @pytest.mark.asyncio
@@ -627,7 +635,7 @@ class TestDraftSpecHandler:
             parent_id=None,
             run_id="test-run",
             event_type="drafted_spec",
-            model_id="unknown"
+            model_id="unknown",
         )
 
 
@@ -790,7 +798,9 @@ class TestRunIdPropagation:
 
     @pytest.mark.asyncio
     @patch("specweaver.review.reviewer.Reviewer.review_code")
-    async def test_review_code_handler_injects_run_id(self, mock_review_code, tmp_path: Path) -> None:
+    async def test_review_code_handler_injects_run_id(
+        self, mock_review_code, tmp_path: Path
+    ) -> None:
         """Handlers must inject context.run_id into GenerationConfig for telemetry correlation."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -799,6 +809,7 @@ class TestRunIdPropagation:
         code.write_text("x = 1")
 
         from specweaver.review.reviewer import ReviewResult, ReviewVerdict
+
         mock_review_code.return_value = ReviewResult(
             verdict=ReviewVerdict.ACCEPTED,
             findings=[],
@@ -825,5 +836,6 @@ class TestRunIdPropagation:
         # We need to peek at the args passed to _resolve_review_routing which happens during execute.
         # Actually, let's just patch _resolve_review_routing and assert? No, we should test the actual injection.
         from specweaver.flow._review import _resolve_review_routing
+
         _, config = _resolve_review_routing(ctx)
         assert config.run_id == "mock-run-id-1234"

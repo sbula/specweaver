@@ -13,6 +13,7 @@ def _isolate_env(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(test_data_dir))
     return test_data_dir
 
+
 @pytest.fixture
 def _mock_db(_isolate_env):
     """
@@ -22,8 +23,10 @@ def _mock_db(_isolate_env):
     db_path = _isolate_env / "specweaver.db"
     return Database(db_path)
 
+
 @pytest.fixture
 def _mock_state_db(_isolate_env):
     """Returns the StateStore DB path. Compatibility wrapper."""
     from specweaver.flow.store import StateStore
+
     return StateStore(_isolate_env / "pipeline_state.db")

@@ -31,7 +31,6 @@ def _unique_name(prefix: str = "mp") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 def _init_project(tmp_path: Path, name: str) -> Path:
     """Helper: create a sub-directory and init a project there."""
     project_dir = tmp_path / name

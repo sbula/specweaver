@@ -31,7 +31,9 @@ core_app.add_typer(app, name="lineage")
 @app.command("tag")
 def tag(
     target: Annotated[Path, typer.Argument(help="Python file to tag")],
-    author: Annotated[str, typer.Option("--author", help="Author of the artifact or manual edit")] = "human",
+    author: Annotated[
+        str, typer.Option("--author", help="Author of the artifact or manual edit")
+    ] = "human",
 ) -> None:
     """Add a missing lineage tag to a file, or log a manual edit if tagged."""
     if not target.exists() or not target.is_file():
@@ -47,7 +49,9 @@ def tag(
 
     if existing_uuid:
         target_uuid = existing_uuid
-        rprint(f"[yellow]File already tagged with {target_uuid}. Logging manual edit event.[/yellow]")
+        rprint(
+            f"[yellow]File already tagged with {target_uuid}. Logging manual edit event.[/yellow]"
+        )
     else:
         target_uuid = str(uuid.uuid4())
         if content_lines and content_lines[0].startswith("#!"):
@@ -132,12 +136,15 @@ def tree_command(  # noqa: C901
         node = parent_tree.add(label)
 
         children = db.get_children(node_uid)
-        child_uids = list(dict.fromkeys(c["artifact_id"] for c in children if c["artifact_id"] != node_uid))
+        child_uids = list(
+            dict.fromkeys(c["artifact_id"] for c in children if c["artifact_id"] != node_uid)
+        )
         for c_uid in child_uids:
             build_node(c_uid, node, visited.copy())
 
     build_node(root_uuid, tree, set())
     console.print(tree)
+
 
 def check_lineage(src_dir: Path) -> list[str]:
     """Scan the source directory for Python files missing artifact tags.

@@ -29,7 +29,6 @@ def _unique_name(prefix: str = "test") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
-
 _GENERATED_CODE = '''\
 """Greet service — personalized greeting generator."""
 

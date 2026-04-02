@@ -44,7 +44,6 @@ def _make_llm(responses: list[str]) -> object:
     return mock_llm
 
 
-
 class TestLineageE2EFlow:
     """E2E verification of new_feature artifact tagging."""
 
@@ -58,16 +57,20 @@ class TestLineageE2EFlow:
 
         spec = project_dir / "specs" / "calc_spec.md"
         spec.parent.mkdir(exist_ok=True)
-        spec.write_text("# sw-artifact: 11111111-2222-3333-4444-555555555555\n# Spec", encoding="utf-8")
+        spec.write_text(
+            "# sw-artifact: 11111111-2222-3333-4444-555555555555\n# Spec", encoding="utf-8"
+        )
 
-        mock_llm = _make_llm([
-            "VERDICT: ACCEPTED\nValid spec.",  # review
-            "```yaml\nphases: []\n```",       # plan
-            "```python\n# sw-artifact: 66666666-2222-3333-4444-555555555555\nx = 1\n```", # generate code
-            "```python\n# sw-artifact: 77777777-2222-3333-4444-555555555555\ntest = 1\n```", # generate tests
-            "VERDICT: ACCEPTED", # validate code
-            "VERDICT: ACCEPTED", # validate tests
-        ])
+        mock_llm = _make_llm(
+            [
+                "VERDICT: ACCEPTED\nValid spec.",  # review
+                "```yaml\nphases: []\n```",  # plan
+                "```python\n# sw-artifact: 66666666-2222-3333-4444-555555555555\nx = 1\n```",  # generate code
+                "```python\n# sw-artifact: 77777777-2222-3333-4444-555555555555\ntest = 1\n```",  # generate tests
+                "VERDICT: ACCEPTED",  # validate code
+                "VERDICT: ACCEPTED",  # validate tests
+            ]
+        )
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
@@ -88,12 +91,20 @@ class TestLineageE2EFlow:
 
         # Verify DB got the event with correct model_id
         conn = sqlite3.connect(db_path)
-        rows = conn.execute("SELECT artifact_id, parent_id, event_type, model_id FROM artifact_events WHERE event_type='generated_code'").fetchall()
+        rows = conn.execute(
+            "SELECT artifact_id, parent_id, event_type, model_id FROM artifact_events WHERE event_type='generated_code'"
+        ).fetchall()
         assert len(rows) == 1
-        assert rows[0][1] == "11111111-2222-3333-4444-555555555555"  # parent_id was correctly pulled from the spec tag
-        assert rows[0][3] == "gemini-3-flash-preview"  # model_id properly flowed from context through flow layers to DB
+        assert (
+            rows[0][1] == "11111111-2222-3333-4444-555555555555"
+        )  # parent_id was correctly pulled from the spec tag
+        assert (
+            rows[0][3] == "gemini-3-flash-preview"
+        )  # model_id properly flowed from context through flow layers to DB
 
-        test_rows = conn.execute("SELECT model_id FROM artifact_events WHERE event_type='generated_tests'").fetchall()
+        test_rows = conn.execute(
+            "SELECT model_id FROM artifact_events WHERE event_type='generated_tests'"
+        ).fetchall()
         if test_rows:
             assert test_rows[0][0] == "gemini-3-flash-preview"
 
@@ -107,11 +118,14 @@ class TestLineageE2EFlow:
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
 
-        mock_llm = _make_llm([
-            "# Some Component\nGenerated content",
-        ])
+        mock_llm = _make_llm(
+            [
+                "# Some Component\nGenerated content",
+            ]
+        )
 
         from specweaver.config.settings import LLMSettings, SpecWeaverSettings
+
         mock_settings = SpecWeaverSettings(llm=LLMSettings(model="mock"))
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
@@ -133,12 +147,15 @@ class TestLineageE2EFlow:
 
         # UUID is physically injected, let's pull it
         import re
+
         match = re.search(r"<!-- sw-artifact:\s*([a-f0-9-]+)\s*-->", content)
         assert match is not None
         spec_uuid = match.group(1)
 
         conn = sqlite3.connect(db_path)
-        rows = conn.execute("SELECT artifact_id, event_type, model_id FROM artifact_events WHERE event_type='drafted_spec'").fetchall()
+        rows = conn.execute(
+            "SELECT artifact_id, event_type, model_id FROM artifact_events WHERE event_type='drafted_spec'"
+        ).fetchall()
         assert len(rows) == 1
         assert rows[0][0] == spec_uuid
         assert rows[0][2] == "mock"  # model extracted from context.config.llm.model
@@ -154,10 +171,14 @@ class TestLineageE2EFlow:
 
         spec = project_dir / "specs" / "old_spec.md"
         spec.parent.mkdir(exist_ok=True)
-        spec.write_text("<!-- sw-artifact: 55555555-4444-3333-2222-111111111111 -->\n# Old Spec", encoding="utf-8")
+        spec.write_text(
+            "<!-- sw-artifact: 55555555-4444-3333-2222-111111111111 -->\n# Old Spec",
+            encoding="utf-8",
+        )
 
-        mock_llm = _make_llm([
-            '''{
+        mock_llm = _make_llm(
+            [
+                """{
                 "spec_path": "old_spec.md",
                 "spec_name": "Old Spec",
                 "spec_hash": "hash",
@@ -170,8 +191,9 @@ class TestLineageE2EFlow:
                 "test_expectations": [],
                 "reasoning": "mock plan",
                 "confidence": 100
-            }'''
-        ])
+            }"""
+            ]
+        )
 
         import asyncio
 
@@ -198,7 +220,9 @@ class TestLineageE2EFlow:
         asyncio.run(pipe_runner.run())
 
         conn = sqlite3.connect(db_path)
-        rows = conn.execute("SELECT artifact_id, parent_id, event_type, model_id FROM artifact_events WHERE event_type='generated_plan'").fetchall()
+        rows = conn.execute(
+            "SELECT artifact_id, parent_id, event_type, model_id FROM artifact_events WHERE event_type='generated_plan'"
+        ).fetchall()
         assert len(rows) == 1
         assert rows[0][1] == "55555555-4444-3333-2222-111111111111"
         assert rows[0][3] == "mock"
@@ -225,7 +249,9 @@ class TestLineageE2EFlow:
         # Now test with --lineage flag
         result = runner.invoke(app, ["check", "--project", str(project_dir), "--lineage"])
 
-        assert result.exit_code == 1, f"Expected validation failure due to orphaned files, got {result.exit_code}"
+        assert result.exit_code == 1, (
+            f"Expected validation failure due to orphaned files, got {result.exit_code}"
+        )
         assert "Lineage Tracking Error" in result.output
         assert "orphan.py" in result.output
         assert "Missing '# sw-artifact:' tags" in result.output
@@ -234,6 +260,7 @@ class TestLineageE2EFlow:
 # ===========================================================================
 # Edge Case 18: Legacy Pre-Tag Compatibility
 # ===========================================================================
+
 
 class TestLegacyE2ECompatibility:
     """Validate legacy untagged structures don't break the CLI."""
@@ -251,7 +278,9 @@ class TestLegacyE2ECompatibility:
         spec.write_text("# Old Spec\nNo UUID here.", encoding="utf-8")
 
         # We just need to ensure the pipeline runs validation without crashing parsing tags
-        result = runner.invoke(app, ["run", "validate_only", str(spec), "--project", str(project_dir)])
+        result = runner.invoke(
+            app, ["run", "validate_only", str(spec), "--project", str(project_dir)]
+        )
 
         # Since the spec is invalid (doesn't follow rules), it exits with 1, but NOT a python traceback
         assert result.exit_code in (0, 1)
@@ -261,6 +290,7 @@ class TestLegacyE2ECompatibility:
 # ===========================================================================
 # Edge Case 19: AST Fix Tag Survivability
 # ===========================================================================
+
 
 class TestASTFixSurvivability:
     """Ensures LLM reflection loops cleanly preserve physics tags."""
@@ -280,19 +310,26 @@ class TestASTFixSurvivability:
         src_dir = project_dir / "src"
         src_dir.mkdir(exist_ok=True)
         code = src_dir / "foo.py"
-        code.write_text("# sw-artifact: 99999999-2222-3333-4444-555555555555\ny = x\n", encoding="utf-8")
+        code.write_text(
+            "# sw-artifact: 99999999-2222-3333-4444-555555555555\ny = x\n", encoding="utf-8"
+        )
 
         # LLM simulating a successful fix that obeys the prompt instruction to keep the tag
-        mock_llm = _make_llm([
-            "```python\n# sw-artifact: 99999999-2222-3333-4444-555555555555\n# clean code\n```"
-        ])
+        mock_llm = _make_llm(
+            ["```python\n# sw-artifact: 99999999-2222-3333-4444-555555555555\n# clean code\n```"]
+        )
 
         with patch("specweaver.cli._helpers._require_llm_adapter") as mock_req:
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
 
             pipe_def = project_dir / "my_lint.yaml"
-            pipe_def.write_text("name: my_lint\nsteps:\n  - name: lint\n    action: lint_fix\n    target: code\n", encoding="utf-8")
-            result = runner.invoke(app, ["run", str(pipe_def), str(spec), "--project", str(project_dir)])
+            pipe_def.write_text(
+                "name: my_lint\nsteps:\n  - name: lint\n    action: lint_fix\n    target: code\n",
+                encoding="utf-8",
+            )
+            result = runner.invoke(
+                app, ["run", str(pipe_def), str(spec), "--project", str(project_dir)]
+            )
 
         assert result.exit_code == 0, f"Lint fix failed: {result.output}"
 
@@ -301,8 +338,12 @@ class TestASTFixSurvivability:
 
         # Verify db logged lint_fixed with correct model_id
         conn = sqlite3.connect(db_path)
-        rows = conn.execute("SELECT artifact_id, event_type, model_id FROM artifact_events WHERE event_type='lint_fixed'").fetchall()
+        rows = conn.execute(
+            "SELECT artifact_id, event_type, model_id FROM artifact_events WHERE event_type='lint_fixed'"
+        ).fetchall()
         assert len(rows) == 1
         assert rows[0][0] == "99999999-2222-3333-4444-555555555555"
-        assert rows[0][2] == "gemini-3-flash-preview"  # Ensure pipeline fallback/resolved model hit DB
+        assert (
+            rows[0][2] == "gemini-3-flash-preview"
+        )  # Ensure pipeline fallback/resolved model hit DB
         conn.close()

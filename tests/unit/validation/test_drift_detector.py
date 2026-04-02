@@ -12,7 +12,13 @@ class MockMethodSignature:
 
 
 class MockImplementationTask:
-    def __init__(self, sequence_number: int, name: str, files: list[str], expected_signatures: dict[str, list[MockMethodSignature]]):
+    def __init__(
+        self,
+        sequence_number: int,
+        name: str,
+        files: list[str],
+        expected_signatures: dict[str, list[MockMethodSignature]],
+    ):
         self.sequence_number = sequence_number
         self.name = name
         self.files = files
@@ -26,19 +32,27 @@ class MockFileChange:
 
 
 class MockPlanArtifact:
-    def __init__(self, tasks: list[MockImplementationTask], file_layout: list[MockFileChange] | None = None):
+    def __init__(
+        self, tasks: list[MockImplementationTask], file_layout: list[MockFileChange] | None = None
+    ):
         self.tasks = tasks
         self.file_layout = file_layout or []
 
 
 class MockNode:
-    def __init__(self, type_: str, text: bytes, children: list['MockNode'] | None = None, field_children: dict | None = None):
+    def __init__(
+        self,
+        type_: str,
+        text: bytes,
+        children: list["MockNode"] | None = None,
+        field_children: dict | None = None,
+    ):
         self.type = type_
         self.text = text
         self.children = children or []
         self._field_children = field_children or {}
 
-    def child_by_field_name(self, name: str) -> 'MockNode | None':
+    def child_by_field_name(self, name: str) -> "MockNode | None":
         return self._field_children.get(name)
 
 
@@ -61,7 +75,9 @@ def test_perfect_match() -> None:
     params_node = MockNode("parameters", b"", children=[id_node])
 
     func_node = MockNode(
-        "function_definition", b"def my_func(user_id): pass", field_children={"name": name_node, "parameters": params_node}
+        "function_definition",
+        b"def my_func(user_id): pass",
+        field_children={"name": name_node, "parameters": params_node},
     )
     root = MockNode("module", b"", children=[func_node])
 
@@ -82,9 +98,7 @@ def test_missing_method_gap() -> None:
                 sequence_number=1,
                 name="t1",
                 files=["test.py"],
-                expected_signatures={
-                    "test.py": [MockMethodSignature(name="expected_func")]
-                },
+                expected_signatures={"test.py": [MockMethodSignature(name="expected_func")]},
             )
         ],
     )
@@ -109,9 +123,7 @@ def test_added_unauthorized_method_drift() -> None:
                 sequence_number=1,
                 name="t1",
                 files=["test.py"],
-                expected_signatures={
-                    "test.py": [MockMethodSignature(name="expected_func")]
-                },
+                expected_signatures={"test.py": [MockMethodSignature(name="expected_func")]},
             )
         ],
     )
@@ -156,7 +168,10 @@ def test_parameter_drift() -> None:
                 expected_signatures={
                     "test.py": [
                         # Plan expects parameters (ast, plan) and cleans it up natively
-                        MockMethodSignature(name="detect", parameters=["ast: tree_sitter.Tree", "plan: PlanArtifactProtocol"])
+                        MockMethodSignature(
+                            name="detect",
+                            parameters=["ast: tree_sitter.Tree", "plan: PlanArtifactProtocol"],
+                        )
                     ]
                 },
             )
@@ -169,7 +184,9 @@ def test_parameter_drift() -> None:
     params_node = MockNode("parameters", b"", children=[id_node])
 
     func_node = MockNode(
-        "function_definition", b"def detect(ast): pass", field_children={"name": name_node, "parameters": params_node}
+        "function_definition",
+        b"def detect(ast): pass",
+        field_children={"name": name_node, "parameters": params_node},
     )
     root = MockNode("module", b"", children=[func_node])
 
@@ -193,7 +210,7 @@ def test_detect_workspace_drift() -> None:
             MockFileChange(path="src/app.py", action="create"),
             MockFileChange(path="src/utils.py", action="modify"),
             MockFileChange(path="src/old.py", action="delete"),
-        ]
+        ],
     )
 
     # Simulate src/utils.py exists, but src/app.py is completely missing

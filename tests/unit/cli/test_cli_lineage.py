@@ -97,7 +97,6 @@ def test_check_lineage_only_checks_py_files(tmp_path):
     assert orphans == []
 
 
-
 def test_check_lineage_unreadable_file(tmp_path):
     """Scanner logs a warning and skips files raising read exceptions."""
     src_dir = tmp_path / "src"
@@ -106,7 +105,11 @@ def test_check_lineage_unreadable_file(tmp_path):
     bad_file = src_dir / "bad.py"
     bad_file.write_bytes(bytes.fromhex("ffffff"))  # Invalid utf-8 byte sequence
 
-    with check_lineage.__globals__.get("pytest", __import__("pytest")).raises(Exception) if False else __import__("contextlib").nullcontext():
+    with (
+        check_lineage.__globals__.get("pytest", __import__("pytest")).raises(Exception)
+        if False
+        else __import__("contextlib").nullcontext()
+    ):
         # Actually it won't raise, it will catch and log
         orphans = check_lineage(src_dir)
 
@@ -118,8 +121,10 @@ def test_tag_command_adds_tag_and_logs_to_db(tmp_path):
     target_file = tmp_path / "target.py"
     target_file.write_text("def foo():\n    pass\n", encoding="utf-8")
 
-    with patch("specweaver.cli.lineage.uuid.uuid4") as mock_uuid, \
-         patch("specweaver.cli.lineage.get_db") as mock_get_db:
+    with (
+        patch("specweaver.cli.lineage.uuid.uuid4") as mock_uuid,
+        patch("specweaver.cli.lineage.get_db") as mock_get_db,
+    ):
         mock_uuid.return_value = "mocked-uuid-123"
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
@@ -142,7 +147,9 @@ def test_tag_command_adds_tag_and_logs_to_db(tmp_path):
 def test_tag_command_logs_edit_for_existing_tag(tmp_path):
     """sw lineage tag <file> should read existing UUID and log manual event."""
     target_file = tmp_path / "target.py"
-    target_file.write_text("# sw-artifact: existing-uuid-456\ndef foo():\n    pass\n", encoding="utf-8")
+    target_file.write_text(
+        "# sw-artifact: existing-uuid-456\ndef foo():\n    pass\n", encoding="utf-8"
+    )
 
     with patch("specweaver.cli.lineage.get_db") as mock_get_db:
         mock_db = MagicMock()
@@ -171,11 +178,32 @@ def test_tree_command_displays_lineage():
         # parent chain
         def mock_history(uid):
             if uid == "child-uuid":
-                return [{"artifact_id": "child-uuid", "parent_id": "root-uuid", "event_type": "linted", "model_id": "human"}]
+                return [
+                    {
+                        "artifact_id": "child-uuid",
+                        "parent_id": "root-uuid",
+                        "event_type": "linted",
+                        "model_id": "human",
+                    }
+                ]
             if uid == "root-uuid":
-                return [{"artifact_id": "root-uuid", "parent_id": None, "event_type": "generated_code", "model_id": "human"}]
+                return [
+                    {
+                        "artifact_id": "root-uuid",
+                        "parent_id": None,
+                        "event_type": "generated_code",
+                        "model_id": "human",
+                    }
+                ]
             if uid == "leaf-uuid":
-                return [{"artifact_id": "leaf-uuid", "parent_id": "child-uuid", "event_type": "manual_tag", "model_id": "human"}]
+                return [
+                    {
+                        "artifact_id": "leaf-uuid",
+                        "parent_id": "child-uuid",
+                        "event_type": "manual_tag",
+                        "model_id": "human",
+                    }
+                ]
             return []
 
         mock_db.get_artifact_history.side_effect = mock_history
@@ -183,9 +211,23 @@ def test_tree_command_displays_lineage():
         # mock get_children: returning child info only once to avoid infinite loops, returning empty else
         def mock_children(uid):
             if uid == "root-uuid":
-                return [{"artifact_id": "child-uuid", "parent_id": "root-uuid", "event_type": "linted", "model_id": "human"}]
+                return [
+                    {
+                        "artifact_id": "child-uuid",
+                        "parent_id": "root-uuid",
+                        "event_type": "linted",
+                        "model_id": "human",
+                    }
+                ]
             if uid == "child-uuid":
-                return [{"artifact_id": "leaf-uuid", "parent_id": "child-uuid", "event_type": "manual_tag", "model_id": "human"}]
+                return [
+                    {
+                        "artifact_id": "leaf-uuid",
+                        "parent_id": "child-uuid",
+                        "event_type": "manual_tag",
+                        "model_id": "human",
+                    }
+                ]
             return []
 
         mock_db.get_children.side_effect = mock_children
@@ -246,15 +288,34 @@ def test_tree_command_handles_circular_references():
 
         # history always returns something so it's a valid node
         mock_db.get_artifact_history.return_value = [
-            {"artifact_id": "loop-uuid", "parent_id": None, "event_type": "manual", "model_id": "human"}
+            {
+                "artifact_id": "loop-uuid",
+                "parent_id": None,
+                "event_type": "manual",
+                "model_id": "human",
+            }
         ]
 
         # get_children returns a cycle referencing each other
         def mock_children(uid):
             if uid == "loop-a":
-                return [{"artifact_id": "loop-b", "parent_id": "loop-a", "event_type": "manual", "model_id": "human"}]
+                return [
+                    {
+                        "artifact_id": "loop-b",
+                        "parent_id": "loop-a",
+                        "event_type": "manual",
+                        "model_id": "human",
+                    }
+                ]
             if uid == "loop-b":
-                return [{"artifact_id": "loop-a", "parent_id": "loop-b", "event_type": "manual", "model_id": "human"}]
+                return [
+                    {
+                        "artifact_id": "loop-a",
+                        "parent_id": "loop-b",
+                        "event_type": "manual",
+                        "model_id": "human",
+                    }
+                ]
             return []
 
         mock_db.get_children.side_effect = mock_children
