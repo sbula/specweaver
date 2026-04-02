@@ -3,7 +3,7 @@
 - **Feature ID**: 3.14a
 - **Phase**: 3
 - **Status**: APPROVED
-- **Design Doc**: docs/proposals/design/phase_3/feature_3_14a_design.md
+- **Design Doc**: docs/proposals/design/phase_3/feature_3_18_design.md
 
 ## Feature Overview
 
@@ -67,7 +67,7 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 - **Inputs**: Source code file path and its parent Spec constraints (via `models`).
 - **Outputs**: Structured drift and coverage findings (no LLM involved).
 - **Depends on**: none
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_14a_sf1_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_18_sf1_implementation_plan.md
 
 ### SF-2: Flow Integration & CLI (`sw drift`)
 - **Scope**: Expose the detector to pipelines and the CLI, providing opt-in LLM root-cause pinpointing.
@@ -75,7 +75,7 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 - **Inputs**: User CLI arguments, findings from SF-1, and UUIDs from DB context.
 - **Outputs**: Pipeline step execution, terminal rendering, and an LLM root-cause response if requested.
 - **Depends on**: [SF-1]
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_14a_sf2_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_18_sf2_implementation_plan.md
 
 ## Execution Order
 
@@ -92,4 +92,4 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 ## Session Handoff
 
 **Current status**: Implementation Plan APPROVED for SF-2. Ready for Flow Validation & CLI development.
-**Next step**: Run TDD workflow: `/dev docs/proposals/roadmap/phase_3/feature_3_14a_sf2_implementation_plan.md`
+**Next step**: Run TDD workflow: `/dev docs/proposals/roadmap/phase_3/feature_3_18_sf2_implementation_plan.md`
