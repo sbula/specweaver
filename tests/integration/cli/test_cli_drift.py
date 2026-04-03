@@ -120,16 +120,16 @@ def test_drift_check_analyze(dummy_project: Path, monkeypatch: pytest.MonkeyPatc
     plan_path = dummy_project / "plan.yaml"
     target_path = dummy_project / "src" / "test.py"
     target_path.write_text("def missing() -> int: return 0\n")
-    
+
     from specweaver.cli import _helpers
     class MockAdapter:
         async def generate(self, *args: list[str], **kwargs: dict[str, str]) -> object:
             class MockResp:
                 text = "Mock LLM Root Cause"
             return MockResp()
-    
+
     monkeypatch.setattr(_helpers, "_require_llm_adapter", lambda p: (None, MockAdapter(), None))
-    
+
     result = runner.invoke(
         app,
         ["drift", "check", str(target_path), "--plan", str(plan_path), "--project", str(dummy_project), "--analyze"]

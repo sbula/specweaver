@@ -621,6 +621,13 @@ Pipeline gates ─▶ post-step: controls flow (auto/HITL)
 Tool stack ─────▶ runtime: enforces agent permissions
 ```
 
+## Updating 3rd Party Software and Protocols within SpecWeaver
+
+To insulate SpecWeaver from breaking changes in standard compilation/debugging schemas (like DAP and SARIF), we utilize an **Adapter Pattern** strategy. External schemas must NEVER be consumed directly by LLM Agents or the workflow flow engine.
+
+1. **Protocol Insulation**: All external protocol outputs are rigorously mapped into strictly typed, internal data models (`CompileError`, `CompileRunResult`, `OutputEvent`, etc.) within `loom/commons/test_runner/interface.py`.
+2. **Deprecation Strategy**: Temporary fallback adaptors (e.g., the `PythonTestRunner` stub implementing `run_compiler` as a no-op) must be documented and explicitly deleted once the target domain migration completes.
+
 ---
 
 ## Known Boundary Violations

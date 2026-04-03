@@ -28,11 +28,15 @@ class TestFailure:
         nodeid: Test identifier (e.g., "tests/test_a.py::test_x").
         message: Failure message / assertion error.
         stdout: Captured stdout from the test, if any.
+        stacktrace: Detailed stacktrace from the test failure.
+        rule_uri: Optional URI to the documentation for the error.
     """
 
     nodeid: str
     message: str
     stdout: str = ""
+    stacktrace: str = ""
+    rule_uri: str = ""
 
     __test__ = False
 
@@ -73,12 +77,14 @@ class LintError:
         line: Line number.
         code: Rule code (e.g., "E501").
         message: Human-readable description.
+        rule_uri: Optional URI to the documentation for the rule.
     """
 
     file: str
     line: int
     code: str
     message: str
+    rule_uri: str = ""
 
     __test__ = False
 
@@ -136,6 +142,82 @@ class ComplexityRunResult:
     violation_count: int
     max_complexity: int
     violations: list[ComplexityViolation] = field(default_factory=list)
+
+    __test__ = False
+
+
+@dataclass(frozen=True)
+class CompileError:
+    """A single compilation error or warning.
+
+    Attributes:
+        file: Relative file path.
+        line: Line number.
+        column: Column number.
+        code: Error code (e.g., TS1005, E0432).
+        message: Human-readable description.
+        is_warning: True if warning, False if hard error.
+    """
+
+    file: str
+    line: int
+    column: int
+    code: str
+    message: str
+    is_warning: bool = False
+
+    __test__ = False
+
+
+@dataclass(frozen=True)
+class CompileRunResult:
+    """Structured result from running a compiler.
+
+    Attributes:
+        error_count: Total hard errors.
+        warning_count: Total warnings.
+        errors: Details of each compilation error.
+    """
+
+    error_count: int
+    warning_count: int
+    errors: list[CompileError] = field(default_factory=list)
+
+    __test__ = False
+
+
+@dataclass(frozen=True)
+class OutputEvent:
+    """A standard debug output event mapped from DAP protocol.
+
+    Attributes:
+        category: Output channel (stdout, stderr, console).
+        output: Raw text output.
+        file: Source file associated with the output block.
+        line: Associated line number.
+    """
+
+    category: str
+    output: str
+    file: str = ""
+    line: int = 0
+
+    __test__ = False
+
+
+@dataclass(frozen=True)
+class DebugRunResult:
+    """Structured result from a debug execution.
+
+    Attributes:
+        exit_code: Process exit code.
+        duration_seconds: Wall-clock duration of the run.
+        events: Streamed output events.
+    """
+
+    exit_code: int
+    duration_seconds: float
+    events: list[OutputEvent] = field(default_factory=list)
 
     __test__ = False
 
@@ -208,4 +290,34 @@ class TestRunnerInterface(ABC):
 
         Returns:
             ComplexityRunResult with violation counts and details.
+        """
+
+    @abstractmethod
+    def run_compiler(
+        self,
+        target: str,
+    ) -> CompileRunResult:
+        """Run compilation/build and return structured results.
+
+        Args:
+            target: File or directory to compile (relative to cwd).
+
+        Returns:
+            CompileRunResult with error counts and details.
+        """
+
+    @abstractmethod
+    def run_debugger(
+        self,
+        target: str,
+        entrypoint: str,
+    ) -> DebugRunResult:
+        """Execute a process and stream runtime outputs.
+
+        Args:
+            target: File or directory to run.
+            entrypoint: Command or specific script to use as entrypoint.
+
+        Returns:
+            DebugRunResult with exit records and DAP-mapped output events.
         """

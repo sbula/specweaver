@@ -18,8 +18,10 @@ import time
 from typing import TYPE_CHECKING, TypedDict
 
 from specweaver.loom.commons.test_runner.interface import (
+    CompileRunResult,
     ComplexityRunResult,
     ComplexityViolation,
+    DebugRunResult,
     LintError,
     LintRunResult,
     TestFailure,
@@ -108,6 +110,8 @@ def _parse_pytest_output(stdout: str) -> _ParsedOutput:
 
 class PythonTestRunner(TestRunnerInterface):
     """Python test runner using pytest and ruff.
+
+    TODO(migration): This stub is temporary. It will be deleted the polyglot migration work is fully done.
 
     Args:
         cwd: Project root directory.
@@ -361,3 +365,18 @@ class PythonTestRunner(TestRunnerInterface):
             max_complexity=max_complexity,
             violations=violations,
         )
+
+    def run_compiler(
+        self,
+        target: str,
+    ) -> CompileRunResult:
+        """Run compilation/build and return structured results (Python is a no-op)."""
+        return CompileRunResult(error_count=0, warning_count=0, errors=[])
+
+    def run_debugger(
+        self,
+        target: str,
+        entrypoint: str,
+    ) -> DebugRunResult:
+        """Execute a process and stream runtime outputs (stub)."""
+        return DebugRunResult(exit_code=0, duration_seconds=0.0, events=[])

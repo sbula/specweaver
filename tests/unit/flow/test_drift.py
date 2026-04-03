@@ -194,7 +194,7 @@ async def test_drift_handler_ast_parse_failure(tmp_path: Path, plan_yaml_content
     src_file = tmp_path / "src" / "test.py"
     src_file.parent.mkdir()
     src_file.write_text("def my_func(): pass")
-    
+
     # Mock TreeSitter to raise Exception during parse
     def mock_parse(*args: Any, **kwargs: Any) -> Any:
         raise RuntimeError("Mock parse error")
