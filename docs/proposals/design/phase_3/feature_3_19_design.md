@@ -59,7 +59,7 @@ none stated
 
 | # | Decision | Rationale | Architectural Switch? |
 |---|----------|-----------|----------------------|
-| AD-1 | Dedicated Sub-Modules | Separating logic into `rust.py`, `typescript.py` etc., keeps code cohesive and allows us to stub out CLI commands effectively. | No |
+| AD-1 | Dedicated Package Sub-Modules | Separating run logic, parsers, and interfaces into dedicated folders (e.g. `java/runner.py`, `java/parsers.py`) per language prevents God-class bloat as lint/test logic diversifies. | Yes |
 | AD-2 | E2E Subprocess Mocking | Mocking subprocess outputs allows the full battery of runners to be tested comprehensively on a Python-only local machine or CI. | No |
 
 ## Sub-Feature Breakdown
@@ -88,23 +88,33 @@ none stated
 - **Depends on**: SF-1
 - **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf3_implementation_plan.md
 
+### SF-4: Polyglot Submodule Architecture Refactor
+- **Scope**: Refactors god-classes (`java.py`, `kotlin.py`, `rust.py`) into dedicated package submodules (`java/runner.py`, `java/parsers.py`) alongside migrating their respective unit and integration test folders natively inside `tests/unit/.../java/` to prevent directory and module bloat. **Must natively refactor `_parse_detekt_complexity` and `_parse_pmd_complexity` to extract values purely via structural SARIF properties instead of brittle string regex scraping (fixing compiler upgrade vulnerability)**. **Must perform an exhaustive evaluation and backfill of E2E and Unit test gaps across all Polyglot handlers (Java/Kotlin/Rust) to ensure complete ecosystem parity and structural coverage.**
+- **FRs**: [FR-1]
+- **Inputs**: Existing unified runner files.
+- **Outputs**: Clean domain-driven package modules mapping per-language correctly.
+- **Depends on**: SF-2, SF-3
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf4_implementation_plan.md
+
 ## Execution Order
 
 1. SF-1 (Core Interface, Compilers & Python/TS)
 2. SF-2 (JVM Handlers) and SF-3 (Rust Handler) in parallel (both depend only on SF-1)
+3. SF-4 (Polyglot Submodule Architecture Refactor)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Core Interface & Python/TS | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | JVM Handlers (Java & Kotlin)| SF-1 | ✅ | ✅ | 🏃 | ⬜ | ⬜ |
-| SF-3 | Rust Handler | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | JVM Handlers (Java & Kotlin)| SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-3 | Rust Handler | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-4 | Submodule Refactoring | SF-2, SF-3 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Implementation Plan for SF-2 is APPROVED.
-**Next step**: Run the following command to transition to the Development phase and begin implementing the code for SF-2 via TDD:
-`@[/dev] docs/proposals/roadmap/phase_3/feature_3_19_sf2_implementation_plan.md`
+**Current status**: Implementation Plan for SF-3 is APPROVED.
+**Next step**: Run the following command to begin building the code for SF-3 via TDD:
+`@[/dev] docs/proposals/roadmap/phase_3/feature_3_19_sf3_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
