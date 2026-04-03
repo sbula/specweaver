@@ -93,7 +93,7 @@ class JavaRunner(TestRunnerInterface):
             check=False,
         )
 
-        import junitparser
+        import junitparser  # type: ignore[import-not-found]
         for xml_file in search_path.rglob("*.xml"):
             try:
                 xml = junitparser.JUnitXml.fromfile(str(xml_file))

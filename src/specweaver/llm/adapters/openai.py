@@ -49,7 +49,7 @@ class OpenAIAdapter(LLMAdapter):
 
     def _get_client(self) -> Any:
         if self._client is None:
-            import openai
+            import openai  # type: ignore[import-not-found]
 
             self._client = openai.AsyncOpenAI(api_key=self._api_key)
         return self._client

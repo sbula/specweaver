@@ -4,7 +4,7 @@
 - **Design Document**: docs/proposals/design/phase_3/feature_3_19_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
 - **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf2_implementation_plan.md
-- **Status**: IN PROGRESS (Batch 1 Complete)
+- **Status**: COMPLETED
 
 ## Goal Description
 Implement the `JavaRunner` and `KotlinRunner` classes inheriting from `TestRunnerInterface`. These runners will map the 5 polyglot intents (run_tests, run_linter, run_complexity, run_compiler, run_debugger) directly into Gradle and Maven CLI executions.

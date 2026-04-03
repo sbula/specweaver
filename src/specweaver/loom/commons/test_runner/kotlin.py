@@ -97,7 +97,7 @@ class KotlinRunner(TestRunnerInterface):
         )
 
     def _parse_junit_results(self, search_path: Path) -> tuple[int, int]:
-        import junitparser
+        import junitparser  # type: ignore[import-not-found]
         passed = 0
         failed = 0
 
@@ -146,7 +146,6 @@ class KotlinRunner(TestRunnerInterface):
                             ploc = loc.get("physicalLocation", {})
                             uri = ploc.get("artifactLocation", {}).get("uri", "")
                             line = ploc.get("region", {}).get("startLine", 0)
-                            col = ploc.get("region", {}).get("startColumn", 0)
                             errors.append(LintError(
                                 file=uri,
                                 line=line,
