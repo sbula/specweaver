@@ -13,7 +13,9 @@ import contextlib
 import json
 import logging
 import re
+import shlex
 import subprocess
+import sys
 import time
 from typing import TYPE_CHECKING, TypedDict
 
@@ -24,6 +26,7 @@ from specweaver.loom.commons.test_runner.interface import (
     DebugRunResult,
     LintError,
     LintRunResult,
+    OutputEvent,
     TestFailure,
     TestRunnerInterface,
     TestRunResult,
@@ -378,5 +381,37 @@ class PythonTestRunner(TestRunnerInterface):
         target: str,
         entrypoint: str,
     ) -> DebugRunResult:
-        """Execute a process and stream runtime outputs (stub)."""
-        return DebugRunResult(exit_code=0, duration_seconds=0.0, events=[])
+        """Execute a process and stream runtime outputs using DAP OutputEvents."""
+        cmd = [sys.executable, entrypoint]
+        logger.debug("Running Python debugger wrapper: %s", shlex.join(cmd))
+
+        start_time = time.monotonic()
+        try:
+            proc = subprocess.run(
+                cmd,
+                cwd=self._cwd,
+                capture_output=True,
+                text=True,
+                timeout=300,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            return DebugRunResult(
+                exit_code=124,
+                duration_seconds=300.0,
+                events=[OutputEvent(category="stderr", output="Timeout expired")],
+            )
+
+        duration = time.monotonic() - start_time
+
+        events: list[OutputEvent] = []
+        for line in proc.stdout.splitlines():
+            events.append(OutputEvent(category="stdout", output=line))
+        for line in proc.stderr.splitlines():
+            events.append(OutputEvent(category="stderr", output=line))
+
+        return DebugRunResult(
+            exit_code=proc.returncode,
+            duration_seconds=duration,
+            events=events,
+        )

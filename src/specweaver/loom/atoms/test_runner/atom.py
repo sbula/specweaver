@@ -45,7 +45,12 @@ def _resolve_runner(language: str, cwd: Any) -> TestRunnerInterface:
 
         return PythonTestRunner(cwd=cwd)
 
-    msg = f"Unsupported language: {language!r}. Supported: ['python']"
+    if language == "typescript":
+        from specweaver.loom.commons.test_runner.typescript import TypeScriptRunner
+
+        return TypeScriptRunner(cwd=cwd)
+
+    msg = f"Unsupported language: {language!r}. Supported: ['python', 'typescript']"
     raise ValueError(msg)
 
 

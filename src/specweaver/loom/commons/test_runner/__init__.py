@@ -17,6 +17,7 @@ from specweaver.loom.commons.test_runner.interface import (
     TestRunResult,
 )
 from specweaver.loom.commons.test_runner.python import PythonTestRunner
+from specweaver.loom.commons.test_runner.typescript import TypeScriptRunner
 
 __all__ = [
     "ComplexityRunResult",
@@ -27,4 +28,5 @@ __all__ = [
     "TestFailure",
     "TestRunResult",
     "TestRunnerInterface",
+    "TypeScriptRunner",
 ]
