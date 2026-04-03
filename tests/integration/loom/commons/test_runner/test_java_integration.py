@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -23,7 +22,7 @@ def maven_project() -> Path:
 
 def test_java_runner_gradle_integration(gradle_project: Path):
     assert gradle_project.exists(), "Gradle fixture missing"
-    
+
     runner = JavaRunner(cwd=gradle_project)
 
     # 1. Compile
@@ -52,7 +51,7 @@ def test_java_runner_gradle_integration(gradle_project: Path):
 
 def test_java_runner_maven_integration(maven_project: Path):
     assert maven_project.exists(), "Maven fixture missing"
-    
+
     runner = JavaRunner(cwd=maven_project)
 
     # 1. Compile

@@ -56,7 +56,7 @@ Contains isolated unittest pipelines strictly enforcing isolation boundaries.
 ## Status Tracking
 - [x] **Batch 1**: Atom Resolution Engine & Interface Stubs (Completed)
 - [x] **Batch 2**: JavaRunner implementation (Maven/Gradle) (Completed)
-- [ ] **Batch 3**: KotlinRunner implementation (Gradle/detekt)
+- [x] **Batch 3**: KotlinRunner implementation (Gradle/detekt) (Completed)
 
 ## Research Notes
 - **SARIF Parsing**: `detekt` outputs strictly standard `run -> results -> locations` json bindings. We enforce manual tree traversal using standard python JSON natively as approved via HITL gate findings.

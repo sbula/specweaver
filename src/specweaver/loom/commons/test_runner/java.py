@@ -20,6 +20,7 @@ from specweaver.loom.commons.test_runner.interface import (
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
+
     from specweaver.loom.commons.test_runner.interface import ComplexityViolation
 
 import json
@@ -173,7 +174,6 @@ class JavaRunner(TestRunnerInterface):
         max_complexity: int = 10,
     ) -> ComplexityRunResult:
 
-        from specweaver.loom.commons.test_runner.interface import ComplexityViolation
 
         tool = self._get_build_tool()
         violations: list[ComplexityViolation] = []
@@ -204,7 +204,7 @@ class JavaRunner(TestRunnerInterface):
             violations=violations,
         )
 
-    def _parse_pmd_complexity(self, data: "dict[str, Any]", max_complexity: int) -> "list[ComplexityViolation]":
+    def _parse_pmd_complexity(self, data: dict[str, Any], max_complexity: int) -> list[ComplexityViolation]:
         import re
 
         from specweaver.loom.commons.test_runner.interface import ComplexityViolation
