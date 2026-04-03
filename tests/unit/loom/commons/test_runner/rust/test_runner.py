@@ -103,6 +103,7 @@ class TestRustRunner:
             "runs": [{
                 "results": [{
                     "ruleId": "clippy::cognitive_complexity",
+                    "properties": {"complexity": 15},
                     "message": {"text": "The function `complex_fn` has a cognitive complexity of 15"},
                     "locations": [{
                         "physicalLocation": {

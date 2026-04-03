@@ -9,6 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.loom.commons.test_runner.interface import TestRunnerInterface
+from specweaver.loom.commons.test_runner.rust.parsers import parse_clippy_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,10 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class RustRunner(TestRunnerInterface):
-    """Test runner bindings for Rust using cargo, cargo2junit, and clippy-sarif.
-
-    This uses standard structural mappings natively mirroring JVM logic.
-    """
+    """Test runner bindings for Rust using cargo, cargo2junit, and clippy-sarif."""
 
     def __init__(self, cwd: Path) -> None:
         self._cwd = cwd
@@ -160,10 +158,7 @@ class RustRunner(TestRunnerInterface):
         import json
         import subprocess
 
-        from specweaver.loom.commons.test_runner.interface import (
-            ComplexityRunResult,
-            ComplexityViolation,
-        )
+        from specweaver.loom.commons.test_runner.interface import ComplexityRunResult
 
         try:
             clippy_cmd = ["cargo", "clippy", "--message-format=json", "--", "-W", "clippy::cognitive_complexity"]
@@ -188,32 +183,7 @@ class RustRunner(TestRunnerInterface):
             if sarif_process.stdout.strip():
                 try:
                     data = json.loads(sarif_process.stdout)
-                    runs = data.get("runs", [])
-                    for run in runs:
-                        for result in run.get("results", []):
-                            rule_id = result.get("ruleId", "")
-                            if "cognitive_complexity" not in rule_id:
-                                continue
-
-                            msg = result.get("message", {}).get("text", "")
-                            complexity_val = 0
-                            import re
-                            match = re.search(r"complexity of (\d+)", msg)
-                            if match:
-                                complexity_val = int(match.group(1))
-
-                            for loc in result.get("locations", []):
-                                ploc = loc.get("physicalLocation", {})
-                                uri = ploc.get("artifactLocation", {}).get("uri", "")
-                                line = ploc.get("region", {}).get("startLine", 0)
-
-                                violations.append(ComplexityViolation(
-                                    file=uri,
-                                    line=line,
-                                    function="unknown",
-                                    complexity=complexity_val,
-                                    message=msg,
-                                ))
+                    violations.extend(parse_clippy_complexity(data, max_complexity))
                 except json.JSONDecodeError:
                     pass
 
