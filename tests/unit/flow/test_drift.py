@@ -104,7 +104,9 @@ class MockLLMResponse:
 
 
 class MockLLMAdapter:
-    async def generate(self, messages: list[Any], config: Any = None, tool_dispatcher: Any = None) -> Any:
+    async def generate(
+        self, messages: list[Any], config: Any = None, tool_dispatcher: Any = None
+    ) -> Any:
         return MockLLMResponse("The parameter `z` in `my_func` is a typo and should be `y`.")
 
 
@@ -186,7 +188,9 @@ async def test_drift_handler_non_utf8_target(tmp_path: Path, plan_yaml_content: 
 
 
 @pytest.mark.asyncio
-async def test_drift_handler_ast_parse_failure(tmp_path: Path, plan_yaml_content: str, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_drift_handler_ast_parse_failure(
+    tmp_path: Path, plan_yaml_content: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test handler catches Tree-Sitter parsing failure."""
     plan_file = tmp_path / "plan.yaml"
     plan_file.write_text(plan_yaml_content)
@@ -200,6 +204,7 @@ async def test_drift_handler_ast_parse_failure(tmp_path: Path, plan_yaml_content
         raise RuntimeError("Mock parse error")
 
     import tree_sitter
+
     monkeypatch.setattr(tree_sitter.Parser, "parse", mock_parse)
 
     handler = DriftCheckHandler()
@@ -217,7 +222,9 @@ async def test_drift_handler_ast_parse_failure(tmp_path: Path, plan_yaml_content
 
 
 class FailingLLMAdapter:
-    async def generate(self, messages: list[Any], config: Any = None, tool_dispatcher: Any = None) -> Any:
+    async def generate(
+        self, messages: list[Any], config: Any = None, tool_dispatcher: Any = None
+    ) -> Any:
         raise RuntimeError("API Timeout")
 
 

@@ -384,12 +384,15 @@ class TestAtomRunDebugger:
         assert result2.status == AtomStatus.FAILED
         assert "target" in result2.message.lower()
 
+
 def test_resolve_runner_languages(tmp_path: Path) -> None:
+    import pytest
+
     from specweaver.loom.atoms.test_runner.atom import _resolve_runner
     from specweaver.loom.commons.test_runner.typescript import TypeScriptRunner
-    import pytest
+
     with pytest.raises(ValueError, match="Unsupported language"):
         _resolve_runner("ruby", tmp_path)
-    
+
     ts_runner = _resolve_runner("typescript", tmp_path)
     assert isinstance(ts_runner, TypeScriptRunner)

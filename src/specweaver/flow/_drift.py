@@ -133,7 +133,12 @@ class DriftCheckHandler:
         try:
             # Check for config (we don't strictly require context.config for test harnesses)
             from specweaver.llm.models import GenerationConfig
-            config = context.config.llm if getattr(context, "config", None) and hasattr(context.config, "llm") else GenerationConfig(model="gemini-3-flash-preview")
+
+            config = (
+                context.config.llm
+                if getattr(context, "config", None) and hasattr(context.config, "llm")
+                else GenerationConfig(model="gemini-3-flash-preview")
+            )
             response = await context.llm.generate(messages, config)
             return str(response.text)
         except Exception as exc:

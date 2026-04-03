@@ -30,6 +30,7 @@ def test_test_failure_model_supports_stacktrace_and_rule() -> None:
     assert failure.stacktrace.startswith("Traceback")
     assert failure.rule_uri == "https://eslint.org/docs/rules/eqeqeq"
 
+
 def test_test_failure_default_values() -> None:
     """Test that TestFailure handles defaults gracefully for backward compatibility."""
     failure = TestFailure(
@@ -39,6 +40,7 @@ def test_test_failure_default_values() -> None:
     assert failure.stacktrace == ""
     assert failure.rule_uri == ""
     assert failure.stdout == ""
+
 
 def test_lint_error_model_supports_rule_uri() -> None:
     """Test that LintError accepts rule_uri per the new SARIF standards."""
@@ -52,6 +54,7 @@ def test_lint_error_model_supports_rule_uri() -> None:
     assert error.code == "E501"
     assert error.rule_uri == "https://docs.astral.sh/ruff/rules/line-too-long/"
 
+
 def test_lint_error_default_values() -> None:
     """Test that LintError handles defaults gracefully for backward compatibility."""
     error = LintError(
@@ -61,6 +64,7 @@ def test_lint_error_default_values() -> None:
         message="Line too long",
     )
     assert error.rule_uri == ""
+
 
 def test_compile_error_model() -> None:
     """Test CompileError structure supports SARIF lines/cols."""
@@ -76,13 +80,17 @@ def test_compile_error_model() -> None:
     assert err.column == 12
     assert not err.is_warning
 
+
 def test_compile_run_result_model() -> None:
     """Test CompileRunResult container."""
-    res = CompileRunResult(error_count=1, warning_count=0, errors=[
-        CompileError("main.ts", 1, 0, "TS1005", "expected ';'", False)
-    ])
+    res = CompileRunResult(
+        error_count=1,
+        warning_count=0,
+        errors=[CompileError("main.ts", 1, 0, "TS1005", "expected ';'", False)],
+    )
     assert res.error_count == 1
     assert len(res.errors) == 1
+
 
 def test_output_event_model() -> None:
     """Test DAP-compliant OutputEvent mapping."""
@@ -97,24 +105,31 @@ def test_output_event_model() -> None:
     assert event.file == "index.js"
     assert event.line == 1
 
+
 def test_debug_run_result_model() -> None:
     """Test DebugRunResult container."""
-    res = DebugRunResult(
-        exit_code=1,
-        duration_seconds=1.5,
-        events=[OutputEvent("stderr", "crash")]
-    )
+    res = DebugRunResult(exit_code=1, duration_seconds=1.5, events=[OutputEvent("stderr", "crash")])
     assert res.exit_code == 1
     assert len(res.events) == 1
+
 
 def test_interface_demands_compile_and_debug() -> None:
     """Test that TestRunnerInterface correctly defines run_compiler and run_debugger as abstract."""
     from typing import Any
+
     class IncompleteRunner(TestRunnerInterface):
         # Only implementing the old ones
-        def run_tests(self, **kwargs: Any) -> CompileRunResult: pass  # type: ignore
-        def run_linter(self, **kwargs: Any) -> CompileRunResult: pass  # type: ignore
-        def run_complexity(self, **kwargs: Any) -> CompileRunResult: pass  # type: ignore
+        def run_tests(self, **kwargs: Any) -> CompileRunResult:
+            pass  # type: ignore
 
-    with pytest.raises(TypeError, match=r"Can't instantiate abstract class IncompleteRunner without an implementation for abstract method.*run_compiler"):
+        def run_linter(self, **kwargs: Any) -> CompileRunResult:
+            pass  # type: ignore
+
+        def run_complexity(self, **kwargs: Any) -> CompileRunResult:
+            pass  # type: ignore
+
+    with pytest.raises(
+        TypeError,
+        match=r"Can't instantiate abstract class IncompleteRunner without an implementation for abstract method.*run_compiler",
+    ):
         IncompleteRunner()  # type: ignore[abstract]

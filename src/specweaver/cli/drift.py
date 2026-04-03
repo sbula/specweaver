@@ -109,14 +109,13 @@ def drift_check(
 
     _present_result(last_record.result, target_path.name, analyze)
 
+
 def _present_result(result: StepResult, target_name: str, analyze: bool) -> None:
     is_drifted = result.output.get("is_drifted", False)
     findings = result.output.get("findings", [])
 
     if not is_drifted:
-        _core.console.print(
-            f"[green]✓ AST signatures match specification.[/green] ({target_name})"
-        )
+        _core.console.print(f"[green]✓ AST signatures match specification.[/green] ({target_name})")
         if findings:
             table = Table(title=f"Warnings for {target_name}")
             table.add_column("Severity")

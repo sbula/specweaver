@@ -111,6 +111,7 @@ class TestTypeScriptRunner:
 
     def test_run_compiler_timeout(self, tmp_path: Path) -> None:
         import subprocess
+
         runner = TypeScriptRunner(cwd=tmp_path)
         with patch("subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx"], timeout=120)
@@ -120,6 +121,7 @@ class TestTypeScriptRunner:
 
     def test_run_debugger_timeout(self, tmp_path: Path) -> None:
         import subprocess
+
         runner = TypeScriptRunner(cwd=tmp_path)
         with patch("subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx"], timeout=300)

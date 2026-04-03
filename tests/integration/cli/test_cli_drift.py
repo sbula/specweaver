@@ -54,7 +54,15 @@ def test_drift_check_success(dummy_project: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["drift", "check", str(target_path), "--plan", str(plan_path), "--project", str(dummy_project)]
+        [
+            "drift",
+            "check",
+            str(target_path),
+            "--plan",
+            str(plan_path),
+            "--project",
+            str(dummy_project),
+        ],
     )
     assert result.exit_code == 0
     assert "signatures match specification" in result.stdout
@@ -69,11 +77,19 @@ def test_drift_check_failed(dummy_project: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["drift", "check", str(target_path), "--plan", str(plan_path), "--project", str(dummy_project)]
+        [
+            "drift",
+            "check",
+            str(target_path),
+            "--plan",
+            str(plan_path),
+            "--project",
+            str(dummy_project),
+        ],
     )
     assert result.exit_code == 1
     assert "AST Drift Detected" in result.stdout
-    assert "missing_function" not in result.stdout # Should say missing expected method my_func
+    assert "missing_function" not in result.stdout  # Should say missing expected method my_func
     assert "my_func" in result.stdout
 
 
@@ -81,7 +97,15 @@ def test_drift_check_file_not_found(dummy_project: Path) -> None:
     plan_path = dummy_project / "plan.yaml"
     result = runner.invoke(
         app,
-        ["drift", "check", "nonexistent.py", "--plan", str(plan_path), "--project", str(dummy_project)]
+        [
+            "drift",
+            "check",
+            "nonexistent.py",
+            "--plan",
+            str(plan_path),
+            "--project",
+            str(dummy_project),
+        ],
     )
     assert result.exit_code == 1
     assert "File not found" in result.stdout
@@ -96,7 +120,15 @@ def test_drift_check_warning(dummy_project: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["drift", "check", str(target_path), "--plan", str(plan_path), "--project", str(dummy_project)]
+        [
+            "drift",
+            "check",
+            str(target_path),
+            "--plan",
+            str(plan_path),
+            "--project",
+            str(dummy_project),
+        ],
     )
     # WARNING shouldn't crash with 1
     assert result.exit_code == 0
@@ -110,7 +142,15 @@ def test_drift_check_invalid_project(dummy_project: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["drift", "check", str(target_path), "--plan", str(plan_path), "--project", "random/missing/dir"]
+        [
+            "drift",
+            "check",
+            str(target_path),
+            "--plan",
+            str(plan_path),
+            "--project",
+            "random/missing/dir",
+        ],
     )
     assert result.exit_code == 1
     assert "Error:" in result.stdout
@@ -122,17 +162,28 @@ def test_drift_check_analyze(dummy_project: Path, monkeypatch: pytest.MonkeyPatc
     target_path.write_text("def missing() -> int: return 0\n")
 
     from specweaver.cli import _helpers
+
     class MockAdapter:
         async def generate(self, *args: list[str], **kwargs: dict[str, str]) -> object:
             class MockResp:
                 text = "Mock LLM Root Cause"
+
             return MockResp()
 
     monkeypatch.setattr(_helpers, "_require_llm_adapter", lambda p: (None, MockAdapter(), None))
 
     result = runner.invoke(
         app,
-        ["drift", "check", str(target_path), "--plan", str(plan_path), "--project", str(dummy_project), "--analyze"]
+        [
+            "drift",
+            "check",
+            str(target_path),
+            "--plan",
+            str(plan_path),
+            "--project",
+            str(dummy_project),
+            "--analyze",
+        ],
     )
     assert result.exit_code == 1
     assert "LLM Root-Cause Analysis" in result.stdout

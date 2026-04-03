@@ -6,6 +6,7 @@
 import logging
 import re
 import shlex
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -76,7 +77,8 @@ class TypeScriptRunner(TestRunnerInterface):
 
     def run_compiler(self, target: str) -> CompileRunResult:
         """Run TypeScript compiler (tsc --noEmit) and extract diagnostics."""
-        cmd = ["npx", "tsc", "--noEmit"]
+        npx_bin = shutil.which("npx") or "npx"
+        cmd = [npx_bin, "tsc", "--noEmit"]
         if target and target != "." and target != "src/":
             # If a strict file target is provided, append it
             cmd.append(target)
@@ -145,6 +147,11 @@ class TypeScriptRunner(TestRunnerInterface):
                     )
                 )
 
+        if not errors:
+            raise RuntimeError(
+                f"DEBUG NO MATCH. STDOUT: {proc.stdout!r} STDERR: {proc.stderr!r} CODE: {proc.returncode}"
+            )
+
         return CompileRunResult(
             error_count=len(errors),
             warning_count=0,  # tsc doesn't easily divide warnings in standard output buffer without verbose
@@ -153,7 +160,13 @@ class TypeScriptRunner(TestRunnerInterface):
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         """Execute a process and stream runtime outputs."""
-        cmd = ["npx", "ts-node", entrypoint] if entrypoint.endswith(".ts") else ["node", entrypoint]
+        npx_bin = shutil.which("npx") or "npx"
+        node_bin = shutil.which("node") or "node"
+        cmd = (
+            [npx_bin, "ts-node", entrypoint]
+            if entrypoint.endswith(".ts")
+            else [node_bin, entrypoint]
+        )
         logger.debug("Running TypeScript debugger wrapper: %s", shlex.join(cmd))
 
         start_time = time.monotonic()
@@ -176,7 +189,11 @@ class TypeScriptRunner(TestRunnerInterface):
             return DebugRunResult(
                 exit_code=127,
                 duration_seconds=0.0,
-                events=[OutputEvent(category="stderr", output="Node/TypeScript runner not found in PATH")],
+                events=[
+                    OutputEvent(
+                        category="stderr", output="Node/TypeScript runner not found in PATH"
+                    )
+                ],
             )
 
         duration = time.monotonic() - start_time

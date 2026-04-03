@@ -325,9 +325,11 @@ class TestInterfaceCompileDebug:
 
         assert result.status == "success"
 
+
 # ---------------------------------------------------------------------------
 # Legacy Proxy Gaps — TestRunnerTool & Interfaces
 # ---------------------------------------------------------------------------
+
 
 class TestToolLegacyProxyGaps:
     """Tests that cover pre-existing gaps in the Tool and Interface layers."""
@@ -336,22 +338,28 @@ class TestToolLegacyProxyGaps:
         """Tool generates correct LLM definitions based on the assigned role."""
         atom = MagicMock()
         tool = TestRunnerTool(atom=atom, role="implementer")
-        
+
         # Override the definitions map purely for test determinism
-        with patch("specweaver.loom.tools.test_runner.definitions.INTENT_DEFINITIONS", {"run_tests": {"name": "run_tests"}, "dummy": {"name": "dummy"}}):
-            with patch.dict("specweaver.loom.tools.test_runner.tool.ROLE_INTENTS", {"implementer": frozenset({"run_tests"})}):
-                defs = tool.definitions()
-                assert len(defs) == 1
-                assert defs[0]["name"] == "run_tests"
+        with patch(
+            "specweaver.loom.tools.test_runner.definitions.INTENT_DEFINITIONS",
+            {"run_tests": {"name": "run_tests"}, "dummy": {"name": "dummy"}},
+        ), patch.dict(
+            "specweaver.loom.tools.test_runner.tool.ROLE_INTENTS",
+            {"implementer": frozenset({"run_tests"})},
+        ):
+            defs = tool.definitions()
+            assert len(defs) == 1
+            assert defs[0]["name"] == "run_tests"
 
     def test_require_intent_blocks_disallowed_intent(self) -> None:
         """Tool blocks execution if role lacks intent (covering line 92 gap)."""
         atom = MagicMock()
         tool = TestRunnerTool(atom=atom, role="implementer")
-        
-        with patch.dict("specweaver.loom.tools.test_runner.tool.ROLE_INTENTS", {"implementer": frozenset()}):
-            with pytest.raises(TestRunnerToolError, match="not allowed for role"):
-                tool.run_tests(target="src/")
+
+        with patch.dict(
+            "specweaver.loom.tools.test_runner.tool.ROLE_INTENTS", {"implementer": frozenset()}
+        ), pytest.raises(TestRunnerToolError, match="not allowed for role"):
+            tool.run_tests(target="src/")
 
     def test_implementer_proxy_passthrough(self, tmp_path: Path) -> None:
         """Implementer interface preserves arguments perfectly when delegating to the tool."""
@@ -365,7 +373,9 @@ class TestToolLegacyProxyGaps:
         # 2. run_tests
         tool.run_tests.return_value = ToolResult(status="success")
         iface.run_tests(target="src/", kind="e2e", scope="auth", timeout=60, coverage=True)
-        tool.run_tests.assert_called_once_with(target="src/", kind="e2e", scope="auth", timeout=60, coverage=True)
+        tool.run_tests.assert_called_once_with(
+            target="src/", kind="e2e", scope="auth", timeout=60, coverage=True
+        )
 
         # 3. run_linter
         tool.run_linter.return_value = ToolResult(status="success")
@@ -384,7 +394,9 @@ class TestToolLegacyProxyGaps:
         # 2. run_tests
         tool.run_tests.return_value = ToolResult(status="success")
         iface.run_tests(target="src/", kind="unit", scope="", timeout=120, coverage=False)
-        tool.run_tests.assert_called_once_with(target="src/", kind="unit", scope="", timeout=120, coverage=False)
+        tool.run_tests.assert_called_once_with(
+            target="src/", kind="unit", scope="", timeout=120, coverage=False
+        )
 
     def test_factory_invalid_role(self, tmp_path: Path) -> None:
         """Factory triggers value error for invalid roles directly (missing path)."""

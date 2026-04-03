@@ -245,3 +245,97 @@ class TestAtomToolStack:
 
         content = bad_file.read_text(encoding="utf-8")
         assert "import os" not in content
+
+
+# ---------------------------------------------------------------------------
+# Compiler and Debugger Real Executions
+# ---------------------------------------------------------------------------
+
+
+class TestPythonRunnerExecution:
+    """Validate python debugger execution integration."""
+
+    def test_run_compiler_stub(self, sample_project: Path) -> None:
+        """Python compiler just returns a 0 error stub organically."""
+        runner = PythonTestRunner(cwd=sample_project)
+        result = runner.run_compiler(target=".")
+        assert result.error_count == 0
+
+    def test_run_debugger_streams(self, sample_project: Path) -> None:
+        """Python debugger runs the process natively parsing stdout."""
+        target_dir = sample_project / "src" / "debug_test"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        py_file = target_dir / "app.py"
+        py_file.write_text(
+            'import sys\nprint("STDOUT_LINE")\nprint("STDERR_LINE", file=sys.stderr)',
+            encoding="utf-8",
+        )
+
+        runner = PythonTestRunner(cwd=sample_project)
+        result = runner.run_debugger(target=str(target_dir), entrypoint=str(py_file))
+        assert result.exit_code == 0
+        outputs = [e.output for e in result.events]
+        assert "STDOUT_LINE" in outputs
+        assert "STDERR_LINE" in outputs
+
+
+class TestTypeScriptRunnerRealTooling:
+    """Validate real npx tsc / ts-node logic integration constraints."""
+
+    def test_tsc_compiler_regex_parsing(self, sample_project: Path) -> None:
+        """Create a broken typescript file and invoke real tsc compiler."""
+        import shutil
+        import subprocess
+
+        from specweaver.loom.commons.test_runner.typescript import TypeScriptRunner
+
+        target_dir = sample_project / "src" / "ts_compile"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        ts_file = target_dir / "index.ts"
+        # Type error TS2322: Type number is not assignable to type string.
+        ts_file.write_text("let x: string = 5;", encoding="utf-8")
+
+        # Create localized tsconfig to compile everything in src
+        (sample_project / "tsconfig.json").write_text(
+            '{"compilerOptions": {"noEmit": true}, "include": ["src/**/*"]}', encoding="utf-8"
+        )
+
+        npm_bin = shutil.which("npm") or "npm"
+        subprocess.run(
+            [npm_bin, "install", "typescript", "ts-node"],
+            cwd=sample_project,
+            check=False,
+            capture_output=True,
+        )
+
+        runner = TypeScriptRunner(cwd=sample_project)
+        result = runner.run_compiler(target=".")
+        assert result.error_count > 0
+        assert result.errors[0].code == "TS2322"
+        assert result.errors[0].line == 1
+
+    def test_ts_node_debugger_execution(self, sample_project: Path) -> None:
+        """Execute a typescript file natively through ts-node."""
+        import shutil
+        import subprocess
+
+        from specweaver.loom.commons.test_runner.typescript import TypeScriptRunner
+
+        target_dir = sample_project / "src" / "ts_debug"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        ts_file = target_dir / "app.ts"
+        ts_file.write_text('console.log("HELLO_TSNODE");', encoding="utf-8")
+
+        npm_bin = shutil.which("npm") or "npm"
+        subprocess.run(
+            [npm_bin, "install", "typescript", "ts-node", "@types/node"],
+            cwd=sample_project,
+            check=False,
+            capture_output=True,
+        )
+
+        runner = TypeScriptRunner(cwd=sample_project)
+        result = runner.run_debugger(target=str(target_dir), entrypoint=str(ts_file))
+        assert result.exit_code == 0
+        outputs = [e.output for e in result.events]
+        assert "HELLO_TSNODE" in outputs

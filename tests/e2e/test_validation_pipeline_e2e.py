@@ -379,7 +379,15 @@ tasks:
 
         result = runner.invoke(
             app,
-            ["drift", "check", str(code_file), "--plan", str(plan_path), "--project", str(project_dir)]
+            [
+                "drift",
+                "check",
+                str(code_file),
+                "--plan",
+                str(plan_path),
+                "--project",
+                str(project_dir),
+            ],
         )
         assert result.exit_code == 1
         assert "AST Drift Detected" in result.stdout
@@ -409,7 +417,15 @@ tasks:
         missing_file = project_dir / "src" / "missing.py"
         result = runner.invoke(
             app,
-            ["drift", "check", str(missing_file), "--plan", str(plan_path), "--project", str(project_dir)]
+            [
+                "drift",
+                "check",
+                str(missing_file),
+                "--plan",
+                str(plan_path),
+                "--project",
+                str(project_dir),
+            ],
         )
         assert result.exit_code == 1
         assert "File not found" in result.stdout
@@ -447,7 +463,15 @@ tasks:
 
         result = runner.invoke(
             app,
-            ["drift", "check", str(code_file), "--plan", str(plan_path), "--project", str(project_dir)]
+            [
+                "drift",
+                "check",
+                str(code_file),
+                "--plan",
+                str(plan_path),
+                "--project",
+                str(project_dir),
+            ],
         )
         assert result.exit_code == 0
         assert "Warnings for greet.py" in result.stdout
