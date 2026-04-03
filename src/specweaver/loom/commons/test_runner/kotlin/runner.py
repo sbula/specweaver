@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from specweaver.loom.commons.test_runner.interface import (
     CompileError,
@@ -22,6 +22,7 @@ from specweaver.loom.commons.test_runner.interface import (
     TestRunnerInterface,
     TestRunResult,
 )
+from specweaver.loom.commons.test_runner.kotlin.parsers import parse_detekt_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -36,12 +37,11 @@ class KotlinRunner(TestRunnerInterface):
         self._cwd = cwd
 
     def _get_build_tool(self) -> str:
-        """Anchors structurally prioritizing Gradle over Maven."""
         if (self._cwd / "build.gradle").exists() or (self._cwd / "build.gradle.kts").exists():
             return "gradle"
         if (self._cwd / "pom.xml").exists():
             return "maven"
-        return "gradle"  # Default if unknown
+        return "gradle"
 
     def run_tests(
         self,
@@ -52,7 +52,6 @@ class KotlinRunner(TestRunnerInterface):
         coverage: bool = False,
         coverage_threshold: int = 70,
     ) -> TestRunResult:
-
         tool = self._get_build_tool()
 
         if tool == "gradle":
@@ -60,7 +59,6 @@ class KotlinRunner(TestRunnerInterface):
             if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
                 cmd[0] = "gradle"
 
-            # recursive XML cleanup
             search_path = self._cwd / "build" / "test-results"
             if search_path.exists():
                 for stale_xml in search_path.rglob("*.xml"):
@@ -75,13 +73,7 @@ class KotlinRunner(TestRunnerInterface):
                 for stale_xml in search_path.rglob("*.xml"):
                     stale_xml.unlink(missing_ok=True)
 
-        subprocess.run(
-            cmd,
-            cwd=self._cwd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
 
         passed, failed = self._parse_junit_results(search_path)
 
@@ -111,11 +103,7 @@ class KotlinRunner(TestRunnerInterface):
                     pass
         return passed, failed
 
-    def run_linter(
-        self,
-        target: str,
-        fix: bool = False,
-    ) -> LintRunResult:
+    def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
         tool = self._get_build_tool()
         errors: list[LintError] = []
 
@@ -162,11 +150,7 @@ class KotlinRunner(TestRunnerInterface):
             errors=errors,
         )
 
-    def run_complexity(
-        self,
-        target: str,
-        max_complexity: int = 10,
-    ) -> ComplexityRunResult:
+    def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
         tool = self._get_build_tool()
         violations: list[ComplexityViolation] = []
 
@@ -186,7 +170,7 @@ class KotlinRunner(TestRunnerInterface):
         if sarif_path.exists():
             try:
                 data = json.loads(sarif_path.read_text("utf-8"))
-                violations.extend(self._parse_detekt_complexity(data, max_complexity))
+                violations.extend(parse_detekt_complexity(data, max_complexity))
             except json.JSONDecodeError:
                 pass
 
@@ -196,38 +180,7 @@ class KotlinRunner(TestRunnerInterface):
             violations=violations,
         )
 
-    def _parse_detekt_complexity(self, data: dict[str, Any], max_complexity: int) -> list[ComplexityViolation]:
-        import re
-        violations: list[ComplexityViolation] = []
-        for run in data.get("runs", []):
-            for result in run.get("results", []):
-                rule_id = result.get("ruleId", "")
-                if "complex" not in rule_id.lower():
-                    continue
-
-                msg = result.get("message", {}).get("text", "")
-                # Detekt complexity message e.g. "The function complexLogic appears to be too complex (15)."
-                match = re.search(r"too complex \((\d+)\)", msg)
-                comp_val = int(match.group(1)) if match else max_complexity + 1
-
-                if comp_val > max_complexity:
-                    for loc in result.get("locations", []):
-                        ploc = loc.get("physicalLocation", {})
-                        uri = ploc.get("artifactLocation", {}).get("uri", "")
-                        line = ploc.get("region", {}).get("startLine", 0)
-                        violations.append(ComplexityViolation(
-                            file=uri,
-                            line=line,
-                            function="unknown",
-                            complexity=comp_val,
-                            message=msg,
-                        ))
-        return violations
-
-    def run_compiler(
-        self,
-        target: str,
-    ) -> CompileRunResult:
+    def run_compiler(self, target: str) -> CompileRunResult:
         tool = self._get_build_tool()
 
         if tool == "gradle":
@@ -251,11 +204,7 @@ class KotlinRunner(TestRunnerInterface):
             errors=errors,
         )
 
-    def run_debugger(
-        self,
-        target: str,
-        entrypoint: str,
-    ) -> DebugRunResult:
+    def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         tool = self._get_build_tool()
 
         if tool == "gradle":

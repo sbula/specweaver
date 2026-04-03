@@ -98,6 +98,7 @@ class TestKotlinRunner:
                     "results": [
                         {
                             "ruleId": "ComplexMethod",
+                            "properties": {"complexity": 15},
                             "message": {"text": "The function complexLogic appears to be too complex (15)."},
                             "locations": [
                                 {
