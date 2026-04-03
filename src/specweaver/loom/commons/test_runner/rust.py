@@ -45,7 +45,7 @@ class RustRunner(TestRunnerInterface):
         import subprocess
         import time
 
-        import junitparser  # type: ignore[import-not-found]
+        import junitparser
 
         from specweaver.loom.commons.test_runner.interface import TestFailure, TestRunResult
 
@@ -73,7 +73,7 @@ class RustRunner(TestRunnerInterface):
             failed = 0
             errors = 0
             skipped = 0
-            failures = []
+            failures: list[TestFailure] = []
 
             xml_str = junit_process.stdout.strip()
             if xml_str:

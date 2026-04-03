@@ -97,7 +97,7 @@ class KotlinRunner(TestRunnerInterface):
         )
 
     def _parse_junit_results(self, search_path: Path) -> tuple[int, int]:
-        import junitparser  # type: ignore[import-not-found]
+        import junitparser
         passed = 0
         failed = 0
 

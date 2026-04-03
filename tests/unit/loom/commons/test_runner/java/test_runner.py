@@ -138,7 +138,7 @@ class TestJavaRunner:
 
         pmd_file = tmp_path / "build" / "reports" / "pmd" / "main.sarif"
         pmd_file.parent.mkdir(parents=True, exist_ok=True)
-        pmd_file.write_text('{"runs": [{"results": [{"ruleId": "CyclomaticComplexity", "message": {"text": "The method foo() has a cyclomatic complexity of 12."}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "src/main/java/Main.java"}, "region": {"startLine": 10}}}]}]}]}')
+        pmd_file.write_text('{"runs": [{"results": [{"ruleId": "CyclomaticComplexity", "properties": {"complexity": 12}, "message": {"text": "The method foo() has a cyclomatic complexity of 12."}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "src/main/java/Main.java"}, "region": {"startLine": 10}}}]}]}]}')
 
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="BUILD SUCCESSFUL", stderr="")

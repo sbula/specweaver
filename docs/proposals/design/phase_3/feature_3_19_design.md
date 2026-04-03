@@ -109,10 +109,10 @@ none stated
 | SF-1 | Core Interface & Python/TS | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | JVM Handlers (Java & Kotlin)| SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Rust Handler | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Submodule Refactoring | SF-2, SF-3 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-4 | Submodule Refactoring | SF-2, SF-3 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
-
+Execute `@[/dev]` targeting `docs/proposals/roadmap/phase_3/feature_3_19_sf4_implementation_plan.md` to begin safely refactoring the Polyglot boundaries.
 **Current status**: Implementation Plan for SF-3 is APPROVED.
 **Next step**: Run the following command to begin building the code for SF-3 via TDD:
 `@[/dev] docs/proposals/roadmap/phase_3/feature_3_19_sf3_implementation_plan.md`
