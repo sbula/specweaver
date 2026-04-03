@@ -60,7 +60,12 @@ def _resolve_runner(language: str, cwd: Any) -> TestRunnerInterface:
 
         return KotlinRunner(cwd=cwd)
 
-    msg = f"Unsupported language: {language!r}. Supported: ['python', 'typescript', 'java', 'kotlin']"
+    if language == "rust":
+        from specweaver.loom.commons.test_runner.rust import RustRunner
+
+        return RustRunner(cwd=cwd)
+
+    msg = f"Unsupported language: {language!r}. Supported: ['python', 'typescript', 'java', 'kotlin', 'rust']"
     raise ValueError(msg)
 
 

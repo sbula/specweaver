@@ -404,3 +404,8 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
 
     kotlin_runner = _resolve_runner("kotlin", tmp_path)
     assert isinstance(kotlin_runner, KotlinRunner)
+
+    from specweaver.loom.commons.test_runner.rust import RustRunner
+
+    rust_runner = _resolve_runner("rust", tmp_path)
+    assert isinstance(rust_runner, RustRunner)
