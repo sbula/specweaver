@@ -389,6 +389,8 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
     import pytest
 
     from specweaver.loom.atoms.test_runner.atom import _resolve_runner
+    from specweaver.loom.commons.test_runner.java import JavaRunner
+    from specweaver.loom.commons.test_runner.kotlin import KotlinRunner
     from specweaver.loom.commons.test_runner.typescript import TypeScriptRunner
 
     with pytest.raises(ValueError, match="Unsupported language"):
@@ -396,3 +398,9 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
 
     ts_runner = _resolve_runner("typescript", tmp_path)
     assert isinstance(ts_runner, TypeScriptRunner)
+
+    java_runner = _resolve_runner("java", tmp_path)
+    assert isinstance(java_runner, JavaRunner)
+
+    kotlin_runner = _resolve_runner("kotlin", tmp_path)
+    assert isinstance(kotlin_runner, KotlinRunner)

@@ -147,10 +147,6 @@ class TypeScriptRunner(TestRunnerInterface):
                     )
                 )
 
-        if not errors:
-            raise RuntimeError(
-                f"DEBUG NO MATCH. STDOUT: {proc.stdout!r} STDERR: {proc.stderr!r} CODE: {proc.returncode}"
-            )
 
         return CompileRunResult(
             error_count=len(errors),

@@ -97,14 +97,14 @@ none stated
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Core Interface & Python/TS | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-2 | JVM Handlers (Java & Kotlin)| SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Core Interface & Python/TS | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | JVM Handlers (Java & Kotlin)| SF-1 | ✅ | ✅ | 🏃 | ⬜ | ⬜ |
 | SF-3 | Rust Handler | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Implementation Plan for SF-1 is APPROVED.
-**Next step**: Run the following command to transition to the Development phase and begin implementing the code for SF-1 via TDD:
-`@[/dev] docs/proposals/roadmap/phase_3/feature_3_19_sf1_implementation_plan.md`
+**Current status**: Implementation Plan for SF-2 is APPROVED.
+**Next step**: Run the following command to transition to the Development phase and begin implementing the code for SF-2 via TDD:
+`@[/dev] docs/proposals/roadmap/phase_3/feature_3_19_sf2_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

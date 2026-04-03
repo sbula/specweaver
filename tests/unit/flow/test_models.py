@@ -38,7 +38,7 @@ class TestStepAction:
         assert StepAction.ENRICH == "enrich"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 8
+        assert len(StepAction) == 9
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +57,7 @@ class TestStepTarget:
         assert StepTarget.STANDARDS == "standards"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 5
+        assert len(StepTarget) == 6
 
 
 # ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 14
+        assert len(VALID_STEP_COMBINATIONS) == 15
 
     @pytest.mark.parametrize(
         ("action", "target"),
