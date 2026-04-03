@@ -70,6 +70,14 @@ class ImplementerTestInterface:
         """Run complexity checks."""
         return self._tool.run_complexity(target=target, max_complexity=max_complexity)
 
+    def run_compiler(self, target: str) -> ToolResult:
+        """Run compilation/build."""
+        return self._tool.run_compiler(target=target)
+
+    def run_debugger(self, target: str, entrypoint: str) -> ToolResult:
+        """Run debugger."""
+        return self._tool.run_debugger(target=target, entrypoint=entrypoint)
+
 
 class ReviewerTestInterface:
     """Test runner interface for the Reviewer role.
@@ -111,6 +119,14 @@ class ReviewerTestInterface:
     ) -> ToolResult:
         """Run complexity checks."""
         return self._tool.run_complexity(target=target, max_complexity=max_complexity)
+
+    def run_compiler(self, target: str) -> ToolResult:
+        """Run compilation/build."""
+        return self._tool.run_compiler(target=target)
+
+    def run_debugger(self, target: str, entrypoint: str) -> ToolResult:
+        """Run debugger."""
+        return self._tool.run_debugger(target=target, entrypoint=entrypoint)
 
 
 # ---------------------------------------------------------------------------

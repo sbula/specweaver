@@ -236,3 +236,73 @@ class TestRunnerAtom(Atom):
             message=f"All functions within complexity threshold of {result.max_complexity}.",
             exports=exports,
         )
+
+    def _intent_run_compiler(self, context: dict[str, Any]) -> AtomResult:
+        """Run compilation/build process.
+
+        Context keys:
+            target: str — file or directory to compile (required).
+        """
+        target = context.get("target")
+        if not target:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'target' in context for run_compiler intent.",
+            )
+
+        result = self._runner.run_compiler(target=target)
+
+        exports: dict[str, Any] = {
+            "error_count": result.error_count,
+            "warning_count": result.warning_count,
+            "errors": [asdict(e) for e in result.errors],
+        }
+
+        if result.error_count > 0:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"{result.error_count} compile error(s) found.",
+                exports=exports,
+            )
+
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="Compilation successful. No errors.",
+            exports=exports,
+        )
+
+    def _intent_run_debugger(self, context: dict[str, Any]) -> AtomResult:
+        """Run a process in the debugger.
+
+        Context keys:
+            target: str — workspace directory or file target (required).
+            entrypoint: str — the entrypoint to debug (required).
+        """
+        target = context.get("target")
+        entrypoint = context.get("entrypoint")
+        if not target or not entrypoint:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'target' or 'entrypoint' in context for run_debugger intent.",
+            )
+
+        result = self._runner.run_debugger(target=target, entrypoint=entrypoint)
+
+        exports: dict[str, Any] = {
+            "exit_code": result.exit_code,
+            "duration_seconds": result.duration_seconds,
+            "events": [asdict(e) for e in result.events],
+        }
+
+        if result.exit_code != 0:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"Debug process exited with code {result.exit_code}.",
+                exports=exports,
+            )
+
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="Debug process completed successfully.",
+            exports=exports,
+        )

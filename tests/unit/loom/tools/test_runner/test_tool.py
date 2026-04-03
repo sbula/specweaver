@@ -20,6 +20,7 @@ from specweaver.loom.tools.test_runner.tool import (
     ROLE_INTENTS,
     TestRunnerTool,
     TestRunnerToolError,
+    ToolResult,
 )
 
 if TYPE_CHECKING:
@@ -251,3 +252,141 @@ class TestInterfaceComplexity:
             result = iface.run_complexity(target="src/")
 
         assert result.status == "success"
+
+
+# ---------------------------------------------------------------------------
+# Compiler & Debugger — role gating
+# ---------------------------------------------------------------------------
+
+
+class TestToolCompileDebugGating:
+    """Tests that run_compiler and run_debugger are properly role-gated."""
+
+    def test_implementer_can_run_compiler(self) -> None:
+        atom = MagicMock()
+        atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"error_count": 0, "warning_count": 0, "errors": []},
+        )
+        tool = TestRunnerTool(atom=atom, role="implementer")
+        result = tool.run_compiler(target="src/")
+        assert result.status == "success"
+
+    def test_reviewer_can_run_debugger(self) -> None:
+        atom = MagicMock()
+        atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"exit_code": 0, "duration_seconds": 1.0, "events": []},
+        )
+        tool = TestRunnerTool(atom=atom, role="reviewer")
+        result = tool.run_debugger(target="src/", entrypoint="main.py")
+        assert result.status == "success"
+
+    def test_role_intents_include_compile_and_debug(self) -> None:
+        """Both implementer and reviewer have compiler and debugger intents."""
+        assert "run_compiler" in ROLE_INTENTS["implementer"]
+        assert "run_debugger" in ROLE_INTENTS["implementer"]
+        assert "run_compiler" in ROLE_INTENTS["reviewer"]
+        assert "run_debugger" in ROLE_INTENTS["reviewer"]
+
+
+class TestInterfaceCompileDebug:
+    """Tests that role-specific interfaces expose compilation and debugging."""
+
+    def test_implementer_has_run_compiler(self, tmp_path: Path) -> None:
+        with patch("specweaver.loom.atoms.test_runner.atom.TestRunnerAtom") as mock_atom_cls:
+            mock_atom = MagicMock()
+            mock_atom.run.return_value = AtomResult(
+                status=AtomStatus.SUCCESS,
+                message="ok",
+                exports={"error_count": 0, "warning_count": 0, "errors": []},
+            )
+            mock_atom_cls.return_value = mock_atom
+
+            iface = create_test_runner_interface("implementer", tmp_path)
+            result = iface.run_compiler(target="src/")
+
+        assert result.status == "success"
+
+    def test_implementer_has_run_debugger(self, tmp_path: Path) -> None:
+        with patch("specweaver.loom.atoms.test_runner.atom.TestRunnerAtom") as mock_atom_cls:
+            mock_atom = MagicMock()
+            mock_atom.run.return_value = AtomResult(
+                status=AtomStatus.SUCCESS,
+                message="ok",
+                exports={"exit_code": 0, "duration_seconds": 1.0, "events": []},
+            )
+            mock_atom_cls.return_value = mock_atom
+
+            iface = create_test_runner_interface("implementer", tmp_path)
+            result = iface.run_debugger(target="src/", entrypoint="main.py")
+
+        assert result.status == "success"
+
+# ---------------------------------------------------------------------------
+# Legacy Proxy Gaps — TestRunnerTool & Interfaces
+# ---------------------------------------------------------------------------
+
+class TestToolLegacyProxyGaps:
+    """Tests that cover pre-existing gaps in the Tool and Interface layers."""
+
+    def test_tool_definitions_mapping(self) -> None:
+        """Tool generates correct LLM definitions based on the assigned role."""
+        atom = MagicMock()
+        tool = TestRunnerTool(atom=atom, role="implementer")
+        
+        # Override the definitions map purely for test determinism
+        with patch("specweaver.loom.tools.test_runner.definitions.INTENT_DEFINITIONS", {"run_tests": {"name": "run_tests"}, "dummy": {"name": "dummy"}}):
+            with patch.dict("specweaver.loom.tools.test_runner.tool.ROLE_INTENTS", {"implementer": frozenset({"run_tests"})}):
+                defs = tool.definitions()
+                assert len(defs) == 1
+                assert defs[0]["name"] == "run_tests"
+
+    def test_require_intent_blocks_disallowed_intent(self) -> None:
+        """Tool blocks execution if role lacks intent (covering line 92 gap)."""
+        atom = MagicMock()
+        tool = TestRunnerTool(atom=atom, role="implementer")
+        
+        with patch.dict("specweaver.loom.tools.test_runner.tool.ROLE_INTENTS", {"implementer": frozenset()}):
+            with pytest.raises(TestRunnerToolError, match="not allowed for role"):
+                tool.run_tests(target="src/")
+
+    def test_implementer_proxy_passthrough(self, tmp_path: Path) -> None:
+        """Implementer interface preserves arguments perfectly when delegating to the tool."""
+        tool = MagicMock()
+        iface = ImplementerTestInterface(tool=tool)
+
+        # 1. definitions
+        tool.definitions.return_value = [{"name": "fake"}]
+        assert iface.definitions() == [{"name": "fake"}]
+
+        # 2. run_tests
+        tool.run_tests.return_value = ToolResult(status="success")
+        iface.run_tests(target="src/", kind="e2e", scope="auth", timeout=60, coverage=True)
+        tool.run_tests.assert_called_once_with(target="src/", kind="e2e", scope="auth", timeout=60, coverage=True)
+
+        # 3. run_linter
+        tool.run_linter.return_value = ToolResult(status="success")
+        iface.run_linter(target="src/", fix=True)
+        tool.run_linter.assert_called_once_with(target="src/", fix=True)
+
+    def test_reviewer_proxy_passthrough(self, tmp_path: Path) -> None:
+        """Reviewer interface preserves arguments except for run_linter fix."""
+        tool = MagicMock()
+        iface = ReviewerTestInterface(tool=tool)
+
+        # 1. definitions
+        tool.definitions.return_value = [{"name": "fake"}]
+        assert iface.definitions() == [{"name": "fake"}]
+
+        # 2. run_tests
+        tool.run_tests.return_value = ToolResult(status="success")
+        iface.run_tests(target="src/", kind="unit", scope="", timeout=120, coverage=False)
+        tool.run_tests.assert_called_once_with(target="src/", kind="unit", scope="", timeout=120, coverage=False)
+
+    def test_factory_invalid_role(self, tmp_path: Path) -> None:
+        """Factory triggers value error for invalid roles directly (missing path)."""
+        with pytest.raises(ValueError, match="Unknown role"):
+            create_test_runner_interface("non_existent_role", tmp_path, language="python")

@@ -293,3 +293,93 @@ class TestAtomRunComplexity:
 
         assert result.status == AtomStatus.SUCCESS
         mock_fn.assert_called_once_with(target="src/", max_complexity=5)
+
+
+# ---------------------------------------------------------------------------
+# run_compiler intent
+# ---------------------------------------------------------------------------
+
+
+class TestAtomRunCompiler:
+    """Tests for the run_compiler intent."""
+
+    def test_run_compiler_clean(self, tmp_path: Path) -> None:
+        atom = TestRunnerAtom(cwd=tmp_path)
+        from specweaver.loom.commons.test_runner.interface import CompileRunResult
+
+        mock_result = CompileRunResult(error_count=0, warning_count=0, errors=[])
+        with patch.object(atom._runner, "run_compiler", return_value=mock_result):
+            result = atom.run({"intent": "run_compiler", "target": "src/"})
+
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["error_count"] == 0
+
+    def test_run_compiler_errors(self, tmp_path: Path) -> None:
+        atom = TestRunnerAtom(cwd=tmp_path)
+        from specweaver.loom.commons.test_runner.interface import CompileError, CompileRunResult
+
+        mock_result = CompileRunResult(
+            error_count=1,
+            warning_count=0,
+            errors=[
+                CompileError(
+                    file="foo.py", line=10, column=0, code="E1", message="Err", is_warning=False
+                )
+            ],
+        )
+        with patch.object(atom._runner, "run_compiler", return_value=mock_result):
+            result = atom.run({"intent": "run_compiler", "target": "src/"})
+
+        assert result.status == AtomStatus.FAILED
+        assert result.exports["error_count"] == 1
+
+    def test_run_compiler_missing_target(self, tmp_path: Path) -> None:
+        atom = TestRunnerAtom(cwd=tmp_path)
+        result = atom.run({"intent": "run_compiler"})
+        assert result.status == AtomStatus.FAILED
+        assert "target" in result.message.lower()
+
+
+# ---------------------------------------------------------------------------
+# run_debugger intent
+# ---------------------------------------------------------------------------
+
+
+class TestAtomRunDebugger:
+    """Tests for the run_debugger intent."""
+
+    def test_run_debugger_success(self, tmp_path: Path) -> None:
+        atom = TestRunnerAtom(cwd=tmp_path)
+        from specweaver.loom.commons.test_runner.interface import DebugRunResult
+
+        mock_result = DebugRunResult(exit_code=0, duration_seconds=1.0, events=[])
+        with patch.object(atom._runner, "run_debugger", return_value=mock_result):
+            result = atom.run({"intent": "run_debugger", "target": "src/", "entrypoint": "main.py"})
+
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["exit_code"] == 0
+
+    def test_run_debugger_failure(self, tmp_path: Path) -> None:
+        atom = TestRunnerAtom(cwd=tmp_path)
+        from specweaver.loom.commons.test_runner.interface import DebugRunResult, OutputEvent
+
+        mock_result = DebugRunResult(
+            exit_code=1,
+            duration_seconds=1.0,
+            events=[OutputEvent(category="stderr", output="Segfault")],
+        )
+        with patch.object(atom._runner, "run_debugger", return_value=mock_result):
+            result = atom.run({"intent": "run_debugger", "target": "src/", "entrypoint": "main.py"})
+
+        assert result.status == AtomStatus.FAILED
+        assert result.exports["exit_code"] == 1
+
+    def test_run_debugger_missing_args(self, tmp_path: Path) -> None:
+        atom = TestRunnerAtom(cwd=tmp_path)
+        result = atom.run({"intent": "run_debugger", "target": "src/"})
+        assert result.status == AtomStatus.FAILED
+        assert "entrypoint" in result.message.lower()
+
+        result2 = atom.run({"intent": "run_debugger", "entrypoint": "main.py"})
+        assert result2.status == AtomStatus.FAILED
+        assert "target" in result2.message.lower()

@@ -25,8 +25,19 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 ROLE_INTENTS: dict[str, frozenset[str]] = {
-    "implementer": frozenset({"run_tests", "run_linter", "run_linter_fix", "run_complexity"}),
-    "reviewer": frozenset({"run_tests", "run_linter", "run_complexity"}),
+    "implementer": frozenset(
+        {
+            "run_tests",
+            "run_linter",
+            "run_linter_fix",
+            "run_complexity",
+            "run_compiler",
+            "run_debugger",
+        }
+    ),
+    "reviewer": frozenset(
+        {"run_tests", "run_linter", "run_complexity", "run_compiler", "run_debugger"}
+    ),
     "planner": frozenset({"run_tests", "run_linter", "run_complexity"}),
     # drafter: no access — not in the map
 }
@@ -168,6 +179,43 @@ class TestRunnerTool:
                 "intent": "run_complexity",
                 "target": target,
                 "max_complexity": max_complexity,
+            }
+        )
+
+        return ToolResult(
+            status="success" if result.status.value == "SUCCESS" else "error",
+            message=result.message,
+            data=result.exports,
+        )
+
+    def run_compiler(self, target: str) -> ToolResult:
+        """Run compilation/build (requires run_compiler intent)."""
+        self._require_intent("run_compiler")
+        logger.debug("TestRunnerTool.run_compiler: target=%s", target)
+
+        result = self._atom.run(
+            {
+                "intent": "run_compiler",
+                "target": target,
+            }
+        )
+
+        return ToolResult(
+            status="success" if result.status.value == "SUCCESS" else "error",
+            message=result.message,
+            data=result.exports,
+        )
+
+    def run_debugger(self, target: str, entrypoint: str) -> ToolResult:
+        """Run debugger (requires run_debugger intent)."""
+        self._require_intent("run_debugger")
+        logger.debug("TestRunnerTool.run_debugger: target=%s entrypoint=%s", target, entrypoint)
+
+        result = self._atom.run(
+            {
+                "intent": "run_debugger",
+                "target": target,
+                "entrypoint": entrypoint,
             }
         )
 
