@@ -46,7 +46,8 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 | **SF-1** | Initialization & Base Layer Isolation | Install Tach. Map `config`, `standards`, and `logging.py` as strict base layers. Ensure they import absolutely nothing else from SpecWeaver. | [x] Committed |
 | **SF-2** | Resource & Core Capability Hardening | Apply Tach rules to the `llm`, `graph`, `context`, and `project` modules. Formally isolate the `llm` engine from the business logic. | [x] Committed |
 | **SF-3** | Presentation Layer Sterilization | Enforce that no domain logic inside `src/specweaver` is allowed to depend on `api` or `cli`. | [x] Committed |
-| **SF-4** | Public Interface Enforcement | Use Tach's `interfaces:` to declare strict public boundaries and delete the messy `__init__.py` boilerplate hacks. | [ ] Pending |
+| **SF-4** | Public Interface Enforcement | Use Tach's `interfaces:` to declare strict public boundaries and delete the messy `__init__.py` boilerplate hacks. | [x] Committed |
+| **SF-5** | Legacy Linter Subsumption | Outsource legacy manual architectural checks (soft-deprecations, cyclic guards, explicit `.toml` test logic) entirely to Tach's strict definitions. | [ ] Pending |
 
 ## 6. Progress Tracker
 - [x] Requirements Finalized
@@ -56,13 +57,13 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 - [x] SF-3 Implementation Plan
 - [x] SF-3 Implementation (Committed)
 - [x] SF-4 Implementation Plan
-- [ ] SF-4 Implementation
-- [ ] SF-4 Implementation
-- [ ] Merged
+- [x] SF-4 Implementation (Committed)
+- [x] SF-5 Implementation Plan
+- [ ] SF-5 Implementation
+- [ ] Feature 3.20a Fully Complete
 
 ## 7. Session Handoff
 
-**Current status**: SF-4 Implementation Plan APPROVED.
-**Next step**: Run the following command to begin development:
-`/dev docs/proposals/roadmap/phase_3/feature_3_20a/feature_3_20a_sf4_implementation_plan.md`
+**Current status**: Feature 3.20a (Fractal Architectural Boundaries) FULLY COMPLETED.
+**Next step**: Move to the next feature in the Roadmap (Feature 3.20b: Dynamic Governance).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

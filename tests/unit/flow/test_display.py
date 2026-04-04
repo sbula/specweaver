@@ -251,7 +251,7 @@ class TestResolveSpecPath:
     """Tests for the spec argument resolution logic."""
 
     def test_existing_file_returned_directly(self, tmp_path) -> None:
-        from specweaver.cli import _resolve_spec_path
+        from specweaver.cli.pipelines import _resolve_spec_path
 
         spec = tmp_path / "my_spec.md"
         spec.write_text("# Test")
@@ -259,13 +259,13 @@ class TestResolveSpecPath:
         assert result == spec
 
     def test_new_feature_derives_from_module_name(self, tmp_path) -> None:
-        from specweaver.cli import _resolve_spec_path
+        from specweaver.cli.pipelines import _resolve_spec_path
 
         result = _resolve_spec_path("new_feature", "greet_service", tmp_path)
         assert result == tmp_path / "specs" / "greet_service_spec.md"
 
     def test_relative_path_to_project(self, tmp_path) -> None:
-        from specweaver.cli import _resolve_spec_path
+        from specweaver.cli.pipelines import _resolve_spec_path
 
         relative = tmp_path / "specs" / "calc.md"
         relative.parent.mkdir(parents=True, exist_ok=True)
@@ -274,7 +274,7 @@ class TestResolveSpecPath:
         assert result == relative
 
     def test_nonexistent_falls_back_to_literal(self, tmp_path) -> None:
-        from specweaver.cli import _resolve_spec_path
+        from specweaver.cli.pipelines import _resolve_spec_path
 
         result = _resolve_spec_path("validate_only", "does_not_exist.md", tmp_path)
         from pathlib import Path
@@ -372,13 +372,13 @@ class TestCLIRunEdgeCases:
         assert "resume" in result.output.lower()
 
     def test_create_display_json(self) -> None:
-        from specweaver.cli import _create_display
+        from specweaver.cli.pipelines import _create_display
 
         display = _create_display(use_json=True)
         assert isinstance(display, JsonPipelineDisplay)
 
     def test_create_display_rich(self) -> None:
-        from specweaver.cli import _create_display
+        from specweaver.cli.pipelines import _create_display
 
         display = _create_display(use_json=False, verbose=True)
         assert isinstance(display, RichPipelineDisplay)

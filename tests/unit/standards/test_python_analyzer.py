@@ -792,6 +792,34 @@ class TestErrorHandlingEdgeCases:
         assert result.dominant == {}
         assert result.confidence == 0.0
 
+    def test_analyzer_scans_implicit_namespace_package(
+        self,
+        analyzer: PythonStandardsAnalyzer,
+    ) -> None:
+        """
+        Integration/Edge Case: Proves `StandardsAnalyzer` AST extraction correctly navigates
+        nested directories possessing NO `__init__.py` files (PEP 420 implicit namespaces)
+        and extracts Python styles from inner `.py` files natively based on true project topology.
+        """
+        from pathlib import Path
+
+        import specweaver.llm.adapters.registry as registry_module
+
+        # Target the actual registry.py inside the implicit namespace
+        nested_file = Path(registry_module.__file__).resolve()
+
+        # Analyze it explicitly to prove AST handles standard project files safely
+        results = analyzer.extract_all([nested_file], 180)
+
+        # Verify it successfully parsed the project file
+        naming = next((r for r in results if r.category == "naming"), None)
+        assert naming is not None
+        assert naming.dominant.get("function_style") == "snake_case"
+
+        docstrings = next((r for r in results if r.category == "docstrings"), None)
+        assert docstrings is not None
+        assert docstrings.dominant.get("coverage") in ("full", "high")
+
     def test_mixed_bare_and_specific(
         self,
         analyzer: PythonStandardsAnalyzer,

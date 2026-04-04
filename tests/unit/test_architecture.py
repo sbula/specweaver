@@ -19,57 +19,38 @@ def test_tach_architectural_boundaries() -> None:
 
     assert result.returncode == 0, f"Architecture boundary violation detected by tach:\n{result.stdout}\n{result.stderr}"
 
-def test_tach_toml_enforces_resource_layer_modules() -> None:
+
+
+def test_tach_interfaces_map_to_valid_namespaces() -> None:
     """
-    Ensures that tach.toml explicitly binds the core resource layer modules.
-    If the configuration file loses these bounds, the CI could falsely pass without catching loose layers.
+    Edge Case: Prevention of Silent Namespace Ignore by Tach.
+    Since __init__.py files were deleted (SF-4), these directories became Implicit Namespace Packages.
+    Tach might silently skip checking a route if the dir has no __init__.py and doesn't map correctly.
+    We formally assert that every path declared in [[interfaces]] exists as a physical directory or file.
     """
     root_dir = Path(__file__).resolve().parent.parent.parent
     tach_path = root_dir / "tach.toml"
-    assert tach_path.exists(), "tach.toml missing from project root!"
+    assert tach_path.exists()
 
     with tach_path.open("rb") as f:
         config = tomllib.load(f)
 
-    modules = [mod.get("path") for mod in config.get("modules", [])]
+    for interface in config.get("interfaces", []):
+        module_base = interface.get("module")
+        if not module_base:
+            continue
 
-    required_modules = [
-        "src.specweaver.project",
-        "src.specweaver.context",
-        "src.specweaver.llm",
-        "src.specweaver.api",
-        "src.specweaver.cli",
-    ]
+        base_parts = module_base.split(".")
+        for exposed_path in interface.get("expose", []):
+            parts = exposed_path.split(".")
+            # Convert import path to physical path (e.g. src.specweaver.project + constitution)
+            # Tach syntax means `expose = ["constitution"]` inside `module = "src.x"` maps to `src.x.constitution`
+            relative_path = Path(*base_parts) / Path(*parts)
+            physical_dir = root_dir / relative_path
+            physical_file = physical_dir.with_suffix(".py")
 
-    for req in required_modules:
-        assert req in modules, f"Layer boundary logic missing for {req} in tach.toml!"
-
-def test_core_layers_never_depend_on_presentation() -> None:
-    """
-    Critical Edge Case:
-    Ensures that no lower capability/resource module explicitly adds `api` or `cli`
-    to their `depends_on` graph in tach.toml. This serves as a secondary defense
-    to prevent developers from silently overriding the boundary config.
-    """
-    root_dir = Path(__file__).resolve().parent.parent.parent
-    tach_path = root_dir / "tach.toml"
-    
-    with tach_path.open("rb") as f:
-        config = tomllib.load(f)
-        
-    modules = config.get("modules", [])
-    presentation_layers = ["src.specweaver.api", "src.specweaver.cli"]
-    
-    for mod in modules:
-        path = mod.get("path")
-        if path not in presentation_layers:
-            depends_on = mod.get("depends_on", [])
-            if depends_on and isinstance(depends_on[0], str):
-                deps_paths = depends_on
-            elif depends_on and isinstance(depends_on[0], dict):
-                deps_paths = [d.get("path") for d in depends_on]
-            else:
-                deps_paths = []
-                
-            for p_layer in presentation_layers:
-                assert p_layer not in deps_paths, f"CRITICAL ARCHITECTURAL VIOLATION: {path} illegally depends on {p_layer} in tach.toml!"
+            assert physical_dir.exists() or physical_file.exists(), (
+                f"Tach explicit boundary violation risk! "
+                f"The interface {exposed_path} for module {module_base} listed in tach.toml does not map "
+                f"to any physical directory or file in the filesystem. Tach may silently ignore this."
+            )

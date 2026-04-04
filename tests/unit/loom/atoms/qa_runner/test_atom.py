@@ -409,3 +409,16 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
 
     rust_runner = _resolve_runner("rust", tmp_path)
     assert isinstance(rust_runner, RustRunner)
+
+def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Path) -> None:
+    """
+    Edge Case: Namespace routing stability under concurrent / rapid dynamic paths (Implicit Namespace).
+    Proves consecutive dynamic traversals over the proxy-less PEP 420 `loom.commons.qa_runner.*`
+    paths do not fail from sys.path thrashing or incorrect __package__ resolution.
+    """
+    from specweaver.loom.atoms.qa_runner.atom import _resolve_runner
+    languages = ["python", "java", "typescript", "rust", "kotlin", "python", "rust"]
+    for lang in languages:
+        runner = _resolve_runner(lang, tmp_path)
+        assert runner is not None
+        assert lang.capitalize() in runner.__class__.__name__ or lang == "typescript"

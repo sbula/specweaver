@@ -92,7 +92,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **LLM adapter** (Multi-Provider)
 - `llm/adapter.py` — `LLMAdapter` abstract base class (provider-agnostic contract). In `llm/` (adapter archetype) because it wraps an external service.
-- `llm/adapters/__init__.py` — Auto-discovery registry. Scans and registers adapters dynamically at import.
+- `llm/adapters/registry.py` — Auto-discovery registry. Scans and registers adapters dynamically at import across the implicit namespace.
 - `llm/adapters/gemini.py` — `GeminiAdapter`: Gemini API calls, error translation, response parsing.
 - `llm/adapters/openai.py` — `OpenAIAdapter`: OpenAI SDK wrapper with full tool use.
 - `llm/adapters/anthropic.py` — `AnthropicAdapter`: Anthropic SDK wrapper with full tool use.
@@ -168,7 +168,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.12 Token & Cost Telemetry** — `llm/telemetry.py` (`CostEntry`, `UsageRecord`), `llm/collector.py` (`TelemetryCollector`), `config/_db_telemetry_mixin.py` (`llm_cost_overrides`). Lives in `llm/` because it's LLM usage, and `config/` for SQLite persistence.
 
-**3.12a Multi-Provider Adapter Registry** — `llm/adapters/__init__.py` (auto-discovery registry scanning package at import), `llm/adapters/base.py` (self-describing adapter ABC), `config/settings.py` (`provider` field). Lives in `llm/adapters/` (adapter archetype) to support dynamic provider creation without central maps.
+**3.12a Multi-Provider Adapter Registry** — `llm/adapters/registry.py` (auto-discovery registry scanning package at import), `llm/adapters/base.py` (self-describing adapter ABC), `config/settings.py` (`provider` field). Lives in `llm/adapters/` (adapter archetype) to support dynamic provider creation across implicit namespaces without central maps.
 
 **3.13 Project Metadata Injection** — `llm/prompt_builder.py` updated to inject system data (project name, OS, archetype) ensuring robust reasoning references across LLM boundaries.
 
@@ -336,7 +336,7 @@ Do NOT create parallel security mechanisms. Use the existing stack.
 
 The system employs a multi-provider auto-discovery registry for its underlying LLM backends (introduced in Feature 3.12a).
 
-- **Auto-Discovery**: Any new file added to `src/specweaver/llm/adapters/` that defines an `LLMAdapter` subclass with a `provider_name` is automatically discovered at runtime by the `__init__.py` module. No hardcoded imports or central dictionary registrations are needed.
+- **Auto-Discovery**: Any new file added to `src/specweaver/llm/adapters/` that defines an `LLMAdapter` subclass with a `provider_name` is automatically discovered at runtime by the `registry.py` module. No hardcoded imports or central dictionary registrations are needed, and the folder functions as a PEP 420 Implicit Namespace Package.
 - **Supported Providers**: Natively supports `gemini`, `openai`, `anthropic`, `mistral`, and `qwen`.
 - **Factory Encapsulation**: `src/specweaver/llm/factory.py` reads the project's linked database profile to instantiate the configured adapter dynamically. If no provider is explicitly set, the factory cleanly falls back to `gemini`.
 - **Telemetry Transparency**: The factory automatically wraps any instantiated adapter inside a `TelemetryCollector` proxy to provide unified token usage, cost tracking, and streaming telemetry, totally invisible to the underlying adapter logic.
