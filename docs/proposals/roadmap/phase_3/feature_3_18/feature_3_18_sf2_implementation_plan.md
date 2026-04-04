@@ -1,9 +1,9 @@
 # Implementation Plan: AST Drift Detection [SF-2: Flow Integration & CLI]
 - **Feature ID**: 3.14a
 - **Sub-Feature**: SF-2 — Flow Integration & CLI
-- **Design Document**: docs/proposals/design/phase_3/feature_3_18_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_18/feature_3_18_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_18_sf2_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_18/feature_3_18_sf2_implementation_plan.md
 - **Status**: COMPLETED
 
 ## Goal Description

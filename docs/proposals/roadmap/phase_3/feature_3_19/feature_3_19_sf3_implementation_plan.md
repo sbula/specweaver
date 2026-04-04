@@ -2,9 +2,9 @@
 
 - **Feature ID**: 3.19
 - **Sub-Feature**: SF-3 — Rust Handler
-- **Design Document**: docs/proposals/design/phase_3/feature_3_19_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-3
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf3_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf3_implementation_plan.md
 - **Status**: COMPLETED
 
 ## Research Notes

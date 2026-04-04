@@ -1,9 +1,9 @@
 # Implementation Plan: Polyglot QARunner Interface [SF-1: Core Interface, Compilers & Python/TS Handlers]
 - **Feature ID**: 3.19
 - **Sub-Feature**: SF-1 — Core Interface, Compilers & Python/TS Handlers
-- **Design Document**: docs/proposals/design/phase_3/feature_3_19_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf1_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf1_implementation_plan.md
 - **Status**: APPROVED
 
 ## Goal Description

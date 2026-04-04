@@ -1,9 +1,9 @@
 # Implementation Plan: Unified CLI Runner [SF-2: Unified CLI Runner]
 - **Feature ID**: 3.13a
 - **Sub-Feature**: SF-2 — Unified CLI Runner
-- **Design Document**: docs/proposals/design/phase_3/feature_3_16_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_16_sf2_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_sf2_implementation_plan.md
 - **Status**: COMPLETED
 - **Completed Date**: 2026-03-29
 - **Notes on Implementation**: All commands successfully refactored to use PipelineRunner. Test failures resolved by adhering to no-compound-shell rules and updating LLM mock definitions. E2E passing (3589 tests).

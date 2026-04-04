@@ -3,7 +3,7 @@
 - **Feature ID**: feature_3_15
 - **Phase**: 3
 - **Status**: APPROVED
-- **Design Doc**: docs/proposals/design/phase_3/feature_3_15_design.md
+- **Design Doc**: docs/proposals/roadmap/phase_3/feature_3_15/feature_3_15_design.md
 
 ## Feature Overview
 
@@ -66,7 +66,7 @@ Single feature — no decomposition.
 - **Inputs**: Current `SpecWeaverSettings`, Project name from context, system state.
 - **Outputs**: `<project_metadata>` tag within LLM prompt.
 - **Depends on**: none
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_15_sf1_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_15/feature_3_15_sf1_implementation_plan.md
 
 ## Execution Order
 

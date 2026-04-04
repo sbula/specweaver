@@ -1,9 +1,9 @@
 # Implementation Plan: AST Drift Detection & AI Root-Cause Analysis [SF-1: AST Drift Engine]
 - **Feature ID**: 3.14a
 - **Sub-Feature**: SF-1 — AST Drift & Coverage Engine
-- **Design Document**: docs/proposals/design/phase_3/feature_3_18_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_18/feature_3_18_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_18_sf1_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_18/feature_3_18_sf1_implementation_plan.md
 - **Status**: COMPLETE (2026-04-02)
 
 > **Implementation Notes:**

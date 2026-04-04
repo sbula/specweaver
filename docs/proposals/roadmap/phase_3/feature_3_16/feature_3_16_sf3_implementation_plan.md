@@ -1,9 +1,9 @@
 # Implementation Plan: Unified Runner Architecture & Universal Logging [SF-3: Logging Rollout]
 - **Feature ID**: 3.13a
 - **Sub-Feature**: SF-3 — Logging Rollout
-- **Design Document**: docs/proposals/design/phase_3/feature_3_16_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-3
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_16_sf3_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_sf3_implementation_plan.md
 - **Status**: APPROVED
 
 ## Goal Description

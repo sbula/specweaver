@@ -1,9 +1,9 @@
 # Implementation Plan: Feature 3.12b [SF-2: CLI Routing Commands]
 - **Feature ID**: feature_3_14
 - **Sub-Feature**: SF-2 — CLI Routing Commands
-- **Design Document**: docs/proposals/design/phase_3/feature_3_14_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_14/feature_3_14_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_14_sf2_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_14/feature_3_14_sf2_implementation_plan.md
 - **Status**: COMPLETE
 
 ---

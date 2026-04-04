@@ -3,7 +3,7 @@
 - **Feature ID**: 3.14
 - **Phase**: 3
 - **Status**: COMPLETE
-- **Design Doc**: docs/proposals/design/phase_3/feature_3_17_design.md
+- **Design Doc**: docs/proposals/roadmap/phase_3/feature_3_17/feature_3_17_design.md
 
 ## Feature Overview
 
@@ -74,7 +74,7 @@ Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per fil
 - **Inputs**: Current `run_id` and pipeline definition context (parent artifact DB).
 - **Outputs**: UUIDs passed down to handlers; DB rows persisted in `lineage_graph`.
 - **Depends on**: none
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_17_sf1_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_17/feature_3_17_sf1_implementation_plan.md
 
 ### SF-2: Artifact Tagging Engine
 - **Scope**: Injects instructions into LLM prompts via `PromptBuilder` to write UUID tags and coordinates generation handlers to bind `parent_uuid` to `artifact_uuid`.
@@ -82,7 +82,7 @@ Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per fil
 - **Inputs**: Generated UUIDs from SF-1.
 - **Outputs**: Generated code on disk containing `# sw-artifact: <uuid>`.
 - **Depends on**: SF-1
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_17_sf2_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_17/feature_3_17_sf2_implementation_plan.md
 
 ### SF-3: Verification & CLI Tools
 - **Scope**: Implements orphan detection, manual tagging, and lineage tracing CLI commands.
@@ -90,7 +90,7 @@ Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per fil
 - **Inputs**: `pathlib` scans of `src/` and SQLite SELECT queries.
 - **Outputs**: Terminal output and exit codes for CI.
 - **Depends on**: SF-1, SF-2
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_17_sf3_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_17/feature_3_17_sf3_implementation_plan.md
 
 ## Execution Order
 

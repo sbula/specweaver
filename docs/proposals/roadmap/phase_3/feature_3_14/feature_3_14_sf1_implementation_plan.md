@@ -2,9 +2,9 @@
 
 - **Feature ID**: feature_3_14
 - **Sub-Feature**: SF-1 — ModelRouter + DB + Handler Integration
-- **Design Document**: docs/proposals/design/phase_3/feature_3_14_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_14/feature_3_14_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_14_sf1_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_14/feature_3_14_sf1_implementation_plan.md
 - **Status**: COMPLETE
 
 ---

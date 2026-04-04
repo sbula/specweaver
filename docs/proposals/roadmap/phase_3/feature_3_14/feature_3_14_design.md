@@ -3,7 +3,7 @@
 - **Feature ID**: feature_3_14
 - **Phase**: 3
 - **Status**: APPROVED
-- **Design Doc**: docs/proposals/design/phase_3/feature_3_14_design.md
+- **Design Doc**: docs/proposals/roadmap/phase_3/feature_3_14/feature_3_14_design.md
 
 ## Feature Overview
 
@@ -362,7 +362,7 @@ FR-5 (persistence), FR-6 (telemetry), FR-7 (multi-model)
 - New unit tests: `tests/unit/llm/test_router.py`
 
 **Depends on**: none
-**Impl Plan**: `docs/proposals/roadmap/phase_3/feature_3_14_sf1_implementation_plan.md`
+**Impl Plan**: `docs/proposals/roadmap/phase_3/feature_3_14/feature_3_14_sf1_implementation_plan.md`
 
 ---
 
@@ -383,7 +383,7 @@ FR-5 (persistence), FR-6 (telemetry), FR-7 (multi-model)
 - New unit tests: `tests/unit/cli/test_config_routing_commands.py`
 
 **Depends on**: SF-1 (needs the two new DB methods)
-**Impl Plan**: `docs/proposals/roadmap/phase_3/feature_3_14_sf2_implementation_plan.md`
+**Impl Plan**: `docs/proposals/roadmap/phase_3/feature_3_14/feature_3_14_sf2_implementation_plan.md`
 
 ---
 
@@ -410,5 +410,5 @@ Topological execution order: SF-1, then SF-2. Linear — no parallelism.
 ## Session Handoff
 
 **Current status**: SF-2 Pre-Commit complete. Ready for Commit Boundary.
-**Next step**: Run `/dev docs/proposals/roadmap/phase_3/feature_3_14_sf2_implementation_plan.md`
+**Next step**: Run `/dev docs/proposals/roadmap/phase_3/feature_3_14/feature_3_14_sf2_implementation_plan.md`
 **If resuming mid-feature**: Read Progress Tracker. Find first ⬜ in the Dev/Pre-Commit/Committed columns.

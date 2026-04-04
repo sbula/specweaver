@@ -1,9 +1,9 @@
 # Implementation Plan: Feature 3.14 [SF-2: Artifact Tagging Engine]
 - **Feature ID**: 3.14
 - **Sub-Feature**: SF-2 — Artifact Tagging Engine
-- **Design Document**: docs/proposals/design/phase_3/feature_3_17_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_17/feature_3_17_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_17_sf2_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_17/feature_3_17_sf2_implementation_plan.md
 - **Status**: APPROVED
 
 ## Goal Description

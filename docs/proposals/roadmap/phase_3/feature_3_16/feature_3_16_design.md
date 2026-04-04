@@ -3,7 +3,7 @@
 - **Feature ID**: 3.13a
 - **Phase**: 3
 - **Status**: APPROVED
-- **Design Doc**: docs/proposals/design/phase_3/feature_3_16_design.md
+- **Design Doc**: docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_design.md
 
 ## Feature Overview
 
@@ -64,7 +64,7 @@ No external blueprint references are strictly required, though this follows the 
 - **Inputs**: Logger configuration requests from CLI/System.
 - **Outputs**: Formatted console strings, JSON file lines.
 - **Depends on**: none
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_16_sf1_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_sf1_implementation_plan.md
 
 ### SF-2: Unified CLI Runner
 - **Scope**: Refactor single-shot CLI commands (`sw review`, `sw draft`, etc.) to execute via programmatic dynamic 1-step pipelines using `PipelineRunner`.
@@ -72,7 +72,7 @@ No external blueprint references are strictly required, though this follows the 
 - **Inputs**: CLI command arguments, current project context.
 - **Outputs**: Validated module executions natively integrated with `flow/` engine, telemetry flushed.
 - **Depends on**: none
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_16_sf2_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_sf2_implementation_plan.md
 
 ### SF-3: Logging Rollout
 - **Scope**: Add structured logging calls (`logger.debug`, `logger.info`, `logger.warning`, `logger.error`) to every module, class, and public method across the entire `src/specweaver/` tree. Ensure every module declares `logger = logging.getLogger(__name__)` and every public function/method emits at least method-entry debug logs and error-path logs.
@@ -80,7 +80,7 @@ No external blueprint references are strictly required, though this follows the 
 - **Inputs**: Existing module source code, logging infrastructure from SF-1.
 - **Outputs**: All modules instrumented with structured logging calls.
 - **Depends on**: SF-1 (logging infrastructure must be in place)
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_16_sf3_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_sf3_implementation_plan.md
 
 ## Execution Order
 
@@ -98,5 +98,5 @@ No external blueprint references are strictly required, though this follows the 
 ## Session Handoff
 
 **Current status**: SF-1 Committed. SF-2 Impl Plan approved, Dev pending. SF-3 Impl Plan APPROVED.
-**Next step**: Run `/dev docs/proposals/roadmap/phase_3/feature_3_16_sf3_implementation_plan.md` to implement SF-3.
+**Next step**: Run `/dev docs/proposals/roadmap/phase_3/feature_3_16/feature_3_16_sf3_implementation_plan.md` to implement SF-3.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

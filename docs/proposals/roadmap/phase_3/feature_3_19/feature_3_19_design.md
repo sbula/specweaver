@@ -3,7 +3,7 @@
 - **Feature ID**: 3.19
 - **Phase**: 3
 - **Status**: APPROVED
-- **Design Doc**: docs/proposals/design/phase_3/feature_3_19_design.md
+- **Design Doc**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_design.md
 
 ## Feature Overview
 
@@ -70,7 +70,7 @@ none stated
 - **Inputs**: Polyglot execution parameters simulating Agents requesting builds/tests.
 - **Outputs**: Validated compile/debug/test/lint/complexity runners using mock JUnit/SARIF files.
 - **Depends on**: none
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf1_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf1_implementation_plan.md
 
 ### SF-2: JVM Handlers (Java & Kotlin)
 - **Scope**: Implements `JavaRunner` and `KotlinRunner` compiling and parsing outputs from Gradle (`gradlew`), Maven (`mvn`), detekt, and PMD.
@@ -78,7 +78,7 @@ none stated
 - **Inputs**: JVM polyglot requests and mock JVM fail/pass payloads.
 - **Outputs**: Validated Java and Kotlin compilation & test runners.
 - **Depends on**: SF-1
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf2_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf2_implementation_plan.md
 
 ### SF-3: Rust Handler
 - **Scope**: Implements `RustRunner` using Cargo and Clippy natively, mapping `cargo build` exits to the generic bounds.
@@ -86,7 +86,7 @@ none stated
 - **Inputs**: Rust polyglot requests.
 - **Outputs**: Validated Rust runner integrating `cargo`.
 - **Depends on**: SF-1
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf3_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf3_implementation_plan.md
 
 ### SF-4: Polyglot Submodule Architecture Refactor
 - **Scope**: Refactors god-classes (`java.py`, `kotlin.py`, `rust.py`) into dedicated package submodules (`java/runner.py`, `java/parsers.py`) alongside migrating their respective unit and integration test folders natively inside `tests/unit/.../java/` to prevent directory and module bloat. **Must natively refactor `_parse_detekt_complexity` and `_parse_pmd_complexity` to extract values purely via structural SARIF properties instead of brittle string regex scraping (fixing compiler upgrade vulnerability)**. **Must perform an exhaustive evaluation and backfill of E2E and Unit test gaps across all Polyglot handlers (Java/Kotlin/Rust) to ensure complete ecosystem parity and structural coverage.**
@@ -94,7 +94,7 @@ none stated
 - **Inputs**: Existing unified runner files.
 - **Outputs**: Clean domain-driven package modules mapping per-language correctly.
 - **Depends on**: SF-2, SF-3
-- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf4_implementation_plan.md
+- **Impl Plan**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf4_implementation_plan.md
 
 ## Execution Order
 
@@ -112,9 +112,9 @@ none stated
 | SF-4 | Submodule Refactoring | SF-2, SF-3 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
-Execute `@[/dev]` targeting `docs/proposals/roadmap/phase_3/feature_3_19_sf4_implementation_plan.md` to begin safely refactoring the Polyglot boundaries.
+Execute `@[/dev]` targeting `docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf4_implementation_plan.md` to begin safely refactoring the Polyglot boundaries.
 **Current status**: Implementation Plan for SF-3 is APPROVED.
 **Next step**: Run the following command to begin building the code for SF-3 via TDD:
-`@[/dev] docs/proposals/roadmap/phase_3/feature_3_19_sf3_implementation_plan.md`
+`@[/dev] docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf3_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

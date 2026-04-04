@@ -1,8 +1,8 @@
 # Implementation Plan: Project Metadata Injection
 
 - **Feature ID**: feature_3_15
-- **Design Document**: docs/proposals/design/phase_3/feature_3_15_design.md
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_15_implementation_plan.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_15/feature_3_15_design.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_15/feature_3_15_implementation_plan.md
 - **Status**: COMPLETED
 
 ## Phase 4: Merge Findings (HITL Review)

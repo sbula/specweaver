@@ -1,9 +1,9 @@
 # Implementation Plan: Polyglot Submodule Architecture Refactor [SF-4: Polyglot Submodule Architecture Refactor]
 - **Feature ID**: 3.19
 - **Sub-Feature**: SF-4 — Polyglot Submodule Architecture Refactor
-- **Design Document**: docs/proposals/design/phase_3/feature_3_19_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-4
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_19_sf4_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_19/feature_3_19_sf4_implementation_plan.md
 - **Status**: APPROVED
 
 ## Research Notes

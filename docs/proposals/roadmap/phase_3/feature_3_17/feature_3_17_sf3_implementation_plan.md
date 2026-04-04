@@ -2,9 +2,9 @@
 - **Feature ID**: 3.14
 - **Phase**: 3
 - **Sub-Feature**: SF-3 — Verification & CLI Tools
-- **Design Document**: docs/proposals/design/phase_3/feature_3_17_design.md
+- **Design Document**: docs/proposals/roadmap/phase_3/feature_3_17/feature_3_17_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-3
-- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_17_sf3_implementation_plan.md
+- **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_17/feature_3_17_sf3_implementation_plan.md
 - **Status**: APPROVED
 
 This plan completes the "Spec-to-Code Traceability" feature by adding CLI commands to verify and build lineage trees, and establishing DB schemas for tracking manual interventions (`model_id`).
