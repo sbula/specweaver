@@ -44,7 +44,7 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 | SF ID | Name | Description | Status |
 |:---|:---|:---|:---|
 | **SF-1** | Initialization & Base Layer Isolation | Install Tach. Map `config`, `standards`, and `logging.py` as strict base layers. Ensure they import absolutely nothing else from SpecWeaver. | [x] Committed |
-| **SF-2** | Resource & Core Capability Hardening | Apply Tach rules to the `llm`, `graph`, `context`, and `project` modules. Formally isolate the `llm` engine from the business logic. | [ ] Pending |
+| **SF-2** | Resource & Core Capability Hardening | Apply Tach rules to the `llm`, `graph`, `context`, and `project` modules. Formally isolate the `llm` engine from the business logic. | [x] Committed |
 | **SF-3** | Presentation Layer Sterilization | Enforce that no domain logic inside `src/specweaver` is allowed to depend on `api` or `cli`. | [ ] Pending |
 | **SF-4** | Public Interface Enforcement | Use Tach's `interfaces:` to declare strict public boundaries and delete the messy `__init__.py` boilerplate hacks. | [ ] Pending |
 
@@ -52,14 +52,15 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 - [x] Requirements Finalized
 - [x] SF-1 Implementation (Committed)
 - [x] SF-2 Implementation Plan
-- [ ] SF-2 Implementation
+- [x] SF-2 Implementation (Committed)
+- [x] SF-3 Implementation Plan
 - [ ] SF-3 Implementation
 - [ ] SF-4 Implementation
 - [ ] Merged
 
 ## 7. Session Handoff
 
-**Current status**: SF-2 Implementation Plan APPROVED.
+**Current status**: SF-3 Implementation Plan APPROVED.
 **Next step**: Run the following command to begin development:
-`/dev docs/proposals/roadmap/phase_3/feature_3_20a/feature_3_20a_sf2_implementation_plan.md`
+`/dev docs/proposals/roadmap/phase_3/feature_3_20a/feature_3_20a_sf3_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

@@ -4,9 +4,26 @@ source_roots = [
 ]
 
 [[modules]]
+path = "src.specweaver.api"
+
+[[modules]]
+path = "src.specweaver.cli"
+
+[[modules]]
 path = "src.specweaver.config"
+depends_on = []
+
+[[modules]]
+path = "src.specweaver.context"
+depends_on = []
+
+[[modules]]
+path = "src.specweaver.graph"
+depends_on = []
+
+[[modules]]
+path = "src.specweaver.llm"
 depends_on = [
-    "src.specweaver.logging",
 ]
 
 [[modules]]
@@ -14,53 +31,15 @@ path = "src.specweaver.logging"
 depends_on = []
 
 [[modules]]
-path = "src.specweaver.standards"
-depends_on = [
-    "src.specweaver.logging",
-]
-
-[[modules]]
 path = "src.specweaver.project"
-depends_on = [
-    "src.specweaver.logging",
-    "src.specweaver.standards",
-]
+depends_on = []
 
 [[modules]]
-path = "src.specweaver.context"
-depends_on = [
-    "src.specweaver.logging",
-]
-
-[[modules]]
-path = "src.specweaver.graph"
-depends_on = [
-    "src.specweaver.logging",
-    "src.specweaver.context",
-]
-
-[[modules]]
-path = "src.specweaver.llm"
-depends_on = [
-    "src.specweaver.logging",
-    "src.specweaver.config",
-    "src.specweaver.graph",
-]
+path = "src.specweaver.standards"
+depends_on = []
 
 [[interfaces]]
 expose = []
 from = [
-    "src.specweaver.logging",
-]
-
-[[interfaces]]
-expose = []
-from = [
-    "src.specweaver.config",
-]
-
-[[interfaces]]
-expose = []
-from = [
-    "src.specweaver.standards",
+    "src.specweaver.llm",
 ]

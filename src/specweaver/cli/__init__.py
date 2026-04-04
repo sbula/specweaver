@@ -74,21 +74,3 @@ from specweaver.cli import (  # noqa: E402, F401
     usage_commands,
     validation,
 )
-
-# ---------------------------------------------------------------------------
-# Backward-compatible re-exports so ``from specweaver.cli import X`` works
-# ---------------------------------------------------------------------------
-from specweaver.cli._helpers import (  # noqa: E402, F401
-    _display_results,
-    _get_selector_map,
-    _load_constitution_content,
-    _load_standards_content,
-    _load_topology,
-    _print_summary,
-    _require_llm_adapter,
-    _select_topology_contexts,
-)
-from specweaver.cli.pipelines import (  # noqa: E402, F401
-    _create_display,
-    _resolve_spec_path,
-)
