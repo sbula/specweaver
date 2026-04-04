@@ -47,7 +47,9 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 | **SF-2** | Resource & Core Capability Hardening | Apply Tach rules to the `llm`, `graph`, `context`, and `project` modules. Formally isolate the `llm` engine from the business logic. | [x] Committed |
 | **SF-3** | Presentation Layer Sterilization | Enforce that no domain logic inside `src/specweaver` is allowed to depend on `api` or `cli`. | [x] Committed |
 | **SF-4** | Public Interface Enforcement | Use Tach's `interfaces:` to declare strict public boundaries and delete the messy `__init__.py` boilerplate hacks. | [x] Committed |
-| **SF-5** | Legacy Linter Subsumption | Outsource legacy manual architectural checks (soft-deprecations, cyclic guards, explicit `.toml` test logic) entirely to Tach's strict definitions. | [ ] Pending |
+| **SF-5** | Legacy Linter Subsumption | Outsource manual architectural tests (soft-deprecations, cyclic guards) to Tach. | [ ] Pending |
+| **SF-6** | Global Implicit Namespace Conversion | Delete all 20 remaining internal `__init__.py` proxy files and enforce global `strict = true` topology using Tach. | [ ] Pending |
+
 
 ## 6. Progress Tracker
 - [x] Requirements Finalized
@@ -59,11 +61,13 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 - [x] SF-4 Implementation Plan
 - [x] SF-4 Implementation (Committed)
 - [x] SF-5 Implementation Plan
-- [ ] SF-5 Implementation
+- [x] SF-5 Implementation (Committed)
+- [ ] SF-6 Implementation Plan
+- [ ] SF-6 Implementation
 - [ ] Feature 3.20a Fully Complete
 
 ## 7. Session Handoff
 
-**Current status**: Feature 3.20a (Fractal Architectural Boundaries) FULLY COMPLETED.
-**Next step**: Move to the next feature in the Roadmap (Feature 3.20b: Dynamic Governance).
+**Current status**: Feature 3.20a (SF-5: Legacy Linter Subsumption) FULLY COMPLETED.
+**Next step**: Execute `/implementation-plan 3.20a, sf6` to architect the Global Namespace Conversion in SF-6.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
