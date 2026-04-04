@@ -22,7 +22,10 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
      e2e). Do NOT guess — actually read the test files and list what scenarios
      they already cover.
 
-3.4. **Deliverable 1 — Coverage Matrix** (one table per source module):
+3.4. **Deliverable 1 — Coverage Matrix** (one table per source module/file):
+
+     > [!CAUTION]
+     > **MANDATORY FORMAT EXCEPTION:** EVEN IF the feature contains zero Python logic and only modifies configuration files (e.g. `.toml`, `.md`, or deleting files), you MUST STILL present the exact matrix table format below for the impacted files. Do not skip the matrix. Use the ✅/🟡/❌ format religiously.
 
      Rows = classes/functions in the module.
      Columns = Unit | Integration | E2E.

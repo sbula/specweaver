@@ -44,5 +44,11 @@ description: "Phase 2: Code quality checks — ruff, mypy, complexity, and file 
      ```
      Files over 500 lines MUST be refactored by splitting into smaller modules!
 
+2.5. Run **tach architecture check** to verify domain isolation boundary rules:
+     ```
+     tach check
+     ```
+     Every violation MUST be fixed by explicitly removing or circumventing the illegal dependencies!
+
 > [!IMPORTANT]
 > **NO HITL GATE HERE:** If all checks in Phase 2 pass successfully, update `task.md` and PROCEED IMMEDIATELY to Phase 3. Do NOT stop to ask the user for permission to continue.

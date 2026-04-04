@@ -133,7 +133,7 @@ class GeminiAdapter(LLMAdapter):
         try:
             response = await client.aio.models.generate_content(
                 model=config.model,
-                contents=contents,
+                contents=contents,  # type: ignore[arg-type]
                 config=gen_config,
             )
         except Exception as exc:
@@ -161,7 +161,7 @@ class GeminiAdapter(LLMAdapter):
         try:
             stream = client.aio.models.generate_content_stream(
                 model=config.model,
-                contents=contents,
+                contents=contents,  # type: ignore[arg-type]
                 config=gen_config,
             )
             async for chunk in await stream:
@@ -323,7 +323,7 @@ class GeminiAdapter(LLMAdapter):
             try:
                 response = await client.aio.models.generate_content(
                     model=config.model,
-                    contents=contents,
+                    contents=contents,  # type: ignore[arg-type]
                     config=gen_config,
                 )
             except Exception as exc:
