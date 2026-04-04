@@ -1,6 +1,6 @@
 # Test Coverage Matrix
 
-> **3 744 collected** · 3 744 passed · 0 skipped · 123 source modules · 171 test files
+> **3 755 collected** · 3 755 passed · 0 skipped · 124 source modules · 174 test files
 > **Last updated**: 2026-04-03
 
 Legend: ✅ covered · ❌ missing · ⚪ n/a
@@ -37,7 +37,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `graph/` | 2 | 88 | 0 | 0 | 88 |
 | `implementation/` | 1 | 9 | 0 | 0 | 9 |
 | `llm/` | 13 | 286 | 10 | 2 | 298 |
-| `loom/` | 15 | 579 | 14 | 0 | 593 |
+| `loom/` | 16 | 588 | 16 | 0 | 604 |
 | `planning/` | 3 | 79 | 3 | 2 | 84 |
 | `project/` | 3 | 90 | 10 | 18 | 118 |
 | `research/` | 4 | 59 | 0 | 0 | 59 |
@@ -46,7 +46,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `validation/` | 24 | 562 | 49 | 5 | 616 |
 | `api/` | 4 | 57 | 0 | 0 | 57 |
 | `logging.py` | 1 | 22 | 1 | 0 | 23 |
-| **Total** | **116** | **3 006** | **244** | **82** | **3 503** |
+| **Total** | **117** | **3 015** | **246** | **82** | **3 514** |
 
 
 ---
@@ -205,17 +205,11 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 
 | Story | Unit | Integ | E2E | Perf | Notes |
-
 |-------|:----:|:-----:|:---:|:----:|-------|
-
 | `usage` shows summary table | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
-
 | `usage` no data shows message | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
-
 | `usage --all` flag | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
-
 | `usage --since` filter | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
-
 | `usage` no active project shows hint | ✅ | ⚪ | ⚪ | ⚪ | Feature 3.12 |
 
 

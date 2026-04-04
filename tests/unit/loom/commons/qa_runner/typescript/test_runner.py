@@ -1,12 +1,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""Tests for TypeScriptRunner."""
+"""Tests for TypeScriptRunner execution."""
 
+import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from specweaver.loom.commons.qa_runner.typescript import TypeScriptRunner
+from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
 
 
 class TestTypeScriptRunner:
@@ -22,33 +23,21 @@ class TestTypeScriptRunner:
             assert result.error_count == 0
             assert not result.errors
 
-    def test_run_compiler_regex_parsing(self, tmp_path: Path) -> None:
+    def test_run_compiler_missing_binary(self, tmp_path: Path) -> None:
         runner = TypeScriptRunner(cwd=tmp_path)
         with patch("subprocess.run") as mock_run:
-            tsc_output = (
-                "src/main.ts(12,5): error TS2322: Type 'string' is not assignable to type 'number'.\n"
-                "lib/utils.ts(45,1): error TS1005: ',' expected.\n"
-                "Other compilation error info without standard format.\n"
-            )
-            mock_run.return_value = MagicMock(returncode=2, stdout=tsc_output, stderr="")
-
+            mock_run.side_effect = FileNotFoundError()
             result = runner.run_compiler(target="src/")
+            assert result.error_count == 1
+            assert result.errors[0].code == "ENOENT"
 
-            assert result.error_count == 2
-            assert len(result.errors) == 2
-
-            err1 = result.errors[0]
-            assert err1.file == "src/main.ts"
-            assert err1.line == 12
-            assert err1.column == 5
-            assert err1.message == "Type 'string' is not assignable to type 'number'."
-            assert err1.code == "TS2322"
-            assert not err1.is_warning
-
-            err2 = result.errors[1]
-            assert err2.file == "lib/utils.ts"
-            assert err2.line == 45
-            assert err2.column == 1
+    def test_run_compiler_timeout(self, tmp_path: Path) -> None:
+        runner = TypeScriptRunner(cwd=tmp_path)
+        with patch("subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx"], timeout=120)
+            result = runner.run_compiler(target="custom.ts")
+            assert result.error_count == 1
+            assert result.errors[0].code == "TIMEOUT"
 
     def test_run_debugger_parsing(self, tmp_path: Path) -> None:
         runner = TypeScriptRunner(cwd=tmp_path)
@@ -75,6 +64,40 @@ class TestTypeScriptRunner:
             assert events[2].category == "stderr"
             assert events[2].output == "Warning: deprecated"
 
+    def test_run_debugger_js_fallback(self, tmp_path: Path) -> None:
+        runner = TypeScriptRunner(cwd=tmp_path)
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout="JS started", stderr="")
+
+            result = runner.run_debugger(target=".", entrypoint="dist/index.js")
+
+            mock_run.assert_called_once()
+            # Assert "node" is used instead of "ts-node"
+            cmd_args = mock_run.call_args[0][0]
+            assert any("node" in str(arg).lower() for arg in cmd_args), f"Could not find 'node' in {cmd_args}"
+            assert not any("ts-node" in str(arg).lower() for arg in cmd_args), f"Found 'ts-node' in {cmd_args}"
+
+            assert result.exit_code == 0
+            assert len(result.events) == 1
+            assert result.events[0].output == "JS started"
+
+    def test_run_debugger_missing_binary(self, tmp_path: Path) -> None:
+        runner = TypeScriptRunner(cwd=tmp_path)
+        with patch("subprocess.run") as mock_run:
+            mock_run.side_effect = FileNotFoundError()
+            result = runner.run_debugger(target=".", entrypoint="src/index.ts")
+            assert result.exit_code == 127
+            assert len(result.events) == 1
+            assert "not found" in result.events[0].output
+
+    def test_run_debugger_timeout(self, tmp_path: Path) -> None:
+        runner = TypeScriptRunner(cwd=tmp_path)
+        with patch("subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx"], timeout=300)
+            result = runner.run_debugger(target=".", entrypoint="src/index.ts")
+            assert result.exit_code == 124
+            assert "Timeout" in result.events[0].output
+
     def test_run_tests_stub(self, tmp_path: Path) -> None:
         runner = TypeScriptRunner(cwd=tmp_path)
         result = runner.run_tests(target="src/")
@@ -91,40 +114,3 @@ class TestTypeScriptRunner:
         runner = TypeScriptRunner(cwd=tmp_path)
         result = runner.run_complexity(target="src/")
         assert result.violation_count == 0
-
-    def test_run_compiler_missing_binary(self, tmp_path: Path) -> None:
-        runner = TypeScriptRunner(cwd=tmp_path)
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = FileNotFoundError()
-            result = runner.run_compiler(target="src/")
-            assert result.error_count == 1
-            assert result.errors[0].code == "ENOENT"
-
-    def test_run_debugger_missing_binary(self, tmp_path: Path) -> None:
-        runner = TypeScriptRunner(cwd=tmp_path)
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = FileNotFoundError()
-            result = runner.run_debugger(target=".", entrypoint="src/index.ts")
-            assert result.exit_code == 127
-            assert len(result.events) == 1
-            assert "not found" in result.events[0].output
-
-    def test_run_compiler_timeout(self, tmp_path: Path) -> None:
-        import subprocess
-
-        runner = TypeScriptRunner(cwd=tmp_path)
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx"], timeout=120)
-            result = runner.run_compiler(target="custom.ts")
-            assert result.error_count == 1
-            assert result.errors[0].code == "TIMEOUT"
-
-    def test_run_debugger_timeout(self, tmp_path: Path) -> None:
-        import subprocess
-
-        runner = TypeScriptRunner(cwd=tmp_path)
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx"], timeout=300)
-            result = runner.run_debugger(target=".", entrypoint="src/index.ts")
-            assert result.exit_code == 124
-            assert "Timeout" in result.events[0].output
