@@ -6,7 +6,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from specweaver.loom.commons.qa_runner.java import JavaRunner
+from specweaver.loom.commons.qa_runner.java.runner import JavaRunner
 
 
 class TestJavaRunner:

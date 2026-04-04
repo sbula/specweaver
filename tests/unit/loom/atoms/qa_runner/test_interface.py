@@ -19,7 +19,7 @@ from specweaver.loom.commons.qa_runner.interface import (
     TestFailure,
     TestRunResult,
 )
-from specweaver.loom.commons.qa_runner.python import PythonQARunner
+from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path

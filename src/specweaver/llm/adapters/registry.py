@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""LLM adapter interface and concrete implementations."""
+"""LLM adapter dynamic registry and loader."""
 
 import importlib
 import logging
@@ -34,9 +34,10 @@ def _ensure_discovered() -> None:
     # Dynamically import all sibling modules to trigger class evaluation
     package_dir = Path(__file__).parent
     for _, module_name, _ in pkgutil.iter_modules([str(package_dir)]):
-        if module_name != "base":
+        if module_name not in ("base", "registry"):
             try:
-                importlib.import_module(f".{module_name}", package=__name__)
+                # IMPORTANT: Use __package__ instead of __name__ because this is a submodule
+                importlib.import_module(f".{module_name}", package=__package__)
             except Exception as e:
                 logger.debug("Failed to load adapter module '%s': %s", module_name, e)
 
@@ -85,6 +86,3 @@ def get_merged_default_costs() -> dict[str, "CostEntry"]:
                 if model not in merged:
                     merged[model] = cost
     return merged
-
-
-__all__ = ["get_adapter_class", "get_all_adapters", "get_merged_default_costs", "register_adapter"]

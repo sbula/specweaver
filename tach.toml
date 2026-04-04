@@ -39,7 +39,22 @@ path = "src.specweaver.standards"
 depends_on = []
 
 [[interfaces]]
-expose = []
-from = [
-    "src.specweaver.llm",
-]
+from = ["src.specweaver.project"]
+expose = ["constitution", "scaffold", "discovery", "settings", "models"]
+
+[[interfaces]]
+from = ["src.specweaver.context"]
+expose = ["analyzers", "provider", "hitl_provider", "inferrer", "recency", "models"]
+
+[[interfaces]]
+from = ["src.specweaver.graph"]
+expose = ["topology", "selectors", "builder", "models"]
+
+[[interfaces]]
+from = ["src.specweaver.llm"]
+expose = ["models", "adapters.base", "adapters.registry", "prompt_builder", "mention_scanner.models", "mention_scanner.scanner", "telemetry", "router", "collector", "factory", "lineage"]
+
+[[interfaces]]
+from = ["src.specweaver.loom"]
+expose = ["atoms", "commons", "dispatcher", "security", "tools"]
+

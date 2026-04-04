@@ -20,7 +20,7 @@ import os
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from specweaver.config.settings import load_settings
-from specweaver.llm.adapters import get_adapter_class
+from specweaver.llm.adapters.registry import get_adapter_class
 
 if TYPE_CHECKING:
     from specweaver.config.database import Database

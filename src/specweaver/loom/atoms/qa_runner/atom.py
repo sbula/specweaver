@@ -41,27 +41,27 @@ def _resolve_runner(language: str, cwd: Any) -> QARunnerInterface:
         ValueError: If the language is not supported.
     """
     if language == "python":
-        from specweaver.loom.commons.qa_runner.python import PythonQARunner
+        from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
 
         return PythonQARunner(cwd=cwd)
 
     if language == "typescript":
-        from specweaver.loom.commons.qa_runner.typescript import TypeScriptRunner
+        from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
 
         return TypeScriptRunner(cwd=cwd)
 
     if language == "java":
-        from specweaver.loom.commons.qa_runner.java import JavaRunner
+        from specweaver.loom.commons.qa_runner.java.runner import JavaRunner
 
         return JavaRunner(cwd=cwd)
 
     if language == "kotlin":
-        from specweaver.loom.commons.qa_runner.kotlin import KotlinRunner
+        from specweaver.loom.commons.qa_runner.kotlin.runner import KotlinRunner
 
         return KotlinRunner(cwd=cwd)
 
     if language == "rust":
-        from specweaver.loom.commons.qa_runner.rust import RustRunner
+        from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
 
         return RustRunner(cwd=cwd)
 

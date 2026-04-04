@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from specweaver.llm.adapters import (
+from specweaver.llm.adapters.registry import (
     _ensure_discovered,
     get_adapter_class,
     get_all_adapters,

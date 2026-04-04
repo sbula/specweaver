@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from specweaver.loom.commons.qa_runner.rust import RustRunner
+from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
 
 
 class TestRustRunner:

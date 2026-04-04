@@ -1,4 +1,0 @@
-# Copyright (c) 2026 sbula. All rights reserved.
-# Licensed under the MIT License. See LICENSE file in the project root.
-
-"""SpecWeaver web tools — agent-facing web search and URL reading."""

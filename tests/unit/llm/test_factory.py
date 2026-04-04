@@ -126,7 +126,7 @@ class TestFactoryProviderCapabilities:
         self, db: Any, provider: str, adapter_cls_name: str, env_key: str
     ) -> None:
         """Factory creates correct adapter based on DB provider setting."""
-        from specweaver.llm.adapters import get_adapter_class
+        from specweaver.llm.adapters.registry import get_adapter_class
         from specweaver.llm.factory import create_llm_adapter
 
         db.register_project("test-proj", "/tmp/test")

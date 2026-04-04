@@ -389,9 +389,9 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
     import pytest
 
     from specweaver.loom.atoms.qa_runner.atom import _resolve_runner
-    from specweaver.loom.commons.qa_runner.java import JavaRunner
-    from specweaver.loom.commons.qa_runner.kotlin import KotlinRunner
-    from specweaver.loom.commons.qa_runner.typescript import TypeScriptRunner
+    from specweaver.loom.commons.qa_runner.java.runner import JavaRunner
+    from specweaver.loom.commons.qa_runner.kotlin.runner import KotlinRunner
+    from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
 
     with pytest.raises(ValueError, match="Unsupported language"):
         _resolve_runner("ruby", tmp_path)
@@ -405,7 +405,7 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
     kotlin_runner = _resolve_runner("kotlin", tmp_path)
     assert isinstance(kotlin_runner, KotlinRunner)
 
-    from specweaver.loom.commons.qa_runner.rust import RustRunner
+    from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
 
     rust_runner = _resolve_runner("rust", tmp_path)
     assert isinstance(rust_runner, RustRunner)

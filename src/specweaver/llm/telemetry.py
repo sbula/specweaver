@@ -29,7 +29,7 @@ class CostEntry(NamedTuple):
 
 def get_default_cost_table() -> dict[str, CostEntry]:
     """Get the merged default pricing from all registered LLM adapters."""
-    from specweaver.llm.adapters import get_merged_default_costs
+    from specweaver.llm.adapters.registry import get_merged_default_costs
 
     return get_merged_default_costs()
 

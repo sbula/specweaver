@@ -27,7 +27,7 @@ class LLMAdapterError(Exception):
 
 def _get_adapter_class(provider: str) -> Any:
     """Return the adapter class for the given provider name."""
-    from specweaver.llm.adapters import get_adapter_class, get_all_adapters
+    from specweaver.llm.adapters.registry import get_adapter_class, get_all_adapters
 
     try:
         return get_adapter_class(provider)

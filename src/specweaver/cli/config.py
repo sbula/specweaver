@@ -427,7 +427,7 @@ def config_set_provider(
     name = _core._require_active_project()
     db = _core.get_db()
 
-    from specweaver.llm.adapters import get_all_adapters
+    from specweaver.llm.adapters.registry import get_all_adapters
 
     adapters = get_all_adapters()
     if provider not in adapters:
