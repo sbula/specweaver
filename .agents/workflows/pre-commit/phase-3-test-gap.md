@@ -71,17 +71,13 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
 
 3.6. Do NOT invent arbitrary test counts. Every story must trace to real code.
 3.7. Present the FULL list — do NOT limit to 10 items.
-3.8. **STOP and wait for the HITL response.** Present the gap analysis to the
-     user and wait for their feedback before proceeding. Do NOT continue
-     until the user confirms or provides changes.
-     Include in the HITL notification:
-     - The coverage matrix (Deliverable 1)
-     - The proposed test stories (Deliverable 2)
-     - Your reasoning for each gap's priority
-     - Any recommendations for deferral vs. immediate fix
-     - Any issues discovered during the analysis
+3.8. **STOP and wait for the HITL response.** Present the gap analysis.
+     > [!CAUTION]
+     > You MUST NOT write the test gap analysis into a file or system Artifact!
+     > You MUST print the full Background, Coverage Matrix, Options, Analysis, and Proposal DIRECTLY into your conversational chat response. 
+     > Write it exactly like a review straight to the user in the text window.
 
 > [!CAUTION]
-> **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories to the user. 
+> **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories directly in the chat to the user. 
 > You MUST YIELD YOUR TURN. A yield means making ZERO further tool calls. You must end your response and wait for the user to type a reply in the chat.
 > You MUST NOT proceed to Phase 4 (implementing tests) synchronously in the same turn. Do not assume they look okay or skip this gate.
