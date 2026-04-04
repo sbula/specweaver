@@ -56,6 +56,7 @@ Your `runner.py` must fully implement or securely stub the `QARunnerInterface`:
 - `run_linter()`
 - `run_complexity()`
 - `run_debugger()`
+- **`enforce_boundaries()`** (New in Feature 3.20b: You MUST provide an adapter that translates `context.yaml` boundaries into the language's native Mixed-Criticality FFI enforcement tool, e.g., `ArchUnit` for Java or `eslint` for TS).
 
 *If Go does not support a dedicated complexity checker out-of-the-box, map `run_complexity` to a static no-op violation array or an accepted open-source equivalent (like `gocyclo`).*
 

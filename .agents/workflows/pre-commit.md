@@ -12,6 +12,16 @@ description: Run a pre-commit quality gate for the current feature before markin
 > 3. **NO RELIANCE ON PAST RUNS:** You are STRICTLY FORBIDDEN from relying on tests, lints, or architecture checks that you ran *before* starting this `/pre-commit` workflow. If you ran `pytest` 5 minutes ago, it DOES NOT MATTER. You **MUST** physically re-run every command required by Phases 1-7 identically from scratch every single time this gate is entered. "I already know it passes" is an unacceptable excuse.
 > 4. **USE .tmp FOR SCRATCHPADS:** All temporary files, debug scripts, or generated data must be stored in the project's `.tmp/` directory. Keep the project root clean.
 
+> [!IMPORTANT]
+> **HITL GATE PRESENTATION FORMAT:**
+> Whenever you hit a HITL gate and must present a question, review, or decision to the human, you MUST output it as an **ARTIFACT** (using the `write_to_file` tool with `IsArtifact: true` and `ArtifactType: other`) so the user can easily leave line-by-line comments. 
+> Do NOT just print the text in the dialog! Inside the artifact, you MUST use the following format:
+> 1. **Background:** Why is this a question/blocker? Include context.
+> 2. **Options:** Provide multiple distinct options (at least 3 if possible).
+> 3. **Analysis:** For *each* option, explicitly list: Pros, Cons, Impact, and Consequences.
+> 4. **Proposal:** State your exact recommendation and explain why it is the best path forward.
+> After creating the artifact, briefly point the user to it in your dialog response.
+
 // turbo-all
 
 > [!IMPORTANT]

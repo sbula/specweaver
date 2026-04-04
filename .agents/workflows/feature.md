@@ -14,6 +14,16 @@ description: "Master feature lifecycle workflow. Orchestrates /design → /imple
 > 5. **HARMONIZATION:** Use the system's `implementation_plan.md` artifact ONLY to display HITL Gate approvals. Use the system's `task.md` artifact ONLY to mirror the Progress Tracker. All real planning data must be saved to project markdown files.
 
 > [!IMPORTANT]
+> **HITL GATE PRESENTATION FORMAT:**
+> Whenever you hit a HITL gate and must present a question, review, or decision to the human, you MUST output it as an **ARTIFACT** (using the `write_to_file` tool with `IsArtifact: true` and `ArtifactType: other`) so the user can easily leave line-by-line comments. 
+> Do NOT just print the text in the dialog! Inside the artifact, you MUST use the following format:
+> 1. **Background:** Why is this a question/blocker? Include context.
+> 2. **Options:** Provide multiple distinct options (at least 3 if possible).
+> 3. **Analysis:** For *each* option, explicitly list: Pros, Cons, Impact, and Consequences.
+> 4. **Proposal:** State your exact recommendation and explain why it is the best path forward.
+> After creating the artifact, briefly point the user to it in your dialog response.
+
+> [!IMPORTANT]
 > **AGENT DIRECTIVE:**
 > Execute all research, TDD, and quality checks autonomously.
 > STOP only at the explicitly defined HITL gates below.

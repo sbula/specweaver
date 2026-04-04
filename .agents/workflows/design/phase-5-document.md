@@ -19,7 +19,7 @@ description: "Phase 5: Document — write the fully self-contained Design Docume
 ## Write the Design Document
 
 5.1. Write the Design Document to:
-     `docs/proposals/design/phase<X>/<feature_id>_design.md`
+     `docs/proposals/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md`
      Create the directory if it does not exist.
 
 5.2. The document MUST be fully self-contained. An agent starting a brand-new
@@ -39,7 +39,7 @@ description: "Phase 5: Document — write the fully self-contained Design Docume
 - **Feature ID**: <feature_id>
 - **Phase**: <X>
 - **Status**: DRAFT
-- **Design Doc**: docs/proposals/design/phase<X>/<feature_id>_design.md
+- **Design Doc**: docs/proposals/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md
 
 ## Feature Overview
 
@@ -130,7 +130,7 @@ Example:
 
 **Current status**: Design DRAFT — awaiting HITL approval.
 **Next step**: After approval, run:
-`/implementation-plan docs/proposals/design/phase<X>/<feature_id>_design.md SF-1`
+`/implementation-plan docs/proposals/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md SF-1`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
 ````
