@@ -19,10 +19,6 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
 
 // turbo-all
 
-6.1. Update `docs/test_coverage_matrix.md` with the corrected test count and
-     any new entries for modules added or modified in this feature. Do not forget
-     to update the story -> unit/integr/e2e/... matrices!
-
 6.2. **MANDATORY**: You MUST explicitly open, read, and update ALL of the following documents if they exist. DO NOT skip any of them under the assumption that they don't need updates:
      - `README.md` — updating features list, CLI commands table, project structure, test counts
      - `docs/quickstart.md` — new workflows or commands

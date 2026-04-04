@@ -128,7 +128,7 @@ monorepo/
 | `cli/projects.py` | After `sw init` scaffold (line ~59): if existing source files detected, print hint: *"Existing code detected. Run `sw standards scan` to discover coding conventions."* |
 | `cli/config.py` | New `sw config set-auto-bootstrap` / `sw config get-auto-bootstrap` commands. |
 | Edge cases (scan + bootstrap) | Empty project, single-file, all-below-threshold, project with no git, mixed languages in one scope — test both scan path and bootstrap path. |
-| Documentation | `README.md` (constitution bootstrap bullet + CLI table), `docs/quickstart.md` (scan→bootstrap flow), `docs/developer_guide.html` (if applicable), `docs/test_coverage_matrix.md` (new stories), `docs/proposals/roadmap/phase_3_feature_expansion.md` (mark 3.5 ✅). |
+| Documentation | `README.md` (constitution bootstrap bullet + CLI table), `docs/quickstart.md` (scan→bootstrap flow), `docs/developer_guide.html` (if applicable), `docs/proposals/roadmap/phase_3_feature_expansion.md` (mark 3.5 ✅). |
 
 **Tests**: ~20-30 tests.
 - **Unit** (~12): `generate_constitution_from_standards()` variations (Python-only, multi-lang, empty standards, idempotent, `--force`), schema v7 migration, get/set auto_bootstrap.
@@ -474,7 +474,7 @@ Layer 3: CLI --set Flags (EPHEMERAL)
 | `docs/quickstart.md` | Update profile behavior documentation |
 | `validation_spec_default.yaml` | Add cascade comment block |
 | `context.yaml` (validation, pipelines) | Update descriptions |
-| `docs/test_coverage_matrix.md` | Add 3.5b test coverage rows |
+
 
 ### Tests
 

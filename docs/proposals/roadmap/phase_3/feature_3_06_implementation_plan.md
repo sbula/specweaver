@@ -628,7 +628,7 @@ uv run mypy src/
 |-----|-------------|
 | `README.md` | Features bullet for "Implementation Planning", CLI table for `sw plan`, project structure for `planning/` |
 | `docs/quickstart.md` | New section: "Generate an Implementation Plan" |
-| `docs/test_coverage_matrix.md` | New rows for planning tests |
+
 | `docs/proposals/roadmap/phase_3_feature_expansion.md` | Mark 3.6a done when complete |
 | `docs/architecture/lifecycle_layers.md` | Annotate Plan as L2→L4 bridge artifact |
 | `docs/architecture/context_yaml_spec.md` | Add `planning/` module |

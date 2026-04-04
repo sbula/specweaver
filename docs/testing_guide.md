@@ -159,7 +159,6 @@ Before marking a feature as done, run the `/pre-commit-test-gap` workflow (`.age
 1. Reviews every modified source file line-by-line
 2. Identifies untested branches, guards, and edge cases
 3. Produces a gap table per module
-4. Updates the [Test Coverage Matrix](test_coverage_matrix.md)
 
 ## 10. Coverage Target
 The project aims for **70–90% test coverage**. This balances thorough testing with practical development speed.
@@ -208,7 +207,6 @@ These tests pass on Linux/macOS. No action needed.
 ---
 
 **Related Documents:**
-- [Test Coverage Matrix](test_coverage_matrix.md) — per-module test story inventory
 - [Pre-Commit Test Gap Workflow](../.agents/workflows/pre-commit-test-gap.md) — automated gap analysis
 - [Architecture Completeness Tests](architecture/completeness_tests.md) — structural verification
 

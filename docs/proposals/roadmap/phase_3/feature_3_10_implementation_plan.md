@@ -507,4 +507,4 @@ uv run mypy src/
 |-----|-------------|
 | `README.md` | Features bullet: "Agentic research — Planner and Reviewer search your codebase and the web" |
 | `docs/proposals/roadmap/phase_3_feature_expansion.md` | Update Feature 3.10 row: new description, mark sub-phases |
-| `docs/test_coverage_matrix.md` | New section: Research Tools |
+

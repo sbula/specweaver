@@ -279,7 +279,7 @@ open http://localhost:8000/dashboard
 #### [MODIFY] `docs/quickstart.md`
 Add container quickstart as an alternative to the Python install flow.
 
-#### [MODIFY] `docs/test_coverage_matrix.md`
+
 Add Section 17: Containerization (path module unit tests).
 
 #### [MODIFY] `docs/proposals/specweaver_roadmap.md` + `phase_3_feature_expansion.md`
