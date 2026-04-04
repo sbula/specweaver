@@ -41,6 +41,12 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
      Add new anti-patterns discovered during this feature. Update the sub-layer
      structure diagram if new modules were added or moved.
 
+6.4. **MANDATORY: Keep Developer Guides Up to Date (`docs/dev_guides/`)**:
+     - Review the existing guides in `docs/dev_guides/` (e.g., `pipeline_engine_guide.md`, `adding_tools_and_atoms.md`, etc.).
+     - If this feature modified the systems or processes described in those guides, you MUST update them to reflect the current truth.
+     - **SPECIAL PATTERNS**: If this feature invents a new non-standard workaround, unique architecture pattern, or custom adaptation, you MUST append it to `docs/dev_guides/special_patterns_and_adaptations.md`.
+     - **CREATING NEW GUIDES**: Evaluate if this feature introduced a significant new topic or extension point (e.g., a new subsystem) that needs its own guide. If so, create one.
+
 > [!IMPORTANT]
 > Every bug, lint error, complexity violation, or oversized file MUST be fixed
 > regardless of whether it is pre-existing or introduced by this feature.

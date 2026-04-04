@@ -82,6 +82,14 @@ what boundary rules constrain the design>
 | AD-1 | ... | ... | No |
 | AD-2 | ... | ... | Yes — approved by <user> on <date> |
 
+## Developer Guides Required
+
+Evaluate if this feature introduces a new sub-system, paradigm, or extension layer that requires a Developer Guide for onboarding engineers.
+
+| Guide Topic | Description | Status |
+|-------------|-------------|--------|
+| Guide-1 | e.g., Adding a new external integration | ⬜ To be written during Pre-commit |
+
 ## Sub-Feature Breakdown
 
 *(Use "Single feature — no decomposition." if not split.)*
