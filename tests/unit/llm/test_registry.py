@@ -92,7 +92,7 @@ def test_ensure_discovered_swallows_syntax_error(mock_import):
 
 def test_ensure_discovered_implicit_namespace_package():
     """
-    Integration/Edge Case: Proves `specweaver.llm.adapters` natively functions as a PEP 420 
+    Integration/Edge Case: Proves `specweaver.llm.adapters` natively functions as a PEP 420
     Implicit Namespace Package without `__init__.py` bounding boxes by confirming its `__path__`
     is a _NamespacePath iterable and it possesses no `__file__` attribute.
     """

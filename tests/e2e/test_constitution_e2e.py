@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.cli import app
+from specweaver.cli.main import app
 from specweaver.llm.models import GenerationConfig, LLMResponse
 
 if TYPE_CHECKING:

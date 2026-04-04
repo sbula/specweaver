@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.cli import app
+from specweaver.cli.main import app
 
 if TYPE_CHECKING:
     from pathlib import Path

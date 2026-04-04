@@ -17,7 +17,7 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from specweaver.cli import app
+from specweaver.cli.main import app
 from specweaver.cli.pipelines import (
     _create_display,
     _resolve_spec_path,

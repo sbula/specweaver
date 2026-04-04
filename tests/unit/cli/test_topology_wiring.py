@@ -120,7 +120,7 @@ class TestSelectorCLIFlag:
     def test_draft_has_selector_flag(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["draft", "--help"])
@@ -129,7 +129,7 @@ class TestSelectorCLIFlag:
     def test_review_has_selector_flag(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["review", "--help"])
@@ -138,7 +138,7 @@ class TestSelectorCLIFlag:
     def test_implement_has_selector_flag(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["implement", "--help"])

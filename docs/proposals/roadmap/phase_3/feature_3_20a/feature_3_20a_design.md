@@ -47,8 +47,10 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 | **SF-2** | Resource & Core Capability Hardening | Apply Tach rules to the `llm`, `graph`, `context`, and `project` modules. Formally isolate the `llm` engine from the business logic. | [x] Committed |
 | **SF-3** | Presentation Layer Sterilization | Enforce that no domain logic inside `src/specweaver` is allowed to depend on `api` or `cli`. | [x] Committed |
 | **SF-4** | Public Interface Enforcement | Use Tach's `interfaces:` to declare strict public boundaries and delete the messy `__init__.py` boilerplate hacks. | [x] Committed |
-| **SF-5** | Legacy Linter Subsumption | Outsource manual architectural tests (soft-deprecations, cyclic guards) to Tach. | [ ] Pending |
-| **SF-6** | Global Implicit Namespace Conversion | Delete all 20 remaining internal `__init__.py` proxy files and enforce global `strict = true` topology using Tach. | [ ] Pending |
+| **SF-5** | Legacy Linter Subsumption | Outsource manual architectural tests (soft-deprecations, cyclic guards) to Tach. | [x] Committed |
+| **SF-6** | Global Implicit Namespace Conversion | Delete all 20 remaining internal `__init__.py` proxy files and enforce global `strict = true` topology using Tach. | [x] Committed |
+| **SF-7** | Target Rule C05 Subsumption (Tach) | Gut the hardcoded AST parser inside `c05_import_direction.py`. Replace it with a subprocess execution of `tach check` on the target project, mapping structural boundary violations into standard SpecWeaver Findings. | [ ] Pending |
+| **SF-8** | TopologyGraph to Tach Adapter | Build an adapter or synchronization layer ensuring that when SpecWeaver maps `context.yaml` boundaries across a target codebase, a `tach.toml` is dynamically generated or synchronized behind the scenes. | [ ] Pending |
 
 
 ## 6. Progress Tracker
@@ -61,13 +63,17 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 - [x] SF-4 Implementation Plan
 - [x] SF-4 Implementation (Committed)
 - [x] SF-5 Implementation Plan
-- [ ] SF-5 Implementation
-- [ ] SF-6 Implementation Plan
-- [ ] SF-6 Implementation
+- [x] SF-5 Implementation (Committed)
+- [x] SF-6 Implementation Plan
+- [x] SF-6 Implementation
+- [ ] SF-7 Implementation Plan
+- [ ] SF-7 Implementation
+- [ ] SF-8 Implementation Plan
+- [ ] SF-8 Implementation
 - [ ] Feature 3.20a Fully Complete
 
 ## 7. Session Handoff
 
-**Current status**: Feature 3.20a (SF-5: Legacy Linter Subsumption) Implementation in progress.
-**Next step**: Execute `/dev sf5` to complete the architectural transitions required for SF5.
+**Current status**: Feature 3.20a (SF-6: Global Implicit Namespace Conversion) Implementation complete.
+**Next step**: Execute `/dev sf7` to begin replacing the hardcoded AST parser with Tach.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

@@ -62,7 +62,7 @@ def test_tach_keeps_runner_soft_deprecated() -> None:
     """
     Integration Regression Guard:
     Ensures that the legacy 'runner' module is explicitly omitted from the 'src.specweaver.validation'
-    expose list in tach.toml. This prevents accidental soft-deprecation regressions where a future 
+    expose list in tach.toml. This prevents accidental soft-deprecation regressions where a future
     developer might silently re-expose it, bypassing the architectural deprecation boundary.
     """
     root_dir = Path(__file__).resolve().parent.parent.parent

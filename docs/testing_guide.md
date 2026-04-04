@@ -113,6 +113,19 @@ ruff check --fix src/specweaver/
 | SIM102/SIM108 | Simplifiable control flow |
 | N806 | Function-scope variables must be lowercase |
 
+### Architectural Boundaries (Tach)
+SpecWeaver enforces its Domain-Driven "Layer Cake" architecture and public interfaces using [Tach](https://github.com/gauge-sh/tach), rather than relying on legacy `__init__.py` encapsulation. SpecWeaver is structured as a PEP-420 Implicit Namespace Package.
+
+**Check architectural boundaries:**
+```bash
+tach check
+```
+
+**Sync dependencies after moving files:**
+```bash
+tach sync
+```
+
 ### Type Checking (mypy)
 SpecWeaver uses [mypy](https://mypy.readthedocs.io/) in strict mode. Configuration is in `pyproject.toml` under `[tool.mypy]`.
 

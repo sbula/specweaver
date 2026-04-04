@@ -60,6 +60,7 @@
 - ✅ Feature 3.17: Spec-to-code traceability — Artifact Lineage Graph
 - ✅ Feature 3.18: AST Drift Detection & AI Root-Cause Analysis — Parser-backed drift gating
 - ✅ Feature 3.19: Polyglot QARunner Interface — Black Box execution wrapping
+- 🚧 Feature 3.20a: Internal Layer Enforcement (Tach) — Strict Domain-Driven isolation
 - 🚧 Feature 3.20: Dynamic Risk-Based Rulesets — DAL-dictated injection of structural targets
 
 ---
@@ -86,7 +87,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API 🔧) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10 (Research Tools ✅) → 3.11 (Auto-Mention ✅) → 3.12 (Telemetry ✅) → 3.13 (Multi-Provider Registry ✅) → 3.14 (Static Routing ✅) → 3.15 (Metadata Injection ✅) → 3.16 (Unified Runner ✅) → 3.17 (Artifact Lineage ✅) → 3.18 (AST Drift Detection ✅) → 3.19 (Polyglot Runner ✅) → 3.20 (Dynamic Rulesets 🚧) → 3.21+ (Upcoming)
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API 🔧) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10 (Research Tools ✅) → 3.11 (Auto-Mention ✅) → 3.12 (Telemetry ✅) → 3.13 (Multi-Provider Registry ✅) → 3.14 (Static Routing ✅) → 3.15 (Metadata Injection ✅) → 3.16 (Unified Runner ✅) → 3.17 (Artifact Lineage ✅) → 3.18 (AST Drift Detection ✅) → 3.19 (Polyglot Runner ✅) → 3.20a (Internal Layer Enforcement 🚧) → 3.20 (Dynamic Rulesets 🚧) → 3.21+ (Upcoming)
 
 ---
 

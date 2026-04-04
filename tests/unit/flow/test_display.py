@@ -233,7 +233,7 @@ class TestCLIPipelines:
     def test_pipelines_shows_bundled(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["pipelines"])
@@ -353,7 +353,7 @@ class TestCLIRunEdgeCases:
     def test_run_help_shows_examples(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["run", "--help"])
@@ -364,7 +364,7 @@ class TestCLIRunEdgeCases:
     def test_resume_help(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["resume", "--help"])

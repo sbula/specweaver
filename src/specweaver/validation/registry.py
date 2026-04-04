@@ -118,3 +118,7 @@ _registry = RuleRegistry()
 def get_registry() -> RuleRegistry:
     """Get the global rule registry."""
     return _registry
+
+# Auto-register standard rules upon import
+import specweaver.validation.rules.code.register  # noqa: F401, E402
+import specweaver.validation.rules.spec.register  # noqa: F401, E402

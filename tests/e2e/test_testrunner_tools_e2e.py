@@ -9,7 +9,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from specweaver.cli import app
+from specweaver.cli.main import app
 
 runner = CliRunner()
 

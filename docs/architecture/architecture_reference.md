@@ -547,14 +547,16 @@ downstream atoms.
 
 SpecWeaver enforces safety at **every layer** through distinct mechanisms:
 
-### Layer 1: Boundary Manifests (`context.yaml`)
+### Layer 1: Boundary Manifests (`context.yaml` & `tach.toml`)
 
 Every directory declares its allowed dependencies, forbidden imports, and
 archetype. Violations are detectable by AST analysis (free, no LLM needed).
+Additionally, SpecWeaver is built as a **PEP-420 Implicit Namespace Package**, formally omitting `__init__.py` proxy files in favor of mathematically evaluated Rust boundaries using `Tach`.
 
 | Enforcement Field | Mechanism |
 |-------------------|-----------|
-| `consumes` | Whitelist of allowed imports |
+| `tach.toml` | Globally enforced strict boundaries preventing domain upward dependencies |
+| `consumes` | Whitelist of allowed imports (`context.yaml`) |
 | `forbids` | Explicit deny list (overrides parent) |
 | `archetype` | Structural pattern validation |
 | `constraints` | Free-form rules for veto agent |

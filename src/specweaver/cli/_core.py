@@ -16,7 +16,7 @@ import logging
 import typer
 from rich.console import Console
 
-from specweaver import __version__
+from specweaver._version import __version__
 from specweaver.config.database import Database
 from specweaver.config.paths import config_db_path
 

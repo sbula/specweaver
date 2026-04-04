@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.cli import app
+from specweaver.cli.main import app
 from specweaver.llm.models import LLMResponse
 
 runner = CliRunner()

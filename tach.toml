@@ -2,6 +2,7 @@ exclude = []
 source_roots = [
     ".",
 ]
+exact = true
 
 [[modules]]
 path = "src.specweaver.api"

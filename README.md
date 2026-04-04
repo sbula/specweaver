@@ -23,6 +23,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
 - **Standards auto-discovery** — Analyze codebase (Python, JavaScript, TypeScript) to extract naming, error handling, type hints/jsdoc/tsdoc, import, async, and test patterns. Multi-scope support (monorepo-aware), Human-in-the-Loop review, optional async LLM best-practice comparison, and token-capped injection into LLM prompts
 - **AST Drift Detection** — Structural parsing of implementations via `tree-sitter` to automatically pinpoint methods or modules that deviate from original Plan decisions.
+- **Architectural Enforcement** — Strict Domain-Driven "Layer Cake" isolation via Tach, natively bounded as a PEP-420 Implicit Namespace Package.
 - **UI Mockup Generation** — Auto-detects UI/Frontend requirements in specs and calls Google Stitch MCP to generate and attach visual mockups to standard implementation plans
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
 - **Multi-provider support** — Auto-discovering adapter registry supporting Gemini, OpenAI (GPT-5.4), Anthropic (Claude 4.6), Mistral (Small 4), and Qwen (3.5)
@@ -274,7 +275,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C08, drift detection)
-├── tests/                      # 3727+ tests (unit, integration, E2E)
+├── tests/                      # 3767+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
@@ -408,6 +409,9 @@ uv run pytest
 
 # Run linter
 uv run ruff check src/ tests/
+
+# Run architectural layer tests
+uv run tach check
 
 # Run tests with coverage
 uv run pytest --cov=specweaver --cov-report=term-missing

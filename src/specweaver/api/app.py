@@ -17,7 +17,8 @@ from specweaver.api import deps
 from specweaver.api.errors import SpecWeaverAPIError, specweaver_error_handler
 from specweaver.api.ui import htmx as ui_htmx
 from specweaver.api.ui import routes as ui_routes
-from specweaver.api.v1 import health, router
+from specweaver.api.v1 import health
+from specweaver.api.v1.router import router
 
 logger = logging.getLogger(__name__)
 

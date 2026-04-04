@@ -123,7 +123,7 @@ class TestC05ImportDirection:
         assert result.status == Status.PASS
 
     def test_forbidden_cli_import(self) -> None:
-        code = "from specweaver.cli import app\n"
+        code = "from specweaver.cli.main import app\n"
         rule = ImportDirectionRule()
         result = rule.check(code)
         assert result.status == Status.FAIL
@@ -457,7 +457,7 @@ class TestCLICodeCheck:
     def test_check_code_valid_python(self, tmp_path: pytest.TempPathFactory) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         code_file = tmp_path / "clean.py"
         code_file.write_text("def greet(name: str) -> str:\n    return f'Hello {name}'\n")
@@ -472,7 +472,7 @@ class TestCLICodeCheck:
     def test_check_code_syntax_error(self, tmp_path: pytest.TempPathFactory) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         code_file = tmp_path / "broken.py"
         code_file.write_text("def foo(\n")

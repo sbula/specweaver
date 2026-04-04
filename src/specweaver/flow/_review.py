@@ -110,7 +110,7 @@ class ReviewSpecHandler:
             )
 
             def on_tool_round(round_num: int, messages: list[Message]) -> None:
-                from specweaver.llm.mention_scanner import extract_mentions
+                from specweaver.llm.mention_scanner.scanner import extract_mentions
                 from specweaver.llm.models import Message, Role
 
                 last_msg = messages[-1]
@@ -197,7 +197,7 @@ class ReviewCodeHandler:
             )
 
             def on_tool_round(round_num: int, messages: list[Message]) -> None:
-                from specweaver.llm.mention_scanner import extract_mentions
+                from specweaver.llm.mention_scanner.scanner import extract_mentions
                 from specweaver.llm.models import Message, Role
 
                 last_msg = messages[-1]
@@ -291,7 +291,7 @@ def _scan_and_store_mentions(
     Resolution respects workspace boundaries: only files within
     ``context.project_path`` (or ``context.workspace_roots``) are included.
     """
-    from specweaver.llm.mention_scanner import extract_mentions
+    from specweaver.llm.mention_scanner.scanner import extract_mentions
 
     candidates = extract_mentions(raw_response)
     if not candidates:

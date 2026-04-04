@@ -298,7 +298,7 @@ class TestCLICheck:
     def test_check_good_spec(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["check", "tests/fixtures/good_spec.md"])
@@ -309,7 +309,7 @@ class TestCLICheck:
     def test_check_bad_spec_fails(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["check", "tests/fixtures/bad_spec_ambiguous.md"])
@@ -320,7 +320,7 @@ class TestCLICheck:
     def test_check_nonexistent_file(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["check", "nonexistent.md"])
@@ -331,7 +331,7 @@ class TestCLICheck:
     def test_check_unknown_level(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["check", "tests/fixtures/good_spec.md", "--level", "cosmic"])
@@ -342,7 +342,7 @@ class TestCLICheck:
     def test_check_code_level_stub(self) -> None:
         from typer.testing import CliRunner
 
-        from specweaver.cli import app
+        from specweaver.cli.main import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["check", "tests/fixtures/good_spec.md", "--level", "code"])
