@@ -138,7 +138,7 @@ docker compose up -d
 | `sw projects` | List all registered projects (marks active) |
 | `sw remove <name>` | Unregister a project (files stay on disk) |
 | `sw update <name> path <path>` | Update a project's root path |
-| `sw scan` | Auto-generate missing `context.yaml` files |
+| `sw scan` | Auto-generate `context.yaml` constraints and synchronize `tach.toml` architecture matrix |
 
 ### Validation Configuration
 

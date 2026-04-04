@@ -407,6 +407,34 @@ class TestCLIScan:
         assert result.exit_code == 0
         assert "existing" in result.output.lower() or "exists" in result.output.lower()
 
+    def test_scan_sync_tach_success(self, tmp_path: Path):
+        project_dir = tmp_path / "proj"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "myapp4", "--path", str(project_dir)])
+
+        # Add a context.yaml to ensure a TopologyGraph builds at least 1 node
+        (project_dir / "context.yaml").write_text("name: root\nlevel: module\narchetype: pure-logic\n")
+
+        result = runner.invoke(app, ["scan"])
+        assert result.exit_code == 0
+        assert "Synchronizing Tach Architecture Matrix" in result.output
+        assert "Tach Sync" in result.output
+        assert "Synchronized" in result.output
+
+    def test_scan_sync_tach_handles_errors(self, tmp_path: Path):
+        project_dir = tmp_path / "proj"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "myapp5", "--path", str(project_dir)])
+
+        # Corrupt the tach.toml explicitly to simulate a crash inside the adapter
+        corrupt = project_dir / "tach.toml"
+        corrupt.write_text("[[modules]\nINVALID", encoding="utf-8")
+
+        result = runner.invoke(app, ["scan"])
+        # Should catch Exception and not crash the program, exiting 0 normally since scan completes
+        assert result.exit_code == 0
+        assert "Tach Sync Failed" in result.output
+
 
 # ---------------------------------------------------------------------------
 # sw init — standards scan hint

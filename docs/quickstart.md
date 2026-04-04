@@ -241,6 +241,7 @@ sw projects            # List all registered projects
 sw use other-project   # Switch active project
 sw remove old-project  # Unregister (files stay on disk)
 sw update my-app path /new/path  # Update project path
+sw scan                # Auto-generate missing context.yamls & sync tach.toml
 ```
 
 ## Constitution Management

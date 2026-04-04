@@ -11,6 +11,7 @@ archetype: adapter
 
 consumes:
   - specweaver/config
+  - specweaver/graph
 
 forbids:
   - specweaver/loom/*
@@ -20,6 +21,8 @@ exposes:
   - resolve_project_path
   - scaffold_project
   - ScaffoldResult
+  - sync_tach_toml
+  - TachSyncResult
   - find_constitution
   - find_all_constitutions
   - check_constitution

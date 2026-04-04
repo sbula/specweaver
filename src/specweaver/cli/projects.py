@@ -12,8 +12,10 @@ import typer
 from rich.table import Table
 
 from specweaver.cli import _core
+from specweaver.graph.topology import TopologyGraph
 from specweaver.project.discovery import resolve_project_path
 from specweaver.project.scaffold import scaffold_project
+from specweaver.project.tach_sync import sync_tach_toml
 
 logger = logging.getLogger(__name__)
 
@@ -196,34 +198,7 @@ def update(
         _core.console.print(f"[red]Error:[/red] Unknown field '{field}'. Supported: path")
         raise typer.Exit(code=1)
 
-
-@_core.app.command()
-def scan() -> None:
-    """Scan the active project and auto-generate missing context.yaml files."""
-    db = _core.get_db()
-    active = db.get_active_project()
-    if not active:
-        _core.console.print(
-            "[red]Error:[/red] No active project. "
-            "Run [bold]sw init <name>[/bold] or [bold]sw use <name>[/bold] first.",
-        )
-        raise typer.Exit(code=1)
-
-    proj = db.get_project(active)
-    if proj is None:
-        _core.console.print(f"[red]Error:[/red] Project '{active}' not found.")
-        raise typer.Exit(code=1)
-    project_path = Path(str(proj["root_path"]))
-
-    if not project_path.exists():
-        _core.console.print(f"[red]Error:[/red] Project root does not exist: {project_path}")
-        raise typer.Exit(code=1)
-
-    from specweaver.context.inferrer import ContextInferrer
-
-    inferrer = ContextInferrer()
-    _core.console.print(f"[bold]Scanning[/bold] {project_path}...")
-
+def _infer_subdirs(project_path: Path, inferrer: ContextInferrer) -> tuple[int, int, int]:
     generated = 0
     skipped = 0
     existing = 0
@@ -258,7 +233,52 @@ def scan() -> None:
             rel = subdir.relative_to(project_path)
             _core.console.print(f"  [red]\u2717[/red] {rel}/ \u2014 failed to infer")
 
+    return generated, skipped, existing
+
+
+@_core.app.command()
+def scan() -> None:
+    """Scan the active project and auto-generate missing context.yaml files."""
+    db = _core.get_db()
+    active = db.get_active_project()
+    if not active:
+        _core.console.print(
+            "[red]Error:[/red] No active project. "
+            "Run [bold]sw init <name>[/bold] or [bold]sw use <name>[/bold] first.",
+        )
+        raise typer.Exit(code=1)
+
+    proj = db.get_project(active)
+    if proj is None:
+        _core.console.print(f"[red]Error:[/red] Project '{active}' not found.")
+        raise typer.Exit(code=1)
+    project_path = Path(str(proj["root_path"]))
+
+    if not project_path.exists():
+        _core.console.print(f"[red]Error:[/red] Project root does not exist: {project_path}")
+        raise typer.Exit(code=1)
+
+    from specweaver.context.inferrer import ContextInferrer
+
+    inferrer = ContextInferrer()
+    _core.console.print(f"[bold]Scanning[/bold] {project_path}...")
+
+    generated, skipped, existing = _infer_subdirs(project_path, inferrer)
+
     _core.console.print(
         f"\n[bold]Scan complete[/bold]: "
         f"{existing} existing, {generated} generated, {skipped} skipped",
     )
+
+    # Sync tach.toml topology layer
+    _core.console.print("\n[bold]Synchronizing Tach Architecture Matrix...[/bold]")
+    try:
+        graph = TopologyGraph.from_project(project_path)
+        sync_result = sync_tach_toml(graph, project_path)
+        _core.console.print(
+            f"  [green]\u2713[/green] [bold]Tach Sync[/bold]: Synchronized {sync_result.modules_synced} modules "
+            f"and {sync_result.interfaces_synced} interfaces into tach.toml"
+        )
+    except Exception as exc:
+        _core.console.print(f"  [red]\u2717[/red] Tach Sync Failed: {exc}")
+
