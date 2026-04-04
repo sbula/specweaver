@@ -36,21 +36,47 @@ def test_tach_interfaces_map_to_valid_namespaces() -> None:
         config = tomllib.load(f)
 
     for interface in config.get("interfaces", []):
-        module_base = interface.get("module")
-        if not module_base:
-            continue
+        from_bases = interface.get("from", [])
+        if not from_bases:
+            # Fallback for old tach syntax if any
+            module_base = interface.get("module")
+            if module_base:
+                from_bases = [module_base]
 
-        base_parts = module_base.split(".")
-        for exposed_path in interface.get("expose", []):
-            parts = exposed_path.split(".")
-            # Convert import path to physical path (e.g. src.specweaver.project + constitution)
-            # Tach syntax means `expose = ["constitution"]` inside `module = "src.x"` maps to `src.x.constitution`
-            relative_path = Path(*base_parts) / Path(*parts)
-            physical_dir = root_dir / relative_path
-            physical_file = physical_dir.with_suffix(".py")
+        for module_base in from_bases:
+            base_parts = module_base.split(".")
+            for exposed_path in interface.get("expose", []):
+                parts = exposed_path.split(".")
+                relative_path = Path(*base_parts) / Path(*parts)
+                physical_dir = root_dir / relative_path
+                physical_file = physical_dir.with_suffix(".py")
 
-            assert physical_dir.exists() or physical_file.exists(), (
-                f"Tach explicit boundary violation risk! "
-                f"The interface {exposed_path} for module {module_base} listed in tach.toml does not map "
-                f"to any physical directory or file in the filesystem. Tach may silently ignore this."
+                assert physical_dir.exists() or physical_file.exists(), (
+                    f"Tach explicit boundary violation risk! "
+                    f"The interface {exposed_path} for module {module_base} listed in tach.toml does not map "
+                    f"to any physical directory or file in the filesystem. Tach may silently ignore this."
+                )
+
+
+def test_tach_keeps_runner_soft_deprecated() -> None:
+    """
+    Integration Regression Guard:
+    Ensures that the legacy 'runner' module is explicitly omitted from the 'src.specweaver.validation'
+    expose list in tach.toml. This prevents accidental soft-deprecation regressions where a future 
+    developer might silently re-expose it, bypassing the architectural deprecation boundary.
+    """
+    root_dir = Path(__file__).resolve().parent.parent.parent
+    tach_path = root_dir / "tach.toml"
+    assert tach_path.exists()
+
+    with tach_path.open("rb") as f:
+        config = tomllib.load(f)
+
+    for interface in config.get("interfaces", []):
+        from_bases = interface.get("from", [])
+        if "src.specweaver.validation" in from_bases:
+            exposed = interface.get("expose", [])
+            assert "runner" not in exposed, (
+                "CRITICAL: The 'runner' module must remain soft-deprecated! "
+                "Do NOT add 'runner' to the validation interfaces in tach.toml."
             )

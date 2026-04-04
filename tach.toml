@@ -45,15 +45,15 @@ depends_on = []
 
 [[interfaces]]
 from = ["src.specweaver.project"]
-expose = ["constitution", "scaffold", "discovery", "settings", "models"]
+expose = ["constitution", "scaffold", "discovery"]
 
 [[interfaces]]
 from = ["src.specweaver.context"]
-expose = ["analyzers", "provider", "hitl_provider", "inferrer", "recency", "models"]
+expose = ["analyzers", "provider", "hitl_provider", "inferrer"]
 
 [[interfaces]]
 from = ["src.specweaver.graph"]
-expose = ["topology", "selectors", "builder", "models"]
+expose = ["topology", "selectors"]
 
 [[interfaces]]
 from = ["src.specweaver.llm"]

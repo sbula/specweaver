@@ -61,13 +61,13 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 - [x] SF-4 Implementation Plan
 - [x] SF-4 Implementation (Committed)
 - [x] SF-5 Implementation Plan
-- [x] SF-5 Implementation (Committed)
+- [ ] SF-5 Implementation
 - [ ] SF-6 Implementation Plan
 - [ ] SF-6 Implementation
 - [ ] Feature 3.20a Fully Complete
 
 ## 7. Session Handoff
 
-**Current status**: Feature 3.20a (SF-5: Legacy Linter Subsumption) FULLY COMPLETED.
-**Next step**: Execute `/implementation-plan 3.20a, sf6` to architect the Global Namespace Conversion in SF-6.
+**Current status**: Feature 3.20a (SF-5: Legacy Linter Subsumption) Implementation in progress.
+**Next step**: Execute `/dev sf5` to complete the architectural transitions required for SF5.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

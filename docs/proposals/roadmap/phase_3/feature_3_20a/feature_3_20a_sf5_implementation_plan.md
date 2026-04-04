@@ -26,9 +26,11 @@ This implementation plan covers the complete integration and adoption of `Tach` 
 
 ## 3. Implementation Steps
 
-1. **Delete Testing Files**: Hard delete `tests/unit/validation/test_runner_removals.py`.
-2. **Strip Boilerplate**: Remove `test_tach_toml_enforces_resource_layer_modules` and `test_core_layers_never_depend_on_presentation` from `tests/unit/test_architecture.py`.
-3. **Register `validation` Interface**: Update `tach.toml` to explicitly map `src.specweaver.validation` into `modules` and `interfaces`, purposely excluding `runner` to formalize the CI deprecation block globally.
+1. [x] **Delete Testing Files**: Hard delete `tests/unit/validation/test_runner_removals.py`.
+2. [x] **Strip Boilerplate**: Remove `test_tach_toml_enforces_resource_layer_modules` and `test_core_layers_never_depend_on_presentation` from `tests/unit/test_architecture.py`.
+3. [x] **Register `validation` Interface**: Update `tach.toml` to explicitly map `src.specweaver.validation` into `modules` and `interfaces`, purposely excluding `runner` to formalize the CI deprecation block globally.
+
+*Implementation Note: Also implemented a targeted integration test `test_tach_keeps_runner_soft_deprecated` to ensure `runner` is never accidentally re-added to `tach.toml`, and fixed bugs in `test_architecture.py` regarding `tach.toml` structure parsing which revealed and fixed several phantom/dead module exposures.*
 
 ---
 
