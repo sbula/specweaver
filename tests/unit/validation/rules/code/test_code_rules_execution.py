@@ -34,12 +34,12 @@ def _make_mock_llm(response_text: str = "def greet(): pass\n") -> MagicMock:
 
 
 # ---------------------------------------------------------------------------
-# C03: Tests Pass — PythonTestRunner mock tests
+# C03: Tests Pass — PythonQARunner mock tests
 # ---------------------------------------------------------------------------
 
 
 class TestC03TestsPass:
-    """C03 runs pytest via PythonTestRunner and checks results."""
+    """C03 runs pytest via PythonQARunner and checks results."""
 
     def test_skip_when_no_path(self) -> None:
         """Should SKIP when no spec_path is provided."""
@@ -74,13 +74,13 @@ class TestC03TestsPass:
         assert result.status == Status.SKIP
         assert "test_mymod" in result.message
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonQARunner")
     def test_pass_when_tests_succeed(
         self,
         mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Should PASS when PythonTestRunner.run_tests reports no failures."""
+        """Should PASS when PythonQARunner.run_tests reports no failures."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -93,7 +93,7 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
@@ -108,13 +108,13 @@ class TestC03TestsPass:
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.PASS
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonQARunner")
     def test_fail_when_tests_fail(
         self,
         mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Should FAIL when PythonTestRunner.run_tests reports failures."""
+        """Should FAIL when PythonQARunner.run_tests reports failures."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -127,7 +127,7 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestFailure, TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestFailure, TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
@@ -144,13 +144,13 @@ class TestC03TestsPass:
         assert result.status == Status.FAIL
         assert len(result.findings) > 0
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonQARunner")
     def test_fail_when_tests_timeout(
         self,
         mock_runner_cls: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Should FAIL with timeout message when PythonTestRunner times out."""
+        """Should FAIL with timeout message when PythonQARunner times out."""
         (tmp_path / "pyproject.toml").write_text("[project]", encoding="utf-8")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -168,7 +168,7 @@ class TestC03TestsPass:
         assert result.status == Status.FAIL
         assert "timed out" in result.message.lower()
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonQARunner")
     def test_fail_output_truncated(
         self,
         mock_runner_cls: MagicMock,
@@ -184,7 +184,7 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestFailure, TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestFailure, TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         long_message = "x" * 1000
@@ -203,7 +203,7 @@ class TestC03TestsPass:
         # Output is truncated to 500 chars
         assert len(result.findings[0].message) <= 500
 
-    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c03_tests_pass.PythonQARunner")
     def test_fail_no_output(
         self,
         mock_runner_cls: MagicMock,
@@ -219,7 +219,7 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
@@ -238,12 +238,12 @@ class TestC03TestsPass:
 
 
 # ---------------------------------------------------------------------------
-# C04: Coverage — PythonTestRunner mock tests
+# C04: Coverage — PythonQARunner mock tests
 # ---------------------------------------------------------------------------
 
 
 class TestC04Coverage:
-    """C04 runs pytest --cov via PythonTestRunner and checks coverage."""
+    """C04 runs pytest --cov via PythonQARunner and checks coverage."""
 
     def test_skip_when_no_path(self) -> None:
         """Should SKIP when no spec_path is provided."""
@@ -251,7 +251,7 @@ class TestC04Coverage:
         result = rule.check("code content", spec_path=None)
         assert result.status == Status.SKIP
 
-    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonQARunner")
     def test_pass_when_above_threshold(
         self,
         mock_runner_cls: MagicMock,
@@ -262,7 +262,7 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
@@ -279,7 +279,7 @@ class TestC04Coverage:
         assert result.status == Status.PASS
         assert "95%" in result.message
 
-    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonQARunner")
     def test_fail_when_below_threshold(
         self,
         mock_runner_cls: MagicMock,
@@ -290,7 +290,7 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
@@ -308,7 +308,7 @@ class TestC04Coverage:
         assert "40%" in result.message
         assert len(result.findings) > 0
 
-    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonQARunner")
     def test_warn_when_output_unparseable(
         self,
         mock_runner_cls: MagicMock,
@@ -319,7 +319,7 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
@@ -336,7 +336,7 @@ class TestC04Coverage:
         assert result.status == Status.WARN
         assert "unparseable" in result.message.lower() or "parse" in result.message.lower()
 
-    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonQARunner")
     def test_fail_when_timeout(
         self,
         mock_runner_cls: MagicMock,
@@ -355,7 +355,7 @@ class TestC04Coverage:
         assert result.status == Status.FAIL
         assert "timed out" in result.message.lower()
 
-    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonQARunner")
     def test_pass_at_exact_threshold(
         self,
         mock_runner_cls: MagicMock,
@@ -366,7 +366,7 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(
@@ -382,7 +382,7 @@ class TestC04Coverage:
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.PASS
 
-    @patch("specweaver.validation.rules.code.c04_coverage.PythonTestRunner")
+    @patch("specweaver.validation.rules.code.c04_coverage.PythonQARunner")
     def test_fail_one_below_threshold(
         self,
         mock_runner_cls: MagicMock,
@@ -393,7 +393,7 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.loom.commons.test_runner.interface import TestRunResult
+        from specweaver.loom.commons.qa_runner.interface import TestRunResult
 
         mock_runner = mock_runner_cls.return_value
         mock_runner.run_tests.return_value = TestRunResult(

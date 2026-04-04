@@ -3,7 +3,7 @@
 
 """Tests for apply_settings_to_pipeline — overrides via DB settings.
 
-Replaces the old test_runner_settings.py which tested via the now-removed
+Replaces the old qa_runner_settings.py which tested via the now-removed
 ``get_spec_rules()`` / ``get_code_rules()`` legacy functions.
 
 All tests use the production pipeline executor path:

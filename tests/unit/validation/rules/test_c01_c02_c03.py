@@ -181,7 +181,7 @@ class TestTestsPassRule:
         assert result.status == Status.SKIP
 
     def test_passing_tests_pass(self, tmp_path: Path) -> None:
-        """Mocked PythonTestRunner returns passing results."""
+        """Mocked PythonQARunner returns passing results."""
         (tmp_path / "pyproject.toml").write_text("[project]\n")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -191,7 +191,7 @@ class TestTestsPassRule:
 
         mock_result = MagicMock(failed=0, errors=0, failures=[])
         with patch(
-            "specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner"
+            "specweaver.validation.rules.code.c03_tests_pass.PythonQARunner"
         ) as mock_runner:
             mock_runner.return_value.run_tests.return_value = mock_result
             rule = TestsPassRule()
@@ -199,7 +199,7 @@ class TestTestsPassRule:
         assert result.status == Status.PASS
 
     def test_failing_tests_fail(self, tmp_path: Path) -> None:
-        """Mocked PythonTestRunner returns failing results."""
+        """Mocked PythonQARunner returns failing results."""
         (tmp_path / "pyproject.toml").write_text("[project]\n")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -210,7 +210,7 @@ class TestTestsPassRule:
         mock_failure = MagicMock(message="assert False")
         mock_result = MagicMock(failed=1, errors=0, failures=[mock_failure])
         with patch(
-            "specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner"
+            "specweaver.validation.rules.code.c03_tests_pass.PythonQARunner"
         ) as mock_runner:
             mock_runner.return_value.run_tests.return_value = mock_result
             rule = TestsPassRule()
@@ -218,7 +218,7 @@ class TestTestsPassRule:
         assert result.status == Status.FAIL
 
     def test_timeout_fails(self, tmp_path: Path) -> None:
-        """Mocked PythonTestRunner raises TimeoutError."""
+        """Mocked PythonQARunner raises TimeoutError."""
         (tmp_path / "pyproject.toml").write_text("[project]\n")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -227,7 +227,7 @@ class TestTestsPassRule:
         src.write_text("x = 1\n")
 
         with patch(
-            "specweaver.validation.rules.code.c03_tests_pass.PythonTestRunner"
+            "specweaver.validation.rules.code.c03_tests_pass.PythonQARunner"
         ) as mock_runner:
             mock_runner.return_value.run_tests.side_effect = TimeoutError
             rule = TestsPassRule()

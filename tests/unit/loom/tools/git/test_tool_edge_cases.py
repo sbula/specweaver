@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -51,7 +52,7 @@ class TestWrongRoleBlocksAllIntents:
             ("list_branches", ()),
         ],
     )
-    def test_implementer_cannot_use_reviewer_intents(self, intent: str, args: tuple) -> None:
+    def test_implementer_cannot_use_reviewer_intents(self, intent: str, args: tuple[Any, ...]) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
@@ -65,7 +66,7 @@ class TestWrongRoleBlocksAllIntents:
             ("reflog", (10,)),
         ],
     )
-    def test_implementer_cannot_use_debugger_intents(self, intent: str, args: tuple) -> None:
+    def test_implementer_cannot_use_debugger_intents(self, intent: str, args: tuple[Any, ...]) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
@@ -81,7 +82,7 @@ class TestWrongRoleBlocksAllIntents:
             ("switch_branch", ("feat/nope",)),
         ],
     )
-    def test_reviewer_cannot_use_write_intents(self, intent: str, args: tuple) -> None:
+    def test_reviewer_cannot_use_write_intents(self, intent: str, args: tuple[Any, ...]) -> None:
         tool = GitTool(executor=_make_executor(), role="reviewer")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
@@ -94,7 +95,7 @@ class TestWrongRoleBlocksAllIntents:
             ("switch_branch", ("feat/nope",)),
         ],
     )
-    def test_drafter_blocked_from_branch_and_uncommit(self, intent: str, args: tuple) -> None:
+    def test_drafter_blocked_from_branch_and_uncommit(self, intent: str, args: tuple[Any, ...]) -> None:
         tool = GitTool(executor=_make_executor(), role="drafter")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
@@ -436,7 +437,7 @@ class TestConfigConsistency:
     def test_all_intents_in_intent_commands_are_used_by_a_role(self) -> None:
         from specweaver.loom.tools.git.tool import INTENT_COMMANDS
 
-        all_role_intents = set()
+        all_role_intents: set[str] = set()
         for intents in ROLE_INTENTS.values():
             all_role_intents |= intents
         for intent in INTENT_COMMANDS:

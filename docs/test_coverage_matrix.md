@@ -666,7 +666,7 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 
 ## 9 · Loom — Atoms / Tools / Commons (`loom/`)
 
-### 9.1 Atoms (base, rule, filesystem, git, test_runner)
+### 9.1 Atoms (base, rule, filesystem, git, qa_runner)
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
@@ -674,28 +674,28 @@ Legend: ✅ covered · ❌ missing · ⚪ n/a
 | `RuleAtom` run | ✅ | ✅ | ⚪ | ⚪ | — |
 | `FileSystemAtom` all intents | ✅ | ✅ | ⚪ | ⚪ | — |
 | `GitAtom` all intents | ✅ | ⚪ | ⚪ | ⚪ | — |
-| `TestRunnerAtom` run/lint/complexity | ✅ | ✅ | ⚪ | ⚪ | — |
+| `QARunnerAtom` run/lint/complexity | ✅ | ✅ | ⚪ | ⚪ | — |
 
-### 9.2 Tools (filesystem, git, test_runner)
+### 9.2 Tools (filesystem, git, qa_runner)
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `FileSystemTool` all methods + grants | ✅ | ✅ | ⚪ | ⚪ | — |
 | `GitTool` all methods + whitelist | ✅ | ⚪ | ⚪ | ⚪ | — |
-| `TestRunnerTool` run_tests/run_linter | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `QARunnerTool` run_tests/run_linter | ✅ | ⚪ | ⚪ | ⚪ | — |
 | Role gating (implementer can fix, reviewer cannot) | ✅ | ✅ | ⚪ | ⚪ | — |
 | Path traversal prevention | ✅ | ⚪ | ⚪ | ⚪ | — |
 
-### 9.3 Commons (filesystem, git, test_runner)
+### 9.3 Commons (filesystem, git, qa_runner)
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|
 | `FileExecutor` all methods | ✅ | ⚪ | ⚪ | ⚪ | — |
 | `GitExecutor` run + whitelist | ✅ | ⚪ | ⚪ | ⚪ | — |
-| `PythonTestRunner` run/lint/complexity | ✅ | ⚪ | ⚪ | ⚪ | — |
-| `TestRunnerInterface` ABC | ⚪ | ⚪ | ⚪ | ⚪ | — |
+| `PythonQARunner` run/lint/complexity | ✅ | ⚪ | ⚪ | ⚪ | — |
+| `QARunnerInterface` ABC | ⚪ | ⚪ | ⚪ | ⚪ | — |
 
-### 9.4 Interfaces (filesystem, git, test_runner)
+### 9.4 Interfaces (filesystem, git, qa_runner)
 
 | Story | Unit | Integ | E2E | Perf | Notes |
 |-------|:----:|:-----:|:---:|:----:|-------|

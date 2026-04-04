@@ -217,19 +217,19 @@ graph TB
             direction TB
             A_GIT["GitAtom"]
             A_FS["FileSystemAtom"]
-            A_TR["TestRunnerAtom"]
+            A_TR["QARunnerAtom"]
         end
         subgraph tools["tools/ (agent-facing)"]
             direction TB
             T_GIT["GitTool"]
             T_FS["FileSystemTool"]
-            T_TR["TestRunnerTool"]
+            T_TR["QARunnerTool"]
         end
         subgraph commons["commons/ (shared)"]
             direction TB
             C_GIT["GitExecutor"]
             C_FS["FileSystemExecutor"]
-            C_TR["TestRunnerInterface<br/>PythonTestRunner"]
+            C_TR["QARunnerInterface<br/>PythonQARunner"]
         end
     end
 
@@ -254,18 +254,18 @@ graph TB
 
 <div class="diagram-card">
   <h3>Test Runner: 4-Layer Architecture</h3>
-  <p>Shows how the TestRunner flows from pipeline handler to subprocess execution.</p>
+  <p>Shows how the QARunner flows from pipeline handler to subprocess execution.</p>
   <pre class="mermaid">
 flowchart TB
     subgraph "Handler Layer"
         VTH["ValidateTestsHandler"]
     end
     subgraph "Atom Layer"
-        TRA["TestRunnerAtom<br/>(intent dispatch)"]
+        TRA["QARunnerAtom<br/>(intent dispatch)"]
     end
     subgraph "Commons Layer"
-        TRI["TestRunnerInterface<br/>(ABC)"]
-        PTR["PythonTestRunner<br/>(subprocess)"]
+        TRI["QARunnerInterface<br/>(ABC)"]
+        PTR["PythonQARunner<br/>(subprocess)"]
     end
     subgraph "External"
         PYTEST["pytest"]
@@ -286,7 +286,7 @@ flowchart TB
   <pre class="mermaid">
 flowchart LR
     subgraph "Factory"
-        F["create_test_runner_interface(role, cwd)"]
+        F["create_qa_runner_interface(role, cwd)"]
     end
     subgraph "Implementer"
         I_TEST["run_tests()"]
@@ -1106,7 +1106,7 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td>YAML pipeline definitions</td><td>Non-code configuration → easy to add new workflows without touching Python</td></tr>
   <tr><td>Atom / Tool separation</td><td>Engine and agents have different security boundaries → principle of least privilege</td></tr>
   <tr><td>Commons shared layer</td><td>Prevents cross-layer imports → atoms and tools stay independently testable</td></tr>
-  <tr><td>Language-agnostic interfaces</td><td><code>TestRunnerInterface</code> ABC → future Go, Rust, TypeScript support</td></tr>
+  <tr><td>Language-agnostic interfaces</td><td><code>QARunnerInterface</code> ABC → future Go, Rust, TypeScript support</td></tr>
   <tr><td>Role-based tool gating</td><td>Implementer gets <code>fix=True</code>, reviewer gets read-only → agents can't exceed authority</td></tr>
   <tr><td>Gate-based flow control</td><td>Retry, loop-back, HITL parking → pipelines are self-healing</td></tr>
   <tr><td>Feedback injection</td><td>Failed step findings enriched into next attempt's context → agents learn from mistakes</td></tr>

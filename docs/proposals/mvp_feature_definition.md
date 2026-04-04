@@ -88,8 +88,10 @@ Interactive session. Agent and HITL co-author a Component Spec.
 
 Automated rules against a spec file. Uniform rule interface — all rules run, results collected, caller decides next action.
 
-See [Validation Rules](../../README.md#validation-rules) in the README for the current spec rule list (S01-S11).
-
+See [Validation Rules](../../README.md#validation-rules) in the README for the current spec rule list (S01-S11).
+
+
+
 All rules are DRAFT implementations
 ### F4: Spec Review (`sw review spec`)
 
@@ -109,7 +111,8 @@ Reads validated+reviewed spec, generates code + tests:
 
 Same rule interface as F3, different rules:
 
-See [Code Rules](../../README.md#code-rules-c01c08) in the README for the current code rule list (C01-C08).
+See [Code Rules](../../README.md#code-rules-c01c08) in the README for the current code rule list (C01-C08).
+
 
 ### F7: Code Review (`sw review code`)
 
@@ -337,7 +340,7 @@ tests/
 │   ├── test_cli.py                      # CLI dispatch
 │   ├── test_settings.py                 # Config loading
 │   ├── test_rule_models.py              # Interface compliance
-│   ├── test_runner.py                   # Result collection
+│   ├── qa_runner.py                   # Result collection
 │   ├── test_spec_rules/                 # Per-rule tests (s01-s11)
 │   ├── test_code_rules/                 # Per-rule tests (c01-c08)
 │   ├── test_reviewer.py                 # Prompt construction

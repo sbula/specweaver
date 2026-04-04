@@ -3,7 +3,7 @@
 
 """C03: Tests Pass — runs pytest on the test file and checks results.
 
-Delegates pytest execution to the shared PythonTestRunner from the
+Delegates pytest execution to the shared PythonQARunner from the
 commons layer, eliminating duplicate subprocess handling.
 """
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.loom.commons.test_runner.python import PythonTestRunner
+from specweaver.loom.commons.qa_runner.python import PythonQARunner
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
 if TYPE_CHECKING:
@@ -54,8 +54,8 @@ class TestsPassRule(Rule):
 
         test_file = matches[0]
 
-        # Delegate to PythonTestRunner
-        runner = PythonTestRunner(cwd=project_root)
+        # Delegate to PythonQARunner
+        runner = PythonQARunner(cwd=project_root)
         try:
             result = runner.run_tests(
                 target=str(test_file.relative_to(project_root)),

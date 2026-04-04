@@ -244,51 +244,51 @@ class TestInterfaceDelegation:
 
     def test_implementer_commit_delegates(self) -> None:
         mock_tool = MagicMock()
-        mock_tool.commit.return_value = "result"
+        mock_tool.commit.return_value = MagicMock()
         iface = ImplementerGitInterface(mock_tool)
         result = iface.commit("feat: test")
         mock_tool.commit.assert_called_once_with("feat: test")
-        assert result == "result"
+        assert result == mock_tool.commit.return_value
 
     def test_reviewer_history_delegates(self) -> None:
         mock_tool = MagicMock()
-        mock_tool.history.return_value = "result"
+        mock_tool.history.return_value = MagicMock()
         iface = ReviewerGitInterface(mock_tool)
         result = iface.history(5)
         mock_tool.history.assert_called_once_with(5)
-        assert result == "result"
+        assert result == mock_tool.history.return_value
 
     def test_debugger_file_history_delegates(self) -> None:
         mock_tool = MagicMock()
-        mock_tool.file_history.return_value = "result"
+        mock_tool.file_history.return_value = MagicMock()
         iface = DebuggerGitInterface(mock_tool)
         result = iface.file_history("app.py", 3)
         mock_tool.file_history.assert_called_once_with("app.py", 3)
-        assert result == "result"
+        assert result == mock_tool.file_history.return_value
 
     def test_drafter_discard_delegates(self) -> None:
         mock_tool = MagicMock()
-        mock_tool.discard.return_value = "result"
+        mock_tool.discard.return_value = MagicMock()
         iface = DrafterGitInterface(mock_tool)
         result = iface.discard("file.py")
         mock_tool.discard.assert_called_once_with("file.py")
-        assert result == "result"
+        assert result == mock_tool.discard.return_value
 
     def test_reviewer_compare_delegates(self) -> None:
         mock_tool = MagicMock()
-        mock_tool.compare.return_value = "result"
+        mock_tool.compare.return_value = MagicMock()
         iface = ReviewerGitInterface(mock_tool)
         result = iface.compare("main", "dev")
         mock_tool.compare.assert_called_once_with("main", "dev")
-        assert result == "result"
+        assert result == mock_tool.compare.return_value
 
     def test_implementer_switch_branch_delegates(self) -> None:
         mock_tool = MagicMock()
-        mock_tool.switch_branch.return_value = "result"
+        mock_tool.switch_branch.return_value = MagicMock()
         iface = ImplementerGitInterface(mock_tool)
         result = iface.switch_branch("feat/other")
         mock_tool.switch_branch.assert_called_once_with("feat/other")
-        assert result == "result"
+        assert result == mock_tool.switch_branch.return_value
 
 
 # ---------------------------------------------------------------------------

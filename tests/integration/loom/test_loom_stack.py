@@ -15,11 +15,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.loom.commons.test_runner.interface import (
+from specweaver.loom.commons.qa_runner.interface import (
     ComplexityRunResult,
     LintRunResult,
 )
-from specweaver.loom.commons.test_runner.python import PythonTestRunner
+from specweaver.loom.commons.qa_runner.python import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -37,7 +37,7 @@ def _write_py(tmp_path: Path, name: str, content: str) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# PythonTestRunner — real ruff subprocess
+# PythonQARunner — real ruff subprocess
 # ---------------------------------------------------------------------------
 
 
@@ -48,7 +48,7 @@ class TestRealLinting:
         """Clean greeter module → zero lint errors."""
         clean_dir = sample_project / "src" / "greeter"
 
-        runner = PythonTestRunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project)
         result = runner.run_linter(target=str(clean_dir))
 
         assert isinstance(result, LintRunResult)
@@ -64,7 +64,7 @@ class TestRealLinting:
             encoding="utf-8",
         )
 
-        runner = PythonTestRunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project)
         result = runner.run_linter(target=str(broken_dir))
 
         assert isinstance(result, LintRunResult)
@@ -82,7 +82,7 @@ class TestRealLinting:
             encoding="utf-8",
         )
 
-        runner = PythonTestRunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project)
 
         before = runner.run_linter(target=str(fixable_dir))
         assert before.error_count > 0
@@ -103,7 +103,7 @@ class TestRealComplexity:
         """Clean greeter module → no complexity violations."""
         clean_dir = sample_project / "src" / "greeter"
 
-        runner = PythonTestRunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project)
         result = runner.run_complexity(target=str(clean_dir))
 
         assert isinstance(result, ComplexityRunResult)
@@ -130,7 +130,7 @@ class TestRealComplexity:
         lines.append('    return "default"\n')
         (complex_dir / "complex.py").write_text("".join(lines), encoding="utf-8")
 
-        runner = PythonTestRunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project)
         result = runner.run_complexity(target=str(complex_dir))
 
         assert isinstance(result, ComplexityRunResult)
@@ -157,7 +157,7 @@ class TestRealComplexity:
             encoding="utf-8",
         )
 
-        runner = PythonTestRunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project)
 
         result_default = runner.run_complexity(target=str(moderate_dir))
         assert result_default.violation_count == 0
@@ -175,7 +175,7 @@ class TestAtomToolStack:
     """Test the atom → tool wiring with real execution."""
 
     def test_atom_lint_intent_with_real_ruff(self, sample_project: Path) -> None:
-        """TestRunnerAtom handles run_linter intent via real PythonTestRunner."""
+        """QARunnerAtom handles run_linter intent via real PythonQARunner."""
         # Write a broken file without noqa
         lint_dir = sample_project / "src" / "atom_lint_test"
         lint_dir.mkdir(parents=True, exist_ok=True)
@@ -184,9 +184,9 @@ class TestAtomToolStack:
             encoding="utf-8",
         )
 
-        from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+        from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
 
-        atom = TestRunnerAtom(cwd=sample_project)
+        atom = QARunnerAtom(cwd=sample_project)
         result = atom.run(
             {
                 "intent": "run_linter",
@@ -198,12 +198,12 @@ class TestAtomToolStack:
         assert result.exports.get("error_count", 0) > 0
 
     def test_atom_complexity_intent_clean(self, sample_project: Path) -> None:
-        """TestRunnerAtom handles run_complexity intent — clean code."""
+        """QARunnerAtom handles run_complexity intent — clean code."""
         clean_dir = sample_project / "src" / "greeter"
 
-        from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+        from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
 
-        atom = TestRunnerAtom(cwd=sample_project)
+        atom = QARunnerAtom(cwd=sample_project)
         result = atom.run(
             {
                 "intent": "run_complexity",
@@ -214,20 +214,20 @@ class TestAtomToolStack:
         assert result.status.value == "SUCCESS"
 
     def test_tool_role_gating_blocks_reviewer_fix(self, sample_project: Path) -> None:
-        """TestRunnerTool blocks reviewer from using fix=True."""
-        from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
-        from specweaver.loom.tools.test_runner.tool import (
-            TestRunnerTool,
-            TestRunnerToolError,
+        """QARunnerTool blocks reviewer from using fix=True."""
+        from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
+        from specweaver.loom.tools.qa_runner.tool import (
+            QARunnerTool,
+            QARunnerToolError,
         )
 
-        atom = TestRunnerAtom(cwd=sample_project)
-        tool = TestRunnerTool(atom, role="reviewer")
-        with pytest.raises(TestRunnerToolError, match="not allowed"):
+        atom = QARunnerAtom(cwd=sample_project)
+        tool = QARunnerTool(atom, role="reviewer")
+        with pytest.raises(QARunnerToolError, match="not allowed"):
             tool.run_linter(target=".", fix=True)
 
     def test_tool_implementer_can_lint_fix(self, sample_project: Path) -> None:
-        """TestRunnerTool allows implementer to use fix=True."""
+        """QARunnerTool allows implementer to use fix=True."""
         fix_dir = sample_project / "src" / "tool_fix_test"
         fix_dir.mkdir(parents=True, exist_ok=True)
         bad_file = fix_dir / "fixable.py"
@@ -236,11 +236,11 @@ class TestAtomToolStack:
             encoding="utf-8",
         )
 
-        from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
-        from specweaver.loom.tools.test_runner.tool import TestRunnerTool
+        from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
+        from specweaver.loom.tools.qa_runner.tool import QARunnerTool
 
-        atom = TestRunnerAtom(cwd=sample_project)
-        tool = TestRunnerTool(atom, role="implementer")
+        atom = QARunnerAtom(cwd=sample_project)
+        tool = QARunnerTool(atom, role="implementer")
         tool.run_linter(target=str(fix_dir), fix=True)
 
         content = bad_file.read_text(encoding="utf-8")
@@ -257,7 +257,7 @@ class TestPythonRunnerExecution:
 
     def test_run_compiler_stub(self, sample_project: Path) -> None:
         """Python compiler just returns a 0 error stub organically."""
-        runner = PythonTestRunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project)
         result = runner.run_compiler(target=".")
         assert result.error_count == 0
 
@@ -271,7 +271,7 @@ class TestPythonRunnerExecution:
             encoding="utf-8",
         )
 
-        runner = PythonTestRunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project)
         result = runner.run_debugger(target=str(target_dir), entrypoint=str(py_file))
         assert result.exit_code == 0
         outputs = [e.output for e in result.events]
@@ -287,7 +287,7 @@ class TestTypeScriptRunnerRealTooling:
         import shutil
         import subprocess
 
-        from specweaver.loom.commons.test_runner.typescript import TypeScriptRunner
+        from specweaver.loom.commons.qa_runner.typescript import TypeScriptRunner
 
         target_dir = sample_project / "src" / "ts_compile"
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -319,7 +319,7 @@ class TestTypeScriptRunnerRealTooling:
         import shutil
         import subprocess
 
-        from specweaver.loom.commons.test_runner.typescript import TypeScriptRunner
+        from specweaver.loom.commons.qa_runner.typescript import TypeScriptRunner
 
         target_dir = sample_project / "src" / "ts_debug"
         target_dir.mkdir(parents=True, exist_ok=True)

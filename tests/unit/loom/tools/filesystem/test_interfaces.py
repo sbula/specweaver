@@ -164,22 +164,26 @@ class TestImplementerFunctional:
 
     def test_read_file(self, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
+        assert isinstance(iface, ImplementerFileInterface)
         result = iface.read_file("src/domain/billing/calc.py")
         assert result.status == "success"
         assert "total" in result.data
 
     def test_write_file(self, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
+        assert isinstance(iface, ImplementerFileInterface)
         result = iface.write_file("src/domain/billing/calc.py", "# updated\n")
         assert result.status == "success"
 
     def test_create_file(self, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
+        assert isinstance(iface, ImplementerFileInterface)
         result = iface.create_file("src/domain/billing/new.py", "# new")
         assert result.status == "success"
 
     def test_delete_file(self, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
+        assert isinstance(iface, ImplementerFileInterface)
         result = iface.delete_file("src/domain/billing/calc.py")
         assert result.status == "success"
 
@@ -195,6 +199,7 @@ class TestImplementerFunctional:
 
     def test_edit_file(self, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
+        assert isinstance(iface, ImplementerFileInterface)
         result = iface.edit_file(
             "src/domain/billing/calc.py",
             old="return a + b",
@@ -227,17 +232,20 @@ class TestDrafterFunctional:
 
     def test_read_source(self, project: Path) -> None:
         iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
+        assert isinstance(iface, DrafterFileInterface)
         result = iface.read_file("src/domain/billing/calc.py")
         assert result.status == "success"
 
     def test_write_spec(self, project: Path) -> None:
         iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
+        assert isinstance(iface, DrafterFileInterface)
         result = iface.write_file("specs/billing.md", "# Updated\n")
         assert result.status == "success"
 
     def test_cannot_write_source(self, project: Path) -> None:
         """Drafter has READ-only on src — boundary enforcement still works through interface."""
         iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
+        assert isinstance(iface, DrafterFileInterface)
         result = iface.write_file("src/domain/billing/calc.py", "hacked")
         assert result.status == "error"
 

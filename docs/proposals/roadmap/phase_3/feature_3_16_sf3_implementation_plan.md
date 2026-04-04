@@ -252,16 +252,16 @@ Core domain modules that perform business logic.
 - `atoms/rule_atom.py` — **Has logger**. Audit for comprehensive coverage.
 - `atoms/filesystem/atom.py` — Add logger if missing. Log atom execution at DEBUG.
 - `atoms/git/atom.py` — Add logger if missing. Log atom execution at DEBUG.
-- `atoms/test_runner/atom.py` — Add logger if missing. Log atom execution at DEBUG.
+- `atoms/qa_runner/atom.py` — Add logger if missing. Log atom execution at DEBUG.
 - `commons/filesystem/executor.py` — Add logger if missing. Log file ops at DEBUG.
 - `commons/filesystem/search.py` — **Has logger**. Audit for comprehensive coverage.
 - `commons/git/executor.py` — Add logger if missing. Log git command execution at DEBUG.
 - `commons/git/engine_executor.py` — Add logger if missing.
-- `commons/test_runner/python.py` — **Has logger**. Audit for comprehensive coverage.
-- `commons/test_runner/interface.py` — Add logger if missing.
+- `commons/qa_runner/python.py` — **Has logger**. Audit for comprehensive coverage.
+- `commons/qa_runner/interface.py` — Add logger if missing.
 - `tools/filesystem/tool.py` — Add logger if missing. Log tool invocation at DEBUG.
 - `tools/git/tool.py` — Add logger if missing. Log tool invocation at DEBUG.
-- `tools/test_runner/tool.py` — Add logger if missing. Log tool invocation at DEBUG.
+- `tools/qa_runner/tool.py` — Add logger if missing. Log tool invocation at DEBUG.
 - `tools/web/tool.py` — **Has logger**. Audit for comprehensive coverage.
 
 ---

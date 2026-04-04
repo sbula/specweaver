@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.flow.models import PipelineStep
-    from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+    from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
     from specweaver.validation.models import RuleResult
 
 logger = logging.getLogger(__name__)
@@ -174,7 +174,7 @@ class ValidateCodeHandler:
 
 
 class ValidateTestsHandler:
-    """Runs tests via the TestRunnerAtom.
+    """Runs tests via the QARunnerAtom.
 
     Step params (optional):
         target: str — test directory (default: "tests/").
@@ -227,8 +227,8 @@ class ValidateTestsHandler:
             completed_at=_now_iso(),
         )
 
-    def _get_atom(self, context: RunContext) -> TestRunnerAtom:
-        """Lazily create a TestRunnerAtom for the project."""
-        from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+    def _get_atom(self, context: RunContext) -> QARunnerAtom:
+        """Lazily create a QARunnerAtom for the project."""
+        from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
 
-        return TestRunnerAtom(cwd=context.project_path)
+        return QARunnerAtom(cwd=context.project_path)

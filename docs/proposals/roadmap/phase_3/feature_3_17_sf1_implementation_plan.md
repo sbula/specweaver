@@ -113,5 +113,5 @@ No contradictions found:
 ### Automated Tests
 1. **Migrations**: `pytest tests/unit/config/test_database.py` (Assert schema migrates to 11 and table `artifact_events` exists, plus `run_id` on telemetry).
 2. **Persistence**: `pytest tests/unit/config/test_lineage_mixin.py` (Assert `log_artifact_event` handles standard rows and NULL `parent_id` cases).
-3. **Context Tracing**: `pytest tests/unit/flow/test_runner.py` (Assert that handlers receive a `RunContext` seeded with valid `run_id` and list of `step_records`).
+3. **Context Tracing**: `pytest tests/unit/flow/qa_runner.py` (Assert that handlers receive a `RunContext` seeded with valid `run_id` and list of `step_records`).
 4. **Telemetry Correlation**: `pytest tests/unit/llm/test_telemetry.py` (Assert `UsageRecord` supports and persists new `run_id` field).

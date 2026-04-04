@@ -469,7 +469,7 @@ Pipeline resolution order:
 | Test File | Tests | Covers |
 |-----------|-------|--------|
 | `tests/unit/validation/test_registry.py` [NEW] | ~15 | `register()`, `get()`, `list_spec()`, `list_code()`, `list_all()`, duplicate ID rejection, D-prefix enforcement, S/C rejection for custom rules |
-| `tests/unit/validation/test_runner.py` [EXTEND] | ~5 | Verify `get_spec_rules()` / `get_code_rules()` still return same rules via registry |
+| `tests/unit/validation/qa_runner.py` [EXTEND] | ~5 | Verify `get_spec_rules()` / `get_code_rules()` still return same rules via registry |
 | `tests/integration/test_registry_integration.py` [NEW] | ~5 | All 19 built-in rules registered, categories correct, can instantiate each |
 
 **Phase A expected: ~25 new tests**

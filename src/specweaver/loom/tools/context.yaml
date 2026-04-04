@@ -21,7 +21,7 @@ forbids:
 
 exposes:
   - git
-  - test_runner
+  - qa_runner
 
 # -- Operational Metadata --------------------------------------------------
 operational:

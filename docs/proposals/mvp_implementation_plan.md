@@ -396,7 +396,7 @@ tests/
 │   ├── test_settings.py             # Config loading
 │   ├── test_scaffold.py             # Init creates dirs
 │   ├── test_rule_models.py          # Interface compliance
-│   ├── test_runner.py               # Result collection
+│   ├── qa_runner.py               # Result collection
 │   ├── test_spec_rules/             # S01-S11 per-rule tests
 │   ├── test_code_rules/             # C01-C08 per-rule tests
 │   ├── test_reviewer.py             # Prompt construction

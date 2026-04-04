@@ -117,9 +117,9 @@ async def test_validate_tests_handler_lazy_atom(
     """ValidateTestsHandler can instantiate its atom."""
     handler = ValidateTestsHandler()
     atom = handler._get_atom(run_context)
-    from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
+    from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
 
-    assert isinstance(atom, TestRunnerAtom)
+    assert isinstance(atom, QARunnerAtom)
 
 
 @pytest.mark.asyncio

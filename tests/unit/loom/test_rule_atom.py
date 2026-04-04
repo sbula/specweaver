@@ -93,31 +93,31 @@ class _CrashingRule(Rule):
 class TestRuleAtom:
     """Test RuleAtom adapts Rule.check() to Atom.run()."""
 
-    def test_passing_rule_returns_success(self):
+    def test_passing_rule_returns_success(self) -> None:
         atom = RuleAtom(_PassingRule())
         result = atom.run({"spec_text": "hello", "spec_path": None})
         assert result.status == AtomStatus.SUCCESS
         assert "S99" in result.message
 
-    def test_failing_rule_returns_failed(self):
+    def test_failing_rule_returns_failed(self) -> None:
         atom = RuleAtom(_FailingRule())
         result = atom.run({"spec_text": "hello", "spec_path": None})
         assert result.status == AtomStatus.FAILED
         assert "S98" in result.message
 
-    def test_warn_rule_returns_success(self):
+    def test_warn_rule_returns_success(self) -> None:
         """WARN is not FAIL — maps to SUCCESS."""
         atom = RuleAtom(_WarnRule())
         result = atom.run({"spec_text": "hello", "spec_path": None})
         assert result.status == AtomStatus.SUCCESS
 
-    def test_skip_rule_returns_success(self):
+    def test_skip_rule_returns_success(self) -> None:
         """SKIP is not FAIL — maps to SUCCESS."""
         atom = RuleAtom(_SkipRule())
         result = atom.run({"spec_text": "hello", "spec_path": None})
         assert result.status == AtomStatus.SUCCESS
 
-    def test_exports_rule_result(self):
+    def test_exports_rule_result(self) -> None:
         """AtomResult.exports has the RuleResult."""
         atom = RuleAtom(_PassingRule())
         result = atom.run({"spec_text": "hello", "spec_path": None})
@@ -126,14 +126,14 @@ class TestRuleAtom:
         assert isinstance(rr, RuleResult)
         assert rr.rule_id == "S99"
 
-    def test_crashing_rule_returns_failed(self):
+    def test_crashing_rule_returns_failed(self) -> None:
         """Unhandled exception in rule maps to FAILED."""
         atom = RuleAtom(_CrashingRule())
         result = atom.run({"spec_text": "hello", "spec_path": None})
         assert result.status == AtomStatus.FAILED
         assert "boom" in result.message
 
-    def test_is_atom_subclass(self):
+    def test_is_atom_subclass(self) -> None:
         """RuleAtom is a proper Atom subclass."""
         from specweaver.loom.atoms.base import Atom
 

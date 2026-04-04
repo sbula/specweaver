@@ -3,7 +3,7 @@
 
 """C04: Coverage — checks that test coverage meets the threshold.
 
-Delegates pytest+coverage execution to the shared PythonTestRunner
+Delegates pytest+coverage execution to the shared PythonQARunner
 from the commons layer, eliminating duplicate subprocess handling.
 """
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 
-from specweaver.loom.commons.test_runner.python import PythonTestRunner
+from specweaver.loom.commons.qa_runner.python import PythonQARunner
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
 if TYPE_CHECKING:
@@ -49,8 +49,8 @@ class CoverageRule(Rule):
                 break
             project_root = project_root.parent
 
-        # Delegate to PythonTestRunner
-        runner = PythonTestRunner(cwd=project_root)
+        # Delegate to PythonQARunner
+        runner = PythonQARunner(cwd=project_root)
         try:
             result = runner.run_tests(
                 target=str(spec_path),

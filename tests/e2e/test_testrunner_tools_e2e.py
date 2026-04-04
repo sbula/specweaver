@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""E2E tests for TestRunnerTool integration."""
+"""E2E tests for QARunnerTool integration."""
 
 import shutil
 import subprocess
@@ -14,7 +14,7 @@ from specweaver.cli import app
 runner = CliRunner()
 
 
-def test_e2e_python_testrunner_tooling(tmp_path: Path) -> None:
+def test_e2e_python_qarunner_tooling(tmp_path: Path) -> None:
     """E2E boundary test validating python compiler and debugger via CLI invocation."""
     project_dir = tmp_path / "py_proj"
     project_dir.mkdir()
@@ -26,11 +26,11 @@ def test_e2e_python_testrunner_tooling(tmp_path: Path) -> None:
     py_file = target_dir / "app.py"
     py_file.write_text('print("E2E_PYTHON_STDOUT")', encoding="utf-8")
 
-    from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
-    from specweaver.loom.tools.test_runner.tool import TestRunnerTool
+    from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
+    from specweaver.loom.tools.qa_runner.tool import QARunnerTool
 
-    atom = TestRunnerAtom(cwd=project_dir)
-    tool = TestRunnerTool(atom=atom, role="implementer")
+    atom = QARunnerAtom(cwd=project_dir)
+    tool = QARunnerTool(atom=atom, role="implementer")
 
     # E2E proxy of run_compiler
     compile_result = tool.run_compiler(target=str(target_dir))
@@ -44,7 +44,7 @@ def test_e2e_python_testrunner_tooling(tmp_path: Path) -> None:
     assert "E2E_PYTHON_STDOUT" in str(debug_result.data["events"])
 
 
-def test_e2e_typescript_testrunner_tooling(tmp_path: Path) -> None:
+def test_e2e_typescript_qarunner_tooling(tmp_path: Path) -> None:
     """E2E boundary test validating TS compiler and debugger via CLI invocation."""
     project_dir = tmp_path / "ts_proj"
     project_dir.mkdir()
@@ -74,11 +74,11 @@ def test_e2e_typescript_testrunner_tooling(tmp_path: Path) -> None:
     ts_file_debug = target_dir / "app.ts"
     ts_file_debug.write_text('console.log("E2E_TS_STDOUT");', encoding="utf-8")
 
-    from specweaver.loom.atoms.test_runner.atom import TestRunnerAtom
-    from specweaver.loom.tools.test_runner.tool import TestRunnerTool
+    from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
+    from specweaver.loom.tools.qa_runner.tool import QARunnerTool
 
-    atom = TestRunnerAtom(cwd=project_dir, language="typescript")
-    tool = TestRunnerTool(atom=atom, role="implementer")
+    atom = QARunnerAtom(cwd=project_dir, language="typescript")
+    tool = QARunnerTool(atom=atom, role="implementer")
 
     # E2E proxy of run_compiler
     compile_result = tool.run_compiler(target=".")

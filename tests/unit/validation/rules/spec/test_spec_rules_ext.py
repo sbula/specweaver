@@ -52,7 +52,7 @@ def bad_too_big() -> str:
 # ---------------------------------------------------------------------------
 
 
-class TestRunner:
+class QARunner:
     """Test the validation runner (pipeline executor path)."""
 
     def test_spec_pipeline_has_eleven_rules(self) -> None:

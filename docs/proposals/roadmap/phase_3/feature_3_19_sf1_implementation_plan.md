@@ -1,4 +1,4 @@
-# Implementation Plan: Polyglot TestRunner Interface [SF-1: Core Interface, Compilers & Python/TS Handlers]
+# Implementation Plan: Polyglot QARunner Interface [SF-1: Core Interface, Compilers & Python/TS Handlers]
 - **Feature ID**: 3.19
 - **Sub-Feature**: SF-1 — Core Interface, Compilers & Python/TS Handlers
 - **Design Document**: docs/proposals/design/phase_3/feature_3_19_design.md
@@ -12,7 +12,7 @@ Expand the engine internals (`atoms`, `tools`, `interface`) to securely broker u
 ## 1. Interface & Data Models (`interface.py`)
 Add models to standardize compiler errors (SARIF-inspired) and debug streams (DAP-inspired).
 
-### [MODIFY] `src/specweaver/loom/commons/test_runner/interface.py`
+### [MODIFY] `src/specweaver/loom/commons/qa_runner/interface.py`
 Add base imports.
 Update `TestFailure` to add `stacktrace: str = ""` and `rule_uri: str = ""`.
 Update `LintError` to add `rule_uri: str = ""`.
@@ -36,18 +36,18 @@ Add new `OutputEvent` data model:
 Add new `DebugRunResult` data model:
 - `exit_code: int`, `duration_seconds: float`, `events: list[OutputEvent]`
 
-Update `TestRunnerInterface` class:
+Update `QARunnerInterface` class:
 - Add `@abstractmethod def run_compiler(self, target: str) -> CompileRunResult:`
 - Add `@abstractmethod def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:`
 
 ## 2. Intent Routing (`atom.py` & `tool.py`)
 Plumb the new compile and debug hooks from the LLM agent down to the interface.
 
-### [MODIFY] `src/specweaver/loom/atoms/test_runner/atom.py`
+### [MODIFY] `src/specweaver/loom/atoms/qa_runner/atom.py`
 - Add `_intent_run_compiler` handling context `target`. Returns `AtomResult` packaging `CompileRunResult.errors`.
 - Add `_intent_run_debugger` handling context `target` and `entrypoint`. Returns `AtomResult` packaging `DebugRunResult.events`.
 
-### [MODIFY] `src/specweaver/loom/tools/test_runner/tool.py`
+### [MODIFY] `src/specweaver/loom/tools/qa_runner/tool.py`
 - Update `ROLE_INTENTS` dict: Add `"run_compiler"` and `"run_debugger"` to both the `implementer` and `reviewer` roles.
 - Add `def run_compiler(self, target: str) -> ToolResult:`. Requires `run_compiler` intent.
 - Add `def run_debugger(self, target: str, entrypoint: str) -> ToolResult:`. Requires `run_debugger` intent.
@@ -55,18 +55,18 @@ Plumb the new compile and debug hooks from the LLM agent down to the interface.
 ## 3. Runners & Fallbacks (`python.py`, `typescript.py`, `__init__.py`)
 Implement the base logic for Python and the new TypeScript handler.
 
-### [MODIFY] `src/specweaver/loom/commons/test_runner/__init__.py`
+### [MODIFY] `src/specweaver/loom/commons/qa_runner/__init__.py`
 - Expose `CompileRunResult`, `CompileError`, `DebugRunResult`, `OutputEvent`.
 - Update `_resolve_runner` to route to `TypeScriptRunner` if `package.json` is traced.
 
-### [MODIFY] `src/specweaver/loom/commons/test_runner/python.py`
+### [MODIFY] `src/specweaver/loom/commons/qa_runner/python.py`
 > [!CAUTION]
-> Adding @abstractmethod breaks the master branch unless we implement stubs in PythonTestRunner immediately.
+> Adding @abstractmethod breaks the master branch unless we implement stubs in PythonQARunner immediately.
 - Implement `run_compiler()` stub returning 0 errors (Since python is interpreted, fallback to a compilation no-op or surface `py_compile` trace if needed).
 - Implement `run_debugger()` using `subprocess.run()`, capturing stdout/stderr and mapping to DAP `OutputEvent` fields.
 
-### [NEW] `src/specweaver/loom/commons/test_runner/typescript.py`
-- Build `TypeScriptRunner(TestRunnerInterface)`
+### [NEW] `src/specweaver/loom/commons/qa_runner/typescript.py`
+- Build `TypeScriptRunner(QARunnerInterface)`
 - `run_compiler()`: runs `tsc --noEmit`. Fallback to Regex parsing `<file>(<line>,<col>): error TS<code>: <msg>` to `CompileError` (since tsc JSON output is non-standard outside of tsc-watch).
 - `run_debugger()`: runs `node <entrypoint>`, parses directly to `OutputEvent` arrays.
 

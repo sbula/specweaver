@@ -1,4 +1,4 @@
-# Design: Polyglot TestRunner Interface
+# Design: Polyglot QARunner Interface
 
 - **Feature ID**: 3.19
 - **Phase**: 3
@@ -7,12 +7,12 @@
 
 ## Feature Overview
 
-Feature 3.19 transforms the `TestRunnerInterface` from a Python-only construct into a fully-implemented polyglot execution engine spanning both **Atoms** (engine-internal rules) and **Tools** (agent-facing actions). It wraps the target-language CLI commands for Python, Kotlin, Java, Rust, and TypeScript (React) into dedicated language runner implementations. Each implementation will deeply integrate with its language's standard tooling (`cargo`, `gradlew`, `mvn`, `npm`/`jest`, `pytest`). Beyond testing, linting, and complexity, the interface is expanded to govern **compiling** and **debugging**, parsing test results into `TestRunResult`, `LintRunResult`, and `ComplexityRunResult` via open-source protocols (JUnit XML and SARIF), while routing detailed compiler/debugger standard errors back to the LLM agent identically.
+Feature 3.19 transforms the `QARunnerInterface` from a Python-only construct into a fully-implemented polyglot execution engine spanning both **Atoms** (engine-internal rules) and **Tools** (agent-facing actions). It wraps the target-language CLI commands for Python, Kotlin, Java, Rust, and TypeScript (React) into dedicated language runner implementations. Each implementation will deeply integrate with its language's standard tooling (`cargo`, `gradlew`, `mvn`, `npm`/`jest`, `pytest`). Beyond testing, linting, and complexity, the interface is expanded to govern **compiling** and **debugging**, parsing test results into `TestRunResult`, `LintRunResult`, and `ComplexityRunResult` via open-source protocols (JUnit XML and SARIF), while routing detailed compiler/debugger standard errors back to the LLM agent identically.
 
 ## Research Findings
 
 ### Codebase Patterns
-Presently, the `PythonTestRunner` (`src/specweaver/loom/commons/test_runner/python.py`) interacts directly with `pytest` and `ruff`. We will extend `src/specweaver/loom/commons/test_runner/` by creating dedicated modules (`rust.py`, `java.py`, `kotlin.py`, `typescript.py`) that implement the expanded `TestRunnerInterface`. Crucially, we must also update the Agent-facing Tool (`src/specweaver/loom/tools/test_runner/tool.py`) to expose these new capabilities (`compile`, `debug`) so the AI Agents themselves can trigger native builds and debug execution loops just like the Pipeline Engine does with Atoms. 
+Presently, the `PythonQARunner` (`src/specweaver/loom/commons/qa_runner/python.py`) interacts directly with `pytest` and `ruff`. We will extend `src/specweaver/loom/commons/qa_runner/` by creating dedicated modules (`rust.py`, `java.py`, `kotlin.py`, `typescript.py`) that implement the expanded `QARunnerInterface`. Crucially, we must also update the Agent-facing Tool (`src/specweaver/loom/tools/qa_runner/tool.py`) to expose these new capabilities (`compile`, `debug`) so the AI Agents themselves can trigger native builds and debug execution loops just like the Pipeline Engine does with Atoms. 
 
 **Runner Resolution Strategy**: The factory function `_resolve_runner` will aggressively determine which runner (and build tool variant) to instantiate by first checking for explicit overrides in the local `context.yaml` of the target directory or Database Config. If absent, it will fall back to **target-aware structural tracing**—scanning upwards from the specific file/directory being executed looking for anchor files (e.g., if testing `src/native/rust_lib.rs`, it traces up to find a nested `Cargo.toml` → Rust Cargo runner; if testing `tests/test_py.py`, it traces up to root `pyproject.toml` → Python runner). This guarantees that heterogeneous workspaces (like Python projects with Rust extensions) are natively supported.
 
@@ -32,8 +32,8 @@ none stated
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | Unified Interface Refactor | System | Update `interface.py` | The bounds encompass Test, Lint, Complexity, **Compile**, and **Debug**. The Data Models are expanded to support `stacktrace: str`, `rule_uri: str`, etc. |
-| FR-2 | Agent-facing Tools | Agent | Update `test_runner/tool.py` | The LLM agents natively gain permissioned access to trigger `compile()` and `debug()` through the Loom Sandbox, utilizing identical Black Box resolution patterns. |
-| FR-3 | Python Support | System | Align `PythonTestRunner` | Python executes tests, linting, complexity, compiling, and debugging by conforming to the new unified data models. |
+| FR-2 | Agent-facing Tools | Agent | Update `qa_runner/tool.py` | The LLM agents natively gain permissioned access to trigger `compile()` and `debug()` through the Loom Sandbox, utilizing identical Black Box resolution patterns. |
+| FR-3 | Python Support | System | Align `PythonQARunner` | Python executes tests, linting, complexity, compiling, and debugging by conforming to the new unified data models. |
 | FR-4 | Rust Support | System | Build `RustRunner` | Rust executes tests, linting, compiling, complexity natively via `cargo` wrappers mapping to generic bounds. |
 | FR-5 | Java Support | System | Build `JavaRunner` | Java executes tests, compilation, linting via Maven (`mvn compile/test/pmd`) and Gradle natively mapping outputs. |
 | FR-6 | Kotlin Support | System | Build `KotlinRunner` | Kotlin executes tests, compilation, complexity via Gradle/Maven and `detekt` pushing SARIF maps. |
@@ -65,7 +65,7 @@ none stated
 ## Sub-Feature Breakdown
 
 ### SF-1: Core Interface, Compilers & Python/TS Handlers
-- **Scope**: Updates `interface.py` and `test_runner/tool.py` to accept stacktraces/SARIF bounds and add `compile`/`debug` commands. Aligns the `PythonTestRunner` and implements the `TypeScriptRunner`.
+- **Scope**: Updates `interface.py` and `qa_runner/tool.py` to accept stacktraces/SARIF bounds and add `compile`/`debug` commands. Aligns the `PythonQARunner` and implements the `TypeScriptRunner`.
 - **FRs**: [FR-1, FR-2, FR-3, FR-7, FR-8]
 - **Inputs**: Polyglot execution parameters simulating Agents requesting builds/tests.
 - **Outputs**: Validated compile/debug/test/lint/complexity runners using mock JUnit/SARIF files.

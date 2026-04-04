@@ -122,9 +122,9 @@ class TestModels:
     """Basic model behavior."""
 
     def test_access_mode_values(self) -> None:
-        assert AccessMode.READ == "read"
-        assert AccessMode.WRITE == "write"
-        assert AccessMode.FULL == "full"
+        assert AccessMode.READ.value == "read"
+        assert AccessMode.WRITE.value == "write"
+        assert AccessMode.FULL.value == "full"
 
     def test_folder_grant_creation(self) -> None:
         grant = FolderGrant(path="src", mode=AccessMode.FULL, recursive=True)

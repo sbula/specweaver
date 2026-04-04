@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""Tests for ValidateTestsHandler — runs tests via TestRunnerAtom."""
+"""Tests for ValidateTestsHandler — runs tests via QARunnerAtom."""
 
 from __future__ import annotations
 

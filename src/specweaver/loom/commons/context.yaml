@@ -21,7 +21,7 @@ forbids:
 
 exposes:
   - git
-  - test_runner
+  - qa_runner
 
 constraints:
   - "Must never import from tools/ or atoms/ — dependency flows upward only"

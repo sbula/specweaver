@@ -3,7 +3,7 @@
 
 """Tests for SpecKind pipeline selection and spec_kind presets.
 
-Replaces the old test_runner_kind.py which tested via the now-removed
+Replaces the old qa_runner_kind.py which tested via the now-removed
 ``get_spec_rules(kind=...)`` legacy function.
 
 The correct pipeline-based design (Feature 3.5b) is:

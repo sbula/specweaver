@@ -295,7 +295,7 @@ All ~1696 tests must pass with zero regressions.
 |---|---|
 | `tests/unit/validation/test_spec_kind.py` | `SpecKind` enum, preset lookup, None fallback |
 | `tests/unit/validation/rules/spec/test_rules_by_kind.py` | S01/S05/S08 feature thresholds; S03 abstraction leak mode; S04 skip for feature |
-| `tests/unit/validation/test_runner.py` (extend) | `get_spec_rules(kind=...)` passes through |
+| `tests/unit/validation/qa_runner.py` (extend) | `get_spec_rules(kind=...)` passes through |
 | `tests/unit/drafting/test_feature_drafter.py` | 5-section template, mock LLM, greenfield |
 | `tests/unit/drafting/test_decomposition.py` | Model construction, YAML round-trip, stub generation, coverage_score, confidence field |
 | `tests/unit/flow/test_decompose_handler.py` | Valid/invalid LLM response, greenfield, with topology, alignment_notes |

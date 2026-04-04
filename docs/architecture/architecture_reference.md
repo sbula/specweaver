@@ -46,16 +46,16 @@ specweaver/                       ← level: system, archetype: orchestrator
 │   ├── tools/                    ← Agent-facing capability providers
 │   │   ├── filesystem/           ← FileSystemTool + role interfaces
 │   │   ├── git/                  ← GitTool + role interfaces
-│   │   ├── test_runner/          ← TestRunnerTool + role interfaces
+│   │   ├── qa_runner/          ← QARunnerTool + role interfaces
 │   │   └── web/                  ← WebTool + role interfaces
 │   ├── atoms/                    ← Engine-internal workflow ops
 │   │   ├── filesystem/
 │   │   ├── git/
-│   │   └── test_runner/
+│   │   └── qa_runner/
 │   └── commons/                  ← Shared executors + helpers
 │       ├── filesystem/           ← FileExecutor, search helpers
 │       ├── git/                  ← GitExecutor
-│       └── test_runner/          ← TestRunnerExecutor
+│       └── qa_runner/          ← QARunnerExecutor
 ├── pipelines/                    ← YAML pipeline definitions (data only)
 ├── planning/                     ← Implementation plan generation
 ├── project/                      ← Project discovery + scaffolding
@@ -144,9 +144,9 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `loom/atoms/git/atom.py` — `EngineGitExecutor`: unrestricted for engine use.
 
 **Test runner** (loom) — same pattern:
-- `loom/commons/test_runner/executor.py` — `TestRunnerExecutor`: subprocess pytest with output capture.
-- `loom/tools/test_runner/tool.py` — `TestRunnerTool`: role-gated test execution.
-- `loom/atoms/test_runner/atom.py` — `TestRunnerAtom`: engine-internal test runs + lint-fix reflection.
+- `loom/commons/qa_runner/executor.py` — `QARunnerExecutor`: subprocess pytest with output capture.
+- `loom/tools/qa_runner/tool.py` — `QARunnerTool`: role-gated test execution.
+- `loom/atoms/qa_runner/atom.py` — `QARunnerAtom`: engine-internal test runs + lint-fix reflection.
 
 ### Phase 3 — Feature Expansion (Incremental)
 
@@ -183,7 +183,7 @@ L1 (Business)        ← drafting, context
 L2 (Architecture)    ← graph, standards (3.5)
 L3 (Specification)   ← validation, review, constitution (3.2), profiles (3.3)
 L4 (Implementation)  ← implementation, planning (3.6), loom tools
-L5 (Review)          ← review, loom tools (git, filesystem, test_runner)
+L5 (Review)          ← review, loom tools (git, filesystem, qa_runner)
 L6 (Deploy)          ← api (3.7), dashboard (3.8), container (3.9)
 ```
 
@@ -257,7 +257,7 @@ graph TD
 | `config` | pure-logic | *(leaf)* | loom/* |
 | `context` | contract | *(leaf)* | loom/* |
 | `drafting` | orchestrator | llm, config, context | loom/* |
-| `flow` | orchestrator | config, llm, review, implementation, planning, validation, loom/atoms/test_runner, loom/dispatcher, loom/security | loom/tools/*, loom/commons/*, drafting, context |
+| `flow` | orchestrator | config, llm, review, implementation, planning, validation, loom/atoms/qa_runner, loom/dispatcher, loom/security | loom/tools/*, loom/commons/*, drafting, context |
 | `graph` | pure-logic | context | loom/*, llm, drafting, implementation |
 | `implementation` | orchestrator | llm, config, validation | *(none)* |
 | `llm` | adapter | config | loom/* |
@@ -306,7 +306,7 @@ See [context_yaml_spec.md](context_yaml_spec.md) for the full archetype specific
 
 ## Tool Architecture (4-Layer Stack)
 
-Each tool domain (filesystem, git, test_runner, web) follows the same layered pattern:
+Each tool domain (filesystem, git, qa_runner, web) follows the same layered pattern:
 
 ```
 Flow Engine ──▶ Atom ──▶ Interface ──▶ Tool ──▶ Executor
@@ -625,8 +625,8 @@ Tool stack ─────▶ runtime: enforces agent permissions
 
 To insulate SpecWeaver from breaking changes in standard compilation/debugging schemas (like DAP and SARIF), we utilize an **Adapter Pattern** strategy. External schemas must NEVER be consumed directly by LLM Agents or the workflow flow engine.
 
-1. **Protocol Insulation**: All external protocol outputs are rigorously mapped into strictly typed, internal data models (`CompileError`, `CompileRunResult`, `OutputEvent`, etc.) within `loom/commons/test_runner/interface.py`.
-2. **Deprecation Strategy**: Temporary fallback adaptors (e.g., the `PythonTestRunner` stub implementing `run_compiler` as a no-op) must be documented and explicitly deleted once the target domain migration completes.
+1. **Protocol Insulation**: All external protocol outputs are rigorously mapped into strictly typed, internal data models (`CompileError`, `CompileRunResult`, `OutputEvent`, etc.) within `loom/commons/qa_runner/interface.py`.
+2. **Deprecation Strategy**: Temporary fallback adaptors (e.g., the `PythonQARunner` stub implementing `run_compiler` as a no-op) must be documented and explicitly deleted once the target domain migration completes.
 
 ---
 
@@ -646,7 +646,7 @@ To insulate SpecWeaver from breaking changes in standard compilation/debugging s
 > - Tool definitions moved into each tool's own `definitions.py`
 > - `review/` and `planning/` use `loom/dispatcher` via `TYPE_CHECKING` only
 > - `flow/` consumes `loom/dispatcher` and `loom/security` at runtime (declared in `context.yaml`)
-> - `test_runner/interfaces.py` tools→atoms import fixed to lazy factory import
+> - `qa_runner/interfaces.py` tools→atoms import fixed to lazy factory import
 
 ---
 

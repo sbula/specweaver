@@ -1,0 +1,35 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: test-runner-tools
+level: module
+purpose: >
+  Role-restricted test runner operations for agents with intent validation.
+
+description: |
+  QARunnerTool wraps QARunnerAtom with role-based access control.
+  Supports intents: run_tests, run_linter, run_linter_fix, run_complexity.
+  Role interfaces (ImplementerTestInterface, ReviewerTestInterface) expose
+  only the intents permitted for each role. Reviewers cannot use fix=True.
+
+archetype: facade
+
+consumes:
+  - specweaver/loom/atoms/qa_runner
+
+forbids:
+  - specweaver/loom/commons/*
+
+exposes:
+  - QARunnerTool
+  - QARunnerToolError
+  - ToolResult
+  - ImplementerTestInterface
+  - ReviewerTestInterface
+  - create_qa_runner_interface
+  - ROLE_INTENTS
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

@@ -235,7 +235,7 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 > **Goal**: Configurable gates (auto-pass, HITL approval), retry on failure, feedback loops (re-draft after failed review). Test runner as **atom + tool** for use by both the flow engine and agents.
 
-- [x] `src/specweaver/loom/atoms/test_runner/` — **test runner atom** (engine-level building block)
+- [x] `src/specweaver/loom/atoms/qa_runner/` — **test runner atom** (engine-level building block)
   - [x] Run `pytest` subprocess with structured output capture (JSON `--tb=short`)
   - [x] `--kind` parameter: unit, integration, e2e
   - [x] `--target` parameter: module/service/file scope
@@ -243,7 +243,7 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
   - [x] Reuses C03/C04 validation internals where applicable
   - [x] Used by `ValidateCodeHandler` and gate logic inside the flow
   - [x] `run_complexity` intent — McCabe complexity checks via ruff C90
-- [x] `src/specweaver/loom/tools/test_runner/` — **agent test runner tool** (agent-facing interface)
+- [x] `src/specweaver/loom/tools/qa_runner/` — **agent test runner tool** (agent-facing interface)
   - [x] Wraps the atom with role-based grant checks and intent validation
   - [x] Agents can invoke for autonomous test execution (lint-fix loop, CI checks)
   - [x] Structured output: pass/fail summary, formatted failure messages
@@ -338,7 +338,7 @@ The spec/module argument is **different per pipeline type**:
   - [x] `validation/runner.py`
   - [x] `llm/adapters/gemini.py`
   - [x] `context/inferrer.py`, `graph/topology.py`
-  - [x] `loom/commons/test_runner/python.py`
+  - [x] `loom/commons/qa_runner/python.py`
   - [x] `cli.py`
 - [x] Wire `setup_logging()` into CLI startup (`@app.callback()` — called before any command runs)
 - [x] `sw config set-log-level <level>` / `sw config get-log-level` — update/show log level for active project

@@ -102,7 +102,7 @@ class EventCollector:
 # ---------------------------------------------------------------------------
 
 
-class TestRunnerEventCallback:
+class QARunnerEventCallback:
     """Tests for the on_event callback mechanism."""
 
     @pytest.mark.asyncio

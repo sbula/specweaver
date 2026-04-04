@@ -121,7 +121,7 @@ class TestBuiltInRegistration:
 # ---------------------------------------------------------------------------
 
 
-class TestRunnerRegistryIntegration:
+class QARunnerRegistryIntegration:
     """Verify pipeline executor produces correct results via registry."""
 
     def test_get_spec_rules_returns_11(self):
@@ -152,7 +152,7 @@ class TestRunnerRegistryIntegration:
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
         # Load the non-subprocess code pipeline
-        # C03 (subprocess_test_runner) and C04 (coverage) are subprocess rules
+        # C03 (subprocess_qa_runner) and C04 (coverage) are subprocess rules
         pipeline = load_pipeline_yaml("validation_code_default")
         # Filter out subprocess-based steps (C03, C04)
         subprocess_ids = {"C03", "C04"}
