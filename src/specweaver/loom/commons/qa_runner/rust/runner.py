@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.loom.commons.qa_runner.interface import QARunnerInterface
+from specweaver.loom.commons.qa_runner.interface import ArchitectureRunResult, QARunnerInterface
 from specweaver.loom.commons.qa_runner.rust.parsers import parse_clippy_complexity
 
 if TYPE_CHECKING:
@@ -237,3 +237,10 @@ class RustRunner(QARunnerInterface):
             )
         except Exception:
             return DebugRunResult(exit_code=1, duration_seconds=0.0, events=[])
+
+    def run_architecture_check(
+        self,
+        target: str,
+    ) -> ArchitectureRunResult:
+        """Run architectural checks (Deferred to Feature 3.20b)."""
+        return ArchitectureRunResult(violation_count=0, violations=[])

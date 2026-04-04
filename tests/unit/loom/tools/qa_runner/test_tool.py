@@ -68,6 +68,17 @@ class TestToolRoleGating:
         result = tool.run_linter(target="src/", fix=True)
         assert result.status == "success"
 
+    def test_implementer_can_run_architecture(self, tmp_path: Path) -> None:
+        atom = MagicMock()
+        atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"violation_count": 0, "violations": []},
+        )
+        tool = QARunnerTool(atom=atom, role="implementer")
+        result = tool.run_architecture(target="src/")
+        assert result.status == "success"
+
     def test_reviewer_can_run_tests(self, tmp_path: Path) -> None:
         atom = MagicMock()
         atom.run.return_value = AtomResult(
@@ -301,6 +312,12 @@ class TestToolCompileDebugGating:
         assert "run_compiler" in ROLE_INTENTS["reviewer"]
         assert "run_debugger" in ROLE_INTENTS["reviewer"]
 
+    def test_role_intents_include_architecture(self) -> None:
+        """implementer, reviewer, and planner have architecture intents."""
+        assert "run_architecture" in ROLE_INTENTS["implementer"]
+        assert "run_architecture" in ROLE_INTENTS["reviewer"]
+        assert "run_architecture" in ROLE_INTENTS["planner"]
+
 
 class TestInterfaceCompileDebug:
     """Tests that role-specific interfaces expose compilation and debugging."""
@@ -334,6 +351,20 @@ class TestInterfaceCompileDebug:
             result = iface.run_debugger(target="src/", entrypoint="main.py")
 
         assert result.status == "success"
+
+    def test_interfaces_has_run_architecture(self, tmp_path: Path) -> None:
+        with patch("specweaver.loom.atoms.qa_runner.atom.QARunnerAtom") as mock_atom_cls:
+            mock_atom = MagicMock()
+            mock_atom.run.return_value = AtomResult(
+                status=AtomStatus.SUCCESS,
+                message="ok",
+                exports={"violation_count": 0, "violations": []},
+            )
+            mock_atom_cls.return_value = mock_atom
+
+            iface = create_qa_runner_interface("implementer", tmp_path)
+            result = iface.run_architecture(target="src/")
+            assert result.status == "success"
 
 
 # ---------------------------------------------------------------------------

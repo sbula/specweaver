@@ -51,6 +51,7 @@ class TestAtomBasics:
         assert "run_tests" in result.message
         assert "run_linter" in result.message
         assert "run_complexity" in result.message
+        assert "run_architecture" in result.message
 
     def test_unsupported_language(self, tmp_path: Path) -> None:
         with pytest.raises(ValueError, match="Unsupported language"):
@@ -383,6 +384,51 @@ class TestAtomRunDebugger:
         result2 = atom.run({"intent": "run_debugger", "entrypoint": "main.py"})
         assert result2.status == AtomStatus.FAILED
         assert "target" in result2.message.lower()
+
+
+# ---------------------------------------------------------------------------
+# run_architecture intent
+# ---------------------------------------------------------------------------
+
+class TestAtomRunArchitecture:
+    """Tests for the run_architecture intent."""
+
+    def test_architecture_clean(self, tmp_path: Path) -> None:
+        atom = QARunnerAtom(cwd=tmp_path)
+        from specweaver.loom.commons.qa_runner.interface import ArchitectureRunResult
+
+        mock_result = ArchitectureRunResult(violation_count=0, violations=[])
+        with patch.object(atom._runner, "run_architecture_check", return_value=mock_result):
+            result = atom.run({"intent": "run_architecture", "target": "src/"})
+
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["violation_count"] == 0
+
+    def test_architecture_violations(self, tmp_path: Path) -> None:
+        atom = QARunnerAtom(cwd=tmp_path)
+        from specweaver.loom.commons.qa_runner.interface import (
+            ArchitectureRunResult,
+            ArchitectureViolation,
+        )
+
+        mock_result = ArchitectureRunResult(
+            violation_count=1,
+            violations=[
+                ArchitectureViolation("src/foo.py", "E01", "bad import", "uri")
+            ]
+        )
+        with patch.object(atom._runner, "run_architecture_check", return_value=mock_result):
+            result = atom.run({"intent": "run_architecture", "target": "src/"})
+
+        assert result.status == AtomStatus.FAILED
+        assert result.exports["violation_count"] == 1
+        assert len(result.exports["violations"]) == 1
+
+    def test_architecture_missing_target(self, tmp_path: Path) -> None:
+        atom = QARunnerAtom(cwd=tmp_path)
+        result = atom.run({"intent": "run_architecture"})
+        assert result.status == AtomStatus.FAILED
+        assert "target" in result.message.lower()
 
 
 def test_resolve_runner_languages(tmp_path: Path) -> None:

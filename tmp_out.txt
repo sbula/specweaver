@@ -1,0 +1,64 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\steve\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\development\pitbula\specweaver
+configfile: pyproject.toml
+plugins: anyio-4.8.0, asyncio-1.3.0, cov-7.0.0, tach-0.34.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+[36m[Tach][0m 4 tests in 8 files unaffected by changes ([33m~3.8s could be saved[0m). Skip with: [1mpytest --tach[0m
+[36m[Tach][0m [2mTo disable: pytest -p no:tach (https://docs.gauge.sh/usage/commands#using-the-pytest-plugin-directly)[0m
+
+tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_tach_execution_produces_physical_payload PASSED [ 25%]
+tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_native_violation_mapping FAILED [ 50%]
+tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_c05_full_native_invocation PASSED [ 75%]
+tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_c05_full_native_invocation_pass FAILED [100%]
+
+================================== FAILURES ===================================
+__________ TestArchitectureIntegration.test_native_violation_mapping __________
+tests\integration\validation\test_c05_architecture_integration.py:86: in test_native_violation_mapping
+    assert v.code == "UndeclaredDependency"
+E   AssertionError: assert 'JSONDecodeError' == 'UndeclaredDependency'
+E     
+E     - UndeclaredDependency
+E     + JSONDecodeError
+______ TestArchitectureIntegration.test_c05_full_native_invocation_pass _______
+tests\integration\validation\test_c05_architecture_integration.py:115: in test_c05_full_native_invocation_pass
+    assert result.status == Status.PASS
+E   AssertionError: assert <Status.FAIL: 'fail'> == <Status.PASS: 'pass'>
+E     
+E     - pass
+E     + fail
+============================== warnings summary ===============================
+tests\integration\validation\test_c05_architecture_integration.py:69
+  C:\development\pitbula\specweaver\tests\integration\validation\test_c05_architecture_integration.py:69: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\integration\validation\test_c05_architecture_integration.py:79
+  C:\development\pitbula\specweaver\tests\integration\validation\test_c05_architecture_integration.py:79: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\integration\validation\test_c05_architecture_integration.py:90
+  C:\development\pitbula\specweaver\tests\integration\validation\test_c05_architecture_integration.py:90: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\integration\validation\test_c05_architecture_integration.py:104
+  C:\development\pitbula\specweaver\tests\integration\validation\test_c05_architecture_integration.py:104: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== Tach Impact Analysis Warning =========================
+[Tach] WARNING: 2 test(s) failed that would be skipped by impact analysis!
+[Tach] These failures would be missed when using --tach:
+[Tach]   - tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_native_violation_mapping
+[Tach]   - tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_c05_full_native_invocation_pass
+=========================== short test summary info ===========================
+FAILED tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_native_violation_mapping - AssertionError: assert 'JSONDecodeError' == 'UndeclaredDependency'
+  
+  - UndeclaredDependency
+  + JSONDecodeError
+FAILED tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_c05_full_native_invocation_pass - AssertionError: assert <Status.FAIL: 'fail'> == <Status.PASS: 'pass'>
+  
+  - pass
+  + fail
+=================== 2 failed, 2 passed, 4 warnings in 2.75s ===================

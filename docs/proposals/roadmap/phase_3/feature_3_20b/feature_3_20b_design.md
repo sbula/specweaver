@@ -30,8 +30,7 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 *   **Generative HARA Governance (SF-3):**
     *   `src/specweaver/drafting/decomposition.py` (or prompt templates): Inject HARA heuristics (Topology + Data Sensitivity) into the prompt building cycle so the AI proposes optimal DAL strings during `/design` scaffoldings.
 *   **Outsourced FFI Rules (SF-4):**
-    *   `src/specweaver/loom/commons/qa_runner/interfaces.py`: Extend the `QARunnerInterface` with `enforce_boundaries()`.
-    *   Language Adapters (e.g., `qa_runner/python/runner.py`): Implement the generation of `tach.yml` and execution of `tach check`.
+    *   `src/specweaver/loom/commons/qa_runner/{language}/runner.py`: Implement the stubs for `run_architecture_check` in Java (ArchUnit) and TypeScript (ESLint) to actively enforce boundaries dynamically loaded from `context.yaml` and DAL overrides.
 
 ## 4. External Dependencies
 
@@ -56,7 +55,7 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 | **SF-1** | DAL Schema & Pydantic Impact Matrix Merge | Define the `DALLevel` enumerations and configure `pydantic-settings` to safely deep-merge `dal_definitions.yaml` over base profiles. | [ ] Pending |
 | **SF-2** | Fractal Resolution Engine | Implement `O(1)` cached directory-tree walking in `ValidationRunner` to map target files to their closest `context.yaml` DAL. | [ ] Pending |
 | **SF-3** | Generative HARA (AI Governance Proposal) | Update the `/design` scaffolding workflow so LLMs analyze topological edges/data to propose a DAL, requiring HITL approval. | [ ] Pending |
-| **SF-4** | Outsourced FFI Boundary Rules (Polyglot) | Extend the `QARunner` interface to dynamically generate and execute native boundary configurations (`.tach.yml`, ArchUnit test) based on `context.yaml`. | [ ] Pending |
+| **SF-4** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [ ] Pending |
 
 ## 6. Progress Tracker
 - [ ] Requirements Finalized

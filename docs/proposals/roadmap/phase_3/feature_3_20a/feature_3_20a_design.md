@@ -49,7 +49,7 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 | **SF-4** | Public Interface Enforcement | Use Tach's `interfaces:` to declare strict public boundaries and delete the messy `__init__.py` boilerplate hacks. | [x] Committed |
 | **SF-5** | Legacy Linter Subsumption | Outsource manual architectural tests (soft-deprecations, cyclic guards) to Tach. | [x] Committed |
 | **SF-6** | Global Implicit Namespace Conversion | Delete all 20 remaining internal `__init__.py` proxy files and enforce global `strict = true` topology using Tach. | [x] Committed |
-| **SF-7** | Target Rule C05 Subsumption (Tach) | Gut the hardcoded AST parser inside `c05_import_direction.py`. Replace it with a subprocess execution of `tach check` on the target project, mapping structural boundary violations into standard SpecWeaver Findings. | [ ] Pending |
+| **SF-7** | Target Rule C05 Subsumption (Tach) | Gut the hardcoded AST parser inside `c05_import_direction.py`. Replace it with a subprocess execution of `tach check` on the target project, mapping structural boundary violations into standard SpecWeaver Findings. | [x] Completed |
 | **SF-8** | TopologyGraph to Tach Adapter | Build an adapter or synchronization layer ensuring that when SpecWeaver maps `context.yaml` boundaries across a target codebase, a `tach.toml` is dynamically generated or synchronized behind the scenes. | [ ] Pending |
 
 
@@ -66,14 +66,14 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 - [x] SF-5 Implementation (Committed)
 - [x] SF-6 Implementation Plan
 - [x] SF-6 Implementation
-- [ ] SF-7 Implementation Plan
-- [ ] SF-7 Implementation
+- [x] SF-7 Implementation Plan
+- [x] SF-7 Implementation
 - [ ] SF-8 Implementation Plan
 - [ ] SF-8 Implementation
 - [ ] Feature 3.20a Fully Complete
 
 ## 7. Session Handoff
 
-**Current status**: Feature 3.20a (SF-6: Global Implicit Namespace Conversion) Implementation complete.
-**Next step**: Execute `/dev sf7` to begin replacing the hardcoded AST parser with Tach.
+**Current status**: Feature 3.20a (SF-7: Target Rule C05 Subsumption (Tach)) Implementation COMPLETED.
+**Next step**: Execute `/implementation-plan docs/proposals/roadmap/phase_3/feature_3_20a/feature_3_20a_design.md SF-8` to begin the next sub-feature.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

@@ -78,6 +78,10 @@ class ImplementerTestInterface:
         """Run debugger."""
         return self._tool.run_debugger(target=target, entrypoint=entrypoint)
 
+    def run_architecture(self, target: str) -> ToolResult:
+        """Run architectural boundary checks."""
+        return self._tool.run_architecture(target=target)
+
 
 class ReviewerTestInterface:
     """Test runner interface for the Reviewer role.
@@ -127,6 +131,10 @@ class ReviewerTestInterface:
     def run_debugger(self, target: str, entrypoint: str) -> ToolResult:
         """Run debugger."""
         return self._tool.run_debugger(target=target, entrypoint=entrypoint)
+
+    def run_architecture(self, target: str) -> ToolResult:
+        """Run architectural boundary checks."""
+        return self._tool.run_architecture(target=target)
 
 
 # ---------------------------------------------------------------------------

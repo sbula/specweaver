@@ -34,4 +34,11 @@ INTENT_DEFINITIONS: dict[str, ToolDefinition] = {
             ToolParameter(name="max_complexity", type="string", description="max_complexity"),
         ],
     ),
+    "run_architecture": ToolDefinition(
+        name="run_architecture",
+        description="Run architectural boundary checks (requires run_architecture intent).",
+        parameters=[
+            ToolParameter(name="target", type="string", description="target"),
+        ],
+    ),
 }

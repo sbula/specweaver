@@ -222,6 +222,39 @@ class DebugRunResult:
     __test__ = False
 
 
+@dataclass(frozen=True)
+class ArchitectureViolation:
+    """A single architectural boundary finding.
+
+    Attributes:
+        file: Relative file path.
+        code: Rule code (e.g., "E0432").
+        message: Human-readable description.
+        rule_uri: Optional URI to the documentation for the rule.
+    """
+
+    file: str
+    code: str
+    message: str
+    rule_uri: str = ""
+
+    __test__ = False
+
+
+@dataclass(frozen=True)
+class ArchitectureRunResult:
+    """Structured result from running an architectural linters.
+
+    Attributes:
+        violation_count: Total hard errors.
+        violations: Details of each compilation error.
+    """
+
+    violation_count: int
+    violations: list[ArchitectureViolation] = field(default_factory=list)
+
+    __test__ = False
+
 # ---------------------------------------------------------------------------
 # Abstract interface
 # ---------------------------------------------------------------------------
@@ -320,4 +353,18 @@ class QARunnerInterface(ABC):
 
         Returns:
             DebugRunResult with exit records and DAP-mapped output events.
+        """
+
+    @abstractmethod
+    def run_architecture_check(
+        self,
+        target: str,
+    ) -> ArchitectureRunResult:
+        """Run architectural boundary checks and return structured results.
+
+        Args:
+            target: File or directory to compile (relative to cwd).
+
+        Returns:
+            ArchitectureRunResult with error counts and details.
         """

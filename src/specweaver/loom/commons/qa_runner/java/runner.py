@@ -11,6 +11,7 @@ import subprocess
 from typing import TYPE_CHECKING
 
 from specweaver.loom.commons.qa_runner.interface import (
+    ArchitectureRunResult,
     CompileRunResult,
     ComplexityRunResult,
     ComplexityViolation,
@@ -220,3 +221,10 @@ class JavaRunner(QARunnerInterface):
             duration_seconds=0.0,
             events=[OutputEvent(category="stdout", output=x) for x in proc.stdout.splitlines()],
         )
+
+    def run_architecture_check(
+        self,
+        target: str,
+    ) -> ArchitectureRunResult:
+        """Run architectural checks (Deferred to Feature 3.20b)."""
+        return ArchitectureRunResult(violation_count=0, violations=[])

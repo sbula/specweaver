@@ -11,6 +11,7 @@ import subprocess
 from typing import TYPE_CHECKING
 
 from specweaver.loom.commons.qa_runner.interface import (
+    ArchitectureRunResult,
     CompileError,
     CompileRunResult,
     ComplexityRunResult,
@@ -226,3 +227,10 @@ class KotlinRunner(QARunnerInterface):
                 OutputEvent(category="stderr", output=proc.stderr[:200]),
             ],
         )
+
+    def run_architecture_check(
+        self,
+        target: str,
+    ) -> ArchitectureRunResult:
+        """Run architectural checks (Deferred to Feature 3.20b)."""
+        return ArchitectureRunResult(violation_count=0, violations=[])

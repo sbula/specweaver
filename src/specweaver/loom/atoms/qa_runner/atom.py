@@ -326,3 +326,36 @@ class QARunnerAtom(Atom):
             message="Debug process completed successfully.",
             exports=exports,
         )
+
+    def _intent_run_architecture(self, context: dict[str, Any]) -> AtomResult:
+        """Run architectural checks.
+
+        Context keys:
+            target: str — file or directory to check (required).
+        """
+        target = context.get("target")
+        if not target:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'target' in context for run_architecture intent.",
+            )
+
+        result = self._runner.run_architecture_check(target=target)
+
+        exports: dict[str, Any] = {
+            "violation_count": result.violation_count,
+            "violations": [asdict(v) for v in result.violations],
+        }
+
+        if result.violation_count > 0:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"{result.violation_count} architectural violation(s) found.",
+                exports=exports,
+            )
+
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="No architectural violations.",
+            exports=exports,
+        )

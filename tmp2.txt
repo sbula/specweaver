@@ -1,0 +1,51 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\steve\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\development\pitbula\specweaver
+configfile: pyproject.toml
+plugins: anyio-4.8.0, asyncio-1.3.0, cov-7.0.0, tach-0.34.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+[36m[Tach][0m 1 test in 8 files unaffected by changes ([33m~4.3s could be saved[0m). Skip with: [1mpytest --tach[0m
+[36m[Tach][0m [2mTo disable: pytest -p no:tach (https://docs.gauge.sh/usage/commands#using-the-pytest-plugin-directly)[0m
+
+tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_native_violation_mapping FAILED [100%]
+
+================================== FAILURES ===================================
+__________ TestArchitectureIntegration.test_native_violation_mapping __________
+tests\integration\validation\test_c05_architecture_integration.py:87: in test_native_violation_mapping
+    assert v.code == "UndeclaredDependency", f"Expected UndeclaredDependency, got {v.code}: {v.message}"
+E   AssertionError: Expected UndeclaredDependency, got JSONDecodeError: Failed to decode tach JSON output: Expecting value: line 1 column 1 (char 0)
+E   assert 'JSONDecodeError' == 'UndeclaredDependency'
+E     
+E     - UndeclaredDependency
+E     + JSONDecodeError
+============================== warnings summary ===============================
+tests\integration\validation\test_c05_architecture_integration.py:70
+  C:\development\pitbula\specweaver\tests\integration\validation\test_c05_architecture_integration.py:70: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\integration\validation\test_c05_architecture_integration.py:80
+  C:\development\pitbula\specweaver\tests\integration\validation\test_c05_architecture_integration.py:80: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\integration\validation\test_c05_architecture_integration.py:91
+  C:\development\pitbula\specweaver\tests\integration\validation\test_c05_architecture_integration.py:91: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests\integration\validation\test_c05_architecture_integration.py:105
+  C:\development\pitbula\specweaver\tests\integration\validation\test_c05_architecture_integration.py:105: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== Tach Impact Analysis Warning =========================
+[Tach] WARNING: 1 test(s) failed that would be skipped by impact analysis!
+[Tach] These failures would be missed when using --tach:
+[Tach]   - tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_native_violation_mapping
+=========================== short test summary info ===========================
+FAILED tests/integration/validation/test_c05_architecture_integration.py::TestArchitectureIntegration::test_native_violation_mapping - AssertionError: Expected UndeclaredDependency, got JSONDecodeError: Failed to decode tach JSON output: Expecting value: line 1 column 1 (char 0)
+assert 'JSONDecodeError' == 'UndeclaredDependency'
+  
+  - UndeclaredDependency
+  + JSONDecodeError
+======================== 1 failed, 4 warnings in 1.57s ========================

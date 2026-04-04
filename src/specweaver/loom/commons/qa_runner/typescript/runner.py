@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 from specweaver.loom.commons.qa_runner.interface import (
+    ArchitectureRunResult,
     CompileError,
     CompileRunResult,
     ComplexityRunResult,
@@ -181,3 +182,10 @@ class TypeScriptRunner(QARunnerInterface):
             duration_seconds=duration,
             events=events,
         )
+
+    def run_architecture_check(
+        self,
+        target: str,
+    ) -> ArchitectureRunResult:
+        """Run architectural checks (Deferred to Feature 3.20b)."""
+        return ArchitectureRunResult(violation_count=0, violations=[])

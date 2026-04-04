@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import ast
 from typing import TYPE_CHECKING
 
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
@@ -21,7 +20,7 @@ _FORBIDDEN_IMPORTS = [
 
 
 class ImportDirectionRule(Rule):
-    """Check that imports follow the correct layering direction."""
+    """Check that imports follow the correct layering direction (Tach)."""
 
     @property
     def rule_id(self) -> str:
@@ -32,38 +31,38 @@ class ImportDirectionRule(Rule):
         return "Import Direction"
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
+        if not spec_path:
+            return self._skip("Cannot run architecture checks without a file path")
+
+        import logging
+
+        from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+
+        logger = logging.getLogger(__name__)
+
         try:
-            tree = ast.parse(spec_text)
-        except SyntaxError:
-            return self._skip("Cannot parse file (syntax error)")
+            runner = PythonQARunner(cwd=spec_path.parent)
+            result = runner.run_architecture_check(target=str(spec_path.absolute()))
+        except Exception as e:
+            logger.warning("C05 architecture check failed: %s", e)
+            return self._skip(f"Architecture engine failure: {e}")
+
+        if result.violation_count == 0:
+            return self._pass("All imports follow layering rules")
 
         findings: list[Finding] = []
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    if alias.name in _FORBIDDEN_IMPORTS:
-                        findings.append(
-                            Finding(
-                                message=f"Forbidden import: '{alias.name}'",
-                                line=node.lineno,
-                                severity=Severity.ERROR,
-                                suggestion="Components should not import from the CLI layer.",
-                            )
-                        )
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                for forbidden in _FORBIDDEN_IMPORTS:
-                    if node.module == forbidden or node.module.startswith(forbidden + "."):
-                        findings.append(
-                            Finding(
-                                message=f"Forbidden import from: '{node.module}'",
-                                line=node.lineno,
-                                severity=Severity.ERROR,
-                                suggestion="Components should not import from the CLI layer.",
-                            )
-                        )
+        for viol in result.violations:
+            findings.append(
+                Finding(
+                    message=f"Architecture boundary violated: {viol.message}",
+                    line=0,
+                    severity=Severity.ERROR,
+                    suggestion=f"See architectural boundary configuration (Code: {viol.code}).",
+                )
+            )
 
         if findings:
-            return self._fail(f"Found {len(findings)} forbidden import(s)", findings)
+            return self._fail(f"Found {result.violation_count} architectural violation(s)", findings)
 
-        return self._pass("All imports follow layering rules")
+        return self._fail("Architectural violations detected.", [])

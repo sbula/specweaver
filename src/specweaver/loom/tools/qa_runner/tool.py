@@ -33,12 +33,13 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
             "run_complexity",
             "run_compiler",
             "run_debugger",
+            "run_architecture",
         }
     ),
     "reviewer": frozenset(
-        {"run_tests", "run_linter", "run_complexity", "run_compiler", "run_debugger"}
+        {"run_tests", "run_linter", "run_complexity", "run_compiler", "run_debugger", "run_architecture"}
     ),
-    "planner": frozenset({"run_tests", "run_linter", "run_complexity"}),
+    "planner": frozenset({"run_tests", "run_linter", "run_complexity", "run_architecture"}),
     # drafter: no access — not in the map
 }
 
@@ -216,6 +217,24 @@ class QARunnerTool:
                 "intent": "run_debugger",
                 "target": target,
                 "entrypoint": entrypoint,
+            }
+        )
+
+        return ToolResult(
+            status="success" if result.status.value == "SUCCESS" else "error",
+            message=result.message,
+            data=result.exports,
+        )
+
+    def run_architecture(self, target: str) -> ToolResult:
+        """Run architectural boundary checks (requires run_architecture intent)."""
+        self._require_intent("run_architecture")
+        logger.debug("QARunnerTool.run_architecture: target=%s", target)
+
+        result = self._atom.run(
+            {
+                "intent": "run_architecture",
+                "target": target,
             }
         )
 

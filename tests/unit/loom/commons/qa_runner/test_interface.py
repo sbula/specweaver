@@ -113,8 +113,8 @@ def test_debug_run_result_model() -> None:
     assert len(res.events) == 1
 
 
-def test_interface_demands_compile_and_debug() -> None:
-    """Test that QARunnerInterface correctly defines run_compiler and run_debugger as abstract."""
+def test_interface_demands_all_methods() -> None:
+    """Test that QARunnerInterface correctly defines all new methods as abstract."""
     from typing import Any
 
     class IncompleteRunner(QARunnerInterface):
@@ -132,6 +132,30 @@ def test_interface_demands_compile_and_debug() -> None:
 
     with pytest.raises(
         TypeError,
-        match=r"Can't instantiate abstract class IncompleteRunner without an implementation for abstract method.*run_compiler",
+        match=r"Can't instantiate abstract class IncompleteRunner without an implementation for abstract method.*run_architecture_check",
     ):
         IncompleteRunner()  # type: ignore[abstract]
+
+def test_architecture_violation_model() -> None:
+    from specweaver.loom.commons.qa_runner.interface import ArchitectureViolation
+    v = ArchitectureViolation(
+        file="src/foo.py",
+        code="DEPS01",
+        message="Invalid import from bar",
+        rule_uri="arch.com/rules/DEPS01"
+    )
+    assert v.file == "src/foo.py"
+    assert v.code == "DEPS01"
+    assert v.message == "Invalid import from bar"
+
+def test_architecture_run_result_model() -> None:
+    from specweaver.loom.commons.qa_runner.interface import (
+        ArchitectureRunResult,
+        ArchitectureViolation,
+    )
+    res = ArchitectureRunResult(
+        violation_count=1,
+        violations=[ArchitectureViolation("main.py", "ERR", "bad", "")]
+    )
+    assert res.violation_count == 1
+    assert len(res.violations) == 1

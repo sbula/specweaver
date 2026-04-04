@@ -20,6 +20,8 @@ import time
 from typing import TYPE_CHECKING, TypedDict
 
 from specweaver.loom.commons.qa_runner.interface import (
+    ArchitectureRunResult,
+    ArchitectureViolation,
     CompileRunResult,
     ComplexityRunResult,
     ComplexityViolation,
@@ -414,4 +416,110 @@ class PythonQARunner(QARunnerInterface):
             exit_code=proc.returncode,
             duration_seconds=duration,
             events=events,
+        )
+
+    def run_architecture_check(
+        self,
+        target: str,
+    ) -> ArchitectureRunResult:
+        """Run architectural boundary checks via tach.
+
+        Executes `uv run tach check --output json` (or equivalent).
+        """
+        logger.debug("PythonQARunner.run_architecture_check: target=%s", target)
+
+        try:
+            # We use python -m tach to ensure we hit the tach in the current env
+            proc = subprocess.run(
+                [sys.executable, "-m", "tach", "check", "--output", "json"],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd=str(self._cwd),
+            )
+        except subprocess.TimeoutExpired:
+            logger.warning("PythonQARunner: tach check timed out (target=%s)", target)
+            return ArchitectureRunResult(
+                violation_count=1,
+                violations=[
+                    ArchitectureViolation(
+                        file="<validation_engine>",
+                        code="TimeoutExpired",
+                        message="Architecture check timed out while executing tach.",
+                    )
+                ],
+            )
+        except FileNotFoundError:
+            logger.warning("PythonQARunner: tach not found")
+            return ArchitectureRunResult(
+                violation_count=1,
+                violations=[
+                    ArchitectureViolation(
+                        file="<validation_engine>",
+                        code="FileNotFoundError",
+                        message="Tach architectural linter is not installed or not found in paths.",
+                    )
+                ],
+            )
+
+        return self._build_architecture_result(proc.stdout)
+
+    def _build_architecture_result(self, stdout: str) -> ArchitectureRunResult:
+        """Build ArchitectureRunResult from tach check JSON output."""
+        if not stdout.strip() or stdout.strip() == "[]":
+            return ArchitectureRunResult(violation_count=0, violations=[])
+
+        try:
+            data = json.loads(stdout)
+            if not isinstance(data, list):
+                # Valid tach error JSON is a list of violation objects
+                return ArchitectureRunResult(
+                    violation_count=1,
+                    violations=[
+                        ArchitectureViolation(
+                            file="<validation_engine>",
+                            code="InvalidOutput",
+                            message="Tach output is not a valid JSON list of violations.",
+                        )
+                    ],
+                )
+        except (json.JSONDecodeError, TypeError) as e:
+            return ArchitectureRunResult(
+                violation_count=1,
+                violations=[
+                    ArchitectureViolation(
+                        file="<validation_engine>",
+                        code="JSONDecodeError",
+                        message=f"Failed to decode tach JSON output: {e}",
+                    )
+                ],
+            )
+
+
+        violations: list[ArchitectureViolation] = []
+        for item in data:
+            located = item.get("Located", {})
+            file_path = located.get("file_path", "")
+            details = located.get("details", {})
+            code_block = details.get("Code", {})
+
+            # The structure for undeclared dependency is Code -> UndeclaredDependency -> ...
+            ud = code_block.get("UndeclaredDependency")
+            if ud:
+                dependency = ud.get("dependency", "")
+                usage_module = ud.get("usage_module", "")
+                definition_module = ud.get("definition_module", "")
+                msg = f"Module '{usage_module}' cannot import '{dependency}' from '{definition_module}'"
+
+                violations.append(
+                    ArchitectureViolation(
+                        file=str(file_path),
+                        code="UndeclaredDependency",
+                        message=msg,
+                    )
+                )
+
+        return ArchitectureRunResult(
+            violation_count=len(violations),
+            violations=violations,
         )

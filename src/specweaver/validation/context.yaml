@@ -16,6 +16,7 @@ archetype: pure-logic
 
 consumes:
   - specweaver/config
+  - specweaver/loom/commons/qa_runner
 
 forbids:
   - specweaver/loom/*

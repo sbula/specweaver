@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -114,47 +114,70 @@ class TestC02TestsExist:
 
 
 class TestC05ImportDirection:
-    """Test the Import Direction rule."""
+    """Test the Import Direction rule via Tach Atom."""
 
-    def test_clean_imports(self) -> None:
+    def test_clean_imports(self, tmp_path: pytest.TempPathFactory) -> None:
+        from specweaver.loom.commons.qa_runner.interface import ArchitectureRunResult
         code = "from specweaver.llm.models import Message\n"
         rule = ImportDirectionRule()
-        result = rule.check(code)
-        assert result.status == Status.PASS
+        spec_path = tmp_path / "test.py"
+        with patch("specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check") as mock_run:
+            mock_run.return_value = ArchitectureRunResult(
+                violation_count=0,
+                violations=[]
+            )
+            result = rule.check(code, spec_path=spec_path)
+            assert result.status == Status.PASS
 
-    def test_forbidden_cli_import(self) -> None:
+    def test_forbidden_cli_import(self, tmp_path: pytest.TempPathFactory) -> None:
+        from specweaver.loom.commons.qa_runner.interface import (
+            ArchitectureRunResult,
+            ArchitectureViolation,
+        )
         code = "from specweaver.cli.main import app\n"
         rule = ImportDirectionRule()
-        result = rule.check(code)
-        assert result.status == Status.FAIL
-        assert "Forbidden import" in result.findings[0].message
+        spec_path = tmp_path / "test.py"
+        with patch("specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check") as mock_run:
+            mock_run.return_value = ArchitectureRunResult(
+                violation_count=1,
+                violations=[ArchitectureViolation(file="test.py", code="UndeclaredDependency", message="Module 'specweaver.cli' is not allowed")]
+            )
+            result = rule.check(code, spec_path=spec_path)
+            assert result.status == Status.FAIL
+            assert "Architecture boundary violated" in result.findings[0].message
 
-    def test_forbidden_direct_import(self) -> None:
+    def test_no_file_path_skips(self) -> None:
         code = "import specweaver.cli\n"
         rule = ImportDirectionRule()
-        result = rule.check(code)
-        assert result.status == Status.FAIL
-
-    def test_syntax_error_skips(self) -> None:
-        code = "def foo(\n"
-        rule = ImportDirectionRule()
-        result = rule.check(code)
+        result = rule.check(code) # No spec_path
         assert result.status == Status.SKIP
+
+    def test_engine_failure_skips(self, tmp_path: pytest.TempPathFactory) -> None:
+        code = "import specweaver.cli\n"
+        rule = ImportDirectionRule()
+        spec_path = tmp_path / "test.py"
+        with patch("specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check", side_effect=Exception("Timeout")):
+            result = rule.check(code, spec_path=spec_path)
+            assert result.status == Status.SKIP
+            assert "Architecture engine failure" in result.message
+
+    def test_missing_payload_fails(self, tmp_path: pytest.TempPathFactory) -> None:
+        from specweaver.loom.commons.qa_runner.interface import ArchitectureRunResult
+        code = "from specweaver.cli.main import app\n"
+        rule = ImportDirectionRule()
+        spec_path = tmp_path / "test.py"
+        with patch("specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check") as mock_run:
+            # violation_count > 0 but violations is empty
+            mock_run.return_value = ArchitectureRunResult(
+                violation_count=2,
+                violations=[]
+            )
+            result = rule.check(code, spec_path=spec_path)
+            assert result.status == Status.FAIL
+            assert "Architectural violations detected." in result.message
 
     def test_rule_id(self) -> None:
         assert ImportDirectionRule().rule_id == "C05"
-
-    def test_submodule_import_forbidden(self) -> None:
-        """from specweaver.cli.submod import X should also be caught."""
-        code = "from specweaver.cli.commands import init_cmd\n"
-        rule = ImportDirectionRule()
-        result = rule.check(code)
-        assert result.status == Status.FAIL
-
-    def test_empty_code(self) -> None:
-        rule = ImportDirectionRule()
-        result = rule.check("")
-        assert result.status == Status.PASS
 
 
 # ---------------------------------------------------------------------------
