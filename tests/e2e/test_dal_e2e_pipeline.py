@@ -5,11 +5,9 @@
 
 from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli.main import app
-from specweaver.config.database import Database
 
 # Counter for unique project names in tests
 _proj_counter = 0
@@ -27,7 +25,7 @@ def test_e2e_check_spec_dal_matrix_zero_tolerance(tmp_path: Path) -> None:
     proj_name = _unique_name("dal_chk")
     result_init = runner.invoke(app, ["init", proj_name, "--path", str(tmp_path)])
     assert result_init.exit_code == 0, result_init.output
-    
+
     cwd = tmp_path
 
     # 2. Write an extremely minimal spec that normally passes with warnings but now we enforce S01 zero tolerance
@@ -58,7 +56,7 @@ def test_e2e_sw_implement_pipeline_dal_strictness(tmp_path: Path) -> None:
     proj_name = _unique_name("dal_impl")
     result_init = runner.invoke(app, ["init", proj_name, "--path", str(tmp_path)])
     assert result_init.exit_code == 0, result_init.output
-    
+
     cwd = tmp_path
 
     spec = cwd / "specs" / "test.md"

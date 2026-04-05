@@ -10,7 +10,7 @@ Tables:
 - projects              — registered projects (name, root_path, timestamps)
 - llm_profiles          — global and project-specific LLM configurations
 - project_llm_links     — links projects to LLM profiles by role
-- validation_overrides  — per-project validation rule overrides
+- validation_overrides  — (Removed in v14)
 - active_state          — singleton key-value (currently active project)
 - schema_version        — for future DB migrations
 """
@@ -44,6 +44,7 @@ from specweaver.config._schema import (
     SCHEMA_V11,
     SCHEMA_V12,
     SCHEMA_V13,
+    SCHEMA_V14,
 )
 
 # Backward-compatible aliases (tests import with underscore prefix)
@@ -60,6 +61,7 @@ _SCHEMA_V10 = SCHEMA_V10
 _SCHEMA_V11 = SCHEMA_V11
 _SCHEMA_V12 = SCHEMA_V12
 _SCHEMA_V13 = SCHEMA_V13
+_SCHEMA_V14 = SCHEMA_V14
 _DEFAULT_PROFILES = DEFAULT_PROFILES
 
 logger = logging.getLogger(__name__)
@@ -80,6 +82,7 @@ _MIGRATIONS: list[tuple[int, str, str]] = [
     (11, SCHEMA_V11, "artifact_events & usage correlation"),
     (12, SCHEMA_V12, "model_id for artifact_events"),
     (13, SCHEMA_V13, "default_dal on projects"),
+    (14, SCHEMA_V14, "drop validation_overrides"),
 ]
 
 

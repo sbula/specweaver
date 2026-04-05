@@ -43,72 +43,23 @@ def _create_project(db, name: str = "testproj") -> str:
 # ---------------------------------------------------------------------------
 
 
-class TestConfigSetGetListReset:
-    """Test config set/get/list/reset subcommands."""
+class TestConfigList:
+    """Test config list subcommand."""
 
-    def test_set_requires_at_least_one_option(self, _mock_db) -> None:
-        """config set without any option → exit 1."""
-        _create_project(_mock_db)
-        result = runner.invoke(app, ["config", "set", "S08"])
-        assert result.exit_code == 1
-        assert "Provide at least one" in result.output
-
-    def test_set_enabled(self, _mock_db) -> None:
-        """config set --enabled → success."""
-        _create_project(_mock_db)
-        result = runner.invoke(app, ["config", "set", "S08", "--enabled"])
-        assert result.exit_code == 0
-        assert "S08" in result.output
-
-    def test_set_warn_threshold(self, _mock_db) -> None:
-        """config set --warn → success."""
-        _create_project(_mock_db)
-        result = runner.invoke(app, ["config", "set", "S08", "--warn", "5.0"])
-        assert result.exit_code == 0
-
-    def test_set_fail_threshold(self, _mock_db) -> None:
-        """config set --fail → success."""
-        _create_project(_mock_db)
-        result = runner.invoke(app, ["config", "set", "S08", "--fail", "10.0"])
-        assert result.exit_code == 0
-
-    def test_get_no_override(self, _mock_db) -> None:
-        """config get with no override → shows default message."""
-        _create_project(_mock_db)
-        result = runner.invoke(app, ["config", "get", "S99"])
-        assert result.exit_code == 0
-        assert "No override" in result.output or "defaults" in result.output
-
-    def test_get_existing_override(self, _mock_db) -> None:
-        """config get after set → shows the override."""
-        _create_project(_mock_db)
-        runner.invoke(app, ["config", "set", "S08", "--warn", "5.0"])
-        result = runner.invoke(app, ["config", "get", "S08"])
-        assert result.exit_code == 0
-        assert "S08" in result.output
-
-    def test_list_empty(self, _mock_db) -> None:
-        """config list with no overrides → shows default message."""
+    def test_list_with_no_profile(self, _mock_db) -> None:
+        """config list shows default pipeline message."""
         _create_project(_mock_db)
         result = runner.invoke(app, ["config", "list"])
         assert result.exit_code == 0
-        assert "No overrides" in result.output or "defaults" in result.output
+        assert "default pipeline" in result.output
 
-    def test_list_with_overrides(self, _mock_db) -> None:
-        """config list after setting overrides → shows them."""
+    def test_list_with_profile(self, _mock_db) -> None:
+        """config list shows profile message."""
         _create_project(_mock_db)
-        runner.invoke(app, ["config", "set", "S08", "--warn", "5.0"])
+        runner.invoke(app, ["config", "set-profile", "web-app"])
         result = runner.invoke(app, ["config", "list"])
         assert result.exit_code == 0
-        assert "S08" in result.output
-
-    def test_reset_removes_override(self, _mock_db) -> None:
-        """config reset → removes the override."""
-        _create_project(_mock_db)
-        runner.invoke(app, ["config", "set", "S08", "--warn", "5.0"])
-        result = runner.invoke(app, ["config", "reset", "S08"])
-        assert result.exit_code == 0
-        assert "removed" in result.output.lower() or "S08" in result.output
+        assert "web-app" in result.output
 
 
 # ---------------------------------------------------------------------------

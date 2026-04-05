@@ -70,12 +70,8 @@ class TestDomainProfileCLI:
         assert result.exit_code == 0, f"Failed: {result.output}"
         assert "web-app" in result.output
 
-        # Profile name is stored — but NO DB overrides are written
+        # Profile name is stored
         assert _mock_db.get_domain_profile(name) == "web-app"
-        overrides = _mock_db.get_validation_overrides(name)
-        assert overrides == [], (
-            "set-profile must NOT write validation_overrides (new Sub-Phase A contract)"
-        )
 
     def test_set_profile_unknown(self, tmp_path: Path, _mock_db) -> None:
         """sw config set-profile with unknown profile shows error."""
@@ -122,25 +118,7 @@ class TestDomainProfileCLI:
         # Per-rule overrides are preserved (none were set in this test, so empty)
         # assert _mock_db.get_validation_overrides(name) == []
 
-    def test_individual_override_on_top_of_profile(
-        self,
-        tmp_path: Path,
-        _mock_db,
-    ) -> None:
-        """Individual override on top of profile works."""
-        name = _unique_name("proflayer")
-        runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        _mock_db.set_active_project(name)
-        runner.invoke(app, ["config", "set-profile", "web-app"])
 
-        # Fine-tune S08 on top of profile
-        result = runner.invoke(app, ["config", "set", "S08", "--fail", "3"])
-        assert result.exit_code == 0
-
-        # S08 should now have fail=3 (our override) instead of fail=8 (profile)
-        o = _mock_db.get_validation_override(name, "S08")
-        assert o is not None
-        assert o["fail_threshold"] == 3
 
     def test_set_profile_then_check_spec(
         self,
@@ -177,27 +155,7 @@ class TestDomainProfileCLI:
         # Should run (may pass or warn, but not crash)
         assert result.exit_code in (0, 1), f"Crashed: {result.output}"
 
-    def test_config_list_shows_profile_overrides(
-        self,
-        tmp_path: Path,
-        _mock_db,
-    ) -> None:
-        """After set-profile, config list doesn't show profile overrides.
 
-        Under the new Sub-Phase A model, the profile is NOT written to
-        validation_overrides.  The profile just selects a YAML pipeline.
-        config list (which shows DB overrides) therefore shows nothing.
-        """
-        name = _unique_name("proflist")
-        runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        _mock_db.set_active_project(name)
-        runner.invoke(app, ["config", "set-profile", "web-app"])
-
-        result = runner.invoke(app, ["config", "list"])
-        assert result.exit_code == 0, f"Failed: {result.output}"
-        # Profile is stored as a name; config list shows per-rule DB overrides
-        # (none, since set-profile doesn't write overrides)
-        assert _mock_db.get_domain_profile(name) == "web-app"  # profile stored
 
     def test_set_profile_no_active_project(self, _mock_db) -> None:
         """sw config set-profile without active project shows error."""

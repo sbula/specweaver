@@ -314,18 +314,29 @@ sw standards scan --project ./my-project
 
 **HITL review**: By default, each discovered standard category is presented for human review. Options: **(a)ccept**, **(r)eject**, **(e)dit** (modify JSON), **(A)ccept All** (remaining in scope), **(S)kip Scope**. Use `--no-review` for CI or automated pipelines.
 
-## Validation Overrides
+## Validation Pipelines
 
-Customize rule thresholds per project:
+Customize rule thresholds exclusively through YAML pipelines via your active domain profile:
 
-```bash
-sw config set S08 --fail 3           # Fail on >3 ambiguous words
-sw config set C04 --fail 80          # Require 80% coverage
-sw config set S05 --enabled false    # Disable Day Test rule
-sw config list                       # Show all overrides
-sw config reset S08                  # Revert to defaults
+Create `.specweaver/pipelines/validation_spec_custom.yaml`:
+```yaml
+name: validation_spec_custom
+type: validation_pipeline
+extends: validation_spec_default
+target: spec
+remove:
+  - 's05_day_test'        # Disable Day Test rule
+override:
+  's08_ambiguity':        # Fail on >3 ambiguous words
+    params:
+      fail_threshold: 3
 ```
 
+Then assign it to your project:
+```bash
+sw config set-profile custom
+sw config list                       # Show all resolved rules and thresholds
+```
 ## Next Steps
 
 - Read the full [README](../README.md) for detailed feature documentation

@@ -233,10 +233,10 @@ class TestValidateOnlyWithProfileOverride:
 
 
 class TestValidateOnlyWithDisableOverride:
-    """Using --set S01.enabled=false skips S01 from the output."""
+    """Disabling a rule via local pipeline configuration removes it."""
 
     def test_validate_only_with_disable_override(self, tmp_path: Path) -> None:
-        """Disable S01 via --set → S01 not present in check output."""
+        """Create a local pipeline that removes s01_one_sentence → S01 not present in check output."""
         project_dir, spec = _init_project_with_spec(tmp_path)
 
         # First run without disable — S01 must appear
@@ -246,7 +246,18 @@ class TestValidateOnlyWithDisableOverride:
         )
         assert "S01" in result_with.output, "S01 should appear without disable flag"
 
-        # Now disable S01 via --set
+        # Now disable S01 via local pipeline overriding
+        pipelines_dir = project_dir / ".specweaver" / "pipelines"
+        pipelines_dir.mkdir(parents=True, exist_ok=True)
+        (pipelines_dir / "validation_spec_custom.yaml").write_text(
+            "name: validation_spec_custom\n"
+            "type: validation_pipeline\n"
+            "extends: validation_spec_default\n"
+            "target: spec\n"
+            "remove:\n"
+            "  - s01_one_sentence\n"
+        )
+
         result_without = runner.invoke(
             app,
             [
@@ -256,12 +267,12 @@ class TestValidateOnlyWithDisableOverride:
                 "component",
                 "--project",
                 str(project_dir),
-                "--set",
-                "S01.enabled=false",
+                "--pipeline",
+                "validation_spec_custom",
             ],
         )
         assert result_without.exit_code in (0, 1), (
-            f"check with disable crashed: {result_without.output}"
+            f"check with disabled pipeline crashed: {result_without.output}"
         )
         # S01 should NOT appear in results when disabled
         assert "S01" not in result_without.output, (

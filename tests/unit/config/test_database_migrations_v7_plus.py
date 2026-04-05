@@ -551,11 +551,11 @@ class TestSchemaV10Migration:
         for row in rows:
             assert row["provider"] == "gemini"
 
-    def test_schema_version_is_13(self, db):
-        """Schema version is 13 after all migrations."""
+    def test_schema_version_is_latest(self, db):
+        """Schema version is 14 after all migrations."""
         with db.connect() as conn:
             row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert row[0] == 13
+        assert row[0] == 14
 
     def test_v9_to_v10_upgrade(self, db_path: Path):
         """Simulate a v9 DB and verify v10 migration adds provider column."""
@@ -669,9 +669,8 @@ class TestSchemaV11ToV12Upgrade:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
 
         assert row[0] == "unknown"  # constraint default from ALTER TABLE
-        assert version[0] >= 13
-
-
+        assert version[0] >= 14
+        
 # ===========================================================================
 # Schema v13 — default_dal column on projects
 # ===========================================================================
@@ -753,11 +752,11 @@ class TestSchemaV12ToV13Upgrade:
         conn.commit()
         conn.close()
 
-        # Opening with Database will trigger migration to v13
+        # Opening with Database will trigger migration to v13 (and v14)
         db = Database(db_path)
         with db.connect() as conn2:
             row = conn2.execute("SELECT default_dal FROM projects WHERE name='legacy'").fetchone()
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
 
         assert row[0] == "DAL_A"  # constraint default from ALTER TABLE
-        assert version[0] >= 13
+        assert version[0] >= 14

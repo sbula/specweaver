@@ -98,59 +98,7 @@ class TestSchemaV2Migration:
 # ---------------------------------------------------------------------------
 
 
-class TestValidationOverrideUpsert:
-    """Edge cases for set_validation_override partial-update logic."""
 
-    def test_load_validation_settings_no_overrides(self, db, tmp_path: Path):
-        """Project with zero overrides returns empty ValidationSettings."""
-        db.register_project("clean", str(tmp_path / "clean"))
-        settings = db.load_validation_settings("clean")
-        assert settings.overrides == {}
-
-    def test_set_and_load_override(self, db, tmp_path: Path):
-        """Set an override, then load it back."""
-        db.register_project("proj", str(tmp_path / "proj"))
-        db.set_validation_override(
-            "proj",
-            "S01",
-            enabled=True,
-            warn_threshold=5.0,
-            fail_threshold=3.0,
-        )
-        settings = db.load_validation_settings("proj")
-        assert "S01" in settings.overrides
-        assert settings.overrides["S01"].warn_threshold == 5.0
-        assert settings.overrides["S01"].fail_threshold == 3.0
-
-    def test_partial_update_preserves_existing(self, db, tmp_path: Path):
-        """Updating only warn_threshold should preserve fail_threshold."""
-        db.register_project("proj", str(tmp_path / "proj"))
-        db.set_validation_override(
-            "proj",
-            "S02",
-            enabled=True,
-            warn_threshold=8.0,
-            fail_threshold=5.0,
-        )
-        # Update only warn_threshold
-        db.set_validation_override("proj", "S02", warn_threshold=6.0)
-        settings = db.load_validation_settings("proj")
-        override = settings.overrides["S02"]
-        assert override.warn_threshold == 6.0
-        assert override.fail_threshold == 5.0  # preserved
-
-    def test_disable_rule(self, db, tmp_path: Path):
-        """Can disable a rule via override."""
-        db.register_project("proj", str(tmp_path / "proj"))
-        db.set_validation_override("proj", "S03", enabled=False)
-        settings = db.load_validation_settings("proj")
-        assert settings.overrides["S03"].enabled is False
-
-    def test_is_enabled_defaults_true(self, db, tmp_path: Path):
-        """Rules without overrides default to enabled."""
-        db.register_project("proj", str(tmp_path / "proj"))
-        settings = db.load_validation_settings("proj")
-        assert settings.is_enabled("S99") is True
 
 
 # ---------------------------------------------------------------------------
@@ -378,60 +326,7 @@ class TestDomainProfile:
         db.clear_domain_profile("myapp")
         assert db.get_domain_profile("myapp") is None
 
-    def test_set_domain_profile_does_not_write_overrides(
-        self,
-        db,
-        tmp_path: Path,
-    ):
-        """set_domain_profile MUST NOT write validation_overrides rows.
 
-        Profile = pipeline YAML selector only. Per-rule DB overrides are
-        a separate layer managed via 'sw config set <RULE>'.
-        """
-        db.register_project("myapp", str(tmp_path))
-        # Set some overrides manually FIRST
-        db.set_validation_override("myapp", "S08", warn_threshold=99)
-        db.set_validation_override("myapp", "C04", fail_threshold=99)
-        assert len(db.get_validation_overrides("myapp")) == 2
-
-        # Apply profile — must NOT change or clear existing overrides
-        db.set_domain_profile("myapp", "web-app")
-        overrides = db.get_validation_overrides("myapp")
-        assert len(overrides) == 2  # unchanged — profile didn't touch overrides
-        assert overrides[0]["rule_id"] in {"S08", "C04"}
-
-    def test_set_domain_profile_does_not_clear_previous_overrides(
-        self,
-        db,
-        tmp_path: Path,
-    ):
-        """Switching profiles preserves all per-rule DB overrides."""
-        db.register_project("myapp", str(tmp_path))
-        db.set_validation_override("myapp", "S11", warn_threshold=5)
-        db.set_domain_profile("myapp", "web-app")
-        db.set_domain_profile("myapp", "library")
-        # S11 override must still be there (profile switch doesn't touch DB overrides)
-        overrides = db.get_validation_overrides("myapp")
-        assert any(o["rule_id"] == "S11" for o in overrides)
-
-    def test_clear_domain_profile_preserves_overrides(
-        self,
-        db,
-        tmp_path: Path,
-    ):
-        """clear_domain_profile only clears the profile name, not overrides."""
-        db.register_project("myapp", str(tmp_path))
-        db.set_domain_profile("myapp", "web-app")
-        db.set_validation_override("myapp", "S08", fail_threshold=3)
-        assert len(db.get_validation_overrides("myapp")) == 1
-
-        db.clear_domain_profile("myapp")
-        # Profile is cleared
-        assert db.get_domain_profile("myapp") is None
-        # But the per-rule override is preserved!
-        overrides = db.get_validation_overrides("myapp")
-        assert len(overrides) == 1
-        assert overrides[0]["rule_id"] == "S08"
 
     def test_set_domain_profile_unknown_raises(self, db, tmp_path: Path):
         """Setting an unknown profile name raises ValueError."""
@@ -531,4 +426,21 @@ class TestSchemaV4ToV5Upgrade:
         assert version[0] >= 10  # v5, v6, v7, v8 all applied
 
 
-# ===========================================================================
+
+
+class TestSchemaV14Migration:
+    """Test the v13→v14 schema migration (dropping validation_overrides)."""
+
+    def test_validation_overrides_is_dropped(self, db):
+        """After dropping, validation_overrides does not exist in sqlite_schema."""
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT name FROM sqlite_schema WHERE type='table' AND name='validation_overrides'"
+            ).fetchone()
+        assert row is None
+
+    def test_schema_version_is_latest(self, db):
+        """Schema version reaches 14."""
+        with db.connect() as conn:
+            row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
+            assert row[0] >= 14

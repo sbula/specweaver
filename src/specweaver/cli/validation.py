@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import typer
 
@@ -15,91 +14,6 @@ from specweaver.cli import _core
 from specweaver.cli._helpers import _display_results, _print_summary
 
 logger = logging.getLogger(__name__)
-
-
-if TYPE_CHECKING:
-    from specweaver.config.settings import ValidationSettings
-
-
-def _apply_override(
-    settings: ValidationSettings,
-    item: str,
-) -> None:
-    """Parse and apply a single RULE.FIELD=VALUE override, or exit on error."""
-    from specweaver.config.settings import RuleOverride
-
-    if "=" not in item or "." not in item.split("=", 1)[0]:
-        _core.console.print(
-            f"[red]Error:[/red] Invalid --set format: '{item}'. "
-            "Expected RULE.FIELD=VALUE (e.g. S08.fail_threshold=5).",
-        )
-        raise typer.Exit(code=1)
-
-    key, value = item.split("=", 1)
-    rule_id, field = key.rsplit(".", 1)
-    rule_id = rule_id.upper()
-
-    existing = settings.overrides.get(rule_id)
-    if existing is None:
-        existing = RuleOverride(rule_id=rule_id)
-        settings.overrides[rule_id] = existing
-
-    if field == "enabled":
-        settings.overrides[rule_id] = existing.model_copy(
-            update={"enabled": value.lower() in ("true", "1", "yes")},
-        )
-    elif field in ("warn_threshold", "fail_threshold"):
-        try:
-            settings.overrides[rule_id] = existing.model_copy(
-                update={field: float(value)},
-            )
-        except ValueError:
-            _core.console.print(
-                f"[red]Error:[/red] Invalid threshold value: '{value}'. Must be a number.",
-            )
-            raise typer.Exit(code=1) from None
-    else:
-        try:
-            new_extra = {**existing.extra_params, field: float(value)}
-            settings.overrides[rule_id] = existing.model_copy(
-                update={"extra_params": new_extra},
-            )
-        except ValueError:
-            _core.console.print(
-                f"[red]Error:[/red] Invalid value for '{field}': '{value}'. Must be a number.",
-            )
-            raise typer.Exit(code=1) from None
-
-
-def _load_check_settings(
-    set_overrides: list[str] | None,
-) -> ValidationSettings | None:
-    """Load ValidationSettings from DB + CLI --set overrides.
-
-    Cascade: code defaults -> project DB overrides -> --set CLI flags.
-    Returns None if no active project and no --set flags.
-    """
-    from specweaver.config.settings import ValidationSettings
-
-    settings: ValidationSettings | None = None
-
-    # 1. Try loading from DB for the active project
-    db = _core.get_db()
-    active = db.get_active_project()
-    if active:
-        import contextlib
-
-        with contextlib.suppress(ValueError):
-            settings = db.load_validation_settings(active)
-
-    # 2. Apply --set CLI overrides on top
-    if set_overrides:
-        if settings is None:
-            settings = ValidationSettings()
-        for item in set_overrides:
-            _apply_override(settings, item)
-
-    return settings
 
 
 def _resolve_pipeline_name(
@@ -170,11 +84,6 @@ def check(
         "--pipeline",
         help="Name of the validation pipeline to use (e.g. validation_spec_library).",
     ),
-    set_overrides: list[str] | None = typer.Option(  # noqa: B008
-        None,
-        "--set",
-        help="One-off override: RULE.FIELD=VALUE (e.g. S08.fail_threshold=5).",
-    ),
     lineage: bool = typer.Option(
         False,
         "--lineage",
@@ -190,7 +99,7 @@ def check(
 
     Use --pipeline to choose a specific validation pipeline by name.
 
-    Override cascade: pipeline YAML defaults -> project DB overrides -> --set flags.
+    Override cascade is strictly pipeline YAML defaults -> applied pipeline configurations.
     """
     # Trigger auto-registration of built-in rules
     import specweaver.validation.rules.code
@@ -236,10 +145,18 @@ def check(
             f"[red]Error:[/red] Cannot read '{target}': file is not valid UTF-8 text.",
         )
         raise typer.Exit(code=1) from None
-    project_dir = Path(project) if project else None
 
+    from specweaver.project.discovery import resolve_project_path
+    db = _core.get_db()
+    # Ensure project resolution handles implicit CWD and active project logic
+    try:
+        project_dir: Path | None = resolve_project_path(project)
+    except Exception:
+        # Fallback to None if not inside a valid project
+        project_dir = Path(project) if project else None
+        
     # Determine active project for profile-aware pipeline selection
-    active = _core.get_db().get_active_project()
+    active = db.get_active_project()
     pipeline_name = _resolve_pipeline_name(level, pipeline, active_project=active)
 
     try:
@@ -247,13 +164,6 @@ def check(
     except FileNotFoundError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
-
-    # Apply --set / DB overrides to pipeline step params
-    settings = _load_check_settings(set_overrides)
-    if settings is not None:
-        from specweaver.validation.executor import apply_settings_to_pipeline
-
-        resolved = apply_settings_to_pipeline(resolved, settings)
 
     results = execute_validation_pipeline(resolved, content, target_path)
 

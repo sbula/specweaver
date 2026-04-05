@@ -54,9 +54,9 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 
 | SF ID | Name | Description | Status |
 |:---|:---|:---|:---|
-| **SF-1** | DAL Schema & Pydantic Impact Matrix Merge | Define the `DALLevel` enumerations and configure `pydantic-settings` to safely deep-merge `dal_definitions.yaml` over base profiles. | [ ] Pending |
-| **SF-2** | Fractal Resolution Engine | Implement `O(1)` cached directory-tree walking in `ValidationRunner` to map target files to their closest `context.yaml` DAL. | [ ] Pending |
-| **SF-3** | Validation Override Consolidation (Cleanup) | Strip the legacy SQLite `validation_overrides` tables and force all resolution exclusively through the DAL Impact matrices and rule sub-pipeline inheritance. | [ ] Pending |
+| **SF-1** | DAL Schema & Pydantic Impact Matrix Merge | Define the `DALLevel` enumerations and configure `pydantic-settings` to safely deep-merge `dal_definitions.yaml` over base profiles. | [x] Complete |
+| **SF-2** | Fractal Resolution Engine | Implement `O(1)` cached directory-tree walking in `ValidationRunner` to map target files to their closest `context.yaml` DAL. | [x] Complete |
+| **SF-3** | Validation Override Consolidation (Cleanup) | Strip the legacy SQLite `validation_overrides` tables and force all resolution exclusively through the DAL Impact matrices and rule sub-pipeline inheritance. | [x] Complete |
 | **SF-4** | Generative HARA (AI Governance Proposal) | Update the `/design` scaffolding workflow so LLMs analyze topological edges/data to propose a DAL, requiring HITL approval. | [ ] Pending |
 | **SF-5** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [ ] Pending |
 
@@ -65,15 +65,13 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 - [x] SF-1 Implementation Plan ✅
 - [x] SF-1 Implementation
 - [x] SF-2 Implementation Plan ✅
-- [ ] SF-2 Implementation
-- [ ] SF-3 Implementation
-- [ ] SF-4 Implementation
-- [ ] SF-5 Implementation
-- [ ] Merged
+- [x] SF-2 Implementation ✅
+- [x] SF-3 Implementation Plan ✅
+- [x] SF-3 Implementation ✅ (Dev ✅, Pre-Commit ✅, Committed ✅)
 
 ## 7. Session Handoff
 
-**Current status**: SF-2 Implementation Plan APPROVED.
-**Next step**: Run the following command to develop SF-2:
-`/dev docs/proposals/roadmap/phase_3/feature_3_20b/feature_3_20b_sf2_implementation_plan.md`
+**Current status**: SF-3 Implementation and Commits are COMPLETE.
+**Next step**: Run the following command to design SF-4:
+`/design feature_3_20b_sf4`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

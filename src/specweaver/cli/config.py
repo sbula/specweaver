@@ -27,121 +27,25 @@ config_app = typer.Typer(
 _core.app.add_typer(config_app, name="config")
 
 
-@config_app.command("set")
-def config_set(
-    rule_id: str = typer.Argument(help="Rule ID (e.g. S08, C04)."),
-    *,
-    enabled: bool | None = typer.Option(None, help="Enable/disable the rule."),
-    warn: float | None = typer.Option(None, "--warn", help="Warning threshold."),
-    fail: float | None = typer.Option(None, "--fail", help="Failure threshold."),
-) -> None:
-    """Set a validation override for the active project."""
-    name = _core._require_active_project()
-    rule_upper = rule_id.upper()
-
-    if enabled is None and warn is None and fail is None:
-        _core.console.print(
-            "[red]Error:[/red] Provide at least one of --enabled/--no-enabled, --warn, --fail.",
-        )
-        raise typer.Exit(code=1)
-
-    db = _core.get_db()
-    db.set_validation_override(
-        name,
-        rule_upper,
-        enabled=enabled,
-        warn_threshold=warn,
-        fail_threshold=fail,
-    )
-
-    parts: list[str] = []
-    if enabled is not None:
-        parts.append(f"enabled={enabled}")
-    if warn is not None:
-        parts.append(f"warn={warn}")
-    if fail is not None:
-        parts.append(f"fail={fail}")
-
-    _core.console.print(
-        f"[green]\u2713[/green] Override set for [bold]{rule_upper}[/bold] "
-        f"({', '.join(parts)}) on project [bold]{name}[/bold].",
-    )
-
-
-@config_app.command("get")
-def config_get(
-    rule_id: str = typer.Argument(help="Rule ID to query."),
-) -> None:
-    """Show the current override for a rule in the active project."""
-    name = _core._require_active_project()
-    rule_upper = rule_id.upper()
-
-    db = _core.get_db()
-    o = db.get_validation_override(name, rule_upper)
-
-    if o is None:
-        _core.console.print(
-            f"[dim]No override for [bold]{rule_upper}[/bold] "
-            f"on project [bold]{name}[/bold] (using defaults).[/dim]",
-        )
-        return
-
-    table = Table(title=f"Override: {rule_upper} ({name})")
-    table.add_column("Field", style="cyan")
-    table.add_column("Value")
-    table.add_row("enabled", str(bool(o["enabled"])))
-    table.add_row("warn_threshold", str(o["warn_threshold"]))
-    table.add_row("fail_threshold", str(o["fail_threshold"]))
-    _core.console.print(table)
-
-
 @config_app.command("list")
 def config_list() -> None:
-    """List all validation overrides for the active project."""
+    """List all validation rules currently applied via the active pipeline."""
     name = _core._require_active_project()
-
     db = _core.get_db()
-    overrides = db.get_validation_overrides(name)
 
-    if not overrides:
+    profile_name = db.get_domain_profile(name)
+    if profile_name:
         _core.console.print(
-            f"[dim]No overrides configured for project [bold]{name}[/bold] "
-            "(all rules use defaults).[/dim]",
+            f"Validation rules for project [bold]{name}[/bold] are fully declarative "
+            f"and managed by domain profile: [cyan]{profile_name}[/cyan].\n"
+            f"Use 'sw config show-profile {profile_name}' to see the active thresholds."
         )
-        return
-
-    table = Table(title=f"Validation Overrides ({name})")
-    table.add_column("Rule", style="cyan")
-    table.add_column("Enabled")
-    table.add_column("Warn Threshold")
-    table.add_column("Fail Threshold")
-
-    for o in overrides:
-        table.add_row(
-            str(o["rule_id"]),
-            "[green]Yes[/green]" if o["enabled"] else "[red]No[/red]",
-            str(o["warn_threshold"]) if o["warn_threshold"] is not None else "[dim]\u2014[/dim]",
-            str(o["fail_threshold"]) if o["fail_threshold"] is not None else "[dim]\u2014[/dim]",
+    else:
+        _core.console.print(
+            f"Validation rules for project [bold]{name}[/bold] are fully declarative "
+            f"and managed by the default pipeline.\n"
+            f"Use 'sw config profiles' to assign a domain profile."
         )
-
-    _core.console.print(table)
-
-
-@config_app.command("reset")
-def config_reset(
-    rule_id: str = typer.Argument(help="Rule ID to reset (removes override)."),
-) -> None:
-    """Remove the override for a rule, reverting to defaults."""
-    name = _core._require_active_project()
-    rule_upper = rule_id.upper()
-
-    db = _core.get_db()
-    db.delete_validation_override(name, rule_upper)
-
-    _core.console.print(
-        f"[green]\u2713[/green] Override removed for [bold]{rule_upper}[/bold] "
-        f"on project [bold]{name}[/bold] (using defaults).",
-    )
 
 
 @config_app.command("set-log-level")
