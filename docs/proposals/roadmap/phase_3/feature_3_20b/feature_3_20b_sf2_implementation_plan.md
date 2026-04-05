@@ -34,7 +34,7 @@ Additionally, manage the Global Fallback Default behavior: If no target file con
 - Method `resolve(target_path: Path) -> DALLevel | None`: Walk `target_path.parents`, parsing `context.yaml` sequentially. Halts immediately and returns `None` upon breaking out of `project_root`. **NOTE:** If a `dal_level` string is found but is invalid (not in `DALLevel` enum), raise a `ValueError` immediately (Fail-Secure).
 - *Deviation/Addition (Task 2)*: Implemented fail-safe resilience against malformed YAML structures to prevent `context.yaml` syntax errors from aborting traversal.
 
-### `specweaver/flow/_validation.py` -> [MODIFY]
+### `specweaver/flow/_validation.py` -> [COMPLETED]
 - Update `ValidateSpecHandler.execute` and `ValidateCodeHandler.execute` to instantiate `DALResolver(context.project_path)`.
 - Invoke `dal = dal_resolver.resolve(target)`.
 - `if not dal:` execute `dal = context.db.get_default_dal()`.
@@ -42,7 +42,7 @@ Additionally, manage the Global Fallback Default behavior: If no target file con
 - If constraints exist, safely deep-merge them over the baseline `context.settings.validation` overrides using a pure python dictionary merge, and reconstruct a new `ValidationSettings` object.
 - Finally, invoke `apply_settings_to_pipeline(pipeline, merged_settings)`.
 
-### `specweaver/config/context.yaml` -> [MODIFY]
+### `specweaver/config/context.yaml` -> [COMPLETED]
 - Expose `DALResolver` to project boundaries via explicit `exposes:` array modifications.
 
 ## Verification Plan

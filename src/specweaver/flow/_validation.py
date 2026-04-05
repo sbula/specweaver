@@ -23,6 +23,38 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:
+    """Resolve DAL for the target and overlay validation constraints over settings."""
+    from specweaver.config.dal import DALLevel
+    from specweaver.config.dal_resolver import DALResolver
+    from specweaver.config.settings import SpecWeaverSettings, deep_merge_dict
+
+    dal_resolver = DALResolver(context.project_path)
+    dal_str = dal_resolver.resolve(target_path)
+
+    if not dal_str and context.db:
+        try:
+            dal_str = context.db.get_default_dal(context.project_path.name)
+        except Exception:
+            dal_str = None
+
+    merged_settings = context.settings
+    if dal_str and merged_settings and hasattr(merged_settings, "dal_matrix"):
+        try:
+            dal = DALLevel(dal_str)
+            matrix_dict = merged_settings.dal_matrix.matrix
+            dal_constraints = matrix_dict.get(dal)
+            if dal_constraints:
+                base_dict = merged_settings.model_dump()
+                constraint_dict = {"validation": dal_constraints.model_dump(exclude_unset=True)}
+                merged_dict = deep_merge_dict(base_dict, constraint_dict)
+                merged_settings = SpecWeaverSettings.model_validate(merged_dict)
+        except Exception as exc:
+            logger.warning("Failed to merge DAL '%s' constraints: %s", dal_str, exc)
+
+    return merged_settings
+
+
 class ValidateSpecHandler:
     """Handler for validate+spec — runs spec validation rules."""
 
@@ -40,10 +72,12 @@ class ValidateSpecHandler:
         kind_str = step.params.get("kind")
 
         try:
+            merged_settings = _resolve_merged_settings(context, context.spec_path)
+
             results = await asyncio.to_thread(
                 self._run_validation,
                 context.spec_path,
-                context.settings,
+                merged_settings,
                 kind_str=kind_str,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
@@ -83,7 +117,10 @@ class ValidateSpecHandler:
         """Run spec validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
         import specweaver.validation.rules.spec  # noqa: F401
-        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.executor import (
+            apply_settings_to_pipeline,
+            execute_validation_pipeline,
+        )
         from specweaver.validation.models import RuleResult  # noqa: F401 — for type narrowing
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
@@ -93,6 +130,9 @@ class ValidateSpecHandler:
             pipeline_name = "validation_spec_feature"
 
         pipeline = load_pipeline_yaml(pipeline_name)
+        if settings is not None:
+            pipeline = apply_settings_to_pipeline(pipeline, getattr(settings, "validation", settings))
+
         content = spec_path.read_text(encoding="utf-8")
         return execute_validation_pipeline(pipeline, content, spec_path)
 
@@ -114,11 +154,12 @@ class ValidateCodeHandler:
 
         logger.debug("ValidateCodeHandler: validating code file '%s'", code_path.name)
         try:
+            merged_settings = _resolve_merged_settings(context, code_path)
             results = await asyncio.to_thread(
                 self._run_validation,
                 code_path,
                 context.spec_path,
-                context.settings,
+                merged_settings,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -164,11 +205,17 @@ class ValidateCodeHandler:
         """Run code validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
         import specweaver.validation.rules.code  # noqa: F401
-        from specweaver.validation.executor import execute_validation_pipeline
+        from specweaver.validation.executor import (
+            apply_settings_to_pipeline,
+            execute_validation_pipeline,
+        )
         from specweaver.validation.models import RuleResult  # noqa: F401 — for type narrowing
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")
+        if settings is not None:
+            pipeline = apply_settings_to_pipeline(pipeline, getattr(settings, "validation", settings))
+
         content = code_path.read_text(encoding="utf-8")
         return execute_validation_pipeline(pipeline, content, spec_path)
 

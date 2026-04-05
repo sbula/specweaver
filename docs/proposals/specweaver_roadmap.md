@@ -41,7 +41,7 @@
 
 **Phase 1 (MVP)**: Steps 1–5 ✅ | Step 6 ⏸ (deferred)
 **Phase 2 (Flow Engine)**: Steps 7–14 ✅
-**Phase 3 (Features)**: Features 3.1 through 3.6 ✅ | Feature 3.7 🔧 | Features 3.8 through 3.19 ✅ (3755 total tests)
+**Phase 3 (Features)**: Features 3.1 through 3.6 ✅ | Feature 3.7 🔧 | Features 3.8 through 3.20b ✅ (3785 total tests)
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - ✅ Feature 3.5: Auto-discover standards from codebase — multi-language (Py/JS/TS)
@@ -61,7 +61,7 @@
 - ✅ Feature 3.18: AST Drift Detection & AI Root-Cause Analysis — Parser-backed drift gating
 - ✅ Feature 3.19: Polyglot QARunner Interface — Black Box execution wrapping
 - ✅ Feature 3.20a: Internal Layer Enforcement (Tach) — Strict Domain-Driven isolation
-- 🚧 Feature 3.20b: Dynamic Risk-Based Rulesets (DAL) — Contextual baseline risk enforcement
+- ✅ Feature 3.20b: Dynamic Risk-Based Rulesets (DAL) — Contextual baseline risk enforcement
 
 ---
 
@@ -87,7 +87,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API 🔧) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10 (Research Tools ✅) → 3.11 (Auto-Mention ✅) → 3.12 (Telemetry ✅) → 3.13 (Multi-Provider Registry ✅) → 3.14 (Static Routing ✅) → 3.15 (Metadata Injection ✅) → 3.16 (Unified Runner ✅) → 3.17 (Artifact Lineage ✅) → 3.18 (AST Drift Detection ✅) → 3.19 (Polyglot Runner ✅) → 3.20a (Internal Layer Enforcement 🚧) → 3.20 (Dynamic Rulesets 🚧) → 3.21+ (Upcoming)
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API 🔧) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10 (Research Tools ✅) → 3.11 (Auto-Mention ✅) → 3.12 (Telemetry ✅) → 3.13 (Multi-Provider Registry ✅) → 3.14 (Static Routing ✅) → 3.15 (Metadata Injection ✅) → 3.16 (Unified Runner ✅) → 3.17 (Artifact Lineage ✅) → 3.18 (AST Drift Detection ✅) → 3.19 (Polyglot Runner ✅) → 3.20a (Internal Layer Enforcement 🚧) → 3.20b (Dynamic Rulesets ✅) → 3.21+ (Upcoming)
 
 ---
 

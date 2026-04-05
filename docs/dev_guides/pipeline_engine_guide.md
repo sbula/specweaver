@@ -74,3 +74,24 @@ pipe = create_single_step(action="scan", target="standards")
 runner.execute(pipe)
 ```
 This forces all commands—no matter how small—to persist their context, inherit active telemetry, and utilize the robust handler engine symmetrically.
+
+---
+
+## 4. Dynamic Risk-Based Rulesets (DAL Integration)
+
+When validation boundaries restrict capabilities based on runtime architecture (e.g. Flight Critical Data vs Backend Internal), the Pipeline leverages the **Fractal Resolution Engine (SF-2)**.
+
+Instead of overriding global settings, Handlers like `ValidateSpecHandler` and `ValidateCodeHandler` transparently extract the architectural boundary by locating the target module's `context.yaml`. 
+They read the `.operational.dal_level` context and deep-merge the global standard threshold parameters against the specific architectural assurance matrix bounds safely at runtime.
+
+```python
+# Extract the target architecture baseline
+dal = dal_resolver.resolve(target.path) or context.db.get_default_dal()
+
+# Map bounding thresholds locally and merge
+if dal_settings := context.settings.dal_matrix.matrix.get(dal):
+    from pydantic.utils import deep_update # equivalent
+    resolved = deep_merge_dict(base_config, dal_settings.dict(exclude_unset=True))
+    
+apply_settings_to_pipeline(pipeline, ValidationSettings(**resolved))
+```

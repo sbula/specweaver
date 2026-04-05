@@ -176,6 +176,8 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.14a AST Drift Engine (SF-1)** — Built on native `tree-sitter`, the Validation engine now structurally inspects the workspace against Plan expectations, performing drift detection by natively extracting AST signatures. Located in `validation/drift_detector.py` since it is a pure validation module used by code check rules to prevent agent drift.
 
+**3.20b Dynamic Risk-Based Rulesets (DAL)** — Fractal Resolution Engine (SF-2) dynamically resolves Design Assurance Level constraints by scanning upwards from any target file to locate the nearest `context.yaml`, deep-merging local and global overrides through Pydantic into the pipeline stream. Lives in `config/dal_resolver.py` to prevent cyclic dependencies.
+
 ### How Features Map to Lifecycle Layers
 
 ```
