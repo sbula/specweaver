@@ -28,7 +28,7 @@
 - ✅ Code generation: `sw implement` generates code + tests from spec
 - ✅ Topology graph: In-memory dep graph, impact analysis, cycle detection, auto-infer
 - ✅ Project registry: SQLite config store, multi-project, `sw use/projects/remove/update`
-- ✅ Validation config: `sw config set/get/list/reset`, `--strict`, `--set` CLI overrides
+- ✅ Validation config: `sw config list` and `--pipeline` cascade overrides
 - ✅ Context-enriched prompts: PromptBuilder, token budgets, topology injection, trust signals, dynamic scaling
 - ✅ Flow engine: Pipeline models, runner, state tracking, gates, retry, loop-back, HITL parking
 - ✅ Loom test runner: Atom + tool with role gating, lint-fix reflection loop
@@ -45,7 +45,7 @@
 
 **What we're building next** (see [mvp_feature_definition.md](mvp_feature_definition.md)):
 - ✅ Feature 3.5: Auto-discover standards from codebase — multi-language (Py/JS/TS)
-- ⚙️ **Post-3.5 cleanup**: Consolidate DB `validation_overrides` vs YAML inheritance
+- ✅ **Post-3.5 cleanup**: Consolidate DB `validation_overrides` vs YAML inheritance (Completed in 3.20b)
 - ✅ Feature 3.6: Explicit plan phase (Spec → Plan → Tasks) (Including Stitch Mockups)
 - 🔧 Feature 3.7: REST API server (`sw serve`) — TDD phases 1–3 complete
 - ✅ Feature 3.8: Web Dashboard (`sw serve`) — HTMX, Jinja2

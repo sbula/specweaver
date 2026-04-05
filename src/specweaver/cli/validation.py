@@ -154,7 +154,7 @@ def check(
     except Exception:
         # Fallback to None if not inside a valid project
         project_dir = Path(project) if project else None
-        
+
     # Determine active project for profile-aware pipeline selection
     active = db.get_active_project()
     pipeline_name = _resolve_pipeline_name(level, pipeline, active_project=active)

@@ -104,7 +104,7 @@ SQLite runs in WAL mode for concurrency. Single `~/.specweaver/specweaver.db` fi
 
 > **Goal**: Configurable thresholds per validation rule, stored in the project config DB.
 
-- [x] `validation_overrides` table in `database.py` — CRUD + cascade
+- [x] ~~`validation_overrides` table in `database.py` — CRUD + cascade~~ (Removed in Schema V14 / 3.20b)
 - [x] `src/specweaver/config/settings.py` — `RuleOverride`, `ValidationSettings` Pydantic models
 - [x] `src/specweaver/validation/runner.py` — accept `ValidationSettings`, apply overrides
 - [x] 7 rules updated to accept constructor overrides: S01, S03, S04, S05, S07, S08, S11, C04

@@ -36,7 +36,7 @@ class TestValidationeE2E:
         proj_dir = tmp_path / "app"
         proj_dir.mkdir(parents=True)
         monkeypatch.chdir(proj_dir)
-        
+
         runner.invoke(app, ["init", "app"])
 
         # Create a custom pipeline inside the project's .specweaver/pipelines directory
@@ -88,7 +88,7 @@ class TestValidationeE2E:
         proj_dir = tmp_path / "app"
         proj_dir.mkdir(parents=True)
         monkeypatch.chdir(proj_dir)
-        
+
         res_init = runner.invoke(app, ["init", "app"])
         assert res_init.exit_code == 0, res_init.output
 
@@ -119,10 +119,10 @@ class TestValidationeE2E:
         spec.write_text("## 1. Purpose\nDoes a thing.\n", encoding="utf-8")
 
         result = runner.invoke(app, ["check", str(spec.name)])
-        
+
         # S01 and S08 are false, they should not run at all. S02 or S03 should run.
         assert "S01" not in result.output, result.output
         assert "S08" not in result.output, result.output
-        
+
         # Verify it still functioned
         assert "Validation" in result.output, result.output

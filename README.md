@@ -24,6 +24,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Standards auto-discovery** — Analyze codebase (Python, JavaScript, TypeScript) to extract naming, error handling, type hints/jsdoc/tsdoc, import, async, and test patterns. Multi-scope support (monorepo-aware), Human-in-the-Loop review, optional async LLM best-practice comparison, and token-capped injection into LLM prompts
 - **AST Drift Detection** — Structural parsing of implementations via `tree-sitter` to automatically pinpoint methods or modules that deviate from original Plan decisions.
 - **Architectural Enforcement** — Strict Domain-Driven "Layer Cake" isolation via Tach, natively bounded as a PEP-420 Implicit Namespace Package.
+- **Risk-Based Constraint Pipelines (DAL)** — Supports DO-178C Mixed Criticality by assigning rule pipelines and thresholds utilizing Pydantic Deep-Merge based on a specific Module's Design Assurance Level declared natively inside boundary topologies.
 - **UI Mockup Generation** — Auto-detects UI/Frontend requirements in specs and calls Google Stitch MCP to generate and attach visual mockups to standard implementation plans
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
 - **Multi-provider support** — Auto-discovering adapter registry supporting Gemini, OpenAI (GPT-5.4), Anthropic (Claude 4.6), Mistral (Small 4), and Qwen (3.5)

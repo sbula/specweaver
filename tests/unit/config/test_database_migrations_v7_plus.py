@@ -670,7 +670,7 @@ class TestSchemaV11ToV12Upgrade:
 
         assert row[0] == "unknown"  # constraint default from ALTER TABLE
         assert version[0] >= 14
-        
+
 # ===========================================================================
 # Schema v13 — default_dal column on projects
 # ===========================================================================

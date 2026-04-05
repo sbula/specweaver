@@ -4,7 +4,7 @@
 - **Design Document**: docs/proposals/roadmap/phase_3/feature_3_20b/feature_3_20b_design.md
 - **Design Section**: §5 Sub-Feature Decomposition → SF-3
 - **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_20b/feature_3_20b_sf3_implementation_plan.md
-- **Status**: APPROVED
+- **Status**: IMPLEMENTED
 
 ## Goal
 Strip the legacy SQLite `validation_overrides` tables completely out of the system. Force all threshold boundaries to route strictly through our new DAL Impact Matrices and rule sub-pipeline inheritance. Deprecate CLI write access to validation rule tuning in favor of declarative files (`dal_definitions.yaml` / `.specweaver/pipelines/*.yaml`).

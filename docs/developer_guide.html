@@ -581,8 +581,8 @@ flowchart TD
     end
 
     subgraph "Layer 2: DB Overrides [RUNTIME TUNING]"
-        DB1["Per-project, per-rule<br/>sw config set RULE --warn/--fail"]
-        DB2["NOT written by set-profile<br/>(profile = YAML only)"]
+        DB1["Profile Pipeline<br/>(e.g. validation_spec_web_app.yaml)"]
+        DB2["Local Pipeline Override<br/>(.specweaver/pipelines/*.yaml)"]
     end
 
     subgraph "Layer 3: CLI --set [EPHEMERAL]"
@@ -813,13 +813,13 @@ flowchart LR
 <!-- ================================================================== -->
 <h2 id="profiles">7c. Domain Profiles</h2>
 
-<p>Domain profiles are <strong>named YAML pipeline configurations</strong> that tune validation thresholds for specific project types. Setting a profile <strong>selects a YAML pipeline</strong> — it does NOT write to the DB. Per-rule DB overrides (<code>sw config set</code>) are a separate, independent mechanism for runtime tuning.</p>
+<p>Domain profiles are <strong>named YAML pipeline configurations</strong> that tune validation thresholds for specific project types. Setting a profile <strong>selects a YAML pipeline</strong> which dictates the threshold rule cascade structurally.</p>
 
 <div class="callout">
   <strong>Clear Separation:</strong>
   <ul>
     <li><strong>YAML pipelines</strong> define structure — which rules run, in what order, with what base thresholds. Profiles select which YAML pipeline to use.</li>
-    <li><strong>DB overrides</strong> provide runtime tuning — per-project, per-rule enable/disable and threshold tweaks via <code>sw config set</code>.</li>
+    <li><strong>Local Pipeline Overrides</strong> located in <code>.specweaver/pipelines/*.yaml</code> provide runtime tuning — extending or overriding the base Pipeline.</li>
     <li><strong>CLI <code>--set</code> flags</strong> are ephemeral, session-only overrides with the highest precedence.</li>
   </ul>
 </div>
@@ -1118,7 +1118,7 @@ uv run ruff check src/ tests/         # Lint</code></pre>
   <tr><td>Feature decomposition</td><td>HITL-gated pipeline: draft feature → validate at feature thresholds → decompose into components</td></tr>
   <tr><td>Constitution injection</td><td>Project-wide <code>CONSTITUTION.md</code> injected into every LLM call → consistent coding standards enforced by AI across review + implementation</td></tr>
   <tr><td>Constitution walk-up</td><td>Walk-up resolution from spec dir to project root → monorepo support with per-module overrides</td></tr>
-  <tr><td>Domain profiles as bulk-write</td><td>Profiles write to the existing DB override layer (not a new cascade layer) → <code>sw config set</code> still works on top, override resolution unchanged</td></tr>
+  <tr><td>Domain profiles as pure YAML</td><td>Profiles assign a YAML pipeline cascade which completely eliminates runtime configuration conflicts</td></tr>
   <tr><td>Hardcoded profile dicts</td><td>Profiles are Python dicts in <code>profiles.py</code> → versioned with code, quick-win over YAML/DB-stored profiles (deferred to 3.3b)</td></tr>
   <tr><td>set-profile overwrites</td><td>Applying a profile DELETEs all existing overrides first → predictable state, no leftover rules from previous profile</td></tr>
   <tr><td>Self-describing LLM Adapters</td><td>Auto-discovery registry scans package at import → adding a new provider requires exactly one file without touching central maps</td></tr>
