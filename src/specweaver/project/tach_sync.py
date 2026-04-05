@@ -7,12 +7,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import tomlkit
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.graph.topology import TopologyGraph
 
 logger = logging.getLogger(__name__)
@@ -79,10 +80,7 @@ def sync_tach_toml(graph: TopologyGraph, target_path: Path) -> TachSyncResult:
     """
     tach_file = target_path / "tach.toml"
 
-    if tach_file.exists():
-        doc = tomlkit.parse(tach_file.read_text("utf-8"))
-    else:
-        doc = tomlkit.document()
+    doc = tomlkit.parse(tach_file.read_text("utf-8")) if tach_file.exists() else tomlkit.document()
 
     # Root Configuration
     if "exclude" not in doc:

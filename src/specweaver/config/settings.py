@@ -16,14 +16,38 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from specweaver.config.dal import DALLevel  # noqa: TC001
 
 if TYPE_CHECKING:
     from specweaver.config.database import Database
 
 logger = logging.getLogger(__name__)
+
+
+def deep_merge_dict(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    """Recursively deeply merges the overlay dictionary into a copy of the base dictionary.
+
+    Keys in overlay overwrite keys in base. If both values are dictionaries,
+    the merge is performed recursively. List elements are wholly overwritten.
+
+    Args:
+        base: The fundamental dictionary.
+        overlay: The dictionary to overlay on top.
+
+    Returns:
+        A new nested dictionary with the merged results.
+    """
+    merged = dict(base)
+    for key, value in overlay.items():
+        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
+            merged[key] = deep_merge_dict(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
 
 
 class LLMSettings(BaseModel):
@@ -67,6 +91,16 @@ class ValidationSettings(BaseModel):
         return override.enabled if override else True
 
 
+class DALImpactMatrix(BaseModel):
+    """A risk-based FFI override matrix.
+
+    Maps each risk tier (DALLevel) to discrete ValidationSettings overrides.
+    """
+    model_config = ConfigDict(use_enum_values=False)
+
+    matrix: dict[DALLevel, ValidationSettings] = {}
+
+
 class StitchSettings(BaseModel):
     """Stitch UI mockup generation configuration."""
 
@@ -80,6 +114,7 @@ class SpecWeaverSettings(BaseModel):
     llm: LLMSettings
     stitch: StitchSettings = StitchSettings()
     validation: ValidationSettings = ValidationSettings()
+    dal_matrix: DALImpactMatrix = DALImpactMatrix()
 
 
 def load_settings(
@@ -89,6 +124,9 @@ def load_settings(
     llm_role: str = "review",
 ) -> SpecWeaverSettings:
     """Load settings for a project from the database.
+
+    Loads the database variables, plus optionally loads and deep merges
+    `.specweaver/dal_definitions.yaml` for DAL matrices.
 
     Args:
         db: Database instance.
@@ -144,7 +182,31 @@ def load_settings(
         api_key=os.environ.get("STITCH_API_KEY", ""),
     )
 
-    return SpecWeaverSettings(llm=llm, stitch=stitch)
+    # -------------------------------------------------------------
+    # Feature 3.20b: DAL Impact Matrix Loading and Merging
+    # -------------------------------------------------------------
+    from pathlib import Path
+    dal_matrix = DALImpactMatrix()
+
+    # We resolve the project root path
+    root_path = proj.get("root_path")
+    if root_path and isinstance(root_path, str):
+        dal_file = Path(root_path) / ".specweaver" / "dal_definitions.yaml"
+        if dal_file.exists():
+            from ruamel.yaml import YAML
+            yaml_parser = YAML(typ="safe")
+            try:
+                dal_dict = yaml_parser.load(dal_file) or {}
+                # Assume empty internal base definition, deep_merge over it
+                merged_dal_dict = deep_merge_dict({}, dal_dict)
+                # Hydrate the model
+                dal_matrix = DALImpactMatrix(**merged_dal_dict)
+                logger.debug("Loaded DAL configuration from %s", dal_file)
+            except Exception:
+                logger.exception("Failed to parse dal_definitions.yaml at %s", dal_file)
+
+    return SpecWeaverSettings(llm=llm, stitch=stitch, dal_matrix=dal_matrix)
+
 
 
 def load_settings_for_active(

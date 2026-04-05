@@ -58,8 +58,9 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 | **SF-4** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [ ] Pending |
 
 ## 6. Progress Tracker
-- [ ] Requirements Finalized
-- [ ] SF-1 Implementation
+- [x] Requirements Finalized
+- [x] SF-1 Implementation Plan ✅
+- [x] SF-1 Implementation
 - [ ] SF-2 Implementation
 - [ ] SF-3 Implementation
 - [ ] SF-4 Implementation
@@ -67,7 +68,7 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 
 ## 7. Session Handoff
 
-**Current status**: Design APPROVED.
-**Next step**: Run the following command to begin implementation planning:
-`/implementation-plan docs/proposals/roadmap/phase_3/feature_3_20b/feature_3_20b_design.md SF-1`
+**Current status**: SF-1 Implementation COMPLETE.
+**Next step**: Run the following command to design SF-2:
+`/implementation-plan docs/proposals/roadmap/phase_3/feature_3_20b/feature_3_20b_design.md SF-2`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

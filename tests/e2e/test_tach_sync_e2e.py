@@ -35,7 +35,7 @@ def test_e2e_tach_sync_generates_valid_boundaries(tmp_path: Path):
     cli_cmd = ["python", "-c", "from specweaver.cli.main import app; app(prog_name='sw')"]
 
     subprocess.run(
-        cli_cmd + ["init", "validating-tach-project", "--path", str(project_dir)],
+        [*cli_cmd, "init", "validating-tach-project", "--path", str(project_dir)],
         env=env,
         check=True,
         capture_output=True,
@@ -48,7 +48,7 @@ def test_e2e_tach_sync_generates_valid_boundaries(tmp_path: Path):
     # 4. Run sw scan to trigger the tach sync
     try:
         result = subprocess.run(
-            cli_cmd + ["scan"],
+            [*cli_cmd, "scan"],
             env=env,
             check=True,
             capture_output=True,

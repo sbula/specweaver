@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.table import Table
@@ -16,6 +17,9 @@ from specweaver.graph.topology import TopologyGraph
 from specweaver.project.discovery import resolve_project_path
 from specweaver.project.scaffold import scaffold_project
 from specweaver.project.tach_sync import sync_tach_toml
+
+if TYPE_CHECKING:
+    from specweaver.graph.inference import ContextInferrer  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 

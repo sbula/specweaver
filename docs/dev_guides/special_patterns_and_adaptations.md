@@ -83,4 +83,16 @@ To prevent writing custom AST parsers across Go, Python, and TS, the Validation 
 
 ---
 
+## 6. Deep-Merged Polyglot Configurations (DAL Matrices)
+
+SpecWeaver uses a strict risk-based matrix (DO-178C style "DAL") to bypass or tighten rules based on mixed-criticality execution environments. We explicitly decouple `pydantic-settings` from environment variable mapping when parsing structural rule matrices.
+
+### How it works:
+Instead of internal Pydantic hacks, we rely on a pure-Python, mathematically deterministic recursive dictionary walker (`deep_merge_dict`) combined with direct YAML (`ruamel.yaml`) hydration to layer `.specweaver/dal_definitions.yaml` over base presets, before funneling the explicitly merged dictionary structurally into `DALImpactMatrix(**merged)`.
+
+### Why we do it:
+Configuration overriding frameworks notoriously clobber massive hierarchies if user configurations omit single child branches. `deep_merge_dict` guarantees safety matrices explicitly retain all default safety toggles unconditionally, while merging exclusively targeted overrides for domain-specific risk levels (DAL).
+
+---
+
 By understanding these core adaptations, you will be able to navigate SpecWeaver's unique safety systems and extend the architecture without accidentally violating our zero-trust boundaries!
