@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from specweaver.config.dal import DALLevel
+from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 
 
 class ComponentChange(BaseModel):

@@ -53,10 +53,6 @@ class TestAtomBasics:
         assert "run_complexity" in result.message
         assert "run_architecture" in result.message
 
-    def test_unsupported_language(self, tmp_path: Path) -> None:
-        with pytest.raises(ValueError, match="Unsupported language"):
-            QARunnerAtom(cwd=tmp_path, language="cobol")
-
 
 # ---------------------------------------------------------------------------
 # run_tests intent
@@ -431,29 +427,40 @@ class TestAtomRunArchitecture:
 
 
 def test_resolve_runner_languages(tmp_path: Path) -> None:
-    import pytest
-
-    from specweaver.loom.atoms.qa_runner.atom import _resolve_runner
+    from specweaver.loom.commons.qa_runner.factory import resolve_runner
     from specweaver.loom.commons.qa_runner.java.runner import JavaRunner
     from specweaver.loom.commons.qa_runner.kotlin.runner import KotlinRunner
     from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
-
-    with pytest.raises(ValueError, match="Unsupported language"):
-        _resolve_runner("ruby", tmp_path)
-
-    ts_runner = _resolve_runner("typescript", tmp_path)
-    assert isinstance(ts_runner, TypeScriptRunner)
-
-    java_runner = _resolve_runner("java", tmp_path)
-    assert isinstance(java_runner, JavaRunner)
-
-    kotlin_runner = _resolve_runner("kotlin", tmp_path)
-    assert isinstance(kotlin_runner, KotlinRunner)
-
     from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
+    from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
 
-    rust_runner = _resolve_runner("rust", tmp_path)
-    assert isinstance(rust_runner, RustRunner)
+    # Default is python
+    runner = resolve_runner(tmp_path)
+    assert isinstance(runner, PythonQARunner)
+
+    # TypeScript
+    (tmp_path / "package.json").touch()
+    runner = resolve_runner(tmp_path)
+    assert isinstance(runner, TypeScriptRunner)
+    (tmp_path / "package.json").unlink()
+
+    # Java
+    (tmp_path / "pom.xml").touch()
+    runner = resolve_runner(tmp_path)
+    assert isinstance(runner, JavaRunner)
+    (tmp_path / "pom.xml").unlink()
+
+    # Kotlin
+    (tmp_path / "build.gradle").touch()
+    runner = resolve_runner(tmp_path)
+    assert isinstance(runner, KotlinRunner)
+    (tmp_path / "build.gradle").unlink()
+
+    # Rust
+    (tmp_path / "Cargo.toml").touch()
+    runner = resolve_runner(tmp_path)
+    assert isinstance(runner, RustRunner)
+    (tmp_path / "Cargo.toml").unlink()
 
 
 def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Path) -> None:
@@ -462,10 +469,11 @@ def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Pat
     Proves consecutive dynamic traversals over the proxy-less PEP 420 `loom.commons.qa_runner.*`
     paths do not fail from sys.path thrashing or incorrect __package__ resolution.
     """
-    from specweaver.loom.atoms.qa_runner.atom import _resolve_runner
+    from specweaver.loom.commons.qa_runner.factory import resolve_runner
 
-    languages = ["python", "java", "typescript", "rust", "kotlin", "python", "rust"]
-    for lang in languages:
-        runner = _resolve_runner(lang, tmp_path)
+    markers = ["package.json", "pom.xml", "build.gradle", "Cargo.toml"]
+    for marker in markers:
+        (tmp_path / marker).touch()
+        runner = resolve_runner(tmp_path)
         assert runner is not None
-        assert lang.capitalize() in runner.__class__.__name__ or lang == "typescript"
+        (tmp_path / marker).unlink()

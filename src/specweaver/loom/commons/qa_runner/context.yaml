@@ -14,7 +14,8 @@ description: |
 
 archetype: adapter
 
-consumes: []
+consumes:
+  - specweaver/commons
 
 forbids:
   - specweaver/loom/tools/*

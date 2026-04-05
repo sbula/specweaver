@@ -15,6 +15,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+
 # ---------------------------------------------------------------------------
 # Result types (language-agnostic)
 # ---------------------------------------------------------------------------
@@ -360,11 +362,13 @@ class QARunnerInterface(ABC):
     def run_architecture_check(
         self,
         target: str,
+        dal_level: DALLevel | None = None,
     ) -> ArchitectureRunResult:
         """Run architectural boundary checks and return structured results.
 
         Args:
             target: File or directory to compile (relative to cwd).
+            dal_level: Active target strictness boundary resolving dynamic config payloads.
 
         Returns:
             ArchitectureRunResult with error counts and details.

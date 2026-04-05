@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:
     """Resolve DAL for the target and overlay validation constraints over settings."""
-    from specweaver.config.dal import DALLevel
+    from specweaver.commons.enums.dal import DALLevel
     from specweaver.config.dal_resolver import DALResolver
     from specweaver.config.settings import SpecWeaverSettings, deep_merge_dict
 

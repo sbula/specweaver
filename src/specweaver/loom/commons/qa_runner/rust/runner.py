@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.loom.commons.qa_runner.interface import ArchitectureRunResult, QARunnerInterface
 from specweaver.loom.commons.qa_runner.rust.parsers import parse_clippy_complexity
 
@@ -276,6 +277,7 @@ class RustRunner(QARunnerInterface):
     def run_architecture_check(
         self,
         target: str,
+        dal_level: DALLevel | None = None,
     ) -> ArchitectureRunResult:
         """Run architectural checks (Deferred to Feature 3.20b)."""
         return ArchitectureRunResult(violation_count=0, violations=[])

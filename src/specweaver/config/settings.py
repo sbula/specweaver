@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from specweaver.config.dal import DALLevel  # noqa: TC001
+from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 
 if TYPE_CHECKING:
     from specweaver.config.database import Database

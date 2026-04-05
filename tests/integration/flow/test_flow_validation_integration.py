@@ -91,7 +91,7 @@ async def test_validate_spec_dal_matrix_integrates_pipeline(tmp_path: Path) -> N
     spec_path = tmp_path / "spec.md"
     spec_path.write_text("# Test Spec\n\n## Intent\n\nThis is a test spec.\n")
 
-    from specweaver.config.dal import DALLevel
+    from specweaver.commons.enums.dal import DALLevel
     from specweaver.config.settings import (
         DALImpactMatrix,
         LLMSettings,
@@ -125,7 +125,7 @@ async def test_validate_spec_dal_matrix_integrates_pipeline(tmp_path: Path) -> N
 @pytest.mark.asyncio
 async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> None:
     """Verifies when context yield nothing, code handler falls back to DB."""
-    from specweaver.config.dal import DALLevel
+    from specweaver.commons.enums.dal import DALLevel
     from specweaver.config.settings import (
         DALImpactMatrix,
         LLMSettings,

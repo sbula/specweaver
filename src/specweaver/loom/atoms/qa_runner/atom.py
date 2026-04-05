@@ -35,38 +35,13 @@ _LANGUAGE_RUNNERS: dict[str, type] = {}
 
 
 def _resolve_runner(language: str, cwd: Any) -> QARunnerInterface:
-    """Create a runner for the given language.
+    """Create a runner for the target.
 
-    Raises:
-        ValueError: If the language is not supported.
+    Forwards resolution to the auto-discovery factory, ignoring the legacy language string.
     """
-    if language == "python":
-        from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+    from specweaver.loom.commons.qa_runner.factory import resolve_runner
 
-        return PythonQARunner(cwd=cwd)
-
-    if language == "typescript":
-        from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
-
-        return TypeScriptRunner(cwd=cwd)
-
-    if language == "java":
-        from specweaver.loom.commons.qa_runner.java.runner import JavaRunner
-
-        return JavaRunner(cwd=cwd)
-
-    if language == "kotlin":
-        from specweaver.loom.commons.qa_runner.kotlin.runner import KotlinRunner
-
-        return KotlinRunner(cwd=cwd)
-
-    if language == "rust":
-        from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
-
-        return RustRunner(cwd=cwd)
-
-    msg = f"Unsupported language: {language!r}. Supported: ['python', 'typescript', 'java', 'kotlin', 'rust']"
-    raise ValueError(msg)
+    return resolve_runner(cwd)
 
 
 # ---------------------------------------------------------------------------

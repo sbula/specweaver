@@ -36,13 +36,21 @@ class ImportDirectionRule(Rule):
 
         import logging
 
-        from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+        from specweaver.commons.enums.dal import DALLevel
+        from specweaver.config.dal_resolver import DALResolver
+        from specweaver.loom.commons.qa_runner.factory import resolve_runner
 
         logger = logging.getLogger(__name__)
 
         try:
-            runner = PythonQARunner(cwd=spec_path.parent)
-            result = runner.run_architecture_check(target=str(spec_path.absolute()))
+            cwd = spec_path.parent
+            runner = resolve_runner(cwd)
+            
+            # Resolve the active DAL for this boundary
+            resolver = DALResolver(project_root=cwd)
+            dal_enum = resolver.resolve(target_path=spec_path)
+
+            result = runner.run_architecture_check(target=str(spec_path.absolute()), dal_level=dal_enum)
         except Exception as e:
             logger.warning("C05 architecture check failed: %s", e)
             return self._skip(f"Architecture engine failure: {e}")

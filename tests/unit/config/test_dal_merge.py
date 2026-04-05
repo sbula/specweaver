@@ -1,4 +1,4 @@
-from specweaver.config.dal import DALLevel
+from specweaver.commons.enums.dal import DALLevel
 
 
 def test_dal_levels():
@@ -41,7 +41,7 @@ def test_dal_impact_matrix(tmp_path):
     """Verify loading and deep merging of DAL rulesets via load_settings()."""
     import yaml
 
-    from specweaver.config.dal import DALLevel
+    from specweaver.commons.enums.dal import DALLevel
     from specweaver.config.database import Database
     from specweaver.config.settings import DALImpactMatrix, load_settings
 

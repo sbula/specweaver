@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.config.dal import DALLevel
+from specweaver.commons.enums.dal import DALLevel
 
 if TYPE_CHECKING:
     from pathlib import Path

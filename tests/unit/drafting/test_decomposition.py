@@ -11,7 +11,7 @@ import pytest
 
 from pydantic import ValidationError
 
-from specweaver.config.dal import DALLevel
+from specweaver.commons.enums.dal import DALLevel
 from specweaver.drafting.decomposition import (
     ComponentChange,
     DecompositionPlan,

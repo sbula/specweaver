@@ -20,7 +20,7 @@ class TestValidationDALResolution:
     @pytest.mark.asyncio
     @patch("specweaver.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_merges_matrix(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
-        from specweaver.config.dal import DALLevel
+        from specweaver.commons.enums.dal import DALLevel
         from specweaver.config.settings import (
             DALImpactMatrix,
             LLMSettings,
@@ -54,7 +54,7 @@ class TestValidationDALResolution:
     async def test_dal_resolution_fallback_to_db(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
         from unittest.mock import MagicMock
 
-        from specweaver.config.dal import DALLevel
+        from specweaver.commons.enums.dal import DALLevel
         from specweaver.config.settings import (
             DALImpactMatrix,
             LLMSettings,
@@ -90,7 +90,7 @@ class TestValidationDALResolution:
     async def test_dal_resolution_invalid_db_string_ignored(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
         from unittest.mock import MagicMock
 
-        from specweaver.config.dal import DALLevel
+        from specweaver.commons.enums.dal import DALLevel
         from specweaver.config.settings import (
             DALImpactMatrix,
             LLMSettings,
@@ -139,7 +139,7 @@ class TestValidationDALResolution:
     @pytest.mark.asyncio
     @patch("specweaver.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_deep_merges_nested_extra_params(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
-        from specweaver.config.dal import DALLevel
+        from specweaver.commons.enums.dal import DALLevel
         from specweaver.config.settings import (
             DALImpactMatrix,
             LLMSettings,

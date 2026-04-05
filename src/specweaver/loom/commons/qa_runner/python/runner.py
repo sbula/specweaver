@@ -19,6 +19,7 @@ import sys
 import time
 from typing import TYPE_CHECKING, TypedDict
 
+from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
@@ -421,6 +422,7 @@ class PythonQARunner(QARunnerInterface):
     def run_architecture_check(
         self,
         target: str,
+        dal_level: DALLevel | None = None,
     ) -> ArchitectureRunResult:
         """Run architectural boundary checks via tach.
 

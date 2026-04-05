@@ -10,6 +10,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from specweaver.commons.enums.dal import DALLevel
 from specweaver.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     CompileError,
@@ -186,6 +187,81 @@ class TypeScriptRunner(QARunnerInterface):
     def run_architecture_check(
         self,
         target: str,
+        dal_level: DALLevel | None = None,
     ) -> ArchitectureRunResult:
-        """Run architectural checks (Deferred to Feature 3.20b)."""
-        return ArchitectureRunResult(violation_count=0, violations=[])
+        """Run architectural checks dynamically using ESLint."""
+        import json
+        import yaml
+        from specweaver.loom.commons.qa_runner.interface import ArchitectureViolation
+
+        logger.debug("TypeScriptRunner.run_architecture_check: target=%s, dal=%s", target, dal_level)
+        
+        target_path = self.cwd / target
+        ctx_dir = target_path.parent if target_path.is_file() else target_path
+
+        # Traverse up to find closest context.yaml
+        while ctx_dir != self.cwd and ctx_dir.parent != ctx_dir and not (ctx_dir / "context.yaml").exists():
+            ctx_dir = ctx_dir.parent
+
+        ctx_file = ctx_dir / "context.yaml"
+        forbids = []
+        if ctx_file.exists():
+            try:
+                data = yaml.safe_load(ctx_file.read_text(encoding="utf-8")) or {}
+                forbids = data.get("forbids", [])
+            except Exception as e:
+                logger.warning("Failed to parse context.yaml at %s: %s", ctx_file, e)
+
+        # Temporary config dropping
+        tmp_dir = self.cwd / ".tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        config_path = tmp_dir / ".eslint-specweaver-arch.json"
+
+        eslint_config = {
+            "root": True,
+            "parser": "@typescript-eslint/parser",
+            "plugins": ["@typescript-eslint"],
+            "rules": {
+                "no-restricted-imports": ["error", {
+                    "patterns": forbids
+                }]
+            }
+        }
+        config_path.write_text(json.dumps(eslint_config, indent=2), encoding="utf-8")
+
+        npx_bin = shutil.which("npx") or "npx"
+        cmd = [npx_bin, "eslint", "--no-eslintrc", "-c", str(config_path), "--format", "json", target]
+
+        try:
+            proc = subprocess.run(cmd, cwd=self.cwd, capture_output=True, text=True, timeout=60, check=False)
+        except subprocess.TimeoutExpired:
+            return ArchitectureRunResult(
+                violation_count=1,
+                violations=[ArchitectureViolation(file=target, code="Timeout", message="ESLint timed out", context_uri="")]
+            )
+        finally:
+            config_path.unlink(missing_ok=True)
+
+        violations = []
+        if proc.stdout.strip():
+            try:
+                results = json.loads(proc.stdout)
+                for res in results:
+                    file_path = res.get("filePath", "")
+                    for msg in res.get("messages", []):
+                        if msg.get("ruleId") == "no-restricted-imports":
+                            violations.append(
+                                ArchitectureViolation(
+                                    file=file_path,
+                                    code="C05",
+                                    message=msg.get("message", "Restricted import"),
+                                    context_uri=str(ctx_file.absolute()) if ctx_file.exists() else "",
+                                )
+                            )
+            except json.JSONDecodeError:
+                pass
+
+        return ArchitectureRunResult(
+            violation_count=len(violations),
+            violations=violations,
+        )

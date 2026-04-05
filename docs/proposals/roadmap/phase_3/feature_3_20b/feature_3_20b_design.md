@@ -58,7 +58,7 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 | **SF-2** | Fractal Resolution Engine | Implement `O(1)` cached directory-tree walking in `ValidationRunner` to map target files to their closest `context.yaml` DAL. | [x] Complete |
 | **SF-3** | Validation Override Consolidation (Cleanup) | Strip the legacy SQLite `validation_overrides` tables and force all resolution exclusively through the DAL Impact matrices and rule sub-pipeline inheritance. | [x] Complete |
 | **SF-4** | Generative HARA (AI Governance Proposal) | Update the `/design` scaffolding workflow so LLMs analyze topological edges/data to propose a DAL, requiring HITL approval. | [ ] Pending |
-| **SF-5** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [ ] Pending |
+| **SF-5** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [x] Complete |
 
 ## 6. Progress Tracker
 - [x] Requirements Finalized
@@ -69,10 +69,12 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 - [x] SF-3 Implementation Plan ✅
 - [x] SF-3 Implementation ✅ (Dev ✅, Pre-Commit ✅, Committed ✅)
 - [x] SF-4 Implementation Plan ✅
-- [x] SF-4 Implementation ✅ (Pre-Commit ✅, Committed ⏳)
+- [x] SF-4 Implementation ✅ (Pre-Commit ✅, Committed ✅)
+- [x] SF-5 Implementation Plan ✅
+- [x] SF-5 Implementation ✅ (Dev ✅, Pre-Commit ✅, Committed ✅)
 
 ## 7. Session Handoff
 
-**Current status**: SF-4 Implementation is complete and waiting for the final commit.
-**Next step**: Proceed with the SF-5 feature implementation workflow `sw feature --next`.
+**Current status**: SF-5 is complete and committed.
+**Next step**: Proceed with SF-6 or wrap up Feature 3.20b.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

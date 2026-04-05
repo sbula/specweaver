@@ -1,0 +1,27 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+name: commons
+level: foundation
+purpose: >
+  Universal logic-free structs and enums meant to act as cross-layer data models avoiding cyclic constraints.
+
+description: |
+  Provides baseline structures (like DALLevel) that multiple high-level and low-level 
+  components require for type-safety without introducing inter-layer dependencies.
+  This module strictly resides at layer L0.
+
+archetype: raw-data
+
+consumes: []
+
+forbids:
+  - specweaver/*
+
+exposes:
+  - DALLevel
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: true
+  concurrency_model: none

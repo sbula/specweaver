@@ -1,0 +1,55 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root.
+
+"""QARunner Factory.
+
+Auto-discovers the target project language based on presence of manifest files
+in a given directory without communicating with explicit Database layers.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from specweaver.loom.commons.qa_runner.interface import QARunnerInterface
+
+logger = logging.getLogger(__name__)
+
+
+def resolve_runner(cwd: Path) -> QARunnerInterface:
+    """Auto-discover the native QA pipeline runner for the target repository.
+
+    Args:
+        cwd: Target directory to sniff for manifests.
+
+    Returns:
+        The matching QARunnerInterface adapter. Defaults to PythonQARunner.
+    """
+    if (cwd / "package.json").exists():
+        from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
+
+        return TypeScriptRunner(cwd=cwd)
+
+    if (cwd / "Cargo.toml").exists():
+        from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
+
+        return RustRunner(cwd=cwd)
+
+    if (cwd / "build.gradle").exists() or (cwd / "build.gradle.kts").exists():
+        from specweaver.loom.commons.qa_runner.kotlin.runner import KotlinRunner
+
+        return KotlinRunner(cwd=cwd)
+
+    if (cwd / "pom.xml").exists():
+        from specweaver.loom.commons.qa_runner.java.runner import JavaRunner
+
+        return JavaRunner(cwd=cwd)
+
+    # By default, or if pyproject.toml is found
+    from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+
+    return PythonQARunner(cwd=cwd)
