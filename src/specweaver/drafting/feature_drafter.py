@@ -115,6 +115,21 @@ FEATURE_SECTIONS: list[FeatureSectionDef] = [
             "at this position (e.g., 'dependency of step 3')."
         ),
     },
+    {
+        "name": "Risk Assessment (DAL)",
+        "heading": "## Risk Assessment (DAL)",
+        "question": (
+            "What is the severity of failure for this feature? "
+            "Please assess data sensitivity and operational criticality."
+        ),
+        "prompt": (
+            "Based on the user's answer, write a Risk Assessment section for a "
+            "Feature Spec. Propose a DAL using strict DO-178C logic: DAL_A "
+            "(Catastrophic), DAL_B (Hazardous), DAL_C (Major), DAL_D (Minor), "
+            "DAL_E (No Safety Effect). Ground your output securely in these categorizations."
+        ),
+        "inject_topology": True,
+    },
 ]
 
 # Instruction template for per-section LLM calls
@@ -154,6 +169,7 @@ _FEATURE_SPEC_TEMPLATE = Template("""\
 - [ ] Change Map has at least one entry per Blast Radius item
 - [ ] Integration Seams defines contracts for cross-module communication
 - [ ] Sequence is ordered by dependency
+- [ ] Risk Assessment explicitly declares a DAL level
 - [ ] `sw check --level=feature` passes
 """)
 

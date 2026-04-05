@@ -95,4 +95,16 @@ Configuration overriding frameworks notoriously clobber massive hierarchies if u
 
 ---
 
+## 7. Generative HARA Governance (Enum-Driven Prompts)
+
+When AI Agents generate structured JSON proposals for complex engineering operations (like Hazard Analysis and Risk Assessment - HARA), we completely ban standard string bindings for critical data classifications.
+
+### How it works:
+Inside our decomposition workflows (`ComponentChange`), the target DO-178C data tier (`proposed_dal`) is typed structurally as `DALLevel(str, Enum)` rather than `str`.
+
+### Why we do it:
+Even with aggressive system prompts detailing "DAL_A through DAL_E", Agents hallucinate or append invalid remarks like "DAL_Z" or "Critical". By explicitly binding the parsing layer to a Pydantic Enum, we offload architectural safety to the underlying Rust JSON schema parser. If the LLM hallucinates, Pydantic throws a `ValidationError`, instantly triggering our `loop_back` native HITL engine to auto-retry the LLM without crashing SpecWeaver's internal state.
+
+---
+
 By understanding these core adaptations, you will be able to navigate SpecWeaver's unique safety systems and extend the architecture without accidentally violating our zero-trust boundaries!

@@ -9,6 +9,9 @@ import json
 
 import pytest
 
+from pydantic import ValidationError
+
+from specweaver.config.dal import DALLevel
 from specweaver.drafting.decomposition import (
     ComponentChange,
     DecompositionPlan,
@@ -28,7 +31,7 @@ class TestComponentChange:
             component="billing_service",
             exists=True,
             change_nature="behavior",
-            description="Add tax calculation endpoint",
+            description="Add tax calculation endpoint", proposed_dal="DAL_E",
         )
         assert c.component == "billing_service"
         assert c.exists is True
@@ -39,7 +42,7 @@ class TestComponentChange:
             component="auth",
             exists=True,
             change_nature="config",
-            description="Add mTLS config",
+            description="Add mTLS config", proposed_dal="DAL_E",
         )
         assert c.dependencies == []
 
@@ -48,7 +51,7 @@ class TestComponentChange:
             component="auth",
             exists=True,
             change_nature="config",
-            description="test",
+            description="test", proposed_dal="DAL_E",
         )
         assert c.confidence == 0
 
@@ -57,7 +60,7 @@ class TestComponentChange:
             component="auth",
             exists=True,
             change_nature="config",
-            description="test",
+            description="test", proposed_dal="DAL_E",
             confidence=85,
         )
         assert c.confidence == 85
@@ -69,7 +72,7 @@ class TestComponentChange:
                 component="test",
                 exists=True,
                 change_nature=nature,
-                description="test",
+                description="test", proposed_dal="DAL_E",
             )
             assert c.change_nature == nature
 
@@ -78,7 +81,7 @@ class TestComponentChange:
             component="billing",
             exists=False,
             change_nature="new_interface",
-            description="New billing API",
+            description="New billing API", proposed_dal="DAL_E",
             dependencies=["auth", "orders"],
             confidence=90,
         )
@@ -87,6 +90,49 @@ class TestComponentChange:
         assert c2.component == "billing"
         assert c2.dependencies == ["auth", "orders"]
         assert c2.confidence == 90
+
+    def test_proposed_dal_rejects_hallucinations(self) -> None:
+        """Pydantic structurally rejects invalid DAL Enums (e.g., 'DAL_Z')."""
+        with pytest.raises(ValidationError) as exc_info:
+            ComponentChange(
+                component="test",
+                exists=True,
+                change_nature="behavior",
+                description="test",
+                proposed_dal="DAL_Z",  # type: ignore
+            )
+        assert "Input should be" in str(exc_info.value)
+
+    def test_proposed_dal_parses_valid_strings(self) -> None:
+        """Pydantic successfully parses valid strings into DALLevel Enum."""
+        c = ComponentChange(
+            component="test",
+            exists=True,
+            change_nature="behavior",
+            description="test",
+            proposed_dal="DAL_C",  # type: ignore
+        )
+        assert c.proposed_dal is DALLevel.DAL_C
+
+    def test_json_pipeline_parsing(self) -> None:
+        """Integration: DecompositionPlan parses string Enums natively."""
+        raw_json = '''{
+            "feature_spec": "test.md",
+            "components": [{
+                "component": "auth",
+                "exists": true,
+                "change_nature": "behavior",
+                "description": "test",
+                "proposed_dal": "DAL_B"
+            }],
+            "integration_seams": [],
+            "build_sequence": ["auth"],
+            "coverage_score": 0.9,
+            "alignment_notes": [],
+            "timestamp": "2026-04-05T08:00:00Z"
+        }'''
+        plan = DecompositionPlan.model_validate_json(raw_json)
+        assert plan.components[0].proposed_dal is DALLevel.DAL_B
 
 
 # ---------------------------------------------------------------------------
@@ -154,14 +200,14 @@ class TestDecompositionPlan:
                     component="order_service",
                     exists=True,
                     change_nature="behavior",
-                    description="Add sell order logic",
+                    description="Add sell order logic", proposed_dal="DAL_E",
                     confidence=92,
                 ),
                 ComponentChange(
                     component="settlement",
                     exists=False,
                     change_nature="new_interface",
-                    description="New settlement module",
+                    description="New settlement module", proposed_dal="DAL_E",
                     dependencies=["order_service"],
                     confidence=78,
                 ),
@@ -274,7 +320,7 @@ class TestDecompositionEdgeCases:
             component="test",
             exists=True,
             change_nature="refactor",  # not in the documented 4 values
-            description="Refactoring",
+            description="Refactoring", proposed_dal="DAL_E",
         )
         assert c.change_nature == "refactor"
 
@@ -284,7 +330,7 @@ class TestDecompositionEdgeCases:
             component="test",
             exists=True,
             change_nature="behavior",
-            description="test",
+            description="test", proposed_dal="DAL_E",
             confidence=-10,
         )
         assert c.confidence == -10

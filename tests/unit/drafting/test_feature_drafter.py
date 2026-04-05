@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 class TestFeatureSections:
     """Feature Spec has exactly 5 sections with the correct names."""
 
-    def test_five_sections(self) -> None:
-        assert len(FEATURE_SECTIONS) == 5
+    def test_six_sections(self) -> None:
+        assert len(FEATURE_SECTIONS) == 6
 
     def test_section_names(self) -> None:
         names = [s["name"] for s in FEATURE_SECTIONS]
@@ -38,6 +38,7 @@ class TestFeatureSections:
             "Change Map",
             "Integration Seams",
             "Sequence",
+            "Risk Assessment (DAL)",
         ]
 
     def test_each_section_has_required_keys(self) -> None:
@@ -126,7 +127,7 @@ class TestFeatureDrafter:
     ) -> None:
         drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
         await drafter.draft("sell_shares", tmp_path)
-        assert mock_llm.generate.call_count == 5
+        assert mock_llm.generate.call_count == 6
 
     @pytest.mark.asyncio()
     async def test_draft_asks_user_per_section(
@@ -134,7 +135,7 @@ class TestFeatureDrafter:
     ) -> None:
         drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
         await drafter.draft("sell_shares", tmp_path)
-        assert mock_context.ask.call_count == 5
+        assert mock_context.ask.call_count == 6
 
     @pytest.mark.asyncio()
     async def test_draft_content_includes_all_headings(
@@ -147,12 +148,27 @@ class TestFeatureDrafter:
             assert section["heading"] in content
 
     @pytest.mark.asyncio()
+    async def test_draft_content_includes_dala_assessment(
+        self, mock_llm: AsyncMock, mock_context: AsyncMock, tmp_path: Path
+    ) -> None:
+        """Integration: verifies the LLM output is physically drafted with the Risk Assessment."""
+        mock_response = AsyncMock()
+        mock_response.text = "Mock LLM output indicating DAL_A rating."
+        mock_llm.generate = AsyncMock(return_value=mock_response)
+        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        path = await drafter.draft("critical_system", tmp_path)
+        content = path.read_text(encoding="utf-8")
+        assert "## Risk Assessment (DAL)" in content
+        assert "Mock LLM output indicating DAL_A rating." in content
+
+
+    @pytest.mark.asyncio()
     async def test_skipped_section_gets_placeholder(
         self, mock_llm: AsyncMock, tmp_path: Path
     ) -> None:
         context = AsyncMock()
         # First question answered, rest skipped
-        context.ask = AsyncMock(side_effect=["answer", "", "", "", ""])
+        context.ask = AsyncMock(side_effect=["answer", "", "", "", "", ""])
         drafter = FeatureDrafter(llm=mock_llm, context_provider=context)
         path = await drafter.draft("test_feature", tmp_path)
         content = path.read_text(encoding="utf-8")
@@ -215,6 +231,7 @@ class TestFeatureDrafterEdgeCases:
             "Change Map": True,
             "Integration Seams": True,
             "Sequence": False,
+            "Risk Assessment (DAL)": True,
         }
         for section in FEATURE_SECTIONS:
             expected = topology_flag_expected[section["name"]]

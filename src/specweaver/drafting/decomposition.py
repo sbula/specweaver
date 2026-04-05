@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from specweaver.config.dal import DALLevel
+
 
 class ComponentChange(BaseModel):
     """A single component affected by a feature.
@@ -27,6 +29,7 @@ class ComponentChange(BaseModel):
         exists: True = modify existing, False = create new.
         change_nature: One of ``new_interface``, ``schema``, ``behavior``, ``config``.
         description: What changes in this component.
+        proposed_dal: The assigned DO-178C DAL level for this component (e.g., DAL_A, DAL_B, DAL_C, DAL_D, DAL_E). This MUST be explicitly provided.
         dependencies: Other components that must be changed first.
         confidence: LLM's confidence in this proposal (0-100).
     """
@@ -35,6 +38,7 @@ class ComponentChange(BaseModel):
     exists: bool
     change_nature: str
     description: str
+    proposed_dal: DALLevel = Field(description="The DO-178C DAL rating required: DAL_A, DAL_B, DAL_C, DAL_D, or DAL_E")
     dependencies: list[str] = Field(default_factory=list)
     confidence: int = 0
 

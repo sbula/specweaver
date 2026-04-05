@@ -87,8 +87,8 @@ sw config set-model gpt-5.4-mini
 sw draft greet_service --project ./my-project
 ```
 
-The LLM will interactively help you write a spec with the 5-section structure:
-**Purpose** -> **Contract** -> **Protocol** -> **Policy** -> **Boundaries**
+The LLM will interactively help you write a spec with the 6-section structure:
+**Purpose** -> **Contract** -> **Protocol** -> **Policy** -> **Boundaries** -> **Risk Assessment (DAL)**
 
 The result is saved to `specs/greet_service_spec.md`.
 

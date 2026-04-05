@@ -69,11 +69,10 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 - [x] SF-3 Implementation Plan ✅
 - [x] SF-3 Implementation ✅ (Dev ✅, Pre-Commit ✅, Committed ✅)
 - [x] SF-4 Implementation Plan ✅
-- [ ] SF-4 Implementation
+- [x] SF-4 Implementation ✅ (Pre-Commit ✅, Committed ⏳)
 
 ## 7. Session Handoff
 
-**Current status**: SF-4 Implementation Plan is APPROVED.
-**Next step**: Run the following command to develop SF-4:
-`/dev c:\development\pitbula\specweaver\docs\proposals\roadmap\phase_3\feature_3_20b\feature_3_20b_sf4_implementation_plan.md`
+**Current status**: SF-4 Implementation is complete and waiting for the final commit.
+**Next step**: Proceed with the SF-5 feature implementation workflow `sw feature --next`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

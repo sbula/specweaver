@@ -19,7 +19,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Constitution support** — Project-wide `CONSTITUTION.md` with coding principles, testing standards, and UX guidelines injected into every LLM call (review, implement, pipeline). Walk-up resolution, configurable size limits, CLI management. Auto-bootstrap from discovered standards with configurable behavior (off/prompt/auto)
 - **Validation pipelines** — YAML-defined rule sub-pipelines with inheritance (extends/override/remove/add), profile-specific pipelines, project-local overrides, and custom D-prefix rule support
 - **Pipeline definitions** — YAML-defined workflows with configurable gates, retries, and feedback loops
-- **Spec methodology** — Enforces a 5-section structure: Purpose, Contract, Protocol, Policy, Boundaries
+- **Spec methodology** — Enforces a 6-section structure: Purpose, Contract, Protocol, Policy, Boundaries, Risk Assessment (DAL)
 - **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
 - **Standards auto-discovery** — Analyze codebase (Python, JavaScript, TypeScript) to extract naming, error handling, type hints/jsdoc/tsdoc, import, async, and test patterns. Multi-scope support (monorepo-aware), Human-in-the-Loop review, optional async LLM best-practice comparison, and token-capped injection into LLM prompts
 - **AST Drift Detection** — Structural parsing of implementations via `tree-sitter` to automatically pinpoint methods or modules that deviate from original Plan decisions.
