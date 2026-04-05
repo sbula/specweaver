@@ -9,13 +9,24 @@ QARunnerAtom.__test__ = False  # type: ignore[attr-defined]
 
 pytestmark = pytest.mark.live
 
+
 @pytest.fixture
 def gradle_project() -> Path:
-    return Path(__file__).parent.parent.parent.parent.parent.parent / "fixtures" / "kotlin_gradle_project"
+    return (
+        Path(__file__).parent.parent.parent.parent.parent.parent
+        / "fixtures"
+        / "kotlin_gradle_project"
+    )
+
 
 @pytest.fixture
 def maven_project() -> Path:
-    return Path(__file__).parent.parent.parent.parent.parent.parent / "fixtures" / "kotlin_maven_project"
+    return (
+        Path(__file__).parent.parent.parent.parent.parent.parent
+        / "fixtures"
+        / "kotlin_maven_project"
+    )
+
 
 def test_kotlin_atom_gradle_integration(gradle_project: Path) -> None:
     assert gradle_project.exists(), "Gradle fixture missing"
@@ -43,6 +54,7 @@ def test_kotlin_atom_gradle_integration(gradle_project: Path) -> None:
     # 5. Debugger
     res_debug = atom.run({"intent": "run_debugger", "target": "src/", "entrypoint": "AppKt"})
     assert res_debug.status == AtomStatus.SUCCESS, res_debug.message
+
 
 def test_kotlin_atom_maven_integration(maven_project: Path) -> None:
     assert maven_project.exists(), "Maven fixture missing"

@@ -10,15 +10,11 @@ def test_tach_architectural_boundaries() -> None:
     has no forbidden upstream dependencies, replacing the deleted __init__.py manual encapsulation.
     """
     root_dir = Path(__file__).resolve().parent.parent.parent
-    result = subprocess.run(
-        ["tach", "check"],
-        cwd=root_dir,
-        capture_output=True,
-        text=True
+    result = subprocess.run(["tach", "check"], cwd=root_dir, capture_output=True, text=True)
+
+    assert result.returncode == 0, (
+        f"Architecture boundary violation detected by tach:\n{result.stdout}\n{result.stderr}"
     )
-
-    assert result.returncode == 0, f"Architecture boundary violation detected by tach:\n{result.stdout}\n{result.stderr}"
-
 
 
 def test_tach_interfaces_map_to_valid_namespaces() -> None:

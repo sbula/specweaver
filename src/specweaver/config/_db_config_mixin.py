@@ -262,3 +262,59 @@ class ConfigSettingsMixin:
                 project_name,
                 mode_lower,
             )
+
+    # ------------------------------------------------------------------
+    # DAL configuration
+    # ------------------------------------------------------------------
+
+    def get_default_dal(self, project_name: str) -> str:
+        """Get the default DAL for a project.
+
+        Returns ``"DAL_A"`` if the project has no explicit setting.
+
+        Raises:
+            ValueError: If project not found.
+        """
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            row = conn.execute(
+                "SELECT default_dal FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not row:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+            return str(row["default_dal"])
+
+    def set_default_dal(
+        self,
+        project_name: str,
+        dal: str,
+    ) -> None:
+        """Set the default DAL for a project.
+
+        Args:
+            project_name: Name of the registered project.
+            dal: The DAL string.
+
+        Raises:
+            ValueError: If project not found.
+        """
+        dal_upper = dal.upper()
+        with self.connect() as conn:  # type: ignore[attr-defined]
+            existing = conn.execute(
+                "SELECT name FROM projects WHERE name = ?",
+                (project_name,),
+            ).fetchone()
+            if not existing:
+                msg = f"Project '{project_name}' not found"
+                raise ValueError(msg)
+
+            conn.execute(
+                "UPDATE projects SET default_dal = ? WHERE name = ?",
+                (dal_upper, project_name),
+            )
+            logger.debug(
+                "set_default_dal: %s = %s",
+                project_name,
+                dal_upper,
+            )

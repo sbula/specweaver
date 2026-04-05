@@ -74,8 +74,12 @@ class TestTypeScriptRunner:
             mock_run.assert_called_once()
             # Assert "node" is used instead of "ts-node"
             cmd_args = mock_run.call_args[0][0]
-            assert any("node" in str(arg).lower() for arg in cmd_args), f"Could not find 'node' in {cmd_args}"
-            assert not any("ts-node" in str(arg).lower() for arg in cmd_args), f"Found 'ts-node' in {cmd_args}"
+            assert any("node" in str(arg).lower() for arg in cmd_args), (
+                f"Could not find 'node' in {cmd_args}"
+            )
+            assert not any("ts-node" in str(arg).lower() for arg in cmd_args), (
+                f"Found 'ts-node' in {cmd_args}"
+            )
 
             assert result.exit_code == 0
             assert len(result.events) == 1

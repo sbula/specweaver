@@ -42,8 +42,12 @@ def test_e2e_tach_sync_generates_valid_boundaries(tmp_path: Path):
     )
 
     # 3. Write explicit context.yamls
-    (api_dir / "context.yaml").write_text("name: src.api\nlevel: module\narchetype: orchestrator\nconsumes: [src.core]\n")
-    (core_dir / "context.yaml").write_text("name: src.core\nlevel: module\narchetype: pure-logic\nconsumes: []\n")
+    (api_dir / "context.yaml").write_text(
+        "name: src.api\nlevel: module\narchetype: orchestrator\nconsumes: [src.core]\n"
+    )
+    (core_dir / "context.yaml").write_text(
+        "name: src.core\nlevel: module\narchetype: pure-logic\nconsumes: []\n"
+    )
 
     # 4. Run sw scan to trigger the tach sync
     try:

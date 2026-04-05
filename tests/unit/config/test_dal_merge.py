@@ -14,24 +14,13 @@ def test_dal_levels():
     assert len(levels) == 5
     assert DALLevel.DAL_A in levels
 
+
 def test_deep_merge_dict():
     """Verify recursive merging logic for configuration dicts."""
     from specweaver.config.settings import deep_merge_dict
 
-    base = {
-        "A": 1,
-        "nested": {
-            "B": 2,
-            "deep": {"x": 100}
-        }
-    }
-    overlay = {
-        "nested": {
-            "C": 3,
-            "deep": {"x": 999, "y": 200}
-        },
-        "D": 4
-    }
+    base = {"A": 1, "nested": {"B": 2, "deep": {"x": 100}}}
+    overlay = {"nested": {"C": 3, "deep": {"x": 999, "y": 200}}, "D": 4}
 
     result = deep_merge_dict(base, overlay)
 
@@ -71,16 +60,8 @@ def test_dal_impact_matrix(tmp_path):
     # Override S01 explicitly for DAL_E to be completely disabled
     overlay = {
         "matrix": {
-            "DAL_E": {
-                "overrides": {
-                    "S01": {"rule_id": "S01", "enabled": False}
-                }
-            },
-            "DAL_A": {
-                "overrides": {
-                    "S01": {"rule_id": "S01", "warn_threshold": 0.99}
-                }
-            }
+            "DAL_E": {"overrides": {"S01": {"rule_id": "S01", "enabled": False}}},
+            "DAL_A": {"overrides": {"S01": {"rule_id": "S01", "warn_threshold": 0.99}}},
         }
     }
 
@@ -161,13 +142,7 @@ def test_load_settings_invalid_schema(tmp_path):
 
     # Provide a string where a bool (enabled) is expected
     overlay = {
-        "matrix": {
-            "DAL_E": {
-                "overrides": {
-                    "S01": {"rule_id": "S01", "enabled": "not_a_boolean"}
-                }
-            }
-        }
+        "matrix": {"DAL_E": {"overrides": {"S01": {"rule_id": "S01", "enabled": "not_a_boolean"}}}}
     }
 
     dal_file = sw_dir / "dal_definitions.yaml"
@@ -178,6 +153,3 @@ def test_load_settings_invalid_schema(tmp_path):
     # Assert matrix degrades to empty gracefully due to Pydantic exception inside try/except
     assert isinstance(settings.dal_matrix, DALImpactMatrix)
     assert len(settings.dal_matrix.matrix) == 0
-
-
-

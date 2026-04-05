@@ -28,7 +28,9 @@ class TachSyncResult:
     interfaces_synced: int
 
 
-def _build_modules_and_interfaces(graph: TopologyGraph) -> tuple[tomlkit.items.AoT, tomlkit.items.AoT, int, int]:
+def _build_modules_and_interfaces(
+    graph: TopologyGraph,
+) -> tuple[tomlkit.items.AoT, tomlkit.items.AoT, int, int]:
     modules_array = tomlkit.aot()
     interfaces_array = tomlkit.aot()
 
@@ -64,6 +66,7 @@ def _build_modules_and_interfaces(graph: TopologyGraph) -> tuple[tomlkit.items.A
             interfaces_count += 1
 
     return modules_array, interfaces_array, modules_count, interfaces_count
+
 
 def sync_tach_toml(graph: TopologyGraph, target_path: Path) -> TachSyncResult:
     """Synchronize a TopologyGraph into a tach.toml file natively.
@@ -101,7 +104,9 @@ def sync_tach_toml(graph: TopologyGraph, target_path: Path) -> TachSyncResult:
     if "interfaces" in doc:
         del doc["interfaces"]
 
-    modules_array, interfaces_array, modules_count, interfaces_count = _build_modules_and_interfaces(graph)
+    modules_array, interfaces_array, modules_count, interfaces_count = (
+        _build_modules_and_interfaces(graph)
+    )
 
     if modules_count > 0:
         doc["modules"] = modules_array

@@ -82,7 +82,12 @@ class RustRunner(QARunnerInterface):
                             passed += 1
                         elif isinstance(case.result, junitparser.Failure):
                             failed += 1
-                            failures.append(TestFailure(name=f"{case.classname}::{case.name}", message=case.result.message or "Failed"))
+                            failures.append(
+                                TestFailure(
+                                    name=f"{case.classname}::{case.name}",
+                                    message=case.result.message or "Failed",
+                                )
+                            )
                         elif isinstance(case.result, junitparser.Error):
                             errors += 1
                         elif isinstance(case.result, junitparser.Skipped):
@@ -102,7 +107,16 @@ class RustRunner(QARunnerInterface):
                 coverage_pct=None,
             )
         except Exception:
-            return TestRunResult(passed=0, failed=1, errors=0, skipped=0, total=1, failures=[], duration_seconds=0.0, coverage_pct=None)
+            return TestRunResult(
+                passed=0,
+                failed=1,
+                errors=0,
+                skipped=0,
+                total=1,
+                failures=[],
+                duration_seconds=0.0,
+                coverage_pct=None,
+            )
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
         import json
@@ -146,11 +160,15 @@ class RustRunner(QARunnerInterface):
                                 ploc = loc.get("physicalLocation", {})
                                 uri = ploc.get("artifactLocation", {}).get("uri", "")
                                 line = ploc.get("region", {}).get("startLine", 0)
-                                errors_list.append(LintError(file=uri, line=line, code=rule_id, message=msg))
+                                errors_list.append(
+                                    LintError(file=uri, line=line, code=rule_id, message=msg)
+                                )
                 except json.JSONDecodeError:
                     pass
 
-            return LintRunResult(error_count=len(errors_list), fixable_count=0, fixed_count=0, errors=errors_list)
+            return LintRunResult(
+                error_count=len(errors_list), fixable_count=0, fixed_count=0, errors=errors_list
+            )
         except Exception:
             return LintRunResult(error_count=1, fixable_count=0, fixed_count=0, errors=[])
 
@@ -161,7 +179,14 @@ class RustRunner(QARunnerInterface):
         from specweaver.loom.commons.qa_runner.interface import ComplexityRunResult
 
         try:
-            clippy_cmd = ["cargo", "clippy", "--message-format=json", "--", "-W", "clippy::cognitive_complexity"]
+            clippy_cmd = [
+                "cargo",
+                "clippy",
+                "--message-format=json",
+                "--",
+                "-W",
+                "clippy::cognitive_complexity",
+            ]
 
             clippy_process = subprocess.run(
                 clippy_cmd,
@@ -187,7 +212,11 @@ class RustRunner(QARunnerInterface):
                 except json.JSONDecodeError:
                     pass
 
-            return ComplexityRunResult(violation_count=len(violations), max_complexity=max_complexity, violations=violations)
+            return ComplexityRunResult(
+                violation_count=len(violations),
+                max_complexity=max_complexity,
+                violations=violations,
+            )
         except Exception:
             return ComplexityRunResult(violation_count=1, max_complexity=10, violations=[])
 
@@ -213,7 +242,11 @@ class RustRunner(QARunnerInterface):
             return CompileRunResult(
                 error_count=1,
                 warning_count=0,
-                errors=[CompileError(file="", line=0, column=0, code="", message=str(e), is_warning=False)],
+                errors=[
+                    CompileError(
+                        file="", line=0, column=0, code="", message=str(e), is_warning=False
+                    )
+                ],
             )
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
@@ -233,7 +266,9 @@ class RustRunner(QARunnerInterface):
             return DebugRunResult(
                 exit_code=process.returncode,
                 duration_seconds=0.0,
-                events=[OutputEvent(category="stdout", output=process.stdout)] if process.stdout else [],
+                events=[OutputEvent(category="stdout", output=process.stdout)]
+                if process.stdout
+                else [],
             )
         except Exception:
             return DebugRunResult(exit_code=1, duration_seconds=0.0, events=[])

@@ -12,6 +12,7 @@ QARunnerTool.__test__ = False  # type: ignore
 
 pytestmark = pytest.mark.live
 
+
 @pytest.fixture
 def ts_project_dir(tmp_path: Path) -> Path:
     """Create a minimal TypeScript environment."""
@@ -19,6 +20,7 @@ def ts_project_dir(tmp_path: Path) -> Path:
     (tmp_path / "src" / "index.ts").write_text("const x: number = 5;\nconsole.log(x);")
     (tmp_path / "tsconfig.json").write_text('{"compilerOptions": {"strict": true, "noEmit": true}}')
     return tmp_path
+
 
 def test_typescript_tool_integration(ts_project_dir: Path) -> None:
     atom = QARunnerAtom(cwd=ts_project_dir, language="typescript")

@@ -190,9 +190,7 @@ class TestTestsPassRule:
         src.write_text("x = 1\n")
 
         mock_result = MagicMock(failed=0, errors=0, failures=[])
-        with patch(
-            "specweaver.validation.rules.code.c03_tests_pass.PythonQARunner"
-        ) as mock_runner:
+        with patch("specweaver.validation.rules.code.c03_tests_pass.PythonQARunner") as mock_runner:
             mock_runner.return_value.run_tests.return_value = mock_result
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)
@@ -209,9 +207,7 @@ class TestTestsPassRule:
 
         mock_failure = MagicMock(message="assert False")
         mock_result = MagicMock(failed=1, errors=0, failures=[mock_failure])
-        with patch(
-            "specweaver.validation.rules.code.c03_tests_pass.PythonQARunner"
-        ) as mock_runner:
+        with patch("specweaver.validation.rules.code.c03_tests_pass.PythonQARunner") as mock_runner:
             mock_runner.return_value.run_tests.return_value = mock_result
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)
@@ -226,9 +222,7 @@ class TestTestsPassRule:
         src = tmp_path / "mymod.py"
         src.write_text("x = 1\n")
 
-        with patch(
-            "specweaver.validation.rules.code.c03_tests_pass.PythonQARunner"
-        ) as mock_runner:
+        with patch("specweaver.validation.rules.code.c03_tests_pass.PythonQARunner") as mock_runner:
             mock_runner.return_value.run_tests.side_effect = TimeoutError
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)

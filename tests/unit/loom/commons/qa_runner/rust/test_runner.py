@@ -30,8 +30,12 @@ class TestRustRunner:
 
         with patch("subprocess.run") as mock_run:
             # First call for `cargo test`, second for `cargo2junit`
-            mock_test_process = MagicMock(returncode=0, stdout='{"type":"test","event":"ok"}', stderr="")
-            mock_junit_process = MagicMock(returncode=0, stdout='<testsuites></testsuites>', stderr="")
+            mock_test_process = MagicMock(
+                returncode=0, stdout='{"type":"test","event":"ok"}', stderr=""
+            )
+            mock_junit_process = MagicMock(
+                returncode=0, stdout="<testsuites></testsuites>", stderr=""
+            )
             mock_run.side_effect = [mock_test_process, mock_junit_process]
 
             with patch("junitparser.JUnitXml.fromstring") as mock_fromstring:
@@ -47,7 +51,9 @@ class TestRustRunner:
 
                 # Verify second `cargo2junit` call
                 assert "cargo2junit" in mock_run.call_args_list[1][0][0]
-                assert mock_run.call_args_list[1].kwargs.get("input") == '{"type":"test","event":"ok"}'
+                assert (
+                    mock_run.call_args_list[1].kwargs.get("input") == '{"type":"test","event":"ok"}'
+                )
 
                 assert result.passed == 0
                 assert result.failed == 0
@@ -56,23 +62,33 @@ class TestRustRunner:
         (tmp_path / "Cargo.toml").write_text("")
         runner = RustRunner(cwd=tmp_path)
 
-        sarif_output = json.dumps({
-            "runs": [{
-                "results": [{
-                    "message": {"text": "A clippy error"},
-                    "locations": [{
-                        "physicalLocation": {
-                            "artifactLocation": {"uri": "src/main.rs"},
-                            "region": {"startLine": 42}
-                        }
-                    }]
-                }]
-            }]
-        })
+        sarif_output = json.dumps(
+            {
+                "runs": [
+                    {
+                        "results": [
+                            {
+                                "message": {"text": "A clippy error"},
+                                "locations": [
+                                    {
+                                        "physicalLocation": {
+                                            "artifactLocation": {"uri": "src/main.rs"},
+                                            "region": {"startLine": 42},
+                                        }
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                ]
+            }
+        )
 
         with patch("subprocess.run") as mock_run:
             # First call `cargo clippy`, second `clippy-sarif`
-            mock_clippy_process = MagicMock(returncode=0, stdout='{"reason":"compiler-message"}', stderr="")
+            mock_clippy_process = MagicMock(
+                returncode=0, stdout='{"reason":"compiler-message"}', stderr=""
+            )
             mock_sarif_process = MagicMock(returncode=0, stdout=sarif_output, stderr="")
             mock_run.side_effect = [mock_clippy_process, mock_sarif_process]
 
@@ -99,21 +115,31 @@ class TestRustRunner:
         runner = RustRunner(cwd=tmp_path)
 
         # Mock clippy-sarif output containing a cognitive complexity error
-        sarif_output = json.dumps({
-            "runs": [{
-                "results": [{
-                    "ruleId": "clippy::cognitive_complexity",
-                    "properties": {"complexity": 15},
-                    "message": {"text": "The function `complex_fn` has a cognitive complexity of 15"},
-                    "locations": [{
-                        "physicalLocation": {
-                            "artifactLocation": {"uri": "src/main.rs"},
-                            "region": {"startLine": 100}
-                        }
-                    }]
-                }]
-            }]
-        })
+        sarif_output = json.dumps(
+            {
+                "runs": [
+                    {
+                        "results": [
+                            {
+                                "ruleId": "clippy::cognitive_complexity",
+                                "properties": {"complexity": 15},
+                                "message": {
+                                    "text": "The function `complex_fn` has a cognitive complexity of 15"
+                                },
+                                "locations": [
+                                    {
+                                        "physicalLocation": {
+                                            "artifactLocation": {"uri": "src/main.rs"},
+                                            "region": {"startLine": 100},
+                                        }
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                ]
+            }
+        )
 
         with patch("subprocess.run") as mock_run:
             mock_clippy_process = MagicMock(returncode=0, stdout="", stderr="")

@@ -52,7 +52,9 @@ class TestWrongRoleBlocksAllIntents:
             ("list_branches", ()),
         ],
     )
-    def test_implementer_cannot_use_reviewer_intents(self, intent: str, args: tuple[Any, ...]) -> None:
+    def test_implementer_cannot_use_reviewer_intents(
+        self, intent: str, args: tuple[Any, ...]
+    ) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
@@ -66,7 +68,9 @@ class TestWrongRoleBlocksAllIntents:
             ("reflog", (10,)),
         ],
     )
-    def test_implementer_cannot_use_debugger_intents(self, intent: str, args: tuple[Any, ...]) -> None:
+    def test_implementer_cannot_use_debugger_intents(
+        self, intent: str, args: tuple[Any, ...]
+    ) -> None:
         tool = GitTool(executor=_make_executor(), role="implementer")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)
@@ -95,7 +99,9 @@ class TestWrongRoleBlocksAllIntents:
             ("switch_branch", ("feat/nope",)),
         ],
     )
-    def test_drafter_blocked_from_branch_and_uncommit(self, intent: str, args: tuple[Any, ...]) -> None:
+    def test_drafter_blocked_from_branch_and_uncommit(
+        self, intent: str, args: tuple[Any, ...]
+    ) -> None:
         tool = GitTool(executor=_make_executor(), role="drafter")
         with pytest.raises(GitToolError, match="not allowed for role"):
             getattr(tool, intent)(*args)

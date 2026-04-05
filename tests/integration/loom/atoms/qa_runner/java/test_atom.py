@@ -9,13 +9,22 @@ QARunnerAtom.__test__ = False  # type: ignore[attr-defined]
 
 pytestmark = pytest.mark.live
 
+
 @pytest.fixture
 def gradle_project() -> Path:
-    return Path(__file__).parent.parent.parent.parent.parent.parent / "fixtures" / "java_gradle_project"
+    return (
+        Path(__file__).parent.parent.parent.parent.parent.parent
+        / "fixtures"
+        / "java_gradle_project"
+    )
+
 
 @pytest.fixture
 def maven_project() -> Path:
-    return Path(__file__).parent.parent.parent.parent.parent.parent / "fixtures" / "java_maven_project"
+    return (
+        Path(__file__).parent.parent.parent.parent.parent.parent / "fixtures" / "java_maven_project"
+    )
+
 
 def test_java_atom_gradle_integration(gradle_project: Path) -> None:
     assert gradle_project.exists(), "Gradle fixture missing"
@@ -41,8 +50,11 @@ def test_java_atom_gradle_integration(gradle_project: Path) -> None:
     assert res_complex.exports and res_complex.exports.get("violation_count", 0) >= 1
 
     # 5. Debugger
-    res_debug = atom.run({"intent": "run_debugger", "target": "src/", "entrypoint": "com.example.Main"})
+    res_debug = atom.run(
+        {"intent": "run_debugger", "target": "src/", "entrypoint": "com.example.Main"}
+    )
     assert res_debug.status == AtomStatus.SUCCESS, res_debug.message
+
 
 def test_java_atom_maven_integration(maven_project: Path) -> None:
     assert maven_project.exists(), "Maven fixture missing"
@@ -60,5 +72,7 @@ def test_java_atom_maven_integration(maven_project: Path) -> None:
     res_complex = atom.run({"intent": "run_complexity", "target": "src/", "max_complexity": 10})
     assert res_complex.status == AtomStatus.FAILED, "Expected complexity violation"
 
-    res_debug = atom.run({"intent": "run_debugger", "target": "src/", "entrypoint": "com.example.Main"})
+    res_debug = atom.run(
+        {"intent": "run_debugger", "target": "src/", "entrypoint": "com.example.Main"}
+    )
     assert res_debug.status == AtomStatus.SUCCESS, res_debug.message

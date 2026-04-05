@@ -90,6 +90,7 @@ def test_ensure_discovered_swallows_syntax_error(mock_import):
     registry_module._REGISTRY.clear()
     registry_module._REGISTRY.update(old_registry)
 
+
 def test_ensure_discovered_implicit_namespace_package():
     """
     Integration/Edge Case: Proves `specweaver.llm.adapters` natively functions as a PEP 420
@@ -101,11 +102,15 @@ def test_ensure_discovered_implicit_namespace_package():
     # 1. Native PEP 420 packages do not have a physical __file__ because they are pure directories
     has_file = hasattr(adapters_package, "__file__")
     file_attr = getattr(adapters_package, "__file__", None)
-    assert not has_file or file_attr is None, f"Implicit Namespace Package should not have a physical __file__, found {file_attr}"
+    assert not has_file or file_attr is None, (
+        f"Implicit Namespace Package should not have a physical __file__, found {file_attr}"
+    )
 
     # 2. Native PEP 420 packages possess a dynamic _NamespacePath
     assert hasattr(adapters_package, "__path__"), "Implicit Namespace Package is missing __path__"
-    assert "NamespacePath" in type(adapters_package.__path__).__name__, "Package __path__ is not dynamically resolving as a PEP 420 NamespacePath"
+    assert "NamespacePath" in type(adapters_package.__path__).__name__, (
+        "Package __path__ is not dynamically resolving as a PEP 420 NamespacePath"
+    )
 
 
 def test_get_merged_default_costs():

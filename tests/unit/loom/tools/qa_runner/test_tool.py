@@ -381,25 +381,34 @@ class TestToolLegacyProxyGaps:
         tool = QARunnerTool(atom=atom, role="implementer")
 
         # Override the definitions map purely for test determinism
-        with patch(
-            "specweaver.loom.tools.qa_runner.definitions.INTENT_DEFINITIONS",
-            {"run_tests": {"name": "run_tests"}, "dummy": {"name": "dummy"}},
-        ), patch.dict(
-            "specweaver.loom.tools.qa_runner.tool.ROLE_INTENTS",
-            {"implementer": frozenset({"run_tests"})},
+        with (
+            patch(
+                "specweaver.loom.tools.qa_runner.definitions.INTENT_DEFINITIONS",
+                {"run_tests": {"name": "run_tests"}, "dummy": {"name": "dummy"}},
+            ),
+            patch.dict(
+                "specweaver.loom.tools.qa_runner.tool.ROLE_INTENTS",
+                {"implementer": frozenset({"run_tests"})},
+            ),
         ):
             defs = tool.definitions()
             assert len(defs) == 1
-            assert getattr(defs[0], "name", defs[0].get("name") if isinstance(defs[0], dict) else None) == "run_tests"
+            assert (
+                getattr(defs[0], "name", defs[0].get("name") if isinstance(defs[0], dict) else None)
+                == "run_tests"
+            )
 
     def test_require_intent_blocks_disallowed_intent(self) -> None:
         """Tool blocks execution if role lacks intent (covering line 92 gap)."""
         atom = MagicMock()
         tool = QARunnerTool(atom=atom, role="implementer")
 
-        with patch.dict(
-            "specweaver.loom.tools.qa_runner.tool.ROLE_INTENTS", {"implementer": frozenset()}
-        ), pytest.raises(QARunnerToolError, match="not allowed for role"):
+        with (
+            patch.dict(
+                "specweaver.loom.tools.qa_runner.tool.ROLE_INTENTS", {"implementer": frozenset()}
+            ),
+            pytest.raises(QARunnerToolError, match="not allowed for role"),
+        ):
             tool.run_tests(target="src/")
 
     def test_implementer_proxy_passthrough(self, tmp_path: Path) -> None:

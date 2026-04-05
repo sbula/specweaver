@@ -120,7 +120,13 @@ def test_interface_demands_all_methods() -> None:
     class IncompleteRunner(QARunnerInterface):
         # Only implementing the old ones
         def run_tests(
-            self, target: str, kind: str = "unit", scope: str = "", timeout: int = 120, coverage: bool = False, coverage_threshold: int = 70
+            self,
+            target: str,
+            kind: str = "unit",
+            scope: str = "",
+            timeout: int = 120,
+            coverage: bool = False,
+            coverage_threshold: int = 70,
         ) -> Any:
             raise NotImplementedError
 
@@ -136,26 +142,29 @@ def test_interface_demands_all_methods() -> None:
     ):
         IncompleteRunner()  # type: ignore[abstract]
 
+
 def test_architecture_violation_model() -> None:
     from specweaver.loom.commons.qa_runner.interface import ArchitectureViolation
+
     v = ArchitectureViolation(
         file="src/foo.py",
         code="DEPS01",
         message="Invalid import from bar",
-        rule_uri="arch.com/rules/DEPS01"
+        rule_uri="arch.com/rules/DEPS01",
     )
     assert v.file == "src/foo.py"
     assert v.code == "DEPS01"
     assert v.message == "Invalid import from bar"
+
 
 def test_architecture_run_result_model() -> None:
     from specweaver.loom.commons.qa_runner.interface import (
         ArchitectureRunResult,
         ArchitectureViolation,
     )
+
     res = ArchitectureRunResult(
-        violation_count=1,
-        violations=[ArchitectureViolation("main.py", "ERR", "bad", "")]
+        violation_count=1, violations=[ArchitectureViolation("main.py", "ERR", "bad", "")]
     )
     assert res.violation_count == 1
     assert len(res.violations) == 1

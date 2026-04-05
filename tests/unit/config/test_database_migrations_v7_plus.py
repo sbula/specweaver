@@ -551,11 +551,11 @@ class TestSchemaV10Migration:
         for row in rows:
             assert row["provider"] == "gemini"
 
-    def test_schema_version_is_12(self, db):
-        """Schema version is 12 after all migrations."""
+    def test_schema_version_is_13(self, db):
+        """Schema version is 13 after all migrations."""
         with db.connect() as conn:
             row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
-        assert row[0] == 12
+        assert row[0] == 13
 
     def test_v9_to_v10_upgrade(self, db_path: Path):
         """Simulate a v9 DB and verify v10 migration adds provider column."""
@@ -669,4 +669,95 @@ class TestSchemaV11ToV12Upgrade:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
 
         assert row[0] == "unknown"  # constraint default from ALTER TABLE
-        assert version[0] >= 12
+        assert version[0] >= 13
+
+
+# ===========================================================================
+# Schema v13 — default_dal column on projects
+# ===========================================================================
+
+
+class TestSchemaV13DefaultDal:
+    """Tests for default_dal column and accessors."""
+
+    def test_default_dal_default_is_dal_a(self, db, tmp_path: Path):
+        """Default default_dal is 'DAL_A'."""
+        db.register_project("myapp", str(tmp_path))
+        assert db.get_default_dal("myapp") == "DAL_A"
+
+    def test_set_default_dal(self, db, tmp_path: Path):
+        db.register_project("myapp", str(tmp_path))
+        db.set_default_dal("myapp", "DAL_C")
+        assert db.get_default_dal("myapp") == "DAL_C"
+
+    def test_get_default_dal_nonexistent_raises(self, db):
+        with pytest.raises(ValueError, match=r"not found"):
+            db.get_default_dal("nonexistent")
+
+    def test_set_default_dal_nonexistent_raises(self, db):
+        with pytest.raises(ValueError, match=r"not found"):
+            db.set_default_dal("nonexistent", "DAL_B")
+
+
+class TestSchemaV12ToV13Upgrade:
+    """Simulate opening a V12 DB and verify V13 migration adds default_dal column."""
+
+    @pytest.fixture()
+    def db_path(self, tmp_path: Path) -> Path:
+        return tmp_path / "upgrade_v12_v13.db"
+
+    def test_v12_to_v13_upgrade(self, db_path: Path):
+        """Simulate a v12 DB and verify v13 migration adds default_dal column with DAL_A."""
+        import sqlite3 as _sqlite3
+
+        from specweaver.config.database import (
+            _SCHEMA_V1,
+            _SCHEMA_V2,
+            _SCHEMA_V3,
+            _SCHEMA_V4,
+            _SCHEMA_V5,
+            _SCHEMA_V6,
+            _SCHEMA_V7,
+            _SCHEMA_V8,
+            _SCHEMA_V9,
+            SCHEMA_V10,
+            SCHEMA_V11,
+            SCHEMA_V12,
+            Database,
+        )
+
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = _sqlite3.connect(str(db_path))
+        conn.executescript(_SCHEMA_V1)
+        conn.executescript(_SCHEMA_V2)
+        conn.executescript(_SCHEMA_V3)
+        conn.executescript(_SCHEMA_V4)
+        conn.executescript(_SCHEMA_V5)
+        conn.executescript(_SCHEMA_V6)
+        conn.executescript(_SCHEMA_V7)
+        conn.executescript(_SCHEMA_V8)
+        conn.executescript(_SCHEMA_V9)
+        conn.executescript(SCHEMA_V10)
+        conn.executescript(SCHEMA_V11)
+        conn.executescript(SCHEMA_V12)
+
+        conn.execute(
+            "INSERT INTO schema_version (version, applied_at) VALUES (12, '2026-01-01T00:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO projects (name, root_path, created_at, last_used_at, "
+            "log_level, constitution_max_size, domain_profile, auto_bootstrap_constitution, stitch_mode) "
+            "VALUES ('legacy', '/tmp/legacy', '2026-01-01', '2026-01-01', "
+            "'INFO', 5120, NULL, 'prompt', 'off')"
+        )
+        conn.commit()
+        conn.close()
+
+        # Opening with Database will trigger migration to v13
+        db = Database(db_path)
+        with db.connect() as conn2:
+            row = conn2.execute("SELECT default_dal FROM projects WHERE name='legacy'").fetchone()
+            version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
+
+        assert row[0] == "DAL_A"  # constraint default from ALTER TABLE
+        assert version[0] >= 13

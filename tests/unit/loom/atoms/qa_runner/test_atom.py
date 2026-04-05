@@ -390,6 +390,7 @@ class TestAtomRunDebugger:
 # run_architecture intent
 # ---------------------------------------------------------------------------
 
+
 class TestAtomRunArchitecture:
     """Tests for the run_architecture intent."""
 
@@ -413,9 +414,7 @@ class TestAtomRunArchitecture:
 
         mock_result = ArchitectureRunResult(
             violation_count=1,
-            violations=[
-                ArchitectureViolation("src/foo.py", "E01", "bad import", "uri")
-            ]
+            violations=[ArchitectureViolation("src/foo.py", "E01", "bad import", "uri")],
         )
         with patch.object(atom._runner, "run_architecture_check", return_value=mock_result):
             result = atom.run({"intent": "run_architecture", "target": "src/"})
@@ -456,6 +455,7 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
     rust_runner = _resolve_runner("rust", tmp_path)
     assert isinstance(rust_runner, RustRunner)
 
+
 def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Path) -> None:
     """
     Edge Case: Namespace routing stability under concurrent / rapid dynamic paths (Implicit Namespace).
@@ -463,6 +463,7 @@ def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Pat
     paths do not fail from sys.path thrashing or incorrect __package__ resolution.
     """
     from specweaver.loom.atoms.qa_runner.atom import _resolve_runner
+
     languages = ["python", "java", "typescript", "rust", "kotlin", "python", "rust"]
     for lang in languages:
         runner = _resolve_runner(lang, tmp_path)

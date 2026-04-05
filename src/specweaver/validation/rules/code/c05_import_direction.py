@@ -63,6 +63,8 @@ class ImportDirectionRule(Rule):
             )
 
         if findings:
-            return self._fail(f"Found {result.violation_count} architectural violation(s)", findings)
+            return self._fail(
+                f"Found {result.violation_count} architectural violation(s)", findings
+            )
 
         return self._fail("Architectural violations detected.", [])

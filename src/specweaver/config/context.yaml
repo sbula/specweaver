@@ -21,6 +21,7 @@ exposes:
   - LLMSettings
   - Database
   - load_settings
+  - DALResolver
 
 # -- Operational Metadata --------------------------------------------------
 operational:

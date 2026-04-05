@@ -49,6 +49,7 @@ def test_sync_tach_toml_empty_creates_new(tmp_path: Path) -> None:
     # Assert no interfaces written for empty exposes
     assert "interfaces" not in doc
 
+
 def test_sync_tach_toml_interface_mapping(tmp_path: Path) -> None:
     # Setup simple arbitrary graph
     node = TopologyNode(
@@ -74,17 +75,18 @@ def test_sync_tach_toml_interface_mapping(tmp_path: Path) -> None:
     assert interfaces[0]["from"] == ["domain"]
     assert interfaces[0]["expose"] == ["core", "runner"]
 
+
 def test_sync_tach_toml_deep_merge(tmp_path: Path) -> None:
     # Pre-populate an existing tach.toml with custom properties
     tach_file = tmp_path / "tach.toml"
     tach_file.write_text(
-        "exclude = [\"venv\", \"dist\"]\n"
+        'exclude = ["venv", "dist"]\n'
         "custom_property = 42\n"
         "\n"
         "[[modules]]\n"
-        "path = \"old_module\"\n"
-        "depends_on = [\"old_dep\"]\n",
-        encoding="utf-8"
+        'path = "old_module"\n'
+        'depends_on = ["old_dep"]\n',
+        encoding="utf-8",
     )
 
     node = TopologyNode(
@@ -117,7 +119,6 @@ def test_sync_tach_toml_deep_merge(tmp_path: Path) -> None:
     assert modules[0]["depends_on"] == ["new_dep"]
 
 
-
 def test_sync_tach_toml_malformed(tmp_path: Path) -> None:
     tach_file = tmp_path / "tach.toml"
     tach_file.write_text("[[modules]\nbad_syntax...", encoding="utf-8")
@@ -125,6 +126,7 @@ def test_sync_tach_toml_malformed(tmp_path: Path) -> None:
 
     with pytest.raises(ParseError):
         sync_tach_toml(graph, tmp_path)
+
 
 def test_sync_tach_toml_empty_graph(tmp_path: Path) -> None:
     graph = TopologyGraph(nodes={})
@@ -137,4 +139,3 @@ def test_sync_tach_toml_empty_graph(tmp_path: Path) -> None:
     assert "modules" not in doc
     assert "interfaces" not in doc
     assert doc["exact"] is True
-

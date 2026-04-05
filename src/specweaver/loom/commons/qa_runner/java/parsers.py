@@ -30,7 +30,9 @@ def parse_pmd_complexity(data: dict[str, Any], max_complexity: int) -> list[Comp
                 comp_val = int(props["CyclomaticComplexity"])
 
             if comp_val is None:
-                raise ValueError("HARD FAIL: SARIF property 'complexity' or 'CyclomaticComplexity' missing in complexity violation node. Missing compiler version drift?")
+                raise ValueError(
+                    "HARD FAIL: SARIF property 'complexity' or 'CyclomaticComplexity' missing in complexity violation node. Missing compiler version drift?"
+                )
 
             if comp_val > max_complexity:
                 msg = result.get("message", {}).get("text", "")
@@ -44,12 +46,14 @@ def parse_pmd_complexity(data: dict[str, Any], max_complexity: int) -> list[Comp
                     line = ploc.get("region", {}).get("startLine", 0)
                     break
 
-                violations.append(ComplexityViolation(
-                    file=uri,
-                    line=line,
-                    function="unknown",
-                    complexity=comp_val,
-                    message=msg,
-                ))
+                violations.append(
+                    ComplexityViolation(
+                        file=uri,
+                        line=line,
+                        function="unknown",
+                        complexity=comp_val,
+                        message=msg,
+                    )
+                )
 
     return violations

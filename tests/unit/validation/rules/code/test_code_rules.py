@@ -118,14 +118,14 @@ class TestC05ImportDirection:
 
     def test_clean_imports(self, tmp_path: pytest.TempPathFactory) -> None:
         from specweaver.loom.commons.qa_runner.interface import ArchitectureRunResult
+
         code = "from specweaver.llm.models import Message\n"
         rule = ImportDirectionRule()
         spec_path = tmp_path / "test.py"
-        with patch("specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check") as mock_run:
-            mock_run.return_value = ArchitectureRunResult(
-                violation_count=0,
-                violations=[]
-            )
+        with patch(
+            "specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check"
+        ) as mock_run:
+            mock_run.return_value = ArchitectureRunResult(violation_count=0, violations=[])
             result = rule.check(code, spec_path=spec_path)
             assert result.status == Status.PASS
 
@@ -134,13 +134,22 @@ class TestC05ImportDirection:
             ArchitectureRunResult,
             ArchitectureViolation,
         )
+
         code = "from specweaver.cli.main import app\n"
         rule = ImportDirectionRule()
         spec_path = tmp_path / "test.py"
-        with patch("specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check") as mock_run:
+        with patch(
+            "specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check"
+        ) as mock_run:
             mock_run.return_value = ArchitectureRunResult(
                 violation_count=1,
-                violations=[ArchitectureViolation(file="test.py", code="UndeclaredDependency", message="Module 'specweaver.cli' is not allowed")]
+                violations=[
+                    ArchitectureViolation(
+                        file="test.py",
+                        code="UndeclaredDependency",
+                        message="Module 'specweaver.cli' is not allowed",
+                    )
+                ],
             )
             result = rule.check(code, spec_path=spec_path)
             assert result.status == Status.FAIL
@@ -149,29 +158,32 @@ class TestC05ImportDirection:
     def test_no_file_path_skips(self) -> None:
         code = "import specweaver.cli\n"
         rule = ImportDirectionRule()
-        result = rule.check(code) # No spec_path
+        result = rule.check(code)  # No spec_path
         assert result.status == Status.SKIP
 
     def test_engine_failure_skips(self, tmp_path: pytest.TempPathFactory) -> None:
         code = "import specweaver.cli\n"
         rule = ImportDirectionRule()
         spec_path = tmp_path / "test.py"
-        with patch("specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check", side_effect=Exception("Timeout")):
+        with patch(
+            "specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check",
+            side_effect=Exception("Timeout"),
+        ):
             result = rule.check(code, spec_path=spec_path)
             assert result.status == Status.SKIP
             assert "Architecture engine failure" in result.message
 
     def test_missing_payload_fails(self, tmp_path: pytest.TempPathFactory) -> None:
         from specweaver.loom.commons.qa_runner.interface import ArchitectureRunResult
+
         code = "from specweaver.cli.main import app\n"
         rule = ImportDirectionRule()
         spec_path = tmp_path / "test.py"
-        with patch("specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check") as mock_run:
+        with patch(
+            "specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check"
+        ) as mock_run:
             # violation_count > 0 but violations is empty
-            mock_run.return_value = ArchitectureRunResult(
-                violation_count=2,
-                violations=[]
-            )
+            mock_run.return_value = ArchitectureRunResult(violation_count=2, violations=[])
             result = rule.check(code, spec_path=spec_path)
             assert result.status == Status.FAIL
             assert "Architectural violations detected." in result.message

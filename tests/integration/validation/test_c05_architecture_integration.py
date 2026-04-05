@@ -90,7 +90,9 @@ class TestArchitectureIntegration:
             print(f"DEBUG: violation = {v}")
 
         v = result.violations[0]
-        assert v.code == "UndeclaredDependency", f"Expected UndeclaredDependency, got {v.code}: {v.message}"
+        assert v.code == "UndeclaredDependency", (
+            f"Expected UndeclaredDependency, got {v.code}: {v.message}"
+        )
         assert "my_project.core" in v.message
         assert "my_project.ui" in v.message
 
@@ -101,7 +103,9 @@ class TestArchitectureIntegration:
         rule = ImportDirectionRule()
 
         # We pass the file path to run Native architecture check
-        result = rule.check(code, spec_path=tach_workspace / "src" / "my_project" / "core" / "bad.py")
+        result = rule.check(
+            code, spec_path=tach_workspace / "src" / "my_project" / "core" / "bad.py"
+        )
 
         assert result.status == Status.FAIL
         assert "architectural violation" in result.message.lower()

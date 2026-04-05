@@ -29,7 +29,9 @@ def parse_clippy_complexity(data: dict[str, Any], max_complexity: int) -> list[C
                 comp_val = int(props["CyclomaticComplexity"])
 
             if comp_val is None:
-                raise ValueError("HARD FAIL: SARIF property 'complexity' or 'CyclomaticComplexity' missing in complexity violation node. Missing clippy property mapping?")
+                raise ValueError(
+                    "HARD FAIL: SARIF property 'complexity' or 'CyclomaticComplexity' missing in complexity violation node. Missing clippy property mapping?"
+                )
 
             if comp_val > max_complexity:
                 msg = result.get("message", {}).get("text", "")
@@ -42,12 +44,14 @@ def parse_clippy_complexity(data: dict[str, Any], max_complexity: int) -> list[C
                     line = ploc.get("region", {}).get("startLine", 0)
                     break
 
-                violations.append(ComplexityViolation(
-                    file=uri,
-                    line=line,
-                    function="unknown",
-                    complexity=comp_val,
-                    message=msg,
-                ))
+                violations.append(
+                    ComplexityViolation(
+                        file=uri,
+                        line=line,
+                        function="unknown",
+                        complexity=comp_val,
+                        message=msg,
+                    )
+                )
 
     return violations

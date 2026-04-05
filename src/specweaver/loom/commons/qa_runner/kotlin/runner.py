@@ -91,6 +91,7 @@ class KotlinRunner(QARunnerInterface):
 
     def _parse_junit_results(self, search_path: Path) -> tuple[int, int]:
         import junitparser
+
         passed = 0
         failed = 0
 
@@ -135,12 +136,14 @@ class KotlinRunner(QARunnerInterface):
                             ploc = loc.get("physicalLocation", {})
                             uri = ploc.get("artifactLocation", {}).get("uri", "")
                             line = ploc.get("region", {}).get("startLine", 0)
-                            errors.append(LintError(
-                                file=uri,
-                                line=line,
-                                code=rule_id,
-                                message=msg,
-                            ))
+                            errors.append(
+                                LintError(
+                                    file=uri,
+                                    line=line,
+                                    code=rule_id,
+                                    message=msg,
+                                )
+                            )
             except json.JSONDecodeError:
                 pass
 
@@ -197,7 +200,9 @@ class KotlinRunner(QARunnerInterface):
 
         errors: list[CompileError] = []
         if proc.returncode != 0:
-            errors.append(CompileError(file="", line=0, column=0, code="COMPILE_ERROR", message=proc.stderr))
+            errors.append(
+                CompileError(file="", line=0, column=0, code="COMPILE_ERROR", message=proc.stderr)
+            )
 
         return CompileRunResult(
             error_count=len(errors),

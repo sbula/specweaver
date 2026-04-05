@@ -27,9 +27,11 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
     *   `src/specweaver/config/settings.py`: Configure Pydantic's `SettingsConfigDict` to load and deep-merge the local `.specweaver/dal_definitions.yaml`.
 *   **Fractal Resolution Engine (SF-2):**
     *   `src/specweaver/validation/pipeline.py`: Inside the `ValidationRunner`, implement the `O(1)` cached `resolve_dal()` directory-walker logic before applying rulesets.
-*   **Generative HARA Governance (SF-3):**
+*   **Validation Override Consolidation (SF-3):**
+    *   `src/specweaver/config/database.py` and `config/_schema.py`: Delete legacy SQLite `validation_overrides` tables and finalize the DAL-centric matrix workflow.
+*   **Generative HARA Governance (SF-4):**
     *   `src/specweaver/drafting/decomposition.py` (or prompt templates): Inject HARA heuristics (Topology + Data Sensitivity) into the prompt building cycle so the AI proposes optimal DAL strings during `/design` scaffoldings.
-*   **Outsourced FFI Rules (SF-4):**
+*   **Outsourced FFI Rules (SF-5):**
     *   `src/specweaver/loom/commons/qa_runner/{language}/runner.py`: Implement the stubs for `run_architecture_check` in Java (ArchUnit) and TypeScript (ESLint) to actively enforce boundaries dynamically loaded from `context.yaml` and DAL overrides.
 
 ## 4. External Dependencies
@@ -54,21 +56,24 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 |:---|:---|:---|:---|
 | **SF-1** | DAL Schema & Pydantic Impact Matrix Merge | Define the `DALLevel` enumerations and configure `pydantic-settings` to safely deep-merge `dal_definitions.yaml` over base profiles. | [ ] Pending |
 | **SF-2** | Fractal Resolution Engine | Implement `O(1)` cached directory-tree walking in `ValidationRunner` to map target files to their closest `context.yaml` DAL. | [ ] Pending |
-| **SF-3** | Generative HARA (AI Governance Proposal) | Update the `/design` scaffolding workflow so LLMs analyze topological edges/data to propose a DAL, requiring HITL approval. | [ ] Pending |
-| **SF-4** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [ ] Pending |
+| **SF-3** | Validation Override Consolidation (Cleanup) | Strip the legacy SQLite `validation_overrides` tables and force all resolution exclusively through the DAL Impact matrices and rule sub-pipeline inheritance. | [ ] Pending |
+| **SF-4** | Generative HARA (AI Governance Proposal) | Update the `/design` scaffolding workflow so LLMs analyze topological edges/data to propose a DAL, requiring HITL approval. | [ ] Pending |
+| **SF-5** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [ ] Pending |
 
 ## 6. Progress Tracker
 - [x] Requirements Finalized
 - [x] SF-1 Implementation Plan ✅
 - [x] SF-1 Implementation
+- [x] SF-2 Implementation Plan ✅
 - [ ] SF-2 Implementation
 - [ ] SF-3 Implementation
 - [ ] SF-4 Implementation
+- [ ] SF-5 Implementation
 - [ ] Merged
 
 ## 7. Session Handoff
 
-**Current status**: SF-1 Implementation COMPLETE.
-**Next step**: Run the following command to design SF-2:
-`/implementation-plan docs/proposals/roadmap/phase_3/feature_3_20b/feature_3_20b_design.md SF-2`
+**Current status**: SF-2 Implementation Plan APPROVED.
+**Next step**: Run the following command to develop SF-2:
+`/dev docs/proposals/roadmap/phase_3/feature_3_20b/feature_3_20b_sf2_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

@@ -66,7 +66,7 @@ class TestPythonQARunner:
 
     def test_run_architecture_check_violations(self, tmp_path: Path) -> None:
         runner = PythonQARunner(cwd=tmp_path)
-        mock_stdout = '''
+        mock_stdout = """
         [
           {
             "Located": {
@@ -84,7 +84,7 @@ class TestPythonQARunner:
             }
           }
         ]
-        '''
+        """
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=1, stdout=mock_stdout)
 
@@ -134,7 +134,9 @@ class TestPythonQARunner:
     def test_run_architecture_check_invalid_json(self, tmp_path: Path) -> None:
         runner = PythonQARunner(cwd=tmp_path)
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1, stdout="TypeError: 'dict' object is not...")
+            mock_run.return_value = MagicMock(
+                returncode=1, stdout="TypeError: 'dict' object is not..."
+            )
 
             result = runner.run_architecture_check(target=".")
 

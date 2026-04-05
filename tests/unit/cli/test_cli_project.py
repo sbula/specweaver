@@ -413,7 +413,9 @@ class TestCLIScan:
         runner.invoke(app, ["init", "myapp4", "--path", str(project_dir)])
 
         # Add a context.yaml to ensure a TopologyGraph builds at least 1 node
-        (project_dir / "context.yaml").write_text("name: root\nlevel: module\narchetype: pure-logic\n")
+        (project_dir / "context.yaml").write_text(
+            "name: root\nlevel: module\narchetype: pure-logic\n"
+        )
 
         result = runner.invoke(app, ["scan"])
         assert result.exit_code == 0

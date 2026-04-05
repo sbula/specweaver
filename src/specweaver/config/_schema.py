@@ -140,3 +140,7 @@ ALTER TABLE llm_usage_log ADD COLUMN run_id TEXT DEFAULT '';
 SCHEMA_V12 = """\
 ALTER TABLE artifact_events ADD COLUMN model_id TEXT NOT NULL DEFAULT 'unknown';
 """
+
+SCHEMA_V13 = """\
+ALTER TABLE projects ADD COLUMN default_dal TEXT NOT NULL DEFAULT 'DAL_A';
+"""

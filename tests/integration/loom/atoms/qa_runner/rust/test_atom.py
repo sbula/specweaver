@@ -9,9 +9,13 @@ QARunnerAtom.__test__ = False  # type: ignore[attr-defined]
 
 pytestmark = pytest.mark.live
 
+
 @pytest.fixture
 def rust_project() -> Path:
-    return Path(__file__).parent.parent.parent.parent.parent.parent / "fixtures" / "rust_cargo_project"
+    return (
+        Path(__file__).parent.parent.parent.parent.parent.parent / "fixtures" / "rust_cargo_project"
+    )
+
 
 def test_rust_atom_integration(rust_project: Path) -> None:
     assert rust_project.exists(), "Rust fixture missing"

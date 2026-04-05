@@ -9,10 +9,12 @@ QARunnerAtom.__test__ = False  # type: ignore[attr-defined]
 
 pytestmark = pytest.mark.live
 
+
 @pytest.fixture
 def python_project() -> Path:
     # Use the specweaver repository itself as a python fixture since it has pytest and ruff configured
     return Path(__file__).parent.parent.parent.parent.parent.parent
+
 
 def test_python_atom_integration(python_project: Path) -> None:
     assert python_project.exists(), "Python fixture missing"
@@ -23,15 +25,25 @@ def test_python_atom_integration(python_project: Path) -> None:
     assert res_compile.status == AtomStatus.SUCCESS, res_compile.message
 
     # 2. Test (use a very restricted target so it doesn't run the entire 12-story battery)
-    res_tests = atom.run({"intent": "run_tests", "target": "tests/unit/loom/commons/qa_runner/python/"})
+    res_tests = atom.run(
+        {"intent": "run_tests", "target": "tests/unit/loom/commons/qa_runner/python/"}
+    )
     assert res_tests.status == AtomStatus.SUCCESS, res_tests.message
 
     # 3. Linter
-    res_lint = atom.run({"intent": "run_linter", "target": "tests/unit/loom/commons/qa_runner/python/"})
+    res_lint = atom.run(
+        {"intent": "run_linter", "target": "tests/unit/loom/commons/qa_runner/python/"}
+    )
     assert res_lint.status in [AtomStatus.SUCCESS, AtomStatus.FAILED]
 
     # 4. Complexity
-    res_complex = atom.run({"intent": "run_complexity", "target": "tests/unit/loom/commons/qa_runner/python/", "max_complexity": 10})
+    res_complex = atom.run(
+        {
+            "intent": "run_complexity",
+            "target": "tests/unit/loom/commons/qa_runner/python/",
+            "max_complexity": 10,
+        }
+    )
     assert res_complex.status in [AtomStatus.SUCCESS, AtomStatus.FAILED]
 
     # 5. Debugger

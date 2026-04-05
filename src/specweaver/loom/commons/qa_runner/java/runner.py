@@ -84,6 +84,7 @@ class JavaRunner(QARunnerInterface):
         subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
 
         import junitparser
+
         for xml_file in search_path.rglob("*.xml"):
             try:
                 xml = junitparser.JUnitXml.fromfile(str(xml_file))
@@ -136,12 +137,14 @@ class JavaRunner(QARunnerInterface):
                             ploc = loc.get("physicalLocation", {})
                             uri = ploc.get("artifactLocation", {}).get("uri", "")
                             line = ploc.get("region", {}).get("startLine", 0)
-                            errors.append(LintError(
-                                file=uri,
-                                line=line,
-                                code=rule_id,
-                                message=msg,
-                            ))
+                            errors.append(
+                                LintError(
+                                    file=uri,
+                                    line=line,
+                                    code=rule_id,
+                                    message=msg,
+                                )
+                            )
             except json.JSONDecodeError:
                 pass
 
@@ -216,6 +219,7 @@ class JavaRunner(QARunnerInterface):
         proc = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
 
         from specweaver.loom.commons.qa_runner.interface import OutputEvent
+
         return DebugRunResult(
             exit_code=proc.returncode,
             duration_seconds=0.0,

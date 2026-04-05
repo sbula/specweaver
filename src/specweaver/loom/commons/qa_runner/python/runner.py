@@ -495,7 +495,6 @@ class PythonQARunner(QARunnerInterface):
                 ],
             )
 
-
         violations: list[ArchitectureViolation] = []
         for item in data:
             located = item.get("Located", {})

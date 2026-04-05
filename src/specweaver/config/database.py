@@ -43,6 +43,7 @@ from specweaver.config._schema import (
     SCHEMA_V10,
     SCHEMA_V11,
     SCHEMA_V12,
+    SCHEMA_V13,
 )
 
 # Backward-compatible aliases (tests import with underscore prefix)
@@ -58,6 +59,7 @@ _SCHEMA_V9 = SCHEMA_V9
 _SCHEMA_V10 = SCHEMA_V10
 _SCHEMA_V11 = SCHEMA_V11
 _SCHEMA_V12 = SCHEMA_V12
+_SCHEMA_V13 = SCHEMA_V13
 _DEFAULT_PROFILES = DEFAULT_PROFILES
 
 logger = logging.getLogger(__name__)
@@ -77,6 +79,7 @@ _MIGRATIONS: list[tuple[int, str, str]] = [
     (10, SCHEMA_V10, "llm_profiles.provider"),
     (11, SCHEMA_V11, "artifact_events & usage correlation"),
     (12, SCHEMA_V12, "model_id for artifact_events"),
+    (13, SCHEMA_V13, "default_dal on projects"),
 ]
 
 

@@ -37,7 +37,14 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
         }
     ),
     "reviewer": frozenset(
-        {"run_tests", "run_linter", "run_complexity", "run_compiler", "run_debugger", "run_architecture"}
+        {
+            "run_tests",
+            "run_linter",
+            "run_complexity",
+            "run_compiler",
+            "run_debugger",
+            "run_architecture",
+        }
     ),
     "planner": frozenset({"run_tests", "run_linter", "run_complexity", "run_architecture"}),
     # drafter: no access — not in the map

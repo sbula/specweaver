@@ -17,6 +17,7 @@ from specweaver.validation.pipeline_loader import load_pipeline_yaml
 def architecture_workspace(tmp_path: Path) -> Path:
     """Create a temporary workspace with an architecture violation."""
     import subprocess
+
     subprocess.run(["git", "init"], cwd=str(tmp_path), check=True)
     subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=str(tmp_path), check=True)
     subprocess.run(["git", "config", "user.name", "Test User"], cwd=str(tmp_path), check=True)
@@ -56,9 +57,12 @@ depends_on = ["my_project.core"]
 """)
     return tmp_path
 
+
 class TestArchitectureE2E:
     @pytest.mark.asyncio
-    async def test_validation_pipeline_fails_on_architecture(self, architecture_workspace: Path) -> None:
+    async def test_validation_pipeline_fails_on_architecture(
+        self, architecture_workspace: Path
+    ) -> None:
         """Story 7: Pipeline natively aborts on C05 failure."""
         target_file = architecture_workspace / "src" / "my_project" / "core" / "bad_impl.py"
         code = target_file.read_text()

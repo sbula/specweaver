@@ -17,7 +17,9 @@ class TestKotlinRunner:
         return KotlinRunner(cwd=mock_cwd)
 
     @patch("subprocess.run")
-    def test_run_compiler_gradle(self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner) -> None:
+    def test_run_compiler_gradle(
+        self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner
+    ) -> None:
         # Create a build.gradle to anchor gradle logic
         (mock_cwd / "build.gradle").touch()
 
@@ -29,7 +31,9 @@ class TestKotlinRunner:
         assert mock_run.call_args[0][0][1] == "compileKotlin"
 
     @patch("subprocess.run")
-    def test_run_tests_wipes_stale_xml(self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner) -> None:
+    def test_run_tests_wipes_stale_xml(
+        self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner
+    ) -> None:
         # Create a build.gradle
         (mock_cwd / "build.gradle").touch()
         build_dir = mock_cwd / "build" / "test-results"
@@ -47,7 +51,9 @@ class TestKotlinRunner:
         assert res.total >= 0
 
     @patch("subprocess.run")
-    def test_run_linter_detekt_sarif(self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner) -> None:
+    def test_run_linter_detekt_sarif(
+        self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner
+    ) -> None:
         (mock_cwd / "build.gradle").touch()
 
         # Write mock Detekt SARIF json
@@ -66,10 +72,10 @@ class TestKotlinRunner:
                                 {
                                     "physicalLocation": {
                                         "artifactLocation": {"uri": "src/main/kotlin/App.kt"},
-                                        "region": {"startLine": 10, "startColumn": 5}
+                                        "region": {"startLine": 10, "startColumn": 5},
                                     }
                                 }
-                            ]
+                            ],
                         }
                     ]
                 }
@@ -84,7 +90,9 @@ class TestKotlinRunner:
         assert res.errors[0].file == "src/main/kotlin/App.kt"
 
     @patch("subprocess.run")
-    def test_run_complexity_detekt_sarif(self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner) -> None:
+    def test_run_complexity_detekt_sarif(
+        self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner
+    ) -> None:
         (mock_cwd / "build.gradle").touch()
 
         # Write mock Detekt SARIF json targeting a complexity rule
@@ -99,15 +107,17 @@ class TestKotlinRunner:
                         {
                             "ruleId": "ComplexMethod",
                             "properties": {"complexity": 15},
-                            "message": {"text": "The function complexLogic appears to be too complex (15)."},
+                            "message": {
+                                "text": "The function complexLogic appears to be too complex (15)."
+                            },
                             "locations": [
                                 {
                                     "physicalLocation": {
                                         "artifactLocation": {"uri": "App.kt"},
-                                        "region": {"startLine": 20}
+                                        "region": {"startLine": 20},
                                     }
                                 }
-                            ]
+                            ],
                         }
                     ]
                 }
@@ -122,10 +132,14 @@ class TestKotlinRunner:
         assert res.violations[0].line == 20
 
     @patch("subprocess.run")
-    def test_run_debugger(self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner) -> None:
+    def test_run_debugger(
+        self, mock_run: MagicMock, mock_cwd: Path, kotlin_runner: KotlinRunner
+    ) -> None:
         (mock_cwd / "build.gradle").touch()
         mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "Listening for transport dt_socket at address: 5005\nTest JVM Output"
+        mock_run.return_value.stdout = (
+            "Listening for transport dt_socket at address: 5005\nTest JVM Output"
+        )
 
         res = kotlin_runner.run_debugger(target="", entrypoint="AppKt")
         assert len(res.events) > 0

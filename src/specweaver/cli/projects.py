@@ -202,6 +202,7 @@ def update(
         _core.console.print(f"[red]Error:[/red] Unknown field '{field}'. Supported: path")
         raise typer.Exit(code=1)
 
+
 def _infer_subdirs(project_path: Path, inferrer: ContextInferrer) -> tuple[int, int, int]:
     generated = 0
     skipped = 0
@@ -285,4 +286,3 @@ def scan() -> None:
         )
     except Exception as exc:
         _core.console.print(f"  [red]\u2717[/red] Tach Sync Failed: {exc}")
-

@@ -96,6 +96,7 @@ class DALImpactMatrix(BaseModel):
 
     Maps each risk tier (DALLevel) to discrete ValidationSettings overrides.
     """
+
     model_config = ConfigDict(use_enum_values=False)
 
     matrix: dict[DALLevel, ValidationSettings] = {}
@@ -186,6 +187,7 @@ def load_settings(
     # Feature 3.20b: DAL Impact Matrix Loading and Merging
     # -------------------------------------------------------------
     from pathlib import Path
+
     dal_matrix = DALImpactMatrix()
 
     # We resolve the project root path
@@ -194,6 +196,7 @@ def load_settings(
         dal_file = Path(root_path) / ".specweaver" / "dal_definitions.yaml"
         if dal_file.exists():
             from ruamel.yaml import YAML
+
             yaml_parser = YAML(typ="safe")
             try:
                 dal_dict = yaml_parser.load(dal_file) or {}
@@ -206,7 +209,6 @@ def load_settings(
                 logger.exception("Failed to parse dal_definitions.yaml at %s", dal_file)
 
     return SpecWeaverSettings(llm=llm, stitch=stitch, dal_matrix=dal_matrix)
-
 
 
 def load_settings_for_active(

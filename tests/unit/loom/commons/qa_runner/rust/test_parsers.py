@@ -10,19 +10,25 @@ from specweaver.loom.commons.qa_runner.rust.parsers import parse_clippy_complexi
 
 def test_parse_clippy_complexity_strict_mapping() -> None:
     data = {
-        "runs": [{
-            "results": [{
-                "ruleId": "clippy::cognitive_complexity",
-                "properties": {"complexity": 18},
-                "message": {"text": "High complexity"},
-                "locations": [{
-                    "physicalLocation": {
-                        "artifactLocation": {"uri": "src/main.rs"},
-                        "region": {"startLine": 20}
+        "runs": [
+            {
+                "results": [
+                    {
+                        "ruleId": "clippy::cognitive_complexity",
+                        "properties": {"complexity": 18},
+                        "message": {"text": "High complexity"},
+                        "locations": [
+                            {
+                                "physicalLocation": {
+                                    "artifactLocation": {"uri": "src/main.rs"},
+                                    "region": {"startLine": 20},
+                                }
+                            }
+                        ],
                     }
-                }]
-            }]
-        }]
+                ]
+            }
+        ]
     }
 
     # Test above threshold
@@ -35,14 +41,19 @@ def test_parse_clippy_complexity_strict_mapping() -> None:
     violations = parse_clippy_complexity(data, 20)
     assert len(violations) == 0
 
+
 def test_parse_clippy_complexity_hard_fails_without_property() -> None:
     data = {
-        "runs": [{
-            "results": [{
-                "ruleId": "clippy::cognitive_complexity",
-                "message": {"text": "High complexity"},
-            }]
-        }]
+        "runs": [
+            {
+                "results": [
+                    {
+                        "ruleId": "clippy::cognitive_complexity",
+                        "message": {"text": "High complexity"},
+                    }
+                ]
+            }
+        ]
     }
 
     with pytest.raises(ValueError, match=r"HARD FAIL: SARIF property 'complexity'.*"):

@@ -10,19 +10,25 @@ from specweaver.loom.commons.qa_runner.java.parsers import parse_pmd_complexity
 
 def test_parse_pmd_complexity_strict_mapping() -> None:
     data = {
-        "runs": [{
-            "results": [{
-                "ruleId": "CyclomaticComplexity",
-                "properties": {"complexity": 15},
-                "message": {"text": "High complexity"},
-                "locations": [{
-                    "physicalLocation": {
-                        "artifactLocation": {"uri": "src/Main.java"},
-                        "region": {"startLine": 10}
+        "runs": [
+            {
+                "results": [
+                    {
+                        "ruleId": "CyclomaticComplexity",
+                        "properties": {"complexity": 15},
+                        "message": {"text": "High complexity"},
+                        "locations": [
+                            {
+                                "physicalLocation": {
+                                    "artifactLocation": {"uri": "src/Main.java"},
+                                    "region": {"startLine": 10},
+                                }
+                            }
+                        ],
                     }
-                }]
-            }]
-        }]
+                ]
+            }
+        ]
     }
 
     # Test above threshold
@@ -35,14 +41,19 @@ def test_parse_pmd_complexity_strict_mapping() -> None:
     violations = parse_pmd_complexity(data, 20)
     assert len(violations) == 0
 
+
 def test_parse_pmd_complexity_hard_fails_without_property() -> None:
     data = {
-        "runs": [{
-            "results": [{
-                "ruleId": "CyclomaticComplexity",
-                "message": {"text": "High complexity"},
-            }]
-        }]
+        "runs": [
+            {
+                "results": [
+                    {
+                        "ruleId": "CyclomaticComplexity",
+                        "message": {"text": "High complexity"},
+                    }
+                ]
+            }
+        ]
     }
 
     with pytest.raises(ValueError, match=r"HARD FAIL: SARIF property 'complexity'.*"):

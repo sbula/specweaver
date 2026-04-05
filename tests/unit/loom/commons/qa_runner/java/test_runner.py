@@ -32,7 +32,9 @@ class TestJavaRunner:
             result = runner.run_compiler(target="src/")
 
             mock_run.assert_called_once()
-            assert "gradlew" in mock_run.call_args[0][0][0] or "gradle" in mock_run.call_args[0][0][0]
+            assert (
+                "gradlew" in mock_run.call_args[0][0][0] or "gradle" in mock_run.call_args[0][0][0]
+            )
             assert "compileJava" in mock_run.call_args[0][0]
             assert result.error_count == 0
 
@@ -102,7 +104,9 @@ class TestJavaRunner:
 
         pmd_file = tmp_path / "build" / "reports" / "pmd" / "main.sarif"
         pmd_file.parent.mkdir(parents=True, exist_ok=True)
-        pmd_file.write_text('{"runs": [{"results": [{"message": {"text": "A lint error"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "src/main/java/Main.java"}, "region": {"startLine": 10}}}]}]}]}')
+        pmd_file.write_text(
+            '{"runs": [{"results": [{"message": {"text": "A lint error"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "src/main/java/Main.java"}, "region": {"startLine": 10}}}]}]}]}'
+        )
 
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="BUILD SUCCESSFUL", stderr="")
@@ -121,7 +125,9 @@ class TestJavaRunner:
 
         pmd_file = tmp_path / "target" / "pmd.sarif"
         pmd_file.parent.mkdir(parents=True, exist_ok=True)
-        pmd_file.write_text('{"runs": [{"results": [{"message": {"text": "A lint error"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "src/main/java/Main.java"}, "region": {"startLine": 10}}}]}]}]}')
+        pmd_file.write_text(
+            '{"runs": [{"results": [{"message": {"text": "A lint error"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "src/main/java/Main.java"}, "region": {"startLine": 10}}}]}]}]}'
+        )
 
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="BUILD SUCCESS", stderr="")
@@ -138,7 +144,9 @@ class TestJavaRunner:
 
         pmd_file = tmp_path / "build" / "reports" / "pmd" / "main.sarif"
         pmd_file.parent.mkdir(parents=True, exist_ok=True)
-        pmd_file.write_text('{"runs": [{"results": [{"ruleId": "CyclomaticComplexity", "properties": {"complexity": 12}, "message": {"text": "The method foo() has a cyclomatic complexity of 12."}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "src/main/java/Main.java"}, "region": {"startLine": 10}}}]}]}]}')
+        pmd_file.write_text(
+            '{"runs": [{"results": [{"ruleId": "CyclomaticComplexity", "properties": {"complexity": 12}, "message": {"text": "The method foo() has a cyclomatic complexity of 12."}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "src/main/java/Main.java"}, "region": {"startLine": 10}}}]}]}]}'
+        )
 
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="BUILD SUCCESSFUL", stderr="")
@@ -175,5 +183,3 @@ class TestJavaRunner:
             assert "compile" in mock_run.call_args[0][0]
             assert result.exit_code == 0
             assert result.events[0].output == "DEBUG OK"
-
-

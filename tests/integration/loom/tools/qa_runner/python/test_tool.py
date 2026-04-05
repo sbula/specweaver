@@ -12,9 +12,11 @@ QARunnerTool.__test__ = False  # type: ignore[attr-defined]
 
 pytestmark = pytest.mark.live
 
+
 @pytest.fixture
 def python_project() -> Path:
     return Path(__file__).parent.parent.parent.parent.parent.parent
+
 
 def test_python_tool_integration(python_project: Path) -> None:
     assert python_project.exists(), "Python fixture missing"
@@ -30,7 +32,9 @@ def test_python_tool_integration(python_project: Path) -> None:
     res_lint = tool.run_linter(target="tests/unit/loom/commons/qa_runner/python/")
     assert res_lint.status in ["success", "error"]
 
-    res_complex = tool.run_complexity(target="tests/unit/loom/commons/qa_runner/python/", max_complexity=10)
+    res_complex = tool.run_complexity(
+        target="tests/unit/loom/commons/qa_runner/python/", max_complexity=10
+    )
     assert res_complex.status in ["success", "error"]
 
     test_py = python_project / ".tmp" / "test_debug.py"

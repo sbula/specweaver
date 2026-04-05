@@ -60,8 +60,8 @@
 - ✅ Feature 3.17: Spec-to-code traceability — Artifact Lineage Graph
 - ✅ Feature 3.18: AST Drift Detection & AI Root-Cause Analysis — Parser-backed drift gating
 - ✅ Feature 3.19: Polyglot QARunner Interface — Black Box execution wrapping
-- 🚧 Feature 3.20a: Internal Layer Enforcement (Tach) — Strict Domain-Driven isolation
-- 🚧 Feature 3.20: Dynamic Risk-Based Rulesets — DAL-dictated injection of structural targets
+- ✅ Feature 3.20a: Internal Layer Enforcement (Tach) — Strict Domain-Driven isolation
+- 🚧 Feature 3.20b: Dynamic Risk-Based Rulesets (DAL) — Contextual baseline risk enforcement
 
 ---
 
