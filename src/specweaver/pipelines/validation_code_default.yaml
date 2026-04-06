@@ -12,6 +12,9 @@ version: "1.0"
 
 steps:
   # --- Static analysis (no subprocess) ---
+  - name: c09_traceability
+    rule: C09
+
   - name: c01_syntax_valid
     rule: C01
 

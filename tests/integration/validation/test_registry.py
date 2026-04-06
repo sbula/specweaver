@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""Integration tests for rule registry — verifies all 19 built-in rules
+"""Integration tests for rule registry — verifies all 20 built-in rules
 are auto-registered correctly and the runner still produces correct results.
 """
 
@@ -42,7 +42,7 @@ def _populated_registry() -> RuleRegistry:
 
 
 class TestBuiltInRegistration:
-    """Verify all 19 built-in rules are registered."""
+    """Verify all 20 built-in rules are registered."""
 
     EXPECTED_SPEC_IDS: ClassVar[list[str]] = [
         "S01",
@@ -66,6 +66,7 @@ class TestBuiltInRegistration:
         "C06",
         "C07",
         "C08",
+        "C09",
     ]
 
     def test_all_spec_rules_registered(self):
@@ -75,15 +76,15 @@ class TestBuiltInRegistration:
         assert spec_ids == self.EXPECTED_SPEC_IDS
 
     def test_all_code_rules_registered(self):
-        """All 8 code rules (C01-C08) are registered."""
+        """All 9 code rules (C01-C09) are registered."""
         reg = _populated_registry()
         code_ids = [rid for rid, _cls in reg.list_code()]
         assert code_ids == self.EXPECTED_CODE_IDS
 
     def test_total_rule_count(self):
-        """Total of 19 rules registered."""
+        """Total of 20 rules registered."""
         reg = _populated_registry()
-        assert len(reg.list_all()) == 19
+        assert len(reg.list_all()) == 20
 
     def test_all_rules_are_rule_subclasses(self):
         """Every registered class is a Rule subclass."""
@@ -146,7 +147,7 @@ class QARunnerRegistryIntegration:
         assert ids == ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11"]
 
     def test_get_code_rules_without_subprocess(self):
-        """Code default pipeline without subprocess rules returns 6 rules."""
+        """Code default pipeline without subprocess rules returns 7 rules."""
         import specweaver.validation.rules.code  # noqa: F401
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
@@ -159,19 +160,19 @@ class QARunnerRegistryIntegration:
         filtered = [s for s in pipeline.steps if s.rule not in subprocess_ids]
         pipeline = pipeline.model_copy(update={"steps": filtered})
         results = execute_validation_pipeline(pipeline, "# Test")
-        assert len(results) == 6
+        assert len(results) == 7
         ids = [r.rule_id for r in results]
         assert "C03" not in ids
         assert "C04" not in ids
 
     def test_get_code_rules_with_subprocess(self):
-        """Code default pipeline with all rules returns 8 rules."""
+        """Code default pipeline with all rules returns 9 rules."""
         import specweaver.validation.rules.code  # noqa: F401
         from specweaver.validation.executor import execute_validation_pipeline
         from specweaver.validation.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")
         results = execute_validation_pipeline(pipeline, "# Test")
-        assert len(results) == 8
+        assert len(results) == 9
         ids = sorted([r.rule_id for r in results])
-        assert ids == ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08"]
+        assert ids == ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09"]

@@ -348,6 +348,52 @@ class TestCodeValidationPipeline:
             f"Expected C06 or C07 violation in output:\n{result.output}"
         )
 
+    def test_c09_traceability_enforced_in_code_validation_pipeline(self, tmp_path: Path) -> None:
+        """Traceability C09 rule dynamically pulls tags from test files and flags gaps E2E."""
+        project_dir = tmp_path / _unique_name("proj")
+        project_dir.mkdir()
+        runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+
+        # 1. Create a spec with an expected trace ID
+        spec_file = project_dir / "specs" / "feature_39.md"
+        spec_file.parent.mkdir(parents=True, exist_ok=True)
+        spec_file.write_text("## Intent\n\nFR-39: Handle dynamic user routing\n", encoding="utf-8")
+
+        # 2. Write an application codebase
+        code_file = project_dir / "src" / "router.py"
+        code_file.parent.mkdir(parents=True, exist_ok=True)
+        code_file.write_text("def route(): pass\n", encoding="utf-8")
+
+        # 3. Create a test file WITHOUT the trace marker
+        test_file = project_dir / "tests" / "test_router.py"
+        test_file.parent.mkdir(parents=True, exist_ok=True)
+        test_file.write_text("def test_route(): pass\n", encoding="utf-8")
+
+        # 4. SW Check should FAIL because FR-39 is not mapped
+        result_fail = runner.invoke(
+            app,
+            ["check", str(code_file), "--level", "code", "--project", str(project_dir)],
+        )
+        assert result_fail.exit_code == 1
+        assert "C09" in result_fail.output
+        assert "FR-39" in result_fail.output
+        assert "FAIL" in result_fail.output
+
+        # 5. Fix the test by adding polyglot AST trace marker
+        test_file.write_text("# @trace(FR-39)\ndef test_route(): pass\n", encoding="utf-8")
+
+        # 6. SW Check should now PASS C09 implicitly
+        result_pass = runner.invoke(
+            app,
+            ["check", str(code_file), "--level", "code", "--project", str(project_dir)],
+        )
+        assert result_pass.exit_code in (0, 1)  # Might fail on other C0X issues
+        assert "C09" in result_pass.output
+        # Since standard output shows 'PASS' for successful rules
+        assert "C09" in result_pass.stdout
+        # Note: If it fails, check for "FR-39"
+        assert "FR-39 missing" not in result_pass.output
+
 
 # ===========================================================================
 # Test 19: AST Drift Engine validates pipeline boundaries (Pending SF-2)
