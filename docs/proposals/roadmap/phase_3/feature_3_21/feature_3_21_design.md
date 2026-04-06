@@ -82,7 +82,7 @@ Single feature — no decomposition.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Traceability Validation Engine | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-1 | Traceability Validation Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
