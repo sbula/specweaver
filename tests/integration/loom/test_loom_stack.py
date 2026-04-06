@@ -15,11 +15,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.loom.commons.language.python.runner import PythonQARunner
 from specweaver.loom.commons.qa_runner.interface import (
     ComplexityRunResult,
     LintRunResult,
 )
-from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -287,7 +287,7 @@ class TestTypeScriptRunnerRealTooling:
         import shutil
         import subprocess
 
-        from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
+        from specweaver.loom.commons.language.typescript.runner import TypeScriptRunner
 
         target_dir = sample_project / "src" / "ts_compile"
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -319,7 +319,7 @@ class TestTypeScriptRunnerRealTooling:
         import shutil
         import subprocess
 
-        from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
+        from specweaver.loom.commons.language.typescript.runner import TypeScriptRunner
 
         target_dir = sample_project / "src" / "ts_debug"
         target_dir.mkdir(parents=True, exist_ok=True)

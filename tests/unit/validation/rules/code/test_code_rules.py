@@ -123,7 +123,7 @@ class TestC05ImportDirection:
         rule = ImportDirectionRule()
         spec_path = tmp_path / "test.py"
         with patch(
-            "specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check"
+            "specweaver.loom.commons.language.python.runner.PythonQARunner.run_architecture_check"
         ) as mock_run:
             mock_run.return_value = ArchitectureRunResult(violation_count=0, violations=[])
             result = rule.check(code, spec_path=spec_path)
@@ -139,7 +139,7 @@ class TestC05ImportDirection:
         rule = ImportDirectionRule()
         spec_path = tmp_path / "test.py"
         with patch(
-            "specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check"
+            "specweaver.loom.commons.language.python.runner.PythonQARunner.run_architecture_check"
         ) as mock_run:
             mock_run.return_value = ArchitectureRunResult(
                 violation_count=1,
@@ -166,7 +166,7 @@ class TestC05ImportDirection:
         rule = ImportDirectionRule()
         spec_path = tmp_path / "test.py"
         with patch(
-            "specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check",
+            "specweaver.loom.commons.language.python.runner.PythonQARunner.run_architecture_check",
             side_effect=Exception("Timeout"),
         ):
             result = rule.check(code, spec_path=spec_path)
@@ -180,7 +180,7 @@ class TestC05ImportDirection:
         rule = ImportDirectionRule()
         spec_path = tmp_path / "test.py"
         with patch(
-            "specweaver.loom.commons.qa_runner.python.runner.PythonQARunner.run_architecture_check"
+            "specweaver.loom.commons.language.python.runner.PythonQARunner.run_architecture_check"
         ) as mock_run:
             # violation_count > 0 but violations is empty
             mock_run.return_value = ArchitectureRunResult(violation_count=2, violations=[])

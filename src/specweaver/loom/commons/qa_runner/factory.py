@@ -30,26 +30,26 @@ def resolve_runner(cwd: Path) -> QARunnerInterface:
         The matching QARunnerInterface adapter. Defaults to PythonQARunner.
     """
     if (cwd / "package.json").exists():
-        from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
+        from specweaver.loom.commons.language.typescript.runner import TypeScriptRunner
 
         return TypeScriptRunner(cwd=cwd)
 
     if (cwd / "Cargo.toml").exists():
-        from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
+        from specweaver.loom.commons.language.rust.runner import RustRunner
 
         return RustRunner(cwd=cwd)
 
     if (cwd / "build.gradle").exists() or (cwd / "build.gradle.kts").exists():
-        from specweaver.loom.commons.qa_runner.kotlin.runner import KotlinRunner
+        from specweaver.loom.commons.language.kotlin.runner import KotlinRunner
 
         return KotlinRunner(cwd=cwd)
 
     if (cwd / "pom.xml").exists():
-        from specweaver.loom.commons.qa_runner.java.runner import JavaRunner
+        from specweaver.loom.commons.language.java.runner import JavaRunner
 
         return JavaRunner(cwd=cwd)
 
     # By default, or if pyproject.toml is found
-    from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+    from specweaver.loom.commons.language.python.runner import PythonQARunner
 
     return PythonQARunner(cwd=cwd)

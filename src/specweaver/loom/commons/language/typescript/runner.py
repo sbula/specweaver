@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 from specweaver.commons.enums.dal import DALLevel
+from specweaver.loom.commons.language.typescript.parsers import extract_tsc_errors
 from specweaver.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     CompileError,
@@ -22,7 +23,6 @@ from specweaver.loom.commons.qa_runner.interface import (
     QARunnerInterface,
     TestRunResult,
 )
-from specweaver.loom.commons.qa_runner.typescript.parsers import extract_tsc_errors
 
 logger = logging.getLogger(__name__)
 

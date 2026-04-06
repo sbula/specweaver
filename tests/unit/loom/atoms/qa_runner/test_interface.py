@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from specweaver.loom.commons.language.python.runner import PythonQARunner
 from specweaver.loom.commons.qa_runner.interface import (
     ComplexityRunResult,
     ComplexityViolation,
@@ -19,7 +20,6 @@ from specweaver.loom.commons.qa_runner.interface import (
     TestFailure,
     TestRunResult,
 )
-from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+from specweaver.loom.commons.language.python.runner import PythonQARunner
 
 
 class TestPythonQARunner:

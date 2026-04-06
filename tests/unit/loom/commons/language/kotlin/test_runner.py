@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.loom.commons.qa_runner.kotlin.runner import KotlinRunner
+from specweaver.loom.commons.language.kotlin.runner import KotlinRunner
 
 
 class TestKotlinRunner:

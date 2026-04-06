@@ -1,26 +1,26 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root.
 
-"""Tests for strict Kotlin SARIF parsing logic."""
+"""Tests for strict Rust SARIF parsing logic."""
 
 import pytest
 
-from specweaver.loom.commons.qa_runner.kotlin.parsers import parse_detekt_complexity
+from specweaver.loom.commons.language.rust.parsers import parse_clippy_complexity
 
 
-def test_parse_detekt_complexity_strict_mapping() -> None:
+def test_parse_clippy_complexity_strict_mapping() -> None:
     data = {
         "runs": [
             {
                 "results": [
                     {
-                        "ruleId": "ComplexMethod",
+                        "ruleId": "clippy::cognitive_complexity",
                         "properties": {"complexity": 18},
                         "message": {"text": "High complexity"},
                         "locations": [
                             {
                                 "physicalLocation": {
-                                    "artifactLocation": {"uri": "src/App.kt"},
+                                    "artifactLocation": {"uri": "src/main.rs"},
                                     "region": {"startLine": 20},
                                 }
                             }
@@ -32,23 +32,23 @@ def test_parse_detekt_complexity_strict_mapping() -> None:
     }
 
     # Test above threshold
-    violations = parse_detekt_complexity(data, 10)
+    violations = parse_clippy_complexity(data, 10)
     assert len(violations) == 1
     assert violations[0].complexity == 18
-    assert violations[0].file == "src/App.kt"
+    assert violations[0].file == "src/main.rs"
 
     # Test below threshold
-    violations = parse_detekt_complexity(data, 20)
+    violations = parse_clippy_complexity(data, 20)
     assert len(violations) == 0
 
 
-def test_parse_detekt_complexity_hard_fails_without_property() -> None:
+def test_parse_clippy_complexity_hard_fails_without_property() -> None:
     data = {
         "runs": [
             {
                 "results": [
                     {
-                        "ruleId": "ComplexMethod",
+                        "ruleId": "clippy::cognitive_complexity",
                         "message": {"text": "High complexity"},
                     }
                 ]
@@ -57,4 +57,4 @@ def test_parse_detekt_complexity_hard_fails_without_property() -> None:
     }
 
     with pytest.raises(ValueError, match=r"HARD FAIL: SARIF property 'complexity'.*"):
-        parse_detekt_complexity(data, 10)
+        parse_clippy_complexity(data, 10)

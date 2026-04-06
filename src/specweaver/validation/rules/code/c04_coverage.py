@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 
-from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+from specweaver.loom.commons.language.python.runner import PythonQARunner
 from specweaver.validation.models import Finding, Rule, RuleResult, Severity
 
 if TYPE_CHECKING:

@@ -5,7 +5,7 @@
 
 import pytest
 
-from specweaver.loom.commons.qa_runner.java.parsers import parse_pmd_complexity
+from specweaver.loom.commons.language.java.parsers import parse_pmd_complexity
 
 
 def test_parse_pmd_complexity_strict_mapping() -> None:

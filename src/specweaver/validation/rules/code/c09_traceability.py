@@ -59,13 +59,13 @@ class TraceabilityRule(Rule):
     def _find_project_root(self, spec_path: Path | None) -> Path | None:
         if spec_path is None:
             return None
-            
+
         project_root = spec_path.parent
         while project_root != project_root.parent:
             if (project_root / "pyproject.toml").exists() or (project_root / "package.json").exists() or (project_root / ".git").exists() or (project_root / ".specweaver").exists():
                 return project_root
             project_root = project_root.parent
-        
+
         # Fallback to current directory if not found upward
         return None
 
@@ -74,7 +74,7 @@ class TraceabilityRule(Rule):
         specs_dir = project_root / "specs"
         if not specs_dir.exists():
             return target_ids
-            
+
         for spec_file in specs_dir.rglob("*.md"):
             try:
                 content = spec_file.read_text(encoding="utf-8")

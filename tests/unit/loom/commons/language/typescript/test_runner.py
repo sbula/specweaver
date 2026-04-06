@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
+from specweaver.loom.commons.language.typescript.runner import TypeScriptRunner
 
 
 class TestTypeScriptRunner:

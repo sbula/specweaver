@@ -78,7 +78,7 @@ SpecWeaver's domain-driven architecture demands a strict separation between Pure
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Polyglot AST Extractor (Read Side) | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Polyglot AST Extractor (Read Side) | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | SF-2 | AST Symbol Writer (Write Side) | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff

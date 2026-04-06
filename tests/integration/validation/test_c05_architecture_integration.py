@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+from specweaver.loom.commons.language.python.runner import PythonQARunner
 from specweaver.validation.models import Status
 from specweaver.validation.rules.code.c05_import_direction import ImportDirectionRule
 

@@ -24,10 +24,10 @@ def test_extracts_all_requirements(tmp_path):
     root = tmp_path / "fake_project"
     specs_dir = root / "specs"
     specs_dir.mkdir(parents=True)
-    
+
     (specs_dir / "comp1.md").write_text("Hello FR-1 and NFR-2")
     (specs_dir / "comp2.md").write_text("Other FR-99")
-    
+
     rule = TraceabilityRule()
     target_ids = rule._extract_all_requirements(root)
 
@@ -52,7 +52,7 @@ def test_finds_project_root_and_tests(tmp_path):
     rule = TraceabilityRule()
     found_root = rule._find_project_root(code_file)
     assert found_root == root
-    
+
     found_files = rule._discover_test_files(root)
     assert test_file in found_files
 
