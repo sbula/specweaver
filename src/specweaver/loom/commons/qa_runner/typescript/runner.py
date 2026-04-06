@@ -191,11 +191,13 @@ class TypeScriptRunner(QARunnerInterface):
     ) -> ArchitectureRunResult:
         """Run architectural checks dynamically using ESLint."""
         import json
-        import yaml
+
+        import yaml  # type: ignore[import-untyped]
+
         from specweaver.loom.commons.qa_runner.interface import ArchitectureViolation
 
         logger.debug("TypeScriptRunner.run_architecture_check: target=%s, dal=%s", target, dal_level)
-        
+
         target_path = self.cwd / target
         ctx_dir = target_path.parent if target_path.is_file() else target_path
 
@@ -237,7 +239,7 @@ class TypeScriptRunner(QARunnerInterface):
         except subprocess.TimeoutExpired:
             return ArchitectureRunResult(
                 violation_count=1,
-                violations=[ArchitectureViolation(file=target, code="Timeout", message="ESLint timed out", context_uri="")]
+                violations=[ArchitectureViolation(file=target, code="Timeout", message="Jest timed out")]
             )
         finally:
             config_path.unlink(missing_ok=True)
@@ -255,7 +257,6 @@ class TypeScriptRunner(QARunnerInterface):
                                     file=file_path,
                                     code="C05",
                                     message=msg.get("message", "Restricted import"),
-                                    context_uri=str(ctx_file.absolute()) if ctx_file.exists() else "",
                                 )
                             )
             except json.JSONDecodeError:

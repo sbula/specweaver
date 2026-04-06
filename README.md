@@ -12,7 +12,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 
 - **Interactive spec drafting** — Co-author specs with an LLM, section by section
 - **Feature-level validation** — Two-level spec model: feature specs (Intent, Value Proposition) and component specs (Purpose, Contract, Protocol, Policy, Boundaries) with kind-aware thresholds
-- **Static validation** — 19 built-in rules (11 spec + 8 code) with configurable thresholds that adapt to spec kind, organized as YAML-defined sub-pipelines with inheritance
+- **Static validation** — 20 built-in rules (11 spec + 9 code) with configurable thresholds that adapt to spec kind, organized as YAML-defined sub-pipelines with inheritance
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with confidence-scored findings
 - **Feature decomposition** — Draft feature specs and decompose them into component-level work items via pipeline
 - **Code generation** — Generate implementation + test files from a validated spec
@@ -120,7 +120,7 @@ docker compose up -d
 | `sw draft <name>` | Interactively draft a component spec |
 | `sw check <file> --level feature` | Validate a feature spec against S01–S11 with feature-level thresholds |
 | `sw check <file> --level component` | Validate a component spec against S01–S11 with component-level thresholds |
-| `sw check <file> --level code` | Validate code against C01–C08 rules |
+| `sw check <file> --level code` | Validate code against C01–C09 rules |
 | `sw check --pipeline <name>` | Use a specific validation pipeline (overrides `--level`) |
 | `sw check --lineage` | Run a scan over the project's source tree to detect orphaned (untagged) code files |
 | `sw check --strict` | Treat warnings as failures (exit code 1) |
@@ -232,7 +232,7 @@ docker compose up -d
 | S10 | Done Definition | Verifiable completion criteria exist | — |
 | S11 | Terminology | Inconsistent casing + undefined domain terms | ✅ warn/fail threshold |
 
-### Code Rules (C01–C08)
+### Code Rules (C01–C09)
 
 | Rule | Name | What it checks |
 |---|---|---|
@@ -244,6 +244,7 @@ docker compose up -d
 | C06 | No Bare Except | No `except:` without exception type |
 | C07 | No Orphan TODO | No TODOs without ticket references |
 | C08 | Type Hints | Public functions have type annotations |
+| C09 | Traceability | Checks whether all requirements in the spec have `@trace` tags in testing AST |
 
 ## Project Structure
 
@@ -275,7 +276,7 @@ docker compose up -d
 │   ├── project/                # Scaffold, discovery, constitution loader
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
-│   └── validation/             # Rules engine (S01-S11, C01-C08, drift detection)
+│   └── validation/             # Rules engine (S01-S11, C01-C09, drift detection)
 ├── tests/                      # 3770+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml

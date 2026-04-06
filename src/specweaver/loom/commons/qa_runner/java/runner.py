@@ -233,15 +233,18 @@ class JavaRunner(QARunnerInterface):
         dal_level: DALLevel | None = None,
     ) -> ArchitectureRunResult:
         """Run architectural checks dynamically using ArchUnit via Maven."""
-        import yaml
+        import contextlib
+
+        import yaml  # type: ignore[import-untyped]
+
         from specweaver.loom.commons.qa_runner.interface import ArchitectureViolation
 
         logger.debug("JavaRunner.run_architecture_check: target=%s, dal=%s", target, dal_level)
 
-        target_path = self.cwd / target
+        target_path = self._cwd / target
         ctx_dir = target_path.parent if target_path.is_file() else target_path
 
-        while ctx_dir != self.cwd and ctx_dir.parent != ctx_dir and not (ctx_dir / "context.yaml").exists():
+        while ctx_dir != self._cwd and ctx_dir.parent != ctx_dir and not (ctx_dir / "context.yaml").exists():
             ctx_dir = ctx_dir.parent
 
         ctx_file = ctx_dir / "context.yaml"
@@ -259,9 +262,9 @@ class JavaRunner(QARunnerInterface):
         # Generate ArchUnit Test
         # To avoid polluting pom.xml (Zero Boilerplate), we assume either ArchUnit is present
         # OR we generate a minimal Regex-based test that mimics ArchUnit's boundary assertion
-        # without external JARs if it's a completely cold system. But for MVP, we output the 
+        # without external JARs if it's a completely cold system. But for MVP, we output the
         # actual ArchUnit test skeleton and run `mvn test`.
-        test_dir = self.cwd / "src" / "test" / "java" / "specweaver"
+        test_dir = self._cwd / "src" / "test" / "java" / "specweaver"
         test_dir.mkdir(parents=True, exist_ok=True)
         test_file = test_dir / "SpecweaverArchUnitTest.java"
 
@@ -278,9 +281,9 @@ public class SpecweaverArchUnitTest {{
     @Test
     public void testDependencies() throws Exception {{
         String[] forbids = new String[]{{{forbids_str}}};
-        Path srcDir = Paths.get("{self.cwd.absolute().as_posix()}/src/main/java");
+        Path srcDir = Paths.get("{self._cwd.absolute().as_posix()}/src/main/java");
         if (!Files.exists(srcDir)) return;
-        
+
         try (Stream<Path> paths = Files.walk(srcDir)) {{
             paths.filter(Files::isRegularFile)
                  .filter(p -> p.toString().endsWith(".java"))
@@ -302,13 +305,13 @@ public class SpecweaverArchUnitTest {{
         test_file.write_text(test_content, encoding="utf-8")
 
         cmd = ["mvnw", "test", "-Dtest=specweaver.SpecweaverArchUnitTest", "-q"]
-        if not (self.cwd / "mvnw").exists() and not (self.cwd / "mvnw.cmd").exists():
+        if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
             cmd[0] = "mvn"
 
         violations = []
         try:
-            proc = subprocess.run(cmd, cwd=self.cwd, capture_output=True, text=True, timeout=60, check=False)
-            
+            proc = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, timeout=60, check=False)
+
             for line in proc.stdout.splitlines():
                 if line.startswith("ARCH_VIOLATION|"):
                     parts = line.split("|")
@@ -318,21 +321,18 @@ public class SpecweaverArchUnitTest {{
                                 file=parts[1],
                                 code="C05",
                                 message=f"Restricted import violated: {parts[2]}",
-                                context_uri=str(ctx_file.absolute()),
                             )
                         )
         except subprocess.TimeoutExpired:
             return ArchitectureRunResult(
                 violation_count=1,
-                violations=[ArchitectureViolation(file=target, code="Timeout", message="Maven timed out", context_uri="")]
+                violations=[ArchitectureViolation(file=target, code="Timeout", message="Maven timed out")]
             )
         finally:
             test_file.unlink(missing_ok=True)
             # clear empty directories if possible
-            try:
+            with contextlib.suppress(OSError):
                 test_dir.rmdir()
-            except OSError:
-                pass
 
         return ArchitectureRunResult(
             violation_count=len(violations),

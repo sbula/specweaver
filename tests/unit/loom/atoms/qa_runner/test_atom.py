@@ -8,8 +8,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
-import pytest
-
 from specweaver.loom.atoms.base import AtomStatus
 from specweaver.loom.atoms.qa_runner.atom import QARunnerAtom
 from specweaver.loom.commons.qa_runner.interface import (
@@ -430,9 +428,9 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
     from specweaver.loom.commons.qa_runner.factory import resolve_runner
     from specweaver.loom.commons.qa_runner.java.runner import JavaRunner
     from specweaver.loom.commons.qa_runner.kotlin.runner import KotlinRunner
-    from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
-    from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
     from specweaver.loom.commons.qa_runner.python.runner import PythonQARunner
+    from specweaver.loom.commons.qa_runner.rust.runner import RustRunner
+    from specweaver.loom.commons.qa_runner.typescript.runner import TypeScriptRunner
 
     # Default is python
     runner = resolve_runner(tmp_path)

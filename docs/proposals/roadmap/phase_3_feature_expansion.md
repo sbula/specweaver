@@ -44,8 +44,8 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.29** | **Scenario Testing — Independent Verification** | _(inspired by agent-system)_ | Dual-pipeline architecture: coding + scenario pipelines run in parallel, meet at JOIN gate. Contract-first (Python Protocols), structured YAML scenarios, arbiter agent for error attribution. |
 | **3.29a** | ↳ Spec template enforcement | _(subfeature)_ | Require `## Scenarios` section in specs with structured inputs (preconditions, inputs, expected outputs) in YAML code blocks. Enhance S07 to validate. |
 | **3.29b** | ↳ API contract generation | _(subfeature)_ | New handler: `generate+contract` — extract Python Protocol/ABC from spec Contract section. Output: `api_contract.py`. |
-| **3.29c** | ↳ Scenario generation atom | _(subfeature)_ | New atom: spec + API contract → structured YAML scenarios (LLM). Multiple scenarios per public method: happy path, error paths, boundary, state transitions. |
-| **3.29d** | ↳ Scenario → pytest conversion | _(subfeature)_ | New atom: structured YAML scenarios → executable parametrized pytest files. Mechanical conversion, no LLM needed. |
+| **3.29c** | ↳ Scenario generation atom | _(subfeature)_ | New atom: spec + API contract → structured YAML scenarios (LLM). Multiple scenarios per public method. **Must explicitly map to Spec `req_id`s in the YAML schema.** |
+| **3.29d** | ↳ Scenario → pytest conversion | _(subfeature)_ | New atom: structured YAML scenarios → executable parametrized pytest files. Mechanical conversion **must inject zero-dependency `# @trace(FR-X)` tags** for C09. |
 | **3.29e** | ↳ `scenario_agent` role | _(subfeature)_ | New role in loom/tools: sees `specs/` + `scenarios/` only. `FileSystemTool` path allowlist per role. |
 | **3.29f** | ↳ `scenario_validation.yaml` | _(subfeature)_ | New pipeline definition: generate_contract → generate_scenarios → convert_to_pytest → signal READY. |
 | **3.29g** | ↳ JOIN gate type | _(subfeature)_ | New `GateType.JOIN` in `models.py` — waits for two pipelines to both signal READY before proceeding. |
@@ -65,6 +65,7 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.40** | Symbolic Math Validation | _(new)_ | Specialized rules to formally verify mathematical/ML calculations (e.g., FinBERT, trading algorithms) generated in execution code. |
 | **3.41** | External Context Providers | _(new)_ | Arbitrary script injections (e.g., `dump_db_schema.py`) via `context/providers.py` to pipe live environment schema (like a 900-table DB) into LLM prompts without polluting the core. |
 | **3.42** | Industry Standard Bridges | _(new)_ | Adapters to interface seamlessly with massive open-source protocols: Pact.io (Consumer contract testing), Glean (Internal Fact Graphs), and ArchCodex (Drift Prevention). |
+| **3.43** | Semantic Test Completeness Review (AI Validator) | _(new)_ | An LLM-backed Code Validation Rule (`C10_test_completeness.py`) that analyzes the agent's generated test suite against the target spec to assert whether all unhappy paths, error bounds, and expected outcomes are semantically verified. Emits ERRORs for missing branch coverage to ensure thorough completeness. |
 
 ## Process for Each Feature
 

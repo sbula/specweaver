@@ -88,7 +88,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 **Validation engine** (19 rules)
 - `validation/runner.py` — `ValidationRunner`: applies rule list to a spec. In `validation/` (pure-logic) because it's stateless computation — no I/O, no LLM.
 - `validation/rules/spec/s01_one_sentence.py` through `s11_...py` — individual rule implementations. Each is a pure function: `(spec_text) → findings[]`.
-- `validation/rules/code/c01_...py` through `c08_...py` — code quality rules.
+- `validation/rules/code/c01_...py` through `c09_...py` — code quality rules.
 
 **LLM adapter** (Multi-Provider)
 - `llm/adapter.py` — `LLMAdapter` abstract base class (provider-agnostic contract). In `llm/` (adapter archetype) because it wraps an external service.
@@ -583,14 +583,14 @@ Every pipeline step can have a gate that blocks progression:
 
 ### Layer 4: 10-Test Battery (Spec Quality)
 
-Static validation rules (S01-S11, C01-C08) catch structural and completeness
+Static validation rules (S01-S11, C01-C09) catch structural and completeness
 issues before any LLM is involved:
 
 | Category | Rules | Examples |
 |----------|-------|---------|
 | Structure (S01-S05) | One sentence, single setup, size budget, dependency direction, conjunction count | Detects "god specs" |
 | Completeness (S06-S11) | Weasel words, examples, error paths, done definition, scenarios | Detects ambiguity |
-| Code (C01-C08) | Generated code quality validation | Detects spec deviations |
+| Code (C01-C09) | Generated code quality validation | Detects spec deviations |
 
 ### Layer 5: LLM Semantic Review
 

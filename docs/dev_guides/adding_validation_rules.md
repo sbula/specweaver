@@ -55,4 +55,4 @@ Once your rule is written, you do not hardcode it into an array execution tree. 
 ## 4. Methodologies: Regex vs AST
 
 - **Specs**: Text-based boundaries rely on Regex and simplistic NLP chunking schemas.
-- **Code**: Always rely natively on AST. Do not parse Python/TypeScript code with Regex. For advanced analysis, utilize Tree-Sitter (e.g., the `validation/drift_detector.py`) to scrape pure method signatures structurally out of source-code blocks without parsing fragile syntax.
+- **Code**: Always rely natively on AST. Do not parse Python/TypeScript code with Regex. For advanced analysis, utilize Tree-Sitter (e.g., the `validation/drift_detector.py` or `validation/rules/code/c09_traceability.py`) to scrape pure method signatures and abstract comments structurally out of source-code blocks without parsing fragile syntax.

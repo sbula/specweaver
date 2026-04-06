@@ -17,6 +17,7 @@ from .c05_import_direction import ImportDirectionRule
 from .c06_no_bare_except import NoBareExceptRule
 from .c07_no_orphan_todo import NoOrphanTodoRule
 from .c08_type_hints import TypeHintsRule
+from .c09_traceability import TraceabilityRule
 
 _reg = get_registry()
 _reg.register("C01", SyntaxValidRule, "code")
@@ -27,3 +28,4 @@ _reg.register("C05", ImportDirectionRule, "code")
 _reg.register("C06", NoBareExceptRule, "code")
 _reg.register("C07", NoOrphanTodoRule, "code")
 _reg.register("C08", TypeHintsRule, "code")
+_reg.register("C09", TraceabilityRule, "code")

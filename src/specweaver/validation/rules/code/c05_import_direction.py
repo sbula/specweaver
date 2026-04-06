@@ -36,7 +36,6 @@ class ImportDirectionRule(Rule):
 
         import logging
 
-        from specweaver.commons.enums.dal import DALLevel
         from specweaver.config.dal_resolver import DALResolver
         from specweaver.loom.commons.qa_runner.factory import resolve_runner
 
@@ -45,7 +44,7 @@ class ImportDirectionRule(Rule):
         try:
             cwd = spec_path.parent
             runner = resolve_runner(cwd)
-            
+
             # Resolve the active DAL for this boundary
             resolver = DALResolver(project_root=cwd)
             dal_enum = resolver.resolve(target_path=spec_path)

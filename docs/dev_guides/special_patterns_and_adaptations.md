@@ -107,4 +107,17 @@ Even with aggressive system prompts detailing "DAL_A through DAL_E", Agents hall
 
 ---
 
+## 8. Polyglot Abstract Syntax Tree (AST) Traceability (C09 Engine)
+
+When SpecWeaver enforces that every feature spec is rigorously bound to an automated test (Feature 3.21 - Automated Traceability Matrix), we explicitly bypass standard coverage tools or complex code instrumentation in favor of Polyglot AST tokenization via `tree-sitter`.
+
+### How it works:
+Instead of requiring Python developers to use `@pytest.mark.trace("FR-1")`, they simply utilize identical syntactical layout regardless of the language: `# @trace(FR-1)` in Python, or `// @trace(FR-1)` in Java. SpecWeaver fires up an internal AST decoder, dynamically shifts structural parsers based on the file extension, traverses exclusively into `comment` root node types, and maps the matrix entirely in memory.
+
+### Why we do it:
+1. **No Application Dependencies**: The engine operates purely statistically and leaves zero import overhead in the user application.
+2. **Infinite Language Support**: Since `tree-sitter` bindings natively abstract comment scraping, our single codebase natively provides requirement traceability into Python, Rust, Go, JavaScript, TypeScript, and C++ indiscriminately, completely insulating SpecWeaver rules from framework-specific lock-in.
+
+---
+
 By understanding these core adaptations, you will be able to navigate SpecWeaver's unique safety systems and extend the architecture without accidentally violating our zero-trust boundaries!
