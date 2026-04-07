@@ -189,11 +189,11 @@ class PythonCodeStructure(CodeStructureInterface):
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
 
-        margin = typing.cast(int, node.start_point[1])
+        margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin).encode("utf-8")
 
-        start_byte = typing.cast(int, node.start_byte)
-        end_byte = typing.cast(int, node.end_byte)
+        start_byte = typing.cast("int", node.start_byte)
+        end_byte = typing.cast("int", node.end_byte)
         mutated = code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
         return mutated.decode("utf-8")
 
@@ -243,8 +243,8 @@ class PythonCodeStructure(CodeStructureInterface):
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
 
-        start_byte = typing.cast(int, node.start_byte)
-        end_byte = typing.cast(int, node.end_byte)
+        start_byte = typing.cast("int", node.start_byte)
+        end_byte = typing.cast("int", node.end_byte)
         mutated = code_bytes[:start_byte] + code_bytes[end_byte:]
         return mutated.decode("utf-8")
 
@@ -266,10 +266,9 @@ class PythonCodeStructure(CodeStructureInterface):
 
         # Target parent should be a class. Inject right before its end_byte.
         # But we need to indent inside it. Python body block standard indent is parent margin + 4.
-        start_byte = typing.cast(int, node.start_byte)
-        end_byte = typing.cast(int, node.end_byte)
-        margin = typing.cast(int, node.start_point[1])
+        end_byte = typing.cast("int", node.end_byte)
+        margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
-        
+
         mutated = code_bytes[:end_byte] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + code_bytes[end_byte:]
         return mutated.decode("utf-8")

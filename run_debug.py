@@ -1,6 +1,7 @@
-from pathlib import Path
-from specweaver.standards.languages.python.analyzer import PythonStandardsAnalyzer
 import textwrap
+from pathlib import Path
+
+from specweaver.standards.languages.python.analyzer import PythonStandardsAnalyzer
 
 analyzer = PythonStandardsAnalyzer()
 tmp_path = Path("tester_tmp")

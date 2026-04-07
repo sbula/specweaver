@@ -380,10 +380,105 @@ def corrupted_syntax()
     print("oh no"
 """
     fs = {"file.py": code}
-    
+
     # Tree-sitter's fault tolerance should still locate good_method accurately.
     res = _run_atom("delete_symbol", "file.py", {"symbol_name": "good_method"}, fs)
     assert res.status.value == "SUCCESS"
     assert "def good_method(self):" not in fs["file.py"]
     # The bad syntax should be completely untouched
     assert "def corrupted_syntax()" in fs["file.py"]
+
+def test_java_mutation_operations() -> None:
+    """Test replace, replace_body, delete, and add symbol for Java via CodeStructureAtom."""
+    code = """
+public class TargetClass {
+    public int originalMath() {
+        return 1 + 1;
+    }
+
+    public void methodToDelete() {
+    }
+}
+"""
+    fs = {"TargetClass.java": code}
+
+    # 1. Replace Body
+    res = _run_atom("replace_symbol_body", "TargetClass.java", {"symbol_name": "originalMath", "new_code": "return 42;"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "return 42;" in fs["TargetClass.java"]
+    assert "return 1 + 1;" not in fs["TargetClass.java"]
+    assert "public int originalMath() {" in fs["TargetClass.java"]
+
+    # 2. Add Symbol (Nested in Class)
+    new_method = "public void addedMethod() {\n    return;\n}"
+    res = _run_atom("add_symbol", "TargetClass.java", {"target_parent": "TargetClass", "new_code": new_method}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "public void addedMethod() {" in fs["TargetClass.java"]
+    # Ensure it's before the class closing brace
+    assert "}\n}" in fs["TargetClass.java"].replace(" ", "")
+
+    # 3. Delete Symbol
+    res = _run_atom("delete_symbol", "TargetClass.java", {"symbol_name": "methodToDelete"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "methodToDelete" not in fs["TargetClass.java"]
+
+    # 4. Replace Symbol (Full)
+    res = _run_atom("replace_symbol", "TargetClass.java", {"symbol_name": "originalMath", "new_code": "public int brandNewMath() {\n    return 100;\n}"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "brandNewMath" in fs["TargetClass.java"]
+    assert "originalMath" not in fs["TargetClass.java"]
+
+def test_kotlin_mutation_operations() -> None:
+    code = """
+class TargetClass {
+    fun originalMath(): Int {
+        return 1 + 1
+    }
+}
+"""
+    fs = {"TargetClass.kt": code}
+
+    res = _run_atom("replace_symbol_body", "TargetClass.kt", {"symbol_name": "originalMath", "new_code": "return 42"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "return 42" in fs["TargetClass.kt"]
+
+    res = _run_atom("add_symbol", "TargetClass.kt", {"target_parent": "TargetClass", "new_code": "fun added(): Unit {}"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "fun added()" in fs["TargetClass.kt"]
+
+def test_rust_mutation_operations() -> None:
+    code = """
+struct TargetClass {}
+impl TargetClass {
+    fn original_math() -> i32 {
+        1 + 1
+    }
+}
+"""
+    fs = {"target.rs": code}
+
+    res = _run_atom("replace_symbol_body", "target.rs", {"symbol_name": "original_math", "new_code": "42"}, fs)
+    assert res.status.value == "SUCCESS", getattr(res, "message", "unknown error")
+    assert "42" in fs["target.rs"]
+
+    res = _run_atom("add_symbol", "target.rs", {"target_parent": "TargetClass", "new_code": "fn added() {}"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "fn added()" in fs["target.rs"]
+
+def test_typescript_mutation_operations() -> None:
+    code = """
+export class TargetClass {
+    originalMath(): number {
+        return 1 + 1;
+    }
+}
+"""
+    fs = {"TargetClass.ts": code}
+
+    res = _run_atom("replace_symbol_body", "TargetClass.ts", {"symbol_name": "originalMath", "new_code": "return 42;"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "return 42;" in fs["TargetClass.ts"]
+
+    res = _run_atom("add_symbol", "TargetClass.ts", {"target_parent": "TargetClass", "new_code": "added(): void {}"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "added(): void {}" in fs["TargetClass.ts"]

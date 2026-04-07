@@ -140,10 +140,23 @@ class JavaCodeStructure(CodeStructureInterface):
                     if node_name_str == symbol_name:
                         parent = name_node.parent
                         if parent and parent.type in ("method_declaration", "class_declaration", "interface_declaration", "enum_declaration"):
-                            if parent.parent and parent.parent.type == "modifiers":
-                                return parent.parent.parent
                             return parent
         return None
+
+    def _auto_indent(self, new_code: str, margin: int) -> str:
+        if not new_code:
+            return new_code
+        lines = new_code.split("\n")
+        padded = []
+        for i, line in enumerate(lines):
+            if i == 0:
+                padded.append(line)
+            else:
+                if line.strip() == "":
+                    padded.append(line)
+                else:
+                    padded.append((" " * margin) + line)
+        return "\n".join(padded)
 
     def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
         if not code.strip():
@@ -153,7 +166,11 @@ class JavaCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte:]
+
+        margin = typing.cast("int", node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin).encode("utf-8")
+
+        mutated = code_bytes[:node.start_byte] + indented_code + code_bytes[node.end_byte:]
         return mutated.decode("utf-8")
 
     def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
@@ -162,23 +179,24 @@ class JavaCodeStructure(CodeStructureInterface):
         code_bytes = code.encode("utf-8")
         tree = self.parser.parse(code_bytes)
 
-        query = Query(self.language, SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
+        node = self._find_symbol_node(tree, symbol_name)
+        if not node:
+            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
+
         target_block = None
-        for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    if typing.cast("bytes", name_node.text).decode("utf-8") == symbol_name:
-                        parent = name_node.parent
-                        if parent and parent.type in ("method_declaration", "class_declaration", "interface_declaration", "enum_declaration"):
-                            for child in parent.children:
-                                if child.type == "block" or child.type == "class_body" or child.type == "interface_body" or child.type == "enum_body":
-                                    target_block = child
-                                    break
+        for child in node.children:
+            if child.type in ("block", "class_body", "interface_body", "enum_body"):
+                target_block = child
+                break
         if not target_block:
             raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:target_block.start_byte] + new_code.encode("utf-8") + code_bytes[target_block.end_byte:]
+
+        margin = typing.cast("int", node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
+
+        insert_start = target_block.start_byte + 1
+        insert_end = target_block.end_byte - 1
+        mutated = code_bytes[:insert_start] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_end:]
         return mutated.decode("utf-8")
 
     def delete_symbol(self, code: str, symbol_name: str) -> str:
@@ -195,13 +213,28 @@ class JavaCodeStructure(CodeStructureInterface):
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         code_bytes = code.encode("utf-8")
         if not target_parent:
+            indented_code = self._auto_indent(new_code, 0).encode("utf-8")
             if not code.endswith("\n"):
-                return (code_bytes + b"\n\n" + new_code.encode("utf-8")).decode("utf-8")
-            return (code_bytes + b"\n" + new_code.encode("utf-8")).decode("utf-8")
+                return (code_bytes + b"\n\n" + indented_code).decode("utf-8")
+            return (code_bytes + b"\n" + indented_code).decode("utf-8")
+
         tree = self.parser.parse(code_bytes)
         node = self._find_symbol_node(tree, target_parent)
         if not node:
             raise CodeStructureError(f"Parent symbol '{target_parent}' not found.")
 
-        mutated = code_bytes[:node.end_byte] + b"\n" + new_code.encode("utf-8") + b"\n" + code_bytes[node.end_byte:]
+        target_block = None
+        for child in node.children:
+            if child.type in ("class_body", "interface_body", "enum_body", "block"):
+                target_block = child
+                break
+
+        if not target_block:
+            raise CodeStructureError(f"Body block for parent symbol '{target_parent}' not found.")
+
+        margin = typing.cast("int", node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
+
+        insert_point = target_block.end_byte - 1
+        mutated = code_bytes[:insert_point] + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_point:]
         return mutated.decode("utf-8")

@@ -155,6 +155,21 @@ class TypeScriptCodeStructure(CodeStructureInterface):
                             return wrapper
         return None
 
+    def _auto_indent(self, new_code: str, margin: int) -> str:
+        if not new_code:
+            return new_code
+        lines = new_code.split("\n")
+        padded = []
+        for i, line in enumerate(lines):
+            if i == 0:
+                padded.append(line)
+            else:
+                if line.strip() == "":
+                    padded.append(line)
+                else:
+                    padded.append((" " * margin) + line)
+        return "\n".join(padded)
+
     def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
         if not code.strip():
             raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
@@ -164,6 +179,9 @@ class TypeScriptCodeStructure(CodeStructureInterface):
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
         mutated = code_bytes[:node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte:]
+        margin = typing.cast("int", node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin).encode("utf-8")
+        mutated = code_bytes[:node.start_byte] + indented_code + code_bytes[node.end_byte:]
         return mutated.decode("utf-8")
 
     def _search_declarator(self, child: typing.Any) -> typing.Any | None:
@@ -191,6 +209,11 @@ class TypeScriptCodeStructure(CodeStructureInterface):
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
+        if node.type == "export_statement":
+            for child in node.children:
+                res = self._find_target_block(child)
+                if res:
+                    return res
         for child in node.children:
             if child.type == "statement_block" or child.type == "class_body":
                 return child
@@ -213,7 +236,13 @@ class TypeScriptCodeStructure(CodeStructureInterface):
 
         if not target_block:
             raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:target_block.start_byte] + new_code.encode("utf-8") + code_bytes[target_block.end_byte:]
+
+        margin = typing.cast("int", node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
+
+        insert_start = target_block.start_byte + 1
+        insert_end = target_block.end_byte - 1
+        mutated = code_bytes[:insert_start] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_end:]
         return mutated.decode("utf-8")
 
     def delete_symbol(self, code: str, symbol_name: str) -> str:
@@ -230,13 +259,24 @@ class TypeScriptCodeStructure(CodeStructureInterface):
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         code_bytes = code.encode("utf-8")
         if not target_parent:
+            indented_code = self._auto_indent(new_code, 0).encode("utf-8")
             if not code.endswith("\n"):
-                return (code_bytes + b"\n\n" + new_code.encode("utf-8")).decode("utf-8")
-            return (code_bytes + b"\n" + new_code.encode("utf-8")).decode("utf-8")
+                return (code_bytes + b"\n\n" + indented_code).decode("utf-8")
+            return (code_bytes + b"\n" + indented_code).decode("utf-8")
+
         tree = self.parser.parse(code_bytes)
         node = self._find_symbol_node(tree, target_parent)
         if not node:
             raise CodeStructureError(f"Parent symbol '{target_parent}' not found.")
 
-        mutated = code_bytes[:node.end_byte] + b"\n" + new_code.encode("utf-8") + b"\n" + code_bytes[node.end_byte:]
+        target_block = self._find_target_block(node)
+
+        if not target_block:
+            raise CodeStructureError(f"Body block for parent symbol '{target_parent}' not found.")
+
+        margin = typing.cast("int", node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
+
+        insert_point = target_block.end_byte - 1
+        mutated = code_bytes[:insert_point] + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_point:]
         return mutated.decode("utf-8")
