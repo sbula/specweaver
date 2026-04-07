@@ -55,7 +55,8 @@ specweaver/                       ← level: system, archetype: orchestrator
 │   └── commons/                  ← Shared executors + helpers
 │       ├── filesystem/           ← FileExecutor, search helpers
 │       ├── git/                  ← GitExecutor
-│       └── qa_runner/          ← QARunnerExecutor
+│       ├── language/             ← Polyglot AST Extractor (CodeStructure)
+│       └── qa_runner/            ← QARunnerExecutor
 ├── pipelines/                    ← YAML pipeline definitions (data only)
 ├── planning/                     ← Implementation plan generation
 ├── project/                      ← Project discovery + scaffolding

@@ -23,6 +23,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Context & topology** — `context.yaml` boundary manifests + dependency graph for module-level architecture enforcement
 - **Standards auto-discovery** — Analyze codebase (Python, JavaScript, TypeScript) to extract naming, error handling, type hints/jsdoc/tsdoc, import, async, and test patterns. Multi-scope support (monorepo-aware), Human-in-the-Loop review, optional async LLM best-practice comparison, and token-capped injection into LLM prompts
 - **AST Drift Detection** — Structural parsing of implementations via `tree-sitter` to automatically pinpoint methods or modules that deviate from original Plan decisions.
+- **Polyglot AST Skeleton Extractor** — High-performance tree-sitter bindings for Python, JS/TS, Java, Kotlin, and Rust allowing Agents to surgical read and write symbols directly without token bloat.
 - **Architectural Enforcement** — Strict Domain-Driven "Layer Cake" isolation via Tach, natively bounded as a PEP-420 Implicit Namespace Package.
 - **Risk-Based Constraint Pipelines (DAL)** — Supports DO-178C Mixed Criticality by assigning rule pipelines and thresholds utilizing Pydantic Deep-Merge based on a specific Module's Design Assurance Level declared natively inside boundary topologies.
 - **UI Mockup Generation** — Auto-detects UI/Frontend requirements in specs and calls Google Stitch MCP to generate and attach visual mockups to standard implementation plans
@@ -277,7 +278,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C09, drift detection)
-├── tests/                      # 3770+ tests (unit, integration, E2E)
+├── tests/                      # 3720+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

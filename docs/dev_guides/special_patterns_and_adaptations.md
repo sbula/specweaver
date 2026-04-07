@@ -121,3 +121,15 @@ Instead of requiring Python developers to use `@pytest.mark.trace("FR-1")`, they
 ---
 
 By understanding these core adaptations, you will be able to navigate SpecWeaver's unique safety systems and extend the architecture without accidentally violating our zero-trust boundaries!
+
+---
+
+## 9. Structural Reverse Graph-Climbing (AST Skeleton Extraction)
+
+When building our polyglot CodeStructure AST extraction layer (Feature 3.22), we found that standard `.scm` `function_definition` queries natively orphaned critical code-block prefixes (like Python annotations `@classmethod` or TypeScript wrappers `export default class`), causing silent data corruption during agent rewrites.
+
+### How it works:
+Instead of trying to architect convoluted SCM query strings to capture every possible decorator, we inverted the parsing model. We perform a precise "inner target" SCM query to find the raw symbol name (`node_name`), and then execute a mathematical parent-walking algorithm (e.g., checking if `name_node.parent.parent.type == 'decorated_definition'`) to organically swallow all external prefixes surrounding the target.
+
+### Why we do it:
+This abstraction anomaly completely removes the need for infinite grammar mappings. Since the parent-tree strictly cascades mathematically in all 5 supported languages (Rust, Python, Java, Kotlin, TS), a single logical upward-walker uniformly preserves `@app.route` or `export async` wrappers indiscriminately.

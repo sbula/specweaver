@@ -44,6 +44,6 @@ If you are adding a new language (e.g., Go, C++):
 
 All language mechanics live in `src/specweaver/loom/commons/language/<name>/`:
 * `runner.py`: Handles subprocess I/O (e.g., `cargo test`).
-* `ast_parser.py`: Handles external framework I/O (e.g., `.scm` queries fed into tree-sitter C-binaries).
+* `codestructure.py`: Handles external framework I/O (e.g., `.scm` queries fed into tree-sitter C-binaries).
 
 The `Loom Atoms` and `Loom Tools` simply wrap this unified language commons, ensuring the rest of SpecWeaver remains beautifully pure and highly testable.
