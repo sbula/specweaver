@@ -10,6 +10,12 @@ def test_code_structure_schema_valid() -> None:
     assert "read_symbol" in names
     assert "read_symbol_body" in names
 
+    # Write Side Intents (SF-2)
+    assert "replace_symbol" in names
+    assert "replace_symbol_body" in names
+    assert "add_symbol" in names
+    assert "delete_symbol" in names
+
     for tool_def in schema:
         assert tool_def.description is not None
         assert isinstance(tool_def.parameters, list)

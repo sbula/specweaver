@@ -127,3 +127,81 @@ class JavaCodeStructure(CodeStructureInterface):
                 seen.add(x)
                 unique_symbols.append(x)
         return unique_symbols
+
+    def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
+        query = Query(self.language, SCM_SYMBOL_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        for _, match_dict in matches:
+            if "name" in match_dict:
+                for name_node in match_dict["name"]:
+                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
+                    if node_name_str == symbol_name:
+                        parent = name_node.parent
+                        if parent and parent.type in ("method_declaration", "class_declaration", "interface_declaration", "enum_declaration"):
+                            if parent.parent and parent.parent.type == "modifiers":
+                                return parent.parent.parent
+                            return parent
+        return None
+
+    def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
+        if not code.strip():
+            raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+        node = self._find_symbol_node(tree, symbol_name)
+        if not node:
+            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
+        mutated = code_bytes[:node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte:]
+        return mutated.decode("utf-8")
+
+    def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
+        if not code.strip():
+            raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+
+        query = Query(self.language, SCM_SYMBOL_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+        target_block = None
+        for _, match_dict in matches:
+            if "name" in match_dict:
+                for name_node in match_dict["name"]:
+                    if typing.cast("bytes", name_node.text).decode("utf-8") == symbol_name:
+                        parent = name_node.parent
+                        if parent and parent.type in ("method_declaration", "class_declaration", "interface_declaration", "enum_declaration"):
+                            for child in parent.children:
+                                if child.type == "block" or child.type == "class_body" or child.type == "interface_body" or child.type == "enum_body":
+                                    target_block = child
+                                    break
+        if not target_block:
+            raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
+        mutated = code_bytes[:target_block.start_byte] + new_code.encode("utf-8") + code_bytes[target_block.end_byte:]
+        return mutated.decode("utf-8")
+
+    def delete_symbol(self, code: str, symbol_name: str) -> str:
+        if not code.strip():
+            return code
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+        node = self._find_symbol_node(tree, symbol_name)
+        if not node:
+            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
+        mutated = code_bytes[:node.start_byte] + code_bytes[node.end_byte:]
+        return mutated.decode("utf-8")
+
+    def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
+        code_bytes = code.encode("utf-8")
+        if not target_parent:
+            if not code.endswith("\n"):
+                return (code_bytes + b"\n\n" + new_code.encode("utf-8")).decode("utf-8")
+            return (code_bytes + b"\n" + new_code.encode("utf-8")).decode("utf-8")
+        tree = self.parser.parse(code_bytes)
+        node = self._find_symbol_node(tree, target_parent)
+        if not node:
+            raise CodeStructureError(f"Parent symbol '{target_parent}' not found.")
+
+        mutated = code_bytes[:node.end_byte] + b"\n" + new_code.encode("utf-8") + b"\n" + code_bytes[node.end_byte:]
+        return mutated.decode("utf-8")

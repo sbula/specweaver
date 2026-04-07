@@ -17,6 +17,10 @@ def _run_atom(
     executor.read.side_effect = lambda p: ExecutorResult(
         status="success", data=file_system_simulator.get(p, "")
     )
+    def _mock_write(p: str, data: str, **kwargs: Any) -> ExecutorResult:
+        file_system_simulator[p] = data
+        return ExecutorResult(status="success")
+    executor.write.side_effect = _mock_write
 
     atom = CodeStructureAtom(executor)
     res = atom.run({"intent": intent, "path": path, **context})
@@ -298,3 +302,88 @@ def test_tool_oom_protection() -> None:
     res = _run_atom("read_file_structure", "big.py", {}, {"big.py": code})
     # As long as it returns successfully without a StackOverflow, we pass. We don't care if data was truncated.
     assert res.status in [AtomStatus.SUCCESS, AtomStatus.FAILED]
+
+
+def test_python_mutation_operations() -> None:
+    """Test replace, replace_body, delete, and add symbol for Python via CodeStructureAtom."""
+    code = """
+class TargetClass:
+    def original_math(self):
+        return 1 + 1
+
+    def method_to_delete(self):
+        pass
+"""
+    fs = {"file.py": code}
+
+    # 1. Replace Body
+    res = _run_atom("replace_symbol_body", "file.py", {"symbol_name": "original_math", "new_code": "return 42"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "return 42" in fs["file.py"]
+    assert "return 1 + 1" not in fs["file.py"]
+    assert "def original_math(self):" in fs["file.py"]
+
+    # 2. Add Symbol
+    res = _run_atom("add_symbol", "file.py", {"target_parent": "TargetClass", "new_code": "def added_method(self):\n    return 'new'"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "def added_method(self):" in fs["file.py"]
+
+    # 3. Delete Symbol
+    res = _run_atom("delete_symbol", "file.py", {"symbol_name": "method_to_delete"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "def method_to_delete" not in fs["file.py"]
+
+    # 4. Replace Symbol (Full)
+    res = _run_atom("replace_symbol", "file.py", {"symbol_name": "original_math", "new_code": "def brand_new_math(self):\n    return 100"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "def brand_new_math" in fs["file.py"]
+    assert "def original_math" not in fs["file.py"]
+
+def test_python_mutation_edge_cases() -> None:
+    """Test AST edge cases like auto-indentation of multi-line replacements, missing targets, nested classes."""
+    code = """
+class OuterClass:
+    class InnerClass:
+        def do_nested(self):
+            print("nested")
+"""
+    fs = {"file.py": code}
+
+    # 1. Multi-line auto-indentation in nested scopes
+    new_body = "for i in range(3):\n    print('nested ' + str(i))"
+    res = _run_atom("replace_symbol_body", "file.py", {"symbol_name": "do_nested", "new_code": new_body}, fs)
+
+    assert res.status.value == "SUCCESS"
+    # Ensure it was indented to match the 12-space internal block margin
+    assert "            for i in range(3):" in fs["file.py"]
+    assert "                print('nested ' + str(i))" in fs["file.py"]
+
+    # 2. Target not found
+    res = _run_atom("replace_symbol", "file.py", {"symbol_name": "NonExistentMethod", "new_code": "pass"}, fs)
+    assert res.status.value == "FAILED"
+    assert "not found" in res.message
+
+    # 3. Add Symbol to EOF (target_parent None)
+    res = _run_atom("add_symbol", "file.py", {"target_parent": None, "new_code": "def global_func():\n    return 1"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "def global_func():" in fs["file.py"]
+
+def test_python_mutation_on_malformed_syntax() -> None:
+    """Test that tree-sitter recovers and successfully mutates a symbol even if the file contains severe syntax errors."""
+    code = """
+class TargetClass:
+    def good_method(self):
+        return True
+
+# Missing colon, bad indentation, unclosed parenthesis
+def corrupted_syntax()
+    print("oh no"
+"""
+    fs = {"file.py": code}
+    
+    # Tree-sitter's fault tolerance should still locate good_method accurately.
+    res = _run_atom("delete_symbol", "file.py", {"symbol_name": "good_method"}, fs)
+    assert res.status.value == "SUCCESS"
+    assert "def good_method(self):" not in fs["file.py"]
+    # The bad syntax should be completely untouched
+    assert "def corrupted_syntax()" in fs["file.py"]

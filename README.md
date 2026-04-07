@@ -278,7 +278,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C09, drift detection)
-├── tests/                      # 3760+ tests (unit, integration, E2E)
+├── tests/                      # 3780+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

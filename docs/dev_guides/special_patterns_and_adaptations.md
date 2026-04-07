@@ -133,3 +133,17 @@ Instead of trying to architect convoluted SCM query strings to capture every pos
 
 ### Why we do it:
 This abstraction anomaly completely removes the need for infinite grammar mappings. Since the parent-tree strictly cascades mathematically in all 5 supported languages (Rust, Python, Java, Kotlin, TS), a single logical upward-walker uniformly preserves `@app.route` or `export async` wrappers indiscriminately.
+
+---
+
+## 10. The Dual-Consumer Atom Bypass & AST Auto-Indentation
+
+When implementing the **Polyglot AST Symbol Writer (Feature 3.22, SF-2)** to allow agents to seamlessly edit deeply nested code structures, we explicitly authorized a massive architectural exception known as the Dual-Consumer Atom Bypass, paired with an AST auto-indenter proxy.
+
+### How it works:
+Standard design dictates atoms only return localized data formats (e.g. `AtomResult`) and rely entirely on `impl` tool mapping facades to execute actual side effects (like writing strings safely to disk). `CodeStructureAtom` violates this rule explicitly. It intercepts the mutated byte-strings calculated by internal tree-sitter parsers and executes a direct `self._executor.write(path, mutated_code)` side effect completely hidden from the encompassing tool router.
+Furthermore, any multi-line string injected into this write is pre-processed by an `_auto_indent` proxy that intercepts the AST's exact integer-based integer margin layout and flawlessly prepends recursively calculated padding.
+
+### Why we do it:
+1. **Double Handling Loop Hallucination:** If the Atom simply surfaced the newly mutated 2,000-line Python struct payload back to the Agent facade, the AI context window would instantly blow out trying to pipe that return sequence sequentially into an independent `FileWriter` tool call. Atomic persistence within the CodeStructureAtom eliminates context-bloat definitively.
+2. **Strict Indentation Immunity:** By forcing the engine to intercept LLM-generated string blocks and perform padding against Tree-Sitter boundaries natively rather than within regex bounds, we effectively inoculate SpecWeaver against LLM `IndentationErrors` and trailing brace failures across languages.

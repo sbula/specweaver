@@ -5,10 +5,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from specweaver.llm.models import ToolDefinition, ToolParameter
-
 
 READ_FILE_STRUCTURE_SCHEMA = ToolDefinition(
     name="read_file_structure",
@@ -74,11 +73,99 @@ LIST_SYMBOLS_SCHEMA = ToolDefinition(
     ],
 )
 
+DELETE_SYMBOL_SCHEMA = ToolDefinition(
+    name="delete_symbol",
+    description="Surgically removes a symbol and its body entirely from the file without leaving stray characters or invalid AST states.",
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="The exact relative path of the target file.",
+        ),
+        ToolParameter(
+            name="symbol_name",
+            type="string",
+            description="The target node class or function name to delete.",
+        )
+    ],
+)
+
+ADD_SYMBOL_SCHEMA = ToolDefinition(
+    name="add_symbol",
+    description="Injects a completely new symbol cleanly into a specified parent class or to the bottom of the file if target_parent is omitted.",
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="The exact relative path of the target file.",
+        ),
+        ToolParameter(
+            name="target_parent",
+            type="string",
+            description="The class name to inject the new symbol into. If null or empty, injects to the bottom of the file.",
+            required=False,
+        ),
+        ToolParameter(
+            name="new_code",
+            type="string",
+            description="The full syntax logic of the new symbol to add.",
+        )
+    ],
+)
+
+REPLACE_SYMBOL_BODY_SCHEMA = ToolDefinition(
+    name="replace_symbol_body",
+    description="Surgically overwrites ONLY the inner `{...}` or indented body block of a target symbol, protecting its decorators and signature.",
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="The exact relative path of the target file.",
+        ),
+        ToolParameter(
+            name="symbol_name",
+            type="string",
+            description="The target node class or function name whose body will be updated.",
+        ),
+        ToolParameter(
+            name="new_code",
+            type="string",
+            description="The new replacement logic block.",
+        )
+    ],
+)
+
+REPLACE_SYMBOL_SCHEMA = ToolDefinition(
+    name="replace_symbol",
+    description="Surgically overwrites the ENTIRE wrapper (decorators, signature, body) of a target symbol.",
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="The exact relative path of the target file.",
+        ),
+        ToolParameter(
+            name="symbol_name",
+            type="string",
+            description="The target node class or function name to replace.",
+        ),
+        ToolParameter(
+            name="new_code",
+            type="string",
+            description="The new raw code payload that will replace the given symbol boundary entirely.",
+        )
+    ],
+)
+
 def get_code_structure_schema() -> list[Any]:
     """Returns the JSON Schema tools injected into the Prompt."""
     return [
         READ_FILE_STRUCTURE_SCHEMA,
         READ_SYMBOL_SCHEMA,
         READ_SYMBOL_BODY_SCHEMA,
-        LIST_SYMBOLS_SCHEMA
+        LIST_SYMBOLS_SCHEMA,
+        REPLACE_SYMBOL_SCHEMA,
+        REPLACE_SYMBOL_BODY_SCHEMA,
+        ADD_SYMBOL_SCHEMA,
+        DELETE_SYMBOL_SCHEMA
     ]

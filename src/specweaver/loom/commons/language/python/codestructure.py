@@ -145,3 +145,131 @@ class PythonCodeStructure(CodeStructureInterface):
                 seen.add(x)
                 unique_symbols.append(x)
         return unique_symbols
+
+    def _auto_indent(self, new_code: str, margin: int) -> str:
+        if not new_code:
+            return new_code
+        lines = new_code.split("\n")
+        padded = []
+        for i, line in enumerate(lines):
+            if i == 0:
+                padded.append(line)
+            else:
+                if line.strip() == "":
+                    padded.append(line) # preserve empty lines
+                else:
+                    padded.append((" " * margin) + line)
+        return "\n".join(padded)
+
+    def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
+        query = Query(self.language, SCM_SYMBOL_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        for _, match_dict in matches:
+            if "name" in match_dict:
+                for name_node in match_dict["name"]:
+                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
+                    if node_name_str == symbol_name:
+                        parent = name_node.parent
+                        if parent and parent.type in ("function_definition", "class_definition"):
+                            if parent.parent and parent.parent.type == "decorated_definition":
+                                return parent.parent
+                            return parent
+        return None
+
+    def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
+        if not code.strip():
+            raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
+
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+        node = self._find_symbol_node(tree, symbol_name)
+
+        if not node:
+            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
+
+        margin = typing.cast(int, node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin).encode("utf-8")
+
+        start_byte = typing.cast(int, node.start_byte)
+        end_byte = typing.cast(int, node.end_byte)
+        mutated = code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
+        return mutated.decode("utf-8")
+
+    def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
+        if not code.strip():
+            raise CodeStructureError(f"Cannot replace body of '{symbol_name}' in empty code.")
+
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+
+        # We need to find the block explicitly
+        query = Query(self.language, SCM_SYMBOL_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        target_block = None
+        for _, match_dict in matches:
+            if "name" in match_dict:
+                for name_node in match_dict["name"]:
+                    if typing.cast("bytes", name_node.text).decode("utf-8") == symbol_name:
+                        parent = name_node.parent
+                        if parent and parent.type in ("function_definition", "class_definition"):
+                            for child in parent.children:
+                                if child.type == "block":
+                                    target_block = child
+                                    break
+
+        if not target_block:
+            raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
+
+        margin = target_block.start_point[1]
+        indented_code = self._auto_indent(new_code, margin).encode("utf-8")
+
+        start_byte = target_block.start_byte
+        end_byte = target_block.end_byte
+        mutated = code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
+        return mutated.decode("utf-8")
+
+    def delete_symbol(self, code: str, symbol_name: str) -> str:
+        if not code.strip():
+            return code
+
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+        node = self._find_symbol_node(tree, symbol_name)
+
+        if not node:
+            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
+
+        start_byte = typing.cast(int, node.start_byte)
+        end_byte = typing.cast(int, node.end_byte)
+        mutated = code_bytes[:start_byte] + code_bytes[end_byte:]
+        return mutated.decode("utf-8")
+
+    def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
+        code_bytes = code.encode("utf-8")
+
+        if not target_parent:
+            # Append to EOF
+            indented_code = self._auto_indent(new_code, 0).encode("utf-8")
+            if not code.endswith("\n"):
+                return (code_bytes + b"\n\n" + indented_code).decode("utf-8")
+            return (code_bytes + b"\n" + indented_code).decode("utf-8")
+
+        tree = self.parser.parse(code_bytes)
+        node = self._find_symbol_node(tree, target_parent)
+
+        if not node:
+            raise CodeStructureError(f"Parent symbol '{target_parent}' not found.")
+
+        # Target parent should be a class. Inject right before its end_byte.
+        # But we need to indent inside it. Python body block standard indent is parent margin + 4.
+        start_byte = typing.cast(int, node.start_byte)
+        end_byte = typing.cast(int, node.end_byte)
+        margin = typing.cast(int, node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
+        
+        mutated = code_bytes[:end_byte] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + code_bytes[end_byte:]
+        return mutated.decode("utf-8")

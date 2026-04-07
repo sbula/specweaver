@@ -81,3 +81,19 @@ class CodeStructureInterface(ABC):
         Returns:
             A flat array of all targetable symbols.
         """
+
+    @abstractmethod
+    def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
+        """Replace the entire symbol wrapper (decorators, signature, body)."""
+
+    @abstractmethod
+    def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
+        """Replace only the inner execution block of a symbol."""
+
+    @abstractmethod
+    def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
+        """Add a new symbol to the file or to a target parent symbol."""
+
+    @abstractmethod
+    def delete_symbol(self, code: str, symbol_name: str) -> str:
+        """Remove a symbol completely from the file."""

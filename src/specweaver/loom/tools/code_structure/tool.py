@@ -16,7 +16,6 @@ from specweaver.loom.security import AccessMode, FolderGrant
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
     from specweaver.loom.atoms.code_structure.atom import CodeStructureAtom
 
 # ---------------------------------------------------------------------------
