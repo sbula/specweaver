@@ -41,6 +41,8 @@ SpecWeaver's domain-driven architecture demands a strict separation between Pure
 | FR-3 | Polyglot Registry | Flow Engine | centralizes language I/O | The system SHALL unify test-running (`runner.py`) and AST execution (`ast_parser.py`) exclusively within `loom/commons/language/<name>`. |
 | FR-4 | Query Fallback | CodeStructureTool | encounters unsupported language | If the file's language has no registered extractor plugin, the system SHALL throw an explicit error reminding the LLM to use `read_file` instead. |
 | FR-5 | Symbol Replacement | CodeStructureTool | writes into a specific symbol | *(SF-2)* The system SHALL safely replace the body of a specific AST symbol with new code logic without relying on regex or fragile byte matching. |
+| FR-6 | Symbol Listing | CodeStructureTool | lists available symbols | The system SHALL return a flat array mapping of all targetable symbols within a file, filterable by a designated visibility constraint (e.g. `['public']`). |
+| FR-7 | Symbol Body Extraction | CodeStructureTool | reads only the inner block | The system SHALL selectively return only the internal execution logic block (`{...}`) of a symbol without extracting its decorators or external class wrappers. |
 
 ## Non-Functional Requirements
 

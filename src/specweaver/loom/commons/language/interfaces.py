@@ -52,3 +52,32 @@ class CodeStructureInterface(ABC):
         Raises:
             CodeStructureError: If the symbol cannot be found in the AST.
         """
+
+    @abstractmethod
+    def extract_symbol_body(self, code: str, symbol_name: str) -> str:
+        """Extract the exact full source code string of a specific symbol's internal body block.
+        
+        This prevents mutation of the symbol's decorators or signature when performing rewrites.
+
+        Args:
+            code: The raw source code of the file.
+            symbol_name: The target node (e.g., 'MyClass' or 'my_function').
+
+        Returns:
+            The raw execution logic inside the symbol bounds (e.g. `{...}` or `...`).
+
+        Raises:
+            CodeStructureError: If the symbol cannot be found in the AST.
+        """
+
+    @abstractmethod
+    def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
+        """Dynamically map and list all targetable symbols within a file.
+        
+        Args:
+            code: The raw source code of the file.
+            visibility: Optional list to limit the payload to explicit access boundaries (e.g. ['public']).
+
+        Returns:
+            A flat array of all targetable symbols.
+        """

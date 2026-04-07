@@ -25,14 +25,14 @@ This is a required structural refactor. The current `qa_runner` acts as a vertic
 #### [NEW] `src/specweaver/loom/commons/language/<lang>/ast_parser.py`
 - Create AST definitions alongside the newly migrated runners.
 - Store the `.scm` Tree-Sitter queries (`@definition.function`, `@definition.class`) inside the file or as adjacent `.scm` files.
-- Provide a standard interface: `extract_skeleton(code: str) -> str` and `extract_symbol(code: str, symbol: str) -> str`.
+- Provide a standard interface: `extract_skeleton`, `extract_symbol`, `extract_symbol_body`, and `list_symbols(code, visibility: list[str])`.
 
 ### Component 2: The Atom (Trusted Engine I/O)
 *Provides unrestricted execution of the AST engine for SpecWeaver internal use.*
 
 #### [NEW] `src/specweaver/loom/atoms/code_structure/atom.py`
 - Implements `AstAtom` inheriting from `Atom`.
-- Provides `run_extract_skeleton(path: str)` and `run_extract_symbol(path: str, symbol: str)`.
+- Provides `run_extract_skeleton`, `run_extract_symbol`, `run_extract_symbol_body`, and `run_list_symbols`.
 - **Flow:** Uses `FileExecutor` to read the file string, dynamically dispatches to the correct language parser in `commons/language/`, executes the `.scm` query, and formats the output.
 - **Dependency:** Strictly imports from `commons/language`.
 
@@ -41,7 +41,7 @@ This is a required structural refactor. The current `qa_runner` acts as a vertic
 
 #### [NEW] `src/specweaver/loom/tools/code_structure/tool.py`
 - Implements `CodeStructureTool`.
-- Contains intents: `read_file_structure` and `read_symbol`.
+- Contains intents: `read_file_structure`, `read_symbol`, `read_symbol_body`, and `list_symbols`.
 - **Validation:** Verifies `FolderGrant` and checks `ROLE_INTENTS` before delegating to the `AstAtom`.
 
 #### [NEW] `src/specweaver/loom/tools/code_structure/interfaces.py`

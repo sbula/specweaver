@@ -135,3 +135,18 @@ public interface Other { void target(); }
 """
     target = parser.extract_symbol(code, "target")
     assert "target" in target
+
+def test_extract_symbol_missing_closing_brackets(parser: JavaCodeStructure) -> None:
+    code = """
+public class UnclosedClass {
+    public void unclosedMethod() {
+        System.out.println("Wait, I never closed the class or the method...
+"""
+    try:
+        # It shouldn't crash SpecWeaver, it should just fail to find a valid AST symbol boundary
+        # or it should recover and extract it anyway!
+        target = parser.extract_symbol(code, "UnclosedClass")
+        assert "UnclosedClass" in target
+    except CodeStructureError:
+        pass  # Graceful failure is also acceptable for catastrophic syntax loss without crashing the runner
+

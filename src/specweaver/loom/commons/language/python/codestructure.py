@@ -90,3 +90,60 @@ class PythonCodeStructure(CodeStructureInterface):
                             return typing.cast("bytes", parent.text).decode("utf-8")
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
+
+    def extract_symbol_body(self, code: str, symbol_name: str) -> str:
+        if not code.strip():
+            raise CodeStructureError(f"Cannot extract '{symbol_name}' from empty code.")
+
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+
+        query = Query(self.language, SCM_SYMBOL_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        for _, match_dict in matches:
+            if "name" in match_dict:
+                for name_node in match_dict["name"]:
+                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
+                    if node_name_str == symbol_name:
+                        parent = name_node.parent
+                        if parent and parent.type in ("function_definition", "class_definition"):
+                            for child in parent.children:
+                                if child.type == "block":
+                                    return typing.cast("bytes", child.text).decode("utf-8")
+                            return ""
+
+        raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
+
+    def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
+        if not code.strip():
+            return []
+
+        tree = self.parser.parse(code.encode("utf-8"))
+        query = Query(self.language, SCM_SYMBOL_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        symbols = []
+        for _, match_dict in matches:
+            if "name" in match_dict:
+                for name_node in match_dict["name"]:
+                    sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
+                    
+                    if visibility and "public" in visibility:
+                        # In Python, standard protected starts with single `_`
+                        if sym_name.startswith("_") and not sym_name.startswith("__"):
+                            continue
+                            
+                    symbols.append(sym_name)
+
+        # distinct
+        seen = set()
+
+        unique_symbols = []
+        for x in symbols:
+            if x not in seen:
+                seen.add(x)
+                unique_symbols.append(x)
+        return unique_symbols

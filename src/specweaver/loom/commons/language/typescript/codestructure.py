@@ -86,3 +86,52 @@ class TypeScriptCodeStructure(CodeStructureInterface):
                             return typing.cast("bytes", wrapper.text).decode("utf-8")
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
+
+    def extract_symbol_body(self, code: str, symbol_name: str) -> str:
+        symbol_code = self.extract_symbol(code, symbol_name)
+        tree = self.parser.parse(symbol_code.encode("utf-8"))
+        query = Query(self.language, SCM_SKELETON_QUERY)
+        cursor = QueryCursor(query)
+        captures = cursor.captures(tree.root_node)
+        
+        if "block" in captures and captures["block"]:
+            # Pick the largest block if there are multiple (to avoid nested class bodies parsing issue)
+            # Actually, the first capture is usually the outermost block.
+            return typing.cast("bytes", captures["block"][0].text).decode("utf-8")
+        return ""
+
+    def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
+        if not code.strip():
+            return []
+
+        tree = self.parser.parse(code.encode("utf-8"))
+        query = Query(self.language, SCM_SYMBOL_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        symbols = []
+        for match_id, match_dict in matches:
+            if "name" in match_dict:
+                for name_node in match_dict["name"]:
+                    sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
+                    
+                    if visibility and "public" in visibility:
+                        # For TS, public usually implies 'export'
+                        parent = name_node.parent
+                        while parent:
+                            if parent.type == "export_statement":
+                                break
+                            parent = parent.parent
+                        if not parent:
+                            continue
+                            
+                    symbols.append(sym_name)
+
+        seen = set()
+
+        unique_symbols = []
+        for x in symbols:
+            if x not in seen:
+                seen.add(x)
+                unique_symbols.append(x)
+        return unique_symbols
