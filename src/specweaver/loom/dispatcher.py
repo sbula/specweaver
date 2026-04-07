@@ -129,6 +129,26 @@ class ToolDispatcher:
             fs_interface = create_filesystem_interface(role, cwd=boundary.roots[0], grants=grants)
             interfaces.append(fs_interface)
 
+        if "ast" in allowed_tools or "codestructure" in allowed_tools:
+            # Isolate AST dependencies
+            from specweaver.loom.atoms.code_structure.atom import CodeStructureAtom
+            from specweaver.loom.commons.filesystem.executor import EngineFileExecutor
+            from specweaver.loom.security import AccessMode, FolderGrant
+            from specweaver.loom.tools.code_structure.tool import CodeStructureTool
+
+            # Atom executes locally reading files relative to project root
+            atom = CodeStructureAtom(EngineFileExecutor(boundary.roots[0]))
+
+            # Reuse exact read-only grant logic from fs
+            grants = []
+            for root in boundary.roots:
+                grants.append(FolderGrant(str(root), AccessMode.FULL, recursive=True))
+            for api_path in boundary.api_paths:
+                grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
+
+            ast_interface = CodeStructureTool(atom=atom, role=role, grants=grants)
+            interfaces.append(ast_interface)
+
         if "web" in allowed_tools:
             # Provide WebTool directly if web search is enabled
             from specweaver.loom.tools.web.tool import WebTool

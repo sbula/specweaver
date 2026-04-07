@@ -85,12 +85,19 @@ class KotlinCodeStructure(CodeStructureInterface):
         query = Query(self.language, SCM_SKELETON_QUERY)
         cursor = QueryCursor(query)
         captures = cursor.captures(tree.root_node)
-        
-        if "block" in captures and captures["block"]:
+
+        if captures.get("block"):
             # Pick the largest block if there are multiple (to avoid nested class bodies parsing issue)
             # Actually, the first capture is usually the outermost block.
             return typing.cast("bytes", captures["block"][0].text).decode("utf-8")
         return ""
+
+    def _is_symbol_private(self, parent: typing.Any) -> bool:
+        if parent and parent.parent:
+            for child in parent.parent.children:
+                if child.type == "modifiers" and child.text and (b"private" in child.text or b"protected" in child.text or b"internal" in child.text):
+                    return True
+        return False
 
     def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
         if not code.strip():
@@ -102,22 +109,14 @@ class KotlinCodeStructure(CodeStructureInterface):
         matches = cursor.matches(tree.root_node)
 
         symbols = []
-        for match_id, match_dict in matches:
+        for _match_id, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    
-                    if visibility and "public" in visibility:
-                        parent = name_node.parent
-                        is_private = False
-                        if parent and parent.parent:
-                            for child in parent.parent.children:
-                                if child.type == "modifiers":
-                                    if child.text and (b"private" in child.text or b"protected" in child.text or b"internal" in child.text):
-                                        is_private = True
-                        if is_private:
-                            continue
-                            
+
+                    if visibility and "public" in visibility and self._is_symbol_private(name_node.parent):
+                        continue
+
                     symbols.append(sym_name)
 
         seen = set()

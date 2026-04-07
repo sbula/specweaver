@@ -38,12 +38,12 @@ public class MyClass {
     assert "public MyClass() {" in skeleton
     assert "public void method(int x) {" in skeleton
     assert "{ ... }" in skeleton
-    assert "System.out.println(\"Init\")" not in skeleton
+    assert 'System.out.println("Init")' not in skeleton
     assert "int y =" not in skeleton
 
 
 def test_extract_skeleton_preserves_docstrings(parser: JavaCodeStructure) -> None:
-    code = '''
+    code = """
 /**
  * This is a java docstring.
  */
@@ -51,7 +51,7 @@ public void myFunc() {
     int x = 10;
     return;
 }
-'''
+"""
     skeleton = parser.extract_skeleton(code)
 
     assert "public void myFunc() {" in skeleton
@@ -102,6 +102,7 @@ def test_extract_symbol_empty_string(parser: JavaCodeStructure) -> None:
     with pytest.raises(CodeStructureError, match=r"Cannot extract \'Anything\' from empty code\."):
         parser.extract_symbol("", "Anything")
 
+
 def test_extract_symbol_annotation_preservation(parser: JavaCodeStructure) -> None:
     code = """
 @RestController
@@ -119,6 +120,7 @@ public class AnnotatedClass {
     assert "@Override" in target_fn
     assert "@Transactional" in target_fn
 
+
 def test_extract_symbol_malformed_syntax(parser: JavaCodeStructure) -> None:
     code = """public class Broken { public void broken(((( { } }
 
@@ -128,6 +130,8 @@ public class Good { public boolean good() { return true; } }"""
         assert "class Good" in target
     except CodeStructureError:
         pass
+
+
 def test_extract_symbol_scope_collision(parser: JavaCodeStructure) -> None:
     code = """
 public class Parent { public void target() {} }
@@ -135,6 +139,7 @@ public interface Other { void target(); }
 """
     target = parser.extract_symbol(code, "target")
     assert "target" in target
+
 
 def test_extract_symbol_missing_closing_brackets(parser: JavaCodeStructure) -> None:
     code = """
@@ -149,4 +154,3 @@ public class UnclosedClass {
         assert "UnclosedClass" in target
     except CodeStructureError:
         pass  # Graceful failure is also acceptable for catastrophic syntax loss without crashing the runner
-

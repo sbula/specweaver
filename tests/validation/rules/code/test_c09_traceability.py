@@ -11,8 +11,16 @@ from specweaver.validation.rules.code.c09_traceability import TraceabilityRule
 def test_passes_when_no_frs_found():
     """If the spec has no functional requirements, the traceability matrix trivially passes."""
     rule = TraceabilityRule()
-    with patch("specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root", return_value=Path("/tmp/root")), \
-         patch("specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements", return_value=set()):
+    with (
+        patch(
+            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
+            return_value=Path("/tmp/root"),
+        ),
+        patch(
+            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
+            return_value=set(),
+        ),
+    ):
         result = rule.check(spec_text="", spec_path=Path("/tmp/root/app.py"))
 
     assert result.status == Status.PASS
@@ -87,9 +95,20 @@ def test_something():
 
 def test_fails_with_missing_frs():
     """Ensure the matrix fails if target IDs are unmapped."""
-    with patch("specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root", return_value=Path("/tmp/root")), \
-         patch("specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements", return_value={"FR-1", "FR-2", "FR-3"}), \
-         patch("specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_and_parse_tests", return_value={"FR-1", "FR-2"}):
+    with (
+        patch(
+            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
+            return_value=Path("/tmp/root"),
+        ),
+        patch(
+            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
+            return_value={"FR-1", "FR-2", "FR-3"},
+        ),
+        patch(
+            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_and_parse_tests",
+            return_value={"FR-1", "FR-2"},
+        ),
+    ):
         rule = TraceabilityRule()
         result = rule.check(spec_text="", spec_path=Path("/tmp/root/app.py"))
 
@@ -101,9 +120,20 @@ def test_fails_with_missing_frs():
 
 def test_passes_when_all_frs_mapped():
     """Ensure the matrix passes if all target IDs are mapped."""
-    with patch("specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root", return_value=Path("/tmp/root")), \
-         patch("specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements", return_value={"FR-1", "FR-2", "FR-3"}), \
-         patch("specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_and_parse_tests", return_value={"FR-1", "FR-2", "FR-3"}):
+    with (
+        patch(
+            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
+            return_value=Path("/tmp/root"),
+        ),
+        patch(
+            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
+            return_value={"FR-1", "FR-2", "FR-3"},
+        ),
+        patch(
+            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_and_parse_tests",
+            return_value={"FR-1", "FR-2", "FR-3"},
+        ),
+    ):
         rule = TraceabilityRule()
         result = rule.check(spec_text="", spec_path=Path("/tmp/root/app.py"))
 
@@ -141,12 +171,12 @@ def test_missing_spec_file_graceful():
 def test_ast_regex_boundaries(tmp_path):
     """Ensure regex captures standard variants like no spaces, ignoring trailing chars."""
     test_file = tmp_path / "test_bounds.py"
-    test_file.write_text('''
+    test_file.write_text("""
     #@trace(FR-100)
     # @trace(NFR-200) trailing text
     #        @trace(FR-300)
     # this is not a trace FR-400
-    ''')
+    """)
 
     rule = TraceabilityRule()
     with patch(

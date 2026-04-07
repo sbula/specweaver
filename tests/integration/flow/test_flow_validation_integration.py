@@ -85,6 +85,7 @@ async def test_handler_adapter_integration(tmp_path: Path) -> None:
     joined_messages = " ".join([m.content for m in messages if hasattr(m, "content") and m.content])
     assert "Generation Spec" in joined_messages
 
+
 @pytest.mark.asyncio
 async def test_validate_spec_dal_matrix_integrates_pipeline(tmp_path: Path) -> None:
     """Verifies that a configured DAL effectively alters the pipeline rule constraints dynamically."""
@@ -122,6 +123,7 @@ async def test_validate_spec_dal_matrix_integrates_pipeline(tmp_path: Path) -> N
     # Because S01/S02 might be the only failing ones for our tiny mock
     assert result.status is not None
 
+
 @pytest.mark.asyncio
 async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> None:
     """Verifies when context yield nothing, code handler falls back to DB."""
@@ -147,7 +149,13 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
     mock_db = MagicMock()
     mock_db.get_default_dal.return_value = "DAL_B"
 
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", output_dir=code_dir, settings=settings, db=mock_db)
+    context = RunContext(
+        project_path=tmp_path,
+        spec_path=tmp_path / "spec.md",
+        output_dir=code_dir,
+        settings=settings,
+        db=mock_db,
+    )
 
     step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.CODE)
     handler = ValidateCodeHandler()
@@ -158,6 +166,7 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
     mock_db.get_default_dal.assert_called_once()
     assert result.status is not None
 
+
 @pytest.mark.asyncio
 async def test_validate_spec_missing_matrix_integration(tmp_path: Path) -> None:
     """Verifies missing DAL matrix cleanly defaults."""
@@ -165,7 +174,8 @@ async def test_validate_spec_missing_matrix_integration(tmp_path: Path) -> None:
     spec_path.write_text("# Test Spec\n\n## Intent\n\nThis is a test spec.\n")
 
     from specweaver.config.settings import LLMSettings, SpecWeaverSettings
-    settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="mock")) # No dal_matrix set
+
+    settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="mock"))  # No dal_matrix set
 
     context = RunContext(project_path=tmp_path, spec_path=spec_path, settings=settings)
 
@@ -177,4 +187,3 @@ async def test_validate_spec_missing_matrix_integration(tmp_path: Path) -> None:
 
     # Should not crash attempting to merge missing matrix
     assert result.status in (StepStatus.PASSED, StepStatus.FAILED)
-

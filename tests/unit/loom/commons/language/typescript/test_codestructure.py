@@ -44,7 +44,7 @@ export class MyClass {
 
 
 def test_extract_skeleton_preserves_docstrings(parser: TypeScriptCodeStructure) -> None:
-    code = '''
+    code = """
 /**
  * This is a TS docstring.
  */
@@ -52,7 +52,7 @@ function myFunc() {
     let x = 10;
     return x;
 }
-'''
+"""
     skeleton = parser.extract_skeleton(code)
 
     assert "function myFunc() {" in skeleton
@@ -91,7 +91,7 @@ export function TargetFunc() {
 
     target_fn = parser.extract_symbol(code, "TargetFunc")
     assert "function TargetFunc() {" in target_fn
-    assert "return \"success\";" in target_fn
+    assert 'return "success";' in target_fn
     assert "TargetClass" not in target_fn
 
 
@@ -106,16 +106,19 @@ def test_extract_symbol_empty_string(parser: TypeScriptCodeStructure) -> None:
     with pytest.raises(CodeStructureError, match=r"Cannot extract \'Anything\' from empty code\."):
         parser.extract_symbol("", "Anything")
 
+
 def test_extract_symbol_arrow_function(parser: TypeScriptCodeStructure) -> None:
     code = "export const MyArrowFunc = async () => { return 1; }"
     target = parser.extract_symbol(code, "MyArrowFunc")
     assert "export const MyArrowFunc" in target
     assert "=>" in target
 
+
 def test_extract_symbol_export_wrappers(parser: TypeScriptCodeStructure) -> None:
     code = "export default class ExportedClass { }"
     target = parser.extract_symbol(code, "ExportedClass")
     assert "export default class ExportedClass" in target
+
 
 def test_extract_symbol_malformed_syntax(parser: TypeScriptCodeStructure) -> None:
     code = """export default function broken(;::::)
@@ -126,6 +129,8 @@ export function good() { return true; }"""
         assert "export function good" in target
     except CodeStructureError:
         pass  # Graceful failure is expected if severely malformed AST drops the symbol
+
+
 def test_extract_symbol_scope_collision(parser: TypeScriptCodeStructure) -> None:
     code = """
 class Parent { target() { return 1; } }

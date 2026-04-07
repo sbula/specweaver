@@ -1,0 +1,70 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.3, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\steve\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\development\pitbula\specweaver
+configfile: pyproject.toml
+plugins: anyio-4.8.0, asyncio-1.3.0, cov-7.0.0, tach-0.34.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 6 items
+[36m[Tach][0m 6 tests in 28 files unaffected by changes ([33m~54.0s could be saved[0m). Skip with: [1mpytest --tach[0m
+[36m[Tach][0m [2mTo disable: pytest -p no:tach (https://docs.gauge.sh/usage/commands#using-the-pytest-plugin-directly)[0m
+
+tests/integration/loom/test_polyglot_ast_edge_cases.py::test_java_missing_closing_brackets FAILED [ 16%]
+tests/integration/loom/test_polyglot_ast_edge_cases.py::test_ts_deeply_nested_scopes FAILED [ 33%]
+tests/integration/loom/test_polyglot_ast_edge_cases.py::test_rust_overloaded_methods FAILED [ 50%]
+tests/integration/loom/test_polyglot_ast_edge_cases.py::test_python_empty_file_handling FAILED [ 66%]
+tests/integration/loom/test_polyglot_ast_edge_cases.py::test_kotlin_symbol_not_found FAILED [ 83%]
+tests/e2e/test_ast_tool_injection.py::test_dispatcher_ast_injection FAILED [100%]
+
+================================== FAILURES ===================================
+_____________________ test_java_missing_closing_brackets ______________________
+tests\integration\loom\test_polyglot_ast_edge_cases.py:37: in test_java_missing_closing_brackets
+    assert "int a = 1;" in res.exports
+E   assert 'int a = 1;' in {'body': '{\n            int a = 1;\n            int b = 2;\n        // Missing closing brace for method and class'}
+E    +  where {'body': '{\n            int a = 1;\n            int b = 2;\n        // Missing closing brace for method and class'} = AtomResult(status=<AtomStatus.SUCCESS: 'SUCCESS'>, message="Extracted body of 'myTargetMethod'", exports={'body': '{\n            int a = 1;\n            int b = 2;\n        // Missing closing brace for method and class'}).exports
+________________________ test_ts_deeply_nested_scopes _________________________
+tests\integration\loom\test_polyglot_ast_edge_cases.py:54: in test_ts_deeply_nested_scopes
+    assert res.status.value == "SUCCESS"
+E   AssertionError: assert 'FAILED' == 'SUCCESS'
+E     
+E     - SUCCESS
+E     + FAILED
+________________________ test_rust_overloaded_methods _________________________
+tests\integration\loom\test_polyglot_ast_edge_cases.py:76: in test_rust_overloaded_methods
+    assert "fn execute<T>(&self)" in res.exports
+E   assert 'fn execute<T>(&self)' in {'symbol': 'fn execute<T>(&self) {\n            println!("generic");\n        }\n\nfn execute(&self, val: u32) {\n            println!("specific");\n        }'}
+E    +  where {'symbol': 'fn execute<T>(&self) {\n            println!("generic");\n        }\n\nfn execute(&self, val: u32) {\n            println!("specific");\n        }'} = AtomResult(status=<AtomStatus.SUCCESS: 'SUCCESS'>, message="Extracted symbol 'execute'", exports={'symbol': 'fn execute<T>(&self) {\n            println!("generic");\n        }\n\nfn execute(&self, val: u32) {\n            println!("specific");\n        }'}).exports
+_______________________ test_python_empty_file_handling _______________________
+tests\integration\loom\test_polyglot_ast_edge_cases.py:86: in test_python_empty_file_handling
+    assert res_struct.exports.strip() == ""
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'dict' object has no attribute 'strip'
+________________________ test_kotlin_symbol_not_found _________________________
+tests\integration\loom\test_polyglot_ast_edge_cases.py:103: in test_kotlin_symbol_not_found
+    assert res.status.value == "ERROR"
+E   AssertionError: assert 'FAILED' == 'ERROR'
+E     
+E     - ERROR
+E     + FAILED
+________________________ test_dispatcher_ast_injection ________________________
+tests\e2e\test_ast_tool_injection.py:20: in test_dispatcher_ast_injection
+    schema_reviewer = dispatcher_reviewer.get_schemas()
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get_schemas'
+======================== Tach Impact Analysis Warning =========================
+[Tach] WARNING: 6 test(s) failed that would be skipped by impact analysis!
+[Tach] These failures would be missed when using --tach:
+[Tach]   - tests/integration/loom/test_polyglot_ast_edge_cases.py::test_java_missing_closing_brackets
+[Tach]   - tests/integration/loom/test_polyglot_ast_edge_cases.py::test_ts_deeply_nested_scopes
+[Tach]   - tests/integration/loom/test_polyglot_ast_edge_cases.py::test_rust_overloaded_methods
+[Tach]   - tests/integration/loom/test_polyglot_ast_edge_cases.py::test_python_empty_file_handling
+[Tach]   - tests/integration/loom/test_polyglot_ast_edge_cases.py::test_kotlin_symbol_not_found
+[Tach]   - tests/e2e/test_ast_tool_injection.py::test_dispatcher_ast_injection
+=========================== short test summary info ===========================
+FAILED tests/integration/loom/test_polyglot_ast_edge_cases.py::test_java_missing_closing_brackets
+FAILED tests/integration/loom/test_polyglot_ast_edge_cases.py::test_ts_deeply_nested_scopes
+FAILED tests/integration/loom/test_polyglot_ast_edge_cases.py::test_rust_overloaded_methods
+FAILED tests/integration/loom/test_polyglot_ast_edge_cases.py::test_python_empty_file_handling
+FAILED tests/integration/loom/test_polyglot_ast_edge_cases.py::test_kotlin_symbol_not_found
+FAILED tests/e2e/test_ast_tool_injection.py::test_dispatcher_ast_injection - ...
+============================== 6 failed in 1.07s ==============================

@@ -48,13 +48,13 @@ pub fn standalone() -> String {
 
 
 def test_extract_skeleton_preserves_docstrings(parser: RustCodeStructure) -> None:
-    code = '''
+    code = """
 /// This is a rust docstring.
 pub fn my_func() {
     let x = 10;
     return x;
 }
-'''
+"""
     skeleton = parser.extract_skeleton(code)
 
     assert "pub fn my_func() {" in skeleton
@@ -99,7 +99,7 @@ pub fn TargetFunc() {
 """
     target_fn = parser.extract_symbol(code, "TargetFunc")
     assert "pub fn TargetFunc() {" in target_fn
-    assert "return \"success\";" in target_fn
+    assert 'return "success";' in target_fn
 
 
 def test_extract_symbol_not_found(parser: RustCodeStructure) -> None:
@@ -112,6 +112,7 @@ def test_extract_symbol_not_found(parser: RustCodeStructure) -> None:
 def test_extract_symbol_empty_string(parser: RustCodeStructure) -> None:
     with pytest.raises(CodeStructureError, match=r"Cannot extract \'Anything\' from empty code\."):
         parser.extract_symbol("", "Anything")
+
 
 def test_extract_symbol_traits_and_generics(parser: RustCodeStructure) -> None:
     code = """
@@ -130,6 +131,7 @@ impl<T> std::fmt::Display for GenStruct<T> {
     assert "impl<T> std::fmt::Display for GenStruct<T>" in target
     assert "fn fmt() {}" in target
 
+
 def test_extract_symbol_malformed_syntax(parser: RustCodeStructure) -> None:
     code = """fn broken(:: -> { }
 
@@ -139,6 +141,8 @@ fn good() -> bool { true }"""
         assert "fn good() -> bool" in target
     except CodeStructureError:
         pass
+
+
 def test_extract_symbol_scope_collision(parser: RustCodeStructure) -> None:
     code = """
 struct Target {}

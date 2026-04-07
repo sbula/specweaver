@@ -56,7 +56,7 @@ class CodeStructureInterface(ABC):
     @abstractmethod
     def extract_symbol_body(self, code: str, symbol_name: str) -> str:
         """Extract the exact full source code string of a specific symbol's internal body block.
-        
+
         This prevents mutation of the symbol's decorators or signature when performing rewrites.
 
         Args:
@@ -73,7 +73,7 @@ class CodeStructureInterface(ABC):
     @abstractmethod
     def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
         """Dynamically map and list all targetable symbols within a file.
-        
+
         Args:
             code: The raw source code of the file.
             visibility: Optional list to limit the payload to explicit access boundaries (e.g. ['public']).

@@ -839,4 +839,3 @@ class TestRunIdPropagation:
 
         _, config = _resolve_review_routing(ctx)
         assert config.run_id == "mock-run-id-1234"
-

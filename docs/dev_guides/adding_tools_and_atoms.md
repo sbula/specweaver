@@ -13,6 +13,7 @@ Because of this dual-trust model, capabilities are built as decoupled, parallel 
 ```text
 For the Agent (Untrusted):
 LLM Agent ──▶ Role Interface ──▶ Intent Tool ──▶ Executor (Raw I/O)
+(Note: Complex tools like `CodeStructureTool` may securely encapsulate trusted `Atoms` under the hood to prevent duplicating parsing logic, but they still strictly enforce Role/Folder Grants before delegation.)
 
 For the Engine (Trusted):
 Flow Engine ──▶ Atom ──▶ Executor (Raw I/O)
@@ -56,7 +57,8 @@ To add a new capability string (like `SearchWeb`):
 
 ### C. Construct the Atom (For the Engine)
 1. Build `src/specweaver/loom/atoms/web/atom.py`.
-2. Provide a clean `run(context)` method for the internal Flow Engine to use if it needs autonomous, non-LLM invocation of the web capability. **The Atom calls the Executor directly; it NEVER uses the Tool.**
+2. Provide a clean `run(context)` method for the internal Flow Engine to use if it needs autonomous, non-LLM invocation of the capability.
+3. **The Atom calls the Executor directly; it NEVER imports the Tool.** (However, an Untrusted Tool *can* instantiate an Atom instance to reuse its operations, provided the Tool validates Role constraints first).
 
 ### D. Wire It Up
 1. Connect the newly defined `ToolDefinition` payload into the LLM context injector.

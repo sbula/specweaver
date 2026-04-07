@@ -161,7 +161,6 @@ class TestFeatureDrafter:
         assert "## Risk Assessment (DAL)" in content
         assert "Mock LLM output indicating DAL_A rating." in content
 
-
     @pytest.mark.asyncio()
     async def test_skipped_section_gets_placeholder(
         self, mock_llm: AsyncMock, tmp_path: Path

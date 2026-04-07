@@ -118,8 +118,6 @@ class TestDomainProfileCLI:
         # Per-rule overrides are preserved (none were set in this test, so empty)
         # assert _mock_db.get_validation_overrides(name) == []
 
-
-
     def test_set_profile_then_check_spec(
         self,
         tmp_path: Path,
@@ -154,8 +152,6 @@ class TestDomainProfileCLI:
         )
         # Should run (may pass or warn, but not crash)
         assert result.exit_code in (0, 1), f"Crashed: {result.output}"
-
-
 
     def test_set_profile_no_active_project(self, _mock_db) -> None:
         """sw config set-profile without active project shows error."""

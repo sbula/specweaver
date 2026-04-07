@@ -38,19 +38,19 @@ class MyKotlinClass {
     assert "init {" in skeleton
     assert "fun myMethod(a: String): Boolean {" in skeleton
     assert "{ ... }" in skeleton
-    assert "println(\"Init\")" not in skeleton
-    assert "println(\"Should be stripped\")" not in skeleton
+    assert 'println("Init")' not in skeleton
+    assert 'println("Should be stripped")' not in skeleton
 
 
 def test_extract_skeleton_preserves_docstrings(parser: KotlinCodeStructure) -> None:
-    code = '''
+    code = """
 /**
  * This is a kotlin docstring.
  */
 fun myFunc() {
     val x = 10
 }
-'''
+"""
     skeleton = parser.extract_skeleton(code)
 
     assert "fun myFunc() {" in skeleton
@@ -106,6 +106,7 @@ def test_extract_symbol_empty_string(parser: KotlinCodeStructure) -> None:
     with pytest.raises(CodeStructureError, match=r"Cannot extract \'Anything\' from empty code\."):
         parser.extract_symbol("", "Anything")
 
+
 def test_extract_symbol_annotation_preservation(parser: KotlinCodeStructure) -> None:
     code = """
 @JvmStatic
@@ -116,6 +117,7 @@ fun annotatedFunc() { }
     assert "@JvmStatic" in target_fn
     assert "@Throws" in target_fn
 
+
 def test_extract_symbol_malformed_syntax(parser: KotlinCodeStructure) -> None:
     code = """fun broken(::: {{}
 
@@ -125,6 +127,8 @@ fun good(): Boolean { return true }"""
         assert "fun good" in target
     except CodeStructureError:
         pass
+
+
 def test_extract_symbol_scope_collision(parser: KotlinCodeStructure) -> None:
     code = """
 class Parent { fun target() {} }

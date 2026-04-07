@@ -93,12 +93,20 @@ class RustCodeStructure(CodeStructureInterface):
         query = Query(self.language, SCM_SKELETON_QUERY)
         cursor = QueryCursor(query)
         captures = cursor.captures(tree.root_node)
-        
-        if "block" in captures and captures["block"]:
+
+        if captures.get("block"):
             # Pick the largest block if there are multiple (to avoid nested class bodies parsing issue)
             # Actually, the first capture is usually the outermost block.
             return typing.cast("bytes", captures["block"][0].text).decode("utf-8")
         return ""
+
+
+    def _is_symbol_public(self, parent: typing.Any) -> bool:
+        if parent:
+            for child in parent.children:
+                if child.type == "visibility_modifier":
+                    return True
+        return False
 
     def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
         if not code.strip():
@@ -110,25 +118,15 @@ class RustCodeStructure(CodeStructureInterface):
         matches = cursor.matches(tree.root_node)
 
         symbols = []
-        for match_id, match_dict in matches:
+        for _match_id, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    
-                    if visibility and "public" in visibility:
-                        parent = name_node.parent
-                        is_pub = False
-                        if parent and parent.parent:
-                            for child in parent.parent.children:
-                                if child.type == "visibility_modifier":
-                                    is_pub = True
-                        if not is_pub:
-                            continue
-                            
+                    if visibility and "public" in visibility and not self._is_symbol_public(name_node.parent):
+                        continue
                     symbols.append(sym_name)
 
         seen = set()
-
         unique_symbols = []
         for x in symbols:
             if x not in seen:

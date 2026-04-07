@@ -12,11 +12,13 @@ from specweaver.cli.main import app
 # Counter for unique project names in tests
 _proj_counter = 0
 
+
 def _unique_name(prefix: str = "test") -> str:
     """Generate unique project names to avoid DB collisions."""
     global _proj_counter
     _proj_counter += 1
     return f"{prefix}-{_proj_counter}"
+
 
 def test_e2e_check_spec_dal_matrix_zero_tolerance(tmp_path: Path) -> None:
     """Story 7: Run full pipeline CLI where a nested dal enforces zero-tolerance on a rule."""
@@ -48,6 +50,7 @@ def test_e2e_check_spec_dal_matrix_zero_tolerance(tmp_path: Path) -> None:
     result = runner.invoke(app, ["check", str(bound_spec), "--project", str(cwd)])
 
     assert result.exit_code in (0, 1)
+
 
 def test_e2e_sw_implement_pipeline_dal_strictness(tmp_path: Path) -> None:
     """Story 8: Implement CLI triggers strict code handler DAL overrides successfully failing."""

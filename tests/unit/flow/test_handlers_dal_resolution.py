@@ -14,12 +14,15 @@ from specweaver.flow._base import RunContext
 # DAL Constraint Resolution
 # ---------------------------------------------------------------------------
 
+
 class TestValidationDALResolution:
     """Tests for the _resolve_merged_settings helper."""
 
     @pytest.mark.asyncio
     @patch("specweaver.config.dal_resolver.DALResolver.resolve")
-    async def test_dal_resolution_merges_matrix(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
+    async def test_dal_resolution_merges_matrix(
+        self, mock_resolve: MagicMock, tmp_path: Path
+    ) -> None:
         from specweaver.commons.enums.dal import DALLevel
         from specweaver.config.settings import (
             DALImpactMatrix,
@@ -31,7 +34,9 @@ class TestValidationDALResolution:
         from specweaver.flow._validation import _resolve_merged_settings
 
         base_val = ValidationSettings(overrides={"S01": RuleOverride(rule_id="S01", enabled=False)})
-        dal_val = ValidationSettings(overrides={"S01": RuleOverride(rule_id="S01", enabled=True, fail_threshold=10.0)})
+        dal_val = ValidationSettings(
+            overrides={"S01": RuleOverride(rule_id="S01", enabled=True, fail_threshold=10.0)}
+        )
         matrix = DALImpactMatrix(matrix={DALLevel.DAL_A: dal_val})
 
         llm = LLMSettings(model="gemini", provider="gemini", api_key="")
@@ -51,7 +56,9 @@ class TestValidationDALResolution:
 
     @pytest.mark.asyncio
     @patch("specweaver.config.dal_resolver.DALResolver.resolve")
-    async def test_dal_resolution_fallback_to_db(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
+    async def test_dal_resolution_fallback_to_db(
+        self, mock_resolve: MagicMock, tmp_path: Path
+    ) -> None:
         from unittest.mock import MagicMock
 
         from specweaver.commons.enums.dal import DALLevel
@@ -87,7 +94,9 @@ class TestValidationDALResolution:
 
     @pytest.mark.asyncio
     @patch("specweaver.config.dal_resolver.DALResolver.resolve")
-    async def test_dal_resolution_invalid_db_string_ignored(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
+    async def test_dal_resolution_invalid_db_string_ignored(
+        self, mock_resolve: MagicMock, tmp_path: Path
+    ) -> None:
         from unittest.mock import MagicMock
 
         from specweaver.commons.enums.dal import DALLevel
@@ -101,12 +110,18 @@ class TestValidationDALResolution:
 
         base_val = ValidationSettings()
         matrix = DALImpactMatrix(matrix={DALLevel.DAL_B: ValidationSettings()})
-        settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="g", api_key=""), validation=base_val, dal_matrix=matrix)
+        settings = SpecWeaverSettings(
+            llm=LLMSettings(model="g", provider="g", api_key=""),
+            validation=base_val,
+            dal_matrix=matrix,
+        )
 
         mock_db = MagicMock()
         mock_db.get_default_dal.return_value = "INVALID_DAL_STRING"
 
-        ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings, db=mock_db)
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings, db=mock_db
+        )
         mock_resolve.return_value = None
 
         merged = _resolve_merged_settings(ctx, tmp_path / "test.md")
@@ -116,19 +131,25 @@ class TestValidationDALResolution:
 
     @pytest.mark.asyncio
     @patch("specweaver.config.dal_resolver.DALResolver.resolve")
-    async def test_dal_resolution_catches_db_exception(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
+    async def test_dal_resolution_catches_db_exception(
+        self, mock_resolve: MagicMock, tmp_path: Path
+    ) -> None:
         from unittest.mock import MagicMock
 
         from specweaver.config.settings import LLMSettings, SpecWeaverSettings, ValidationSettings
         from specweaver.flow._validation import _resolve_merged_settings
 
         base_val = ValidationSettings()
-        settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="g", api_key=""), validation=base_val)
+        settings = SpecWeaverSettings(
+            llm=LLMSettings(model="g", provider="g", api_key=""), validation=base_val
+        )
 
         mock_db = MagicMock()
         mock_db.get_default_dal.side_effect = Exception("DB Connection Lost")
 
-        ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings, db=mock_db)
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings, db=mock_db
+        )
         mock_resolve.return_value = None
 
         merged = _resolve_merged_settings(ctx, tmp_path / "test.md")
@@ -138,7 +159,9 @@ class TestValidationDALResolution:
 
     @pytest.mark.asyncio
     @patch("specweaver.config.dal_resolver.DALResolver.resolve")
-    async def test_dal_resolution_deep_merges_nested_extra_params(self, mock_resolve: MagicMock, tmp_path: Path) -> None:
+    async def test_dal_resolution_deep_merges_nested_extra_params(
+        self, mock_resolve: MagicMock, tmp_path: Path
+    ) -> None:
         from specweaver.commons.enums.dal import DALLevel
         from specweaver.config.settings import (
             DALImpactMatrix,
@@ -150,13 +173,32 @@ class TestValidationDALResolution:
         from specweaver.flow._validation import _resolve_merged_settings
 
         # Base settings has extra_params for S01
-        base_val = ValidationSettings(overrides={"S01": RuleOverride(rule_id="S01", enabled=True, extra_params={"base": 1.0, "keep_me": 2.0})})
+        base_val = ValidationSettings(
+            overrides={
+                "S01": RuleOverride(
+                    rule_id="S01", enabled=True, extra_params={"base": 1.0, "keep_me": 2.0}
+                )
+            }
+        )
 
         # DAL Matrix overrides the fail threshold and adds/overwrites a key in extra_params, but SHOULD preserve "keep_me" thanks to deep_merge_dict
-        dal_val = ValidationSettings(overrides={"S01": RuleOverride(rule_id="S01", enabled=True, fail_threshold=5.0, extra_params={"base": 5.0, "add_me": 3.0})})
+        dal_val = ValidationSettings(
+            overrides={
+                "S01": RuleOverride(
+                    rule_id="S01",
+                    enabled=True,
+                    fail_threshold=5.0,
+                    extra_params={"base": 5.0, "add_me": 3.0},
+                )
+            }
+        )
         matrix = DALImpactMatrix(matrix={DALLevel.DAL_A: dal_val})
 
-        settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="g", api_key=""), validation=base_val, dal_matrix=matrix)
+        settings = SpecWeaverSettings(
+            llm=LLMSettings(model="g", provider="g", api_key=""),
+            validation=base_val,
+            dal_matrix=matrix,
+        )
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings)
         mock_resolve.return_value = "DAL_A"
 

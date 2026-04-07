@@ -61,8 +61,7 @@ class TestValidationeE2E:
 
         spec = proj_dir / "test.md"
         spec.write_text(
-            "## 1. Purpose\n"
-            "Should do something but might fail to do it and could explode.\n",
+            "## 1. Purpose\nShould do something but might fail to do it and could explode.\n",
             encoding="utf-8",
         )
 

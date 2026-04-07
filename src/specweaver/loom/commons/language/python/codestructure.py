@@ -126,16 +126,14 @@ class PythonCodeStructure(CodeStructureInterface):
         matches = cursor.matches(tree.root_node)
 
         symbols = []
-        for _, match_dict in matches:
+        for _match_id, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    
-                    if visibility and "public" in visibility:
-                        # In Python, standard protected starts with single `_`
-                        if sym_name.startswith("_") and not sym_name.startswith("__"):
-                            continue
-                            
+
+                    if visibility and "public" in visibility and sym_name.startswith("_") and not sym_name.startswith("__"):
+                        continue
+
                     symbols.append(sym_name)
 
         # distinct

@@ -46,16 +46,18 @@ specweaver/                       ← level: system, archetype: orchestrator
 │   ├── tools/                    ← Agent-facing capability providers
 │   │   ├── filesystem/           ← FileSystemTool + role interfaces
 │   │   ├── git/                  ← GitTool + role interfaces
-│   │   ├── qa_runner/          ← QARunnerTool + role interfaces
+│   │   ├── qa_runner/            ← QARunnerTool + role interfaces
+│   │   ├── code_structure/       ← CodeStructureTool (Polyglot AST Extraction)
 │   │   └── web/                  ← WebTool + role interfaces
 │   ├── atoms/                    ← Engine-internal workflow ops
 │   │   ├── filesystem/
 │   │   ├── git/
-│   │   └── qa_runner/
+│   │   ├── qa_runner/
+│   │   └── code_structure/
 │   └── commons/                  ← Shared executors + helpers
 │       ├── filesystem/           ← FileExecutor, search helpers
 │       ├── git/                  ← GitExecutor
-│       ├── language/             ← Polyglot AST Extractor (CodeStructure)
+│       ├── language/             ← Polyglot AST Extractor (tree-sitter bindings)
 │       └── qa_runner/            ← QARunnerExecutor
 ├── pipelines/                    ← YAML pipeline definitions (data only)
 ├── planning/                     ← Implementation plan generation
@@ -178,6 +180,8 @@ Each feature was built incrementally across 3 phases. For each feature:
 **3.14a AST Drift Engine (SF-1)** — Built on native `tree-sitter`, the Validation engine now structurally inspects the workspace against Plan expectations, performing drift detection by natively extracting AST signatures. Located in `validation/drift_detector.py` since it is a pure validation module used by code check rules to prevent agent drift.
 
 **3.20b Dynamic Risk-Based Rulesets (DAL)** — Fractal Resolution Engine (SF-2) dynamically resolves Design Assurance Level constraints by scanning upwards from any target file to locate the nearest `context.yaml`, deep-merging local and global overrides through Pydantic into the pipeline stream. Lives in `config/dal_resolver.py` to prevent cyclic dependencies.
+
+**3.22 Polyglot AST Skeleton Extractor** — High-performance tree-sitter bindings dynamically map into `commons/language/ast_parser.py`, powering the robust `CodeStructureTool` and `CodeStructureAtom` APIs. It parses Rust, Python, Java, Kotlin, and TS into JSON structure payloads, stripping away monolithic "Context Window Bloat" to ensure agents only manipulate surgically exact signatures.
 
 ### How Features Map to Lifecycle Layers
 

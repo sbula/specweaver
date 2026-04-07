@@ -3,7 +3,7 @@
 - **Sub-Feature**: SF-1 — Polyglot AST Extractor
 - **Design Document**: docs/proposals/roadmap/phase_3/feature_3_22/feature_3_22_design.md
 - **Implementation Plan**: docs/proposals/roadmap/phase_3/feature_3_22/feature_3_22_sf1_implementation_plan.md
-- **Status**: DRAFT
+- **Status**: COMPLETE
 
 ## 1. Goal Description
 

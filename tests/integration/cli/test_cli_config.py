@@ -47,9 +47,6 @@ def _init_project(tmp_path: Path, name: str = "cfg-proj") -> None:
     assert result.exit_code == 0, f"init failed: {result.output}"
 
 
-
-
-
 # ---------------------------------------------------------------------------
 # sw config set-log-level / get-log-level
 # ---------------------------------------------------------------------------

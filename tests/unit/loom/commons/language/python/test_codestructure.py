@@ -81,7 +81,7 @@ def TargetFunc():
 
     target_fn = parser.extract_symbol(code, "TargetFunc")
     assert "def TargetFunc():" in target_fn
-    assert "return \"success\"" in target_fn
+    assert 'return "success"' in target_fn
     assert "TargetClass" not in target_fn
 
 
@@ -96,6 +96,7 @@ def test_extract_symbol_empty_string(parser: PythonCodeStructure) -> None:
     with pytest.raises(CodeStructureError, match=r"Cannot extract \'Anything\' from empty code\."):
         parser.extract_symbol("", "Anything")
 
+
 def test_extract_symbol_malformed_syntax(parser: PythonCodeStructure) -> None:
     code = """def existing(: pass
 
@@ -105,6 +106,8 @@ def Good(): return True"""
         assert "def Good():" in target
     except CodeStructureError:
         pass
+
+
 def test_extract_symbol_scope_collision(parser: PythonCodeStructure) -> None:
     code = """
 class Parent:
@@ -114,6 +117,7 @@ def collide(): return 2
     # We expect no crashes, should grab one of them predictably
     target = parser.extract_symbol(code, "collide")
     assert "collide" in target
+
 
 def test_extract_symbol_decorator_preservation(parser: PythonCodeStructure) -> None:
     code = """
@@ -126,6 +130,7 @@ def DecoratedFunc():
     assert "@app.route" in target
     assert "@classmethod" in target
     assert "def DecoratedFunc():" in target
+
 
 def test_extract_symbol_async_support(parser: PythonCodeStructure) -> None:
     code = """

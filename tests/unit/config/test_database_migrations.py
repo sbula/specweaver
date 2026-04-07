@@ -98,9 +98,6 @@ class TestSchemaV2Migration:
 # ---------------------------------------------------------------------------
 
 
-
-
-
 # ---------------------------------------------------------------------------
 # Schema v3 migration — log_level column
 # ---------------------------------------------------------------------------
@@ -326,8 +323,6 @@ class TestDomainProfile:
         db.clear_domain_profile("myapp")
         assert db.get_domain_profile("myapp") is None
 
-
-
     def test_set_domain_profile_unknown_raises(self, db, tmp_path: Path):
         """Setting an unknown profile name raises ValueError."""
         db.register_project("myapp", str(tmp_path))
@@ -424,8 +419,6 @@ class TestSchemaV4ToV5Upgrade:
         with db.connect() as conn2:
             version = conn2.execute("SELECT MAX(version) FROM schema_version").fetchone()
         assert version[0] >= 10  # v5, v6, v7, v8 all applied
-
-
 
 
 class TestSchemaV14Migration:

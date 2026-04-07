@@ -82,7 +82,7 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
     except (ValueError, AttributeError):
         return None
 
-    allowed_tools = ["fs"]
+    allowed_tools = ["fs", "ast"]
     if bool(os.environ.get("SEARCH_API_KEY")):
         allowed_tools.append("web")
 
