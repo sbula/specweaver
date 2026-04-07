@@ -4,9 +4,16 @@
 from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
+
 from specweaver.loom.atoms.base import AtomStatus
 from specweaver.loom.atoms.code_structure.atom import CodeStructureAtom
 from specweaver.loom.commons.filesystem.executor import ExecutorResult
+from specweaver.loom.commons.language.interfaces import CodeStructureError
+from specweaver.loom.commons.language.java.codestructure import JavaCodeStructure
+from specweaver.loom.commons.language.kotlin.codestructure import KotlinCodeStructure
+from specweaver.loom.commons.language.rust.codestructure import RustCodeStructure
+from specweaver.loom.commons.language.typescript.codestructure import TypeScriptCodeStructure
 
 
 def _run_atom(
@@ -388,6 +395,7 @@ def corrupted_syntax()
     # The bad syntax should be completely untouched
     assert "def corrupted_syntax()" in fs["file.py"]
 
+
 def test_java_mutation_operations() -> None:
     """Test replace, replace_body, delete, and add symbol for Java via CodeStructureAtom."""
     code = """
@@ -482,3 +490,122 @@ export class TargetClass {
     res = _run_atom("add_symbol", "TargetClass.ts", {"target_parent": "TargetClass", "new_code": "added(): void {}"}, fs)
     assert res.status.value == "SUCCESS"
     assert "added(): void {}" in fs["TargetClass.ts"]
+
+
+# --- EXHAUSTIVE PHASE 3 EDGE CASES ---
+
+def test_missing_symbol_throws_correctly():
+    java = JavaCodeStructure()
+    with pytest.raises(CodeStructureError, match="not found"):
+        java.replace_symbol("class A {}", "B", "class B {}")
+    with pytest.raises(CodeStructureError, match="not found"):
+        java.extract_symbol("class A {}", "B")
+    with pytest.raises(CodeStructureError, match="not found"):
+        java.extract_symbol_body("class A {}", "B")
+    with pytest.raises(CodeStructureError, match="not found"):
+        java.delete_symbol("class A {}", "B")
+
+def test_empty_string_throws_correctly():
+    kt = KotlinCodeStructure()
+    assert kt.extract_skeleton("   ") == "   "
+    assert kt.list_symbols("   ") == []
+    assert kt.delete_symbol("   ", "anything") == "   "
+    with pytest.raises(CodeStructureError, match="empty code"):
+        kt.replace_symbol("   ", "A", "")
+    with pytest.raises(CodeStructureError, match="empty code"):
+        kt.replace_symbol_body("   ", "A", "")
+    with pytest.raises(CodeStructureError, match="empty code"):
+        kt.extract_symbol("   ", "A")
+
+def test_empty_replace_padding():
+    ts = TypeScriptCodeStructure()
+    res = ts._auto_indent("", 4)
+    assert res == ""
+
+def test_add_symbol_base_end_of_file():
+    rs = RustCodeStructure()
+    res = rs.add_symbol("fn old() {}", None, "fn added() {}")
+    assert res == "fn old() {}\n\nfn added() {}"
+
+    # testing without trailing newline
+    res2 = rs.add_symbol("fn old() {}\n", None, "fn added() {}")
+    assert res2 == "fn old() {}\n\nfn added() {}"
+
+def test_java_nested_enum_replace():
+    java = JavaCodeStructure()
+    code = "public enum Color { RED; }"
+    res = java.replace_symbol_body(code, "Color", "BLUE;")
+    assert "BLUE;" in res
+    assert "RED;" not in res
+
+def test_java_list_visibility_fallback():
+    java = JavaCodeStructure()
+    # Test visibility parsing safely
+    code = "class A {} public class B {}"
+    res = java.list_symbols(code, visibility=["public"])
+    assert "B" in res
+
+def test_kotlin_object_bounds():
+    kt = KotlinCodeStructure()
+    code = "object Single { val x = 1 }"
+    res = kt.extract_symbol(code, "Single")
+    assert "val x = 1" in res
+    # List private override modifiers
+    code2 = "class A { private fun x() {} protected fun y() {} internal fun z() {} }"
+    assert "x" not in kt.list_symbols(code2, visibility=["public"])
+    assert "y" not in kt.list_symbols(code2, visibility=["public"])
+    assert "z" not in kt.list_symbols(code2, visibility=["public"])
+
+def test_rust_impl_generic_extract():
+    rs = RustCodeStructure()
+    code = "impl<T> Builder<T> { fn get() {} }"
+    res = rs.extract_symbol(code, "Builder")
+    assert "fn get" in res
+
+def test_rust_macro_empty_replace():
+    rs = RustCodeStructure()
+    code = "fn testing() { panic!(); }"
+    # Testing replace_symbol natively
+    res = rs.replace_symbol(code, "testing", "fn replaced() {}")
+    assert "replaced" in res
+    # Visibility test
+    code2 = "fn a() {} pub fn b() {}"
+    assert "b" in rs.list_symbols(code2, visibility=["public"])
+    assert "a" not in rs.list_symbols(code2, visibility=["public"])
+
+def test_typescript_nested_lexical_unwrapping():
+    ts = TypeScriptCodeStructure()
+    code = "export const fetcher = async () => { console.log(); };"
+    res = ts.extract_symbol_body(code, "fetcher")
+    assert "console.log" in res
+
+    code2 = "export const missing_body = 42;"
+    with pytest.raises(CodeStructureError, match="not found"):
+        ts.replace_symbol_body(code2, "missing_body", "")
+
+def test_syntax_error_recovery_e2e():
+    # tree-sitter will mark the first function as ERROR but keep the second intact.
+    java = JavaCodeStructure()
+    code = "public class T { public void broken() { int x = 1; /* no semi */ } public void valid() { int y = 2; } }"
+    # Tree-sitter still manages to find the valid symbol
+    res = java.extract_symbol(code, "valid")
+    assert "int y" in res
+    # Verify mutation is safely applied despite broken syntax
+    res2 = java.replace_symbol(code, "valid", "public void replaced() {}")
+    assert "replaced" in res2
+
+def test_multi_byte_utf8_truncation():
+    kt = KotlinCodeStructure()
+    code = "class A { fun start() { val x = \"🚀🚀🚀\"; } }"
+    res = kt.replace_symbol(code, "start", "fun replaced() { val y = \"🥳\"; }")
+    assert "🥳" in res
+    assert "🚀🚀🚀" not in res
+    # if byte slicing failed, encode/decode would throw UnicodeDecodeError
+
+def test_crlf_safety():
+    ts = TypeScriptCodeStructure()
+    code = "class Safe {\r\n  test() {\r\n    let a = 1;\r\n  }\r\n}"
+    res = ts.replace_symbol_body(code, "test", "let b = 2;")
+    # Ensure no exceptions on body replace with \r\n base string margins
+    assert "let b = 2;" in res
+

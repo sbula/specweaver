@@ -62,6 +62,8 @@
 - ✅ Feature 3.19: Polyglot QARunner Interface — Black Box execution wrapping
 - ✅ Feature 3.20a: Internal Layer Enforcement (Tach) — Strict Domain-Driven isolation
 - ✅ Feature 3.20b: Dynamic Risk-Based Rulesets (DAL) — Contextual baseline risk enforcement
+- ✅ Feature 3.21: Automated Traceability Matrix (`@traces`) — Mathematically count and enforce Spec L3 tags in generated code constraints.
+- ✅ Feature 3.22: Polyglot AST Skeleton Extractor — High-performance tree-sitter bindings for `read_skeleton`, `replace_symbol`, etc. across Python, Java, Kotlin, Rust, and TS.
 
 ---
 

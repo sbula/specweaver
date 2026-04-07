@@ -48,7 +48,7 @@ To add a language, say **Go**, you will create a highly isolated submodule insid
    - Implements the `GoQARunner` subclass inheriting from a base `QARunnerInterface`.
    - Native bindings to `go build`, `go test`, etc.
 4. **`ast_parser.py`**
-   - Implements native Tree-Sitter schema endpoints (`extract_skeleton`, `extract_symbol`) to power the unified `CodeStructureTool` and `CodeStructureAtom` APIs.
+   - Implements native Tree-Sitter schema endpoints (`extract_skeleton`, `extract_symbol`, `replace_symbol`, `replace_symbol_body`, `delete_symbol`, `add_symbol`) to power the unified `CodeStructureTool` and `CodeStructureAtom` APIs.
 
 ### B. The Interface Contract
 

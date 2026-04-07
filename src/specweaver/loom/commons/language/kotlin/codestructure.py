@@ -93,10 +93,12 @@ class KotlinCodeStructure(CodeStructureInterface):
         return ""
 
     def _is_symbol_private(self, parent: typing.Any) -> bool:
-        if parent and parent.parent:
-            for child in parent.parent.children:
-                if child.type == "modifiers" and child.text and (b"private" in child.text or b"protected" in child.text or b"internal" in child.text):
-                    return True
+        if parent:
+            for child in parent.children:
+                if child.type == "modifiers":
+                    mod_text = child.text
+                    if mod_text and (b"private" in mod_text or b"protected" in mod_text or b"internal" in mod_text):
+                        return True
         return False
 
     def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:

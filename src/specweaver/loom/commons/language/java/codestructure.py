@@ -22,6 +22,7 @@ SCM_SYMBOL_QUERY = """
 (method_declaration name: (identifier) @name)
 (class_declaration name: (identifier) @name)
 (interface_declaration name: (identifier) @name)
+(enum_declaration name: (identifier) @name)
 """
 
 class JavaCodeStructure(CodeStructureInterface):
@@ -93,10 +94,11 @@ class JavaCodeStructure(CodeStructureInterface):
         return ""
 
     def _is_symbol_public(self, parent: typing.Any) -> bool:
-        if parent and parent.parent and parent.parent.type in ("class_declaration", "method_declaration", "interface_declaration"):
-            for child in parent.parent.children:
-                if child.type == "modifiers" and child.text and b"public" in child.text:
-                    return True
+        if parent:
+            if parent.type in ("class_declaration", "method_declaration", "interface_declaration", "enum_declaration"):
+                for child in parent.children:
+                    if child.type == "modifiers" and child.text and b"public" in child.text:
+                        return True
         return False
 
     def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
