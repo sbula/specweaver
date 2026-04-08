@@ -71,7 +71,9 @@ def test_tool_definitions_filters_by_role() -> None:
 
 def test_tool_intents_propagate_to_atom() -> None:
     atom = MagicMock()
-    atom.run.return_value = AtomResult(status=AtomStatus.SUCCESS, message="OK", exports={"symbols": ["A"]})
+    atom.run.return_value = AtomResult(
+        status=AtomStatus.SUCCESS, message="OK", exports={"symbols": ["A"]}
+    )
     tool = CodeStructureTool(
         atom=atom,
         role="implementer",
@@ -83,11 +85,15 @@ def test_tool_intents_propagate_to_atom() -> None:
         {"intent": "list_symbols", "path": "test.py", "visibility": ["public"]}
     )
 
-    atom.run.return_value = AtomResult(status=AtomStatus.SUCCESS, message="OK", exports={"symbol": "def func():"})
+    atom.run.return_value = AtomResult(
+        status=AtomStatus.SUCCESS, message="OK", exports={"symbol": "def func():"}
+    )
     tool.read_symbol("test.py", "func")
     atom.run.assert_called_with({"intent": "read_symbol", "path": "test.py", "symbol_name": "func"})
 
-    atom.run.return_value = AtomResult(status=AtomStatus.SUCCESS, message="OK", exports={"body": "pass"})
+    atom.run.return_value = AtomResult(
+        status=AtomStatus.SUCCESS, message="OK", exports={"body": "pass"}
+    )
     tool.read_symbol_body("test.py", "func")
     atom.run.assert_called_with(
         {"intent": "read_symbol_body", "path": "test.py", "symbol_name": "func"}
@@ -146,6 +152,7 @@ def test_tool_execution_serialization() -> None:
     assert res2.status == "success"
     assert res2.data["symbol"] == "def TestTarget(): pass"
 
+
 def test_tool_mutation_intents_blocked_by_read_grant() -> None:
     atom = MagicMock()
     # implementer is allowed the intent, but if we only give AccessMode.READ, it should block
@@ -161,6 +168,7 @@ def test_tool_mutation_intents_blocked_by_read_grant() -> None:
     assert "read" in res.message.lower()
     atom.run.assert_not_called()
 
+
 def test_tool_mutation_intents_success_with_write_grant() -> None:
     atom = MagicMock()
     atom.run.return_value = AtomResult(status=AtomStatus.SUCCESS, message="Replaced", exports={})
@@ -172,10 +180,21 @@ def test_tool_mutation_intents_success_with_write_grant() -> None:
 
     res = tool.replace_symbol("test.py", "Target", "pass")
     assert res.status == "success"
-    atom.run.assert_called_with({"intent": "replace_symbol", "path": "test.py", "symbol_name": "Target", "new_code": "pass"})
+    atom.run.assert_called_with(
+        {"intent": "replace_symbol", "path": "test.py", "symbol_name": "Target", "new_code": "pass"}
+    )
 
     tool.add_symbol("test.py", "fn added() {}")
-    atom.run.assert_called_with({"intent": "add_symbol", "path": "test.py", "new_code": "fn added() {}", "target_parent": None})
+    atom.run.assert_called_with(
+        {
+            "intent": "add_symbol",
+            "path": "test.py",
+            "new_code": "fn added() {}",
+            "target_parent": None,
+        }
+    )
 
     tool.delete_symbol("test.py", "Target")
-    atom.run.assert_called_with({"intent": "delete_symbol", "path": "test.py", "symbol_name": "Target"})
+    atom.run.assert_called_with(
+        {"intent": "delete_symbol", "path": "test.py", "symbol_name": "Target"}
+    )

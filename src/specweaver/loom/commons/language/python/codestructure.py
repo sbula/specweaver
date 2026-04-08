@@ -53,7 +53,11 @@ class PythonCodeStructure(CodeStructureInterface):
 
                 if node.children:
                     first_child = node.children[0]
-                    if first_child.type == "expression_statement" and first_child.children and first_child.children[0].type == "string":
+                    if (
+                        first_child.type == "expression_statement"
+                        and first_child.children
+                        and first_child.children[0].type == "string"
+                    ):
                         start_cut = first_child.end_byte
 
                 if start_cut < end_cut:
@@ -131,7 +135,12 @@ class PythonCodeStructure(CodeStructureInterface):
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
 
-                    if visibility and "public" in visibility and sym_name.startswith("_") and not sym_name.startswith("__"):
+                    if (
+                        visibility
+                        and "public" in visibility
+                        and sym_name.startswith("_")
+                        and not sym_name.startswith("__")
+                    ):
                         continue
 
                     symbols.append(sym_name)
@@ -156,7 +165,7 @@ class PythonCodeStructure(CodeStructureInterface):
                 padded.append(line)
             else:
                 if line.strip() == "":
-                    padded.append(line) # preserve empty lines
+                    padded.append(line)  # preserve empty lines
                 else:
                     padded.append((" " * margin) + line)
         return "\n".join(padded)
@@ -270,5 +279,12 @@ class PythonCodeStructure(CodeStructureInterface):
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
 
-        mutated = code_bytes[:end_byte] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + code_bytes[end_byte:]
+        mutated = (
+            code_bytes[:end_byte]
+            + b"\n"
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + code_bytes[end_byte:]
+        )
         return mutated.decode("utf-8")

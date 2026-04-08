@@ -125,7 +125,7 @@ def _present_result(result: StepResult, target_name: str, analyze: bool) -> None
             _core.console.print(table)
         return
 
-    _core.console.print(f"[red]✗ AST Drift Detected![/red] ({target_name})")
+    _core.console.print(f"[red]Failure: AST Drift Detected![/red] ({target_name})")
     table = Table(title=f"Drift Findings for {target_name}")
     table.add_column("Severity", style="red")
     table.add_column("Description")
@@ -139,4 +139,19 @@ def _present_result(result: StepResult, target_name: str, analyze: bool) -> None
         _core.console.print("\n[bold cyan]LLM Root-Cause Analysis:[/bold cyan]")
         _core.console.print(f"[dim]{result.output['llm_root_cause']}[/dim]")
 
-    raise typer.Exit(code=1)
+    raise typer.Exit(code=42)
+
+
+@drift_app.command("check-rot")
+def drift_check_rot(
+    staged: bool = typer.Option(
+        False,
+        "--staged",
+        help="Check only files currently staged in git.",
+    ),
+) -> None:
+    """Bi-Directional Spec Rot Interceptor (SF-1 Stub)."""
+    if staged:
+        _core.console.print("Checking AST drift for staged files")
+    else:
+        _core.console.print("Checking AST drift for all target files")

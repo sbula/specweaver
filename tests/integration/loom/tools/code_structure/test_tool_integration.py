@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -22,11 +21,13 @@ def physical_tool(tmp_path: Path) -> CodeStructureTool:
     # Grant paths use "" to mean the root of the relative workspace context
     grant = FolderGrant(path="", mode=AccessMode.FULL, recursive=True)
     tool = CodeStructureTool(atom=atom, role="implementer", grants=[grant])
-    
+
     return tool
 
 
-def test_physical_integration_python_mutation(tmp_path: Path, physical_tool: CodeStructureTool) -> None:
+def test_physical_integration_python_mutation(
+    tmp_path: Path, physical_tool: CodeStructureTool
+) -> None:
     code = """
 class Target:
     def original_math(self):
@@ -62,7 +63,9 @@ class Target:
     assert "def new_method" in file_path.read_text(encoding="utf-8")
 
 
-def test_physical_integration_java_mutation(tmp_path: Path, physical_tool: CodeStructureTool) -> None:
+def test_physical_integration_java_mutation(
+    tmp_path: Path, physical_tool: CodeStructureTool
+) -> None:
     code = """
 public class JavaTarget {
     public int originalMath() {
@@ -84,7 +87,9 @@ public class JavaTarget {
     assert "originalMath" not in content
 
 
-def test_physical_integration_kotlin_mutation(tmp_path: Path, physical_tool: CodeStructureTool) -> None:
+def test_physical_integration_kotlin_mutation(
+    tmp_path: Path, physical_tool: CodeStructureTool
+) -> None:
     code = """
 class KotlinTarget {
     fun run() {}
@@ -101,7 +106,9 @@ class KotlinTarget {
     assert 'println("kt")' in content
 
 
-def test_physical_integration_typescript_mutation(tmp_path: Path, physical_tool: CodeStructureTool) -> None:
+def test_physical_integration_typescript_mutation(
+    tmp_path: Path, physical_tool: CodeStructureTool
+) -> None:
     code = """
 export class TsTarget {
     execute() {
@@ -120,7 +127,9 @@ export class TsTarget {
     assert "execute()" not in content
 
 
-def test_physical_integration_rust_mutation(tmp_path: Path, physical_tool: CodeStructureTool) -> None:
+def test_physical_integration_rust_mutation(
+    tmp_path: Path, physical_tool: CodeStructureTool
+) -> None:
     code = """
 struct RsTarget;
 impl RsTarget {
@@ -142,11 +151,11 @@ impl RsTarget {
 def test_tool_rejection_boundary_physical(tmp_path: Path, physical_tool: CodeStructureTool) -> None:
     # Validate the fallback security checking if the path lives OUTSIDE the grant
     # Since physical_tool only has a grant for project_root (`tmp_path`), if we query a completely exterior dummy path:
-    
+
     # We must format it as a valid path string format with an extension so the parser doesn't instantly reject it simply for having no format.
     rel_path = "../../../../etc/passwd.py"
     res = physical_tool.replace_symbol(rel_path, "Ghost", "malicious_injection")
-    
+
     # Must physically return error instead of actually evaluating
     assert res.status == "error"
     # Ensure it's blocked by the validation layer

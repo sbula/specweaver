@@ -24,6 +24,7 @@ SCM_SYMBOL_QUERY = """
 (object_declaration (identifier) @name)
 """
 
+
 class KotlinCodeStructure(CodeStructureInterface):
     def __init__(self) -> None:
         self.language = Language(tree_sitter_kotlin.language())
@@ -74,7 +75,11 @@ class KotlinCodeStructure(CodeStructureInterface):
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in ("function_declaration", "class_declaration", "object_declaration"):
+                        if parent and parent.type in (
+                            "function_declaration",
+                            "class_declaration",
+                            "object_declaration",
+                        ):
                             return typing.cast("bytes", parent.text).decode("utf-8")
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
@@ -97,7 +102,11 @@ class KotlinCodeStructure(CodeStructureInterface):
             for child in parent.children:
                 if child.type == "modifiers":
                     mod_text = child.text
-                    if mod_text and (b"private" in mod_text or b"protected" in mod_text or b"internal" in mod_text):
+                    if mod_text and (
+                        b"private" in mod_text
+                        or b"protected" in mod_text
+                        or b"internal" in mod_text
+                    ):
                         return True
         return False
 
@@ -116,7 +125,11 @@ class KotlinCodeStructure(CodeStructureInterface):
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
 
-                    if visibility and "public" in visibility and self._is_symbol_private(name_node.parent):
+                    if (
+                        visibility
+                        and "public" in visibility
+                        and self._is_symbol_private(name_node.parent)
+                    ):
                         continue
 
                     symbols.append(sym_name)
@@ -141,7 +154,11 @@ class KotlinCodeStructure(CodeStructureInterface):
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in ("function_declaration", "class_declaration", "object_declaration"):
+                        if parent and parent.type in (
+                            "function_declaration",
+                            "class_declaration",
+                            "object_declaration",
+                        ):
                             return parent
         return None
 
@@ -172,7 +189,7 @@ class KotlinCodeStructure(CodeStructureInterface):
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin).encode("utf-8")
 
-        mutated = code_bytes[:node.start_byte] + indented_code + code_bytes[node.end_byte:]
+        mutated = code_bytes[: node.start_byte] + indented_code + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
@@ -204,7 +221,15 @@ class KotlinCodeStructure(CodeStructureInterface):
 
         insert_start = target_block.start_byte + 1
         insert_end = target_block.end_byte - 1
-        mutated = code_bytes[:insert_start] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_end:]
+        mutated = (
+            code_bytes[:insert_start]
+            + b"\n"
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_end:]
+        )
         return mutated.decode("utf-8")
 
     def delete_symbol(self, code: str, symbol_name: str) -> str:
@@ -215,7 +240,7 @@ class KotlinCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:node.start_byte] + code_bytes[node.end_byte:]
+        mutated = code_bytes[: node.start_byte] + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
@@ -248,5 +273,12 @@ class KotlinCodeStructure(CodeStructureInterface):
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
 
         insert_point = target_block.end_byte - 1
-        mutated = code_bytes[:insert_point] + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_point:]
+        mutated = (
+            code_bytes[:insert_point]
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_point:]
+        )
         return mutated.decode("utf-8")

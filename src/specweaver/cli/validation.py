@@ -147,6 +147,7 @@ def check(
         raise typer.Exit(code=1) from None
 
     from specweaver.project.discovery import resolve_project_path
+
     db = _core.get_db()
     # Ensure project resolution handles implicit CWD and active project logic
     try:

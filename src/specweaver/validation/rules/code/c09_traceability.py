@@ -46,7 +46,10 @@ class TraceabilityRule(Rule):
 
         if missing_ids:
             findings = [
-                Finding(message=f"Requirement {req_id} is unmapped in test code.", severity=Severity.ERROR)
+                Finding(
+                    message=f"Requirement {req_id} is unmapped in test code.",
+                    severity=Severity.ERROR,
+                )
                 for req_id in sorted(missing_ids)
             ]
             return self._fail(
@@ -62,7 +65,12 @@ class TraceabilityRule(Rule):
 
         project_root = spec_path.parent
         while project_root != project_root.parent:
-            if (project_root / "pyproject.toml").exists() or (project_root / "package.json").exists() or (project_root / ".git").exists() or (project_root / ".specweaver").exists():
+            if (
+                (project_root / "pyproject.toml").exists()
+                or (project_root / "package.json").exists()
+                or (project_root / ".git").exists()
+                or (project_root / ".specweaver").exists()
+            ):
                 return project_root
             project_root = project_root.parent
 
@@ -103,9 +111,12 @@ class TraceabilityRule(Rule):
         try:
             import tree_sitter
             import tree_sitter_python
+
             parser = tree_sitter.Parser(tree_sitter.Language(tree_sitter_python.language()))
         except ImportError:
-            logger.warning("tree_sitter or tree_sitter_python not installed, skipping trace extraction.")
+            logger.warning(
+                "tree_sitter or tree_sitter_python not installed, skipping trace extraction."
+            )
             return set()
 
         for path in test_files:
@@ -120,9 +131,10 @@ class TraceabilityRule(Rule):
 
     def _extract_traces(self, root_node: Any, source: bytes, mapped_ids: set[str]) -> None:
         """Recursively search strictly for AST nodes of type 'comment'."""
+
         def visit(node: Any) -> None:
             if node.type == "comment":
-                text = source[node.start_byte:node.end_byte].decode("utf-8", errors="ignore")
+                text = source[node.start_byte : node.end_byte].decode("utf-8", errors="ignore")
                 matches = re.findall(r"@trace\((?:N)?FR-\d+\)", text)
                 for match in matches:
                     # extract inner requirement ID, e.g. "FR-123"

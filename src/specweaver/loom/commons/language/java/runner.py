@@ -244,7 +244,11 @@ class JavaRunner(QARunnerInterface):
         target_path = self._cwd / target
         ctx_dir = target_path.parent if target_path.is_file() else target_path
 
-        while ctx_dir != self._cwd and ctx_dir.parent != ctx_dir and not (ctx_dir / "context.yaml").exists():
+        while (
+            ctx_dir != self._cwd
+            and ctx_dir.parent != ctx_dir
+            and not (ctx_dir / "context.yaml").exists()
+        ):
             ctx_dir = ctx_dir.parent
 
         ctx_file = ctx_dir / "context.yaml"
@@ -310,7 +314,9 @@ public class SpecweaverArchUnitTest {{
 
         violations = []
         try:
-            proc = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, timeout=60, check=False)
+            proc = subprocess.run(
+                cmd, cwd=self._cwd, capture_output=True, text=True, timeout=60, check=False
+            )
 
             for line in proc.stdout.splitlines():
                 if line.startswith("ARCH_VIOLATION|"):
@@ -326,7 +332,9 @@ public class SpecweaverArchUnitTest {{
         except subprocess.TimeoutExpired:
             return ArchitectureRunResult(
                 violation_count=1,
-                violations=[ArchitectureViolation(file=target, code="Timeout", message="Maven timed out")]
+                violations=[
+                    ArchitectureViolation(file=target, code="Timeout", message="Maven timed out")
+                ],
             )
         finally:
             test_file.unlink(missing_ok=True)

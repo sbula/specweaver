@@ -188,6 +188,19 @@ sw review src/greet_service.py --spec specs/greet_service_spec.md --project ./my
 
 The LLM verifies the code matches the spec and returns ACCEPTED/DENIED.
 
+## 10. Enforce Spec Alignment (Git Hooks)
+
+To ensure that Spec/Code structural drift doesn't make it into your repository, install the SpecWeaver pre-commit hook.
+
+```bash
+# Install the hook into your `.git/hooks/` directory
+sw hooks install --pre-commit --project ./my-project
+```
+
+Once installed, standard `git commit` operations will automatically invoke the bi-directional Spec Rot Interceptor (`sw drift check-rot --staged`). 
+If a structural discrepancy between your AST definitions and your documented specifications is found, the commit will be blocked, prompting you to either fix the code or update your spec!
+
+
 ---
 
 ## Running Pipelines

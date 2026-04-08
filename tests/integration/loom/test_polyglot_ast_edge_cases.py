@@ -24,9 +24,11 @@ def _run_atom(
     executor.read.side_effect = lambda p: ExecutorResult(
         status="success", data=file_system_simulator.get(p, "")
     )
+
     def _mock_write(p: str, data: str, **kwargs: Any) -> ExecutorResult:
         file_system_simulator[p] = data
         return ExecutorResult(status="success")
+
     executor.write.side_effect = _mock_write
 
     atom = CodeStructureAtom(executor)
@@ -246,7 +248,9 @@ pub struct ComplexEntity<'a, T: Clone> {
     pub data: T,
 }
 """
-    res = _run_atom("read_symbol", "entity.rs", {"symbol_name": "ComplexEntity"}, {"entity.rs": code})
+    res = _run_atom(
+        "read_symbol", "entity.rs", {"symbol_name": "ComplexEntity"}, {"entity.rs": code}
+    )
     assert res.status.value == "SUCCESS"
     # Decorators might be dropped depending on rust scm definition
     assert "pub struct ComplexEntity<'a" in res.exports["symbol"]
@@ -324,14 +328,24 @@ class TargetClass:
     fs = {"file.py": code}
 
     # 1. Replace Body
-    res = _run_atom("replace_symbol_body", "file.py", {"symbol_name": "original_math", "new_code": "return 42"}, fs)
+    res = _run_atom(
+        "replace_symbol_body",
+        "file.py",
+        {"symbol_name": "original_math", "new_code": "return 42"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "return 42" in fs["file.py"]
     assert "return 1 + 1" not in fs["file.py"]
     assert "def original_math(self):" in fs["file.py"]
 
     # 2. Add Symbol
-    res = _run_atom("add_symbol", "file.py", {"target_parent": "TargetClass", "new_code": "def added_method(self):\n    return 'new'"}, fs)
+    res = _run_atom(
+        "add_symbol",
+        "file.py",
+        {"target_parent": "TargetClass", "new_code": "def added_method(self):\n    return 'new'"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "def added_method(self):" in fs["file.py"]
 
@@ -341,10 +355,16 @@ class TargetClass:
     assert "def method_to_delete" not in fs["file.py"]
 
     # 4. Replace Symbol (Full)
-    res = _run_atom("replace_symbol", "file.py", {"symbol_name": "original_math", "new_code": "def brand_new_math(self):\n    return 100"}, fs)
+    res = _run_atom(
+        "replace_symbol",
+        "file.py",
+        {"symbol_name": "original_math", "new_code": "def brand_new_math(self):\n    return 100"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "def brand_new_math" in fs["file.py"]
     assert "def original_math" not in fs["file.py"]
+
 
 def test_python_mutation_edge_cases() -> None:
     """Test AST edge cases like auto-indentation of multi-line replacements, missing targets, nested classes."""
@@ -358,7 +378,9 @@ class OuterClass:
 
     # 1. Multi-line auto-indentation in nested scopes
     new_body = "for i in range(3):\n    print('nested ' + str(i))"
-    res = _run_atom("replace_symbol_body", "file.py", {"symbol_name": "do_nested", "new_code": new_body}, fs)
+    res = _run_atom(
+        "replace_symbol_body", "file.py", {"symbol_name": "do_nested", "new_code": new_body}, fs
+    )
 
     assert res.status.value == "SUCCESS"
     # Ensure it was indented to match the 12-space internal block margin
@@ -366,14 +388,22 @@ class OuterClass:
     assert "                print('nested ' + str(i))" in fs["file.py"]
 
     # 2. Target not found
-    res = _run_atom("replace_symbol", "file.py", {"symbol_name": "NonExistentMethod", "new_code": "pass"}, fs)
+    res = _run_atom(
+        "replace_symbol", "file.py", {"symbol_name": "NonExistentMethod", "new_code": "pass"}, fs
+    )
     assert res.status.value == "FAILED"
     assert "not found" in res.message
 
     # 3. Add Symbol to EOF (target_parent None)
-    res = _run_atom("add_symbol", "file.py", {"target_parent": None, "new_code": "def global_func():\n    return 1"}, fs)
+    res = _run_atom(
+        "add_symbol",
+        "file.py",
+        {"target_parent": None, "new_code": "def global_func():\n    return 1"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "def global_func():" in fs["file.py"]
+
 
 def test_python_mutation_on_malformed_syntax() -> None:
     """Test that tree-sitter recovers and successfully mutates a symbol even if the file contains severe syntax errors."""
@@ -411,7 +441,12 @@ public class TargetClass {
     fs = {"TargetClass.java": code}
 
     # 1. Replace Body
-    res = _run_atom("replace_symbol_body", "TargetClass.java", {"symbol_name": "originalMath", "new_code": "return 42;"}, fs)
+    res = _run_atom(
+        "replace_symbol_body",
+        "TargetClass.java",
+        {"symbol_name": "originalMath", "new_code": "return 42;"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "return 42;" in fs["TargetClass.java"]
     assert "return 1 + 1;" not in fs["TargetClass.java"]
@@ -419,7 +454,12 @@ public class TargetClass {
 
     # 2. Add Symbol (Nested in Class)
     new_method = "public void addedMethod() {\n    return;\n}"
-    res = _run_atom("add_symbol", "TargetClass.java", {"target_parent": "TargetClass", "new_code": new_method}, fs)
+    res = _run_atom(
+        "add_symbol",
+        "TargetClass.java",
+        {"target_parent": "TargetClass", "new_code": new_method},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "public void addedMethod() {" in fs["TargetClass.java"]
     # Ensure it's before the class closing brace
@@ -431,10 +471,19 @@ public class TargetClass {
     assert "methodToDelete" not in fs["TargetClass.java"]
 
     # 4. Replace Symbol (Full)
-    res = _run_atom("replace_symbol", "TargetClass.java", {"symbol_name": "originalMath", "new_code": "public int brandNewMath() {\n    return 100;\n}"}, fs)
+    res = _run_atom(
+        "replace_symbol",
+        "TargetClass.java",
+        {
+            "symbol_name": "originalMath",
+            "new_code": "public int brandNewMath() {\n    return 100;\n}",
+        },
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "brandNewMath" in fs["TargetClass.java"]
     assert "originalMath" not in fs["TargetClass.java"]
+
 
 def test_kotlin_mutation_operations() -> None:
     code = """
@@ -446,13 +495,24 @@ class TargetClass {
 """
     fs = {"TargetClass.kt": code}
 
-    res = _run_atom("replace_symbol_body", "TargetClass.kt", {"symbol_name": "originalMath", "new_code": "return 42"}, fs)
+    res = _run_atom(
+        "replace_symbol_body",
+        "TargetClass.kt",
+        {"symbol_name": "originalMath", "new_code": "return 42"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "return 42" in fs["TargetClass.kt"]
 
-    res = _run_atom("add_symbol", "TargetClass.kt", {"target_parent": "TargetClass", "new_code": "fun added(): Unit {}"}, fs)
+    res = _run_atom(
+        "add_symbol",
+        "TargetClass.kt",
+        {"target_parent": "TargetClass", "new_code": "fun added(): Unit {}"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "fun added()" in fs["TargetClass.kt"]
+
 
 def test_rust_mutation_operations() -> None:
     code = """
@@ -465,13 +525,18 @@ impl TargetClass {
 """
     fs = {"target.rs": code}
 
-    res = _run_atom("replace_symbol_body", "target.rs", {"symbol_name": "original_math", "new_code": "42"}, fs)
+    res = _run_atom(
+        "replace_symbol_body", "target.rs", {"symbol_name": "original_math", "new_code": "42"}, fs
+    )
     assert res.status.value == "SUCCESS", getattr(res, "message", "unknown error")
     assert "42" in fs["target.rs"]
 
-    res = _run_atom("add_symbol", "target.rs", {"target_parent": "TargetClass", "new_code": "fn added() {}"}, fs)
+    res = _run_atom(
+        "add_symbol", "target.rs", {"target_parent": "TargetClass", "new_code": "fn added() {}"}, fs
+    )
     assert res.status.value == "SUCCESS"
     assert "fn added()" in fs["target.rs"]
+
 
 def test_typescript_mutation_operations() -> None:
     code = """
@@ -483,16 +548,27 @@ export class TargetClass {
 """
     fs = {"TargetClass.ts": code}
 
-    res = _run_atom("replace_symbol_body", "TargetClass.ts", {"symbol_name": "originalMath", "new_code": "return 42;"}, fs)
+    res = _run_atom(
+        "replace_symbol_body",
+        "TargetClass.ts",
+        {"symbol_name": "originalMath", "new_code": "return 42;"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "return 42;" in fs["TargetClass.ts"]
 
-    res = _run_atom("add_symbol", "TargetClass.ts", {"target_parent": "TargetClass", "new_code": "added(): void {}"}, fs)
+    res = _run_atom(
+        "add_symbol",
+        "TargetClass.ts",
+        {"target_parent": "TargetClass", "new_code": "added(): void {}"},
+        fs,
+    )
     assert res.status.value == "SUCCESS"
     assert "added(): void {}" in fs["TargetClass.ts"]
 
 
 # --- EXHAUSTIVE PHASE 3 EDGE CASES ---
+
 
 def test_missing_symbol_throws_correctly():
     java = JavaCodeStructure()
@@ -504,6 +580,7 @@ def test_missing_symbol_throws_correctly():
         java.extract_symbol_body("class A {}", "B")
     with pytest.raises(CodeStructureError, match="not found"):
         java.delete_symbol("class A {}", "B")
+
 
 def test_empty_string_throws_correctly():
     kt = KotlinCodeStructure()
@@ -517,10 +594,12 @@ def test_empty_string_throws_correctly():
     with pytest.raises(CodeStructureError, match="empty code"):
         kt.extract_symbol("   ", "A")
 
+
 def test_empty_replace_padding():
     ts = TypeScriptCodeStructure()
     res = ts._auto_indent("", 4)
     assert res == ""
+
 
 def test_add_symbol_base_end_of_file():
     rs = RustCodeStructure()
@@ -531,6 +610,7 @@ def test_add_symbol_base_end_of_file():
     res2 = rs.add_symbol("fn old() {}\n", None, "fn added() {}")
     assert res2 == "fn old() {}\n\nfn added() {}"
 
+
 def test_java_nested_enum_replace():
     java = JavaCodeStructure()
     code = "public enum Color { RED; }"
@@ -538,12 +618,14 @@ def test_java_nested_enum_replace():
     assert "BLUE;" in res
     assert "RED;" not in res
 
+
 def test_java_list_visibility_fallback():
     java = JavaCodeStructure()
     # Test visibility parsing safely
     code = "class A {} public class B {}"
     res = java.list_symbols(code, visibility=["public"])
     assert "B" in res
+
 
 def test_kotlin_object_bounds():
     kt = KotlinCodeStructure()
@@ -556,11 +638,13 @@ def test_kotlin_object_bounds():
     assert "y" not in kt.list_symbols(code2, visibility=["public"])
     assert "z" not in kt.list_symbols(code2, visibility=["public"])
 
+
 def test_rust_impl_generic_extract():
     rs = RustCodeStructure()
     code = "impl<T> Builder<T> { fn get() {} }"
     res = rs.extract_symbol(code, "Builder")
     assert "fn get" in res
+
 
 def test_rust_macro_empty_replace():
     rs = RustCodeStructure()
@@ -573,6 +657,7 @@ def test_rust_macro_empty_replace():
     assert "b" in rs.list_symbols(code2, visibility=["public"])
     assert "a" not in rs.list_symbols(code2, visibility=["public"])
 
+
 def test_typescript_nested_lexical_unwrapping():
     ts = TypeScriptCodeStructure()
     code = "export const fetcher = async () => { console.log(); };"
@@ -582,6 +667,7 @@ def test_typescript_nested_lexical_unwrapping():
     code2 = "export const missing_body = 42;"
     with pytest.raises(CodeStructureError, match="not found"):
         ts.replace_symbol_body(code2, "missing_body", "")
+
 
 def test_syntax_error_recovery_e2e():
     # tree-sitter will mark the first function as ERROR but keep the second intact.
@@ -594,13 +680,15 @@ def test_syntax_error_recovery_e2e():
     res2 = java.replace_symbol(code, "valid", "public void replaced() {}")
     assert "replaced" in res2
 
+
 def test_multi_byte_utf8_truncation():
     kt = KotlinCodeStructure()
-    code = "class A { fun start() { val x = \"🚀🚀🚀\"; } }"
-    res = kt.replace_symbol(code, "start", "fun replaced() { val y = \"🥳\"; }")
+    code = 'class A { fun start() { val x = "🚀🚀🚀"; } }'
+    res = kt.replace_symbol(code, "start", 'fun replaced() { val y = "🥳"; }')
     assert "🥳" in res
     assert "🚀🚀🚀" not in res
     # if byte slicing failed, encode/decode would throw UnicodeDecodeError
+
 
 def test_crlf_safety():
     ts = TypeScriptCodeStructure()
@@ -608,4 +696,3 @@ def test_crlf_safety():
     res = ts.replace_symbol_body(code, "test", "let b = 2;")
     # Ensure no exceptions on body replace with \r\n base string margins
     assert "let b = 2;" in res
-

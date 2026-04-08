@@ -56,6 +56,7 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
     ),
 }
 
+
 @dataclass(frozen=True)
 class ToolResult:
     """Result from a CodeStructureTool operation."""
@@ -63,6 +64,7 @@ class ToolResult:
     status: str  # "success" or "error"
     message: str = ""
     data: Any = None
+
 
 class CodeStructureToolError(Exception):
     """Raised when an operation is blocked by role or config."""
@@ -91,39 +93,65 @@ class CodeStructureTool:
 
     def read_file_structure(self, path: str) -> ToolResult:
         self._require_intent("read_file_structure")
-        grant_err = self._check_grant(path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL}))
+        grant_err = self._check_grant(
+            path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
+        )
         if grant_err:
             return grant_err
 
         res = self._atom.run({"intent": "read_file_structure", "path": path})
-        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
 
     def list_symbols(self, path: str, visibility: list[str] | None = None) -> ToolResult:
         self._require_intent("list_symbols")
-        grant_err = self._check_grant(path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL}))
+        grant_err = self._check_grant(
+            path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
+        )
         if grant_err:
             return grant_err
 
         res = self._atom.run({"intent": "list_symbols", "path": path, "visibility": visibility})
-        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
 
     def read_symbol(self, path: str, symbol_name: str) -> ToolResult:
         self._require_intent("read_symbol")
-        grant_err = self._check_grant(path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL}))
+        grant_err = self._check_grant(
+            path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
+        )
         if grant_err:
             return grant_err
 
         res = self._atom.run({"intent": "read_symbol", "path": path, "symbol_name": symbol_name})
-        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
 
     def read_symbol_body(self, path: str, symbol_name: str) -> ToolResult:
         self._require_intent("read_symbol_body")
-        grant_err = self._check_grant(path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL}))
+        grant_err = self._check_grant(
+            path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
+        )
         if grant_err:
             return grant_err
 
-        res = self._atom.run({"intent": "read_symbol_body", "path": path, "symbol_name": symbol_name})
-        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+        res = self._atom.run(
+            {"intent": "read_symbol_body", "path": path, "symbol_name": symbol_name}
+        )
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
 
     def replace_symbol(self, path: str, symbol_name: str, new_code: str) -> ToolResult:
         self._require_intent("replace_symbol")
@@ -131,8 +159,19 @@ class CodeStructureTool:
         if grant_err:
             return grant_err
 
-        res = self._atom.run({"intent": "replace_symbol", "path": path, "symbol_name": symbol_name, "new_code": new_code})
-        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+        res = self._atom.run(
+            {
+                "intent": "replace_symbol",
+                "path": path,
+                "symbol_name": symbol_name,
+                "new_code": new_code,
+            }
+        )
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
 
     def replace_symbol_body(self, path: str, symbol_name: str, new_code: str) -> ToolResult:
         self._require_intent("replace_symbol_body")
@@ -140,8 +179,19 @@ class CodeStructureTool:
         if grant_err:
             return grant_err
 
-        res = self._atom.run({"intent": "replace_symbol_body", "path": path, "symbol_name": symbol_name, "new_code": new_code})
-        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+        res = self._atom.run(
+            {
+                "intent": "replace_symbol_body",
+                "path": path,
+                "symbol_name": symbol_name,
+                "new_code": new_code,
+            }
+        )
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
 
     def delete_symbol(self, path: str, symbol_name: str) -> ToolResult:
         self._require_intent("delete_symbol")
@@ -150,7 +200,11 @@ class CodeStructureTool:
             return grant_err
 
         res = self._atom.run({"intent": "delete_symbol", "path": path, "symbol_name": symbol_name})
-        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
 
     def add_symbol(self, path: str, new_code: str, target_parent: str | None = None) -> ToolResult:
         self._require_intent("add_symbol")
@@ -158,8 +212,19 @@ class CodeStructureTool:
         if grant_err:
             return grant_err
 
-        res = self._atom.run({"intent": "add_symbol", "path": path, "new_code": new_code, "target_parent": target_parent})
-        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+        res = self._atom.run(
+            {
+                "intent": "add_symbol",
+                "path": path,
+                "new_code": new_code,
+                "target_parent": target_parent,
+            }
+        )
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
 
     def definitions(self) -> list[Any]:
         from specweaver.loom.tools.code_structure.definitions import get_code_structure_schema
@@ -196,7 +261,9 @@ class CodeStructureTool:
             return ToolResult(status="error", message=f"No grant covers path: {path}")
 
         if best_mode not in required_modes:
-            return ToolResult(status="error", message=f"Insufficient permissions ({best_mode}) for path: {path}")
+            return ToolResult(
+                status="error", message=f"Insufficient permissions ({best_mode}) for path: {path}"
+            )
 
         return None
 
@@ -218,7 +285,9 @@ class CodeStructureTool:
                 grant_path = "/"
 
             if (
-                self._path_matches_grant(normalized_path, grant.path.replace("\\", "/").rstrip("/"), grant.recursive)
+                self._path_matches_grant(
+                    normalized_path, grant.path.replace("\\", "/").rstrip("/"), grant.recursive
+                )
                 or self._path_matches_grant(check_path, grant_path, grant.recursive)
             ) and (best is None or mode_priority[grant.mode] > mode_priority[best]):
                 best = grant.mode

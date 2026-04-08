@@ -446,7 +446,8 @@ tasks:
                 str(project_dir),
             ],
         )
-        assert result.exit_code == 1
+        # 42 == Drift detected
+        assert result.exit_code == 42
         assert "AST Drift Detected" in result.stdout
         assert "missing_method" in result.stdout
 

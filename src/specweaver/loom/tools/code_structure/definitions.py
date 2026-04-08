@@ -34,7 +34,7 @@ READ_SYMBOL_SCHEMA = ToolDefinition(
             name="symbol_name",
             type="string",
             description="The target node class or function name to extract.",
-        )
+        ),
     ],
 )
 
@@ -51,7 +51,7 @@ READ_SYMBOL_BODY_SCHEMA = ToolDefinition(
             name="symbol_name",
             type="string",
             description="The target node class or function name to extract the body from.",
-        )
+        ),
     ],
 )
 
@@ -69,7 +69,7 @@ LIST_SYMBOLS_SCHEMA = ToolDefinition(
             type="string",
             description="Optional comma-separated list to filter extraction strictly by visibility boundaries (e.g. 'public').",
             required=False,
-        )
+        ),
     ],
 )
 
@@ -86,7 +86,7 @@ DELETE_SYMBOL_SCHEMA = ToolDefinition(
             name="symbol_name",
             type="string",
             description="The target node class or function name to delete.",
-        )
+        ),
     ],
 )
 
@@ -109,7 +109,7 @@ ADD_SYMBOL_SCHEMA = ToolDefinition(
             name="new_code",
             type="string",
             description="The full syntax logic of the new symbol to add.",
-        )
+        ),
     ],
 )
 
@@ -131,7 +131,7 @@ REPLACE_SYMBOL_BODY_SCHEMA = ToolDefinition(
             name="new_code",
             type="string",
             description="The new replacement logic block.",
-        )
+        ),
     ],
 )
 
@@ -153,9 +153,10 @@ REPLACE_SYMBOL_SCHEMA = ToolDefinition(
             name="new_code",
             type="string",
             description="The new raw code payload that will replace the given symbol boundary entirely.",
-        )
+        ),
     ],
 )
+
 
 def get_code_structure_schema() -> list[Any]:
     """Returns the JSON Schema tools injected into the Prompt."""
@@ -167,5 +168,5 @@ def get_code_structure_schema() -> list[Any]:
         REPLACE_SYMBOL_SCHEMA,
         REPLACE_SYMBOL_BODY_SCHEMA,
         ADD_SYMBOL_SCHEMA,
-        DELETE_SYMBOL_SCHEMA
+        DELETE_SYMBOL_SCHEMA,
     ]

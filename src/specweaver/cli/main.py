@@ -65,6 +65,7 @@ from specweaver.cli import (  # noqa: E402, F401
     constitution,
     cost_commands,
     drift,
+    hooks,
     implement,
     lineage,
     pipelines,
@@ -74,3 +75,6 @@ from specweaver.cli import (  # noqa: E402, F401
     usage_commands,
     validation,
 )
+
+if __name__ == "__main__":
+    app()

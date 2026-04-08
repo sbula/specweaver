@@ -196,13 +196,19 @@ class TypeScriptRunner(QARunnerInterface):
 
         from specweaver.loom.commons.qa_runner.interface import ArchitectureViolation
 
-        logger.debug("TypeScriptRunner.run_architecture_check: target=%s, dal=%s", target, dal_level)
+        logger.debug(
+            "TypeScriptRunner.run_architecture_check: target=%s, dal=%s", target, dal_level
+        )
 
         target_path = self.cwd / target
         ctx_dir = target_path.parent if target_path.is_file() else target_path
 
         # Traverse up to find closest context.yaml
-        while ctx_dir != self.cwd and ctx_dir.parent != ctx_dir and not (ctx_dir / "context.yaml").exists():
+        while (
+            ctx_dir != self.cwd
+            and ctx_dir.parent != ctx_dir
+            and not (ctx_dir / "context.yaml").exists()
+        ):
             ctx_dir = ctx_dir.parent
 
         ctx_file = ctx_dir / "context.yaml"
@@ -223,23 +229,32 @@ class TypeScriptRunner(QARunnerInterface):
             "root": True,
             "parser": "@typescript-eslint/parser",
             "plugins": ["@typescript-eslint"],
-            "rules": {
-                "no-restricted-imports": ["error", {
-                    "patterns": forbids
-                }]
-            }
+            "rules": {"no-restricted-imports": ["error", {"patterns": forbids}]},
         }
         config_path.write_text(json.dumps(eslint_config, indent=2), encoding="utf-8")
 
         npx_bin = shutil.which("npx") or "npx"
-        cmd = [npx_bin, "eslint", "--no-eslintrc", "-c", str(config_path), "--format", "json", target]
+        cmd = [
+            npx_bin,
+            "eslint",
+            "--no-eslintrc",
+            "-c",
+            str(config_path),
+            "--format",
+            "json",
+            target,
+        ]
 
         try:
-            proc = subprocess.run(cmd, cwd=self.cwd, capture_output=True, text=True, timeout=60, check=False)
+            proc = subprocess.run(
+                cmd, cwd=self.cwd, capture_output=True, text=True, timeout=60, check=False
+            )
         except subprocess.TimeoutExpired:
             return ArchitectureRunResult(
                 violation_count=1,
-                violations=[ArchitectureViolation(file=target, code="Timeout", message="Jest timed out")]
+                violations=[
+                    ArchitectureViolation(file=target, code="Timeout", message="Jest timed out")
+                ],
             )
         finally:
             config_path.unlink(missing_ok=True)

@@ -131,7 +131,9 @@ class ValidateSpecHandler:
 
         pipeline = load_pipeline_yaml(pipeline_name)
         if settings is not None:
-            pipeline = apply_settings_to_pipeline(pipeline, getattr(settings, "validation", settings))
+            pipeline = apply_settings_to_pipeline(
+                pipeline, getattr(settings, "validation", settings)
+            )
 
         content = spec_path.read_text(encoding="utf-8")
         return execute_validation_pipeline(pipeline, content, spec_path)
@@ -214,7 +216,9 @@ class ValidateCodeHandler:
 
         pipeline = load_pipeline_yaml("validation_code_default")
         if settings is not None:
-            pipeline = apply_settings_to_pipeline(pipeline, getattr(settings, "validation", settings))
+            pipeline = apply_settings_to_pipeline(
+                pipeline, getattr(settings, "validation", settings)
+            )
 
         content = code_path.read_text(encoding="utf-8")
         return execute_validation_pipeline(pipeline, content, spec_path)

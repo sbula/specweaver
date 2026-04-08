@@ -38,7 +38,9 @@ class ComponentChange(BaseModel):
     exists: bool
     change_nature: str
     description: str
-    proposed_dal: DALLevel = Field(description="The DO-178C DAL rating required: DAL_A, DAL_B, DAL_C, DAL_D, or DAL_E")
+    proposed_dal: DALLevel = Field(
+        description="The DO-178C DAL rating required: DAL_A, DAL_B, DAL_C, DAL_D, or DAL_E"
+    )
     dependencies: list[str] = Field(default_factory=list)
     confidence: int = 0
 

@@ -49,25 +49,45 @@ class CodeStructureAtom(Atom):
     def _handle_structure(self, parser: CodeStructureInterface, code: str, path: str) -> AtomResult:
         try:
             skeleton = parser.extract_skeleton(code)
-            return AtomResult(status=AtomStatus.SUCCESS, message=f"Extracted skeleton for {path}", exports={"structure": skeleton})
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Extracted skeleton for {path}",
+                exports={"structure": skeleton},
+            )
         except CodeStructureError as err:
             return AtomResult(status=AtomStatus.FAILED, message=str(err))
 
-    def _handle_list(self, parser: CodeStructureInterface, code: str, context: dict[str, Any], path: str) -> AtomResult:
+    def _handle_list(
+        self, parser: CodeStructureInterface, code: str, context: dict[str, Any], path: str
+    ) -> AtomResult:
         try:
             visibility = context.get("visibility")
             symbols = parser.list_symbols(code, visibility=visibility)
-            return AtomResult(status=AtomStatus.SUCCESS, message=f"Listed symbols for {path}", exports={"symbols": symbols})
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Listed symbols for {path}",
+                exports={"symbols": symbols},
+            )
         except CodeStructureError as err:
             return AtomResult(status=AtomStatus.FAILED, message=str(err))
 
-    def _handle_symbol(self, parser: CodeStructureInterface, code: str, context: dict[str, typing.Any], intent: str, path: str) -> AtomResult:
+    def _handle_symbol(
+        self,
+        parser: CodeStructureInterface,
+        code: str,
+        context: dict[str, typing.Any],
+        intent: str,
+        path: str,
+    ) -> AtomResult:
         symbol_name = context.get("symbol_name")
 
         try:
             if intent in ("read_symbol", "read_symbol_body"):
                 if not symbol_name:
-                    return AtomResult(status=AtomStatus.FAILED, message="Missing 'symbol_name' for symbol extraction.")
+                    return AtomResult(
+                        status=AtomStatus.FAILED,
+                        message="Missing 'symbol_name' for symbol extraction.",
+                    )
                 return self._handle_read_symbol(parser, code, symbol_name, intent)
             else:
                 return self._handle_write_symbol(parser, code, context, intent, path, symbol_name)
@@ -88,20 +108,30 @@ class CodeStructureAtom(Atom):
         path = context.get("path")
 
         if not intent or not path:
-            return AtomResult(status=AtomStatus.FAILED, message="Missing required fields: 'intent' or 'path'.")
+            return AtomResult(
+                status=AtomStatus.FAILED, message="Missing required fields: 'intent' or 'path'."
+            )
 
         valid_intents = {
-            "read_file_structure", "read_symbol", "read_symbol_body", "list_symbols",
-            "replace_symbol", "replace_symbol_body", "add_symbol", "delete_symbol"
+            "read_file_structure",
+            "read_symbol",
+            "read_symbol_body",
+            "list_symbols",
+            "replace_symbol",
+            "replace_symbol_body",
+            "add_symbol",
+            "delete_symbol",
         }
         if intent not in valid_intents:
-            return AtomResult(status=AtomStatus.FAILED, message=f"Unsupported code structure intent: {intent}")
+            return AtomResult(
+                status=AtomStatus.FAILED, message=f"Unsupported code structure intent: {intent}"
+            )
 
         parser = self._get_parser(path)
         if not parser:
             return AtomResult(
                 status=AtomStatus.FAILED,
-                message=f"AST Structure Extraction not supported for '{Path(path).suffix}' files. Please use read_file instead."
+                message=f"AST Structure Extraction not supported for '{Path(path).suffix}' files. Please use read_file instead.",
             )
 
         read_res = self._executor.read(path)
@@ -116,31 +146,53 @@ class CodeStructureAtom(Atom):
             return self._handle_list(parser, code, context, path)
         return self._handle_symbol(parser, code, context, intent, path)
 
-    def _handle_read_symbol(self, parser: CodeStructureInterface, code: str, symbol_name: str, intent: str) -> AtomResult:
+    def _handle_read_symbol(
+        self, parser: CodeStructureInterface, code: str, symbol_name: str, intent: str
+    ) -> AtomResult:
         if intent == "read_symbol":
             symbol_code = parser.extract_symbol(code, symbol_name)
-            return AtomResult(status=AtomStatus.SUCCESS, message=f"Extracted symbol '{symbol_name}'", exports={"symbol": symbol_code})
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Extracted symbol '{symbol_name}'",
+                exports={"symbol": symbol_code},
+            )
         elif intent == "read_symbol_body":
             body_code = parser.extract_symbol_body(code, symbol_name)
-            return AtomResult(status=AtomStatus.SUCCESS, message=f"Extracted body of '{symbol_name}'", exports={"body": body_code})
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Extracted body of '{symbol_name}'",
+                exports={"body": body_code},
+            )
         return AtomResult(status=AtomStatus.FAILED, message="Invalid read intent")
 
-    def _handle_write_symbol(self, parser: CodeStructureInterface, code: str, context: dict[str, typing.Any], intent: str, path: str, symbol_name: str | None) -> AtomResult:
+    def _handle_write_symbol(
+        self,
+        parser: CodeStructureInterface,
+        code: str,
+        context: dict[str, typing.Any],
+        intent: str,
+        path: str,
+        symbol_name: str | None,
+    ) -> AtomResult:
         if intent in ("replace_symbol", "replace_symbol_body", "delete_symbol") and not symbol_name:
-            return AtomResult(status=AtomStatus.FAILED, message=f"Missing 'symbol_name' for {intent}.")
+            return AtomResult(
+                status=AtomStatus.FAILED, message=f"Missing 'symbol_name' for {intent}."
+            )
 
         if intent == "replace_symbol":
             new_code = context.get("new_code", "")
-            mutated = parser.replace_symbol(code, symbol_name, new_code) # type: ignore
+            mutated = parser.replace_symbol(code, symbol_name, new_code)  # type: ignore
             self._executor.write(path, mutated)
             return AtomResult(status=AtomStatus.SUCCESS, message=f"Replaced symbol '{symbol_name}'")
         elif intent == "replace_symbol_body":
             new_code = context.get("new_code", "")
-            mutated = parser.replace_symbol_body(code, symbol_name, new_code) # type: ignore
+            mutated = parser.replace_symbol_body(code, symbol_name, new_code)  # type: ignore
             self._executor.write(path, mutated)
-            return AtomResult(status=AtomStatus.SUCCESS, message=f"Replaced body of symbol '{symbol_name}'")
+            return AtomResult(
+                status=AtomStatus.SUCCESS, message=f"Replaced body of symbol '{symbol_name}'"
+            )
         elif intent == "delete_symbol":
-            mutated = parser.delete_symbol(code, symbol_name) # type: ignore
+            mutated = parser.delete_symbol(code, symbol_name)  # type: ignore
             self._executor.write(path, mutated)
             return AtomResult(status=AtomStatus.SUCCESS, message=f"Deleted symbol '{symbol_name}'")
         elif intent == "add_symbol":
@@ -148,5 +200,7 @@ class CodeStructureAtom(Atom):
             target_parent = context.get("target_parent")
             mutated = parser.add_symbol(code, target_parent, new_code)
             self._executor.write(path, mutated)
-            return AtomResult(status=AtomStatus.SUCCESS, message=f"Added new symbol inside '{target_parent}'")
+            return AtomResult(
+                status=AtomStatus.SUCCESS, message=f"Added new symbol inside '{target_parent}'"
+            )
         return AtomResult(status=AtomStatus.FAILED, message="Invalid write intent")

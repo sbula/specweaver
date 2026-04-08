@@ -77,9 +77,18 @@ class TypeScriptCodeStructure(CodeStructureInterface):
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in ("function_declaration", "method_definition", "class_declaration", "variable_declarator"):
+                        if parent and parent.type in (
+                            "function_declaration",
+                            "method_definition",
+                            "class_declaration",
+                            "variable_declarator",
+                        ):
                             wrapper = parent
-                            if wrapper.type == "variable_declarator" and wrapper.parent and wrapper.parent.type == "lexical_declaration":
+                            if (
+                                wrapper.type == "variable_declarator"
+                                and wrapper.parent
+                                and wrapper.parent.type == "lexical_declaration"
+                            ):
                                 wrapper = wrapper.parent
                             if wrapper.parent and wrapper.parent.type == "export_statement":
                                 wrapper = wrapper.parent
@@ -122,7 +131,11 @@ class TypeScriptCodeStructure(CodeStructureInterface):
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
 
-                    if visibility and "public" in visibility and not self._is_symbol_public(name_node.parent):
+                    if (
+                        visibility
+                        and "public" in visibility
+                        and not self._is_symbol_public(name_node.parent)
+                    ):
                         continue
 
                     symbols.append(sym_name)
@@ -146,9 +159,18 @@ class TypeScriptCodeStructure(CodeStructureInterface):
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in ("function_declaration", "method_definition", "class_declaration", "variable_declarator"):
+                        if parent and parent.type in (
+                            "function_declaration",
+                            "method_definition",
+                            "class_declaration",
+                            "variable_declarator",
+                        ):
                             wrapper = parent
-                            if wrapper.type == "variable_declarator" and wrapper.parent and wrapper.parent.type == "lexical_declaration":
+                            if (
+                                wrapper.type == "variable_declarator"
+                                and wrapper.parent
+                                and wrapper.parent.type == "lexical_declaration"
+                            ):
                                 wrapper = wrapper.parent
                             if wrapper.parent and wrapper.parent.type == "export_statement":
                                 wrapper = wrapper.parent
@@ -178,10 +200,12 @@ class TypeScriptCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte:]
+        mutated = (
+            code_bytes[: node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte :]
+        )
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin).encode("utf-8")
-        mutated = code_bytes[:node.start_byte] + indented_code + code_bytes[node.end_byte:]
+        mutated = code_bytes[: node.start_byte] + indented_code + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def _search_declarator(self, child: typing.Any) -> typing.Any | None:
@@ -242,7 +266,15 @@ class TypeScriptCodeStructure(CodeStructureInterface):
 
         insert_start = target_block.start_byte + 1
         insert_end = target_block.end_byte - 1
-        mutated = code_bytes[:insert_start] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_end:]
+        mutated = (
+            code_bytes[:insert_start]
+            + b"\n"
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_end:]
+        )
         return mutated.decode("utf-8")
 
     def delete_symbol(self, code: str, symbol_name: str) -> str:
@@ -253,7 +285,7 @@ class TypeScriptCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:node.start_byte] + code_bytes[node.end_byte:]
+        mutated = code_bytes[: node.start_byte] + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
@@ -278,5 +310,12 @@ class TypeScriptCodeStructure(CodeStructureInterface):
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
 
         insert_point = target_block.end_byte - 1
-        mutated = code_bytes[:insert_point] + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_point:]
+        mutated = (
+            code_bytes[:insert_point]
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_point:]
+        )
         return mutated.decode("utf-8")

@@ -80,7 +80,9 @@ class RustCodeStructure(CodeStructureInterface):
                         if parent and parent.type == "generic_type":
                             parent = parent.parent
                         if parent and parent.type in ("function_item", "struct_item", "impl_item"):
-                            collected_blocks.append(typing.cast("bytes", parent.text).decode("utf-8"))
+                            collected_blocks.append(
+                                typing.cast("bytes", parent.text).decode("utf-8")
+                            )
 
         if collected_blocks:
             return "\n\n".join(collected_blocks)
@@ -99,7 +101,6 @@ class RustCodeStructure(CodeStructureInterface):
             # Actually, the first capture is usually the outermost block.
             return typing.cast("bytes", captures["block"][0].text).decode("utf-8")
         return ""
-
 
     def _is_symbol_public(self, parent: typing.Any) -> bool:
         if parent:
@@ -122,7 +123,11 @@ class RustCodeStructure(CodeStructureInterface):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if visibility and "public" in visibility and not self._is_symbol_public(name_node.parent):
+                    if (
+                        visibility
+                        and "public" in visibility
+                        and not self._is_symbol_public(name_node.parent)
+                    ):
                         continue
                     symbols.append(sym_name)
 
@@ -178,11 +183,13 @@ class RustCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte:]
+        mutated = (
+            code_bytes[: node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte :]
+        )
         # Using _auto_indent here
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin).encode("utf-8")
-        mutated = code_bytes[:node.start_byte] + indented_code + code_bytes[node.end_byte:]
+        mutated = code_bytes[: node.start_byte] + indented_code + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
@@ -208,7 +215,15 @@ class RustCodeStructure(CodeStructureInterface):
 
         insert_start = target_block.start_byte + 1
         insert_end = target_block.end_byte - 1
-        mutated = code_bytes[:insert_start] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_end:]
+        mutated = (
+            code_bytes[:insert_start]
+            + b"\n"
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_end:]
+        )
         return mutated.decode("utf-8")
 
     def delete_symbol(self, code: str, symbol_name: str) -> str:
@@ -219,7 +234,7 @@ class RustCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:node.start_byte] + code_bytes[node.end_byte:]
+        mutated = code_bytes[: node.start_byte] + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
@@ -248,5 +263,12 @@ class RustCodeStructure(CodeStructureInterface):
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
 
         insert_point = target_block.end_byte - 1
-        mutated = code_bytes[:insert_point] + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_point:]
+        mutated = (
+            code_bytes[:insert_point]
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_point:]
+        )
         return mutated.decode("utf-8")
