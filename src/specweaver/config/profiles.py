@@ -1,5 +1,5 @@
 # Copyright (c) 2026 sbula. All rights reserved.
-# Licensed under the MIT License. See LICENSE file in the project root.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """Domain profiles — named validation pipeline presets for project domains.
 

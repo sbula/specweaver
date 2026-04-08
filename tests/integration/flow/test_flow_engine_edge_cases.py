@@ -1,5 +1,5 @@
 # Copyright (c) 2026 sbula. All rights reserved.
-# Licensed under the MIT License. See LICENSE file in the project root.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """Integration tests exercising multiple flow engine edge cases in a single run.
 This ensures proper interaction between Runner, Handlers, Gates, and Display.

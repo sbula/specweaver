@@ -101,4 +101,4 @@ See [docs/INDEX.md](docs/INDEX.md) for a guided tour of the documentation. Key e
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the Apache License, Version 2.0.

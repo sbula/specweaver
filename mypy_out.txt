@@ -1,6 +1,0 @@
-src\specweaver\loom\tools\code_structure\definitions.py:89: error: List item 0 has incompatible type "dict[str, Collection[str]]"; expected "Mapping[str, str]"  [list-item]
-src\specweaver\loom\tools\code_structure\definitions.py:90: error: List item 1 has incompatible type "dict[str, Collection[str]]"; expected "Mapping[str, str]"  [list-item]
-src\specweaver\loom\tools\code_structure\definitions.py:91: error: List item 2 has incompatible type "dict[str, Collection[str]]"; expected "Mapping[str, str]"  [list-item]
-src\specweaver\loom\tools\code_structure\definitions.py:92: error: List item 3 has incompatible type "dict[str, Collection[str]]"; expected "Mapping[str, str]"  [list-item]
-src\specweaver\loom\tools\code_structure\tool.py:129: error: List comprehension has incompatible type List[Mapping[str, str]]; expected List[dict[str, Any]]  [misc]
-Found 5 errors in 2 files (checked 2 source files)

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 sbula. All rights reserved.
-# Licensed under the MIT License. See LICENSE file in the project root.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """S07: Test-First — checks that a spec's Contract section is concrete enough
    that tests can be derived from it without additional context.
