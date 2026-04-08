@@ -145,3 +145,37 @@ def test_tool_execution_serialization() -> None:
     res2 = tool.read_symbol("test.py", "TestTarget")
     assert res2.status == "success"
     assert res2.data["symbol"] == "def TestTarget(): pass"
+
+def test_tool_mutation_intents_blocked_by_read_grant() -> None:
+    atom = MagicMock()
+    # implementer is allowed the intent, but if we only give AccessMode.READ, it should block
+    tool = CodeStructureTool(
+        atom=atom,
+        role="implementer",
+        grants=[FolderGrant(path="", mode=AccessMode.READ, recursive=True)],
+    )
+
+    res = tool.replace_symbol("test.py", "Target", "pass")
+    assert res.status == "error"
+    assert "Insufficient permissions" in res.message
+    assert "read" in res.message.lower()
+    atom.run.assert_not_called()
+
+def test_tool_mutation_intents_success_with_write_grant() -> None:
+    atom = MagicMock()
+    atom.run.return_value = AtomResult(status=AtomStatus.SUCCESS, message="Replaced", exports={})
+    tool = CodeStructureTool(
+        atom=atom,
+        role="implementer",
+        grants=[FolderGrant(path="", mode=AccessMode.WRITE, recursive=True)],
+    )
+
+    res = tool.replace_symbol("test.py", "Target", "pass")
+    assert res.status == "success"
+    atom.run.assert_called_with({"intent": "replace_symbol", "path": "test.py", "symbol_name": "Target", "new_code": "pass"})
+
+    tool.add_symbol("test.py", "fn added() {}")
+    atom.run.assert_called_with({"intent": "add_symbol", "path": "test.py", "new_code": "fn added() {}", "target_parent": None})
+
+    tool.delete_symbol("test.py", "Target")
+    atom.run.assert_called_with({"intent": "delete_symbol", "path": "test.py", "symbol_name": "Target"})

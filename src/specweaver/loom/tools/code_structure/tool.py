@@ -29,6 +29,10 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
             "read_symbol",
             "read_symbol_body",
             "list_symbols",
+            "replace_symbol",
+            "replace_symbol_body",
+            "delete_symbol",
+            "add_symbol",
         }
     ),
     "reviewer": frozenset(
@@ -119,6 +123,42 @@ class CodeStructureTool:
             return grant_err
 
         res = self._atom.run({"intent": "read_symbol_body", "path": path, "symbol_name": symbol_name})
+        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+
+    def replace_symbol(self, path: str, symbol_name: str, new_code: str) -> ToolResult:
+        self._require_intent("replace_symbol")
+        grant_err = self._check_grant(path, frozenset({AccessMode.WRITE, AccessMode.FULL}))
+        if grant_err:
+            return grant_err
+
+        res = self._atom.run({"intent": "replace_symbol", "path": path, "symbol_name": symbol_name, "new_code": new_code})
+        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+
+    def replace_symbol_body(self, path: str, symbol_name: str, new_code: str) -> ToolResult:
+        self._require_intent("replace_symbol_body")
+        grant_err = self._check_grant(path, frozenset({AccessMode.WRITE, AccessMode.FULL}))
+        if grant_err:
+            return grant_err
+
+        res = self._atom.run({"intent": "replace_symbol_body", "path": path, "symbol_name": symbol_name, "new_code": new_code})
+        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+
+    def delete_symbol(self, path: str, symbol_name: str) -> ToolResult:
+        self._require_intent("delete_symbol")
+        grant_err = self._check_grant(path, frozenset({AccessMode.WRITE, AccessMode.FULL}))
+        if grant_err:
+            return grant_err
+
+        res = self._atom.run({"intent": "delete_symbol", "path": path, "symbol_name": symbol_name})
+        return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
+
+    def add_symbol(self, path: str, new_code: str, target_parent: str | None = None) -> ToolResult:
+        self._require_intent("add_symbol")
+        grant_err = self._check_grant(path, frozenset({AccessMode.WRITE, AccessMode.FULL}))
+        if grant_err:
+            return grant_err
+
+        res = self._atom.run({"intent": "add_symbol", "path": path, "new_code": new_code, "target_parent": target_parent})
         return ToolResult(status="success" if res.status.value == "SUCCESS" else "error", message=res.message, data=res.exports)
 
     def definitions(self) -> list[Any]:

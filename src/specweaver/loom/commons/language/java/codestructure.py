@@ -25,6 +25,7 @@ SCM_SYMBOL_QUERY = """
 (enum_declaration name: (identifier) @name)
 """
 
+
 class JavaCodeStructure(CodeStructureInterface):
     def __init__(self) -> None:
         self.language = Language(tree_sitter_java.language())
@@ -75,7 +76,11 @@ class JavaCodeStructure(CodeStructureInterface):
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in ("method_declaration", "class_declaration", "interface_declaration"):
+                        if parent and parent.type in (
+                            "method_declaration",
+                            "class_declaration",
+                            "interface_declaration",
+                        ):
                             return typing.cast("bytes", parent.text).decode("utf-8")
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
@@ -94,11 +99,15 @@ class JavaCodeStructure(CodeStructureInterface):
         return ""
 
     def _is_symbol_public(self, parent: typing.Any) -> bool:
-        if parent:
-            if parent.type in ("class_declaration", "method_declaration", "interface_declaration", "enum_declaration"):
-                for child in parent.children:
-                    if child.type == "modifiers" and child.text and b"public" in child.text:
-                        return True
+        if parent and parent.type in (
+            "class_declaration",
+            "method_declaration",
+            "interface_declaration",
+            "enum_declaration",
+        ):
+            for child in parent.children:
+                if child.type == "modifiers" and child.text and b"public" in child.text:
+                    return True
         return False
 
     def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
@@ -116,7 +125,11 @@ class JavaCodeStructure(CodeStructureInterface):
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
 
-                    if visibility and "public" in visibility and not self._is_symbol_public(name_node.parent):
+                    if (
+                        visibility
+                        and "public" in visibility
+                        and not self._is_symbol_public(name_node.parent)
+                    ):
                         continue
 
                     symbols.append(sym_name)
@@ -141,7 +154,12 @@ class JavaCodeStructure(CodeStructureInterface):
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in ("method_declaration", "class_declaration", "interface_declaration", "enum_declaration"):
+                        if parent and parent.type in (
+                            "method_declaration",
+                            "class_declaration",
+                            "interface_declaration",
+                            "enum_declaration",
+                        ):
                             return parent
         return None
 
@@ -172,7 +190,7 @@ class JavaCodeStructure(CodeStructureInterface):
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin).encode("utf-8")
 
-        mutated = code_bytes[:node.start_byte] + indented_code + code_bytes[node.end_byte:]
+        mutated = code_bytes[: node.start_byte] + indented_code + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
@@ -198,7 +216,15 @@ class JavaCodeStructure(CodeStructureInterface):
 
         insert_start = target_block.start_byte + 1
         insert_end = target_block.end_byte - 1
-        mutated = code_bytes[:insert_start] + b"\n" + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_end:]
+        mutated = (
+            code_bytes[:insert_start]
+            + b"\n"
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_end:]
+        )
         return mutated.decode("utf-8")
 
     def delete_symbol(self, code: str, symbol_name: str) -> str:
@@ -209,7 +235,7 @@ class JavaCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-        mutated = code_bytes[:node.start_byte] + code_bytes[node.end_byte:]
+        mutated = code_bytes[: node.start_byte] + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
@@ -238,5 +264,12 @@ class JavaCodeStructure(CodeStructureInterface):
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
 
         insert_point = target_block.end_byte - 1
-        mutated = code_bytes[:insert_point] + (b" " * (margin + 4)) + indented_code + b"\n" + (b" " * margin) + code_bytes[insert_point:]
+        mutated = (
+            code_bytes[:insert_point]
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_point:]
+        )
         return mutated.decode("utf-8")
