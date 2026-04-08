@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.cli._core import app
+from specweaver.cli.main import app
 
 runner = CliRunner()
 
@@ -87,7 +87,7 @@ def test_drift_check_failed(dummy_project: Path) -> None:
             str(dummy_project),
         ],
     )
-    assert result.exit_code == 1
+    assert result.exit_code == 42
     assert "AST Drift Detected" in result.stdout
     assert "missing_function" not in result.stdout  # Should say missing expected method my_func
     assert "my_func" in result.stdout
@@ -185,6 +185,6 @@ def test_drift_check_analyze(dummy_project: Path, monkeypatch: pytest.MonkeyPatc
             "--analyze",
         ],
     )
-    assert result.exit_code == 1
+    assert result.exit_code == 42
     assert "LLM Root-Cause Analysis" in result.stdout
     assert "Mock LLM Root Cause" in result.stdout

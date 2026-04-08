@@ -183,6 +183,8 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.22 Polyglot AST Skeleton Extractor** — High-performance tree-sitter bindings dynamically map into `commons/language/ast_parser.py`, powering the robust `CodeStructureTool` and `CodeStructureAtom` APIs. It parses Rust, Python, Java, Kotlin, and TS into JSON structure payloads, stripping away monolithic "Context Window Bloat" to ensure agents only manipulate surgically exact signatures.
 
+**3.23 Bi-Directional Spec Rot Interceptor** — Solves the "2nd-Day Problem" by executing native AST Drift checks directly via the `.git/hooks/pre-commit` phase. It leverages the Pipeline engine's `DriftCheckHandler` deterministically against `--staged` files, aborting commit streams (Exit 42) upon any undocumented divergence between the `Spec.md` and the active code syntax layer.
+
 ### How Features Map to Lifecycle Layers
 
 ```

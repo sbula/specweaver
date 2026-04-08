@@ -25,7 +25,8 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
 3.4. **Deliverable 1 — Coverage Matrix** (one table per source module/file):
 
      > [!CAUTION]
-     > **MANDATORY FORMAT EXCEPTION:** EVEN IF the feature contains zero Python logic and only modifies configuration files (e.g. `.toml`, `.md`, or deleting files), you MUST STILL present the exact matrix table format below for the impacted files. Do not skip the matrix. Use the ✅/🟡/❌ format religiously.
+     > **MANDATORY FORMAT EXCEPTION:** EVEN IF the feature contains zero Python logic and only modifies configuration files (e.g. `.toml`, `.md`, or deleting files), you MUST STILL present the exact matrix table format below for the impacted files. 
+     > **STRICT COMPACTNESS:** Do NOT generate scrolling paragraphs, do NOT generate Mermaid diagrams, and do NOT overcomplicate it. Use ONLY the compact markdown table format below.
 
      Rows = classes/functions in the module.
      Columns = Unit | Integration | E2E.

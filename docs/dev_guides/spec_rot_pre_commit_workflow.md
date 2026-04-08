@@ -10,7 +10,7 @@ SpecWeaver intercepts every `git commit` to mathematically compare the AST signa
 
 ## Installation
 
-You must install the SpecWeaver pre-commit hook in your local `.git` repository for this to work natively.
+You must install the SpecWeaver pre-commit hook in your local `.git` repository for this to work natively. Once installed, the Interceptor will automatically trigger its `sw drift check-rot --staged` hook phase on commits. If it breaks, it deterministically raises a fatal **Exit Code 42** to the underlying OS.
 
 ```bash
 # From the root of your project

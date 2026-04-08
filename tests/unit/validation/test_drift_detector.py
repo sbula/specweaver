@@ -226,3 +226,109 @@ def test_detect_drift_none_ast() -> None:
     report = detect_drift(None, plan, "test.py")
     assert not report.is_drifted
     assert len(report.findings) == 0
+
+
+def test_clean_expected_params_type_stripping() -> None:
+    from specweaver.validation.drift_detector import _clean_expected_params
+
+    raw_params = [
+        "self",
+        "cls",
+        "name: str",
+        "age: int = 42",
+        "items: list[int] | None = None",
+        "*args",
+        "**kwargs: dict[str, Any]",
+    ]
+
+    # self and cls should be stripped
+    # star args should strip stars
+    cleaned = _clean_expected_params(raw_params)
+
+    assert cleaned == ["name", "age", "items", "args", "kwargs"]
+
+
+def test_missing_method_gap_async() -> None:
+    plan = MockPlanArtifact(
+        tasks=[
+            MockImplementationTask(
+                sequence_number=1,
+                name="t1",
+                files=["test.py"],
+                expected_signatures={"test.py": [MockMethodSignature(name="expected_async_func")]},
+            )
+        ],
+    )
+
+    name_node = MockNode("identifier", b"expected_async_func")
+    func_node = MockNode(
+        "async_function_definition",
+        b"async def expected_async_func(): pass",
+        field_children={"name": name_node},
+    )
+    root = MockNode("module", b"", children=[func_node])
+
+    class MockTree:
+        @property
+        def root_node(self):
+            return root
+
+    report = detect_drift(MockTree(), plan, "test.py")
+    # If the async node isn't extracted, this will false alarm as drifted!
+    assert not report.is_drifted
+    assert len(report.findings) == 0
+
+
+def test_class_scope_collision() -> None:
+    plan = MockPlanArtifact(
+        tasks=[
+            MockImplementationTask(
+                sequence_number=1,
+                name="t1",
+                files=["test.py"],
+                expected_signatures={
+                    "test.py": [
+                        MockMethodSignature(name="MyClass.my_method"),
+                        MockMethodSignature(name="OtherClass.my_method"),
+                    ]
+                },
+            )
+        ],
+    )
+
+    # Class 1
+    name_node1 = MockNode("identifier", b"my_method")
+    func_node1 = MockNode(
+        "function_definition", b"def my_method(self): pass", field_children={"name": name_node1}
+    )
+    class_name1 = MockNode("identifier", b"MyClass")
+    class_node1 = MockNode(
+        "class_definition",
+        b"class MyClass:",
+        children=[func_node1],
+        field_children={"name": class_name1},
+    )
+
+    # Class 2
+    name_node2 = MockNode("identifier", b"my_method")
+    func_node2 = MockNode(
+        "function_definition", b"def my_method(self): pass", field_children={"name": name_node2}
+    )
+    class_name2 = MockNode("identifier", b"OtherClass")
+    class_node2 = MockNode(
+        "class_definition",
+        b"class OtherClass:",
+        children=[func_node2],
+        field_children={"name": class_name2},
+    )
+
+    root = MockNode("module", b"", children=[class_node1, class_node2])
+
+    class MockTree:
+        @property
+        def root_node(self):
+            return root
+
+    report = detect_drift(MockTree(), plan, "test.py")
+    assert not report.is_drifted
+    assert len(report.findings) == 0

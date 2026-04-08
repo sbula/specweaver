@@ -90,15 +90,19 @@ def _extract_param_names(parameters_node: Any) -> list[str]:  # noqa: C901
     return [p for p in params if p not in ("self", "cls")]
 
 
-def _extract_signatures(root_node: Any) -> list[ActualSignature]:  # noqa: C901
-    """Recursively extract function and class names from a tree-sitter node, excluding inner functions."""
-    signatures = []
+def _extract_signatures(root_node: Any) -> list[ActualSignature]:
+    """Extract all function/method signatures from the given AST node, handling async and class scoping."""
+    signatures: list[ActualSignature] = []
 
-    def visit(node: Any) -> None:
+    def visit(node: Any, current_scope: str = "") -> None:
+        if not node:
+            return
+
         if node.type in ("function_definition", "async_function_definition"):
             name_node = node.child_by_field_name("name")
             if name_node and name_node.text:
-                name = name_node.text.decode("utf-8")
+                raw_name = name_node.text.decode("utf-8")
+                name = f"{current_scope}.{raw_name}" if current_scope else raw_name
 
                 params: list[str] = []
                 parameters_node = node.child_by_field_name("parameters")
@@ -112,21 +116,24 @@ def _extract_signatures(root_node: Any) -> list[ActualSignature]:  # noqa: C901
         if node.type == "class_definition":
             name_node = node.child_by_field_name("name")
             if name_node and name_node.text:
-                name = name_node.text.decode("utf-8")
-                signatures.append(ActualSignature(name=name, parameters=[]))
+                raw_name = name_node.text.decode("utf-8")
+                new_scope = f"{current_scope}.{raw_name}" if current_scope else raw_name
+            else:
+                new_scope = current_scope
+
             # We DO recurse into class bodies to find methods
             if hasattr(node, "children"):
                 for child in node.children:
-                    visit(child)
+                    visit(child, new_scope)
             return
 
         # Recurse for anything else (module, decorated_definition, block, expression_statement etc)
         if hasattr(node, "children"):
             for child in node.children:
-                visit(child)
+                visit(child, current_scope)
 
     if root_node:
-        visit(root_node)
+        visit(root_node, "")
 
     return signatures
 
@@ -198,7 +205,7 @@ def detect_drift(file_ast: Any, plan: PlanArtifactProtocol, file_path: str) -> D
     for actual_name in actual_map:
         if actual_name not in expected_sigs:
             # Ignore private methods and dunders
-            if actual_name.startswith("_"):
+            if actual_name.split(".")[-1].startswith("_"):
                 continue
 
             findings.append(

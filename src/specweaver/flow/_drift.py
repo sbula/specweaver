@@ -67,6 +67,19 @@ class DriftCheckHandler:
         except UnicodeDecodeError:
             return _error_result("Target file is not valid UTF-8.", started)
 
+        if target_path.suffix != ".py":
+            logger.info(f"Skipping AST drift parsing for non-python file: {target_path}")
+            return StepResult(
+                status=StepStatus.PASSED,
+                output={
+                    "is_drifted": False,
+                    "drift_count": 0,
+                    "findings": [],
+                },
+                started_at=started,
+                completed_at=_now_iso(),
+            )
+
         try:
             import tree_sitter
             import tree_sitter_python

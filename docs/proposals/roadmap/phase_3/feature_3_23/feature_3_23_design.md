@@ -97,13 +97,13 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | CLI Command + Git Hook Deployment | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
-| SF-2 | Dynamic Flow Handler (Detect Rot) | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | CLI Command + Git Hook Deployment | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Dynamic Flow Handler (Detect Rot) | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Impl Plan SF-1 APPROVED.
+**Current status**: Impl Plan SF-2 APPROVED.
 **Next step**: Run:
-`/dev docs/proposals/roadmap/phase_3/feature_3_23/feature_3_23_sf1_implementation_plan.md`
+`/dev docs/proposals/roadmap/phase_3/feature_3_23/feature_3_23_sf2_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

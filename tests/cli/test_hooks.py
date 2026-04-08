@@ -1,10 +1,9 @@
 import os
 import sys
-
-import pytest
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from typer.testing import CliRunner
 
 from specweaver.cli.main import app
@@ -19,9 +18,11 @@ def test_hooks_install_pre_commit_success(tmp_path: Path, caplog: pytest.LogCapt
     hooks_dir = git_dir / "hooks"
     hooks_dir.mkdir(parents=True)
 
-    with caplog.at_level("DEBUG", logger="specweaver.cli.hooks"):
-        with patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path):
-            result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
+    with (
+        caplog.at_level("DEBUG", logger="specweaver.cli.hooks"),
+        patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path),
+    ):
+        result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
 
     assert result.exit_code == 0
     assert "installed successfully" in result.stdout.lower()
@@ -40,7 +41,7 @@ def test_hooks_install_pre_commit_success(tmp_path: Path, caplog: pytest.LogCapt
     assert "exit_code=$?" in content
     assert "if [ $exit_code -eq 42 ]; then" in content
     assert "elif [ $exit_code -ne 0 ]; then" in content
-    
+
     # Telemetry
     assert f"Resolved project path: {tmp_path}" in caplog.text
     assert f"Ensuring hooks directory exists: {hooks_dir}" in caplog.text
@@ -54,9 +55,11 @@ def test_hooks_install_no_git_dir(tmp_path: Path, caplog: pytest.LogCaptureFixtu
 
     # We deliberately do not create .git/ directory here
 
-    with caplog.at_level("ERROR", logger="specweaver.cli.hooks"):
-        with patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path):
-            result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
+    with (
+        caplog.at_level("ERROR", logger="specweaver.cli.hooks"),
+        patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path),
+    ):
+        result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
 
     assert result.exit_code == 1
     assert "not a git repository" in result.stdout.lower()
@@ -67,10 +70,15 @@ def test_hooks_install_resolve_error(caplog: pytest.LogCaptureFixture):
     """Test graceful fail if project path cannot be resolved."""
     runner = CliRunner()
 
-    with caplog.at_level("ERROR", logger="specweaver.cli.hooks"):
-        with patch("specweaver.cli.hooks.resolve_project_path", side_effect=FileNotFoundError("Invalid path")):
-            result = runner.invoke(app, ["hooks", "install"])
-    
+    with (
+        caplog.at_level("ERROR", logger="specweaver.cli.hooks"),
+        patch(
+            "specweaver.cli.hooks.resolve_project_path",
+            side_effect=FileNotFoundError("Invalid path"),
+        ),
+    ):
+        result = runner.invoke(app, ["hooks", "install"])
+
     assert result.exit_code == 1
     assert "invalid path" in result.stdout.lower()
     assert "Project path resolution failed: Invalid path" in caplog.text
@@ -83,12 +91,13 @@ def test_hooks_install_no_pre_commit(tmp_path: Path, caplog: pytest.LogCaptureFi
     git_dir = tmp_path / ".git"
     git_dir.mkdir(parents=True)
 
-    with caplog.at_level("INFO", logger="specweaver.cli.hooks"):
-        with patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path):
-            result = runner.invoke(app, ["hooks", "install", "--no-pre-commit"])
+    with (
+        caplog.at_level("INFO", logger="specweaver.cli.hooks"),
+        patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path),
+    ):
+        result = runner.invoke(app, ["hooks", "install", "--no-pre-commit"])
 
     assert result.exit_code == 0
     hook_file = git_dir / "hooks" / "pre-commit"
     assert not hook_file.exists()
     assert "Skip pre-commit hook installation" in caplog.text
-

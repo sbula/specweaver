@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -151,7 +152,142 @@ def drift_check_rot(
     ),
 ) -> None:
     """Bi-Directional Spec Rot Interceptor (SF-1 Stub)."""
-    if staged:
-        _core.console.print("Checking AST drift for staged files")
-    else:
+    import yaml  # type: ignore[import-untyped]
+    from rich.table import Table
+
+    if not staged:
         _core.console.print("Checking AST drift for all target files")
+        raise typer.Exit(code=0)
+
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+            capture_output=True,
+            text=True,
+            check=True,
+            encoding="utf-8",
+        )
+        raw_files = result.stdout.splitlines()
+    except subprocess.CalledProcessError as exc:
+        _core.console.print(f"[red]Error:[/red] Failed to query git index: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    target_files = [f.strip() for f in raw_files if f.strip()]
+    if not target_files:
+        raise typer.Exit(code=0)
+
+    try:
+        project_path = resolve_project_path(None)
+    except Exception as exc:
+        _core.console.print(f"[red]Error resolving project:[/red] {exc}")
+        raise typer.Exit(code=1)
+
+    specs_dir = project_path / "specs"
+    all_plans = []
+    if specs_dir.exists() and specs_dir.is_dir():
+        all_plans = list(specs_dir.glob("*_plan.yaml"))
+
+    drift_found = False
+
+    from specweaver.flow._base import RunContext
+    from specweaver.flow.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.flow.runner import PipelineRunner
+    from specweaver.flow.state import StepStatus
+
+    for target in target_files:
+        _core.console.print(f"DEBUG TARGET STR: {target}")
+        target_path = project_path / target
+        if not target_path.exists():
+            _core.console.print(f"DEBUG SKIP: {target_path} does not exist!")
+            continue
+
+        matched_plan = None
+        target_posix = target_path.as_posix()
+        try:
+            rel_posix = target_path.resolve().relative_to(project_path.resolve()).as_posix()
+        except ValueError:
+            rel_posix = target_posix
+
+        for plan_path in all_plans:
+            try:
+                with plan_path.open() as pf:
+                    plan_data = yaml.safe_load(pf)
+                for task in plan_data.get("tasks", []):
+                    sigs = task.get("expected_signatures", {})
+                    if rel_posix in sigs or target_posix in sigs or str(target_path) in sigs:
+                        matched_plan = plan_path
+                        break
+                if matched_plan:
+                    break
+            except Exception as e:
+                logger.warning(f"Failed to validate plan {plan_path} against {target}: {e}")
+
+        if not matched_plan:
+            try:
+                from specweaver.llm.lineage import extract_artifact_uuid
+                content = target_path.read_text(encoding="utf-8")
+                uuid = extract_artifact_uuid(content)
+                if uuid:
+                    db = _core.get_db()
+                    with db.get_connection() as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT parent_id FROM artifact_events WHERE artifact_id = ?", (uuid,))
+                        row = cursor.fetchone()
+                        if row and row[0]:
+                            parent_uuid = row[0]
+                            for p in all_plans:
+                                p_content = p.read_text(encoding="utf-8")
+                                p_uuid = extract_artifact_uuid(p_content)
+                                if p_uuid == parent_uuid:
+                                    matched_plan = p
+                                    break
+            except Exception as e:
+                logger.debug(f"Lineage lookup failed for {target}: {e}")
+
+        if not matched_plan:
+            continue
+
+        pipeline = PipelineDefinition.create_single_step(
+            name="check_rot",
+            action=StepAction.DETECT,
+            target=StepTarget.DRIFT,
+            description=f"Rot Check {target_path.name}",
+            params={
+                "target_path": str(target_path.absolute()),
+                "plan_path": str(matched_plan.absolute()),
+                "analyze": False,
+            },
+        )
+
+        context = RunContext(project_path=project_path, spec_path=matched_plan, db=_core.get_db())
+        runner_instance = PipelineRunner(pipeline, context)
+        run_state = asyncio.run(runner_instance.run())
+
+        last_record = run_state.step_records[-1] if run_state.step_records else None
+        status_code = getattr(last_record, "status", None) if last_record else None
+        
+        _core.console.print(f"DEBUG PIPELINE: status_code={status_code}, last_record={last_record}")
+        
+        if status_code in (StepStatus.FAILED, StepStatus.ERROR):
+            drift_found = True
+            res = last_record.result if last_record else None
+            if res and res.output and res.output.get("is_drifted"):
+                _core.console.print(f"[red]Failure: AST Drift Detected![/red] ({target_posix})")
+                table = Table(title=f"Drift Findings for {target}")
+                table.add_column("Severity", style="red")
+                table.add_column("Description")
+                for f in res.output.get("findings", []):
+                    table.add_row(f.get("severity", "ERROR"), f.get("description", ""))
+                _core.console.print(table)
+
+    if drift_found:
+        _core.console.print("\n================================================================")
+        _core.console.print("ERROR: SpecWeaver detected structural drift between Spec and Code!")
+        _core.console.print("Fix the mismatch to proceed with this commit.")
+        _core.console.print("================================================================\n")
+        import sys
+        sys.exit(42)
+
+    _core.console.print("[green]AST signatures match specification.[/green]")
+    raise typer.Exit(code=0)
+
