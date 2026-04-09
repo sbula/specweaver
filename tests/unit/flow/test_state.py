@@ -156,6 +156,7 @@ class TestStepRecord:
 def _make_run(
     *,
     run_id: str | None = None,
+    parent_run_id: str | None = None,
     status: RunStatus = RunStatus.NOT_STARTED,
     current_step: int = 0,
     step_names: list[str] | None = None,
@@ -165,6 +166,7 @@ def _make_run(
         step_names = ["validate_spec", "review_spec"]
     return PipelineRun(
         run_id=run_id or str(uuid.uuid4()),
+        parent_run_id=parent_run_id,
         pipeline_name="test_pipeline",
         project_name="test_project",
         spec_path="specs/test_spec.md",
@@ -186,6 +188,11 @@ class TestPipelineRun:
         assert run.status == RunStatus.NOT_STARTED
         assert run.current_step == 0
         assert len(run.step_records) == 2
+        assert run.parent_run_id is None
+
+    def test_construction_with_parent_run_id(self) -> None:
+        run = _make_run(parent_run_id="parent-uuid-5678")
+        assert run.parent_run_id == "parent-uuid-5678"
 
     def test_current_step_record(self) -> None:
         run = _make_run()
@@ -272,6 +279,12 @@ class TestPipelineRun:
         assert run2.run_id == run.run_id
         assert run2.pipeline_name == run.pipeline_name
         assert len(run2.step_records) == len(run.step_records)
+
+    def test_serialization_roundtrip_with_parent(self) -> None:
+        run = _make_run(parent_run_id="parent-uuid-5678")
+        data = run.model_dump()
+        run2 = PipelineRun.model_validate(data)
+        assert run2.parent_run_id == "parent-uuid-5678"
 
     def test_serialization_with_results(self) -> None:
         run = _make_run(status=RunStatus.RUNNING)

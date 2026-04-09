@@ -120,6 +120,7 @@ class PipelineRun(BaseModel):
     """
 
     run_id: str
+    parent_run_id: str | None = None
     pipeline_name: str
     project_name: str
     spec_path: str

@@ -95,3 +95,16 @@ if dal_settings := context.settings.dal_matrix.matrix.get(dal):
     
 apply_settings_to_pipeline(pipeline, ValidationSettings(**resolved))
 ```
+
+---
+
+## 5. Hierarchical Pipeline Orchestration (Sub-Pipelines)
+
+Starting with Feature 3.24, the SpecWeaver flow engine supports deeply nested asynchronous orchestration. Steps (such as a Feature Decomposer) can fan-out execution into multiple independent sub-pipelines while strictly preserving structural lineage.
+
+### Mechanism:
+1. **`parent_run_id` Telemetry**: Every `PipelineRun` instance natively supports a `parent_run_id` reference in `pipeline_state.db`.
+2. **Sub-Pipeline Triggering**: Instead of complex global state injection, an executing step can securely spawn isolated instances of `PipelineRunner` using the current pipeline run's UUID as the target `parent_run_id`.
+3. **Execution Block (`asyncio.gather`)**: The parent runner enforces blocking evaluation via `fan_out()`, aggregating all sub-pipeline outputs synchronously back into a single structured result bubble.
+
+A `StepResult` natively consolidates the child outputs for upstream consumption while ensuring telemetry platforms can reconstruct the full recursive pipeline lineage via the unified SQLite records.

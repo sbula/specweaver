@@ -95,6 +95,18 @@ class DriftCheckHandler:
         except ValueError:
             file_path_str = target_path.name
 
+        return await self._run_drift_detect(file_path_str, target_path_str, tree, plan, step, context, started)
+
+    async def _run_drift_detect(
+        self,
+        file_path_str: str,
+        target_path_str: str,
+        tree: Any,
+        plan: Any,
+        step: PipelineStep,
+        context: RunContext,
+        started: str,
+    ) -> StepResult:
         from specweaver.validation.drift_detector import detect_drift
 
         report = detect_drift(file_ast=tree, plan=plan, file_path=file_path_str)

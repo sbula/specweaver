@@ -29,9 +29,10 @@ from specweaver.flow.state import (
 
 logger = logging.getLogger(__name__)
 
-_STATE_SCHEMA_V1 = """\
+_STATE_SCHEMA_V2 = """\
 CREATE TABLE IF NOT EXISTS pipeline_runs (
     run_id        TEXT PRIMARY KEY,
+    parent_run_id TEXT REFERENCES pipeline_runs(run_id),
     pipeline_name TEXT NOT NULL,
     project_name  TEXT NOT NULL,
     spec_path     TEXT NOT NULL,
@@ -86,7 +87,7 @@ class StateStore:
     def _ensure_schema(self) -> None:
         """Create tables if they don't exist. Idempotent."""
         with self.connect() as conn:
-            conn.executescript(_STATE_SCHEMA_V1)
+            conn.executescript(_STATE_SCHEMA_V2)
 
             existing = conn.execute(
                 "SELECT COUNT(*) FROM state_schema_version",
@@ -94,9 +95,17 @@ class StateStore:
             if existing == 0:
                 conn.execute(
                     "INSERT INTO state_schema_version (version, applied_at) VALUES (?, ?)",
-                    (1, _now_iso()),
+                    (2, _now_iso()),
                 )
-                logger.debug("StateStore: created schema v1 at '%s'", self._db_path)
+                logger.debug("StateStore: created schema v2 at '%s'", self._db_path)
+            else:
+                version = conn.execute(
+                    "SELECT MAX(version) FROM state_schema_version"
+                ).fetchone()[0]
+                if version == 1:
+                    conn.execute("ALTER TABLE pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES pipeline_runs(run_id);")
+                    conn.execute("INSERT INTO state_schema_version (version, applied_at) VALUES (?, ?)", (2, _now_iso()))
+                    logger.debug("StateStore: migrated schema v1 -> v2 at '%s'", self._db_path)
 
     # ------------------------------------------------------------------
     # Pipeline runs
@@ -122,11 +131,12 @@ class StateStore:
         with self.connect() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO pipeline_runs "
-                "(run_id, pipeline_name, project_name, spec_path, "
+                "(run_id, parent_run_id, pipeline_name, project_name, spec_path, "
                 "status, current_step, step_records, started_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     run.run_id,
+                    run.parent_run_id,
                     run.pipeline_name,
                     run.project_name,
                     run.spec_path,
@@ -230,6 +240,7 @@ def _row_to_run(row: sqlite3.Row) -> PipelineRun:
         )
     return PipelineRun(
         run_id=row["run_id"],
+        parent_run_id=row["parent_run_id"],
         pipeline_name=row["pipeline_name"],
         project_name=row["project_name"],
         spec_path=row["spec_path"],

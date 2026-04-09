@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 def _make_run(
     *,
     run_id: str | None = None,
+    parent_run_id: str | None = None,
     pipeline_name: str = "test_pipeline",
     project_name: str = "test_project",
     status: RunStatus = RunStatus.NOT_STARTED,
@@ -39,6 +40,7 @@ def _make_run(
         step_names = ["validate_spec", "review_spec"]
     return PipelineRun(
         run_id=run_id or str(uuid.uuid4()),
+        parent_run_id=parent_run_id,
         pipeline_name=pipeline_name,
         project_name=project_name,
         spec_path="specs/test_spec.md",
@@ -81,6 +83,44 @@ class TestStoreSchema:
         conn.close()
         assert mode == "wal"
 
+    def test_migration_v1_to_v2(self, tmp_path: Path) -> None:
+        """Test that a V1 schema database is successfully migrated to V2 (parent_run_id added)."""
+        db_path = tmp_path / "legacy.db"
+        import sqlite3
+        # Create a raw V1 database
+        conn = sqlite3.connect(db_path)
+        conn.execute("CREATE TABLE state_schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)")
+        conn.execute("INSERT INTO state_schema_version (version, applied_at) VALUES (1, '2026-03-14T18:00:00Z')")
+        conn.execute(
+            """
+            CREATE TABLE pipeline_runs (
+                run_id TEXT PRIMARY KEY,
+                pipeline_name TEXT NOT NULL,
+                project_name TEXT NOT NULL,
+                spec_path TEXT NOT NULL,
+                status TEXT NOT NULL,
+                current_step INTEGER NOT NULL,
+                step_records TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        # Instantiating the store should trigger migration
+        _ = StateStore(db_path)
+
+        # Verify schema version was bumped
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("SELECT MAX(version) FROM state_schema_version").fetchone()[0]
+        assert version == 2
+
+        # Verify parent_run_id column exists
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)").fetchall()]
+        assert "parent_run_id" in columns
+        conn.close()
 
 # ---------------------------------------------------------------------------
 # Save / load pipeline runs
@@ -91,11 +131,15 @@ class TestSaveLoadRun:
     """Tests for saving and loading pipeline runs."""
 
     def test_save_and_load(self, store: StateStore) -> None:
-        run = _make_run(run_id="run-001")
+        parent_run = _make_run(run_id="parent-001")
+        store.save_run(parent_run)
+
+        run = _make_run(run_id="run-001", parent_run_id="parent-001")
         store.save_run(run)
         loaded = store.load_run("run-001")
         assert loaded is not None
         assert loaded.run_id == "run-001"
+        assert loaded.parent_run_id == "parent-001"
         assert loaded.pipeline_name == "test_pipeline"
         assert loaded.status == RunStatus.NOT_STARTED
         assert len(loaded.step_records) == 2
@@ -304,10 +348,10 @@ class TestStoreEdgeCases:
     def test_schema_version_persisted(self, store: StateStore) -> None:
         """Schema version table should have exactly one entry."""
         conn = store.connect()
-        row = conn.execute("SELECT version FROM state_schema_version").fetchone()
+        row = conn.execute("SELECT MAX(version) FROM state_schema_version").fetchone()
         conn.close()
         assert row is not None
-        assert row[0] == 1
+        assert row[0] == 2
 
     def test_foreign_keys_enabled(self, store: StateStore) -> None:
         """Foreign key constraints should be active."""

@@ -144,7 +144,7 @@ def _present_result(result: StepResult, target_name: str, analyze: bool) -> None
 
 
 @drift_app.command("check-rot")
-def drift_check_rot(
+def drift_check_rot(  # noqa: C901
     staged: bool = typer.Option(
         False,
         "--staged",
@@ -158,6 +158,8 @@ def drift_check_rot(
     if not staged:
         _core.console.print("Checking AST drift for all target files")
         raise typer.Exit(code=0)
+
+    _core.console.print("Checking AST drift for staged files")
 
     try:
         result = subprocess.run(
@@ -180,7 +182,7 @@ def drift_check_rot(
         project_path = resolve_project_path(None)
     except Exception as exc:
         _core.console.print(f"[red]Error resolving project:[/red] {exc}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
     specs_dir = project_path / "specs"
     all_plans = []
@@ -223,26 +225,7 @@ def drift_check_rot(
                 logger.warning(f"Failed to validate plan {plan_path} against {target}: {e}")
 
         if not matched_plan:
-            try:
-                from specweaver.llm.lineage import extract_artifact_uuid
-                content = target_path.read_text(encoding="utf-8")
-                uuid = extract_artifact_uuid(content)
-                if uuid:
-                    db = _core.get_db()
-                    with db.get_connection() as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT parent_id FROM artifact_events WHERE artifact_id = ?", (uuid,))
-                        row = cursor.fetchone()
-                        if row and row[0]:
-                            parent_uuid = row[0]
-                            for p in all_plans:
-                                p_content = p.read_text(encoding="utf-8")
-                                p_uuid = extract_artifact_uuid(p_content)
-                                if p_uuid == parent_uuid:
-                                    matched_plan = p
-                                    break
-            except Exception as e:
-                logger.debug(f"Lineage lookup failed for {target}: {e}")
+            matched_plan = _resolve_plan_by_lineage(target_path, all_plans, target)
 
         if not matched_plan:
             continue
@@ -265,9 +248,9 @@ def drift_check_rot(
 
         last_record = run_state.step_records[-1] if run_state.step_records else None
         status_code = getattr(last_record, "status", None) if last_record else None
-        
+
         _core.console.print(f"DEBUG PIPELINE: status_code={status_code}, last_record={last_record}")
-        
+
         if status_code in (StepStatus.FAILED, StepStatus.ERROR):
             drift_found = True
             res = last_record.result if last_record else None
@@ -290,4 +273,26 @@ def drift_check_rot(
 
     _core.console.print("[green]AST signatures match specification.[/green]")
     raise typer.Exit(code=0)
+
+def _resolve_plan_by_lineage(target_path: Path, all_plans: list[Path], target_posix: str) -> Path | None:
+    try:
+        from specweaver.llm.lineage import extract_artifact_uuid
+        content = target_path.read_text(encoding="utf-8")
+        uuid = extract_artifact_uuid(content)
+        if uuid:
+            db = _core.get_db()
+            with db.connect() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT parent_id FROM artifact_events WHERE artifact_id = ?", (uuid,))
+                row = cursor.fetchone()
+                if row and row[0]:
+                    parent_uuid = row[0]
+                    for p in all_plans:
+                        p_content = p.read_text(encoding="utf-8")
+                        p_uuid = extract_artifact_uuid(p_content)
+                        if p_uuid == parent_uuid:
+                            return p
+    except Exception as e:
+        logger.debug(f"Lineage lookup failed for {target_posix}: {e}")
+    return None
 

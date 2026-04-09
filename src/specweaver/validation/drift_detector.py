@@ -90,11 +90,11 @@ def _extract_param_names(parameters_node: Any) -> list[str]:  # noqa: C901
     return [p for p in params if p not in ("self", "cls")]
 
 
-def _extract_signatures(root_node: Any) -> list[ActualSignature]:
+def _extract_signatures(root_node: Any) -> list[ActualSignature]:  # noqa: C901
     """Extract all function/method signatures from the given AST node, handling async and class scoping."""
     signatures: list[ActualSignature] = []
 
-    def visit(node: Any, current_scope: str = "") -> None:
+    def visit(node: Any, current_scope: str = "") -> None:  # noqa: C901
         if not node:
             return
 
