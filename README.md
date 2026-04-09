@@ -14,7 +14,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Feature-level validation** — Two-level spec model: feature specs (Intent, Value Proposition) and component specs (Purpose, Contract, Protocol, Policy, Boundaries) with kind-aware thresholds
 - **Static validation** — 20 built-in rules (11 spec + 9 code) with configurable thresholds that adapt to spec kind, organized as YAML-defined sub-pipelines with inheritance
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with confidence-scored findings
-- **Feature decomposition** — Draft feature specs and decompose them into component-level work items via pipeline
+- **Feature decomposition** — Draft feature specs and rapidly decompose them into component-level work items via nested `fan_out()` pipelines that natively assert structural boundary coverage.
 - **Code generation** — Generate implementation + test files from a validated spec
 - **Constitution support** — Project-wide `CONSTITUTION.md` with coding principles, testing standards, and UX guidelines injected into every LLM call (review, implement, pipeline). Walk-up resolution, configurable size limits, CLI management. Auto-bootstrap from discovered standards with configurable behavior (off/prompt/auto)
 - **Validation pipelines** — YAML-defined rule sub-pipelines with inheritance (extends/override/remove/add), profile-specific pipelines, project-local overrides, and custom D-prefix rule support

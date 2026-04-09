@@ -18,7 +18,7 @@ consumes:
   - specweaver/loom/commons/filesystem
 
 forbids:
-  - specweaver/loom/atoms/*
+  - specweaver/loom/atoms/*  # Agent-facing tools and commons must not access internal unrestricted engine atoms.
 
 exposes:
   - FileSystemTool

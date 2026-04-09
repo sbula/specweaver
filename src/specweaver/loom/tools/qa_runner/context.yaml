@@ -18,7 +18,7 @@ consumes:
   - specweaver/loom/atoms/qa_runner
 
 forbids:
-  - specweaver/loom/commons/*
+  - specweaver/loom/commons/*  # High-level models must not execute raw executors directly; they must use atoms.
 
 exposes:
   - QARunnerTool

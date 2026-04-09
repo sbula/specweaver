@@ -18,7 +18,7 @@ consumes:
   - specweaver/loom/commons/filesystem
 
 forbids:
-  - specweaver/loom/tools/*
+  - specweaver/loom/tools/*  # Atoms and raw orchestrators must not execute intent-gated agent tools directly.
 
 exposes:
   - FileSystemAtom

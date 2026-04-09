@@ -108,3 +108,12 @@ Starting with Feature 3.24, the SpecWeaver flow engine supports deeply nested as
 3. **Execution Block (`asyncio.gather`)**: The parent runner enforces blocking evaluation via `fan_out()`, aggregating all sub-pipeline outputs synchronously back into a single structured result bubble.
 
 A `StepResult` natively consolidates the child outputs for upstream consumption while ensuring telemetry platforms can reconstruct the full recursive pipeline lineage via the unified SQLite records.
+
+> [!WARNING]
+> **Orchestrating Sub-components (Feature 3.24)**
+> `fan_out()` behavior is dictated inside the `OrchestrateComponentsHandler`. Modifying its loop limits, error bounding, or `StepTarget.SPEC` validation sequence natively violates DMZ assumptions.
+> The Flow engine dynamically parses `new_feature.yaml` to guarantee L3 component validations run.
+
+> [!CAUTION]
+> **Blast Radius Assertion Boundary**
+> `DecomposeFeatureHandler` strictly checks `coverage_score >= 1.0` in the resulting components. Any LLM artifact returning a failure state will push the Flow system into a rigid 3-Strike Loop `FAILED` status, looping internally to `max_retries` rather than relying on explicit human supervision for obviously incomplete structures.

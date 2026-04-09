@@ -40,7 +40,7 @@ async def test_high_concurrency_statestore_persistence(tmp_path: Path) -> None:
     # We build a primary runner but just create a dummy parent run in the store
     master_pipe = PipelineDefinition(name="master", steps=[])
     runner = PipelineRunner(master_pipe, ctx, store=store, registry=registry)
-    
+
     parent_run = await runner.run() # this saves it to store
     parent_id = parent_run.run_id
 

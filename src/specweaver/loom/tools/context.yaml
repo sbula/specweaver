@@ -14,10 +14,10 @@ description: |
 archetype: facade
 
 consumes:
-  - specweaver/loom/commons/*
+  - specweaver/loom/commons/*  # High-level models must not execute raw executors directly; they must use atoms.
 
 forbids:
-  - specweaver/loom/atoms/*
+  - specweaver/loom/atoms/*  # Agent-facing tools and commons must not access internal unrestricted engine atoms.
 
 exposes:
   - git

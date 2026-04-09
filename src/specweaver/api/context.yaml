@@ -16,7 +16,7 @@ consumes:
   - specweaver/implementation
   - specweaver/flow
   - specweaver/graph
-  - specweaver/llm
+  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
   - specweaver/project
   - specweaver/standards
 

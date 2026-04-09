@@ -135,7 +135,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `flow/parser.py` — YAML → `PipelineDefinition` deserialization.
 - `flow/runner.py` — `PipelineRunner`: walks steps, dispatches to handlers, evaluates gates. The core execution loop.
 - `flow/gates.py` — `GateEvaluator`: auto/hitl/loop_back/retry/abort logic. Extracted from runner for testability.
-- `flow/handlers.py` — `StepHandlerRegistry`: maps `(action, target)` → handler class. Each handler (`_draft.py`, `_review.py`, `_validation.py`, `_generation.py`, `_lint_fix.py`) adapts a step to the corresponding domain module.
+- `flow/handlers.py` — `StepHandlerRegistry`: maps `(action, target)` → handler class. Each handler (`_draft.py`, `_review.py`, `_validation.py`, `_generation.py`, `_lint_fix.py`, `_decompose.py`) adapts a step to the corresponding domain module.
 - `flow/state.py` — `PipelineRun`, `StepRecord`, `StepResult`: mutable run state.
 - `flow/store.py` — `StateStore`: SQLite persistence for run state + audit log.
 - `pipelines/*.yaml` — declarative pipeline definitions (data, not code).

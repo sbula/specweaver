@@ -58,6 +58,7 @@ class RunContext(BaseModel):
     db: Any = None  # Database | None — for telemetry flush (set by CLI/API)
     llm_router: Any = None  # ModelRouter | None — per-task routing (3.12b)
     project_metadata: Any = None  # ProjectMetadata | None
+    pipeline_runner: Any = None  # PipelineRunner | None — for fan_out
     run_id: str | None = None
     step_records: list[dict[str, Any]] | None = None
 

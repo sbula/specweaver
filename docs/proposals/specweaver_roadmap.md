@@ -64,6 +64,8 @@
 - ✅ Feature 3.20b: Dynamic Risk-Based Rulesets (DAL) — Contextual baseline risk enforcement
 - ✅ Feature 3.21: Automated Traceability Matrix (`@traces`) — Mathematically count and enforce Spec L3 tags in generated code constraints.
 - ✅ Feature 3.22: Polyglot AST Skeleton Extractor — High-performance tree-sitter bindings for `read_skeleton`, `replace_symbol`, etc. across Python, Java, Kotlin, Rust, and TS.
+- ✅ Feature 3.23: Bi-Directional Spec Rot Interceptor — Blocks builds/commits if AST diverges from Spec markdown.
+- ✅ Feature 3.24: Automated iterative decomposition — DMZ-style iterative loop for structural component extraction.
 
 ---
 

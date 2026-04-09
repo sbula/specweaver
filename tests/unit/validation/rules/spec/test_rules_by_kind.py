@@ -527,7 +527,7 @@ from specweaver.validation.runner import run_rules
 ```
 
 ```python
-from specweaver.drafting.decomposition import DecompositionPlan
+from specweaver.planning.decomposition import DecompositionPlan
 ```
 """
         rule = StrangerTestRule(mode="abstraction_leak")

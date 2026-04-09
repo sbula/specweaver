@@ -36,9 +36,11 @@ class TestStepAction:
         assert StepAction.DECOMPOSE == "decompose"
         assert StepAction.PLAN == "plan"
         assert StepAction.ENRICH == "enrich"
+        assert StepAction.DETECT == "detect"
+        assert StepAction.ORCHESTRATE == "orchestrate"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 9
+        assert len(StepAction) == 10
 
 
 # ---------------------------------------------------------------------------
@@ -55,9 +57,11 @@ class TestStepTarget:
         assert StepTarget.TESTS == "tests"
         assert StepTarget.FEATURE == "feature"
         assert StepTarget.STANDARDS == "standards"
+        assert StepTarget.DRIFT == "drift"
+        assert StepTarget.COMPONENTS == "components"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 6
+        assert len(StepTarget) == 7
 
 
 # ---------------------------------------------------------------------------
@@ -69,7 +73,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 15
+        assert len(VALID_STEP_COMBINATIONS) == 16
 
     @pytest.mark.parametrize(
         ("action", "target"),
@@ -91,6 +95,10 @@ class TestValidStepCombinations:
             (StepAction.PLAN, StepTarget.SPEC),
             # Standards combos
             (StepAction.ENRICH, StepTarget.STANDARDS),
+            # Validation drift combos
+            (StepAction.DETECT, StepTarget.DRIFT),
+            # Component orchestration combos
+            (StepAction.ORCHESTRATE, StepTarget.COMPONENTS),
         ],
     )
     def test_valid_combination(self, action: StepAction, target: StepTarget) -> None:

@@ -22,6 +22,10 @@ from specweaver.flow._base import (  # noqa: F401
     _error_result,
     _now_iso,
 )
+from specweaver.flow._decompose import (
+    DecomposeFeatureHandler,
+    OrchestrateComponentsHandler,
+)
 
 # Re-export all handler implementations
 from specweaver.flow._draft import DraftSpecHandler
@@ -42,12 +46,14 @@ from specweaver.flow._validation import (
 from specweaver.flow.models import StepAction, StepTarget
 
 __all__ = [
+    "DecomposeFeatureHandler",
     "DraftSpecHandler",
     "DriftCheckHandler",
     "EnrichStandardsHandler",
     "GenerateCodeHandler",
     "GenerateTestsHandler",
     "LintFixHandler",
+    "OrchestrateComponentsHandler",
     "PlanSpecHandler",
     "ReviewCodeHandler",
     "ReviewSpecHandler",
@@ -82,6 +88,8 @@ class StepHandlerRegistry:
             (StepAction.PLAN, StepTarget.SPEC): PlanSpecHandler(),
             (StepAction.ENRICH, StepTarget.STANDARDS): EnrichStandardsHandler(),
             (StepAction.DETECT, StepTarget.DRIFT): DriftCheckHandler(),
+            (StepAction.DECOMPOSE, StepTarget.FEATURE): DecomposeFeatureHandler(),
+            (StepAction.ORCHESTRATE, StepTarget.COMPONENTS): OrchestrateComponentsHandler(),
         }
 
     def get(

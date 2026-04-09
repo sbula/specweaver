@@ -307,6 +307,7 @@ class PipelineRunner:
                 # Inject flow state for downstream tracking
                 self._context.run_id = run.run_id
                 self._context.step_records = [r.model_dump() for r in run.step_records]
+                self._context.pipeline_runner = self
 
                 result = await handler.execute(step_def, self._context)
             except Exception as exc:

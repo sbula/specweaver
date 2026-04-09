@@ -10,7 +10,7 @@ purpose: >
 archetype: orchestrator
 
 consumes:
-  - specweaver/llm
+  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
   - specweaver/config
   - specweaver/validation
 

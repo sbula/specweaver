@@ -36,6 +36,7 @@ class StepAction(enum.StrEnum):
     PLAN = "plan"
     ENRICH = "enrich"
     DETECT = "detect"
+    ORCHESTRATE = "orchestrate"
 
 
 class StepTarget(enum.StrEnum):
@@ -47,6 +48,7 @@ class StepTarget(enum.StrEnum):
     FEATURE = "feature"
     STANDARDS = "standards"
     DRIFT = "drift"
+    COMPONENTS = "components"
 
 
 class GateType(enum.StrEnum):
@@ -98,6 +100,8 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.ENRICH, StepTarget.STANDARDS),
         # Validation drift combos
         (StepAction.DETECT, StepTarget.DRIFT),
+        # Component orchestration combos
+        (StepAction.ORCHESTRATE, StepTarget.COMPONENTS),
     }
 )
 

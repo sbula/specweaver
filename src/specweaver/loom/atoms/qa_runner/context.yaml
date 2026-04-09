@@ -17,7 +17,7 @@ consumes:
   - specweaver/loom/commons/qa_runner
 
 forbids:
-  - specweaver/loom/tools/*
+  - specweaver/loom/tools/*  # Atoms and raw orchestrators must not execute intent-gated agent tools directly.
 
 exposes:
   - QARunnerAtom

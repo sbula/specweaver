@@ -19,8 +19,8 @@ consumes:
   - specweaver/loom/commons/qa_runner
 
 forbids:
-  - specweaver/loom/*
-  - specweaver/llm
+  - specweaver/loom/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
+  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
 
 exposes:
   - ValidationRunner

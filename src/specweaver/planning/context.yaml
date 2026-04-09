@@ -1,24 +1,27 @@
 name: planning
 level: module
 purpose: >
-  LLM-assisted implementation planning from approved specs.
-  Generates structured Plan artifacts (YAML) with architecture decisions,
-  tech stack choices, file layout, and constraint reasoning.
+  LLM-assisted architectural feature decomposition and implementation planning
+  from approved specs. Generates structured JSON Plan artifacts with architecture
+  decisions, boundaries, tech stack choices, file layout, and constraint reasoning.
 
 archetype: orchestrator
 
 consumes:
-  - specweaver/llm
+  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
   - specweaver/config
   - specweaver/context
 
 forbids:
-  - specweaver/loom/*
+  - specweaver/loom/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
 
 exposes:
+
   - Planner
   - PlanArtifact
   - render_plan_markdown
+  - FeatureDecomposer
+  - DecompositionPlan
 
 operational:
   async_ready: true

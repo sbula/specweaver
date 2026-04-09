@@ -14,12 +14,12 @@ description: |
 archetype: adapter
 
 consumes:
-  - specweaver/llm
+  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
 
 forbids:
-  - specweaver/loom/*
+  - specweaver/loom/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
   - specweaver/validation
-  - specweaver/drafting
+  - specweaver/drafting  # Rules and adapters must remain isolated from interactive drafts.
 
 exposes:
   - LLMAdapter

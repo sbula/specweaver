@@ -216,25 +216,24 @@ class TestPipelineRunnerSuccess:
     async def test_fan_out_failure_isolation(self, tmp_path: Path) -> None:
         pipeline = _make_pipeline(step_count=1)
         ctx = _make_context(tmp_path)
-        
+
         # Mix of pass and fail registries
         pass_reg = _make_registry(PassHandler())
-        fail_reg = _make_registry(ErrorHandler())
-        
+
         runner = PipelineRunner(pipeline, ctx, registry=pass_reg)
-        
-        # We need to create sub-pipelines that use different handlers, 
+
+        # We need to create sub-pipelines that use different handlers,
         # but runner.fan_out inherits the parent's registry.
         # So we'll register the ErrorHandler for a specific action/target not handled by PassHandler.
         pass_reg.register(StepAction.REVIEW, StepTarget.SPEC, ErrorHandler())
-        
+
         sub_pass = _make_pipeline(step_count=1)
-        
+
         sub_fail = PipelineDefinition(
             name="fail_pipe",
             steps=[PipelineStep(name="s1", action=StepAction.REVIEW, target=StepTarget.SPEC)]
         )
-        
+
         results = await runner.fan_out([sub_pass, sub_fail, sub_pass], parent_run_id="fail-isol")
         assert len(results) == 3
         # Ensure gather didn't explode and we got back results
