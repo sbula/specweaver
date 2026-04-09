@@ -109,8 +109,11 @@ class PipelineRunner:
         self._on_event = on_event
         self._gate_evaluator = GateEvaluator(pipeline)
 
-    async def run(self) -> PipelineRun:
+    async def run(self, parent_run_id: str | None = None) -> PipelineRun:
         """Execute the pipeline from the beginning.
+
+        Args:
+            parent_run_id: Optional ID of the parent pipeline run spawning this run.
 
         Returns:
             The final PipelineRun state (COMPLETED, FAILED, or PARKED).
@@ -118,6 +121,7 @@ class PipelineRunner:
         now = _now_iso()
         run = PipelineRun(
             run_id=str(uuid.uuid4()),
+            parent_run_id=parent_run_id,
             pipeline_name=self._pipeline.name,
             project_name=self._context.project_path.name,
             spec_path=str(self._context.spec_path),
@@ -178,6 +182,36 @@ class PipelineRunner:
             return await self._execute_loop(run)
         finally:
             self._flush_telemetry()
+
+    async def fan_out(
+        self, sub_pipelines: list[PipelineDefinition], parent_run_id: str
+    ) -> list[PipelineRun]:
+        """Execute multiple sub-pipelines concurrently and await their completion.
+
+        Args:
+            sub_pipelines: List of PipelineDefinitions to run concurrently.
+            parent_run_id: The run ID of the executing step's parent pipeline.
+
+        Returns:
+            A list of completed PipelineRun states, one for each sub-pipeline.
+        """
+        import asyncio
+
+        runners = [
+            PipelineRunner(
+                pipe,
+                self._context,
+                registry=self._registry,
+                store=self._store,
+                on_event=self._on_event,
+            )
+            for pipe in sub_pipelines
+        ]
+        return list(
+            await asyncio.gather(
+                *[runner.run(parent_run_id=parent_run_id) for runner in runners]
+            )
+        )
 
     # ------------------------------------------------------------------
     # Core execution loop

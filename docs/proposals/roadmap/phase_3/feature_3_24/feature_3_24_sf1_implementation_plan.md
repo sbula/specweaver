@@ -29,9 +29,8 @@ Implement a hierarchical architecture that allows Steps (like `DecomposeHandler`
 - Update `save_run()` SQLite parameters inside the `INSERT OR REPLACE` string.
 - Update `_row_to_run()` to safely unmap `parent_run_id`.
 
-### `src/specweaver/flow/runner.py`
-#### [MODIFY]
-- Establish a mechanism (`run_sub_pipelines()` or via step handlers) to orchestrate `asyncio.gather` across N spawned `PipelineRunner` executors.
+#### [MODIFY] `src/specweaver/flow/runner.py`
+- [x] Establish a mechanism (`fan_out()`) to orchestrate `asyncio.gather` across N spawned `PipelineRunner` executors.
 > [!CAUTION]
 > The architectural design isolates this parallel execution directly in the action handler flow (Blocking). Be structurally prepared for a future where `sw status` requires switching this out for `StepStatus.YIELD_TO_CHILDREN` non-blocking architecture.
 
