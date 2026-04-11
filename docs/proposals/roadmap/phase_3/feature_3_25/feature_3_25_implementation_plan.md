@@ -36,9 +36,10 @@ None remaining. All options were resolved in the Phase 4 HITL Gate.
 
 ---
 
-### `flow` Module (Execution Engine)
+### `flow` Module (Execution Engine - Routing) [✅ Implemented]
+**Commit 2 Notes**: `RouterEvaluator` logic was safely implemented without `eval()`. State mutation via `route_to_step` and execution logic directly inside `PipelineRunner._execute_loop` handled perfectly. All Edge Case scenarios regarding implicit fallback gates correctly observed.
 
-#### [MODIFY] [state.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/state.py)
+#### [NEW] [routers.py](file:///c:/development/pitbula/specweaver/src/specweaver/flow/routers.py)
 **Rationale:** Facilitate nonlinear step changes in pipeline state reliably.
 1. Add `PipelineRun.route_to_step(self, result: StepResult, next_step_idx: int)`. This marks the current active record with `result`, then directly overwrites `self.current_step = next_step_idx` instead of using `+= 1`. If `next_step_idx` is out of bounds, marks as COMPLETED.
 

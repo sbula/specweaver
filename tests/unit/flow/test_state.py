@@ -247,6 +247,29 @@ class TestPipelineRun:
         assert run.current_step == 2
         assert run.status == RunStatus.COMPLETED
 
+    def test_route_to_step(self) -> None:
+        run = _make_run(current_step=0, step_names=["s1", "s2", "s3"], status=RunStatus.RUNNING)
+        result = StepResult(
+            status=StepStatus.PASSED,
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.route_to_step(result, next_step_idx=2)
+        assert run.current_step == 2
+        assert run.step_records[0].status == StepStatus.PASSED
+        assert run.status == RunStatus.RUNNING
+
+    def test_route_to_out_of_bounds_completes_run(self) -> None:
+        run = _make_run(current_step=0, step_names=["s1", "s2"], status=RunStatus.RUNNING)
+        result = StepResult(
+            status=StepStatus.PASSED,
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.route_to_step(result, next_step_idx=2)
+        assert run.current_step == 2
+        assert run.status == RunStatus.COMPLETED
+
     def test_mark_current_step_failed(self) -> None:
         run = _make_run(status=RunStatus.RUNNING)
         result = StepResult(
@@ -317,6 +340,17 @@ class TestPipelineRun:
             completed_at="2026-03-14T18:00:01Z",
         )
         run.complete_current_step(result)
+        assert run.current_step == 2  # unchanged
+
+    def test_route_to_step_at_end_is_noop(self) -> None:
+        """route_to_step when past last step should not crash."""
+        run = _make_run(current_step=2, step_names=["s1", "s2"])
+        result = StepResult(
+            status=StepStatus.PASSED,
+            started_at="2026-03-14T18:00:00Z",
+            completed_at="2026-03-14T18:00:01Z",
+        )
+        run.route_to_step(result, next_step_idx=0)
         assert run.current_step == 2  # unchanged
 
     def test_fail_at_end_is_noop(self) -> None:

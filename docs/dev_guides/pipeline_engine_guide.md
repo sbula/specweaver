@@ -117,3 +117,44 @@ A `StepResult` natively consolidates the child outputs for upstream consumption 
 > [!CAUTION]
 > **Blast Radius Assertion Boundary**
 > `DecomposeFeatureHandler` strictly checks `coverage_score >= 1.0` in the resulting components. Any LLM artifact returning a failure state will push the Flow system into a rigid 3-Strike Loop `FAILED` status, looping internally to `max_retries` rather than relying on explicit human supervision for obviously incomplete structures.
+
+---
+
+## 6. Dynamic Flow Control (Routers)
+
+Starting in Feature 3.25, the Pipeline Engine natively supports conditional branching via **Routers**. While **Gates** determine whether a step succeeded or failed, **Routers** determine where execution should logically jump *after* success.
+
+### Mechanism & Constraints
+- **Declarative Operators**: To prevent malicious payload execution natively on YAML configs, Routers evaluate strictly using pure Python condition operators (`eq`, `neq`, `lt`, `gt`, `in`, `contains`, `is_empty`, `not_empty`). `eval()` is strictly prohibited.
+- **Infinite Loop Defense (NFR-4)**: A router can redirect backwards (e.g. creating arbitrary step loops). To prevent OS crashes, the `PipelineRunner` explicitly bounds all routing backward jumps utilizing the global `max_total_loops` threshold (default `20`). Exceeding this triggers an abrupt pipeline `ERROR` termination.
+- **Telemetry (FR-5)**: Jump commands trigger a distinct `"step_routed"` emission so visualization dashboards accurately replay the logical path. 
+
+### YAML Example: Dynamic Planner Path (Fast-Track vs Decomposition)
+
+Pipelines can be structurally optimized to skip redundant steps by reading the JSON output payload of the previous step. In the example below, if the `Planner` ascertains the task complexity is extremely trivial, it skips the heavy `decompose` phase and routes immediately into a quick fix:
+
+```yaml
+name: "adaptive_feature_flow"
+max_total_loops: 20
+steps:
+  - name: plan_architectural_impact
+    action: plan
+    target: feature
+    router:
+      default_target: decompose_structure
+      rules:
+        # Fast-Track Condition: The previous step payload yielded `{"complexity": "trivial"}`
+        - field: "complexity"
+          operator: "eq"
+          value: "trivial"
+          target: execute_quick_fix
+
+  - name: decompose_structure
+    action: decompose
+    target: feature
+    # Standard heavy-lifting fallback...
+  
+  - name: execute_quick_fix
+    action: generate 
+    target: code
+```

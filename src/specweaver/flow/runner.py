@@ -109,6 +109,9 @@ class PipelineRunner:
         self._on_event = on_event
         self._gate_evaluator = GateEvaluator(pipeline)
 
+        from specweaver.flow.routers import RouterEvaluator
+        self._router_evaluator = RouterEvaluator()
+
     async def run(self, parent_run_id: str | None = None) -> PipelineRun:
         """Execute the pipeline from the beginning.
 
@@ -241,6 +244,7 @@ class PipelineRunner:
 
         # Per-step attempt counters for retry tracking
         attempts: dict[int, int] = {}
+        route_jumps: int = 0
 
         while run.current_step < len(run.step_records):
             step_idx = run.current_step
@@ -466,10 +470,57 @@ class PipelineRunner:
                 step_def.name,
                 result.status.value,
             )
-            run.complete_current_step(result)
+
+            router = step_def.router
+            if router is not None:
+                target_step_name = self._router_evaluator.evaluate(router, result.output)
+                target_idx = self._pipeline.get_step_index(target_step_name)
+
+                if target_idx is None:
+                    # Defensive programming; invalid targets are trapped by PipelineDefinition.validate_flow()
+                    error_msg = f"Router resolved to unknown step '{target_step_name}'"
+                    logger.error("[run_id=%s] %s", run.run_id, error_msg)
+                    error_result = StepResult(
+                        status=StepStatus.ERROR,
+                        error_message=error_msg,
+                        started_at=_now_iso(),
+                        completed_at=_now_iso(),
+                    )
+                    run.fail_current_step(error_result)
+                    self._persist(run)
+                    self._emit("run_failed", run=run)
+                    return run
+
+                if target_idx <= run.current_step:
+                    route_jumps += 1
+                    if route_jumps > self._pipeline.max_total_loops:
+                        error_msg = f"Infinite routing loop detected: exceeded max_total_loops ({self._pipeline.max_total_loops})"
+                        logger.error("[run_id=%s] %s", run.run_id, error_msg)
+                        error_result = StepResult(
+                            status=StepStatus.ERROR,
+                            error_message=error_msg,
+                            started_at=_now_iso(),
+                            completed_at=_now_iso(),
+                        )
+                        run.fail_current_step(error_result)
+                        self._persist(run)
+                        self._emit("run_failed", run=run)
+                        return run
+
+                logger.info(
+                    "[run_id=%s] Router resolved target '%s' (index %d). Routing.",
+                    run.run_id, target_step_name, target_idx
+                )
+                self._emit("step_routed", step_idx=step_idx, step_name=step_def.name, target_step=target_step_name, target_idx=target_idx, run=run)
+                self._log(run, "step_routed", step_def.name)
+                run.route_to_step(result, target_idx)
+            else:
+                run.complete_current_step(result)
+
             run.updated_at = _now_iso()
             self._persist(run)
-            self._log(run, "step_completed", step_def.name)
+            if router is None:
+                self._log(run, "step_completed", step_def.name)
             self._emit(
                 "step_completed",
                 step_idx=step_idx,

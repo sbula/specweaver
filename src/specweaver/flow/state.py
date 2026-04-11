@@ -162,6 +162,20 @@ class PipelineRun(BaseModel):
             if self.current_step >= len(self.step_records):
                 self.status = RunStatus.COMPLETED
 
+    def route_to_step(self, result: StepResult, next_step_idx: int) -> None:
+        """Record a successful step and jump to a specific step index.
+
+        If next_step_idx is out of bounds, the run is marked COMPLETED.
+        """
+        record = self.current_step_record()
+        if record is not None:
+            record.status = result.status
+            record.result = result
+            self.current_step = next_step_idx
+
+            if self.current_step >= len(self.step_records):
+                self.status = RunStatus.COMPLETED
+
     def fail_current_step(self, result: StepResult) -> None:
         """Record a failed step and mark the run as FAILED.
 

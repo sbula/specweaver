@@ -185,6 +185,10 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.23 Bi-Directional Spec Rot Interceptor** — Solves the "2nd-Day Problem" by executing native AST Drift checks directly via the `.git/hooks/pre-commit` phase. It leverages the Pipeline engine's `DriftCheckHandler` deterministically against `--staged` files, aborting commit streams (Exit 42) upon any undocumented divergence between the `Spec.md` and the active code syntax layer.
 
+**3.24 Automated Iterative Decomposition** — Deep recursive decomposition (Feature → Sub-Features → Components) using dynamic sub-pipelines via `PipelineRunner.fan_out()`. Parent execution safely blocks via `asyncio.gather` while children pipelines run fully isolated.
+
+**3.25 Router-Based Flow Control** — Extends Pipeline YAML schemas via `router` routing logic (`RouterDefinition`, `RouterEvaluator`). Eliminates strict linear execution in favor of declarative conditional branching. Limits backward routes to prevent OS memory exhaustion via predefined `max_total_loops` structural guards.
+
 ### How Features Map to Lifecycle Layers
 
 ```
