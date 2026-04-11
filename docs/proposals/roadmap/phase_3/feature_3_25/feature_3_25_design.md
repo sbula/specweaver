@@ -77,11 +77,11 @@ Single feature — no decomposition.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Core Router Implementation | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Core Router Implementation | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED.
-**Next step**: After approval, run:
-`/implementation-plan docs/proposals/roadmap/phase_3/feature_3_25/feature_3_25_design.md SF-1`
+**Current status**: Implementation Plan APPROVED for SF-1.
+**Next step**: Run:
+`/dev docs/proposals/roadmap/phase_3/feature_3_25/feature_3_25_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there.

@@ -75,6 +75,19 @@ class OnFailAction(enum.StrEnum):
     CONTINUE = "continue"
 
 
+class RuleOperator(enum.StrEnum):
+    """Operators for evaluating router rules."""
+
+    EQ = "=="
+    NEQ = "!="
+    LT = "<"
+    GT = ">"
+    CONTAINS = "contains"
+    IN = "in"
+    IS_EMPTY = "is_empty"
+    NOT_EMPTY = "not_empty"
+
+
 # ---------------------------------------------------------------------------
 # Valid combinations
 # ---------------------------------------------------------------------------
@@ -131,6 +144,39 @@ class GateDefinition(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Router
+# ---------------------------------------------------------------------------
+
+
+class RouterRule(BaseModel):
+    """A conditional rule for pipeline branching.
+
+    Attributes:
+        field: Dot-notation path to the value in StepResult.output.
+        operator: Comparison operator.
+        value: Static value to compare against.
+        target: Step name to route to if this rule matches.
+    """
+
+    field: str
+    operator: RuleOperator
+    value: Any = None
+    target: str
+
+
+class RouterDefinition(BaseModel):
+    """A router configuration for a pipeline step.
+
+    Attributes:
+        rules: List of rules evaluated in sequence. First match wins.
+        default_target: Fallback step name if no rules match.
+    """
+
+    rules: list[RouterRule] = Field(default_factory=list)
+    default_target: str
+
+
+# ---------------------------------------------------------------------------
 # Step
 # ---------------------------------------------------------------------------
 
@@ -152,6 +198,7 @@ class PipelineStep(BaseModel):
     target: StepTarget
     params: dict[str, Any] = Field(default_factory=dict)
     gate: GateDefinition | None = None
+    router: RouterDefinition | None = None
     description: str = ""
 
 
@@ -184,6 +231,13 @@ class PipelineDefinition(BaseModel):
         for step in self.steps:
             if step.name == name:
                 return step
+        return None
+
+    def get_step_index(self, name: str) -> int | None:
+        """Find the index of a step by name, or None if not found."""
+        for i, step in enumerate(self.steps):
+            if step.name == name:
+                return i
         return None
 
     @classmethod
@@ -263,7 +317,36 @@ class PipelineDefinition(BaseModel):
             if step.gate is not None and step.gate.on_fail == OnFailAction.LOOP_BACK:
                 errors.extend(_validate_loop_back(step.name, step.gate, name_to_index, i))
 
+            # Router validation
+            if step.router is not None:
+                errors.extend(_validate_router(step.name, step.router, name_to_index))
+
         return errors
+
+
+def _validate_router(
+    step_name: str,
+    router: RouterDefinition,
+    name_to_index: dict[str, int],
+) -> list[str]:
+    """Validate a router's target references.
+
+    Returns:
+        List of error messages (empty if valid).
+    """
+    errors = []
+    if router.default_target not in name_to_index:
+        errors.append(
+            f"Step '{step_name}' has router default_target "
+            f"'{router.default_target}' which does not exist"
+        )
+    for rule in router.rules:
+        if rule.target not in name_to_index:
+            errors.append(
+                f"Step '{step_name}' has router rule target "
+                f"'{rule.target}' which does not exist"
+            )
+    return errors
 
 
 def _validate_loop_back(
