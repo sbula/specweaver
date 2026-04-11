@@ -49,20 +49,20 @@ file size, and documentation.
 > 3. After completing a phase, mark it `[x]` in `task.md`
 > 4. Remember: We do not care if any flaw existed before our changes, it must be resolve
 >
-> **Phases 1 and 3 have HITL gates** — you MUST stop and present findings
+> **Phases 1, 2, and 3 have HITL gates** — you MUST stop and present findings
 > to the user. Do NOT continue until the user responds.
 > 
 > > [!CAUTION]
 > > **WHAT "HITL GATE" TECHNICALLY MEANS FOR AI AGENTS:**
 > > A "HITL Gate" is a HARD STOP where you MUST yield your turn. 
 > > This means you are **FORBIDDEN** from making *any* further tool calls (e.g., executing commands, writing files, or moving to the next Phase) during the current cycle.
-> > You MUST literally stop thinking, return a text response to the user, and wait for them to reply in the chat before you do ANYTHING else. If you string together Phase 3 and Phase 4 in a single chain of tool calls, you have violated the HITL Gate.
+> > You MUST literally stop thinking, return a text response to the user, and wait for them to reply in the chat before you do ANYTHING else. If you string together Phase 2 and Phase 3 in a single chain of tool calls, you have violated the HITL Gate.
 > 
 > If you catch yourself about to run `pytest` or "verify everything works"
-> before completing Phase 3 and Phase 4 — **STOP immediately**.
-> That is Phase 5. You are skipping phases.
+> before completing Phase 2 and Phase 3 — **STOP immediately**.
+> That is Phase 4. You are skipping phases.
 > 
-> **CRITICAL:** AI Agents have a known tendency to skip Phase 4 (Implement Missing Tests).
+> **CRITICAL:** AI Agents have a known tendency to skip Phase 3 (Implement Missing Tests).
 > This is UNACCEPTABLE. You MUST explicitly write tests for every gap and branch you find.
 
 ## Phases
@@ -72,10 +72,10 @@ Execute each phase by reading and following the instructions in its workflow fil
 | Phase | File | Description | HITL Gate? |
 |-------|------|-------------|------------|
 | **1** | `.agents/workflows/pre-commit/phase-1-architecture.md` | Architecture verification | ⚠️ Yes (step 1.9) |
-| **2** | `.agents/workflows/pre-commit/phase-2-code-quality.md` | Code quality checks (ruff, mypy, complexity, file size) | No |
-| **3** | `.agents/workflows/pre-commit/phase-3-test-gap.md` | Test gap analysis (coverage matrix + test stories) | ⚠️ Yes (step 3.8) |
-| **4** | `.agents/workflows/pre-commit/phase-4-implement-tests.md` | Implement missing tests | ⚠️ Yes (step 4.1b) |
-| **5** | `.agents/workflows/pre-commit/phase-5-test-suite.md` | Run full test suite | No |
+| **2** | `.agents/workflows/pre-commit/phase-2-test-gap.md` | Test gap analysis (coverage matrix + test stories) | ⚠️ Yes (step 2.8) |
+| **3** | `.agents/workflows/pre-commit/phase-3-implement-tests.md` | Implement missing tests | ⚠️ Yes (step 3.1b) |
+| **4** | `.agents/workflows/pre-commit/phase-4-test-suite.md` | Run full test suite | No |
+| **5** | `.agents/workflows/pre-commit/phase-5-code-quality.md` | Code quality checks (ruff, mypy, complexity, file size) | No |
 | **6** | `.agents/workflows/pre-commit/phase-6-documentation.md` | Documentation updates | No |
 | **7** | `.agents/workflows/pre-commit/phase-7-walkthrough.md` | Write walkthrough artifact | No |
 

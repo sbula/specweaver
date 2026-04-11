@@ -1,5 +1,5 @@
 ---
-description: "Phase 4: Implement missing tests identified in Phase 3."
+description: "Phase 3: Implement missing tests identified in Phase 2."
 ---
 
 > [!CAUTION]
@@ -15,11 +15,11 @@ description: "Phase 4: Implement missing tests identified in Phase 3."
 
 
 
-# Phase 4: Implement Missing Tests
+# Phase 3: Implement Missing Tests
 
 > [!CAUTION]
 > **ANTI-LAZINESS DIRECTIVE: DO NOT SKIP THIS PHASE!**
-> AI agents have a known failure mode of skipping Phase 4 and assuming existing tests or minimal happy-path tests are "good enough." 
+> AI agents have a known failure mode of skipping Phase 3 and assuming existing tests or minimal happy-path tests are "good enough." 
 > THIS IS STRICTLY FORBIDDEN.
 > You MUST explicitly write tests for EVERY SINGLE:
 > 1. Error path (e.g. ValueError, None inputs, empty strings)
@@ -30,15 +30,15 @@ description: "Phase 4: Implement missing tests identified in Phase 3."
 
 // turbo-all
 
-4.1. You MUST implement ALL missing tests identified in Phase 3 (after HITL confirmation).
+3.1. You MUST implement ALL missing tests identified in Phase 2 (after HITL confirmation).
      Follow existing test patterns (fixtures, helpers, naming conventions)
      already established in the test files.
-4.1b **MANDATORY HITL YIELD**: Instead of proceeding directly to Phase 5, you MUST explicitly list exactly which edge cases you just implemented tests for and YIELD YOUR TURN. A yield means making ZERO further tool calls. You must end your response and wait for the user to type a reply explicitly approving the tests before you can start Phase 5.
-4.2. Run ruff on any new or modified test files to ensure lint-clean:
+3.1b **MANDATORY HITL YIELD**: Instead of proceeding directly to Phase 4, you MUST explicitly list exactly which edge cases you just implemented tests for and YIELD YOUR TURN. A yield means making ZERO further tool calls. You must end your response and wait for the user to type a reply explicitly approving the tests before you can start Phase 4.
+3.2. Run ruff on any new or modified test files to ensure lint-clean:
      ```
      python -m ruff check tests/
      ```
      Fix any errors immediately!
 
 > [!IMPORTANT]
-> **CHECKPOINT**: Phase 4 is complete. Update `task.md`. You MUST STOP HERE at the new HITL Gate. Yield your turn entirely.
+> **CHECKPOINT**: Phase 3 is complete. Update `task.md`. You MUST STOP HERE at the new HITL Gate. Yield your turn entirely.

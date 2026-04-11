@@ -1,5 +1,5 @@
 ---
-description: "Phase 5: Run the full test suite — all tests must pass."
+description: "Phase 4: Run the full test suite — all tests must pass."
 ---
 
 > [!CAUTION]
@@ -15,7 +15,7 @@ description: "Phase 5: Run the full test suite — all tests must pass."
 
 
 
-# Phase 5: Run Full Test Suite
+# Phase 4: Run Full Test Suite
 
 // turbo-all
 
@@ -26,20 +26,20 @@ description: "Phase 5: Run the full test suite — all tests must pass."
 > 
 > **STRICT ANTI-CACHING RULE:** You MUST physically execute every single one of these `run_command` tools right now. NEVER assume tests pass because you ran `pytest` five minutes ago. You are in a strict pre-commit gate, and the laws of the gate require a fresh run.
 
-5.1. Run **Unit** Tests:
+4.1. Run **Unit** Tests:
      ```
      python -m pytest tests/unit/
      ```
 
-5.2. Run **Integration** Tests:
+4.2. Run **Integration** Tests:
      ```
      python -m pytest tests/integration/
      ```
 
-5.3. Run **End-to-End (E2E)** Tests:
+4.3. Run **End-to-End (E2E)** Tests:
      ```
      python -m pytest tests/e2e/
      ```
 
 > [!IMPORTANT]
-> **NO HITL GATE HERE:** If the entire test sequence passes successfully, update `task.md` and PROCEED IMMEDIATELY to Phase 6. Do NOT stop to ask the user for permission to continue.
+> **NO HITL GATE HERE:** If the entire test sequence passes successfully, update `task.md` and PROCEED IMMEDIATELY to Phase 5. Do NOT stop to ask the user for permission to continue.

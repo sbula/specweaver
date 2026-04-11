@@ -1,5 +1,5 @@
 ---
-description: "Phase 3: Test gap analysis — coverage matrix, proposed test stories, and HITL gate."
+description: "Phase 2: Test gap analysis — coverage matrix, proposed test stories, and HITL gate."
 ---
 
 > [!CAUTION]
@@ -12,17 +12,17 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
 > Execute the gap analysis steps autonomously, but you MUST STOP and present the results. NEVER bypass the user review of the findings.
 
 
-# Phase 3: Test Gap Analysis
+# Phase 2: Test Gap Analysis
 
-3.1. Read EVERY source file that was created or modified for this feature.
-3.2. For each file, go line-by-line and identify EVERY branch, guard clause,
+2.1. Read EVERY source file that was created or modified for this feature.
+2.2. For each file, go line-by-line and identify EVERY branch, guard clause,
      error path, boundary condition, edge case, and fallback. Reference
      the source line numbers.
-3.3. Read EVERY existing test file that covers these modules (unit, integration,
+2.2. Read EVERY existing test file that covers these modules (unit, integration,
      e2e). Do NOT guess — actually read the test files and list what scenarios
      they already cover.
 
-3.4. **Deliverable 1 — Coverage Matrix** (one table per source module/file):
+2.4. **Deliverable 1 — Coverage Matrix** (one table per source module/file):
 
      > [!CAUTION]
      > **MANDATORY FORMAT EXCEPTION:** EVEN IF the feature contains zero Python logic and only modifies configuration files (e.g. `.toml`, `.md`, or deleting files), you MUST STILL present the exact matrix table format below for the impacted files. 
@@ -48,7 +48,7 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
 
      Use `—` when a test kind does not apply (e.g., e2e for a pure helper).
 
-3.5. **Deliverable 2 — Proposed Test Stories** (flat list, grouped by kind):
+2.5. **Deliverable 2 — Proposed Test Stories** (flat list, grouped by kind):
 
      Each proposed new test is written as a **story** with the kind clearly
      tagged. Stories are grouped under headings: `### Unit`, `### Integration`,
@@ -70,9 +70,9 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
      ### E2E
      (none proposed / or list here)
 
-3.6. Do NOT invent arbitrary test counts. Every story must trace to real code.
-3.7. Present the FULL list — do NOT limit to 10 items.
-3.8. **STOP and wait for the HITL response.** Present the gap analysis.
+2.6. Do NOT invent arbitrary test counts. Every story must trace to real code.
+2.7. Present the FULL list — do NOT limit to 10 items.
+2.8. **STOP and wait for the HITL response.** Present the gap analysis.
      > [!CAUTION]
      > You MUST NOT write the test gap analysis into a file or system Artifact!
      > You MUST print the full Background, Coverage Matrix, Options, Analysis, and Proposal DIRECTLY into your conversational chat response. 
@@ -81,4 +81,4 @@ description: "Phase 3: Test gap analysis — coverage matrix, proposed test stor
 > [!CAUTION]
 > **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories directly in the chat to the user. 
 > You MUST YIELD YOUR TURN. A yield means making ZERO further tool calls. You must end your response and wait for the user to type a reply in the chat.
-> You MUST NOT proceed to Phase 4 (implementing tests) synchronously in the same turn. Do not assume they look okay or skip this gate.
+> You MUST NOT proceed to Phase 3 (implementing tests) synchronously in the same turn. Do not assume they look okay or skip this gate.
