@@ -13,6 +13,8 @@ All commands run on the target project directory via EngineGitExecutor.
 from __future__ import annotations
 
 import logging
+import shutil
+import time
 from typing import TYPE_CHECKING, Any
 
 from specweaver.loom.atoms.base import Atom, AtomResult, AtomStatus
@@ -54,6 +56,7 @@ class GitAtom(Atom):
             "fetch",
             "pull",  # sync
             "tag",  # tag
+            "worktree",
         }
     )
 
@@ -377,4 +380,84 @@ class GitAtom(Atom):
             status=AtomStatus.SUCCESS,
             message=f"Tagged as: {name}",
             exports={"tag": name},
+        )
+
+    def _intent_worktree_add(self, context: dict[str, Any]) -> AtomResult:
+        """Create a new worktree tracking a branch.
+
+        Context keys:
+            path: str - relative path for the new worktree.
+            branch: str - name of the new branch to create.
+            start_point: str (optional) - starting commit/branch (defaults to HEAD).
+        """
+        path = context.get("path")
+        branch = context.get("branch")
+        
+        if not path or not branch:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'path' or 'branch' in context for worktree_add intent.",
+            )
+
+        start_point = context.get("start_point", "HEAD")
+        result = self._executor.run("worktree", "add", "-b", branch, str(path), start_point)
+        
+        if result.exit_code != 0:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"git worktree add failed: {result.stderr}",
+            )
+            
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message=f"Created worktree {path} on branch {branch}",
+            exports={"worktree_path": str(path), "branch": branch},
+        )
+
+    def _intent_worktree_teardown(self, context: dict[str, Any]) -> AtomResult:
+        """Resiliently removes a Git worktree.
+
+        Context keys:
+            path: str - relative path to the worktree to remove.
+        """
+        path = context.get("path")
+        if not path:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'path' in context for worktree_teardown intent.",
+            )
+
+        # Primary vector
+        result = self._executor.run("worktree", "remove", "--force", str(path))
+        if result.exit_code == 0:
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Removed worktree cleanly: {path}",
+            )
+
+        # Windows file locking fallback
+        wt_path = self._cwd / path
+        logger.warning("Git worktree remove failed: %s. Engaging shutil fallback.", result.stderr)
+
+        if wt_path.exists():
+            # NFR-1 / NFR-3: 5 iteration progressive backoff under 2s total
+            delays = [0.05, 0.1, 0.2, 0.4, 0.75]
+            for attempt, delay in enumerate(delays):
+                try:
+                    shutil.rmtree(wt_path, ignore_errors=False)
+                    break
+                except Exception as e:
+                    if attempt == len(delays) - 1:
+                        return AtomResult(
+                            status=AtomStatus.FAILED,
+                            message=f"Fallback rmtree failed: {e!s}",
+                        )
+                    time.sleep(delay)
+
+        # Cleanup Git index
+        self._executor.run("worktree", "prune")
+
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message=f"Fallback: Removed worktree {path} via rmtree.",
         )

@@ -254,6 +254,34 @@ class FileSystemAtom(Atom):
             message=f"Restored {source} → {target}",
         )
 
+    def _intent_symlink(self, context: dict[str, Any]) -> AtomResult:
+        """Create a symlink for workspace caching.
+
+        Context keys:
+            target: str - absolute or relative path to link TO.
+            link_name: str - path for the symlink TO CREATE.
+        """
+        target = context.get("target")
+        link_name = context.get("link_name")
+
+        if not target or not link_name:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'target' or 'link_name' in context for symlink intent.",
+            )
+
+        result = self._executor.symlink(target, link_name)
+        if result.status != "success":
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"Symlink failed: {result.error}",
+            )
+
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message=f"Created symlink {link_name} -> {target}",
+        )
+
     def _intent_aggregate_context(self, _context: dict[str, Any]) -> AtomResult:
         """Collect all context.yaml files into a project-wide boundary map.
 

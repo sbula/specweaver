@@ -518,3 +518,31 @@ class TestEngineFileExecutor:
         result = engine_executor.read("link.txt")
         assert result.status == "error"
         target.unlink()
+
+
+class TestEngineFileExecutorSymlink:
+    """Tests for EngineFileExecutor.symlink."""
+
+    @pytest.mark.skipif(os.name == "nt", reason="Symlinks require admin on Windows")
+    def test_symlink_valid(self, engine_executor: EngineFileExecutor, project: Path) -> None:
+        """Engine can create valid relative symlinks inside cwd."""
+        target_dir = project / "target_dir"
+        target_dir.mkdir()
+
+        result = engine_executor.symlink("target_dir", "link_dir")
+        assert result.status == "success"
+        link_path = project / "link_dir"
+        assert link_path.is_symlink()
+        assert link_path.resolve() == target_dir.resolve()
+
+    @pytest.mark.skipif(os.name == "nt", reason="Symlinks require admin on Windows")
+    def test_symlink_traversal_blocked(self, engine_executor: EngineFileExecutor) -> None:
+        """Symlink target must not escape cwd."""
+        result = engine_executor.symlink("../../../etc/passwd", "link_dir")
+        assert result.status == "error"
+
+    @pytest.mark.skipif(os.name == "nt", reason="Symlinks require admin on Windows")
+    def test_symlink_absolute_blocked(self, engine_executor: EngineFileExecutor) -> None:
+        """Symlink target must not be absolute."""
+        result = engine_executor.symlink("/etc/passwd", "link_dir")
+        assert result.status == "error"

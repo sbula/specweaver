@@ -63,6 +63,8 @@ class TestDispatch:
             "integrate",
             "sync",
             "tag",
+            "worktree_add",
+            "worktree_teardown",
         }
         assert atom._known_intents() == expected
 
@@ -524,6 +526,7 @@ class TestEdgeCases:
             "fetch",
             "pull",
             "tag",
+            "worktree",
         }
         assert expected == GitAtom._ENGINE_WHITELIST
 
@@ -558,3 +561,98 @@ class TestEdgeCases:
                 }
             )
         assert result.status == AtomStatus.FAILED
+
+
+# ---------------------------------------------------------------------------
+# worktree_add
+# ---------------------------------------------------------------------------
+
+
+class TestWorktreeAdd:
+    """worktree_add creates a new worktree tracking a branch."""
+
+    def test_success_with_defaults(self, tmp_path: Path) -> None:
+        with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
+            mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run(
+                {
+                    "intent": "worktree_add",
+                    "path": ".worktrees/agent",
+                    "branch": "feat/xyz",
+                }
+            )
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["worktree_path"] == ".worktrees/agent"
+        assert result.exports["branch"] == "feat/xyz"
+
+    def test_missing_keys_fails(self, tmp_path: Path) -> None:
+        atom = GitAtom(cwd=tmp_path)
+        result1 = atom.run({"intent": "worktree_add", "branch": "feat"})
+        result2 = atom.run({"intent": "worktree_add", "path": ".wt"})
+        assert result1.status == AtomStatus.FAILED
+        assert result2.status == AtomStatus.FAILED
+
+    def test_git_failure(self, tmp_path: Path) -> None:
+        with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
+            mock.return_value = type("R", (), {"returncode": 128, "stdout": "", "stderr": "fatal"})()
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run(
+                {
+                    "intent": "worktree_add",
+                    "path": ".wt",
+                    "branch": "feat",
+                }
+            )
+        assert result.status == AtomStatus.FAILED
+        assert "fatal" in result.message
+
+
+# ---------------------------------------------------------------------------
+# worktree_teardown
+# ---------------------------------------------------------------------------
+
+
+class TestWorktreeTeardown:
+    """worktree_teardown removes the worktree resiliently."""
+
+    def test_success_clean_removal(self, tmp_path: Path) -> None:
+        with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
+            mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run(
+                {
+                    "intent": "worktree_teardown",
+                    "path": ".worktrees/agent",
+                }
+            )
+        assert result.status == AtomStatus.SUCCESS
+        assert "Removed worktree" in result.message
+
+    def test_missing_path_fails(self, tmp_path: Path) -> None:
+        atom = GitAtom(cwd=tmp_path)
+        result = atom.run({"intent": "worktree_teardown"})
+        assert result.status == AtomStatus.FAILED
+        assert "Missing 'path'" in result.message
+
+    def test_windows_fallback_triggered_on_failure(self, tmp_path: Path) -> None:
+        """If git worktree remove fails, it falls back to shutil.rmtree + prune."""
+        worktree_path = tmp_path / ".worktrees" / "stub"
+        worktree_path.mkdir(parents=True)
+
+        with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock_run:
+            # First subproc fails (git worktree remove --force ...), second succeeds (git worktree prune)
+            mock_run.side_effect = [
+                type("R", (), {"returncode": 1, "stdout": "", "stderr": "Device or resource busy"})(),
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
+            ]
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run(
+                {
+                    "intent": "worktree_teardown",
+                    "path": ".worktrees/stub",
+                }
+            )
+        assert result.status == AtomStatus.SUCCESS
+        assert "Fallback" in result.message
+        assert not worktree_path.exists()

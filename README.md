@@ -278,7 +278,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C09, drift detection)
-├── tests/                      # 3877+ tests (unit, integration, E2E)
+├── tests/                      # 3883+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
@@ -392,6 +392,8 @@ result = atom.run({"intent": "integrate", "source": "feat/login", "target": "mai
 | **integrate** | Merge branch into target | checkout, merge |
 | **sync** | Pull latest from remote | fetch, pull |
 | **tag** | Mark release/milestone | tag |
+| **worktree_add** | Create isolated parallel worktree branch | worktree add |
+| **worktree_teardown** | Force removal with Windows retry resilience | worktree remove, prune |
 
 **Built-in guardrails:**
 - Conventional commit messages enforced (`feat:`, `fix:`, `docs:`, ...)

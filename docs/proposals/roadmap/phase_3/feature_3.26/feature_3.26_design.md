@@ -94,12 +94,12 @@ Feature 3.26 adds a Git Worktree Bouncer capability to the pipeline orchestrator
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Worktree Sandbox Lifecycle | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Worktree Sandbox Lifecycle | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | SF-2 | Worktree Sync & Conflict Handling | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED.
+**Current status**: SF-1 Implementation Plan APPROVED.
 **Next step**: Run:
-`/implementation-plan docs/proposals/roadmap/phase_3/feature_3.26/feature_3.26_design.md SF-1`
+`/dev docs/proposals/roadmap/phase_3/feature_3.26/feature_3.26_sf1_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

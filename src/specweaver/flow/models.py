@@ -225,6 +225,7 @@ class PipelineDefinition(BaseModel):
     version: str = "1.0"
     steps: list[PipelineStep]
     max_total_loops: int = Field(default=20, ge=0)
+    cache_dirs: list[str] = Field(default_factory=list)
 
     def get_step(self, name: str) -> PipelineStep | None:
         """Find a step by name, or None if not found."""

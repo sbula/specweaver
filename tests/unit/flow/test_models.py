@@ -255,6 +255,15 @@ class TestPipelineDefinition:
         assert p.description == ""
         assert p.version == "1.0"
         assert len(p.steps) == 2
+        assert p.cache_dirs == []
+
+    def test_pipeline_definition_cache_dirs(self) -> None:
+        p = PipelineDefinition(
+            name="cache_test",
+            steps=[],
+            cache_dirs=["node_modules", ".gradle"],
+        )
+        assert p.cache_dirs == ["node_modules", ".gradle"]
 
     def test_with_metadata(self) -> None:
         p = PipelineDefinition(

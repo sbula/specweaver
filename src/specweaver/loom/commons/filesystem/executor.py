@@ -415,3 +415,24 @@ class EngineFileExecutor(FileExecutor):
     """
 
     _PROTECTED_PATTERNS: frozenset[str] = frozenset()  # No protected patterns
+
+    def symlink(self, target: str, link_name: str) -> ExecutorResult:
+        """Create a symlink explicitly bypassed for engine-level caching.
+
+        Args:
+            target: The directory inside the workspace to link TO (e.g., node_modules).
+            link_name: The name of the symlink to create (relative to cwd).
+        """
+        try:
+            target_path = self._validate_path(target)
+            if not target_path:
+                return ExecutorResult(status="error", error="Invalid symlink target path")
+
+            link_path = self._validate_path(link_name)
+            if not link_path:
+                return ExecutorResult(status="error", error="Invalid symlink link path")
+
+            link_path.symlink_to(target_path, target_is_directory=True)
+            return ExecutorResult(status="success")
+        except Exception as e:
+            return ExecutorResult(status="error", error=str(e))

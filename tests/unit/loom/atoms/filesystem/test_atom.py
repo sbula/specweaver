@@ -13,6 +13,7 @@ FileSystemAtom is the engine-level counterpart. It has unrestricted access
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import pytest
@@ -379,3 +380,30 @@ class TestValidateBoundariesIntent:
         errors = result.exports.get("errors", [])
         consumes_errors = [e for e in errors if "consumes" in e.lower()]
         assert len(consumes_errors) == 0
+
+
+# ===========================================================================
+# Symlink Intent
+# ===========================================================================
+
+
+class TestSymlinkIntent:
+    """symlink intent routes correctly to file executor."""
+
+    @pytest.mark.skipif(os.name == "nt", reason="Symlinks require admin on Windows")
+    def test_symlink_valid(self, atom: FileSystemAtom, project: Path) -> None:
+        (project / "node_modules").mkdir()
+        result = atom.run(
+            {
+                "intent": "symlink",
+                "target": "node_modules",
+                "link_name": ".worktrees/agent/node_modules",
+            }
+        )
+        assert result.status == AtomStatus.SUCCESS
+        assert (project / ".worktrees" / "agent" / "node_modules").is_symlink()
+
+    def test_symlink_missing_keys(self, atom: FileSystemAtom) -> None:
+        result = atom.run({"intent": "symlink"})
+        assert result.status == AtomStatus.FAILED
+        assert "Missing" in result.message
