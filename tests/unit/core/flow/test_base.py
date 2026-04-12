@@ -52,3 +52,27 @@ def test_run_context_graceful_degradation(tmp_path: Path) -> None:
         )
 
     assert context.project_metadata.language_target == "Unknown Environment"
+
+
+def test_run_context_env_vars(tmp_path: Path) -> None:
+    """Test that RunContext safely holds isolated env_vars boundaries natively."""
+    context = RunContext(
+        project_path=tmp_path,
+        spec_path=tmp_path / "spec.md",
+        pipeline_name="decomposition_flow",
+        env_vars={"SW_PORT_OFFSET": "49551"}
+    )
+
+    # Must natively survive pydantic model dumping
+    data = context.model_dump()
+    assert context.pipeline_name == "decomposition_flow"
+    assert context.env_vars == {"SW_PORT_OFFSET": "49551"}
+    assert data["env_vars"] == {"SW_PORT_OFFSET": "49551"}
+
+    # Default fallback
+    context_default = RunContext(
+        project_path=tmp_path,
+        spec_path=tmp_path / "spec.md"
+    )
+    assert context_default.env_vars == {}
+    assert context_default.pipeline_name is None

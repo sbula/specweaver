@@ -114,13 +114,13 @@ Key constraints: Must use Topology Graph for blast radius prediction, must run d
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Topological DAG Wave Generation | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-2 | Sandbox Environmental Isolation | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Topological DAG Wave Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Sandbox Environmental Isolation | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-3 | Parallel Engine Hardening | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Implementation Plan APPROVED — Ready for Dev.
-**Next step**: Run `/dev docs/roadmap/phase_3/feature_3.27/feature_3.27_sf1_implementation_plan.md`
+**Current status**: SF-2 Implementation Plan APPROVED — Ready for Dev.
+**Next step**: Run `/dev docs/roadmap/phase_3/feature_3.27/feature_3.27_sf2_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

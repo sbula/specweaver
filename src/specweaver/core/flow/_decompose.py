@@ -6,12 +6,12 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow._base import RunContext, StepHandler
 from specweaver.core.flow.state import StepResult, StepStatus
 from specweaver.workflows.planning.decomposer import FeatureDecomposer
-from typing import Any
+
 if TYPE_CHECKING:
     from specweaver.core.flow.models import PipelineStep
 

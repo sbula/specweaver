@@ -56,6 +56,7 @@ class GateType(enum.StrEnum):
 
     AUTO = "auto"
     HITL = "hitl"
+    RESERVE = "reserve"
 
 
 class GateCondition(enum.StrEnum):

@@ -152,6 +152,7 @@ class TestGateDefinition:
     def test_all_gate_types(self) -> None:
         assert GateType.AUTO == "auto"
         assert GateType.HITL == "hitl"
+        assert GateType.RESERVE == "reserve"
 
     def test_all_conditions(self) -> None:
         assert GateCondition.ALL_PASSED == "all_passed"

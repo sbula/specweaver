@@ -61,6 +61,8 @@ class RunContext(BaseModel):
     pipeline_runner: Any = None  # PipelineRunner | None — for fan_out
     run_id: str | None = None
     step_records: list[dict[str, Any]] | None = None
+    env_vars: dict[str, str] = Field(default_factory=dict)
+    pipeline_name: str | None = None
 
     def model_post_init(self, __context: Any) -> None:
         """Inject ProjectMetadata into context execution strictly securely."""
