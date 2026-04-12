@@ -3,69 +3,99 @@ source_roots = [
     ".",
 ]
 exact = true
-
-[[modules]]
-path = "src.specweaver.interfaces.api"
-
-[[modules]]
-path = "src.specweaver.interfaces.cli"
-
-[[modules]]
-path = "src.specweaver.core.config"
-depends_on = []
-
-[[modules]]
-path = "src.specweaver.workspace.context"
-depends_on = []
-
-[[modules]]
-path = "src.specweaver.assurance.graph"
-depends_on = []
-
-[[modules]]
-path = "src.specweaver.infrastructure.llm"
-depends_on = [
+modules = [
+    { path = "src.specweaver.assurance.graph", depends_on = [] },
+    { path = "src.specweaver.assurance.standards", depends_on = [] },
+    { path = "src.specweaver.assurance.validation", depends_on = [] },
+    { path = "src.specweaver.core.config", depends_on = [] },
+    { path = "src.specweaver.core.flow", depends_on = [] },
+    { path = "src.specweaver.core.loom", depends_on = [] },
+    { path = "src.specweaver.infrastructure.llm", depends_on = [] },
+    { path = "src.specweaver.interfaces.api", depends_on = [] },
+    { path = "src.specweaver.interfaces.cli", depends_on = [] },
+    { path = "src.specweaver.logging", depends_on = [] },
+    { path = "src.specweaver.workflows.drafting", depends_on = [] },
+    { path = "src.specweaver.workflows.implementation", depends_on = [] },
+    { path = "src.specweaver.workflows.pipelines", depends_on = [] },
+    { path = "src.specweaver.workflows.planning", depends_on = [] },
+    { path = "src.specweaver.workflows.review", depends_on = [] },
+    { path = "src.specweaver.workspace.context", depends_on = [] },
+    { path = "src.specweaver.workspace.project", depends_on = [] },
 ]
 
-[[modules]]
-path = "src.specweaver.logging"
-depends_on = []
-
-[[modules]]
-path = "src.specweaver.workspace.project"
-depends_on = []
-
-[[modules]]
-path = "src.specweaver.assurance.standards"
-depends_on = []
-
-[[modules]]
-path = "src.specweaver.assurance.validation"
-depends_on = []
-
+[[interfaces]]
+from = [
+    "src.specweaver.workspace.project",
+]
+expose = [
+    "constitution",
+    "scaffold",
+    "discovery",
+]
 
 [[interfaces]]
-from = ["src.specweaver.workspace.project"]
-expose = ["constitution", "scaffold", "discovery"]
+from = [
+    "src.specweaver.workspace.context",
+]
+expose = [
+    "analyzers",
+    "provider",
+    "hitl_provider",
+    "inferrer",
+]
 
 [[interfaces]]
-from = ["src.specweaver.workspace.context"]
-expose = ["analyzers", "provider", "hitl_provider", "inferrer"]
+from = [
+    "src.specweaver.assurance.graph",
+]
+expose = [
+    "topology",
+    "selectors",
+]
 
 [[interfaces]]
-from = ["src.specweaver.assurance.graph"]
-expose = ["topology", "selectors"]
+from = [
+    "src.specweaver.infrastructure.llm",
+]
+expose = [
+    "models",
+    "adapters.base",
+    "adapters.registry",
+    "prompt_builder",
+    "mention_scanner.models",
+    "mention_scanner.scanner",
+    "telemetry",
+    "router",
+    "collector",
+    "factory",
+    "lineage",
+]
 
 [[interfaces]]
-from = ["src.specweaver.infrastructure.llm"]
-expose = ["models", "adapters.base", "adapters.registry", "prompt_builder", "mention_scanner.models", "mention_scanner.scanner", "telemetry", "router", "collector", "factory", "lineage"]
+from = [
+    "src.specweaver.core.loom",
+]
+expose = [
+    "atoms",
+    "commons",
+    "dispatcher",
+    "security",
+    "tools",
+]
 
 [[interfaces]]
-from = ["src.specweaver.core.loom"]
-expose = ["atoms", "commons", "dispatcher", "security", "tools"]
-
-[[interfaces]]
-from = ["src.specweaver.assurance.validation"]
-expose = ["executor", "loader", "models", "pipeline", "pipeline_loader", "registry", "rules", "spec_kind", "drift_detector", "inheritance"]
-# Note: 'runner' is strictly OMITTED from expose array to enforce soft-deprecation.
-
+from = [
+    "src.specweaver.assurance.validation",
+]
+expose = [
+    "executor",
+    "loader",
+    "models",
+    "pipeline",
+    "pipeline_loader",
+    "registry",
+    "rules",
+    "spec_kind",
+    "drift_detector",
+    "inheritance",
+]
