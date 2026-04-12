@@ -14,13 +14,13 @@ itself is the source of truth for the PARAM_MAP (self-declaring pattern).
 
 from __future__ import annotations
 
-from specweaver.core.config.settings import RuleOverride, ValidationSettings
 from specweaver.assurance.validation.executor import _build_rule_kwargs
 from specweaver.assurance.validation.rules.spec.s01_one_sentence import OneSentenceRule
 from specweaver.assurance.validation.rules.spec.s02_single_setup import SingleSetupRule
 from specweaver.assurance.validation.rules.spec.s05_day_test import DayTestRule
 from specweaver.assurance.validation.rules.spec.s07_test_first import TestFirstRule
 from specweaver.assurance.validation.rules.spec.s08_ambiguity import AmbiguityRule
+from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
 # ---------------------------------------------------------------------------
 # Basic behaviour

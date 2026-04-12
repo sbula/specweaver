@@ -10,11 +10,11 @@ import logging
 
 from fastapi import APIRouter, Depends
 
+from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.errors import SpecWeaverAPIError
 from specweaver.interfaces.api.v1.paths import resolve_file_in_project
 from specweaver.interfaces.api.v1.schemas import ReviewRequest  # noqa: TC001 -- runtime for FastAPI
-from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +35,10 @@ def review_spec(
     """
     project_root, abs_path = resolve_file_in_project(body.file, body.project, db)
 
-    from specweaver.interfaces.cli._helpers import _load_constitution_content
-    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
-    from specweaver.workflows.review.reviewer import Reviewer
     from specweaver.assurance.standards.loader import load_standards_content
+    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.interfaces.cli._helpers import _load_constitution_content
+    from specweaver.workflows.review.reviewer import Reviewer
 
     try:
         _, adapter, gen_config = create_llm_adapter(

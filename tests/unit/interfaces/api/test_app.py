@@ -12,8 +12,8 @@ from starlette.testclient import TestClient
 @pytest.fixture()
 def client(tmp_path):
     """Create a test client backed by a temporary DB."""
-    from specweaver.interfaces.api.app import create_app
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.api.app import create_app
 
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     app = create_app(db=db)
@@ -77,8 +77,8 @@ class TestCORSHeaders:
 
     def test_cors_env_var_single_origin(self, tmp_path, monkeypatch) -> None:
         """CORS_ORIGINS env var adds origins to allowed list."""
-        from specweaver.interfaces.api.app import create_app
         from specweaver.core.config.database import Database
+        from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "http://192.168.1.100:8000")
         db = Database(tmp_path / ".sw-cors" / "specweaver.db")
@@ -96,8 +96,8 @@ class TestCORSHeaders:
 
     def test_cors_env_var_comma_separated(self, tmp_path, monkeypatch) -> None:
         """CORS_ORIGINS with multiple comma-separated origins."""
-        from specweaver.interfaces.api.app import create_app
         from specweaver.core.config.database import Database
+        from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "http://a.com, http://b.com")
         db = Database(tmp_path / ".sw-cors2" / "specweaver.db")
@@ -115,8 +115,8 @@ class TestCORSHeaders:
 
     def test_cors_env_var_empty_no_effect(self, tmp_path, monkeypatch) -> None:
         """Empty CORS_ORIGINS env var has no effect."""
-        from specweaver.interfaces.api.app import create_app
         from specweaver.core.config.database import Database
+        from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "")
         db = Database(tmp_path / ".sw-cors3" / "specweaver.db")
@@ -135,8 +135,8 @@ class TestCORSHeaders:
 
     def test_cors_env_var_whitespace_handling(self, tmp_path, monkeypatch) -> None:
         """CORS_ORIGINS with extra whitespace and empty entries."""
-        from specweaver.interfaces.api.app import create_app
         from specweaver.core.config.database import Database
+        from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "  , http://clean.com ,  ")
         db = Database(tmp_path / ".sw-cors4" / "specweaver.db")
@@ -154,8 +154,8 @@ class TestCORSHeaders:
 
     def test_cors_programmatic_and_env_merge(self, tmp_path, monkeypatch) -> None:
         """Programmatic cors_origins and CORS_ORIGINS env var are merged."""
-        from specweaver.interfaces.api.app import create_app
         from specweaver.core.config.database import Database
+        from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "http://env.example.com")
         db = Database(tmp_path / ".sw-cors5" / "specweaver.db")

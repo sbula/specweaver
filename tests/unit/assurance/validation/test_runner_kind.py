@@ -22,13 +22,13 @@ These tests verify:
 
 from __future__ import annotations
 
-from specweaver.core.config.settings import RuleOverride, ValidationSettings
 from specweaver.assurance.validation.executor import (
     apply_settings_to_pipeline,
     execute_validation_pipeline,
 )
 from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 from specweaver.assurance.validation.spec_kind import SpecKind, get_presets
+from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
 # ---------------------------------------------------------------------------
 # Pipeline YAML selection by --level

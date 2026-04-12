@@ -136,7 +136,11 @@ class TestValidationDALResolution:
     ) -> None:
         from unittest.mock import MagicMock
 
-        from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings, ValidationSettings
+        from specweaver.core.config.settings import (
+            LLMSettings,
+            SpecWeaverSettings,
+            ValidationSettings,
+        )
         from specweaver.core.flow._validation import _resolve_merged_settings
 
         base_val = ValidationSettings()

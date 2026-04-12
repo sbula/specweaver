@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from specweaver.workflows.drafting.feature_drafter import FeatureDrafter
 from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
+from specweaver.workflows.drafting.feature_drafter import FeatureDrafter
 
 
 class TestFeatureDrafterProjectMetadata:

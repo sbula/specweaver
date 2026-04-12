@@ -10,12 +10,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from specweaver.workspace.context.hitl_provider import HITLProvider
-from specweaver.workspace.context.provider import ContextProvider
-from specweaver.workflows.drafting.drafter import SPEC_SECTIONS, Drafter
 from specweaver.infrastructure.llm.errors import GenerationError
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
-from specweaver.workflows.review.reviewer import Reviewer, ReviewFinding, ReviewResult, ReviewVerdict
+from specweaver.workflows.drafting.drafter import SPEC_SECTIONS, Drafter
+from specweaver.workflows.review.reviewer import (
+    Reviewer,
+    ReviewFinding,
+    ReviewResult,
+    ReviewVerdict,
+)
+from specweaver.workspace.context.hitl_provider import HITLProvider
+from specweaver.workspace.context.provider import ContextProvider
 
 if TYPE_CHECKING:
     from pathlib import Path

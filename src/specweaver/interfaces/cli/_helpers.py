@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.assurance.graph.topology import TopologyContext, TopologyGraph
+    from specweaver.assurance.validation.models import RuleResult
+    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
     from specweaver.infrastructure.llm.models import GenerationConfig
-    from specweaver.assurance.validation.models import RuleResult
 
 # Status display mapping (shared across check command)
 _STATUS_STYLE = {

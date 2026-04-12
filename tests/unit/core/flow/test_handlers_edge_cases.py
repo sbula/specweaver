@@ -3,6 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.assurance.validation.models import RuleResult
+from specweaver.assurance.validation.models import Status as RuleStatus
 from specweaver.core.flow.handlers import (
     GenerateCodeHandler,
     GenerateTestsHandler,
@@ -15,8 +17,6 @@ from specweaver.core.flow.handlers import (
 )
 from specweaver.core.flow.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.state import StepStatus
-from specweaver.assurance.validation.models import RuleResult
-from specweaver.assurance.validation.models import Status as RuleStatus
 
 
 @pytest.fixture

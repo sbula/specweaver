@@ -10,6 +10,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query
 
+from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
+from specweaver.core.config.paths import state_db_path
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import resolve_project_root
 from specweaver.interfaces.api.v1.schemas import (
@@ -17,8 +19,6 @@ from specweaver.interfaces.api.v1.schemas import (
     PipelineRunRequest,
     PipelineRunResponse,
 )
-from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
-from specweaver.core.config.paths import state_db_path
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,11 @@ def start_pipeline_run(
     """
     import uuid
 
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.parser import load_pipeline
     from specweaver.core.flow.runner import PipelineRunner
     from specweaver.core.flow.store import StateStore
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     # Resolve project
     project_root = resolve_project_root(body.project, db)
@@ -127,8 +127,8 @@ def get_run_status(
     detail: str = Query(default="summary", description="'summary' or 'full'."),
 ) -> dict[str, object]:
     """Get run status and step results."""
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.core.flow.store import StateStore
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
     store = StateStore(state_db)
@@ -170,8 +170,8 @@ def get_run_status(
 @router.get("/runs/{run_id}/log")
 def get_run_log(run_id: str) -> list[dict[str, object]]:
     """Get audit log for a pipeline run."""
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.core.flow.store import StateStore
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
     store = StateStore(state_db)
@@ -193,11 +193,11 @@ def resume_run(
     db: Database = _db_dep,
 ) -> PipelineRunResponse:
     """Resume a parked pipeline run."""
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.parser import load_pipeline
     from specweaver.core.flow.runner import PipelineRunner
     from specweaver.core.flow.store import StateStore
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
     store = StateStore(state_db)
@@ -262,8 +262,8 @@ def submit_gate_decision(
 
     On approve, the run is resumed as a background task.
     """
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.core.flow.store import StateStore
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
     store = StateStore(state_db)

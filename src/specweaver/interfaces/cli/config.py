@@ -209,8 +209,8 @@ def config_show_profile(
     that differ from the base (validation_spec_default) pipeline.
     """
     import specweaver.assurance.validation.rules.spec  # noqa: F401
-    from specweaver.core.config.profiles import get_profile, profile_to_pipeline_name
     from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+    from specweaver.core.config.profiles import get_profile, profile_to_pipeline_name
 
     profile = get_profile(profile_name)
     if profile is None:

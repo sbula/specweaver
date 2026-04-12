@@ -278,8 +278,8 @@ class TestDrafterTopologyInjection:
     @pytest.mark.asyncio
     async def test_draft_without_topology_still_works(self, tmp_path: Path) -> None:
         """Backward compat: draft works without topology."""
-        from specweaver.workspace.context.provider import ContextProvider
         from specweaver.workflows.drafting.drafter import Drafter
+        from specweaver.workspace.context.provider import ContextProvider
 
         class QuickProvider(ContextProvider):
             @property
@@ -301,8 +301,8 @@ class TestDrafterTopologyInjection:
     @pytest.mark.asyncio
     async def test_draft_with_topology_injects_in_boundaries(self, tmp_path: Path) -> None:
         """When topology provided, Boundaries section prompt includes module context."""
-        from specweaver.workspace.context.provider import ContextProvider
         from specweaver.workflows.drafting.drafter import Drafter
+        from specweaver.workspace.context.provider import ContextProvider
 
         class QuickProvider(ContextProvider):
             @property
@@ -332,8 +332,8 @@ class TestDrafterTopologyInjection:
     @pytest.mark.asyncio
     async def test_draft_topology_in_contract_section(self, tmp_path: Path) -> None:
         """Topology should also be injected in Contract section (interfaces from neighbours)."""
-        from specweaver.workspace.context.provider import ContextProvider
         from specweaver.workflows.drafting.drafter import Drafter
+        from specweaver.workspace.context.provider import ContextProvider
 
         call_order: list[str] = []
 

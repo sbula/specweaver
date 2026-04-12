@@ -9,9 +9,9 @@ import json
 
 import pytest
 
+from specweaver.core.config.database import Database
 from specweaver.interfaces.api.app import create_app, set_event_bridge
 from specweaver.interfaces.api.event_bridge import EventBridge
-from specweaver.core.config.database import Database
 
 
 @pytest.fixture()

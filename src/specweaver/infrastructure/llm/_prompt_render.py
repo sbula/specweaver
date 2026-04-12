@@ -68,6 +68,7 @@ def render_blocks(blocks: list[_ContentBlock]) -> str:
     # Render standard top-level tagged blocks in exact order
     ordered_tags = [
         "instructions",
+        "dictator-overrides",
         "project_metadata",
         "constitution",
         "standards",

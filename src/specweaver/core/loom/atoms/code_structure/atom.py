@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
-from specweaver.core.loom.commons.language.interfaces import CodeStructureError, CodeStructureInterface
+from specweaver.core.loom.commons.language.interfaces import (
+    CodeStructureError,
+    CodeStructureInterface,
+)
 
 if TYPE_CHECKING:
     from specweaver.core.loom.commons.filesystem.executor import FileExecutor

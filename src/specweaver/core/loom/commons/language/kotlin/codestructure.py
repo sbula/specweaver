@@ -9,7 +9,10 @@ import typing
 import tree_sitter_kotlin
 from tree_sitter import Language, Parser, Query, QueryCursor
 
-from specweaver.core.loom.commons.language.interfaces import CodeStructureError, CodeStructureInterface
+from specweaver.core.loom.commons.language.interfaces import (
+    CodeStructureError,
+    CodeStructureInterface,
+)
 
 logger = logging.getLogger(__name__)
 

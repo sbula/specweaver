@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.state import PipelineRun, StepResult
-    from specweaver.core.flow.models import PipelineStep
+    import logging
+
     from specweaver.core.flow.handlers import RunContext
+    from specweaver.core.flow.models import PipelineStep
+    from specweaver.core.flow.state import PipelineRun, StepResult
 
 @runtime_checkable
 class RunnerEventCallback(Protocol):

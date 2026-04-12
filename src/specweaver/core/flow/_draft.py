@@ -63,8 +63,8 @@ class DraftSpecHandler:
         self, step: PipelineStep, context: RunContext, started: str
     ) -> StepResult:
         """Execute the actual interactive Drafter."""
-        from specweaver.workflows.drafting.drafter import Drafter
         from specweaver.infrastructure.llm.models import GenerationConfig
+        from specweaver.workflows.drafting.drafter import Drafter
 
         gen_config = None
         if context.config and hasattr(context.config, "llm"):
@@ -91,7 +91,10 @@ class DraftSpecHandler:
 
             import uuid
 
-            from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
+            from specweaver.infrastructure.llm.lineage import (
+                extract_artifact_uuid,
+                wrap_artifact_tag,
+            )
 
             artifact_uuid = None
             if result_path.exists():

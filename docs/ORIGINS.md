@@ -166,4 +166,19 @@ Blueprint references (study before implementing 3.19):
 - [`packages/core/`](https://github.com/google/A2UI/tree/main/packages/core) — core library: response model, component resolution, data binding
 - [`packages/renderer-lit/`](https://github.com/google/A2UI/tree/main/packages/renderer-lit) — reference renderer implementation (Lit web components)
 - [a2ui.org](https://a2ui.org/) — specification docs, architecture overview, security model
-
+
+### Archon — Workflow Orchestration & Isolation
+
+[Archon](https://github.com/coleam00/Archon) by **coleam** is an open-source harness builder for AI coding that makes workflows deterministic and repeatable through YAML DAGs and git worktrees. Highly influential on SpecWeaver for balancing generic agent operation with hard mathematical boundaries.
+
+Patterns adopted for SpecWeaver:
+- **Deterministic Collision Routing** → Assigning deterministic hash-based port offsets to temporary git worktree sandboxes, avoiding OS resource collisions (`EADDRINUSE` or SQLite locking) during parallel test execution. (Phase 3.27)
+- **Native CLI Action Nodes** → Supporting `action: bash` deterministic steps in pipeline definitions to cleanly trigger pre-test scaffolding without involving the LLM. Enforces strict `FolderGrant` protection by physically restricting hooks to `.specweaver/scripts/`. (Phase 3.40b)
+- **Interactive Gate Variables** → Elevating Human-In-The-Loop feedback loops (`GateType.HITL`) into explicitly mapped, strictly weighted `<dictator-overrides>` prompt variables to ensure definitive agent compliance during fallback iterations. (Phase 3.26c)
+
+Blueprint references:
+- [`SKILL.md`](https://github.com/coleam00/Archon/blob/main/.claude/skills/archon/SKILL.md) — instructing generic agents via skill templates
+- [Worktree Provider](https://github.com/coleam00/Archon/blob/main/packages/isolation/src/providers/worktree.ts) — hash-based port allocation and environment execution
+- [Workflow DAG](https://github.com/coleam00/Archon/blob/main/packages/workflows/src/schemas/dag-node.ts) — declarative Bash nodes decoupling deterministic shell processes from AI bounds
+
+

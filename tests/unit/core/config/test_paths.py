@@ -111,7 +111,12 @@ class TestPathConsistency:
 
     def test_all_paths_share_root(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path / "shared"))
-        from specweaver.core.config.paths import config_db_path, logs_dir, specweaver_root, state_db_path
+        from specweaver.core.config.paths import (
+            config_db_path,
+            logs_dir,
+            specweaver_root,
+            state_db_path,
+        )
 
         root = specweaver_root()
         assert config_db_path().parent == root

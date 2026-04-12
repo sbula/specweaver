@@ -8,8 +8,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path, PurePosixPath
 
-from specweaver.interfaces.api.errors import SpecWeaverAPIError
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime
+from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
 logger = logging.getLogger(__name__)
 

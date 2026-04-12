@@ -315,7 +315,11 @@ class TestReviewerProjectMetadata:
         from pathlib import Path
         from unittest.mock import AsyncMock, patch
 
-        from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
+        from specweaver.infrastructure.llm.models import (
+            LLMResponse,
+            ProjectMetadata,
+            PromptSafeConfig,
+        )
 
         mock_llm = AsyncMock()
         # Mock LLM generation output needs to be valid Review format
@@ -345,7 +349,11 @@ class TestReviewerProjectMetadata:
         from pathlib import Path
         from unittest.mock import AsyncMock, patch
 
-        from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
+        from specweaver.infrastructure.llm.models import (
+            LLMResponse,
+            ProjectMetadata,
+            PromptSafeConfig,
+        )
 
         mock_llm = AsyncMock()
         mock_llm.generate.return_value = LLMResponse(

@@ -9,8 +9,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from specweaver.workflows.implementation.generator import Generator
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.rules.code.c01_syntax_valid import SyntaxValidRule
 from specweaver.assurance.validation.rules.code.c02_tests_exist import TestsExistRule
@@ -18,6 +16,8 @@ from specweaver.assurance.validation.rules.code.c05_import_direction import Impo
 from specweaver.assurance.validation.rules.code.c06_no_bare_except import NoBareExceptRule
 from specweaver.assurance.validation.rules.code.c07_no_orphan_todo import NoOrphanTodoRule
 from specweaver.assurance.validation.rules.code.c08_type_hints import TypeHintsRule
+from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.workflows.implementation.generator import Generator
 
 # ---------------------------------------------------------------------------
 # C01 Syntax Valid
@@ -361,12 +361,12 @@ class TestCodeRulesPipeline:
 
     def test_run_code_rules_on_clean_code(self) -> None:
         import specweaver.assurance.validation.rules.code  # noqa: F401
-        from specweaver.core.config.settings import RuleOverride, ValidationSettings
         from specweaver.assurance.validation.executor import (
             apply_settings_to_pipeline,
             execute_validation_pipeline,
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         code = "def greet(name: str) -> str:\n    return f'Hello {name}!'\n"
 

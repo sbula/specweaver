@@ -14,8 +14,8 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from specweaver.interfaces.api.deps import get_db
 from specweaver.core.config.database import Database  # noqa: TC001
+from specweaver.interfaces.api.deps import get_db
 
 logger = logging.getLogger(__name__)
 

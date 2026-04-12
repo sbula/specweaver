@@ -8,8 +8,8 @@ from __future__ import annotations
 import pytest
 from starlette.testclient import TestClient
 
-from specweaver.interfaces.api.app import create_app
 from specweaver.core.config.database import Database
+from specweaver.interfaces.api.app import create_app
 
 
 @pytest.fixture()
@@ -75,7 +75,13 @@ def test_get_dashboard_run_detail(client, tmp_path) -> None:
     from pathlib import Path
     from unittest.mock import patch
 
-    from specweaver.core.flow.state import PipelineRun, RunStatus, StepRecord, StepResult, StepStatus
+    from specweaver.core.flow.state import (
+        PipelineRun,
+        RunStatus,
+        StepRecord,
+        StepResult,
+        StepStatus,
+    )
     from specweaver.core.flow.store import StateStore
 
     run = PipelineRun(
@@ -156,7 +162,13 @@ def test_get_dashboard_run_detail_string_output(client, tmp_path) -> None:
     from pathlib import Path
     from unittest.mock import patch
 
-    from specweaver.core.flow.state import PipelineRun, RunStatus, StepRecord, StepResult, StepStatus
+    from specweaver.core.flow.state import (
+        PipelineRun,
+        RunStatus,
+        StepRecord,
+        StepResult,
+        StepStatus,
+    )
 
     run = PipelineRun(
         run_id="test-run-ui-3",
@@ -202,12 +214,12 @@ def test_submit_hitl_gate(tmp_path) -> None:
 
     from starlette.testclient import TestClient
 
-    from specweaver.interfaces.api import app as api_app
-    from specweaver.interfaces.api.app import create_app
-    from specweaver.interfaces.api.event_bridge import EventBridge
     from specweaver.core.config.database import Database
     from specweaver.core.flow.state import PipelineRun, RunStatus
     from specweaver.core.flow.store import StateStore
+    from specweaver.interfaces.api import app as api_app
+    from specweaver.interfaces.api.app import create_app
+    from specweaver.interfaces.api.event_bridge import EventBridge
 
     # Set up DB and project
     db = Database(db_path=tmp_path / "test.db")
@@ -280,10 +292,10 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
 
     from starlette.testclient import TestClient
 
-    from specweaver.interfaces.api.app import create_app
     from specweaver.core.config.database import Database
     from specweaver.core.flow.state import PipelineRun, RunStatus
     from specweaver.core.flow.store import StateStore
+    from specweaver.interfaces.api.app import create_app
 
     db = Database(db_path=tmp_path / "test.db")
     app = create_app(db=db)

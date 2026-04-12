@@ -69,6 +69,27 @@ def _resolve_generation_routing(
     return adapter, config
 
 
+def _extract_prompt_feedback(
+    context: RunContext, step: PipelineStep
+) -> tuple[list[str] | None, str | None]:
+    """Extract dictator overrides and validation findings from loop-back feedback and clear it."""
+    dictator_overrides = None
+    validation_findings = None
+    if hasattr(context, "feedback") and context.feedback:
+        step_feedback = context.feedback.pop(step.name, None)
+        if step_feedback and "findings" in step_feedback:
+            findings = step_feedback["findings"]
+            if findings.get("hitl_verdict") == "reject" and "remarks" in findings:
+                dictator_overrides = [findings["remarks"]]
+            if "results" in findings:
+                fails = [r for r in findings["results"] if r.get("status") == "FAIL"]
+                if fails:
+                    validation_findings = "\n".join(
+                        f"[{r.get('rule_id', 'UNKNOWN')}] {r.get('message', '')}" for r in fails
+                    )
+    return dictator_overrides, validation_findings
+
+
 class GenerateCodeHandler:
     """Handler for generate+code — LLM code generation."""
 
@@ -107,6 +128,8 @@ class GenerateCodeHandler:
             if not artifact_uuid:
                 artifact_uuid = str(uuid.uuid4())
 
+            dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
+
             generated = await generator.generate_code(
                 context.spec_path,
                 output_path,
@@ -115,6 +138,8 @@ class GenerateCodeHandler:
                 plan=context.plan,
                 project_metadata=context.project_metadata,
                 artifact_uuid=artifact_uuid,
+                dictator_overrides=dictator_overrides,
+                validation_findings=validation_findings,
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
@@ -177,6 +202,8 @@ class GenerateTestsHandler:
             if not artifact_uuid:
                 artifact_uuid = str(uuid.uuid4())
 
+            dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
+
             generated = await generator.generate_tests(
                 context.spec_path,
                 output_path,
@@ -185,6 +212,8 @@ class GenerateTestsHandler:
                 plan=context.plan,
                 project_metadata=context.project_metadata,
                 artifact_uuid=artifact_uuid,
+                dictator_overrides=dictator_overrides,
+                validation_findings=validation_findings,
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 

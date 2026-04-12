@@ -64,7 +64,11 @@ def create_llm_adapter(
             is not available.
         ValueError: If no project is active (from ``load_settings_for_active``).
     """
-    from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings, load_settings_for_active
+    from specweaver.core.config.settings import (
+        LLMSettings,
+        SpecWeaverSettings,
+        load_settings_for_active,
+    )
     from specweaver.infrastructure.llm.models import GenerationConfig
 
     try:

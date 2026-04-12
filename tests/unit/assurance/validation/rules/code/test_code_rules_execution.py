@@ -13,13 +13,13 @@ if TYPE_CHECKING:
 
 import pytest
 
-from specweaver.workflows.implementation.generator import Generator
-from specweaver.infrastructure.llm.errors import GenerationError
-from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.rules.code.c03_tests_pass import TestsPassRule
 from specweaver.assurance.validation.rules.code.c04_coverage import CoverageRule
 from specweaver.assurance.validation.runner import run_rules
+from specweaver.infrastructure.llm.errors import GenerationError
+from specweaver.infrastructure.llm.models import LLMResponse
+from specweaver.workflows.implementation.generator import Generator
 
 
 def _make_mock_llm(response_text: str = "def greet(): pass\n") -> MagicMock:
@@ -582,9 +582,9 @@ class TestValidationRunnerFiltering:
     def test_code_pipeline_disable_subprocess_rules(self) -> None:
         """Disabling C03/C04 via settings removes subprocess rules."""
         import specweaver.assurance.validation.rules.code  # noqa: F401
-        from specweaver.core.config.settings import RuleOverride, ValidationSettings
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_code_default")
         settings = ValidationSettings(

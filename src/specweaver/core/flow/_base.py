@@ -15,8 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from specweaver.core.flow.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.models import PipelineStep
     from specweaver.assurance.validation.models import RuleResult  # noqa: F401
+    from specweaver.core.flow.models import PipelineStep
 
 logger = logging.getLogger(__name__)
 

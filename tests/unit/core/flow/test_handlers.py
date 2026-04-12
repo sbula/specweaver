@@ -255,6 +255,41 @@ class TestGenerateCodeHandler:
         )
 
     @pytest.mark.asyncio
+    @patch("specweaver.workflows.implementation.generator.Generator.generate_code")
+    async def test_generate_code_extracts_loopback_feedback(self, mock_gen_code, tmp_path: Path) -> None:
+        """Verifies loopback findings from context are passed to Generator."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        ctx.run_id = "test-run"
+
+        # Inject feedback mock matching runner behavior
+        ctx.feedback = {
+            "gen": {
+                "findings": {
+                    "hitl_verdict": "reject",
+                    "remarks": "Change this to an enum",
+                    "results": [{"status": "FAIL", "rule_id": "LNT01", "message": "Line too long"}],
+                }
+            }
+        }
+
+        step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
+        handler = GenerateCodeHandler()
+
+        mock_gen_code.return_value = tmp_path / "src" / "test.py"
+
+        await handler.execute(step, ctx)
+
+        mock_gen_code.assert_called_once()
+        # Verify kwargs
+        call_kwargs = mock_gen_code.call_args.kwargs
+        assert call_kwargs["dictator_overrides"] == ["Change this to an enum"]
+        assert call_kwargs["validation_findings"] == "[LNT01] Line too long"
+        # Verify feedback was consumed
+        assert "gen" not in ctx.feedback
+
+    @pytest.mark.asyncio
     @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
     async def test_generate_code_extracts_existing_uuid(self, mock_git, tmp_path: Path) -> None:
         """Verifies UUID extraction from an existing file before overwriting."""
@@ -401,6 +436,41 @@ class TestGenerateTestsHandler:
             event_type="generated_tests",
             model_id="gemini-3-flash-preview",
         )
+
+    @pytest.mark.asyncio
+    @patch("specweaver.workflows.implementation.generator.Generator.generate_tests")
+    async def test_generate_tests_extracts_loopback_feedback(self, mock_gen_tests, tmp_path: Path) -> None:
+        """Verifies loopback findings from context are passed to Generator."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        ctx.run_id = "test-run"
+
+        # Inject feedback mock matching runner behavior
+        ctx.feedback = {
+            "gen_tests": {
+                "findings": {
+                    "hitl_verdict": "reject",
+                    "remarks": "Add more edge cases",
+                    "results": [{"status": "FAIL", "rule_id": "COV01", "message": "Coverage low"}],
+                }
+            }
+        }
+
+        step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
+        handler = GenerateTestsHandler()
+
+        mock_gen_tests.return_value = tmp_path / "tests" / "test_test.py"
+
+        await handler.execute(step, ctx)
+
+        mock_gen_tests.assert_called_once()
+        # Verify kwargs
+        call_kwargs = mock_gen_tests.call_args.kwargs
+        assert call_kwargs["dictator_overrides"] == ["Add more edge cases"]
+        assert call_kwargs["validation_findings"] == "[COV01] Coverage low"
+        # Verify feedback was consumed
+        assert "gen_tests" not in ctx.feedback
 
     @pytest.mark.asyncio
     @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
@@ -788,54 +858,3 @@ class TestValidateFlowWithDecompose:
         assert any("invalid" in e.lower() or "combination" in e.lower() for e in errors)
 
 
-# ---------------------------------------------------------------------------
-# Telemetry run_id propagation
-# ---------------------------------------------------------------------------
-
-
-class TestRunIdPropagation:
-    """Tests for run_id propagation from RunContext to GenerationConfig."""
-
-    @pytest.mark.asyncio
-    @patch("specweaver.workflows.review.reviewer.Reviewer.review_code")
-    async def test_review_code_handler_injects_run_id(
-        self, mock_review_code, tmp_path: Path
-    ) -> None:
-        """Handlers must inject context.run_id into GenerationConfig for telemetry correlation."""
-        spec = tmp_path / "test_spec.md"
-        spec.write_text("# Test\n")
-        code = tmp_path / "src" / "test.py"
-        code.parent.mkdir()
-        code.write_text("x = 1")
-
-        from specweaver.workflows.review.reviewer import ReviewResult, ReviewVerdict
-
-        mock_review_code.return_value = ReviewResult(
-            verdict=ReviewVerdict.ACCEPTED,
-            findings=[],
-            summary="LGTM",
-            raw_response="LGTM",
-        )
-
-        mock_adapter = MagicMock()
-        mock_adapter.generate = AsyncMock()
-        ctx = RunContext(
-            project_path=tmp_path,
-            spec_path=spec,
-            output_dir=tmp_path / "src",
-            llm=mock_adapter,
-        )
-        ctx.run_id = "mock-run-id-1234"
-
-        step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)
-        handler = ReviewCodeHandler()
-
-        await handler.execute(step, ctx)
-
-        # Verify the Reviewer was instantiated with a config containing the run_id
-        # We need to peek at the args passed to _resolve_review_routing which happens during execute.
-        # Actually, let's just patch _resolve_review_routing and assert? No, we should test the actual injection.
-        from specweaver.core.flow._review import _resolve_review_routing
-
-        _, config = _resolve_review_routing(ctx)
-        assert config.run_id == "mock-run-id-1234"

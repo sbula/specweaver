@@ -22,8 +22,8 @@ from unittest.mock import AsyncMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli.main import app
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.interfaces.cli.main import app
 
 if TYPE_CHECKING:
     from pathlib import Path

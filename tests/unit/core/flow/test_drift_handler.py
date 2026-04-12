@@ -83,8 +83,8 @@ def test_drift_handler_load_plan_raises_exception_on_invalid_yaml(tmp_path: Path
 async def test_drift_handler_analyze_drift_logic(tmp_path: Path) -> None:
     from unittest.mock import AsyncMock
 
-    from specweaver.core.flow.runner import RunContext
     from specweaver.assurance.validation.models import DriftFinding, DriftReport, Severity
+    from specweaver.core.flow.runner import RunContext
 
     class MockConfig:
         llm = "mock_config_llm"

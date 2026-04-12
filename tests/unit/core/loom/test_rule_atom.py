@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from specweaver.assurance.validation.models import Rule, RuleResult
 from specweaver.core.loom.atoms.base import AtomStatus
 from specweaver.core.loom.atoms.rule_atom import RuleAtom
-from specweaver.assurance.validation.models import Rule, RuleResult
 
 if TYPE_CHECKING:
     from pathlib import Path

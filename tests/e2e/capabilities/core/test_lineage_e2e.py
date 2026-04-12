@@ -19,8 +19,8 @@ if TYPE_CHECKING:
 
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli.main import app
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()
 

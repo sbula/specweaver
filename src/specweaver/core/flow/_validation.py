@@ -9,16 +9,16 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.assurance.validation.models import Status as RuleStatus
 from specweaver.core.flow._base import RunContext, _error_result, _now_iso
 from specweaver.core.flow.state import StepResult, StepStatus
-from specweaver.assurance.validation.models import Status as RuleStatus
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.assurance.validation.models import RuleResult
     from specweaver.core.flow.models import PipelineStep
     from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
-    from specweaver.assurance.validation.models import RuleResult
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,9 @@ class ValidateSpecHandler:
             apply_settings_to_pipeline,
             execute_validation_pipeline,
         )
-        from specweaver.assurance.validation.models import RuleResult  # noqa: F401 — for type narrowing
+        from specweaver.assurance.validation.models import (
+            RuleResult,  # noqa: F401 — for type narrowing
+        )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 
         # Map kind to pipeline name
@@ -211,7 +213,9 @@ class ValidateCodeHandler:
             apply_settings_to_pipeline,
             execute_validation_pipeline,
         )
-        from specweaver.assurance.validation.models import RuleResult  # noqa: F401 — for type narrowing
+        from specweaver.assurance.validation.models import (
+            RuleResult,  # noqa: F401 — for type narrowing
+        )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")

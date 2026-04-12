@@ -20,9 +20,9 @@ from specweaver.assurance.validation.models import RuleResult, Status
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.settings import ValidationSettings
     from specweaver.assurance.validation.pipeline import ValidationPipeline
     from specweaver.assurance.validation.registry import RuleRegistry
+    from specweaver.core.config.settings import ValidationSettings
 
 logger = logging.getLogger(__name__)
 

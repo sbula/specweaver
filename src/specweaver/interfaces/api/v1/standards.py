@@ -10,13 +10,13 @@ from pathlib import Path  # noqa: TC003 -- runtime for rglob
 
 from fastapi import APIRouter, Depends, Query
 
+from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import resolve_project_root
 from specweaver.interfaces.api.v1.schemas import (  # noqa: TC001 -- runtime for FastAPI
     AcceptRequest,
     ScanRequest,
 )
-from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 
 logger = logging.getLogger(__name__)
 

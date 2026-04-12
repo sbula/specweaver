@@ -10,8 +10,8 @@ import logging
 import typer
 from rich.table import Table
 
-from specweaver.interfaces.cli import _core
 from specweaver.infrastructure.llm.telemetry import get_default_cost_table
+from specweaver.interfaces.cli import _core
 
 logger = logging.getLogger(__name__)
 

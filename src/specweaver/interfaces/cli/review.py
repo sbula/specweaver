@@ -60,11 +60,11 @@ def draft(
         )
         raise typer.Exit(code=1)
 
-    from specweaver.workspace.context.hitl_provider import HITLProvider
     from specweaver.core.flow._base import RunContext
     from specweaver.core.flow.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.runner import PipelineRunner
     from specweaver.core.flow.state import StepStatus
+    from specweaver.workspace.context.hitl_provider import HITLProvider
 
     settings, adapter, _ = _helpers._require_llm_adapter(project_path)
 

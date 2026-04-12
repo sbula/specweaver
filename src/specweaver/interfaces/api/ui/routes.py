@@ -14,10 +14,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from specweaver.interfaces.api.deps import get_db
-from specweaver.interfaces.api.v1.projects import list_projects
 from specweaver.core.config.database import Database  # noqa: TC001
 from specweaver.core.config.paths import state_db_path
+from specweaver.interfaces.api.deps import get_db
+from specweaver.interfaces.api.v1.projects import list_projects
 
 logger = logging.getLogger(__name__)
 

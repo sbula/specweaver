@@ -112,16 +112,16 @@ class TestCreateDisplay:
 
     def test_creates_rich_display_by_default(self) -> None:
         """Default display is RichPipelineDisplay."""
-        from specweaver.interfaces.cli.pipelines import _create_display
         from specweaver.core.flow.display import RichPipelineDisplay
+        from specweaver.interfaces.cli.pipelines import _create_display
 
         display = _create_display()
         assert isinstance(display, RichPipelineDisplay)
 
     def test_creates_json_display(self) -> None:
         """use_json=True creates JsonPipelineDisplay."""
-        from specweaver.interfaces.cli.pipelines import _create_display
         from specweaver.core.flow.display import JsonPipelineDisplay
+        from specweaver.interfaces.cli.pipelines import _create_display
 
         display = _create_display(use_json=True)
         assert isinstance(display, JsonPipelineDisplay)

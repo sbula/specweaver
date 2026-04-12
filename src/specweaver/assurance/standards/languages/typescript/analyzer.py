@@ -17,7 +17,10 @@ import tree_sitter
 import tree_sitter_typescript
 
 from specweaver.assurance.standards.analyzer import CategoryResult
-from specweaver.assurance.standards.languages.javascript.analyzer import JSStandardsAnalyzer, walk_tree
+from specweaver.assurance.standards.languages.javascript.analyzer import (
+    JSStandardsAnalyzer,
+    walk_tree,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable

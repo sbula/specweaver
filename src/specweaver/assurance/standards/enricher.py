@@ -15,8 +15,8 @@ from pydantic import BaseModel, ValidationError
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 
 if TYPE_CHECKING:
-    from specweaver.infrastructure.llm.adapters.base import LLMAdapter
     from specweaver.assurance.standards.analyzer import CategoryResult
+    from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 
 logger = logging.getLogger(__name__)
 

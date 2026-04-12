@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import typer
 
+from specweaver.core.config.paths import state_db_path
 from specweaver.interfaces.cli import _core, _helpers
 from specweaver.interfaces.cli._helpers import (
     _load_constitution_content,
@@ -19,7 +20,6 @@ from specweaver.interfaces.cli._helpers import (
     _load_topology,
     _select_topology_contexts,
 )
-from specweaver.core.config.paths import state_db_path
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)

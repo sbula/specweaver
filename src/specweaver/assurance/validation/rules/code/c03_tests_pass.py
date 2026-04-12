@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.commons.language.python.runner import PythonQARunner
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
+from specweaver.core.loom.commons.language.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path

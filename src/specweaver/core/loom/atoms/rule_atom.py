@@ -17,8 +17,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
 from specweaver.assurance.validation.models import Status
+from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
 
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import Rule

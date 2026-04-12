@@ -18,8 +18,8 @@ from starlette.testclient import TestClient
 @pytest.fixture()
 def client(tmp_path):
     """Create a test client backed by a temporary DB."""
-    from specweaver.interfaces.api.app import create_app
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.api.app import create_app
 
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     app = create_app(db=db)

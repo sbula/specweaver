@@ -32,7 +32,6 @@ import pytest
 
 import specweaver.assurance.validation.rules.code
 import specweaver.assurance.validation.rules.spec  # noqa: F401 — register all spec rules
-from specweaver.core.config.settings import RuleOverride, ValidationSettings
 from specweaver.assurance.validation.executor import (
     _build_rule_kwargs,
     _get_rule_id_from_cls,
@@ -50,6 +49,7 @@ from specweaver.assurance.validation.rules.spec.s05_day_test import DayTestRule
 from specweaver.assurance.validation.rules.spec.s07_test_first import TestFirstRule
 from specweaver.assurance.validation.rules.spec.s08_ambiguity import AmbiguityRule
 from specweaver.assurance.validation.rules.spec.s11_terminology import TerminologyRule
+from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
 # Valid DB-settable column names
 _VALID_DB_KEYS = frozenset(

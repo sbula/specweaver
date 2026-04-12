@@ -36,8 +36,8 @@ from specweaver.core.loom.tools.filesystem.models import (
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.infrastructure.llm.models import ToolDefinition
     from specweaver.core.loom.commons.filesystem.executor import ExecutorResult, FileExecutor
+    from specweaver.infrastructure.llm.models import ToolDefinition
 
 
 class FileSystemTool:

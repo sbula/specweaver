@@ -106,6 +106,28 @@ class PromptBuilder:
         )
         return self
 
+    def add_dictator_overrides(self, overrides: list[str]) -> PromptBuilder:
+        """Add human-in-the-loop dictator override blocks (priority 0 — never truncated).
+
+        Overrides are placed inside ``<dictator-overrides>`` tags.
+        """
+        if not overrides:
+            return self
+
+        lines = [f"- {o}" for o in overrides]
+        text_block = "\n".join(lines)
+
+        self._blocks.append(
+            _ContentBlock(
+                text=text_block,
+                priority=0,
+                kind="dictator-overrides",
+                label="dictator-overrides",
+                tokens=self._count(text_block),
+            ),
+        )
+        return self
+
     def add_file(
         self,
         path: Path,

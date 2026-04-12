@@ -15,9 +15,9 @@ from specweaver.core.flow.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
     from specweaver.core.flow.models import PipelineStep
+    from specweaver.core.loom.dispatcher import ToolDispatcher
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
     from specweaver.infrastructure.llm.models import GenerationConfig, Message
-    from specweaver.core.loom.dispatcher import ToolDispatcher
 
 logger = logging.getLogger(__name__)
 

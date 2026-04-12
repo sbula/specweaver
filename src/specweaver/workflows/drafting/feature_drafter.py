@@ -23,9 +23,9 @@ from specweaver.infrastructure.llm.models import GenerationConfig, Message, Proj
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.workspace.context.provider import ContextProvider
     from specweaver.assurance.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
+    from specweaver.workspace.context.provider import ContextProvider
 
 logger = logging.getLogger(__name__)
 

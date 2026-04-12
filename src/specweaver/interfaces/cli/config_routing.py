@@ -10,8 +10,8 @@ import logging
 import typer
 from rich.table import Table
 
-from specweaver.interfaces.cli import _core
 from specweaver.infrastructure.llm.models import TaskType
+from specweaver.interfaces.cli import _core
 
 logger = logging.getLogger(__name__)
 

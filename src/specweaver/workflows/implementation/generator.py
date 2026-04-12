@@ -82,6 +82,8 @@ class Generator:
         plan: str | None = None,
         project_metadata: ProjectMetadata | None = None,
         artifact_uuid: str | None = None,
+        dictator_overrides: list[str] | None = None,
+        validation_findings: str | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -109,6 +111,10 @@ class Generator:
             .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="reference")
         )
+        if dictator_overrides:
+            builder.add_dictator_overrides(dictator_overrides)
+        if validation_findings:
+            builder.add_context(validation_findings, "validation_errors", priority=2)
         if constitution:
             builder.add_constitution(constitution)
             logger.debug("generate_code: constitution injected (%d chars)", len(constitution))
@@ -150,6 +156,8 @@ class Generator:
         plan: str | None = None,
         project_metadata: ProjectMetadata | None = None,
         artifact_uuid: str | None = None,
+        dictator_overrides: list[str] | None = None,
+        validation_findings: str | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -177,6 +185,10 @@ class Generator:
             .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="reference")
         )
+        if dictator_overrides:
+            builder.add_dictator_overrides(dictator_overrides)
+        if validation_findings:
+            builder.add_context(validation_findings, "validation_errors", priority=2)
         if constitution:
             builder.add_constitution(constitution)
             logger.debug("generate_tests: constitution injected (%d chars)", len(constitution))

@@ -17,9 +17,9 @@ from specweaver.infrastructure.llm.models import GenerationConfig, Message, Proj
 from specweaver.workflows.planning.decomposition import DecompositionPlan
 
 if TYPE_CHECKING:
-    from specweaver.workspace.context.provider import ContextProvider
     from specweaver.assurance.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
+    from specweaver.workspace.context.provider import ContextProvider
 
 logger = logging.getLogger(__name__)
 

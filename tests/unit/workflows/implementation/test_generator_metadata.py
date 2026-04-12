@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from specweaver.workflows.implementation.generator import Generator
 from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
+from specweaver.workflows.implementation.generator import Generator
 
 
 class TestGeneratorProjectMetadata:

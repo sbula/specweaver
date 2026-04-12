@@ -106,8 +106,8 @@ class TestSaveAcceptedStandards:
         _mock_db,
     ) -> None:
         """no_review=False → confirmed_by='hitl'."""
-        from specweaver.interfaces.cli.standards import _save_accepted_standards
         from specweaver.assurance.standards.analyzer import CategoryResult
+        from specweaver.interfaces.cli.standards import _save_accepted_standards
 
         _init_project(_mock_db, "proj", str(tmp_path))
         accepted = {
@@ -132,8 +132,8 @@ class TestSaveAcceptedStandards:
         _mock_db,
     ) -> None:
         """no_review=True → confirmed_by=None."""
-        from specweaver.interfaces.cli.standards import _save_accepted_standards
         from specweaver.assurance.standards.analyzer import CategoryResult
+        from specweaver.interfaces.cli.standards import _save_accepted_standards
 
         _init_project(_mock_db, "proj", str(tmp_path))
         accepted = {

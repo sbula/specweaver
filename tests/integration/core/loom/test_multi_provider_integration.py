@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from specweaver.core.loom.dispatcher import ToolDispatcher
 from specweaver.infrastructure.llm.adapters.anthropic import AnthropicAdapter
 from specweaver.infrastructure.llm.adapters.mistral import MistralAdapter
 from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
 from specweaver.infrastructure.llm.adapters.qwen import QwenAdapter
 from specweaver.infrastructure.llm.models import GenerationConfig, ToolDefinition
-from specweaver.core.loom.dispatcher import ToolDispatcher
 
 
 class DummyInterface:

@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli.main import app
 from specweaver.core.flow.state import RunStatus
+from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()
 

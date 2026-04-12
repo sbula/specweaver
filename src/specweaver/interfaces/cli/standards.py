@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
-    from specweaver.core.config.database import Database
     from specweaver.assurance.standards.analyzer import CategoryResult
+    from specweaver.core.config.database import Database
 
 standards_app = typer.Typer(
     name="standards",
@@ -56,11 +56,11 @@ def standards_scan(  # noqa: C901
     """
     import asyncio
 
-    from specweaver.core.config.settings import load_settings
-    from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
     from specweaver.assurance.standards.discovery import discover_files
     from specweaver.assurance.standards.reviewer import StandardsReviewer
     from specweaver.assurance.standards.scope_detector import detect_scopes
+    from specweaver.core.config.settings import load_settings
+    from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
 
     name = _core._require_active_project()
     db = _core.get_db()

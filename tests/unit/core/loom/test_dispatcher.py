@@ -12,11 +12,11 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-from specweaver.infrastructure.llm.models import ToolDispatcherProtocol
 from specweaver.core.loom.dispatcher import ToolDispatcher
 from specweaver.core.loom.security import WorkspaceBoundary
 from specweaver.core.loom.tools.filesystem.definitions import INTENT_DEFINITIONS as FILE_DEFINITIONS
 from specweaver.core.loom.tools.web.definitions import INTENT_DEFINITIONS as WEB_DEFINITIONS
+from specweaver.infrastructure.llm.models import ToolDispatcherProtocol
 
 FILE_TOOLS = list(FILE_DEFINITIONS.values())
 WEB_TOOLS = list(WEB_DEFINITIONS.values())

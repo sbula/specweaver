@@ -19,11 +19,11 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.gates import GateEvaluator
 from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
+from specweaver.core.flow.runner_utils import RunnerEventCallback, _now_iso, setup_sandbox_caches
 from specweaver.core.flow.state import (
     PipelineRun,
     RunStatus,
@@ -33,7 +33,7 @@ from specweaver.core.flow.state import (
 )
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.models import PipelineDefinition, PipelineStep
+    from specweaver.core.flow.models import PipelineDefinition
     from specweaver.core.flow.store import StateStore
 
 logger = logging.getLogger(__name__)
@@ -43,8 +43,6 @@ logger = logging.getLogger(__name__)
 # Event callback protocol (prepared for future typed emitter)
 # ---------------------------------------------------------------------------
 
-
-from specweaver.core.flow.runner_utils import RunnerEventCallback, _now_iso, setup_sandbox_caches
 
 
 # ---------------------------------------------------------------------------

@@ -24,9 +24,9 @@ from specweaver.core.loom.tools.filesystem.tool import FileSystemTool
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.infrastructure.llm.models import ToolDefinition
     from specweaver.core.loom.security import FolderGrant
     from specweaver.core.loom.tools.filesystem.models import ToolResult
+    from specweaver.infrastructure.llm.models import ToolDefinition
 
 
 # ---------------------------------------------------------------------------

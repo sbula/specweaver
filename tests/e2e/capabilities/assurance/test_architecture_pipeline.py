@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.config.settings import ValidationSettings
 from specweaver.assurance.validation.executor import execute_validation_pipeline
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+from specweaver.core.config.settings import ValidationSettings
 
 
 @pytest.fixture

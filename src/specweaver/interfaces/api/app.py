@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
-    from specweaver.interfaces.api.event_bridge import EventBridge
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.api.event_bridge import EventBridge
 
 # Module-level singleton for the event bridge
 _event_bridge: EventBridge | None = None

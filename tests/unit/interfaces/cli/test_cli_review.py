@@ -11,8 +11,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli.main import app
 from specweaver.core.flow.state import PipelineRun, StepRecord, StepResult, StepStatus
+from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()
 

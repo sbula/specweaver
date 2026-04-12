@@ -16,8 +16,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from specweaver.infrastructure.llm.models import ToolDefinition
     from specweaver.core.loom.commons.git.executor import GitExecutor
+    from specweaver.infrastructure.llm.models import ToolDefinition
 
 
 # Validation patterns

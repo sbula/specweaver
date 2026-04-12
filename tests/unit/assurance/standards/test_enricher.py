@@ -9,10 +9,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from specweaver.infrastructure.llm.adapters.base import LLMAdapter
-from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.assurance.standards.analyzer import CategoryResult
 from specweaver.assurance.standards.enricher import StandardsEnricher
+from specweaver.infrastructure.llm.adapters.base import LLMAdapter
+from specweaver.infrastructure.llm.models import LLMResponse
 
 
 class DummyAdapter(LLMAdapter):

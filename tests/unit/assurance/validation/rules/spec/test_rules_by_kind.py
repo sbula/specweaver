@@ -234,7 +234,9 @@ class TestS04KindAware:
 
     def test_feature_skips(self) -> None:
         """Feature Specs skip S04 — dependency direction is an architecture concern."""
-        from specweaver.assurance.validation.rules.spec.s04_dependency_dir import DependencyDirectionRule
+        from specweaver.assurance.validation.rules.spec.s04_dependency_dir import (
+            DependencyDirectionRule,
+        )
 
         spec = """\
 ## Intent
@@ -252,7 +254,9 @@ Also see [metrics](metrics_spec.md) and [logging](logging_spec.md).
 
     def test_component_not_skipped(self) -> None:
         """Component Specs still run S04 normally."""
-        from specweaver.assurance.validation.rules.spec.s04_dependency_dir import DependencyDirectionRule
+        from specweaver.assurance.validation.rules.spec.s04_dependency_dir import (
+            DependencyDirectionRule,
+        )
 
         spec = """\
 ## 1. Purpose
@@ -462,7 +466,9 @@ class TestS04EdgeCases:
 
     def test_skip_does_not_read_content(self) -> None:
         """With skip=True, even garbage content returns SKIP."""
-        from specweaver.assurance.validation.rules.spec.s04_dependency_dir import DependencyDirectionRule
+        from specweaver.assurance.validation.rules.spec.s04_dependency_dir import (
+            DependencyDirectionRule,
+        )
 
         # Content that would normally cause errors if processed
         rule = DependencyDirectionRule(skip=True)

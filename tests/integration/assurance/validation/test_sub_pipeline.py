@@ -215,9 +215,9 @@ class TestApplySettingsIntegration:
 
     def test_disable_rule_removes_step(self) -> None:
         """Disabling S04 via settings removes S04 step from default pipeline."""
-        from specweaver.core.config.settings import RuleOverride, ValidationSettings
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         assert any(s.rule == "S04" for s in pipeline.steps)
@@ -232,9 +232,9 @@ class TestApplySettingsIntegration:
 
     def test_threshold_override_merges_into_params(self) -> None:
         """Threshold override merges into the step params."""
-        from specweaver.core.config.settings import RuleOverride, ValidationSettings
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         s08_step = next(s for s in pipeline.steps if s.rule == "S08")
@@ -266,12 +266,12 @@ class TestApplySettingsIntegration:
 
     def test_disable_and_threshold_combined(self, tmp_path: Path) -> None:
         """Disable S04 + override S08 thresholds → execute with both applied."""
-        from specweaver.core.config.settings import RuleOverride, ValidationSettings
         from specweaver.assurance.validation.executor import (
             apply_settings_to_pipeline,
             execute_validation_pipeline,
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         settings = ValidationSettings(
@@ -295,9 +295,9 @@ class TestApplySettingsIntegration:
 
     def test_override_for_rule_not_in_pipeline(self) -> None:
         """Override for a rule not in the pipeline is silently ignored (#2)."""
-        from specweaver.core.config.settings import RuleOverride, ValidationSettings
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         original_count = len(pipeline.steps)
@@ -317,12 +317,12 @@ class TestApplySettingsIntegration:
 
     def test_all_rules_disabled_produces_empty_pipeline(self) -> None:
         """Disabling all rules results in an empty pipeline (#10)."""
-        from specweaver.core.config.settings import RuleOverride, ValidationSettings
         from specweaver.assurance.validation.executor import (
             apply_settings_to_pipeline,
             execute_validation_pipeline,
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         overrides = {}
