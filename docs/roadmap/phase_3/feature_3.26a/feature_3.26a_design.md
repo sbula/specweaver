@@ -97,11 +97,10 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Domain File Realignment | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-2 | Boundary Matrix Sync | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Domain File Realignment | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Boundary Matrix Sync | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Both Implementation Plans APPROVED.
-**Next step**: Start implementation for SF-1:
-`/dev docs/roadmap/phase_3/feature_3.26a/feature_3.26a_sf1_implementation_plan.md`
+**Current status**: Feature complete. Ready for dogfood + merge.
+**Next step**: Proceed to next roadmap item.
