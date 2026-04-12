@@ -25,6 +25,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **AST Drift Detection** — Structural parsing of implementations via `tree-sitter` to automatically pinpoint methods or modules that deviate from original Plan decisions.
 - **Polyglot AST Skeleton Extractor** — High-performance tree-sitter bindings for Python, JS/TS, Java, Kotlin, and Rust allowing Agents to surgical read and write symbols directly without token bloat.
 - **Architectural Enforcement** — Strict Domain-Driven "Layer Cake" isolation via Tach, natively bounded as a PEP-420 Implicit Namespace Package.
+- **Git Worktree Bouncer Sandbox (Feature 3.26)** — Dictatorial worktree sandboxing of LLM handlers via `.git` index diff striping, locking generation to `context.yaml` boundaries safely by dropping unallowed mathematical patch hunks prior to commit.
 - **Risk-Based Constraint Pipelines (DAL)** — Supports DO-178C Mixed Criticality by assigning rule pipelines and thresholds utilizing Pydantic Deep-Merge based on a specific Module's Design Assurance Level declared natively inside boundary topologies.
 - **UI Mockup Generation** — Auto-detects UI/Frontend requirements in specs and calls Google Stitch MCP to generate and attach visual mockups to standard implementation plans
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths

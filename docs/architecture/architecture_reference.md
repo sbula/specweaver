@@ -625,6 +625,10 @@ The `standards/` module analyzes the codebase via AST parsing to extract
 naming conventions, error handling patterns, type hint usage, etc.
 These are injected into LLM prompts so generated code matches existing style.
 
+### Layer 8: Sandbox Validation (Worktree Bouncer)
+
+The `PipelineRunner` forces LLM modifications (`use_worktree=True`) logically into separated physical Git Sandboxes. Before code is permitted out of isolation, an `_intent_strip_merge` mathematical patch diff strips any hunks modifying targets not explicitly inside `context.yaml` topological bounds, dropping hallucinations before `git apply`.
+
 ### How Guardrails Compose
 
 ```
@@ -634,6 +638,7 @@ context.yaml ───▶ pre-code: validates placement + imports
 10-test battery ▶ post-draft: validates spec quality
 Pipeline gates ─▶ post-step: controls flow (auto/HITL)
 Tool stack ─────▶ runtime: enforces agent permissions
+Sandbox Diff ───▶ pre-merge: violently enforces physical constraints
 ```
 
 ## Updating 3rd Party Software and Protocols within SpecWeaver

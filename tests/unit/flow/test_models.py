@@ -185,6 +185,7 @@ class TestPipelineStep:
         assert step.params == {}
         assert step.gate is None
         assert step.description == ""
+        assert step.use_worktree is False
 
     def test_step_with_params(self) -> None:
         step = PipelineStep(
@@ -218,6 +219,15 @@ class TestPipelineStep:
             description="LLM semantic review of the spec",
         )
         assert step.description == "LLM semantic review of the spec"
+
+    def test_step_with_use_worktree(self) -> None:
+        step = PipelineStep(
+            name="generate_code",
+            action=StepAction.GENERATE,
+            target=StepTarget.CODE,
+            use_worktree=True,
+        )
+        assert step.use_worktree is True
 
 
 # ---------------------------------------------------------------------------

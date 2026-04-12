@@ -51,7 +51,7 @@ class TestDispatch:
         assert "checkpoint" in result.message
         assert "integrate" in result.message
 
-    def test_all_nine_intents_are_known(self, tmp_path: Path) -> None:
+    def test_all_intents_are_known(self, tmp_path: Path) -> None:
         atom = GitAtom(cwd=tmp_path)
         expected = {
             "checkpoint",
@@ -65,6 +65,8 @@ class TestDispatch:
             "tag",
             "worktree_add",
             "worktree_teardown",
+            "worktree_sync",
+            "strip_merge",
         }
         assert atom._known_intents() == expected
 
@@ -525,6 +527,7 @@ class TestEdgeCases:
             "merge",
             "fetch",
             "pull",
+            "rebase",
             "tag",
             "worktree",
         }
@@ -656,3 +659,124 @@ class TestWorktreeTeardown:
         assert result.status == AtomStatus.SUCCESS
         assert "Fallback" in result.message
         assert not worktree_path.exists()
+
+    @patch("specweaver.loom.atoms.git.atom.time.sleep")
+    @patch("specweaver.loom.atoms.git.atom.shutil.rmtree")
+    def test_windows_fallback_exhausts_retries_and_fails(self, mock_rmtree, mock_sleep, tmp_path: Path) -> None:
+        """If git worktree remove fails, and rmtree throws 5 times, it fails and sleeps."""
+        worktree_path = tmp_path / ".worktrees" / "stub"
+        worktree_path.mkdir(parents=True)
+
+        mock_rmtree.side_effect = PermissionError("Locked")
+
+        with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock_run:
+            mock_run.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run(
+                {
+                    "intent": "worktree_teardown",
+                    "path": ".worktrees/stub",
+                }
+            )
+
+        assert result.status == AtomStatus.FAILED
+        assert "Fallback rmtree failed" in result.message
+        assert mock_rmtree.call_count == 5
+        assert mock_sleep.call_count == 4
+
+
+# ---------------------------------------------------------------------------
+# worktree_sync
+# ---------------------------------------------------------------------------
+
+
+class TestWorktreeSync:
+    """worktree_sync pulls and rebases main into the active worktree."""
+
+    def test_success_sync(self, tmp_path: Path) -> None:
+        wt_dir = tmp_path / ".worktrees" / "agent"
+        wt_dir.mkdir(parents=True)
+        with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
+            mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run(
+                {
+                    "intent": "worktree_sync",
+                    "path": ".worktrees/agent",
+                }
+            )
+        assert result.status == AtomStatus.SUCCESS
+
+    def test_missing_path_fails(self, tmp_path: Path) -> None:
+        atom = GitAtom(cwd=tmp_path)
+        result = atom.run({"intent": "worktree_sync"})
+        assert result.status == AtomStatus.FAILED
+
+
+# ---------------------------------------------------------------------------
+# strip_merge
+# ---------------------------------------------------------------------------
+
+
+class TestStripMerge:
+    """strip_merge applies bounded allowed paths and merges using 'ours'."""
+
+    def test_success_strip_allowed(self, tmp_path: Path) -> None:
+        with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
+            mock.side_effect = [
+                # git merge
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
+                # git diff
+                type("R", (), {"returncode": 0, "stdout": "src/good.py\nREADME.md\ndocs/arch.md\nsrc/bad.py\n", "stderr": ""})(),
+                # loops for README.md
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # reset
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # checkout
+                # loops for docs/arch.md
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # reset
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # checkout
+                # loops for src/bad.py
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # reset
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # checkout
+                # git commit
+                type("R", (), {"returncode": 0, "stdout": "committed strips", "stderr": ""})(),
+            ]
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run(
+                {
+                    "intent": "strip_merge",
+                    "branch": "sf-task-temp",
+                    "allowed_paths": ["src/good.py"],
+                }
+            )
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["stripped_files"] == ["README.md", "docs/arch.md", "src/bad.py"]
+
+    def test_missing_keys_fails(self, tmp_path: Path) -> None:
+        atom = GitAtom(cwd=tmp_path)
+        assert atom.run({"intent": "strip_merge", "allowed_paths": []}).status == AtomStatus.FAILED
+        assert atom.run({"intent": "strip_merge", "branch": "foo"}).status == AtomStatus.FAILED
+
+    def test_strip_merge_preserves_doc_updates(self, tmp_path: Path) -> None:
+        """doc_updates.md is explicitly preserved (FR-8) regardless of allowed_paths."""
+        with patch("specweaver.loom.commons.git.executor.subprocess.run") as mock:
+            mock.side_effect = [
+                # git merge
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
+                # git diff
+                type("R", (), {"returncode": 0, "stdout": "src/good.py\ncomponent/doc_updates.md\nsrc/bad.py\n", "stderr": ""})(),
+                # loops for src/bad.py ONLY (doc_updates is skipped)
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # reset
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # checkout
+                # git commit
+                type("R", (), {"returncode": 0, "stdout": "committed strips", "stderr": ""})(),
+            ]
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run(
+                {
+                    "intent": "strip_merge",
+                    "branch": "sf-task-temp",
+                    "allowed_paths": ["src/good.py"],
+                }
+            )
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["stripped_files"] == ["src/bad.py"]

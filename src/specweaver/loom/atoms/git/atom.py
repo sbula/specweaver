@@ -55,6 +55,7 @@ class GitAtom(Atom):
             "merge",  # integrate
             "fetch",
             "pull",  # sync
+            "rebase",
             "tag",  # tag
             "worktree",
         }
@@ -392,7 +393,7 @@ class GitAtom(Atom):
         """
         path = context.get("path")
         branch = context.get("branch")
-        
+
         if not path or not branch:
             return AtomResult(
                 status=AtomStatus.FAILED,
@@ -401,13 +402,13 @@ class GitAtom(Atom):
 
         start_point = context.get("start_point", "HEAD")
         result = self._executor.run("worktree", "add", "-b", branch, str(path), start_point)
-        
+
         if result.exit_code != 0:
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message=f"git worktree add failed: {result.stderr}",
             )
-            
+
         return AtomResult(
             status=AtomStatus.SUCCESS,
             message=f"Created worktree {path} on branch {branch}",
@@ -461,3 +462,128 @@ class GitAtom(Atom):
             status=AtomStatus.SUCCESS,
             message=f"Fallback: Removed worktree {path} via rmtree.",
         )
+
+    def _intent_worktree_sync(self, context: dict[str, Any]) -> AtomResult:
+        """Pulls latest main and rebases the worktree on top.
+
+        Context keys:
+            path: str - relative path for the active worktree.
+        """
+        path = context.get("path")
+        if not path:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'path' in context for worktree_sync intent.",
+            )
+
+        fetch_result = self._executor.run("fetch", "origin", "main")
+        if fetch_result.exit_code != 0:
+            logger.warning("git fetch origin main failed: %s, falling back to local main", fetch_result.stderr)
+
+        # Execute rebase exactly constrained inside the worktree via -C
+        worktree_path = self._cwd / path
+        if not worktree_path.exists():
+             return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"Worktree path does not exist for syncing: {worktree_path}",
+            )
+
+        # we use C flag inside EngineGitExecutor via cwd override natively,
+        # but EngineGitExecutor doesn't support C flags natively unless we pass it.
+        # Wait, EngineGitExecutor sets its own cwd! So we can't just pass -C.
+        # We must instantiate a temporary executor for the worktree?
+        # Actually, EngineGitExecutor(cwd=worktree_path)
+        from specweaver.loom.commons.git.engine_executor import EngineGitExecutor
+        wt_executor = EngineGitExecutor(cwd=worktree_path, whitelist=set(self._ENGINE_WHITELIST))
+
+        rebase_result = wt_executor.run("rebase", "main")
+        if rebase_result.exit_code != 0:
+            # We must abort immediately if it fails to automatically resolve!
+            wt_executor.run("rebase", "--abort")
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"git rebase main failed (aborted): {rebase_result.stderr}",
+            )
+
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message=f"Successfully rebased worktree {path} onto main.",
+        )
+
+    def _intent_strip_merge(self, context: dict[str, Any]) -> AtomResult:
+        """Merges a worktree branch mathematically stripping forbidden diff hunks.
+
+        Rules:
+        - Merge uses -X ours (FR-5: human wins).
+        - Strips any file not explicitly passed in allowed_paths.
+        - Hard-blocks "README.md" and "docs/*" regardless of allowed_paths (NFR-4).
+
+        Context keys:
+            branch: str - the branch name of the ephemeral worktree.
+            allowed_paths: list[str] - relative paths allowed to be updated.
+        """
+        branch = context.get("branch")
+        allowed_paths = context.get("allowed_paths")
+
+        if not branch or allowed_paths is None:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'branch' or 'allowed_paths' in context for strip_merge intent.",
+            )
+
+        # 1. Merge the branch but don't commit it yet
+        self._executor.run("merge", "--no-commit", "--no-ff", branch, "-X", "ours")
+        # Note: If it's already up to date, git merge returns success.
+
+        # 2. Extract changed files from the pending index
+        diff_res = self._executor.run("diff", "--name-only", "--cached")
+        if diff_res.exit_code != 0:
+             # Clean up state on crash
+             self._executor.run("merge", "--abort")
+             return AtomResult(
+                 status=AtomStatus.FAILED,
+                 message=f"Failed to read index: {diff_res.stderr}",
+             )
+
+        changed_files = [f.strip() for f in diff_res.stdout.split('\n') if f.strip()]
+        if not changed_files:
+             # Nothing changed
+             return AtomResult(status=AtomStatus.SUCCESS, message="No changes to strip and merge.", exports={"stripped_files": []})
+
+        stripped_files = []
+        for file in changed_files:
+            # FR-8 explicitly allows isolated documentation claims to survive
+            if file.endswith("doc_updates.md"):
+                continue
+
+            # Check NFR-4 Blocklist and FR-4 Allowlist
+            if file == "README.md" or file.startswith("docs/") or file not in allowed_paths:
+                stripped_files.append(file)
+                # Revert this file's staged changes back to HEAD
+                self._executor.run("reset", "HEAD", file)
+                self._executor.run("checkout", "--", file)
+
+        # 3. Commit the surviving hunks
+        commit_res = self._executor.run("commit", "-m", f"chore(sandbox): mathematical diff strip merge from {branch}")
+        if commit_res.exit_code != 0:
+            # It's possible that stripping removed ALL changes, so commit fails.
+            self._executor.run("merge", "--abort")
+            # If everything was stripped, it's just a no-op success conceptually
+            if len(stripped_files) == len(changed_files):
+                 return AtomResult(
+                     status=AtomStatus.SUCCESS,
+                     message="All changes were mathematically stripped. Nothing merged.",
+                     exports={"stripped_files": stripped_files}
+                 )
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"Failed to commit stripped merge: {commit_res.stderr}",
+            )
+
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message=f"Successfully merged cleanly, stripped {len(stripped_files)} files.",
+            exports={"stripped_files": stripped_files}
+        )
+
+

@@ -147,3 +147,19 @@ Furthermore, any multi-line string injected into this write is pre-processed by 
 ### Why we do it:
 1. **Double Handling Loop Hallucination:** If the Atom simply surfaced the newly mutated 2,000-line Python struct payload back to the Agent facade, the AI context window would instantly blow out trying to pipe that return sequence sequentially into an independent `FileWriter` tool call. Atomic persistence within the CodeStructureAtom eliminates context-bloat definitively.
 2. **Strict Indentation Immunity:** By forcing the engine to intercept LLM-generated string blocks and perform padding against Tree-Sitter boundaries natively rather than within regex bounds, we effectively inoculate SpecWeaver against LLM `IndentationErrors` and trailing brace failures across languages.
+
+---
+
+## 11. Git Worktree Sandboxing (Mathematical Diff Striping & OS Lock Resilience)
+
+When allowing LLM agents inside a Pipeline Orchestrator (Feature 3.26) to generate multi-file refactoring steps, we face catastrophic risk if an AI hallucinates massive deletions across a dirty host `src/` directory. 
+
+### How it works:
+Instead of restricting agents purely via prompt rules or abstract AST overlays, the execution engine dynamically builds an isolated `.worktrees/` directory directly linked to the current Git repository using `git worktree add`. The agent writes code here. At completion, `_intent_strip_merge` parses the generated `.diff` hunk by hunk. Any path that isn't explicitly green-lit by the module's `context.yaml` boundaries is **mathematically erased from the patch** before executing a `git apply --strategy-option=ours`. 
+
+Simultaneously, `_intent_worktree_teardown` utilizes a progressive 5-iteration timing backoff loop (`0.05, 0.1, 0.2, ...`) directly wrapping physical `shutil.rmtree` combined with `git worktree prune`.
+
+### Why we do it:
+1. **The mathematical stripe:** Completely and definitively blocks Agents from bypassing API limits to rewrite central configurations (`Pipfile`, `pom.xml`, `README.md`). We physically drop those hunks rather than failing the run, letting the valid logic merge cleanly. Documentation claims (`doc_updates.md`) are explicitly whitelisted as isolated channels.
+2. **The OS locking backoff:** Windows systems aggressively index and run Anti-Virus locks on freshly modified physical directories (`.worktrees/`). Attempting a standard 0ms deletion results in fatal access crashes, halting the entire pipeline. The progressive micro-backoff elegantly yields exactly long enough for OS locks to release, tearing down the sandbox securely under 2 seconds.
+

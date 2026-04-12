@@ -22,6 +22,7 @@ consumes:
   - specweaver/implementation
   - specweaver/planning
   - specweaver/validation
+  - specweaver/loom/atoms/git
   - specweaver/loom/atoms/qa_runner
   - specweaver/loom/dispatcher
   - specweaver/loom/security

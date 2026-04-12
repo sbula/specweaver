@@ -200,6 +200,7 @@ class PipelineStep(BaseModel):
     gate: GateDefinition | None = None
     router: RouterDefinition | None = None
     description: str = ""
+    use_worktree: bool = False
 
 
 # ---------------------------------------------------------------------------
