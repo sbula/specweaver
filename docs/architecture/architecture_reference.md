@@ -427,7 +427,7 @@ YAML pipeline definitions:
 | Pipeline | Steps | Purpose |
 |----------|-------|---------|
 | `new_feature` | draft→validate→review→generate→test→validate→review | Full spec-first loop |
-| `feature_decomposition` | draft→validate→decompose | Feature→components |
+| `feature_decomposition` | draft→validate→decompose | Feature→components via dynamic topological DAG waves |
 | `validate_only` | validate | Static quality check |
 | `validation_spec_*` | validate (with domain presets) | Domain-specific rules |
 | `validation_code_default` | validate code | Code quality check |

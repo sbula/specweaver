@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from specweaver.core.flow._base import RunContext, StepHandler
 from specweaver.core.flow.state import StepResult, StepStatus
 from specweaver.workflows.planning.decomposer import FeatureDecomposer
-
+from typing import Any
 if TYPE_CHECKING:
     from specweaver.core.flow.models import PipelineStep
 
@@ -73,7 +73,13 @@ class OrchestrateComponentsHandler(StepHandler):
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         logger.info("Executing ORCHESTRATE COMPONENTS for %s", context.run_id)
+        import asyncio
+        import graphlib
+        import importlib.resources
         import json
+        import re
+
+        import yaml  # type: ignore
 
         from specweaver.core.flow.models import PipelineDefinition
 
@@ -85,60 +91,108 @@ class OrchestrateComponentsHandler(StepHandler):
             components = plan_data.get("components", [])
 
             if not components:
-                # No sub-components to orchestrate
                 return StepResult(status=StepStatus.PASSED, output={"sub_runs": []}, started_at="", completed_at="")
 
-            import importlib.resources
-            import re
+            if not context.pipeline_runner:
+                return StepResult(status=StepStatus.FAILED, error_message="pipeline_runner not found in context. Cannot orchestrate.", started_at="", completed_at="")
 
-            import yaml  # type: ignore
-
-            sub_pipes = []
             name_pattern = re.compile(r"^[a-zA-Z0-9_\-]+$")
+            graph: dict[str, set[str]] = {}
+            comp_by_name = {}
 
             for comp in components:
                 name = comp.get("component")
                 if not name or not name_pattern.match(name):
                     return StepResult(status=StepStatus.FAILED, error_message=f"Invalid or malicious component name detected: '{name}'. Aborting fan_out to prevent path traversal.", started_at="", completed_at="")
+                deps = set(comp.get("dependencies", []))
+                graph[name] = deps
+                comp_by_name[name] = comp
 
-                try:
-                    files = importlib.resources.files("specweaver.workflows.pipelines")
-                    resource = files.joinpath("new_feature.yaml")
-                    text = resource.read_text(encoding="utf-8")
-                    pipe_data = yaml.safe_load(text)
+            try:
+                sorter = graphlib.TopologicalSorter(graph)
+                sorter.prepare()
+            except graphlib.CycleError as e:
+                return StepResult(status=StepStatus.FAILED, error_message=f"Circular dependency detected: {e}", started_at="", completed_at="")
 
-                    pipe_data["name"] = f"auto_{name}"
+            # Preload yaml to avoid I/O in the loop
+            files = importlib.resources.files("specweaver.workflows.pipelines")
+            resource = files.joinpath("new_feature.yaml")
+            base_pipe_yaml = resource.read_text(encoding="utf-8")
 
-                    for step_dict in pipe_data.get("steps", []):
-                        if "params" not in step_dict:
-                            step_dict["params"] = {}
-                        step_dict["params"]["component"] = name
+            active_tasks: dict[str, asyncio.Task[Any]] = {}
+            pending_dispatch: set[str] = set()
+            sub_runs = []
+            has_failed = False
 
-                    pipe = PipelineDefinition(**pipe_data)
-                    sub_pipes.append(pipe)
-                except Exception as e:
-                    logger.exception("Failed to load new_feature.yaml template for component %s", name)
-                    return StepResult(status=StepStatus.FAILED, error_message=f"Failed to load new_feature.yaml template: {e}", started_at="", completed_at="")
+            while sorter.is_active():
+                for node in sorter.get_ready():
+                    pending_dispatch.add(node)
 
-            if not context.pipeline_runner:
-                return StepResult(status=StepStatus.FAILED, error_message="pipeline_runner not found in context. Cannot fan_out.", started_at="", completed_at="")
+                running_impacts = set()
+                for rn in active_tasks:
+                    running_impacts.add(rn)
+                    if context.topology:
+                        for tm in comp_by_name[rn].get("target_modules", []):
+                            running_impacts.update(context.topology.impact_of(tm))
 
-            logger.info("Fanning out %d sub-pipelines for run %s", len(sub_pipes), context.run_id)
-            run_results = await context.pipeline_runner.fan_out(sub_pipes, parent_run_id=context.run_id)
+                dispatched_this_round = []
+                for node in list(pending_dispatch):
+                    node_impacts = {node}
+                    if context.topology:
+                        for tm in comp_by_name[node].get("target_modules", []):
+                            node_impacts.update(context.topology.impact_of(tm))
 
-            failed = [r for r in run_results if r.status != StepStatus.PASSED and getattr(r, "status", None) != "completed"]
+                    if not node_impacts.intersection(running_impacts):
+                        pending_dispatch.remove(node)
+                        dispatched_this_round.append(node)
+                        running_impacts.update(node_impacts)
 
-            if failed:
-                return StepResult(
-                    status=StepStatus.FAILED,
-                    error_message=f"{len(failed)} sub-pipelines failed.",
-                    started_at="",
-                    completed_at=""
-                )
+                        pipe_data = yaml.safe_load(base_pipe_yaml)
+                        pipe_data["name"] = f"auto_{node}"
+                        for step_dict in pipe_data.get("steps", []):
+                            if "params" not in step_dict:
+                                step_dict["params"] = {}
+                            step_dict["params"]["component"] = node
+                        pipe = PipelineDefinition(**pipe_data)
+
+                        # We use PipelineRunner.run dynamically
+                        from specweaver.core.flow.runner import PipelineRunner
+                        isolated_runner = PipelineRunner(
+                            pipeline=pipe,
+                            context=context.pipeline_runner._context,
+                            registry=context.pipeline_runner._registry,
+                            store=context.pipeline_runner._store,
+                            on_event=context.pipeline_runner._on_event
+                        )
+
+                        task = asyncio.create_task(isolated_runner.run(parent_run_id=context.run_id))
+                        active_tasks[node] = task
+
+                if active_tasks:
+                    done, _ = await asyncio.wait(list(active_tasks.values()), return_when=asyncio.FIRST_COMPLETED)
+
+                    for node, task in list(active_tasks.items()):
+                        if task in done:
+                            del active_tasks[node]
+                            result = task.result()
+                            sub_runs.append(result)
+                            # Assume any run not evaluating to PASSED or string "completed" is a failure
+                            if getattr(result, "status", None) not in (StepStatus.PASSED, "completed"):
+                                has_failed = True
+                            else:
+                                sorter.done(node) # Unlocks dependents
+                else:
+                    if pending_dispatch:
+                        return StepResult(status=StepStatus.FAILED, error_message="Deadlock: Components ready but cannot start due to graph/topology collision.", started_at="", completed_at="")
+                    else:
+                        break # Starvation: some nodes failed, dependents cannot start. End DAG execution.
+
+            if has_failed:
+                return StepResult(status=StepStatus.FAILED, error_message=f"Cascading failure: pipeline execution halted for dependent components. Ran {len(sub_runs)} total pipelines.", started_at="", completed_at="")
 
             return StepResult(
                 status=StepStatus.PASSED,
-                output={"sub_runs": [r.run_id for r in run_results]},
+                output={"sub_runs": [getattr(r, "run_id", "unknown") for r in sub_runs]},
                 started_at="",
                 completed_at=""
             )

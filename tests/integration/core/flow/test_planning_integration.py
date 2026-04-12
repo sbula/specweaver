@@ -20,7 +20,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -663,3 +663,112 @@ class TestPlannerRetryWithCleanJson:
 
         assert plan.spec_name == "Test"
         assert plan.confidence == 80
+
+
+# ---------------------------------------------------------------------------
+# DAG Orchestrator Dynamic Pipeline Fan-Out (Integration)
+# ---------------------------------------------------------------------------
+
+class TestDagOrchestratorIntegration:
+    """Tests the interaction between OrchestrateComponentsHandler, TopologyGraph, and dynamically spawned PipelineRunners."""
+
+    @pytest.mark.asyncio()
+    async def test_integration_starvation_and_dependency_bubble_up(self, tmp_path: Path) -> None:
+        """Integration Story 2: Failures in dynamic sub-pipelines properly starve dependents and bubble."""
+        from specweaver.core.flow._decompose import OrchestrateComponentsHandler
+        from specweaver.core.flow.handlers import StepHandlerRegistry
+        from specweaver.core.flow.models import PipelineDefinition
+        from specweaver.core.flow.runner import PipelineRunner
+
+        ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        ctx.run_id = "parent_run"
+
+        # Two components: A and B. B depends on A.
+        plan_dict = {
+            "components": [
+                {"component": "service_a", "dependencies": [], "target_modules": ["auth"]},
+                {"component": "service_b", "dependencies": ["service_a"], "target_modules": ["api"]}
+            ]
+        }
+        ctx.plan = json.dumps(plan_dict)
+
+        # We need a PipelineRunner with a registry. We will mock the runner to fail on 'service_a'
+        pipe = PipelineDefinition.model_validate_json(json.dumps({"name": "test", "steps": []}))
+        registry = StepHandlerRegistry()
+        ctx.pipeline_runner = PipelineRunner(pipe, ctx, registry=registry, store=MagicMock())
+
+        # Mock PipelineRunner.run() so we don't actually trigger deep LLM calls
+
+        async def mocked_run(self_runner, parent_run_id=None):
+            # If this is service_a, fail it!
+            if self_runner._pipeline.name == "auto_service_a":
+                return MagicMock(status=StepStatus.FAILED)
+            return MagicMock(status=StepStatus.PASSED)
+
+        with patch("specweaver.core.flow.runner.PipelineRunner.run", new=mocked_run):
+            handler = OrchestrateComponentsHandler()
+            step_def = PipelineStep(name="orch", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS)
+
+            result = await handler.execute(step_def, ctx)
+
+            # Since auto_service_a failed, B must be starved.
+            # The parent orchestration must FAIL with a cascading failure message.
+            assert result.status == StepStatus.FAILED, "Handler should bubble up failures."
+            assert "Cascading failure" in result.error_message
+            assert "Ran 1 total pipelines" in result.error_message, "Only Service A should have run!"
+
+    @pytest.mark.asyncio()
+    async def test_integration_topological_collision_deferment(self, tmp_path: Path) -> None:
+        """Integration Story 1: DAG Orchestrator physically blocks overlapping impact chains."""
+        import asyncio
+
+        from specweaver.assurance.graph.topology import TopologyGraph
+        from specweaver.core.flow._decompose import OrchestrateComponentsHandler
+        from specweaver.core.flow.models import PipelineDefinition
+        from specweaver.core.flow.runner import PipelineRunner
+        ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        ctx.run_id = "parent_run"
+
+        # Parallel components logically, no logical strictly defined dependency!
+        # BUT they share a target module "auth"
+        plan_dict = {
+            "components": [
+                {"component": "service_a", "dependencies": [], "target_modules": ["auth"]},
+                {"component": "service_b", "dependencies": [], "target_modules": ["auth"]}
+            ]
+        }
+        ctx.plan = json.dumps(plan_dict)
+
+        # Mock topology showing collision
+        mock_topo = MagicMock(spec=TopologyGraph)
+        mock_topo.impact_of.return_value = {"auth"}
+        ctx.topology = mock_topo
+
+        pipe = PipelineDefinition.model_validate_json(json.dumps({"name": "test", "steps": []}))
+        ctx.pipeline_runner = PipelineRunner(pipe, ctx, registry=MagicMock(), store=MagicMock())
+
+        # We need custom run() locking to prove they don't run *at the same time*.
+        running_tasks = set()
+        max_concurrent = 0
+
+        async def mocked_run(self_runner, parent_run_id=None):
+            nonlocal max_concurrent
+            running_tasks.add(self_runner._pipeline.name)
+            max_concurrent = max(max_concurrent, len(running_tasks))
+            # Sleep briefly to ensure overlap if the engine didn't lock it
+            await asyncio.sleep(0.1)
+            running_tasks.remove(self_runner._pipeline.name)
+            return MagicMock(status=StepStatus.PASSED, run_id="child_run_id")
+
+        with patch("specweaver.core.flow.runner.PipelineRunner.run", new=mocked_run):
+            handler = OrchestrateComponentsHandler()
+            step_def = PipelineStep(name="orch", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS)
+
+            result = await handler.execute(step_def, ctx)
+
+            # Both should have run successfully
+            assert result.status == StepStatus.PASSED
+            assert len(result.output["sub_runs"]) == 2
+
+            # The maximum observed concurrency MUST be 1 due to the topology conflict!
+            assert max_concurrent == 1, "Topological collision guard failed, tasks ran concurrently!"

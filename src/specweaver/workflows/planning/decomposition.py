@@ -42,6 +42,10 @@ class ComponentChange(BaseModel):
         description="The DO-178C DAL rating required: DAL_A, DAL_B, DAL_C, DAL_D, or DAL_E"
     )
     dependencies: list[str] = Field(default_factory=list)
+    target_modules: list[str] = Field(
+        default_factory=list,
+        description="Exact names of the context.yaml modules this component modifies.",
+    )
     confidence: int = 0
 
 

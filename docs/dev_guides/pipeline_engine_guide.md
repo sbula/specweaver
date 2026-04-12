@@ -104,8 +104,9 @@ Starting with Feature 3.24, the SpecWeaver flow engine supports deeply nested as
 
 ### Mechanism:
 1. **`parent_run_id` Telemetry**: Every `PipelineRun` instance natively supports a `parent_run_id` reference in `pipeline_state.db`.
-2. **Sub-Pipeline Triggering**: Instead of complex global state injection, an executing step can securely spawn isolated instances of `PipelineRunner` using the current pipeline run's UUID as the target `parent_run_id`.
-3. **Execution Block (`asyncio.gather`)**: The parent runner enforces blocking evaluation via `fan_out()`, aggregating all sub-pipeline outputs synchronously back into a single structured result bubble.
+2. **Topological DAG Wave Generation**: Instead of bulk `asyncio.gather` list spawning, sub-pipelines are dynamically routed through a `graphlib.TopologicalSorter` during execution. By parsing cross-component logical dependencies and utilizing `TopologyGraph.impact_of` to isolate physical intersections within `context.yaml`, the Engine natively blocks overlapping footprint mutations while maximizing process parallelism.
+3. **Sub-Pipeline Triggering**: The DAG orchestrator spawns isolated execution of `PipelineRunner` using the current pipeline run's UUID as the target `parent_run_id` for each resolved wave node.
+4. **Execution Block**: The parent orchestrator loop strictly enforces DAG completion dynamically pooling the tasks as they fall into starvation states, aggregating all sub-pipeline outputs synchronously back into a single structured result bubble.
 
 A `StepResult` natively consolidates the child outputs for upstream consumption while ensuring telemetry platforms can reconstruct the full recursive pipeline lineage via the unified SQLite records.
 

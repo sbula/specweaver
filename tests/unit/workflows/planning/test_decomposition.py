@@ -47,6 +47,16 @@ class TestComponentChange:
         )
         assert c.dependencies == []
 
+    def test_target_modules_default_empty(self) -> None:
+        c = ComponentChange(
+            component="auth",
+            exists=True,
+            change_nature="config",
+            description="Add mTLS config",
+            proposed_dal="DAL_E",
+        )
+        assert c.target_modules == []
+
     def test_confidence_default_zero(self) -> None:
         c = ComponentChange(
             component="auth",
@@ -88,12 +98,14 @@ class TestComponentChange:
             description="New billing API",
             proposed_dal="DAL_E",
             dependencies=["auth", "orders"],
+            target_modules=["auth", "billing"],
             confidence=90,
         )
         data = c.model_dump()
         c2 = ComponentChange.model_validate(data)
         assert c2.component == "billing"
         assert c2.dependencies == ["auth", "orders"]
+        assert c2.target_modules == ["auth", "billing"]
         assert c2.confidence == 90
 
     def test_proposed_dal_rejects_hallucinations(self) -> None:

@@ -34,6 +34,10 @@ Analyze the intent, blast radius, and change map. For each affected component,
 specify the change nature, dependencies, and propose a DO-178C DAL level (DAL_A to DAL_E).
 Assess the coverage (fraction of blast radius items covered) and include it as `coverage_score` (0.0 to 1.0).
 
+For EVERY component, you MUST strictly map it to the physical architecture using the provided TopologyContexts.
+1. Populate `target_modules` with the exact namespace(s) from the TopologyContext list.
+2. Populate `dependencies` logically (e.g. if Component B reads data written by Component A, B depends on A).
+
 Feature Name: {feature_name}
 Feature Spec Content:
 {spec_content}

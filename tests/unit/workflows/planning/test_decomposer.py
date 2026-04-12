@@ -65,3 +65,11 @@ async def test_decompose_pydantic_validation_error(mock_llm: AsyncMock, mock_con
 
     with pytest.raises(ValueError, match="structurally valid"):
         await decomposer.decompose(feature_name="test", spec_content="spec")
+
+def test_decompose_instruction_template_has_topology_directions() -> None:
+    from specweaver.workflows.planning.decomposer import _DECOMPOSE_INSTRUCTION_TEMPLATE
+
+    assert "target_modules" in _DECOMPOSE_INSTRUCTION_TEMPLATE, "Prompt must explicitly mention target_modules mapping"
+    assert "TopologyContext" in _DECOMPOSE_INSTRUCTION_TEMPLATE, "Prompt must explicitly mention mapping to TopologyContext"
+    assert "dependencies" in _DECOMPOSE_INSTRUCTION_TEMPLATE, "Prompt must explicitly mention logical dependencies"
+    assert "strictly" in _DECOMPOSE_INSTRUCTION_TEMPLATE.lower() or "exact" in _DECOMPOSE_INSTRUCTION_TEMPLATE.lower(), "Must demand exact mapping"
