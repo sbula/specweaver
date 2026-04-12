@@ -76,7 +76,7 @@ class PipelineRunner:
         self._registry = registry or StepHandlerRegistry()
         self._store = store
         self._on_event = on_event
-        self._gate_evaluator = GateEvaluator(pipeline)
+        self._gate_evaluator = GateEvaluator(pipeline, context)
 
         from specweaver.core.flow.routers import RouterEvaluator
         self._router_evaluator = RouterEvaluator()
@@ -293,8 +293,9 @@ class PipelineRunner:
                     from specweaver.core.loom.atoms.git.atom import GitAtom
 
                     atom = GitAtom(cwd=self._context.project_path)
+                    clean_pipeline = (self._context.pipeline_name or "default_pipe").replace(" ", "_")
                     task_id = getattr(self._context, "task_id", getattr(self._context, "run_id", "default"))
-                    branch = f"sf-{task_id}-temp"
+                    branch = f"sf-{clean_pipeline}-{task_id}"
                     wt_path = f".worktrees/{task_id}"
 
                     # 1. Add worktree
@@ -306,6 +307,7 @@ class PipelineRunner:
 
                     isolated_context = copy.copy(self._context)
                     isolated_context.output_dir = self._context.project_path / wt_path
+                    isolated_context.env_vars = self._context.env_vars.copy()
 
                     try:
                         # 2. Execute inner handler bounded to the isolated worktree context
@@ -326,6 +328,14 @@ class PipelineRunner:
                     finally:
                         # 5. Teardown resilience
                         atom.run({"intent": "worktree_teardown", "path": wt_path})
+
+                        # 6. Database Cleanup Hooks bounds guarantee zombie block survival
+                        try:
+                            from specweaver.core.flow.reservation import SQLiteReservationSystem
+                            db_path = self._context.project_path / ".specweaver" / "reservations.db"
+                            SQLiteReservationSystem(db_path).release(run.run_id)
+                        except Exception as e:
+                            logger.error("[run_id=%s] Sandbox DB teardown bounds panic: %s", run.run_id, e)
                 else:
                     result = await handler.execute(step_def, self._context)
             except Exception as exc:

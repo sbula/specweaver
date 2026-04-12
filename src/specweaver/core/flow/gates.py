@@ -19,6 +19,7 @@ from specweaver.core.flow.models import GateCondition, GateType, OnFailAction
 from specweaver.core.flow.state import StepStatus
 
 if TYPE_CHECKING:
+    from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.models import GateDefinition, PipelineDefinition, PipelineStep
     from specweaver.core.flow.state import PipelineRun, StepResult
 
@@ -30,10 +31,12 @@ class GateEvaluator:
 
     Args:
         pipeline: The pipeline definition (for step name lookups).
+        context: Optional RunContext for resolving database paths in RESERVE gates.
     """
 
-    def __init__(self, pipeline: PipelineDefinition) -> None:
+    def __init__(self, pipeline: PipelineDefinition, context: RunContext | None = None) -> None:
         self._pipeline = pipeline
+        self._context = context
 
     def evaluate(
         self,
@@ -52,6 +55,10 @@ class GateEvaluator:
             logger.info("Gate on step '%s': HITL — parking for human review", step_def.name)
             run.park_current_step(result)
             return "park"
+
+        # RESERVE gate: atomic infrastructure-level reservation
+        if gate.type == GateType.RESERVE:
+            return self.evaluate_reserve(gate, result, step_def, run)
 
         # AUTO gate: check condition
         if self.passes(gate, result):
@@ -85,6 +92,31 @@ class GateEvaluator:
             return "advance"
 
         return "advance"
+
+    def evaluate_reserve(
+        self, gate: GateDefinition, result: StepResult, step_def: PipelineStep, run: PipelineRun
+    ) -> str:
+        """Evaluate a RESERVE gate atomically against the SQLite reservation system."""
+        from specweaver.core.flow.reservation import SQLiteReservationSystem
+
+        if not self._context or not getattr(self._context, "project_path", None):
+            logger.warning("Gate on step '%s': RESERVE disabled (missing RunContext)", step_def.name)
+            return "advance"
+
+        db_path = self._context.project_path / ".specweaver" / "reservations.db"
+        pipeline_target = getattr(self._context, "pipeline_name", None) or "default_pipeline"
+
+        sys = SQLiteReservationSystem(db_path)
+        if sys.acquire(resource_id=f"pipeline:{pipeline_target}", run_id=run.run_id, timeout_seconds=3600):
+            logger.info("Gate on step '%s': RESERVE lock securely acquired.", step_def.name)
+            return "advance"
+
+        # Concurrency collision map
+        logger.info("Gate on step '%s': RESERVE collision. Parking natively.", step_def.name)
+        result.status = StepStatus.PENDING
+        result.output = {"verdict": "parked_for_resource"}
+        run.park_current_step(result)
+        return "park"
 
     def passes(self, gate: GateDefinition, result: StepResult) -> bool:
         """Check if the gate condition is met."""

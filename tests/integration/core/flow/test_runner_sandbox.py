@@ -16,8 +16,9 @@ from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
 
 @pytest.mark.asyncio
-async def test_pipeline_runner_sandbox_bouncer(tmp_path: Path):
-    """Verifies that Runner intercepts use_worktree and bounces via GitAtom correctly."""
+@patch("specweaver.core.flow.reservation.SQLiteReservationSystem.release")
+async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path: Path):
+    """Verifies that Runner intercepts use_worktree, bouncing string-maps cleanly, and flushes DB native bindings."""
 
     # 1. Setup a step requiring worktree
     step = PipelineStep(
@@ -28,6 +29,7 @@ async def test_pipeline_runner_sandbox_bouncer(tmp_path: Path):
     )
     pipeline = PipelineDefinition(name="test_pipe", steps=[step])
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
+    context.pipeline_name = "test_pipe"
 
     # 2. Mock handler and GitAtom run explicitly to spy on intents in order
     intents_called = []
@@ -38,10 +40,11 @@ async def test_pipeline_runner_sandbox_bouncer(tmp_path: Path):
         intents_called.append(intent)
 
         if intent == "worktree_add":
+            assert ctx_dict.get("branch").startswith("sf-test_pipe-")
             return AtomResult(
                 status=AtomStatus.SUCCESS,
                 message="",
-                exports={"worktree_path": ".worktrees/temp", "branch": "sf-temp"},
+                exports={"worktree_path": ".worktrees/temp", "branch": ctx_dict.get("branch")},
             )
         if intent == "strip_merge":
             return AtomResult(status=AtomStatus.SUCCESS, message="", exports={"stripped_files": []})
@@ -78,6 +81,10 @@ async def test_pipeline_runner_sandbox_bouncer(tmp_path: Path):
             "strip_merge",
             "worktree_teardown",
         ]
+
+        # 4. Verify explicit database flush capability
+        assert mock_release.called
+        assert mock_release.call_args[0][0] == result_run.run_id
 
 
 @pytest.mark.asyncio

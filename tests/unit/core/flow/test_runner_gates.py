@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 
@@ -291,6 +292,67 @@ class TestGateConditions:
         run = await runner.run()
 
         assert run.status == RunStatus.PARKED
+
+    @pytest.mark.asyncio
+    @mock.patch("specweaver.core.flow.reservation.SQLiteReservationSystem.acquire")
+    async def test_reserve_gate_acquires_lock(self, mock_acquire: mock.MagicMock, tmp_path: Path) -> None:
+        """RESERVE gate advances when SQLite lock is acquired successfully."""
+        mock_acquire.return_value = True
+
+        pipeline = PipelineDefinition(
+            name="test",
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(type=GateType.RESERVE),
+                )
+            ],
+        )
+        registry = StepHandlerRegistry()
+        registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
+
+        context = _make_context(tmp_path)
+        context.pipeline_name = "test_pipe"
+
+        runner = PipelineRunner(pipeline, context, registry=registry)
+        run = await runner.run()
+
+        assert mock_acquire.called
+        assert mock_acquire.call_args[1]["resource_id"] == "pipeline:test_pipe"
+        assert run.status == RunStatus.COMPLETED
+
+    @pytest.mark.asyncio
+    @mock.patch("specweaver.core.flow.reservation.SQLiteReservationSystem.acquire")
+    async def test_reserve_gate_parks_on_collision(self, mock_acquire: mock.MagicMock, tmp_path: Path) -> None:
+        """RESERVE gate parks run safely when SQLite lock collides natively."""
+        mock_acquire.return_value = False
+
+        pipeline = PipelineDefinition(
+            name="test",
+            steps=[
+                PipelineStep(
+                    name="validate",
+                    action=StepAction.VALIDATE,
+                    target=StepTarget.SPEC,
+                    gate=GateDefinition(type=GateType.RESERVE),
+                )
+            ],
+        )
+        registry = StepHandlerRegistry()
+        registry.register(StepAction.VALIDATE, StepTarget.SPEC, PassHandler())
+
+        context = _make_context(tmp_path)
+        context.pipeline_name = "test_pipe"
+
+        runner = PipelineRunner(pipeline, context, registry=registry)
+        run = await runner.run()
+
+        assert mock_acquire.called
+        assert run.status == RunStatus.PARKED
+        assert run.step_records[0].result is not None
+        assert run.step_records[0].result.output.get("verdict") == "parked_for_resource"
 
 
 # ---------------------------------------------------------------------------
