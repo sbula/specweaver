@@ -88,7 +88,7 @@ See [docs/INDEX.md](docs/INDEX.md) for a guided tour of the documentation. Key e
 - **README.md** — Features, CLI reference, agent tools
 - **docs/architecture/methodology_index.md** — Spec methodology (10-test battery, fractal decomposition)
 - **docs/architecture/context_yaml_spec.md** — Context boundary manifest specification
-- **docs/proposals/specweaver_roadmap.md** — Roadmap and future plans
+- **docs/roadmap/specweaver_roadmap.md** — Roadmap and future plans
 
 ## Submitting Changes
 

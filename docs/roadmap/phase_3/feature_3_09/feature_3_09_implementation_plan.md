@@ -282,7 +282,7 @@ Add container quickstart as an alternative to the Python install flow.
 
 Add Section 17: Containerization (path module unit tests).
 
-#### [MODIFY] `docs/proposals/specweaver_roadmap.md` + `phase_3_feature_expansion.md`
+#### [MODIFY] `docs/roadmap/specweaver_roadmap.md` + `phase_3_feature_expansion.md`
 Mark Feature 3.9 as complete with test count.
 
 #### [MODIFY] `docs/roadmap/phase_3_feature_expansion.md`

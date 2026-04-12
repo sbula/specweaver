@@ -133,7 +133,7 @@ Explicit list of things agents must NEVER do.
 |----------|---------|------|
 | Constitution | This file — non-negotiable rules | `CONSTITUTION.md` |
 | Methodology | Spec writing and validation rules | `docs/architecture/spec_methodology.md` |
-| Roadmap | Current project plan | `docs/proposals/specweaver_roadmap.md` |
+| Roadmap | Current project plan | `docs/roadmap/specweaver_roadmap.md` |
 | [Add more as needed] | | |
 
 ## 8. Agent Instructions

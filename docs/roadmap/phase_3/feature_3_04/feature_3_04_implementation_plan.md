@@ -504,7 +504,7 @@ uv run ruff check src/ tests/       # Zero new lint issues
 | `README.md` | Add Custom Rules + Validation Pipelines to Features list |
 | `docs/quickstart.md` | Add "Custom validation rules" and "Pipeline configuration" sections |
 | `docs/developer_guide.html` | Add §8 Validation Pipelines, update architecture diagram, test counts |
-| `docs/proposals/specweaver_roadmap.md` | Mark 3.4 as ✅ when complete |
+| `docs/roadmap/specweaver_roadmap.md` | Mark 3.4 as ✅ when complete |
 | `docs/roadmap/phase_3_feature_expansion.md` | Update 3.4 entry |
 
 ---

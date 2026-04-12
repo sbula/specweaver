@@ -96,7 +96,7 @@ Your task: Write the specification for [SPEC_NAME] — [ONE_LINE_GOAL].
 
 STEP 1 — CONTEXT:
 Read the existing specs in docs/specs/ to understand the system's current
-architecture, vocabulary, and conventions. Also scan docs/proposals/ and
+architecture, vocabulary, and conventions. Also scan docs/architecture/ and docs/roadmap/ and
 docs/architecture/ for strategic direction.
 
 STEP 2 — DRAFT:

@@ -557,7 +557,7 @@ After implementation, update:
 - `README.md` — "Multi-Provider Support" section
 - `docs/quickstart.md` — how to configure a non-Gemini provider
 - `docs/architecture/architecture_reference.md` — update Feature Map, LLM adapter section
-- `docs/proposals/specweaver_roadmap.md` — mark 3.12a complete
+- `docs/roadmap/specweaver_roadmap.md` — mark 3.12a complete
 - `docs/roadmap/phase_3_feature_expansion.md` — mark 3.12a complete
 
 ---

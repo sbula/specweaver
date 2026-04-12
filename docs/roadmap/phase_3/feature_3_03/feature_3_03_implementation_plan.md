@@ -298,7 +298,7 @@ uv run ruff check src/ tests/       # Zero new lint issues
 | `README.md` | Add Domain Profiles to Features list, add profile commands to CLI table |
 | `docs/quickstart.md` | Add "Choose a domain profile" section |
 | `docs/developer_guide.html` | Add profiles section, update override cascade diagram |
-| `docs/proposals/specweaver_roadmap.md` | Mark 3.3 as ✅ when complete |
+| `docs/roadmap/specweaver_roadmap.md` | Mark 3.3 as ✅ when complete |
 | `docs/roadmap/phase_3_feature_expansion.md` | Update 3.3 entry |
 
 ---
