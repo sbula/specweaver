@@ -3,8 +3,8 @@
 
 import pytest
 
-from specweaver.validation.drift_detector import detect_drift
-from specweaver.validation.models import Severity
+from specweaver.assurance.validation.drift_detector import detect_drift
+from specweaver.assurance.validation.models import Severity
 
 # Attempt to import tree-sitter to ensure it's available
 try:

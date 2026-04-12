@@ -57,7 +57,7 @@ def test_tach_interfaces_map_to_valid_namespaces() -> None:
 def test_tach_keeps_runner_soft_deprecated() -> None:
     """
     Integration Regression Guard:
-    Ensures that the legacy 'runner' module is explicitly omitted from the 'src.specweaver.validation'
+    Ensures that the legacy 'runner' module is explicitly omitted from the 'src.specweaver.assurance.validation'
     expose list in tach.toml. This prevents accidental soft-deprecation regressions where a future
     developer might silently re-expose it, bypassing the architectural deprecation boundary.
     """
@@ -70,7 +70,7 @@ def test_tach_keeps_runner_soft_deprecated() -> None:
 
     for interface in config.get("interfaces", []):
         from_bases = interface.get("from", [])
-        if "src.specweaver.validation" in from_bases:
+        if "src.specweaver.assurance.validation" in from_bases:
             exposed = interface.get("expose", [])
             assert "runner" not in exposed, (
                 "CRITICAL: The 'runner' module must remain soft-deprecated! "

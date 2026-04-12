@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.config.database import Database
+from specweaver.core.config.database import Database
 
 
 @pytest.fixture(autouse=True)
@@ -27,6 +27,6 @@ def _mock_db(_isolate_env):
 @pytest.fixture
 def _mock_state_db(_isolate_env):
     """Returns the StateStore DB path. Compatibility wrapper."""
-    from specweaver.flow.store import StateStore
+    from specweaver.core.flow.store import StateStore
 
     return StateStore(_isolate_env / "pipeline_state.db")

@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from specweaver.llm.models import GenerationConfig, Message, Role
+from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 
 
 @pytest.mark.live
@@ -13,7 +13,7 @@ async def test_llm_live_gemini_connection() -> None:
     if not api_key:
         pytest.skip("GEMINI_API_KEY not set. Cannot run live test.")
 
-    from specweaver.llm.adapters.gemini import GeminiAdapter
+    from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
 
     adapter = GeminiAdapter(api_key=api_key)
 
@@ -37,7 +37,7 @@ async def test_llm_live_openai_connection() -> None:
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         pytest.skip("OPENAI_API_KEY not set. Cannot run live test.")
-    from specweaver.llm.adapters.openai import OpenAIAdapter
+    from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
 
     adapter = OpenAIAdapter(api_key=api_key)
     messages = [
@@ -58,7 +58,7 @@ async def test_llm_live_anthropic_connection() -> None:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         pytest.skip("ANTHROPIC_API_KEY not set.")
-    from specweaver.llm.adapters.anthropic import AnthropicAdapter
+    from specweaver.infrastructure.llm.adapters.anthropic import AnthropicAdapter
 
     adapter = AnthropicAdapter(api_key=api_key)
     messages = [
@@ -78,7 +78,7 @@ async def test_llm_live_mistral_connection() -> None:
     api_key = os.environ.get("MISTRAL_API_KEY")
     if not api_key:
         pytest.skip("MISTRAL_API_KEY not set.")
-    from specweaver.llm.adapters.mistral import MistralAdapter
+    from specweaver.infrastructure.llm.adapters.mistral import MistralAdapter
 
     adapter = MistralAdapter(api_key=api_key)
     messages = [
@@ -98,7 +98,7 @@ async def test_llm_live_qwen_connection() -> None:
     api_key = os.environ.get("QWEN_API_KEY")
     if not api_key:
         pytest.skip("QWEN_API_KEY not set.")
-    from specweaver.llm.adapters.qwen import QwenAdapter
+    from specweaver.infrastructure.llm.adapters.qwen import QwenAdapter
 
     adapter = QwenAdapter(api_key=api_key)
     messages = [

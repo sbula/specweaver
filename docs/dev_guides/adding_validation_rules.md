@@ -20,7 +20,7 @@ Rules are implemented as **Pure Functions** or stateless class handlers. They ab
 
 ### Example Schema (Spec Rule)
 ```python
-from specweaver.validation.models import RuleResult, Finding
+from specweaver.assurance.validation.models import RuleResult, Finding
 
 def check_no_weasel_words(spec_content: str) -> RuleResult:
     # 1. Evaluate logic

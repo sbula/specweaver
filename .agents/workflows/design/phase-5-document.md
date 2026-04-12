@@ -19,7 +19,7 @@ description: "Phase 5: Document — write the fully self-contained Design Docume
 ## Write the Design Document
 
 5.1. Write the Design Document to:
-     `docs/proposals/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md`
+     `docs/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md`
      Create the directory if it does not exist.
 
 5.2. The document MUST be fully self-contained. An agent starting a brand-new
@@ -39,7 +39,7 @@ description: "Phase 5: Document — write the fully self-contained Design Docume
 - **Feature ID**: <feature_id>
 - **Phase**: <X>
 - **Status**: DRAFT
-- **Design Doc**: docs/proposals/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md
+- **Design Doc**: docs/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md
 
 ## Feature Overview
 
@@ -100,7 +100,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Inputs**: <what this SF receives — from prior SFs, CLI, DB, files, env>
 - **Outputs**: <what this SF produces — for later SFs, the system, or the user>
 - **Depends on**: none
-- **Impl Plan**: docs/proposals/roadmap/phase<X>/<feature_id>_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/phase<X>/<feature_id>_sf1_implementation_plan.md
 
 ### SF-2: <Name>
 - **Scope**: ...
@@ -108,7 +108,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Inputs**: ...
 - **Outputs**: ...
 - **Depends on**: SF-1
-- **Impl Plan**: docs/proposals/roadmap/phase<X>/<feature_id>_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/phase<X>/<feature_id>_sf2_implementation_plan.md
 
 ## Execution Order
 
@@ -130,7 +130,7 @@ Example:
 
 **Current status**: Design DRAFT — awaiting HITL approval.
 **Next step**: After approval, run:
-`/implementation-plan docs/proposals/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md SF-1`
+`/implementation-plan docs/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md SF-1`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
 ````

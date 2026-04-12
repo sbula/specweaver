@@ -25,7 +25,7 @@ def test_logging_routing_and_format(tmp_path, monkeypatch, capsys):
     """End-to-End test verifying logs correctly route to file (JSON) and console (Rich)."""
     # 1. Setup mock directories
     _logs = tmp_path / "logs"
-    monkeypatch.setattr("specweaver.config.paths.logs_dir", lambda: _logs)
+    monkeypatch.setattr("specweaver.core.config.paths.logs_dir", lambda: _logs)
 
     # 2. Force Rich to not use colors and not paginate so capsys can capture deterministic output
     monkeypatch.setattr("rich.console.Console.is_terminal", property(lambda self: False))

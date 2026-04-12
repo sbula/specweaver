@@ -1,6 +1,6 @@
 from typer.testing import CliRunner
 
-from specweaver.cli.main import app
+from specweaver.interfaces.cli.main import app
 
 
 def test_drift_check_rot_cmd_staged():

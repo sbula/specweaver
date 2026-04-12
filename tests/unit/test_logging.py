@@ -125,7 +125,7 @@ class TestSetupLogging:
     def test_creates_file_and_console_handlers(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("testprj")
@@ -138,7 +138,7 @@ class TestSetupLogging:
     def test_file_handler_uses_correct_path(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("myprj")
@@ -151,7 +151,7 @@ class TestSetupLogging:
     def test_file_handler_uses_rotation_settings(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj")
@@ -163,7 +163,7 @@ class TestSetupLogging:
     def test_console_handler_at_warning_level(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj")
@@ -174,7 +174,7 @@ class TestSetupLogging:
     def test_file_handler_at_configured_level(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj", level="INFO")
@@ -185,7 +185,7 @@ class TestSetupLogging:
     def test_default_level_is_debug(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj")
@@ -196,7 +196,7 @@ class TestSetupLogging:
     def test_fallback_project_name_when_none(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging(None)
@@ -207,7 +207,7 @@ class TestSetupLogging:
     def test_idempotent_same_project(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj")
@@ -219,7 +219,7 @@ class TestSetupLogging:
     def test_project_change_replaces_handlers(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj-a")
@@ -232,7 +232,7 @@ class TestSetupLogging:
     def test_invalid_level_falls_back_to_debug(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj", level="INVALID")
@@ -245,7 +245,7 @@ class TestSetupLogging:
 
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj")
@@ -262,7 +262,7 @@ class TestSetupLogging:
     def test_creates_log_directory(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("newprj")
@@ -272,7 +272,7 @@ class TestSetupLogging:
     def test_logs_are_written_to_file(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("writetest")
@@ -286,7 +286,7 @@ class TestSetupLogging:
     def test_case_insensitive_level(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj", level="info")
@@ -306,7 +306,7 @@ class TestTeardownLogging:
     def test_removes_all_handlers(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj")
@@ -317,7 +317,7 @@ class TestTeardownLogging:
     def test_removes_project_tag(self, tmp_path, monkeypatch):
         _logs = tmp_path / "logs"
         monkeypatch.setattr(
-            "specweaver.config.paths.logs_dir",
+            "specweaver.core.config.paths.logs_dir",
             lambda: _logs,
         )
         setup_logging("proj")

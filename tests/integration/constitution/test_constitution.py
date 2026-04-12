@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.project.constitution import (
+from specweaver.workspace.project.constitution import (
     CONSTITUTION_FILENAME,
     DEFAULT_MAX_CONSTITUTION_SIZE,
     check_constitution,
@@ -24,7 +24,7 @@ from specweaver.project.constitution import (
     find_constitution,
     generate_constitution,
 )
-from specweaver.project.scaffold import scaffold_project
+from specweaver.workspace.project.scaffold import scaffold_project
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -68,7 +68,7 @@ class TestScaffoldConstitutionIntegration:
         tmp_path: Path,
     ) -> None:
         """Generated constitution integrates with PromptBuilder."""
-        from specweaver.llm.prompt_builder import PromptBuilder
+        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
         scaffold_project(tmp_path)
 
@@ -136,7 +136,7 @@ class TestConstitutionDBIntegration:
 
     def test_db_max_size_controls_check(self, tmp_path: Path) -> None:
         """constitution_max_size from DB controls check_constitution limit."""
-        from specweaver.config.database import Database
+        from specweaver.core.config.database import Database
 
         db = Database(tmp_path / ".sw" / "specweaver.db")
         db.register_project("myapp", str(tmp_path))
@@ -170,7 +170,7 @@ class TestConstitutionLogging:
             "# Rules",
             encoding="utf-8",
         )
-        with caplog.at_level(logging.INFO, logger="specweaver.project.constitution"):
+        with caplog.at_level(logging.INFO, logger="specweaver.workspace.project.constitution"):
             find_constitution(tmp_path)
 
         assert any("loaded" in r.message.lower() for r in caplog.records)
@@ -181,7 +181,7 @@ class TestConstitutionLogging:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """find_constitution logs DEBUG when no constitution found."""
-        with caplog.at_level(logging.DEBUG, logger="specweaver.project.constitution"):
+        with caplog.at_level(logging.DEBUG, logger="specweaver.workspace.project.constitution"):
             find_constitution(tmp_path)
 
         assert any("no constitution" in r.message.lower() for r in caplog.records)
@@ -192,7 +192,7 @@ class TestConstitutionLogging:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """generate_constitution logs INFO when creating a new file."""
-        with caplog.at_level(logging.INFO, logger="specweaver.project.constitution"):
+        with caplog.at_level(logging.INFO, logger="specweaver.workspace.project.constitution"):
             generate_constitution(tmp_path, "test-app")
 
         assert any("generated" in r.message.lower() for r in caplog.records)
@@ -207,7 +207,7 @@ class TestConstitutionLogging:
             "x" * (DEFAULT_MAX_CONSTITUTION_SIZE + 100),
             encoding="utf-8",
         )
-        with caplog.at_level(logging.WARNING, logger="specweaver.project.constitution"):
+        with caplog.at_level(logging.WARNING, logger="specweaver.workspace.project.constitution"):
             find_constitution(tmp_path)
 
         assert any("exceeds" in r.message.lower() for r in caplog.records)

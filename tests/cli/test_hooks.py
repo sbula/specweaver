@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.cli.main import app
+from specweaver.interfaces.cli.main import app
 
 
 def test_hooks_install_pre_commit_success(tmp_path: Path, caplog: pytest.LogCaptureFixture):
@@ -19,8 +19,8 @@ def test_hooks_install_pre_commit_success(tmp_path: Path, caplog: pytest.LogCapt
     hooks_dir.mkdir(parents=True)
 
     with (
-        caplog.at_level("DEBUG", logger="specweaver.cli.hooks"),
-        patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path),
+        caplog.at_level("DEBUG", logger="specweaver.interfaces.cli.hooks"),
+        patch("specweaver.interfaces.cli.hooks.resolve_project_path", return_value=tmp_path),
     ):
         result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
 
@@ -56,8 +56,8 @@ def test_hooks_install_no_git_dir(tmp_path: Path, caplog: pytest.LogCaptureFixtu
     # We deliberately do not create .git/ directory here
 
     with (
-        caplog.at_level("ERROR", logger="specweaver.cli.hooks"),
-        patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path),
+        caplog.at_level("ERROR", logger="specweaver.interfaces.cli.hooks"),
+        patch("specweaver.interfaces.cli.hooks.resolve_project_path", return_value=tmp_path),
     ):
         result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
 
@@ -71,9 +71,9 @@ def test_hooks_install_resolve_error(caplog: pytest.LogCaptureFixture):
     runner = CliRunner()
 
     with (
-        caplog.at_level("ERROR", logger="specweaver.cli.hooks"),
+        caplog.at_level("ERROR", logger="specweaver.interfaces.cli.hooks"),
         patch(
-            "specweaver.cli.hooks.resolve_project_path",
+            "specweaver.interfaces.cli.hooks.resolve_project_path",
             side_effect=FileNotFoundError("Invalid path"),
         ),
     ):
@@ -92,8 +92,8 @@ def test_hooks_install_no_pre_commit(tmp_path: Path, caplog: pytest.LogCaptureFi
     git_dir.mkdir(parents=True)
 
     with (
-        caplog.at_level("INFO", logger="specweaver.cli.hooks"),
-        patch("specweaver.cli.hooks.resolve_project_path", return_value=tmp_path),
+        caplog.at_level("INFO", logger="specweaver.interfaces.cli.hooks"),
+        patch("specweaver.interfaces.cli.hooks.resolve_project_path", return_value=tmp_path),
     ):
         result = runner.invoke(app, ["hooks", "install", "--no-pre-commit"])
 

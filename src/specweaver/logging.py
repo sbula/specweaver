@@ -40,7 +40,7 @@ _LOGS_DIR_FALLBACK = _SPECWEAVER_ROOT / "logs"
 
 def _get_logs_dir() -> Path:
     """Return the logs directory, respecting SPECWEAVER_DATA_DIR."""
-    from specweaver.config.paths import logs_dir
+    from specweaver.core.config.paths import logs_dir
 
     return logs_dir()
 

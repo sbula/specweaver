@@ -81,7 +81,7 @@ For each sub-feature in topological execution order (from the Design Document):
 
 2.3. Read `.agents/workflows/implementation-plan.md` and execute the full
      `/implementation-plan` workflow for this SF.
-     Output: `docs/proposals/roadmap/phase<X>/<feature_id>_sf<N>_implementation_plan.md`
+     Output: `docs/roadmap/phase<X>/<feature_id>_sf<N>_implementation_plan.md`
      (no `_sf<N>` suffix for non-decomposed features)
 
 2.4. **STOP at Phase 4 HITL gate.** Wait for user response.

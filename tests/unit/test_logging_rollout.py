@@ -23,19 +23,19 @@ class TestBatch1LoggingRollout:
 
     def test_settings_module_has_logger(self):
         """config/settings.py should declare a module-level logger."""
-        from specweaver.config import settings
+        from specweaver.core.config import settings
 
         assert hasattr(settings, "logger"), "settings module must have a logger"
         assert isinstance(settings.logger, logging.Logger)
-        assert settings.logger.name == "specweaver.config.settings"
+        assert settings.logger.name == "specweaver.core.config.settings"
 
     def test_load_settings_emits_debug_log(self, caplog, tmp_path, monkeypatch):
         """load_settings() should emit a DEBUG entry log."""
         from unittest.mock import MagicMock
 
-        from specweaver.config.settings import load_settings
+        from specweaver.core.config.settings import load_settings
 
-        with caplog.at_level(logging.DEBUG, logger="specweaver.config.settings"):
+        with caplog.at_level(logging.DEBUG, logger="specweaver.core.config.settings"):
             try:
                 mock_db = MagicMock()
                 mock_db.get_project.return_value = None
@@ -49,11 +49,11 @@ class TestBatch1LoggingRollout:
 
     def test_paths_module_has_logger(self):
         """config/paths.py should declare a module-level logger."""
-        from specweaver.config import paths
+        from specweaver.core.config import paths
 
         assert hasattr(paths, "logger"), "paths module must have a logger"
         assert isinstance(paths.logger, logging.Logger)
-        assert paths.logger.name == "specweaver.config.paths"
+        assert paths.logger.name == "specweaver.core.config.paths"
 
 
 class TestBatch4LoggingRollout:
@@ -61,7 +61,7 @@ class TestBatch4LoggingRollout:
 
     def test_cli_modules_have_loggers(self):
         """CLI modules must have loggers."""
-        from specweaver.cli import (
+        from specweaver.interfaces.cli import (
             config,
             config_routing,
             constitution,
@@ -96,7 +96,7 @@ class TestBatch4LoggingRollout:
 
     def test_api_modules_have_loggers(self):
         """API modules must have loggers."""
-        from specweaver.api.v1 import (
+        from specweaver.interfaces.api.v1 import (
             constitution,
             health,
             implement,

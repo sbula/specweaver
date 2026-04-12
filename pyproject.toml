@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sw = "specweaver.cli.main:app"
+sw = "specweaver.interfaces.cli.main:app"
 
 [project.optional-dependencies]
 openai = ["openai>=1.5"]

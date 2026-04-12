@@ -4,8 +4,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from specweaver.validation.models import Status
-from specweaver.validation.rules.code.c09_traceability import TraceabilityRule
+from specweaver.assurance.validation.models import Status
+from specweaver.assurance.validation.rules.code.c09_traceability import TraceabilityRule
 
 
 def test_passes_when_no_frs_found():
@@ -13,11 +13,11 @@ def test_passes_when_no_frs_found():
     rule = TraceabilityRule()
     with (
         patch(
-            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
+            "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
             return_value=Path("/tmp/root"),
         ),
         patch(
-            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
+            "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
             return_value=set(),
         ),
     ):
@@ -82,7 +82,7 @@ def test_something():
 
     rule = TraceabilityRule()
     with patch(
-        "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._discover_test_files",
+        "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._discover_test_files",
         return_value=[test_file],
     ):
         mapped = rule._find_and_parse_tests(Path("/tmp/root"))
@@ -97,15 +97,15 @@ def test_fails_with_missing_frs():
     """Ensure the matrix fails if target IDs are unmapped."""
     with (
         patch(
-            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
+            "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
             return_value=Path("/tmp/root"),
         ),
         patch(
-            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
+            "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
             return_value={"FR-1", "FR-2", "FR-3"},
         ),
         patch(
-            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_and_parse_tests",
+            "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._find_and_parse_tests",
             return_value={"FR-1", "FR-2"},
         ),
     ):
@@ -122,15 +122,15 @@ def test_passes_when_all_frs_mapped():
     """Ensure the matrix passes if all target IDs are mapped."""
     with (
         patch(
-            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
+            "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._find_project_root",
             return_value=Path("/tmp/root"),
         ),
         patch(
-            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
+            "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._extract_all_requirements",
             return_value={"FR-1", "FR-2", "FR-3"},
         ),
         patch(
-            "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._find_and_parse_tests",
+            "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._find_and_parse_tests",
             return_value={"FR-1", "FR-2", "FR-3"},
         ),
     ):
@@ -150,7 +150,7 @@ def test_idempotent_multiple_tags(tmp_path):
 
     rule = TraceabilityRule()
     with patch(
-        "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._discover_test_files",
+        "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._discover_test_files",
         return_value=[test_file_1, test_file_2],
     ):
         mapped = rule._find_and_parse_tests(Path("/tmp/root"))
@@ -180,7 +180,7 @@ def test_ast_regex_boundaries(tmp_path):
 
     rule = TraceabilityRule()
     with patch(
-        "specweaver.validation.rules.code.c09_traceability.TraceabilityRule._discover_test_files",
+        "specweaver.assurance.validation.rules.code.c09_traceability.TraceabilityRule._discover_test_files",
         return_value=[test_file],
     ):
         mapped = rule._find_and_parse_tests(Path("/tmp/root"))

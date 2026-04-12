@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from specweaver.planning.stitch import StitchClient
+from specweaver.workflows.planning.stitch import StitchClient
 
 
 @pytest.mark.live

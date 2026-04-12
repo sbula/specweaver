@@ -18,7 +18,7 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.config.database import Database
+    from specweaver.core.config.database import Database
 
 # Path to the static fixture project (relative to repo root)
 _FIXTURE_ROOT = (
@@ -54,7 +54,7 @@ def sample_db(tmp_path: Path, sample_project: Path) -> Database:
     Returns a Database instance backed by SQLite in ``tmp_path``.
     The sample project is pre-registered as ``"sample"``.
     """
-    from specweaver.config.database import Database
+    from specweaver.core.config.database import Database
 
     db = Database(tmp_path / ".specweaver" / "specweaver.db")
     db.register_project("sample", str(sample_project))

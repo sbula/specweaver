@@ -1,0 +1,519 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+"""Tests for code generation and code validation rules C01-C08."""
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from specweaver.workflows.implementation.generator import Generator
+from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.assurance.validation.models import Status
+from specweaver.assurance.validation.rules.code.c01_syntax_valid import SyntaxValidRule
+from specweaver.assurance.validation.rules.code.c02_tests_exist import TestsExistRule
+from specweaver.assurance.validation.rules.code.c05_import_direction import ImportDirectionRule
+from specweaver.assurance.validation.rules.code.c06_no_bare_except import NoBareExceptRule
+from specweaver.assurance.validation.rules.code.c07_no_orphan_todo import NoOrphanTodoRule
+from specweaver.assurance.validation.rules.code.c08_type_hints import TypeHintsRule
+
+# ---------------------------------------------------------------------------
+# C01 Syntax Valid
+# ---------------------------------------------------------------------------
+
+
+class TestC01SyntaxValid:
+    """Test the Syntax Valid rule."""
+
+    def test_valid_python(self) -> None:
+        rule = SyntaxValidRule()
+        result = rule.check("def foo() -> int:\n    return 42\n")
+        assert result.status == Status.PASS
+
+    def test_invalid_python(self) -> None:
+        rule = SyntaxValidRule()
+        result = rule.check("def foo(\n")
+        assert result.status == Status.FAIL
+        assert result.findings
+        assert result.findings[0].line is not None
+
+    def test_empty_code(self) -> None:
+        rule = SyntaxValidRule()
+        result = rule.check("")
+        assert result.status == Status.PASS
+
+    def test_syntax_error_message(self) -> None:
+        rule = SyntaxValidRule()
+        result = rule.check("class:\n  pass")
+        assert result.status == Status.FAIL
+        assert "SyntaxError" in result.findings[0].message
+
+    def test_rule_id(self) -> None:
+        assert SyntaxValidRule().rule_id == "C01"
+        assert SyntaxValidRule().name == "Syntax Valid"
+
+
+# ---------------------------------------------------------------------------
+# C02 Tests Exist
+# ---------------------------------------------------------------------------
+
+
+class TestC02TestsExist:
+    """Test the Tests Exist rule."""
+
+    def test_no_path(self) -> None:
+        rule = TestsExistRule()
+        result = rule.check("code", None)
+        assert result.status == Status.SKIP
+
+    def test_test_file_exists(self, tmp_path: pytest.TempPathFactory) -> None:
+        # Create a source file and its test file
+        src = tmp_path / "foo.py"
+        src.write_text("pass")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        test_file = tests_dir / "test_foo.py"
+        test_file.write_text("pass")
+
+        rule = TestsExistRule()
+        result = rule.check("pass", src)
+        assert result.status == Status.PASS
+
+    def test_test_file_missing(self, tmp_path: pytest.TempPathFactory) -> None:
+        src = tmp_path / "foo.py"
+        src.write_text("pass")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+
+        rule = TestsExistRule()
+        result = rule.check("pass", src)
+        assert result.status == Status.FAIL
+
+    def test_test_file_in_nested_subdir(self, tmp_path: pytest.TempPathFactory) -> None:
+        """Test file in tests/unit/ subdirectory should be found by rglob."""
+        src = tmp_path / "foo.py"
+        src.write_text("pass")
+        nested = tmp_path / "tests" / "unit"
+        nested.mkdir(parents=True)
+        test_file = nested / "test_foo.py"
+        test_file.write_text("pass")
+
+        rule = TestsExistRule()
+        result = rule.check("pass", src)
+        assert result.status == Status.PASS
+
+    def test_rule_id(self) -> None:
+        assert TestsExistRule().rule_id == "C02"
+
+
+# ---------------------------------------------------------------------------
+# C05 Import Direction
+# ---------------------------------------------------------------------------
+
+
+class TestC05ImportDirection:
+    """Test the Import Direction rule via Tach Atom."""
+
+    def test_clean_imports(self, tmp_path: pytest.TempPathFactory) -> None:
+        from specweaver.core.loom.commons.qa_runner.interface import ArchitectureRunResult
+
+        code = "from specweaver.infrastructure.llm.models import Message\n"
+        rule = ImportDirectionRule()
+        spec_path = tmp_path / "test.py"
+        with patch(
+            "specweaver.core.loom.commons.language.python.runner.PythonQARunner.run_architecture_check"
+        ) as mock_run:
+            mock_run.return_value = ArchitectureRunResult(violation_count=0, violations=[])
+            result = rule.check(code, spec_path=spec_path)
+            assert result.status == Status.PASS
+
+    def test_forbidden_cli_import(self, tmp_path: pytest.TempPathFactory) -> None:
+        from specweaver.core.loom.commons.qa_runner.interface import (
+            ArchitectureRunResult,
+            ArchitectureViolation,
+        )
+
+        code = "from specweaver.interfaces.cli.main import app\n"
+        rule = ImportDirectionRule()
+        spec_path = tmp_path / "test.py"
+        with patch(
+            "specweaver.core.loom.commons.language.python.runner.PythonQARunner.run_architecture_check"
+        ) as mock_run:
+            mock_run.return_value = ArchitectureRunResult(
+                violation_count=1,
+                violations=[
+                    ArchitectureViolation(
+                        file="test.py",
+                        code="UndeclaredDependency",
+                        message="Module 'specweaver.interfaces.cli' is not allowed",
+                    )
+                ],
+            )
+            result = rule.check(code, spec_path=spec_path)
+            assert result.status == Status.FAIL
+            assert "Architecture boundary violated" in result.findings[0].message
+
+    def test_no_file_path_skips(self) -> None:
+        code = "import specweaver.interfaces.cli\n"
+        rule = ImportDirectionRule()
+        result = rule.check(code)  # No spec_path
+        assert result.status == Status.SKIP
+
+    def test_engine_failure_skips(self, tmp_path: pytest.TempPathFactory) -> None:
+        code = "import specweaver.interfaces.cli\n"
+        rule = ImportDirectionRule()
+        spec_path = tmp_path / "test.py"
+        with patch(
+            "specweaver.core.loom.commons.language.python.runner.PythonQARunner.run_architecture_check",
+            side_effect=Exception("Timeout"),
+        ):
+            result = rule.check(code, spec_path=spec_path)
+            assert result.status == Status.SKIP
+            assert "Architecture engine failure" in result.message
+
+    def test_missing_payload_fails(self, tmp_path: pytest.TempPathFactory) -> None:
+        from specweaver.core.loom.commons.qa_runner.interface import ArchitectureRunResult
+
+        code = "from specweaver.interfaces.cli.main import app\n"
+        rule = ImportDirectionRule()
+        spec_path = tmp_path / "test.py"
+        with patch(
+            "specweaver.core.loom.commons.language.python.runner.PythonQARunner.run_architecture_check"
+        ) as mock_run:
+            # violation_count > 0 but violations is empty
+            mock_run.return_value = ArchitectureRunResult(violation_count=2, violations=[])
+            result = rule.check(code, spec_path=spec_path)
+            assert result.status == Status.FAIL
+            assert "Architectural violations detected." in result.message
+
+    def test_rule_id(self) -> None:
+        assert ImportDirectionRule().rule_id == "C05"
+
+
+# ---------------------------------------------------------------------------
+# C06 No Bare Except
+# ---------------------------------------------------------------------------
+
+
+class TestC06NoBareExcept:
+    """Test the No Bare Except rule."""
+
+    def test_no_bare_except(self) -> None:
+        code = "try:\n    pass\nexcept Exception:\n    pass\n"
+        rule = NoBareExceptRule()
+        result = rule.check(code)
+        assert result.status == Status.PASS
+
+    def test_bare_except_found(self) -> None:
+        code = "try:\n    pass\nexcept:\n    pass\n"
+        rule = NoBareExceptRule()
+        result = rule.check(code)
+        assert result.status == Status.WARN
+        assert len(result.findings) == 1
+
+    def test_multiple_bare_excepts(self) -> None:
+        code = "try:\n    pass\nexcept:\n    pass\ntry:\n    pass\nexcept:\n    pass\n"
+        rule = NoBareExceptRule()
+        result = rule.check(code)
+        assert result.status == Status.WARN
+        assert len(result.findings) == 2
+
+    def test_rule_id(self) -> None:
+        assert NoBareExceptRule().rule_id == "C06"
+
+    def test_syntax_error_skips(self) -> None:
+        code = "def foo(\n"
+        rule = NoBareExceptRule()
+        result = rule.check(code)
+        assert result.status == Status.SKIP
+
+    def test_empty_code(self) -> None:
+        rule = NoBareExceptRule()
+        result = rule.check("")
+        assert result.status == Status.PASS
+
+
+# ---------------------------------------------------------------------------
+# C07 No Orphan TODO
+# ---------------------------------------------------------------------------
+
+
+class TestC07NoOrphanTodo:
+    """Test the No Orphan TODO rule."""
+
+    def test_no_todos(self) -> None:
+        code = "def foo() -> int:\n    return 42\n"
+        rule = NoOrphanTodoRule()
+        result = rule.check(code)
+        assert result.status == Status.PASS
+
+    def test_todo_found(self) -> None:
+        code = "# TODO: implement this\ndef foo():\n    pass\n"
+        rule = NoOrphanTodoRule()
+        result = rule.check(code)
+        assert result.status == Status.WARN
+        assert len(result.findings) == 1
+
+    def test_fixme_found(self) -> None:
+        code = "# FIXME: broken\npass\n"
+        rule = NoOrphanTodoRule()
+        result = rule.check(code)
+        assert result.status == Status.WARN
+
+    def test_hack_and_xxx_found(self) -> None:
+        code = "# HACK: workaround\n# XXX: review later\npass\n"
+        rule = NoOrphanTodoRule()
+        result = rule.check(code)
+        assert result.status == Status.WARN
+        assert len(result.findings) == 2
+
+    def test_rule_id(self) -> None:
+        assert NoOrphanTodoRule().rule_id == "C07"
+
+    def test_empty_code(self) -> None:
+        rule = NoOrphanTodoRule()
+        result = rule.check("")
+        assert result.status == Status.PASS
+
+    def test_todo_in_string_literal_not_detected(self) -> None:
+        """TODO inside a string literal should NOT be detected (regex requires #)."""
+        code = 'msg = "# TODO: this is a string, not a comment"\n'
+        rule = NoOrphanTodoRule()
+        result = rule.check(code)
+        # The regex pattern `#\s*TODO` will match inside the string
+        # because it scans line-by-line, not AST-aware. This is a known
+        # limitation — test documents the current behavior.
+        assert result.status in (Status.PASS, Status.WARN)
+
+
+# ---------------------------------------------------------------------------
+# C08 Type Hints
+# ---------------------------------------------------------------------------
+
+
+class TestC08TypeHints:
+    """Test the Type Hints rule."""
+
+    def test_all_typed(self) -> None:
+        code = "def foo() -> int:\n    return 42\ndef bar() -> str:\n    return 'hi'\n"
+        rule = TypeHintsRule()
+        result = rule.check(code)
+        assert result.status == Status.PASS
+
+    def test_missing_return_type(self) -> None:
+        code = "def foo():\n    return 42\n"
+        rule = TypeHintsRule()
+        result = rule.check(code)
+        # With only 1 public function missing -> 0% -> FAIL
+        assert result.status == Status.FAIL
+
+    def test_private_functions_ignored(self) -> None:
+        code = "def _private():\n    pass\ndef __dunder__():\n    pass\n"
+        rule = TypeHintsRule()
+        result = rule.check(code)
+        assert result.status == Status.PASS  # No public functions
+
+    def test_mixed_coverage(self) -> None:
+        code = (
+            "def foo() -> int:\n    return 1\n"
+            "def bar() -> int:\n    return 2\n"
+            "def baz():\n    pass\n"
+        )
+        rule = TypeHintsRule()
+        result = rule.check(code)
+        # 2/3 typed = 66% -> WARN
+        assert result.status == Status.WARN
+
+    def test_rule_id(self) -> None:
+        assert TypeHintsRule().rule_id == "C08"
+
+    def test_syntax_error_skips(self) -> None:
+        code = "def foo(\n"
+        rule = TypeHintsRule()
+        result = rule.check(code)
+        assert result.status == Status.SKIP
+
+    def test_empty_code(self) -> None:
+        rule = TypeHintsRule()
+        result = rule.check("")
+        assert result.status == Status.PASS
+
+
+# ---------------------------------------------------------------------------
+# Runner integration
+# ---------------------------------------------------------------------------
+
+
+class TestCodeRulesPipeline:
+    """Test the code validation pipeline executor path."""
+
+    def test_code_pipeline_has_expected_rules(self) -> None:
+        import specweaver.assurance.validation.rules.code  # noqa: F401
+        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+
+        pipeline = load_pipeline_yaml("validation_code_default")
+        ids = {s.rule for s in pipeline.steps}
+        assert "C01" in ids  # Subprocess rules included
+        assert "C03" in ids
+        assert "C04" in ids
+
+    def test_run_code_rules_on_clean_code(self) -> None:
+        import specweaver.assurance.validation.rules.code  # noqa: F401
+        from specweaver.core.config.settings import RuleOverride, ValidationSettings
+        from specweaver.assurance.validation.executor import (
+            apply_settings_to_pipeline,
+            execute_validation_pipeline,
+        )
+        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+
+        code = "def greet(name: str) -> str:\n    return f'Hello {name}!'\n"
+
+        # Load the code pipeline, but disable subprocess rules for unit test
+        pipeline = load_pipeline_yaml("validation_code_default")
+        settings = ValidationSettings(
+            overrides={
+                "C03": RuleOverride(rule_id="C03", enabled=False),
+                "C04": RuleOverride(rule_id="C04", enabled=False),
+            }
+        )
+        pipeline = apply_settings_to_pipeline(pipeline, settings)
+        results = execute_validation_pipeline(pipeline, code)
+
+        c01 = next(r for r in results if r.rule_id == "C01")
+        assert c01.status == Status.PASS
+
+
+# ---------------------------------------------------------------------------
+# Generator tests
+# ---------------------------------------------------------------------------
+
+
+def _make_mock_llm(response_text: str = "def greet(): pass\n") -> MagicMock:
+    mock_llm = MagicMock()
+    mock_llm.generate = AsyncMock(
+        return_value=LLMResponse(
+            text=response_text,
+            model="test-model",
+        )
+    )
+    return mock_llm
+
+
+class TestGenerator:
+    """Test the code generator."""
+
+    @pytest.mark.asyncio
+    async def test_generate_code(self, tmp_path: pytest.TempPathFactory) -> None:
+        spec = tmp_path / "greet_spec.md"
+        spec.write_text("# Greet Service\n\n## 1. Purpose\nGreets people.", encoding="utf-8")
+
+        output = tmp_path / "greet.py"
+
+        mock_llm = _make_mock_llm("def greet(name: str) -> str:\n    return f'Hello {name}!'\n")
+        gen = Generator(llm=mock_llm)
+
+        result = await gen.generate_code(spec, output)
+
+        assert result.exists()
+        content = result.read_text(encoding="utf-8")
+        assert "def greet" in content
+
+    @pytest.mark.asyncio
+    async def test_generate_tests(self, tmp_path: pytest.TempPathFactory) -> None:
+        spec = tmp_path / "greet_spec.md"
+        spec.write_text("# Greet Service\n\n## Contract\ndef greet(name) -> str", encoding="utf-8")
+
+        output = tmp_path / "test_greet.py"
+
+        mock_llm = _make_mock_llm("import pytest\ndef test_greet():\n    assert True\n")
+        gen = Generator(llm=mock_llm)
+
+        result = await gen.generate_tests(spec, output)
+
+        assert result.exists()
+        assert "test_greet" in result.read_text(encoding="utf-8")
+
+    @pytest.mark.asyncio
+    async def test_generate_creates_dirs(self, tmp_path: pytest.TempPathFactory) -> None:
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec", encoding="utf-8")
+
+        output = tmp_path / "nested" / "dir" / "code.py"
+
+        mock_llm = _make_mock_llm("pass\n")
+        gen = Generator(llm=mock_llm)
+
+        result = await gen.generate_code(spec, output)
+        assert result.exists()
+
+    def test_clean_code_removes_markdown_fences(self) -> None:
+        text = "```python\ndef foo():\n    pass\n```"
+        result = Generator._clean_code_output(text)
+        assert "```" not in result
+        assert "def foo" in result
+
+    def test_clean_code_removes_generic_fences(self) -> None:
+        text = "```\nsome code\n```"
+        result = Generator._clean_code_output(text)
+        assert "```" not in result
+
+    def test_clean_code_preserves_plain(self) -> None:
+        text = "def foo():\n    pass"
+        result = Generator._clean_code_output(text)
+        assert "def foo" in result
+
+    @pytest.mark.asyncio
+    async def test_custom_config(self, tmp_path: pytest.TempPathFactory) -> None:
+        spec = tmp_path / "spec.md"
+        spec.write_text("# Spec", encoding="utf-8")
+        output = tmp_path / "code.py"
+
+        mock_llm = _make_mock_llm("pass\n")
+        config = GenerationConfig(model="custom-model", temperature=0.1)
+        gen = Generator(llm=mock_llm, config=config)
+
+        await gen.generate_code(spec, output)
+
+        call_args = mock_llm.generate.call_args
+        used_config = call_args[0][1]
+        assert used_config.model == "custom-model"
+
+
+# ---------------------------------------------------------------------------
+# CLI code check test
+# ---------------------------------------------------------------------------
+
+
+class TestCLICodeCheck:
+    """Test sw check --level=code."""
+
+    def test_check_code_valid_python(self, tmp_path: pytest.TempPathFactory) -> None:
+        from typer.testing import CliRunner
+
+        from specweaver.interfaces.cli.main import app
+
+        code_file = tmp_path / "clean.py"
+        code_file.write_text("def greet(name: str) -> str:\n    return f'Hello {name}'\n")
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["check", "--level", "code", str(code_file)])
+
+        assert "C01" in result.output
+        # Clean code should have C01 PASS at minimum
+        assert "Syntax Valid" in result.output
+
+    def test_check_code_syntax_error(self, tmp_path: pytest.TempPathFactory) -> None:
+        from typer.testing import CliRunner
+
+        from specweaver.interfaces.cli.main import app
+
+        code_file = tmp_path / "broken.py"
+        code_file.write_text("def foo(\n")
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["check", "--level", "code", str(code_file)])
+
+        assert result.exit_code == 1
+        assert "FAIL" in result.output

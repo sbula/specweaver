@@ -45,7 +45,7 @@ To implement the logical behaviors behind a step, you construct a specific **Han
 
 ### Constructing the Handler:
 ```python
-from specweaver.flow.models import StepResult
+from specweaver.core.flow.models import StepResult
 
 class ReviewCodeHandler:
     def execute(self, context: RunContext) -> StepResult:
@@ -67,7 +67,7 @@ Instead of bypassing Flow and manually wiring a CLI module to an LLM, SpecWeaver
 
 ```python
 # Reusable helper from flow/runner.py
-from specweaver.flow.runner import create_single_step
+from specweaver.core.flow.runner import create_single_step
 
 # Dynamic runtime generation
 pipe = create_single_step(action="scan", target="standards")

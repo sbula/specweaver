@@ -14,15 +14,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.flow._base import RunContext
-from specweaver.llm.collector import TelemetryCollector
-from specweaver.llm.models import (
+from specweaver.core.flow._base import RunContext
+from specweaver.infrastructure.llm.collector import TelemetryCollector
+from specweaver.infrastructure.llm.models import (
     GenerationConfig,
     LLMResponse,
     TaskType,
     TokenUsage,
 )
-from specweaver.llm.telemetry import CostEntry
+from specweaver.infrastructure.llm.telemetry import CostEntry
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -82,7 +82,7 @@ def _make_context(*, with_config: bool = True) -> RunContext:
 @pytest.fixture()
 def db(tmp_path: Path):
     """Fresh database with schema v9."""
-    from specweaver.config.database import Database
+    from specweaver.core.config.database import Database
 
     return Database(tmp_path / ".specweaver" / "specweaver.db")
 

@@ -116,7 +116,7 @@ Key patterns from industry research that inform SpecWeaver design:
 | `docs/analysis/fractal_readiness_walkthrough.md` | ✅ Migrated — uses FM examples but methodology is universal. See [fractal_readiness_walkthrough.md](fractal_readiness_walkthrough.md) |
 | `docs/analysis/methodology_open_research.md` | ✅ Migrated — see [methodology_open_research.md](methodology_open_research.md). Key ideas also in [future_capabilities_reference.md](future_capabilities_reference.md) |
 | `docs/proposals/some_conversations.md` | Raw conversation logs (175KB) — not useful as docs |
-| `docs/proposals/roadmap_2026.md` | FlowManager-era roadmap, superseded by specweaver_roadmap |
+| `docs/roadmap_2026.md` | FlowManager-era roadmap, superseded by specweaver_roadmap |
 | `docs/proposals/validation_gate_proposal.md` | Post-MVP — key ideas extracted to [future_capabilities_reference.md](future_capabilities_reference.md) |
 | `docs/proposals/verification_gates_backlog.md` | Post-MVP — key ideas extracted to [future_capabilities_reference.md](future_capabilities_reference.md) |
 | `docs/proposals/v_next_architecture_proposal.md` | Post-MVP — key ideas extracted to [future_capabilities_reference.md](future_capabilities_reference.md) |

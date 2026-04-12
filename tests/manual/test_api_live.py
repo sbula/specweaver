@@ -18,9 +18,9 @@ from pathlib import Path
 import pytest
 from starlette.testclient import TestClient
 
-from specweaver.api.app import create_app, set_event_bridge
-from specweaver.api.event_bridge import EventBridge
-from specweaver.config.database import Database
+from specweaver.interfaces.api.app import create_app, set_event_bridge
+from specweaver.interfaces.api.event_bridge import EventBridge
+from specweaver.core.config.database import Database
 
 # ---------- Helpers ----------
 

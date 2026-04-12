@@ -15,7 +15,7 @@ description: "Phase 1: Intake — read the feature entry and clarify scope with 
 # Phase 1: Intake
 
 1.1. Read the feature entry. If referenced by ID, read:
-     `docs/proposals/roadmap/phase_3_feature_expansion.md`
+     `docs/roadmap/phase_3_feature_expansion.md`
      and locate the row for this feature. Also read any linked proposal documents.
 
 1.2. Determine whether all of the following are answerable without guessing:

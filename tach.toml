@@ -5,25 +5,25 @@ source_roots = [
 exact = true
 
 [[modules]]
-path = "src.specweaver.api"
+path = "src.specweaver.interfaces.api"
 
 [[modules]]
-path = "src.specweaver.cli"
+path = "src.specweaver.interfaces.cli"
 
 [[modules]]
-path = "src.specweaver.config"
+path = "src.specweaver.core.config"
 depends_on = []
 
 [[modules]]
-path = "src.specweaver.context"
+path = "src.specweaver.workspace.context"
 depends_on = []
 
 [[modules]]
-path = "src.specweaver.graph"
+path = "src.specweaver.assurance.graph"
 depends_on = []
 
 [[modules]]
-path = "src.specweaver.llm"
+path = "src.specweaver.infrastructure.llm"
 depends_on = [
 ]
 
@@ -32,40 +32,40 @@ path = "src.specweaver.logging"
 depends_on = []
 
 [[modules]]
-path = "src.specweaver.project"
+path = "src.specweaver.workspace.project"
 depends_on = []
 
 [[modules]]
-path = "src.specweaver.standards"
+path = "src.specweaver.assurance.standards"
 depends_on = []
 
 [[modules]]
-path = "src.specweaver.validation"
+path = "src.specweaver.assurance.validation"
 depends_on = []
 
 
 [[interfaces]]
-from = ["src.specweaver.project"]
+from = ["src.specweaver.workspace.project"]
 expose = ["constitution", "scaffold", "discovery"]
 
 [[interfaces]]
-from = ["src.specweaver.context"]
+from = ["src.specweaver.workspace.context"]
 expose = ["analyzers", "provider", "hitl_provider", "inferrer"]
 
 [[interfaces]]
-from = ["src.specweaver.graph"]
+from = ["src.specweaver.assurance.graph"]
 expose = ["topology", "selectors"]
 
 [[interfaces]]
-from = ["src.specweaver.llm"]
+from = ["src.specweaver.infrastructure.llm"]
 expose = ["models", "adapters.base", "adapters.registry", "prompt_builder", "mention_scanner.models", "mention_scanner.scanner", "telemetry", "router", "collector", "factory", "lineage"]
 
 [[interfaces]]
-from = ["src.specweaver.loom"]
+from = ["src.specweaver.core.loom"]
 expose = ["atoms", "commons", "dispatcher", "security", "tools"]
 
 [[interfaces]]
-from = ["src.specweaver.validation"]
+from = ["src.specweaver.assurance.validation"]
 expose = ["executor", "loader", "models", "pipeline", "pipeline_loader", "registry", "rules", "spec_kind", "drift_detector", "inheritance"]
 # Note: 'runner' is strictly OMITTED from expose array to enforce soft-deprecation.
 
