@@ -22,3 +22,13 @@
 | **4.8** | Blast radius / locality enforcement | `future_capabilities_reference.md` §16 |
 | **4.9** | Containerized deployment (Podman) | `mvp_feature_definition.md` |
 | **4.10** | **Web UI + server mode** | SpecWeaver as a daemon with REST/WebSocket API and browser-based UI. Includes **per-project pipeline storage** (layer 2): SQLite `pipelines` table, CRUD via `sw pipeline` CLI + REST API. _(See also: [A2UI](https://github.com/google/A2UI) declarative component catalog for agent-generated UI, Phase 3.19 structured output schemas as foundation — ORIGINS.md § A2UI)_ |
+
+---
+
+## Ideas to Consider
+
+### Entity-bridged multi-index query fanout (4.2 + 4.3)
+
+_Source: "Beyond Vector Search: Building a Deterministic 3-Tiered Graph-RAG System" (Matthew Mayo, Machine Learning Mastery, April 2026)_
+
+When 4.2 (AST chunking) and 4.3 (Qdrant payloads) are implemented alongside the existing topology graph, the **query bridge mechanism** needs to be specified — i.e., how a user prompt fans out to both the graph and the vector store simultaneously. The article demonstrates a concrete pattern: extract named entities from the prompt via NER (spaCy), use those entities as **strict graph lookups** against the topology/knowledge graph, while running the full prompt as a **semantic similarity search** against Qdrant. This produces two distinct result streams that are then merged into the context window. This aligns with our Phase C (Rich Qdrant Payloads) + Phase B (Topology Graph) architecture and provides a concrete answer to the "graph-guided vector search" mechanism described in 5.4.
