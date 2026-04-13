@@ -46,6 +46,7 @@ class FakeGeminiAdapter:
     """Fake that quacks like GeminiAdapter but never calls the real API."""
 
     provider_name = "gemini"
+    api_key_env_var = "GEMINI_API_KEY"
 
     def __init__(self, **_kwargs) -> None:
         pass

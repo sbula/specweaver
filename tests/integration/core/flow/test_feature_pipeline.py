@@ -37,7 +37,9 @@ from specweaver.core.flow.store import StateStore
 # Paths
 # ---------------------------------------------------------------------------
 
-PIPELINES_DIR = Path(__file__).resolve().parents[4] / "src" / "specweaver" / "workflows" / "pipelines"
+PIPELINES_DIR = (
+    Path(__file__).resolve().parents[4] / "src" / "specweaver" / "workflows" / "pipelines"
+)
 
 
 # ---------------------------------------------------------------------------

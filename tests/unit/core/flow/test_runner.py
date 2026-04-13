@@ -231,7 +231,7 @@ class TestPipelineRunnerSuccess:
 
         sub_fail = PipelineDefinition(
             name="fail_pipe",
-            steps=[PipelineStep(name="s1", action=StepAction.REVIEW, target=StepTarget.SPEC)]
+            steps=[PipelineStep(name="s1", action=StepAction.REVIEW, target=StepTarget.SPEC)],
         )
 
         results = await runner.fan_out([sub_pass, sub_fail, sub_pass], parent_run_id="fail-isol")

@@ -1,10 +1,9 @@
 import asyncio
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import pytest
 from pydantic import BaseModel
 
-from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 from specweaver.infrastructure.llm.factory import LLMAdapterError
@@ -24,17 +23,33 @@ class StubAdapter(LLMAdapter):
 
     async def generate(self, messages: list[Message], config: GenerationConfig) -> LLMResponse:
         from specweaver.infrastructure.llm.models import TokenUsage
-        await asyncio.sleep(self._config.delay)
-        return LLMResponse(text="success", usage=TokenUsage(prompt_tokens=1, completion_tokens=1), finish_reason="stop", model="stub")
 
-    async def generate_stream(self, messages: list[Message], config: GenerationConfig) -> AsyncIterator[str]:
+        await asyncio.sleep(self._config.delay)
+        return LLMResponse(
+            text="success",
+            usage=TokenUsage(prompt_tokens=1, completion_tokens=1),
+            finish_reason="stop",
+            model="stub",
+        )
+
+    async def generate_stream(
+        self, messages: list[Message], config: GenerationConfig
+    ) -> AsyncIterator[str]:
         await asyncio.sleep(self._config.delay)
         yield "success"
 
-    async def generate_with_tools(self, messages, config, tool_executor, on_tool_round=None) -> LLMResponse:
+    async def generate_with_tools(
+        self, messages, config, tool_executor, on_tool_round=None
+    ) -> LLMResponse:
         from specweaver.infrastructure.llm.models import TokenUsage
+
         await asyncio.sleep(self._config.delay)
-        return LLMResponse(text="tools", usage=TokenUsage(prompt_tokens=1, completion_tokens=1), finish_reason="stop", model="stub")
+        return LLMResponse(
+            text="tools",
+            usage=TokenUsage(prompt_tokens=1, completion_tokens=1),
+            finish_reason="stop",
+            model="stub",
+        )
 
     def available(self) -> bool:
         return True
@@ -50,6 +65,7 @@ class StubAdapter(LLMAdapter):
 def reset_rate_limit_state():
     """Clear global semaphores between tests."""
     from specweaver.infrastructure.llm.adapters._rate_limit import _PROVIDER_SEMAPHORES
+
     _PROVIDER_SEMAPHORES.clear()
     yield
     _PROVIDER_SEMAPHORES.clear()
@@ -70,26 +86,26 @@ async def test_rate_limiter_translates_metadata():
 async def test_rate_limiter_concurrency_bounds():
     stub = StubAdapter(MockAdapterConfig(delay=0.1))
     adapter = AsyncRateLimiterAdapter(stub, limit=2, timeout=0.05)
-    
-    # We fire 3 requests. Limit is 2. The 3rd should timeout because the delay is 0.1s, 
+
+    # We fire 3 requests. Limit is 2. The 3rd should timeout because the delay is 0.1s,
     # but the timeout wait is only 0.05s.
-    
+
     config = GenerationConfig(model="stub")
-    
+
     tasks = [
         asyncio.create_task(adapter.generate([], config)),
         asyncio.create_task(adapter.generate([], config)),
         asyncio.create_task(adapter.generate([], config)),
     ]
-    
+
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     successes = [r for r in results if isinstance(r, LLMResponse)]
     errors = [r for r in results if isinstance(r, Exception)]
-    
+
     assert len(successes) == 2
     assert len(errors) == 1
-    
+
     assert isinstance(errors[0], LLMAdapterError)
     assert "concurrency" in str(errors[0]).lower()
 
@@ -117,13 +133,13 @@ async def test_rate_limiter_releases_lock_on_exception():
 async def test_rate_limiter_wraps_generate_with_tools():
     stub = StubAdapter(MockAdapterConfig(delay=0.1))
     adapter = AsyncRateLimiterAdapter(stub, limit=1, timeout=0.05)
-    
+
     config = GenerationConfig(model="stub")
-    
+
     # Prove successful delegation
     res = await adapter.generate_with_tools([], config, tool_executor=None)
     assert res.text == "tools"
-    
+
     # Prove it obeys the concurrency limits
     tasks = [
         asyncio.create_task(adapter.generate_with_tools([], config, tool_executor=None)),
@@ -132,7 +148,7 @@ async def test_rate_limiter_wraps_generate_with_tools():
     results = await asyncio.gather(*tasks, return_exceptions=True)
     successes = [r for r in results if isinstance(r, LLMResponse)]
     errors = [r for r in results if isinstance(r, Exception)]
-    
+
     assert len(successes) == 1
     assert len(errors) == 1
     assert isinstance(errors[0], LLMAdapterError)
@@ -143,9 +159,9 @@ async def test_rate_limiter_wraps_generate_with_tools():
 async def test_rate_limiter_stream_delegation():
     stub = StubAdapter(MockAdapterConfig(delay=0.0))
     adapter = AsyncRateLimiterAdapter(stub, limit=2)
-    
+
     chunks = []
     async for chunk in adapter.generate_stream([], GenerationConfig(model="stub")):
         chunks.append(chunk)
-        
+
     assert chunks == ["success"]

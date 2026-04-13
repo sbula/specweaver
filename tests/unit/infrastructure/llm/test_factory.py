@@ -39,6 +39,7 @@ class TestFactoryTelemetryWrapping:
 
         _settings, adapter, _config = create_llm_adapter(db, telemetry_project=None)
         from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+
         assert isinstance(adapter, AsyncRateLimiterAdapter)
         assert isinstance(adapter._wrapped, GeminiAdapter)
 
@@ -68,6 +69,7 @@ class TestFactoryTelemetryWrapping:
 
         _settings, adapter, _config = create_llm_adapter(db, telemetry_project="")
         from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+
         assert isinstance(adapter, AsyncRateLimiterAdapter)
         assert isinstance(adapter._wrapped, GeminiAdapter)
 
@@ -145,6 +147,7 @@ class TestFactoryProviderCapabilities:
 
         expected_cls = get_adapter_class(provider)
         from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+
         assert isinstance(adapter, AsyncRateLimiterAdapter)
         assert isinstance(adapter._wrapped, expected_cls)
         assert type(adapter._wrapped).__name__ == adapter_cls_name
@@ -161,6 +164,7 @@ class TestFactoryProviderCapabilities:
             settings, adapter, config = create_llm_adapter(db, telemetry_project=None)
 
         from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+
         assert isinstance(adapter, AsyncRateLimiterAdapter)
         assert isinstance(adapter._wrapped, GeminiAdapter)
         assert settings.llm.provider == "gemini"

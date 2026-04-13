@@ -46,7 +46,9 @@ class TestReviewCommandFlush:
                 return_value=tmp_path,
             ),
             patch("specweaver.interfaces.cli._helpers._load_topology", return_value=None),
-            patch("specweaver.interfaces.cli._helpers._load_constitution_content", return_value=None),
+            patch(
+                "specweaver.interfaces.cli._helpers._load_constitution_content", return_value=None
+            ),
             patch("specweaver.interfaces.cli._helpers._load_standards_content", return_value=None),
         ):
             from specweaver.interfaces.cli.review import review
@@ -81,7 +83,9 @@ class TestImplementCommandFlush:
                 return_value=tmp_path,
             ),
             patch("specweaver.interfaces.cli._helpers._load_topology", return_value=None),
-            patch("specweaver.interfaces.cli._helpers._load_constitution_content", return_value=None),
+            patch(
+                "specweaver.interfaces.cli._helpers._load_constitution_content", return_value=None
+            ),
             patch("specweaver.interfaces.cli._helpers._load_standards_content", return_value=None),
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_code",

@@ -478,12 +478,14 @@ class GitAtom(Atom):
 
         fetch_result = self._executor.run("fetch", "origin", "main")
         if fetch_result.exit_code != 0:
-            logger.warning("git fetch origin main failed: %s, falling back to local main", fetch_result.stderr)
+            logger.warning(
+                "git fetch origin main failed: %s, falling back to local main", fetch_result.stderr
+            )
 
         # Execute rebase exactly constrained inside the worktree via -C
         worktree_path = self._cwd / path
         if not worktree_path.exists():
-             return AtomResult(
+            return AtomResult(
                 status=AtomStatus.FAILED,
                 message=f"Worktree path does not exist for syncing: {worktree_path}",
             )
@@ -494,6 +496,7 @@ class GitAtom(Atom):
         # We must instantiate a temporary executor for the worktree?
         # Actually, EngineGitExecutor(cwd=worktree_path)
         from specweaver.core.loom.commons.git.engine_executor import EngineGitExecutor
+
         wt_executor = EngineGitExecutor(cwd=worktree_path, whitelist=set(self._ENGINE_WHITELIST))
 
         rebase_result = wt_executor.run("rebase", "main")
@@ -538,17 +541,21 @@ class GitAtom(Atom):
         # 2. Extract changed files from the pending index
         diff_res = self._executor.run("diff", "--name-only", "--cached")
         if diff_res.exit_code != 0:
-             # Clean up state on crash
-             self._executor.run("merge", "--abort")
-             return AtomResult(
-                 status=AtomStatus.FAILED,
-                 message=f"Failed to read index: {diff_res.stderr}",
-             )
+            # Clean up state on crash
+            self._executor.run("merge", "--abort")
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"Failed to read index: {diff_res.stderr}",
+            )
 
-        changed_files = [f.strip() for f in diff_res.stdout.split('\n') if f.strip()]
+        changed_files = [f.strip() for f in diff_res.stdout.split("\n") if f.strip()]
         if not changed_files:
-             # Nothing changed
-             return AtomResult(status=AtomStatus.SUCCESS, message="No changes to strip and merge.", exports={"stripped_files": []})
+            # Nothing changed
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message="No changes to strip and merge.",
+                exports={"stripped_files": []},
+            )
 
         stripped_files = []
         for file in changed_files:
@@ -564,17 +571,19 @@ class GitAtom(Atom):
                 self._executor.run("checkout", "--", file)
 
         # 3. Commit the surviving hunks
-        commit_res = self._executor.run("commit", "-m", f"chore(sandbox): mathematical diff strip merge from {branch}")
+        commit_res = self._executor.run(
+            "commit", "-m", f"chore(sandbox): mathematical diff strip merge from {branch}"
+        )
         if commit_res.exit_code != 0:
             # It's possible that stripping removed ALL changes, so commit fails.
             self._executor.run("merge", "--abort")
             # If everything was stripped, it's just a no-op success conceptually
             if len(stripped_files) == len(changed_files):
-                 return AtomResult(
-                     status=AtomStatus.SUCCESS,
-                     message="All changes were mathematically stripped. Nothing merged.",
-                     exports={"stripped_files": stripped_files}
-                 )
+                return AtomResult(
+                    status=AtomStatus.SUCCESS,
+                    message="All changes were mathematically stripped. Nothing merged.",
+                    exports={"stripped_files": stripped_files},
+                )
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message=f"Failed to commit stripped merge: {commit_res.stderr}",
@@ -583,7 +592,5 @@ class GitAtom(Atom):
         return AtomResult(
             status=AtomStatus.SUCCESS,
             message=f"Successfully merged cleanly, stripped {len(stripped_files)} files.",
-            exports={"stripped_files": stripped_files}
+            exports={"stripped_files": stripped_files},
         )
-
-

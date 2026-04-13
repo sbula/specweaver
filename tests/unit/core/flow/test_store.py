@@ -87,10 +87,15 @@ class TestStoreSchema:
         """Test that a V1 schema database is successfully migrated to V2 (parent_run_id added)."""
         db_path = tmp_path / "legacy.db"
         import sqlite3
+
         # Create a raw V1 database
         conn = sqlite3.connect(db_path)
-        conn.execute("CREATE TABLE state_schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)")
-        conn.execute("INSERT INTO state_schema_version (version, applied_at) VALUES (1, '2026-03-14T18:00:00Z')")
+        conn.execute(
+            "CREATE TABLE state_schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+        )
+        conn.execute(
+            "INSERT INTO state_schema_version (version, applied_at) VALUES (1, '2026-03-14T18:00:00Z')"
+        )
         conn.execute(
             """
             CREATE TABLE pipeline_runs (
@@ -121,6 +126,7 @@ class TestStoreSchema:
         columns = [row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)").fetchall()]
         assert "parent_run_id" in columns
         conn.close()
+
 
 # ---------------------------------------------------------------------------
 # Save / load pipeline runs

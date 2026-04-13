@@ -45,7 +45,9 @@ class TestRequireLlmAdapterFallback:
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
         # Patch at the source module (lazy imports inside the function)
-        with patch("specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter") as mock_adapter_cls:
+        with patch(
+            "specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter"
+        ) as mock_adapter_cls:
             mock_adapter = MagicMock()
             mock_adapter.available.return_value = True
             mock_adapter_cls.return_value = mock_adapter
@@ -71,7 +73,9 @@ class TestRequireLlmAdapterFallback:
         with patch("specweaver.core.config.settings.load_settings_for_active") as mock_load:
             mock_load.side_effect = ValueError("No active project")
 
-            with patch("specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter") as mock_adapter_cls:
+            with patch(
+                "specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter"
+            ) as mock_adapter_cls:
                 mock_adapter = MagicMock()
                 mock_adapter.available.return_value = True
                 mock_adapter_cls.return_value = mock_adapter

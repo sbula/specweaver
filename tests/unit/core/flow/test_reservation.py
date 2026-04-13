@@ -30,6 +30,7 @@ def test_sqlite_reservation_acquire_and_release(tmp_path: Path) -> None:
     success3 = system.acquire("port:8000", "run-456")
     assert success3 is True
 
+
 def test_sqlite_reservation_idempotent_creation(tmp_path: Path) -> None:
     db_path = tmp_path / "reservations.db"
     system1 = SQLiteReservationSystem(db_path)
@@ -40,20 +41,24 @@ def test_sqlite_reservation_idempotent_creation(tmp_path: Path) -> None:
     assert system2.acquire("test-resource", "run-999") is True
 
 
-def test_sqlite_reservation_ensure_schema_error(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+def test_sqlite_reservation_ensure_schema_error(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
     db_path = tmp_path / "reservations.db"
     system = SQLiteReservationSystem(db_path)
 
     with (
         mock.patch("sqlite3.connect", side_effect=sqlite3.Error("Mocked schema error")),
-        pytest.raises(sqlite3.Error, match="Mocked schema error")
+        pytest.raises(sqlite3.Error, match="Mocked schema error"),
     ):
         system._ensure_schema()
 
     assert "Failed to initialize SQLiteReservationSystem schema: Mocked schema error" in caplog.text
 
 
-def test_sqlite_reservation_acquire_operational_error(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+def test_sqlite_reservation_acquire_operational_error(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
     db_path = tmp_path / "reservations.db"
     system = SQLiteReservationSystem(db_path)
 
@@ -64,7 +69,10 @@ def test_sqlite_reservation_acquire_operational_error(tmp_path: Path, caplog: py
     with mock.patch.object(system, "_get_connection", return_value=mock_conn):
         assert system.acquire("port:8000", "run-222") is False
 
-    assert "SQLiteReservationSystem Operational timeout on 'port:8000': Database is locked" in caplog.text
+    assert (
+        "SQLiteReservationSystem Operational timeout on 'port:8000': Database is locked"
+        in caplog.text
+    )
 
 
 def test_sqlite_reservation_release_error(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
@@ -78,7 +86,10 @@ def test_sqlite_reservation_release_error(tmp_path: Path, caplog: pytest.LogCapt
     with mock.patch.object(system, "_get_connection", return_value=mock_conn):
         system.release("run-333")  # Does not raise, swallows gracefully via logger
 
-    assert "SQLiteReservationSystem failed to release lock for run_id=run-333: Release failed" in caplog.text
+    assert (
+        "SQLiteReservationSystem failed to release lock for run_id=run-333: Release failed"
+        in caplog.text
+    )
 
 
 def test_sqlite_reservation_thundering_herd_concurrency(tmp_path: Path) -> None:
@@ -105,4 +116,3 @@ def test_sqlite_reservation_thundering_herd_concurrency(tmp_path: Path) -> None:
     # Strictly 1 acquisition should succeed, 49 should yield False via IntegrityError
     assert results.count(True) == 1
     assert results.count(False) == 49
-

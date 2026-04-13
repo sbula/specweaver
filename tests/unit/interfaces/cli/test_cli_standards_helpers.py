@@ -290,7 +290,9 @@ class TestMaybeBootstrapConstitution:
         accepted = self._make_accepted()
 
         # Mock typer.confirm to return True
-        monkeypatch.setattr("specweaver.interfaces.cli.standards.typer.confirm", lambda *a, **kw: True)
+        monkeypatch.setattr(
+            "specweaver.interfaces.cli.standards.typer.confirm", lambda *a, **kw: True
+        )
 
         _maybe_bootstrap_constitution(
             project_path=tmp_path,

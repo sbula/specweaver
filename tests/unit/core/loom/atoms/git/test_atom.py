@@ -598,7 +598,9 @@ class TestWorktreeAdd:
 
     def test_git_failure(self, tmp_path: Path) -> None:
         with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 128, "stdout": "", "stderr": "fatal"})()
+            mock.return_value = type(
+                "R", (), {"returncode": 128, "stdout": "", "stderr": "fatal"}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
                 {
@@ -646,7 +648,9 @@ class TestWorktreeTeardown:
         with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock_run:
             # First subproc fails (git worktree remove --force ...), second succeeds (git worktree prune)
             mock_run.side_effect = [
-                type("R", (), {"returncode": 1, "stdout": "", "stderr": "Device or resource busy"})(),
+                type(
+                    "R", (), {"returncode": 1, "stdout": "", "stderr": "Device or resource busy"}
+                )(),
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
             ]
             atom = GitAtom(cwd=tmp_path)
@@ -662,7 +666,9 @@ class TestWorktreeTeardown:
 
     @patch("specweaver.core.loom.atoms.git.atom.time.sleep")
     @patch("specweaver.core.loom.atoms.git.atom.shutil.rmtree")
-    def test_windows_fallback_exhausts_retries_and_fails(self, mock_rmtree, mock_sleep, tmp_path: Path) -> None:
+    def test_windows_fallback_exhausts_retries_and_fails(
+        self, mock_rmtree, mock_sleep, tmp_path: Path
+    ) -> None:
         """If git worktree remove fails, and rmtree throws 5 times, it fails and sleeps."""
         worktree_path = tmp_path / ".worktrees" / "stub"
         worktree_path.mkdir(parents=True)
@@ -727,16 +733,24 @@ class TestStripMerge:
                 # git merge
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
                 # git diff
-                type("R", (), {"returncode": 0, "stdout": "src/good.py\nREADME.md\ndocs/arch.md\nsrc/bad.py\n", "stderr": ""})(),
+                type(
+                    "R",
+                    (),
+                    {
+                        "returncode": 0,
+                        "stdout": "src/good.py\nREADME.md\ndocs/arch.md\nsrc/bad.py\n",
+                        "stderr": "",
+                    },
+                )(),
                 # loops for README.md
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # reset
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # checkout
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # reset
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
                 # loops for docs/arch.md
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # reset
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # checkout
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # reset
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
                 # loops for src/bad.py
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # reset
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # checkout
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # reset
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
                 # git commit
                 type("R", (), {"returncode": 0, "stdout": "committed strips", "stderr": ""})(),
             ]
@@ -763,10 +777,18 @@ class TestStripMerge:
                 # git merge
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
                 # git diff
-                type("R", (), {"returncode": 0, "stdout": "src/good.py\ncomponent/doc_updates.md\nsrc/bad.py\n", "stderr": ""})(),
+                type(
+                    "R",
+                    (),
+                    {
+                        "returncode": 0,
+                        "stdout": "src/good.py\ncomponent/doc_updates.md\nsrc/bad.py\n",
+                        "stderr": "",
+                    },
+                )(),
                 # loops for src/bad.py ONLY (doc_updates is skipped)
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # reset
-                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(), # checkout
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # reset
+                type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
                 # git commit
                 type("R", (), {"returncode": 0, "stdout": "committed strips", "stderr": ""})(),
             ]

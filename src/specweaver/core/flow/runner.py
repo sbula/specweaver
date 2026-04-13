@@ -44,7 +44,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-
 # ---------------------------------------------------------------------------
 # Pipeline runner
 # ---------------------------------------------------------------------------
@@ -79,6 +78,7 @@ class PipelineRunner:
         self._gate_evaluator = GateEvaluator(pipeline, context)
 
         from specweaver.core.flow.routers import RouterEvaluator
+
         self._router_evaluator = RouterEvaluator()
 
     def _setup_sandbox_caches(self, wt_dir: str) -> None:
@@ -184,9 +184,7 @@ class PipelineRunner:
             for pipe in sub_pipelines
         ]
         return list(
-            await asyncio.gather(
-                *[runner.run(parent_run_id=parent_run_id) for runner in runners]
-            )
+            await asyncio.gather(*[runner.run(parent_run_id=parent_run_id) for runner in runners])
         )
 
     # ------------------------------------------------------------------
@@ -293,13 +291,19 @@ class PipelineRunner:
                     from specweaver.core.loom.atoms.git.atom import GitAtom
 
                     atom = GitAtom(cwd=self._context.project_path)
-                    clean_pipeline = (self._context.pipeline_name or "default_pipe").replace(" ", "_")
-                    task_id = getattr(self._context, "task_id", getattr(self._context, "run_id", "default"))
+                    clean_pipeline = (self._context.pipeline_name or "default_pipe").replace(
+                        " ", "_"
+                    )
+                    task_id = getattr(
+                        self._context, "task_id", getattr(self._context, "run_id", "default")
+                    )
                     branch = f"sf-{clean_pipeline}-{task_id}"
                     wt_path = f".worktrees/{task_id}"
 
                     # 1. Add worktree
-                    add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
+                    add_res = atom.run(
+                        {"intent": "worktree_add", "path": wt_path, "branch": branch}
+                    )
                     if add_res.status != AtomStatus.SUCCESS:
                         raise RuntimeError(f"Failed to create sandbox worktree: {add_res.message}")
 
@@ -319,11 +323,19 @@ class PipelineRunner:
                         atom.run({"intent": "worktree_sync", "path": wt_path})
 
                         # 4. Mathematical diff striping (FR-4, FR-5, NFR-4)
-                        strip_res = atom.run({"intent": "strip_merge", "branch": branch, "allowed_paths": getattr(self._context, "allowed_paths", [])})
+                        strip_res = atom.run(
+                            {
+                                "intent": "strip_merge",
+                                "branch": branch,
+                                "allowed_paths": getattr(self._context, "allowed_paths", []),
+                            }
+                        )
                         if strip_res.status != AtomStatus.SUCCESS:
                             # Log but don't strictly fail the inner step if merging failed
                             # (could be auto-strip just removed everything). Wait, we should log warning.
-                            logger.warning(f"Sandbox diff striping returned non-success: {strip_res.message}")
+                            logger.warning(
+                                f"Sandbox diff striping returned non-success: {strip_res.message}"
+                            )
 
                     finally:
                         # 5. Teardown resilience
@@ -332,10 +344,13 @@ class PipelineRunner:
                         # 6. Database Cleanup Hooks bounds guarantee zombie block survival
                         try:
                             from specweaver.core.flow.reservation import SQLiteReservationSystem
+
                             db_path = self._context.project_path / ".specweaver" / "reservations.db"
                             SQLiteReservationSystem(db_path).release(run.run_id)
                         except Exception as e:
-                            logger.error("[run_id=%s] Sandbox DB teardown bounds panic: %s", run.run_id, e)
+                            logger.error(
+                                "[run_id=%s] Sandbox DB teardown bounds panic: %s", run.run_id, e
+                            )
                 else:
                     result = await handler.execute(step_def, self._context)
             except Exception as exc:
@@ -533,9 +548,18 @@ class PipelineRunner:
 
                 logger.info(
                     "[run_id=%s] Router resolved target '%s' (index %d). Routing.",
-                    run.run_id, target_step_name, target_idx
+                    run.run_id,
+                    target_step_name,
+                    target_idx,
                 )
-                self._emit("step_routed", step_idx=step_idx, step_name=step_def.name, target_step=target_step_name, target_idx=target_idx, run=run)
+                self._emit(
+                    "step_routed",
+                    step_idx=step_idx,
+                    step_name=step_def.name,
+                    target_step=target_step_name,
+                    target_idx=target_idx,
+                    run=run,
+                )
                 self._log(run, "step_routed", step_def.name)
                 run.route_to_step(result, target_idx)
             else:
@@ -597,4 +621,5 @@ class PipelineRunner:
     def _flush_telemetry(self) -> None:
         """Flush telemetry if context.llm is a TelemetryCollector."""
         from specweaver.core.flow.runner_utils import flush_telemetry
+
         flush_telemetry(self._context, logger)

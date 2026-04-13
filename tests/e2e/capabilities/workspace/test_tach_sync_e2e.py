@@ -32,7 +32,11 @@ def test_e2e_tach_sync_generates_valid_boundaries(tmp_path: Path):
     env["SPECWEAVER_DATA_DIR"] = str(tmp_path / "appdata")
     env["PYTHONIOENCODING"] = "utf-8"
 
-    cli_cmd = ["python", "-c", "from specweaver.interfaces.cli.main import app; app(prog_name='sw')"]
+    cli_cmd = [
+        "python",
+        "-c",
+        "from specweaver.interfaces.cli.main import app; app(prog_name='sw')",
+    ]
 
     subprocess.run(
         [*cli_cmd, "init", "validating-tach-project", "--path", str(project_dir)],

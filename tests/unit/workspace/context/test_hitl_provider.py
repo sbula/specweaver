@@ -40,14 +40,18 @@ class TestHITLProviderAsk:
     @pytest.mark.asyncio
     async def test_ask_returns_user_input(self) -> None:
         provider = HITLProvider()
-        with patch("specweaver.workspace.context.hitl_provider.Prompt.ask", return_value="my answer"):
+        with patch(
+            "specweaver.workspace.context.hitl_provider.Prompt.ask", return_value="my answer"
+        ):
             result = await provider.ask("What is X?")
         assert result == "my answer"
 
     @pytest.mark.asyncio
     async def test_ask_strips_whitespace(self) -> None:
         provider = HITLProvider()
-        with patch("specweaver.workspace.context.hitl_provider.Prompt.ask", return_value="  padded  "):
+        with patch(
+            "specweaver.workspace.context.hitl_provider.Prompt.ask", return_value="  padded  "
+        ):
             result = await provider.ask("Q?")
         assert result == "padded"
 

@@ -53,7 +53,9 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
 
     with (
         patch(
-            "specweaver.core.loom.atoms.git.atom.GitAtom.run", autospec=True, side_effect=fake_atom_run
+            "specweaver.core.loom.atoms.git.atom.GitAtom.run",
+            autospec=True,
+            side_effect=fake_atom_run,
         ),
         patch("specweaver.core.flow.runner.StepHandlerRegistry.get") as mock_get_handler,
     ):
@@ -112,7 +114,9 @@ async def test_bouncer_worktree_add_fail(tmp_path: Path):
         result_run = await runner.run()
 
         from specweaver.core.flow.state import RunStatus
+
         assert result_run.status == RunStatus.FAILED
+
 
 @pytest.mark.asyncio
 async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
@@ -134,7 +138,9 @@ async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
 
     with (
         patch(
-            "specweaver.core.loom.atoms.git.atom.GitAtom.run", autospec=True, side_effect=fake_atom_run
+            "specweaver.core.loom.atoms.git.atom.GitAtom.run",
+            autospec=True,
+            side_effect=fake_atom_run,
         ),
         patch("specweaver.core.flow.runner.StepHandlerRegistry.get") as mock_get,
     ):
@@ -167,7 +173,10 @@ async def test_symlink_cache_folders(tmp_path: Path):
     pipeline = PipelineDefinition(name="p1", steps=[step])
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
 
-    with patch("specweaver.core.loom.atoms.git.atom.GitAtom.run", autospec=True) as mock_atom, patch("os.symlink") as mock_symlink:
+    with (
+        patch("specweaver.core.loom.atoms.git.atom.GitAtom.run", autospec=True) as mock_atom,
+        patch("os.symlink") as mock_symlink,
+    ):
         mock_atom.return_value = AtomResult(status=AtomStatus.SUCCESS, message="")
         runner = PipelineRunner(pipeline, context)
 

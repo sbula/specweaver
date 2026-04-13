@@ -669,6 +669,7 @@ class TestPlannerRetryWithCleanJson:
 # DAG Orchestrator Dynamic Pipeline Fan-Out (Integration)
 # ---------------------------------------------------------------------------
 
+
 class TestDagOrchestratorIntegration:
     """Tests the interaction between OrchestrateComponentsHandler, TopologyGraph, and dynamically spawned PipelineRunners."""
 
@@ -687,7 +688,11 @@ class TestDagOrchestratorIntegration:
         plan_dict = {
             "components": [
                 {"component": "service_a", "dependencies": [], "target_modules": ["auth"]},
-                {"component": "service_b", "dependencies": ["service_a"], "target_modules": ["api"]}
+                {
+                    "component": "service_b",
+                    "dependencies": ["service_a"],
+                    "target_modules": ["api"],
+                },
             ]
         }
         ctx.plan = json.dumps(plan_dict)
@@ -707,7 +712,9 @@ class TestDagOrchestratorIntegration:
 
         with patch("specweaver.core.flow.runner.PipelineRunner.run", new=mocked_run):
             handler = OrchestrateComponentsHandler()
-            step_def = PipelineStep(name="orch", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS)
+            step_def = PipelineStep(
+                name="orch", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS
+            )
 
             result = await handler.execute(step_def, ctx)
 
@@ -715,7 +722,9 @@ class TestDagOrchestratorIntegration:
             # The parent orchestration must FAIL with a cascading failure message.
             assert result.status == StepStatus.FAILED, "Handler should bubble up failures."
             assert "Cascading failure" in result.error_message
-            assert "Ran 1 total pipelines" in result.error_message, "Only Service A should have run!"
+            assert "Ran 1 total pipelines" in result.error_message, (
+                "Only Service A should have run!"
+            )
 
     @pytest.mark.asyncio()
     async def test_integration_topological_collision_deferment(self, tmp_path: Path) -> None:
@@ -726,6 +735,7 @@ class TestDagOrchestratorIntegration:
         from specweaver.core.flow._decompose import OrchestrateComponentsHandler
         from specweaver.core.flow.models import PipelineDefinition
         from specweaver.core.flow.runner import PipelineRunner
+
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
         ctx.run_id = "parent_run"
 
@@ -734,7 +744,7 @@ class TestDagOrchestratorIntegration:
         plan_dict = {
             "components": [
                 {"component": "service_a", "dependencies": [], "target_modules": ["auth"]},
-                {"component": "service_b", "dependencies": [], "target_modules": ["auth"]}
+                {"component": "service_b", "dependencies": [], "target_modules": ["auth"]},
             ]
         }
         ctx.plan = json.dumps(plan_dict)
@@ -762,7 +772,9 @@ class TestDagOrchestratorIntegration:
 
         with patch("specweaver.core.flow.runner.PipelineRunner.run", new=mocked_run):
             handler = OrchestrateComponentsHandler()
-            step_def = PipelineStep(name="orch", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS)
+            step_def = PipelineStep(
+                name="orch", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS
+            )
 
             result = await handler.execute(step_def, ctx)
 
@@ -771,4 +783,97 @@ class TestDagOrchestratorIntegration:
             assert len(result.output["sub_runs"]) == 2
 
             # The maximum observed concurrency MUST be 1 due to the topology conflict!
-            assert max_concurrent == 1, "Topological collision guard failed, tasks ran concurrently!"
+            assert max_concurrent == 1, (
+                "Topological collision guard failed, tasks ran concurrently!"
+            )
+
+
+@pytest.mark.asyncio
+async def test_integration_topological_join_wave_n_deferred():
+    """
+    Verifies that OrchestrateComponentsHandler correctly strips `gate: join` steps
+    prior to running parallel fan_out pipelines, and correctly executes them identically
+    at the end via a synchronised Wave N runner execution.
+    """
+    from pathlib import Path
+
+    from specweaver.core.flow._base import RunContext
+    from specweaver.core.flow._decompose import OrchestrateComponentsHandler
+    from specweaver.core.flow.runner import PipelineRunner
+    from specweaver.core.flow.state import StepStatus
+
+    ctx = RunContext(project_path=Path("/tmp/path"), spec_path=Path("/tmp/path/spec.md"))
+    ctx.run_id = "parent_run"
+
+    # 1. Provide a plan indicating 2 entirely disconnected components.
+    mock_plan = json.dumps(
+        {
+            "components": [
+                {"component": "AlphaFeature", "dependencies": []},
+                {"component": "BetaFeature", "dependencies": []},
+            ]
+        }
+    )
+    ctx.plan = mock_plan
+
+    import importlib.resources
+
+    import yaml
+
+    files = importlib.resources.files("specweaver.workflows.pipelines")
+    resource = files.joinpath("new_feature.yaml")
+    base_yaml = yaml.safe_load(resource.read_text(encoding="utf-8"))
+
+    # Force the last step to be a `join` Gate
+    base_yaml["steps"][-1]["gate"] = {"type": "join"}
+    custom_yaml_text = yaml.dump(base_yaml)
+
+    handler = OrchestrateComponentsHandler()
+    runner = PipelineRunner(
+        pipeline=MagicMock(),
+        context=ctx,
+        registry=MagicMock(),
+        store=MagicMock(),
+        on_event=MagicMock(),
+    )
+    ctx.pipeline_runner = runner
+
+    original_init = PipelineRunner.__init__
+    created_pipelines = []
+
+    def spy_init(self, pipeline, *args, **kwargs):
+        created_pipelines.append(pipeline)
+        return original_init(self, pipeline, *args, **kwargs)
+
+    with (
+        patch.multiple(
+            "specweaver.core.flow.runner.PipelineRunner",
+            __init__=spy_init,
+            run=AsyncMock(return_value=MagicMock(status=StepStatus.PASSED, run_id="mock-run")),
+        ),
+        patch.object(importlib.resources, "files") as mock_files,
+    ):
+        mock_resource = MagicMock()
+        mock_resource.joinpath.return_value.read_text.return_value = custom_yaml_text
+        mock_files.return_value = mock_resource
+
+        step_def = PipelineStep(
+            name="orch", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS
+        )
+        res = await handler.execute(step_def, ctx)
+
+    assert res.status == StepStatus.PASSED
+
+    assert len(created_pipelines) == 3
+
+    pipe_alpha = next(p for p in created_pipelines if p.name == "auto_AlphaFeature")
+    pipe_beta = next(p for p in created_pipelines if p.name == "auto_BetaFeature")
+    pipe_join = next(p for p in created_pipelines if "wave_n" in p.name)
+
+    assert len(pipe_alpha.steps) == len(base_yaml["steps"]) - 1
+    assert len(pipe_beta.steps) == len(base_yaml["steps"]) - 1
+
+    assert len(pipe_join.steps) == 2
+    assert pipe_join.steps[0].params["component"] in ["AlphaFeature", "BetaFeature"]
+    assert pipe_join.steps[1].params["component"] in ["AlphaFeature", "BetaFeature"]
+    assert pipe_join.steps[0].params["component"] != pipe_join.steps[1].params["component"]

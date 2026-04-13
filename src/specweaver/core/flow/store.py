@@ -99,12 +99,17 @@ class StateStore:
                 )
                 logger.debug("StateStore: created schema v2 at '%s'", self._db_path)
             else:
-                version = conn.execute(
-                    "SELECT MAX(version) FROM state_schema_version"
-                ).fetchone()[0]
+                version = conn.execute("SELECT MAX(version) FROM state_schema_version").fetchone()[
+                    0
+                ]
                 if version == 1:
-                    conn.execute("ALTER TABLE pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES pipeline_runs(run_id);")
-                    conn.execute("INSERT INTO state_schema_version (version, applied_at) VALUES (?, ?)", (2, _now_iso()))
+                    conn.execute(
+                        "ALTER TABLE pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES pipeline_runs(run_id);"
+                    )
+                    conn.execute(
+                        "INSERT INTO state_schema_version (version, applied_at) VALUES (?, ?)",
+                        (2, _now_iso()),
+                    )
                     logger.debug("StateStore: migrated schema v1 -> v2 at '%s'", self._db_path)
 
     # ------------------------------------------------------------------

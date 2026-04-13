@@ -3,7 +3,7 @@
 
 import asyncio
 import logging
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, Message
@@ -16,7 +16,7 @@ _PROVIDER_SEMAPHORES: dict[str, asyncio.Semaphore] = {}
 
 class AsyncRateLimiterAdapter(LLMAdapter):
     """Wraps an LLMAdapter with an asyncio.Semaphore to natively throttle concurrency.
-    
+
     This mitigates HTTP 429 Rate Limit Crash loops when the topological
     Orchestrator pipeline fan-outs multiple parallel independent waves.
     """
@@ -50,9 +50,12 @@ class AsyncRateLimiterAdapter(LLMAdapter):
             await asyncio.wait_for(semaphore.acquire(), timeout=self._timeout)
             logger.debug("[%s] Concurrent lock acquired.", self.provider_name)
             return semaphore
-        except asyncio.TimeoutError as e:
-            logger.error("[%s] Concurrency lock timed out after %.1fs", self.provider_name, self._timeout)
+        except TimeoutError as e:
+            logger.error(
+                "[%s] Concurrency lock timed out after %.1fs", self.provider_name, self._timeout
+            )
             from specweaver.infrastructure.llm.factory import LLMAdapterError
+
             raise LLMAdapterError(
                 f"Rate limit timeout: Exhausted concurrency bounds awaiting slots for {self.provider_name}."
             ) from e

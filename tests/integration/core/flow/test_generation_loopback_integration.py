@@ -39,10 +39,14 @@ def test_generation_feedback_loopback_e2e(tmp_path: Path) -> None:
     # We provide a mock adapter directly on context
     mock_llm = AsyncMock()
     mock_llm.generate = AsyncMock(
-        return_value=MagicMock(text="```python\ndef pass_test(): pass\n```", finish_reason=1, parsed=None)
+        return_value=MagicMock(
+            text="```python\ndef pass_test(): pass\n```", finish_reason=1, parsed=None
+        )
     )
 
-    context = RunContext(project_path=tmp_path, spec_path=spec_path, output_dir=tmp_path / "src", llm=mock_llm)
+    context = RunContext(
+        project_path=tmp_path, spec_path=spec_path, output_dir=tmp_path / "src", llm=mock_llm
+    )
     context.run_id = "test-e2e-run"
     context.db = MagicMock()
 
@@ -58,7 +62,9 @@ def test_generation_feedback_loopback_e2e(tmp_path: Path) -> None:
     }
 
     # 2. Run the actual engine (using real GenerateCodeHandler internally)
-    with patch("specweaver.core.loom.commons.git.executor.GitExecutor.run", return_value=(0, "", "")):
+    with patch(
+        "specweaver.core.loom.commons.git.executor.GitExecutor.run", return_value=(0, "", "")
+    ):
         runner = PipelineRunner(pipeline, context)
         run_state = asyncio.run(runner.run())
 

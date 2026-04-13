@@ -385,7 +385,10 @@ class TestPlannerStitchIntegration:
         import specweaver.workflows.planning.ui_extractor
 
         monkeypatch.setattr(
-            specweaver.workflows.planning.ui_extractor, "extract_ui_requirements", mock_extract, raising=False
+            specweaver.workflows.planning.ui_extractor,
+            "extract_ui_requirements",
+            mock_extract,
+            raising=False,
         )
 
         plan = await planner.generate_plan(

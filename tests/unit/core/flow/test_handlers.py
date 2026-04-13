@@ -256,7 +256,9 @@ class TestGenerateCodeHandler:
 
     @pytest.mark.asyncio
     @patch("specweaver.workflows.implementation.generator.Generator.generate_code")
-    async def test_generate_code_extracts_loopback_feedback(self, mock_gen_code, tmp_path: Path) -> None:
+    async def test_generate_code_extracts_loopback_feedback(
+        self, mock_gen_code, tmp_path: Path
+    ) -> None:
         """Verifies loopback findings from context are passed to Generator."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -439,7 +441,9 @@ class TestGenerateTestsHandler:
 
     @pytest.mark.asyncio
     @patch("specweaver.workflows.implementation.generator.Generator.generate_tests")
-    async def test_generate_tests_extracts_loopback_feedback(self, mock_gen_tests, tmp_path: Path) -> None:
+    async def test_generate_tests_extracts_loopback_feedback(
+        self, mock_gen_tests, tmp_path: Path
+    ) -> None:
         """Verifies loopback findings from context are passed to Generator."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -856,5 +860,3 @@ class TestValidateFlowWithDecompose:
         p = PipelineDefinition(name="bad", steps=steps)
         errors = p.validate_flow()
         assert any("invalid" in e.lower() or "combination" in e.lower() for e in errors)
-
-

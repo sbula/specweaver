@@ -103,7 +103,8 @@ def hooks_install(
         hook_path.chmod(st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
         logger.info(f"Successfully installed pre-commit hook at {hook_path}")
-        _core.console.print("[green]Success: SpecWeaver pre-commit hook installed successfully.[/green]")
+        _core.console.print(
+            "[green]Success: SpecWeaver pre-commit hook installed successfully.[/green]"
+        )
     else:
         logger.info("Skip pre-commit hook installation per options.")
-

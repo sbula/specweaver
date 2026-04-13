@@ -56,7 +56,9 @@ class TestLiftedRestrictions:
                 "stderr": "",
             },
         )()
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result):
+        with patch(
+            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ):
             result = executor.run("push")
         assert result.status == "success"
 
@@ -71,7 +73,9 @@ class TestLiftedRestrictions:
                 "stderr": "",
             },
         )()
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result):
+        with patch(
+            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ):
             result = executor.run("merge", "feat/login")
         assert result.status == "success"
 
@@ -86,7 +90,9 @@ class TestLiftedRestrictions:
                 "stderr": "",
             },
         )()
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result):
+        with patch(
+            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ):
             result = executor.run("pull")
         assert result.status == "success"
 
@@ -101,7 +107,9 @@ class TestLiftedRestrictions:
                 "stderr": "",
             },
         )()
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result):
+        with patch(
+            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ):
             result = executor.run("fetch")
         assert result.status == "success"
 
@@ -116,7 +124,9 @@ class TestLiftedRestrictions:
                 "stderr": "",
             },
         )()
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result):
+        with patch(
+            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ):
             result = executor.run("rebase", "main")
         assert result.status == "success"
 
@@ -131,7 +141,9 @@ class TestLiftedRestrictions:
                 "stderr": "",
             },
         )()
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result):
+        with patch(
+            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ):
             result = executor.run("tag", "v1.0")
         assert result.status == "success"
 
@@ -170,7 +182,9 @@ class TestWhitelistStillEnforced:
                 "stderr": "",
             },
         )()
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result):
+        with patch(
+            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+        ):
             result = executor.run("log", "merge")
         assert result.status == "success"
 

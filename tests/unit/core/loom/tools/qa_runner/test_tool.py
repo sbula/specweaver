@@ -405,7 +405,8 @@ class TestToolLegacyProxyGaps:
 
         with (
             patch.dict(
-                "specweaver.core.loom.tools.qa_runner.tool.ROLE_INTENTS", {"implementer": frozenset()}
+                "specweaver.core.loom.tools.qa_runner.tool.ROLE_INTENTS",
+                {"implementer": frozenset()},
             ),
             pytest.raises(QARunnerToolError, match="not allowed for role"),
         ):

@@ -57,7 +57,7 @@ class FeatureDecomposer:
         self._context = context_provider
         self._config = config or GenerationConfig(
             model="gemini-3-flash-preview",
-            temperature=0.2, # Low temperature for structured output
+            temperature=0.2,  # Low temperature for structured output
             max_output_tokens=4096,
         )
 
@@ -88,9 +88,7 @@ class FeatureDecomposer:
         )
 
         builder = (
-            PromptBuilder()
-            .add_instructions(instructions)
-            .add_project_metadata(project_metadata)
+            PromptBuilder().add_instructions(instructions).add_project_metadata(project_metadata)
         )
 
         if topology_contexts:
@@ -106,10 +104,14 @@ class FeatureDecomposer:
         cfg = self._config.model_copy()
 
         try:
-            logger.debug("FeatureDecomposer.decompose: executing LLM generation for %s", feature_name)
+            logger.debug(
+                "FeatureDecomposer.decompose: executing LLM generation for %s", feature_name
+            )
             response = await self._llm.generate(messages, cfg)
         except Exception as e:
-            logger.critical("Generator failed: Provider error for '%s'. Details: %s", feature_name, str(e))
+            logger.critical(
+                "Generator failed: Provider error for '%s'. Details: %s", feature_name, str(e)
+            )
             raise
 
         raw_text = response.text.strip()
@@ -126,5 +128,11 @@ class FeatureDecomposer:
         try:
             return DecompositionPlan.model_validate_json(raw_text)
         except Exception as e:
-            logger.error("LLM failed to output valid schema. Parse error: %s. Raw payload size: %s", str(e), len(raw_text))
-            raise ValueError(f"LLM failed to provide a structurally valid DecompositionPlan: {e}") from e
+            logger.error(
+                "LLM failed to output valid schema. Parse error: %s. Raw payload size: %s",
+                str(e),
+                len(raw_text),
+            )
+            raise ValueError(
+                f"LLM failed to provide a structurally valid DecompositionPlan: {e}"
+            ) from e

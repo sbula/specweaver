@@ -94,7 +94,9 @@ def decorated_func():
                         MockMethodSignature(
                             name="my_async_func", parameters=["x", "z"]
                         ),  # 'z' instead of 'y' to cause drift WARNING
-                        MockMethodSignature(name="MyClass.public_method", parameters=["data: dict"]),
+                        MockMethodSignature(
+                            name="MyClass.public_method", parameters=["data: dict"]
+                        ),
                         MockMethodSignature(
                             name="missing_function", parameters=[]
                         ),  # Missing ERROR

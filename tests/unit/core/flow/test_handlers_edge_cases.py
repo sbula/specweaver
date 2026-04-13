@@ -183,10 +183,14 @@ async def test_review_handlers_execution(
     mock_review_result.summary = "Acceptable"
     mock_review_result.raw_response = "Looks good. No issues found."
 
-    with patch("specweaver.workflows.review.reviewer.Reviewer.review_spec", return_value=mock_review_result):
+    with patch(
+        "specweaver.workflows.review.reviewer.Reviewer.review_spec", return_value=mock_review_result
+    ):
         res1 = await spec_handler.execute(pipeline_step, run_context)
         assert res1.status == StepStatus.PASSED
 
-    with patch("specweaver.workflows.review.reviewer.Reviewer.review_code", return_value=mock_review_result):
+    with patch(
+        "specweaver.workflows.review.reviewer.Reviewer.review_code", return_value=mock_review_result
+    ):
         res2 = await code_handler.execute(pipeline_step, run_context)
         assert res2.status == StepStatus.PASSED

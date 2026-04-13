@@ -100,14 +100,18 @@ class GateEvaluator:
         from specweaver.core.flow.reservation import SQLiteReservationSystem
 
         if not self._context or not getattr(self._context, "project_path", None):
-            logger.warning("Gate on step '%s': RESERVE disabled (missing RunContext)", step_def.name)
+            logger.warning(
+                "Gate on step '%s': RESERVE disabled (missing RunContext)", step_def.name
+            )
             return "advance"
 
         db_path = self._context.project_path / ".specweaver" / "reservations.db"
         pipeline_target = getattr(self._context, "pipeline_name", None) or "default_pipeline"
 
         sys = SQLiteReservationSystem(db_path)
-        if sys.acquire(resource_id=f"pipeline:{pipeline_target}", run_id=run.run_id, timeout_seconds=3600):
+        if sys.acquire(
+            resource_id=f"pipeline:{pipeline_target}", run_id=run.run_id, timeout_seconds=3600
+        ):
             logger.info("Gate on step '%s': RESERVE lock securely acquired.", step_def.name)
             return "advance"
 

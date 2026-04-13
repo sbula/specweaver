@@ -59,19 +59,23 @@ class SQLiteReservationSystem:
             with self._get_connection() as conn:
                 conn.execute(
                     "INSERT INTO sw_reservations (resource_id, run_id, expires_at) VALUES (?, ?, ?)",
-                    (resource_id, run_id, expires_at)
+                    (resource_id, run_id, expires_at),
                 )
-            logger.info("SQLiteReservationSystem acquired lock for '%s' (run_id=%s)", resource_id, run_id)
+            logger.info(
+                "SQLiteReservationSystem acquired lock for '%s' (run_id=%s)", resource_id, run_id
+            )
             return True
         except sqlite3.IntegrityError:
             # The core mechanism. A race was lost or the lock is actively held.
             logger.debug(
                 "SQLiteReservationSystem: Race condition natural loss. Resource '%s' is locked.",
-                resource_id
+                resource_id,
             )
             return False
         except sqlite3.OperationalError as e:
-            logger.warning("SQLiteReservationSystem Operational timeout on '%s': %s", resource_id, e)
+            logger.warning(
+                "SQLiteReservationSystem Operational timeout on '%s': %s", resource_id, e
+            )
             return False
 
     def release(self, run_id: str) -> None:
@@ -80,6 +84,12 @@ class SQLiteReservationSystem:
             with self._get_connection() as conn:
                 cursor = conn.execute("DELETE FROM sw_reservations WHERE run_id = ?", (run_id,))
                 if cursor.rowcount > 0:
-                    logger.info("SQLiteReservationSystem released %d locks for run_id=%s", cursor.rowcount, run_id)
+                    logger.info(
+                        "SQLiteReservationSystem released %d locks for run_id=%s",
+                        cursor.rowcount,
+                        run_id,
+                    )
         except sqlite3.Error as e:
-            logger.error("SQLiteReservationSystem failed to release lock for run_id=%s: %s", run_id, e)
+            logger.error(
+                "SQLiteReservationSystem failed to release lock for run_id=%s: %s", run_id, e
+            )

@@ -57,6 +57,7 @@ class GateType(enum.StrEnum):
     AUTO = "auto"
     HITL = "hitl"
     RESERVE = "reserve"
+    JOIN = "join"
 
 
 class GateCondition(enum.StrEnum):
@@ -346,8 +347,7 @@ def _validate_router(
     for rule in router.rules:
         if rule.target not in name_to_index:
             errors.append(
-                f"Step '{step_name}' has router rule target "
-                f"'{rule.target}' which does not exist"
+                f"Step '{step_name}' has router rule target '{rule.target}' which does not exist"
             )
     return errors
 

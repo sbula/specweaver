@@ -60,7 +60,7 @@ def test_run_context_env_vars(tmp_path: Path) -> None:
         project_path=tmp_path,
         spec_path=tmp_path / "spec.md",
         pipeline_name="decomposition_flow",
-        env_vars={"SW_PORT_OFFSET": "49551"}
+        env_vars={"SW_PORT_OFFSET": "49551"},
     )
 
     # Must natively survive pydantic model dumping
@@ -70,9 +70,6 @@ def test_run_context_env_vars(tmp_path: Path) -> None:
     assert data["env_vars"] == {"SW_PORT_OFFSET": "49551"}
 
     # Default fallback
-    context_default = RunContext(
-        project_path=tmp_path,
-        spec_path=tmp_path / "spec.md"
-    )
+    context_default = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
     assert context_default.env_vars == {}
     assert context_default.pipeline_name is None

@@ -21,20 +21,21 @@ def mock_context(tmp_path: Path) -> RunContext:
     return RunContext(
         run_id="test_run",
         project_path=workspace,
-        spec_path=workspace / "docs" / "specs" / "test_feature_spec.md"
+        spec_path=workspace / "docs" / "specs" / "test_feature_spec.md",
     )
+
 
 @pytest.fixture
 def mock_step() -> PipelineStep:
     return PipelineStep(
-        name="decompose_step",
-        action=StepAction.DECOMPOSE,
-        target=StepTarget.FEATURE,
-        params={}
+        name="decompose_step", action=StepAction.DECOMPOSE, target=StepTarget.FEATURE, params={}
     )
 
+
 @pytest.mark.asyncio
-async def test_decompose_feature_handler_success(mock_context: RunContext, mock_step: PipelineStep, tmp_path: Path) -> None:
+async def test_decompose_feature_handler_success(
+    mock_context: RunContext, mock_step: PipelineStep, tmp_path: Path
+) -> None:
     # Setup feature spec
     specs_dir = mock_context.project_path / "docs" / "specs" / "features"
     specs_dir.mkdir(parents=True)
@@ -47,7 +48,7 @@ async def test_decompose_feature_handler_success(mock_context: RunContext, mock_
     with patch("specweaver.core.flow._decompose.FeatureDecomposer") as mock_decomposer_cls:
         mock_decomposer = AsyncMock()
         mock_plan = MagicMock()
-        mock_plan.coverage_score = 1.0 # 100% coverage
+        mock_plan.coverage_score = 1.0  # 100% coverage
         mock_plan.model_dump.return_value = {"coverage_score": 1.0}
         mock_decomposer.decompose.return_value = mock_plan
         mock_decomposer_cls.return_value = mock_decomposer
@@ -59,8 +60,11 @@ async def test_decompose_feature_handler_success(mock_context: RunContext, mock_
         mock_decomposer.decompose.assert_called_once()
         assert result.output.get("coverage_score") == 1.0
 
+
 @pytest.mark.asyncio
-async def test_decompose_feature_handler_coverage_fail(mock_context: RunContext, mock_step: PipelineStep, tmp_path: Path) -> None:
+async def test_decompose_feature_handler_coverage_fail(
+    mock_context: RunContext, mock_step: PipelineStep, tmp_path: Path
+) -> None:
     specs_dir = mock_context.project_path / "docs" / "specs" / "features"
     specs_dir.mkdir(parents=True)
     spec_path = specs_dir / "test_feature_spec.md"
@@ -72,7 +76,7 @@ async def test_decompose_feature_handler_coverage_fail(mock_context: RunContext,
     with patch("specweaver.core.flow._decompose.FeatureDecomposer") as mock_decomposer_cls:
         mock_decomposer = AsyncMock()
         mock_plan = MagicMock()
-        mock_plan.coverage_score = 0.5 # FR-5 bounds fail
+        mock_plan.coverage_score = 0.5  # FR-5 bounds fail
         mock_decomposer.decompose.return_value = mock_plan
         mock_decomposer_cls.return_value = mock_decomposer
 
@@ -83,30 +87,56 @@ async def test_decompose_feature_handler_coverage_fail(mock_context: RunContext,
         assert result.status == StepStatus.FAILED
         assert "below 1.0" in str(result.error_message)
 
+
 @pytest.fixture
 def mock_orchestrate_step() -> PipelineStep:
     return PipelineStep(
         name="orchestrate_step",
         action=StepAction.ORCHESTRATE,
         target=StepTarget.COMPONENTS,
-        params={}
+        params={},
     )
+
 
 @pytest.mark.asyncio
 @patch("specweaver.core.flow.runner.PipelineRunner")
-async def test_orchestrate_components_handler_success_dag(mock_pipeline_runner_cls: MagicMock, mock_context: RunContext, mock_orchestrate_step: PipelineStep, tmp_path: Path) -> None:
+async def test_orchestrate_components_handler_success_dag(
+    mock_pipeline_runner_cls: MagicMock,
+    mock_context: RunContext,
+    mock_orchestrate_step: PipelineStep,
+    tmp_path: Path,
+) -> None:
     # Context now should have a 'plan' JSON string pre-loaded by previous HITL review step
     import json
+
     mock_plan_dict = {
         "feature_spec": "path.md",
         "components": [
-            {"component": "service_a", "exists": True, "change_nature": "behavior", "description": "Update", "proposed_dal": "DAL_B", "dependencies": [], "target_modules": ["service_a"], "confidence": 100},
-            {"component": "service_b", "exists": False, "change_nature": "new", "description": "Create", "proposed_dal": "DAL_C", "dependencies": ["service_a"], "target_modules": ["service_b"], "confidence": 100}
+            {
+                "component": "service_a",
+                "exists": True,
+                "change_nature": "behavior",
+                "description": "Update",
+                "proposed_dal": "DAL_B",
+                "dependencies": [],
+                "target_modules": ["service_a"],
+                "confidence": 100,
+            },
+            {
+                "component": "service_b",
+                "exists": False,
+                "change_nature": "new",
+                "description": "Create",
+                "proposed_dal": "DAL_C",
+                "dependencies": ["service_a"],
+                "target_modules": ["service_b"],
+                "confidence": 100,
+            },
         ],
         "integration_seams": [],
         "build_sequence": ["service_a", "service_b"],
         "coverage_score": 1.0,
-        "timestamp": "2026-01-01T00:00:00Z"
+        "timestamp": "2026-01-01T00:00:00Z",
     }
     mock_context.plan = json.dumps(mock_plan_dict)
 
@@ -140,15 +170,20 @@ async def test_orchestrate_components_handler_success_dag(mock_pipeline_runner_c
 
 
 @pytest.mark.asyncio
-async def test_orchestrate_components_handler_empty_plan(mock_orchestrate_step: PipelineStep, mock_context: RunContext) -> None:
+async def test_orchestrate_components_handler_empty_plan(
+    mock_orchestrate_step: PipelineStep, mock_context: RunContext
+) -> None:
     handler = OrchestrateComponentsHandler()
     mock_context.plan = None
     result = await handler.execute(mock_orchestrate_step, mock_context)
     assert result.status == StepStatus.FAILED
     assert "No DecompositionPlan" in str(result.error_message)
 
+
 @pytest.mark.asyncio
-async def test_orchestrate_components_handler_missing_runner(mock_orchestrate_step: PipelineStep, mock_context: RunContext) -> None:
+async def test_orchestrate_components_handler_missing_runner(
+    mock_orchestrate_step: PipelineStep, mock_context: RunContext
+) -> None:
     handler = OrchestrateComponentsHandler()
     mock_context.plan = '{ "components": [{"component": "valid"}] }'
     mock_context.pipeline_runner = None
@@ -156,9 +191,14 @@ async def test_orchestrate_components_handler_missing_runner(mock_orchestrate_st
     assert result.status == StepStatus.FAILED
     assert "pipeline_runner not found" in str(result.error_message)
 
+
 @pytest.mark.asyncio
 @patch("specweaver.core.flow.runner.PipelineRunner")
-async def test_orchestrate_components_handler_child_failure(mock_pipeline_runner_cls: MagicMock, mock_orchestrate_step: PipelineStep, mock_context: RunContext) -> None:
+async def test_orchestrate_components_handler_child_failure(
+    mock_pipeline_runner_cls: MagicMock,
+    mock_orchestrate_step: PipelineStep,
+    mock_context: RunContext,
+) -> None:
     handler = OrchestrateComponentsHandler()
     mock_context.plan = '{ "components": [{"component": "valid_a", "dependencies": [], "target_modules": ["a"]}, {"component": "valid_b", "dependencies": ["valid_a"], "target_modules": ["b"]}] }'
 
@@ -180,10 +220,15 @@ async def test_orchestrate_components_handler_child_failure(mock_pipeline_runner
     assert result.status == StepStatus.FAILED
     # Should only be called once because valid_b is starved (FR-6)
     assert mock_runner_instance.run.call_count == 1
-    assert "Cascading failure" in str(result.error_message) or "pipeline" in str(result.error_message)
+    assert "Cascading failure" in str(result.error_message) or "pipeline" in str(
+        result.error_message
+    )
+
 
 @pytest.mark.asyncio
-async def test_orchestrate_components_malicious_name(mock_orchestrate_step: PipelineStep, mock_context: RunContext) -> None:
+async def test_orchestrate_components_malicious_name(
+    mock_orchestrate_step: PipelineStep, mock_context: RunContext
+) -> None:
     handler = OrchestrateComponentsHandler()
     mock_context.plan = '{ "components": [{"component": "../../../etc/shadow"}] }'
     mock_context.pipeline_runner = MagicMock()
@@ -191,9 +236,14 @@ async def test_orchestrate_components_malicious_name(mock_orchestrate_step: Pipe
     assert result.status == StepStatus.FAILED
     assert "Invalid or malicious component name" in str(result.error_message)
 
+
 @pytest.mark.asyncio
 @patch("specweaver.core.flow.runner.PipelineRunner")
-async def test_orchestrate_loads_new_feature_yaml(mock_pipeline_runner_cls: MagicMock, mock_orchestrate_step: PipelineStep, mock_context: RunContext) -> None:
+async def test_orchestrate_loads_new_feature_yaml(
+    mock_pipeline_runner_cls: MagicMock,
+    mock_orchestrate_step: PipelineStep,
+    mock_context: RunContext,
+) -> None:
     # FR-3 / FR-4 Verification
     handler = OrchestrateComponentsHandler()
     mock_context.plan = '{ "components": [{"component": "valid_comp"}] }'
@@ -217,10 +267,15 @@ async def test_orchestrate_loads_new_feature_yaml(mock_pipeline_runner_cls: Magi
     assert pipe_dict.name == "auto_valid_comp"
 
     # Assert FR-4: Must include VALIDATE StepAction implicitly by loading the yaml
-    actions = [s.get("action") if isinstance(s, dict) else getattr(s, "action", None) for s in pipe_dict.steps]
+    actions = [
+        s.get("action") if isinstance(s, dict) else getattr(s, "action", None)
+        for s in pipe_dict.steps
+    ]
     if isinstance(actions[0], str):
         actions_str = actions
     else:
         actions_str = [a.value for a in actions if a is not None]
 
-    assert "validate" in actions_str, "Sub pipeline MUST contain a validation step for FR-4 Compliance"
+    assert "validate" in actions_str, (
+        "Sub pipeline MUST contain a validation step for FR-4 Compliance"
+    )

@@ -27,7 +27,9 @@ def test_rule_operator_enum():
 def test_router_rule_validation():
     """Test valid and invalid fields for a RouterRule."""
     # Valid
-    rule = RouterRule(field="output.complexity", operator=RuleOperator.EQ, value="low", target="fast_track")
+    rule = RouterRule(
+        field="output.complexity", operator=RuleOperator.EQ, value="low", target="fast_track"
+    )
     assert rule.field == "output.complexity"
     assert rule.operator == RuleOperator.EQ
     assert rule.value == "low"
@@ -41,9 +43,7 @@ def test_router_rule_validation():
 def test_router_definition_validation():
     """Test valid RouterDefinition."""
     router = RouterDefinition(
-        rules=[
-            RouterRule(field="a", operator=RuleOperator.IS_EMPTY, value=None, target="b")
-        ],
+        rules=[RouterRule(field="a", operator=RuleOperator.IS_EMPTY, value=None, target="b")],
         default_target="c",
     )
     assert len(router.rules) == 1
@@ -58,7 +58,9 @@ def test_pipeline_step_with_router():
         target=StepTarget.SPEC,
         router=RouterDefinition(
             rules=[
-                RouterRule(field="complex", operator=RuleOperator.EQ, value=True, target="heavy_planning")
+                RouterRule(
+                    field="complex", operator=RuleOperator.EQ, value=True, target="heavy_planning"
+                )
             ],
             default_target="generate",
         ),
@@ -75,7 +77,7 @@ def test_pipeline_definition_get_step_index():
         steps=[
             PipelineStep(name="step_a", action=StepAction.DRAFT, target=StepTarget.SPEC),
             PipelineStep(name="step_b", action=StepAction.VALIDATE, target=StepTarget.SPEC),
-        ]
+        ],
     )
     assert pipe.get_step_index("step_a") == 0
     assert pipe.get_step_index("step_b") == 1
@@ -93,12 +95,16 @@ def test_pipeline_definition_validate_flow_router():
                 action=StepAction.DRAFT,
                 target=StepTarget.SPEC,
                 router=RouterDefinition(
-                    rules=[RouterRule(field="complex", operator=RuleOperator.EQ, value=True, target="step_b")],
-                    default_target="step_b"
-                )
+                    rules=[
+                        RouterRule(
+                            field="complex", operator=RuleOperator.EQ, value=True, target="step_b"
+                        )
+                    ],
+                    default_target="step_b",
+                ),
             ),
             PipelineStep(name="step_b", action=StepAction.VALIDATE, target=StepTarget.SPEC),
-        ]
+        ],
     )
     assert not pipe.validate_flow()  # No errors
 
@@ -111,15 +117,20 @@ def test_pipeline_definition_validate_flow_router():
                 action=StepAction.DRAFT,
                 target=StepTarget.SPEC,
                 router=RouterDefinition(
-                    rules=[RouterRule(field="complex", operator=RuleOperator.EQ, value=True, target="missing")],
-                    default_target="missing_default"
-                )
+                    rules=[
+                        RouterRule(
+                            field="complex", operator=RuleOperator.EQ, value=True, target="missing"
+                        )
+                    ],
+                    default_target="missing_default",
+                ),
             ),
             PipelineStep(name="step_b", action=StepAction.VALIDATE, target=StepTarget.SPEC),
-        ]
+        ],
     )
     errors = pipe_invalid.validate_flow()
     assert len(errors) == 2
     assert any("router rule target 'missing' which does not exist" in err for err in errors)
-    assert any("router default_target 'missing_default' which does not exist" in err for err in errors)
-
+    assert any(
+        "router default_target 'missing_default' which does not exist" in err for err in errors
+    )

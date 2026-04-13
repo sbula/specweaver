@@ -95,7 +95,9 @@ class DriftCheckHandler:
         except ValueError:
             file_path_str = target_path.name
 
-        return await self._run_drift_detect(file_path_str, target_path_str, tree, plan, step, context, started)
+        return await self._run_drift_detect(
+            file_path_str, target_path_str, tree, plan, step, context, started
+        )
 
     async def _run_drift_detect(
         self,

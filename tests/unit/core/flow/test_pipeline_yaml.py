@@ -12,7 +12,9 @@ from ruamel.yaml import YAML
 
 from specweaver.core.flow.models import PipelineDefinition
 
-PIPELINES_DIR = Path(__file__).resolve().parents[4] / "src" / "specweaver" / "workflows" / "pipelines"
+PIPELINES_DIR = (
+    Path(__file__).resolve().parents[4] / "src" / "specweaver" / "workflows" / "pipelines"
+)
 
 
 # ---------------------------------------------------------------------------

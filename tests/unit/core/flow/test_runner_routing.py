@@ -38,6 +38,7 @@ class FakeHandler(StepHandler):
             completed_at="2026",
         )
 
+
 @pytest.fixture
 def mock_context(tmp_path) -> RunContext:
 
@@ -48,9 +49,11 @@ def mock_context(tmp_path) -> RunContext:
 
     return RunContext(project_path=project_path, spec_path=spec_path)
 
+
 @pytest.fixture
 def registry() -> StepHandlerRegistry:
     return StepHandlerRegistry()
+
 
 @pytest.mark.asyncio
 async def test_runner_executes_sequential_when_no_router(mock_context, registry):
@@ -62,7 +65,7 @@ async def test_runner_executes_sequential_when_no_router(mock_context, registry)
         steps=[
             PipelineStep(name="step_a", action=StepAction.VALIDATE, target=StepTarget.SPEC),
             PipelineStep(name="step_b", action=StepAction.REVIEW, target=StepTarget.SPEC),
-        ]
+        ],
     )
     runner = PipelineRunner(pipe, mock_context, registry=registry)
     run = await runner.run()
@@ -71,6 +74,7 @@ async def test_runner_executes_sequential_when_no_router(mock_context, registry)
     assert run.step_records[0].status == StepStatus.PASSED
     assert run.step_records[1].status == StepStatus.PASSED
     assert run.current_step == 2
+
 
 @pytest.mark.asyncio
 async def test_runner_respects_router_skip_step(mock_context, registry):
@@ -91,14 +95,19 @@ async def test_runner_respects_router_skip_step(mock_context, registry):
                 target=StepTarget.SPEC,
                 router=RouterDefinition(
                     rules=[
-                        RouterRule(field="complexity", operator=RuleOperator.EQ, value="complex", target="decompose")
+                        RouterRule(
+                            field="complexity",
+                            operator=RuleOperator.EQ,
+                            value="complex",
+                            target="decompose",
+                        )
                     ],
-                    default_target="generate"
-                )
+                    default_target="generate",
+                ),
             ),
             PipelineStep(name="decompose", action=StepAction.DECOMPOSE, target=StepTarget.FEATURE),
             PipelineStep(name="generate", action=StepAction.GENERATE, target=StepTarget.CODE),
-        ]
+        ],
     )
     runner = PipelineRunner(pipe, mock_context, registry=registry)
     run = await runner.run()
@@ -114,10 +123,13 @@ async def test_runner_respects_router_skip_step(mock_context, registry):
     assert h3.call_count == 1
     assert run.step_records[2].status == StepStatus.PASSED
 
+
 @pytest.mark.asyncio
 async def test_router_respects_gate_precedence(mock_context, registry):
     """If a step fails its gate, the router is NOT executed!"""
-    h1 = FakeHandler(output={"score": 10}, failing=True)  # Fails directly so gate isn't completely evaluated the same way but fail breaks
+    h1 = FakeHandler(
+        output={"score": 10}, failing=True
+    )  # Fails directly so gate isn't completely evaluated the same way but fail breaks
     h2 = FakeHandler()
 
     registry.register(StepAction.VALIDATE, StepTarget.SPEC, h1)
@@ -130,10 +142,10 @@ async def test_router_respects_gate_precedence(mock_context, registry):
                 name="step_a",
                 action=StepAction.VALIDATE,
                 target=StepTarget.SPEC,
-                router=RouterDefinition(default_target="step_b")
+                router=RouterDefinition(default_target="step_b"),
             ),
-            PipelineStep(name="step_b", action=StepAction.REVIEW, target=StepTarget.SPEC)
-        ]
+            PipelineStep(name="step_b", action=StepAction.REVIEW, target=StepTarget.SPEC),
+        ],
     )
 
     runner = PipelineRunner(pipe, mock_context, registry=registry)
@@ -144,6 +156,7 @@ async def test_router_respects_gate_precedence(mock_context, registry):
     assert h2.call_count == 0
     assert run.step_records[0].status == StepStatus.FAILED
     assert run.step_records[1].status == StepStatus.PENDING
+
 
 @pytest.mark.asyncio
 async def test_router_infinite_loop_guard(mock_context, registry):
@@ -162,9 +175,9 @@ async def test_router_infinite_loop_guard(mock_context, registry):
                 name="step_b",
                 action=StepAction.REVIEW,
                 target=StepTarget.SPEC,
-                router=RouterDefinition(default_target="step_a")  # Always jump backward
-            )
-        ]
+                router=RouterDefinition(default_target="step_a"),  # Always jump backward
+            ),
+        ],
     )
 
     runner = PipelineRunner(pipe, mock_context, registry=registry)
@@ -177,9 +190,10 @@ async def test_router_infinite_loop_guard(mock_context, registry):
     assert record.status == StepStatus.FAILED
     assert "Infinite routing loop" in record.result.error_message
 
+
 @pytest.mark.asyncio
 async def test_router_edge_cases_and_telemetry(mock_context, registry):
-    h1 = FakeHandler(output={"count": 5}) # missing "name" field
+    h1 = FakeHandler(output={"count": 5})  # missing "name" field
     h2 = FakeHandler()
 
     registry.register(StepAction.VALIDATE, StepTarget.SPEC, h1)
@@ -194,16 +208,19 @@ async def test_router_edge_cases_and_telemetry(mock_context, registry):
                 target=StepTarget.SPEC,
                 router=RouterDefinition(
                     rules=[
-                        RouterRule(field="name", operator=RuleOperator.EQ, target="step_a", value="missing")
+                        RouterRule(
+                            field="name", operator=RuleOperator.EQ, target="step_a", value="missing"
+                        )
                     ],
-                    default_target="step_b"
-                )
+                    default_target="step_b",
+                ),
             ),
-            PipelineStep(name="step_b", action=StepAction.REVIEW, target=StepTarget.SPEC)
-        ]
+            PipelineStep(name="step_b", action=StepAction.REVIEW, target=StepTarget.SPEC),
+        ],
     )
 
     events_caught = []
+
     def _catcher(event, **kw):
         events_caught.append(event)
 

@@ -18,12 +18,16 @@ def mock_llm() -> AsyncMock:
     # Mock LLM generation to return a structured response later
     return llm
 
+
 @pytest.fixture
 def mock_context_provider() -> AsyncMock:
     return AsyncMock()
 
+
 @pytest.mark.asyncio
-async def test_decompose_returns_plan(mock_llm: AsyncMock, mock_context_provider: AsyncMock, tmp_path: Path) -> None:
+async def test_decompose_returns_plan(
+    mock_llm: AsyncMock, mock_context_provider: AsyncMock, tmp_path: Path
+) -> None:
     """Test that FeatureDecomposer returns a DecompositionPlan using LLM structured output."""
     decomposer = FeatureDecomposer(llm=mock_llm, context_provider=mock_context_provider)
 
@@ -36,16 +40,18 @@ async def test_decompose_returns_plan(mock_llm: AsyncMock, mock_context_provider
 
     # Test executing decompose
     plan = await decomposer.decompose(
-        feature_name="test_feature",
-        spec_content="Feature Spec Content Dummy"
+        feature_name="test_feature", spec_content="Feature Spec Content Dummy"
     )
 
     assert isinstance(plan, DecompositionPlan)
     assert plan.coverage_score == 1.0
     mock_llm.generate.assert_called_once()
 
+
 @pytest.mark.asyncio
-async def test_decompose_llm_exception(mock_llm: AsyncMock, mock_context_provider: AsyncMock) -> None:
+async def test_decompose_llm_exception(
+    mock_llm: AsyncMock, mock_context_provider: AsyncMock
+) -> None:
     # FR-4/FR-1 Exception Propagation
     decomposer = FeatureDecomposer(llm=mock_llm, context_provider=mock_context_provider)
     mock_llm.generate.side_effect = Exception("API Connect Timeout")
@@ -53,8 +59,11 @@ async def test_decompose_llm_exception(mock_llm: AsyncMock, mock_context_provide
     with pytest.raises(Exception, match="API Connect Timeout"):
         await decomposer.decompose(feature_name="test", spec_content="spec")
 
+
 @pytest.mark.asyncio
-async def test_decompose_pydantic_validation_error(mock_llm: AsyncMock, mock_context_provider: AsyncMock) -> None:
+async def test_decompose_pydantic_validation_error(
+    mock_llm: AsyncMock, mock_context_provider: AsyncMock
+) -> None:
     # FR-1 Validation formatting
     decomposer = FeatureDecomposer(llm=mock_llm, context_provider=mock_context_provider)
 
@@ -66,10 +75,20 @@ async def test_decompose_pydantic_validation_error(mock_llm: AsyncMock, mock_con
     with pytest.raises(ValueError, match="structurally valid"):
         await decomposer.decompose(feature_name="test", spec_content="spec")
 
+
 def test_decompose_instruction_template_has_topology_directions() -> None:
     from specweaver.workflows.planning.decomposer import _DECOMPOSE_INSTRUCTION_TEMPLATE
 
-    assert "target_modules" in _DECOMPOSE_INSTRUCTION_TEMPLATE, "Prompt must explicitly mention target_modules mapping"
-    assert "TopologyContext" in _DECOMPOSE_INSTRUCTION_TEMPLATE, "Prompt must explicitly mention mapping to TopologyContext"
-    assert "dependencies" in _DECOMPOSE_INSTRUCTION_TEMPLATE, "Prompt must explicitly mention logical dependencies"
-    assert "strictly" in _DECOMPOSE_INSTRUCTION_TEMPLATE.lower() or "exact" in _DECOMPOSE_INSTRUCTION_TEMPLATE.lower(), "Must demand exact mapping"
+    assert "target_modules" in _DECOMPOSE_INSTRUCTION_TEMPLATE, (
+        "Prompt must explicitly mention target_modules mapping"
+    )
+    assert "TopologyContext" in _DECOMPOSE_INSTRUCTION_TEMPLATE, (
+        "Prompt must explicitly mention mapping to TopologyContext"
+    )
+    assert "dependencies" in _DECOMPOSE_INSTRUCTION_TEMPLATE, (
+        "Prompt must explicitly mention logical dependencies"
+    )
+    assert (
+        "strictly" in _DECOMPOSE_INSTRUCTION_TEMPLATE.lower()
+        or "exact" in _DECOMPOSE_INSTRUCTION_TEMPLATE.lower()
+    ), "Must demand exact mapping"

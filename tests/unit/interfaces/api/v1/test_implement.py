@@ -47,8 +47,14 @@ def _project_with_spec(client, tmp_path):
 class TestImplementEndpoint:
     """Tests for POST /api/v1/implement."""
 
-    @patch("specweaver.workflows.implementation.generator.Generator.generate_code", new_callable=AsyncMock)
-    @patch("specweaver.workflows.implementation.generator.Generator.generate_tests", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workflows.implementation.generator.Generator.generate_code",
+        new_callable=AsyncMock,
+    )
+    @patch(
+        "specweaver.workflows.implementation.generator.Generator.generate_tests",
+        new_callable=AsyncMock,
+    )
     def test_implement_returns_200(
         self,
         mock_tests,

@@ -295,7 +295,9 @@ class TestGateConditions:
 
     @pytest.mark.asyncio
     @mock.patch("specweaver.core.flow.reservation.SQLiteReservationSystem.acquire")
-    async def test_reserve_gate_acquires_lock(self, mock_acquire: mock.MagicMock, tmp_path: Path) -> None:
+    async def test_reserve_gate_acquires_lock(
+        self, mock_acquire: mock.MagicMock, tmp_path: Path
+    ) -> None:
         """RESERVE gate advances when SQLite lock is acquired successfully."""
         mock_acquire.return_value = True
 
@@ -325,7 +327,9 @@ class TestGateConditions:
 
     @pytest.mark.asyncio
     @mock.patch("specweaver.core.flow.reservation.SQLiteReservationSystem.acquire")
-    async def test_reserve_gate_parks_on_collision(self, mock_acquire: mock.MagicMock, tmp_path: Path) -> None:
+    async def test_reserve_gate_parks_on_collision(
+        self, mock_acquire: mock.MagicMock, tmp_path: Path
+    ) -> None:
         """RESERVE gate parks run safely when SQLite lock collides natively."""
         mock_acquire.return_value = False
 

@@ -65,6 +65,24 @@ class TestStepTarget:
 
 
 # ---------------------------------------------------------------------------
+# GateType enum
+# ---------------------------------------------------------------------------
+
+
+class TestGateType:
+    """Tests for the GateType enum."""
+
+    def test_all_gates_exist(self) -> None:
+        assert GateType.AUTO == "auto"
+        assert GateType.HITL == "hitl"
+        assert GateType.RESERVE == "reserve"
+        assert GateType.JOIN == "join"
+
+    def test_gate_count(self) -> None:
+        assert len(GateType) == 4
+
+
+# ---------------------------------------------------------------------------
 # VALID_STEP_COMBINATIONS
 # ---------------------------------------------------------------------------
 

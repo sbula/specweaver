@@ -269,21 +269,28 @@ def drift_check_rot(  # noqa: C901
         _core.console.print("Fix the mismatch to proceed with this commit.")
         _core.console.print("================================================================\n")
         import sys
+
         sys.exit(42)
 
     _core.console.print("[green]AST signatures match specification.[/green]")
     raise typer.Exit(code=0)
 
-def _resolve_plan_by_lineage(target_path: Path, all_plans: list[Path], target_posix: str) -> Path | None:
+
+def _resolve_plan_by_lineage(
+    target_path: Path, all_plans: list[Path], target_posix: str
+) -> Path | None:
     try:
         from specweaver.infrastructure.llm.lineage import extract_artifact_uuid
+
         content = target_path.read_text(encoding="utf-8")
         uuid = extract_artifact_uuid(content)
         if uuid:
             db = _core.get_db()
             with db.connect() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT parent_id FROM artifact_events WHERE artifact_id = ?", (uuid,))
+                cursor.execute(
+                    "SELECT parent_id FROM artifact_events WHERE artifact_id = ?", (uuid,)
+                )
                 row = cursor.fetchone()
                 if row and row[0]:
                     parent_uuid = row[0]
@@ -295,4 +302,3 @@ def _resolve_plan_by_lineage(target_path: Path, all_plans: list[Path], target_po
     except Exception as e:
         logger.debug(f"Lineage lookup failed for {target_posix}: {e}")
     return None
-

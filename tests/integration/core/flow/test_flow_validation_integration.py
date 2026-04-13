@@ -70,7 +70,9 @@ async def test_handler_adapter_integration(tmp_path: Path) -> None:
     handler = GenerateCodeHandler()
 
     # Mute Git executor since it requires git repo to be valid
-    with patch("specweaver.core.loom.commons.git.executor.GitExecutor.run", return_value=(0, "", "")):
+    with patch(
+        "specweaver.core.loom.commons.git.executor.GitExecutor.run", return_value=(0, "", "")
+    ):
         result = await handler.execute(step, context)
 
     # Ensure handler drove adapter.generate effectively
