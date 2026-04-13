@@ -103,6 +103,13 @@ def create_llm_adapter(
         msg = f"No API key configured for {settings.llm.provider}. Set {env_key} environment variable."
         raise LLMAdapterError(msg)
 
+    # Wrap in rate limiter transparently mapped per-provider
+    from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+
+    # We use a default concurrency limit of 3.
+    # Note: Global Semaphore guarantees limits horizontally across parallel running adapters.
+    adapter = AsyncRateLimiterAdapter(adapter, limit=3, timeout=30.0)
+
     # Wrap in telemetry collector if project is specified
     if telemetry_project:
         from specweaver.infrastructure.llm.collector import TelemetryCollector

@@ -38,7 +38,9 @@ class TestFactoryTelemetryWrapping:
         db.set_active_project("test-proj")
 
         _settings, adapter, _config = create_llm_adapter(db, telemetry_project=None)
-        assert isinstance(adapter, GeminiAdapter)
+        from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+        assert isinstance(adapter, AsyncRateLimiterAdapter)
+        assert isinstance(adapter._wrapped, GeminiAdapter)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
     def test_telemetry_project_wraps_in_collector(self, db: Any) -> None:
@@ -65,7 +67,9 @@ class TestFactoryTelemetryWrapping:
         db.set_active_project("test-proj")
 
         _settings, adapter, _config = create_llm_adapter(db, telemetry_project="")
-        assert isinstance(adapter, GeminiAdapter)
+        from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+        assert isinstance(adapter, AsyncRateLimiterAdapter)
+        assert isinstance(adapter._wrapped, GeminiAdapter)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
     def test_cost_overrides_passed_to_collector(self, db: Any) -> None:
@@ -140,8 +144,10 @@ class TestFactoryProviderCapabilities:
             _settings, adapter, _config = create_llm_adapter(db, telemetry_project=None)
 
         expected_cls = get_adapter_class(provider)
-        assert isinstance(adapter, expected_cls)
-        assert type(adapter).__name__ == adapter_cls_name
+        from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+        assert isinstance(adapter, AsyncRateLimiterAdapter)
+        assert isinstance(adapter._wrapped, expected_cls)
+        assert type(adapter._wrapped).__name__ == adapter_cls_name
 
     def test_factory_fallback_on_missing_project(self, db: Any) -> None:
         """Factory defaults cleanly to gemini if no active project exists."""
@@ -154,6 +160,8 @@ class TestFactoryProviderCapabilities:
         with patch.dict(os.environ, {"GEMINI_API_KEY": "fallback-key"}):
             settings, adapter, config = create_llm_adapter(db, telemetry_project=None)
 
-        assert isinstance(adapter, GeminiAdapter)
+        from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+        assert isinstance(adapter, AsyncRateLimiterAdapter)
+        assert isinstance(adapter._wrapped, GeminiAdapter)
         assert settings.llm.provider == "gemini"
         assert config.model == "gemini-3-flash-preview"
