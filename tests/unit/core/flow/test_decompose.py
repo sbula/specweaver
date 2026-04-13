@@ -279,3 +279,184 @@ async def test_orchestrate_loads_new_feature_yaml(
     assert "validate" in actions_str, (
         "Sub pipeline MUST contain a validation step for FR-4 Compliance"
     )
+
+
+@pytest.mark.asyncio
+@patch("specweaver.core.flow.runner.PipelineRunner")
+async def test_orchestrate_components_preserves_params_gap_1(
+    mock_pipeline_runner_cls: MagicMock,
+    mock_orchestrate_step: PipelineStep,
+    mock_context: RunContext,
+) -> None:
+    """Gap 1: Preserves existing `params` dict keys when injecting component target."""
+    handler = OrchestrateComponentsHandler()
+    mock_context.plan = '{ "components": [{"component": "valid_a"}] }'
+    mock_runner_instance = AsyncMock()
+    mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
+    mock_runner_instance.run.return_value = mock_success
+    mock_pipeline_runner_cls.return_value = mock_runner_instance
+    mock_context.pipeline_runner = MagicMock()
+
+    mock_topology = MagicMock()
+    mock_topology.impact_of.return_value = set()
+    mock_context.topology = mock_topology
+
+    # Inject YAML with step containing existing pre-set params
+    fake_yaml = {
+        "name": "test",
+        "steps": [
+            {"name": "s1", "action": "generate", "target": "code", "params": {"existing": True}}
+        ],
+    }
+    with patch("yaml.safe_load", return_value=fake_yaml), patch("importlib.resources.files"):
+        await handler.execute(mock_orchestrate_step, mock_context)
+
+    # Verify the pipe definition
+    pipe_dict = mock_pipeline_runner_cls.call_args[1].get("pipeline")
+    params = pipe_dict.steps[0].params
+    assert params["existing"] is True
+    assert params["component"] == "valid_a"
+
+
+@pytest.mark.asyncio
+@patch("specweaver.core.flow.runner.PipelineRunner")
+async def test_orchestrate_components_handles_gate_gaps_2_3_4(
+    mock_pipeline_runner_cls: MagicMock,
+    mock_orchestrate_step: PipelineStep,
+    mock_context: RunContext,
+) -> None:
+    """Gaps 2, 3, 4: Safely handles missing/malformed gates without attribute errors, and does not strip non-join gates."""
+    handler = OrchestrateComponentsHandler()
+    mock_context.plan = '{ "components": [{"component": "valid_a"}] }'
+    mock_runner_instance = AsyncMock()
+    mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
+    mock_runner_instance.run.return_value = mock_success
+    mock_pipeline_runner_cls.return_value = mock_runner_instance
+    mock_context.pipeline_runner = MagicMock()
+    mock_context.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+
+    # s1: No gate (Gap 2)
+    # s3: Non-JOIN hitl dict gate (Gap 4)
+    # s4: valid JOIN gate string
+    fake_yaml = {
+        "name": "test",
+        "steps": [
+            {"name": "s1", "action": "generate", "target": "code"},
+            {"name": "s3", "action": "generate", "target": "code", "gate": {"type": "hitl"}},
+            {
+                "name": "s4",
+                "action": "generate",
+                "target": "code",
+                "gate": {"type": "join"},
+            },  # Only one that matches correctly
+        ],
+    }
+
+    with patch("yaml.safe_load", return_value=fake_yaml), patch("importlib.resources.files"):
+        await handler.execute(mock_orchestrate_step, mock_context)
+
+    # call_args_list[0] is the fan_out runner. call_args_list[1] is Wave N.
+    pipe_dict = mock_pipeline_runner_cls.call_args_list[0][1].get("pipeline")
+
+    # fan_out pipe should explicitly retain s1, s3. Since it strips s4, len == 2.
+    assert len(pipe_dict.steps) == 2
+    assert pipe_dict.steps[0].name == "s1"
+    assert pipe_dict.steps[1].name == "s3"
+
+
+@pytest.mark.asyncio
+@patch("specweaver.core.flow.runner.PipelineRunner")
+async def test_orchestrate_components_skips_wave_n_if_failed_gap_5(
+    mock_pipeline_runner_cls: MagicMock,
+    mock_orchestrate_step: PipelineStep,
+    mock_context: RunContext,
+) -> None:
+    """Gap 5: Ensures Wave N is STRICTLY skipped if a primary `fan_out` pipeline crashed."""
+    handler = OrchestrateComponentsHandler()
+    mock_context.plan = '{ "components": [{"component": "valid_a"}] }'
+    mock_runner_instance = AsyncMock()
+    mock_fail = MagicMock(status=StepStatus.FAILED, run_id="child")
+    mock_runner_instance.run.return_value = mock_fail
+    mock_pipeline_runner_cls.return_value = mock_runner_instance
+    mock_context.pipeline_runner = MagicMock()
+    mock_context.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+
+    # Even right though there's a JOIN step, since the fan_out failed, Wave N must not run!
+    fake_yaml = {
+        "name": "test",
+        "steps": [
+            {"name": "fake", "action": "generate", "target": "code", "gate": {"type": "join"}}
+        ],
+    }
+    with patch("yaml.safe_load", return_value=fake_yaml), patch("importlib.resources.files"):
+        result = await handler.execute(mock_orchestrate_step, mock_context)
+
+    assert result.status == StepStatus.FAILED
+    assert "Cascading failure:" in str(result.error_message)
+    # Runner is only called ONCE (for the failed fan_out pipeline). Wave N is skipped.
+    assert mock_runner_instance.run.call_count == 1
+
+
+@pytest.mark.asyncio
+@patch("specweaver.core.flow.runner.PipelineRunner")
+async def test_orchestrate_components_skips_wave_n_if_empty_gap_6(
+    mock_pipeline_runner_cls: MagicMock,
+    mock_orchestrate_step: PipelineStep,
+    mock_context: RunContext,
+) -> None:
+    """Gap 6: Ensures Wave N is STRICTLY skipped if no JOIN steps exist."""
+    handler = OrchestrateComponentsHandler()
+    mock_context.plan = '{ "components": [{"component": "valid_a"}] }'
+    mock_runner_instance = AsyncMock()
+    mock_success = MagicMock(status=StepStatus.PASSED, run_id="child")
+    mock_runner_instance.run.return_value = mock_success
+    mock_pipeline_runner_cls.return_value = mock_runner_instance
+    mock_context.pipeline_runner = MagicMock()
+    mock_context.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+
+    # Zero JOIN steps
+    fake_yaml = {
+        "name": "test",
+        "steps": [{"name": "fake", "action": "generate", "target": "code"}],
+    }
+    with patch("yaml.safe_load", return_value=fake_yaml), patch("importlib.resources.files"):
+        result = await handler.execute(mock_orchestrate_step, mock_context)
+
+    assert result.status == StepStatus.PASSED
+    # Runner is only called ONCE (for the successful fan_out). Wave N is skipped.
+    assert mock_runner_instance.run.call_count == 1
+
+
+@pytest.mark.asyncio
+@patch("specweaver.core.flow.runner.PipelineRunner")
+async def test_orchestrate_components_wave_n_crash_gap_7(
+    mock_pipeline_runner_cls: MagicMock,
+    mock_orchestrate_step: PipelineStep,
+    mock_context: RunContext,
+) -> None:
+    """Gap 7: Wave N cascade failure trap properly returns FAILED if it internally faults."""
+    handler = OrchestrateComponentsHandler()
+    mock_context.plan = '{ "components": [{"component": "valid_a"}] }'
+    mock_runner_instance = AsyncMock()
+
+    # We must mock that it SUCCEEDS the fan_out wave, but FAILS the wave_n synchronous execution.
+    mock_success = MagicMock(status=StepStatus.PASSED, run_id="fan_out_child")
+    mock_fail = MagicMock(status=StepStatus.FAILED, run_id="wave_n_child")
+
+    mock_runner_instance.run.side_effect = [mock_success, mock_fail]
+    mock_pipeline_runner_cls.return_value = mock_runner_instance
+    mock_context.pipeline_runner = MagicMock()
+    mock_context.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+
+    fake_yaml = {
+        "name": "test",
+        "steps": [
+            {"name": "fake", "action": "generate", "target": "code", "gate": {"type": "join"}}
+        ],
+    }
+    with patch("yaml.safe_load", return_value=fake_yaml), patch("importlib.resources.files"):
+        result = await handler.execute(mock_orchestrate_step, mock_context)
+
+    assert result.status == StepStatus.FAILED
+    assert "Cascading failure: Wave N deferred join execution failed" in str(result.error_message)
+    assert mock_runner_instance.run.call_count == 2

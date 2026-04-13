@@ -171,3 +171,17 @@ Starting in Feature 3.26, the Orchestrator supports executing dangerous steps in
 - **Cache Symlinking (FR-2)**: To prevent massive disk bloat and network thrashing, the runner seamlessly utilizes `os.symlink` to map `node_modules`, `__pycache__`, and `.venv` directly into the cloned environment before execution.
 - **Mathematical Diff Striping (FR-4)**: When the step concludes, the `runner` compares the temporary sandbox diff against the explicit architecture bounds defined in `context.yaml`. It performs surgical `git apply` exclusions to reject AI modifications affecting un-allowed paths natively before pulling back to the trunk.
 - **Main-Branch Resilience**: Rebase operations (`_intent_worktree_sync`) execute constantly to merge in the latest trunk changes. Cleanup (`_intent_worktree_teardown`) leverages a resilient 5-iteration progressive backoff timer to override aggressive OS-level file lock injections (such as Windows Defender).
+
+---
+
+## 8. Topological JOIN Barriers (Synchronized Flow)
+
+In highly parallel execution phases (such as the asynchronous `fan_out()` generated during `action: orchestrate`), certain operations must strictly wait for all concurrent workers to finish before beginning. `GateType.JOIN` introduces a mathematical barrier for this explicit synchronization (Feature 3.27, SF-3).
+
+### Mechanism & Sequence
+- **Step Configuration**: Define `gate: {type: join}` on the step inside your structural YAML iteration block.
+- **Deferred Evaluation**: When `OrchestrateComponentsHandler` prepares to push `new_feature.yaml` onto a DAG fan-out, it iterates through the YAML blueprint and mathematically strips any steps equipped with a `join` gate. These steps do NOT execute in the asynchronous Python concurrent loop block.
+- **Wave N Execution**: The Orchestrator collects all stripped steps across all DAG nodes into a localized pool (`deferred_joins`). Once the `fan_out()` execution yields success asynchronously, the Orchestrator executes `Wave N`—a perfectly synchronous sub-pipeline utilizing the same UUID state tree but running exclusively *after* all previous file-system handles and OS memory locks have been natively released.
+
+### Practical Use Case: Auto-Documentation
+If 5 components generate structural sub-graphs simultaneously over the same internal API contract format, spinning up 5 asynchronous `document` writers causes extreme OS file-lock collision and overwrite starvation (`SQLITE_BUSY` or text overlap). Wrapping the documentation generation step under a `join` gate enforces mathematically guaranteed serialization. The async agents write the AST logic natively in parallel, and single structured synthesis wave finalizes the artifact generation flawlessly.
