@@ -32,6 +32,7 @@ from specweaver.core.flow._draft import DraftSpecHandler
 from specweaver.core.flow._drift import DriftCheckHandler
 from specweaver.core.flow._generation import (
     GenerateCodeHandler,
+    GenerateContractHandler,
     GenerateTestsHandler,
     PlanSpecHandler,
 )
@@ -51,6 +52,7 @@ __all__ = [
     "DriftCheckHandler",
     "EnrichStandardsHandler",
     "GenerateCodeHandler",
+    "GenerateContractHandler",
     "GenerateTestsHandler",
     "LintFixHandler",
     "OrchestrateComponentsHandler",
@@ -90,6 +92,7 @@ class StepHandlerRegistry:
             (StepAction.DETECT, StepTarget.DRIFT): DriftCheckHandler(),
             (StepAction.DECOMPOSE, StepTarget.FEATURE): DecomposeFeatureHandler(),
             (StepAction.ORCHESTRATE, StepTarget.COMPONENTS): OrchestrateComponentsHandler(),
+            (StepAction.GENERATE, StepTarget.CONTRACT): GenerateContractHandler(),
         }
 
     def get(

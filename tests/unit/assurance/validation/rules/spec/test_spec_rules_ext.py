@@ -422,7 +422,7 @@ Example:
   Output: Greeting(message="Hello, Alice!")
 """
         result = TestFirstRule().check(spec)
-        assert result.status == Status.PASS
+        assert result.status == Status.WARN
         assert "12" in result.message or "score" in result.message.lower()
 
     def test_no_contract_fails(self) -> None:

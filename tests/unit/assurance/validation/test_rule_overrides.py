@@ -249,7 +249,7 @@ class TestRuleOverrideEdgeCases:
     def test_s07_custom_thresholds_change_behavior(self):
         """TestFirstRule with fail_score=0 means nothing can fail (score is never < 0)."""
         rule_lenient = TestFirstRule(warn_score=0, fail_score=0)
-        spec = "## 1. Purpose\nDo X.\n\n## 2. Contract\nProvide Y.\n"
+        spec = "## 1. Purpose\nDo X.\n\n## 2. Contract\nProvide Y.\n\n## 3. Scenarios\n```yaml\n- name: a\n  function_under_test: b\n  input_summary: c\n  expected_behavior: d\n```\n"
         result = rule_lenient.check(spec)
         # score=0, and 0 < 0 is False → should pass
         assert result.status.value == "pass"

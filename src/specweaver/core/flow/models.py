@@ -49,6 +49,7 @@ class StepTarget(enum.StrEnum):
     STANDARDS = "standards"
     DRIFT = "drift"
     COMPONENTS = "components"
+    CONTRACT = "contract"
 
 
 class GateType(enum.StrEnum):
@@ -117,6 +118,8 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.DETECT, StepTarget.DRIFT),
         # Component orchestration combos
         (StepAction.ORCHESTRATE, StepTarget.COMPONENTS),
+        # Contract generation combos (Feature 3.28 SF-A)
+        (StepAction.GENERATE, StepTarget.CONTRACT),
     }
 )
 

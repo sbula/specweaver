@@ -415,3 +415,148 @@ class PlanSpecHandler:
         except Exception as exc:
             logger.exception("PlanSpecHandler: unhandled exception during plan generation")
             return _error_result(str(exc), started)
+
+
+class GenerateContractHandler:
+    """Handler for generate+contract — extracts API Protocol from spec Contract section.
+
+    This is a mechanical (non-LLM) extraction. It reads the spec's ## Contract
+    section, extracts Python function signatures from code blocks, and generates
+    a Protocol class file at contracts/{stem}_contract.py.
+
+    No LLM adapter is required.
+    """
+
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        """Execute contract generation from spec."""
+
+        started = _now_iso()
+        try:
+            spec_text = context.spec_path.read_text(encoding="utf-8")
+            contract_section = self._extract_contract(spec_text)
+            if contract_section is None:
+                return _error_result("No ## Contract section found in spec", started)
+
+            signatures = self._extract_signatures(contract_section)
+            if not signatures:
+                return _error_result(
+                    "No Python function signatures found in Contract code blocks",
+                    started,
+                )
+
+            docstrings = self._extract_docstrings(contract_section)
+
+            contracts_dir = context.project_path / "contracts"
+            contracts_dir.mkdir(parents=True, exist_ok=True)
+            stem = context.spec_path.stem.replace("_spec", "")
+            output_path = contracts_dir / f"{stem}_contract.py"
+
+            class_name = stem.replace("_", " ").title().replace(" ", "")
+            protocol_content = self._render_protocol(class_name, signatures, docstrings)
+            output_path.write_text(protocol_content, encoding="utf-8")
+            logger.info("GenerateContractHandler: contract written to '%s'", output_path)
+
+            # Wire contract path into RunContext for downstream consumption (SF-B)
+            if context.api_contract_paths is None:
+                context.api_contract_paths = []
+            context.api_contract_paths.append(str(output_path))
+
+            return StepResult(
+                status=StepStatus.PASSED,
+                output={"generated_path": str(output_path), "signature_count": len(signatures)},
+                started_at=started,
+                completed_at=_now_iso(),
+            )
+        except Exception as exc:
+            logger.exception("GenerateContractHandler: unhandled exception")
+            return _error_result(str(exc), started)
+
+    @staticmethod
+    def _extract_contract(text: str) -> str | None:
+        """Extract the Contract section content from a spec."""
+        import re
+
+        pattern = re.compile(
+            r"^##\s+(?:\d+\.\s+)?Contract\s*$",
+            re.MULTILINE | re.IGNORECASE,
+        )
+        match = pattern.search(text)
+        if not match:
+            return None
+        start = match.end()
+        next_header = re.search(r"^##\s+", text[start:], re.MULTILINE)
+        if next_header:
+            return text[start : start + next_header.start()]
+        return text[start:]
+
+    @staticmethod
+    def _extract_signatures(contract_text: str) -> list[str]:
+        """Extract Python function/method signatures from code blocks."""
+        import re
+
+        code_blocks = re.findall(r"```python\s*\n(.*?)```", contract_text, re.DOTALL)
+        signatures: list[str] = []
+        for block in code_blocks:
+            for match in re.finditer(
+                r"^\s*((?:async\s+)?def\s+\w+\(.*?\)(?:\s*->\s*[^\n:]+)?)\s*:",
+                block,
+                re.MULTILINE | re.DOTALL,
+            ):
+                signatures.append(match.group(1).strip())
+        return signatures
+
+    @staticmethod
+    def _extract_docstrings(contract_text: str) -> dict[str, str]:
+        """Extract docstrings paired with function names from code blocks.
+
+        Returns a mapping of function_name -> docstring content.
+        """
+        import re
+
+        code_blocks = re.findall(r"```python\s*\n(.*?)```", contract_text, re.DOTALL)
+        docstrings: dict[str, str] = {}
+        for block in code_blocks:
+            for match in re.finditer(
+                r"(?:async\s+)?def\s+(\w+)\(.*?\).*?:\s*\n"
+                r'\s+"""(.*?)"""',
+                block,
+                re.DOTALL,
+            ):
+                func_name = match.group(1)
+                docstring = match.group(2).strip()
+                docstrings[func_name] = docstring
+        return docstrings
+
+    @staticmethod
+    def _render_protocol(
+        class_name: str,
+        signatures: list[str],
+        docstrings: dict[str, str] | None = None,
+    ) -> str:
+        """Render a Python Protocol class from extracted signatures and docstrings."""
+        import re
+
+        docstrings = docstrings or {}
+        lines = [
+            '"""Auto-generated API contract from spec Contract section."""',
+            "",
+            "from __future__ import annotations",
+            "",
+            "from typing import Protocol, runtime_checkable",
+            "",
+            "",
+            "@runtime_checkable",
+            f"class {class_name}Protocol(Protocol):",
+            f'    """API contract for {class_name}."""',
+            "",
+        ]
+        for sig in signatures:
+            lines.append(f"    {sig}:")
+            func_match = re.search(r"def\s+(\w+)\(", sig)
+            func_name = func_match.group(1) if func_match else None
+            if func_name and func_name in docstrings:
+                lines.append(f'        """{docstrings[func_name]}"""')
+            else:
+                lines.append("        ...")
+            lines.append("")
+        return "\n".join(lines) + "\n"

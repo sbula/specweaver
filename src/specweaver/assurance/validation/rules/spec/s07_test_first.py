@@ -12,7 +12,7 @@ Full LLM analysis would attempt to generate a test skeleton.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
 
@@ -117,6 +117,30 @@ class TestFirstRule(Rule):
                 findings,
             )
 
+        # ── Scenario section validation (Feature 3.28 SF-A) ──
+        scenarios = _extract_scenarios(spec_text)
+        if scenarios is None:
+            return self._warn(
+                f"Contract testability score: {testability_score}/12. "
+                "No Scenarios section found — scenario generation will be skipped.",
+                [
+                    *findings,
+                    Finding(
+                        message="Missing '## Scenarios' section",
+                        severity=Severity.WARNING,
+                        suggestion="Add a '## Scenarios' section with YAML scenario definitions.",
+                    ),
+                ],
+            )
+
+        scenario_findings = _validate_scenario_yaml(scenarios)
+        if scenario_findings:
+            return self._warn(
+                f"Contract testability score: {testability_score}/12. "
+                "Scenarios section has structural issues.",
+                findings + scenario_findings,
+            )
+
         return self._pass(f"Contract testability score: {testability_score}/12")
 
 
@@ -217,3 +241,113 @@ def _extract_contract(text: str) -> str | None:
     if next_header:
         return text[start : start + next_header.start()]
     return text[start:]
+
+
+def _extract_scenarios(text: str) -> str | None:
+    """Extract the Scenarios section content from a spec."""
+    pattern = re.compile(
+        r"^##\s+(?:\d+\.\s+)?Scenarios\s*$",
+        re.MULTILINE | re.IGNORECASE,
+    )
+    match = pattern.search(text)
+    if not match:
+        return None
+
+    start = match.end()
+    next_header = re.search(r"^##\s+", text[start:], re.MULTILINE)
+    if next_header:
+        return text[start : start + next_header.start()]
+    return text[start:]
+
+
+_SCENARIO_REQUIRED_KEYS = frozenset(
+    {"name", "function_under_test", "input_summary", "expected_behavior"}
+)
+_SCENARIO_VALID_CATEGORIES = frozenset({"happy", "error", "boundary"})
+
+
+def _validate_scenario_yaml(scenarios_text: str) -> list[Finding]:
+    """Validate that the Scenarios section contains valid YAML with expected schema.
+
+    Expected schema per item (aligned with TestExpectation model):
+      - name: str (required)
+      - function_under_test: str (required)
+      - input_summary: str (required)
+      - expected_behavior: str (required)
+      - category: str (optional, one of: happy|error|boundary)
+    """
+    from ruamel.yaml import YAML, YAMLError
+
+    yaml = YAML(typ="safe")
+    findings: list[Finding] = []
+
+    # Extract YAML from code blocks
+    code_blocks = re.findall(r"```(?:ya?ml)?\s*\n(.*?)```", scenarios_text, re.DOTALL)
+    if not code_blocks:
+        findings.append(
+            Finding(
+                message="Scenarios section has no YAML code blocks",
+                severity=Severity.ERROR,
+                suggestion="Add at least one ```yaml code block with scenario definitions.",
+            )
+        )
+        return findings
+
+    for block in code_blocks:
+        try:
+            data = yaml.load(block)
+            if isinstance(data, list):
+                for i, item in enumerate(data):
+                    findings.extend(_validate_scenario_item(item, i))
+            elif isinstance(data, dict):
+                findings.extend(_validate_scenario_item(data, 0))
+            else:
+                findings.append(
+                    Finding(
+                        message=f"Scenario YAML must be a list or mapping, got: {type(data).__name__}",
+                        severity=Severity.ERROR,
+                    )
+                )
+        except YAMLError as exc:
+            findings.append(
+                Finding(
+                    message=f"Invalid YAML in Scenarios section: {exc}",
+                    severity=Severity.ERROR,
+                    suggestion="Fix the YAML syntax in the scenario code block.",
+                )
+            )
+    return findings
+
+
+def _validate_scenario_item(item: Any, index: int) -> list[Finding]:
+    """Validate a single scenario item against the expected schema."""
+    findings: list[Finding] = []
+    if not isinstance(item, dict):
+        findings.append(
+            Finding(
+                message=f"Scenario item {index} must be a mapping, got: {type(item).__name__}",
+                severity=Severity.ERROR,
+            )
+        )
+        return findings
+
+    missing = _SCENARIO_REQUIRED_KEYS - set(item.keys())
+    if missing:
+        findings.append(
+            Finding(
+                message=f"Scenario item {index} missing required keys: {sorted(missing)}",
+                severity=Severity.ERROR,
+                suggestion=f"Each scenario must have: {sorted(_SCENARIO_REQUIRED_KEYS)}",
+            )
+        )
+
+    category = item.get("category")
+    if category is not None and category not in _SCENARIO_VALID_CATEGORIES:
+        findings.append(
+            Finding(
+                message=f"Scenario item {index} has invalid category '{category}'",
+                severity=Severity.WARNING,
+                suggestion=f"category must be one of: {sorted(_SCENARIO_VALID_CATEGORIES)}",
+            )
+        )
+    return findings

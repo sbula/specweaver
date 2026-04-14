@@ -61,7 +61,7 @@ class TestStepTarget:
         assert StepTarget.COMPONENTS == "components"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 7
+        assert len(StepTarget) == 8
 
 
 # ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 16
+        assert len(VALID_STEP_COMBINATIONS) == 17
 
     @pytest.mark.parametrize(
         ("action", "target"),

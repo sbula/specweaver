@@ -797,7 +797,6 @@ async def test_integration_topological_join_wave_n_deferred() -> None:
     """
     from pathlib import Path
 
-    from typing import Any
     from specweaver.core.flow._base import RunContext
     from specweaver.core.flow._decompose import OrchestrateComponentsHandler
     from specweaver.core.flow.runner import PipelineRunner
@@ -918,11 +917,8 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
     mock_plan = json.dumps({"components": [{"component": "Alpha"}, {"component": "Beta"}]})
     ctx.plan = mock_plan
 
-    import importlib.resources
-    import yaml
 
-    files = importlib.resources.files("specweaver.workflows.pipelines")
-    resource = files.joinpath("new_feature.yaml")
+
     # Base YAML read ensures module paths are correct, but we substitute totally Custom YAML
 
     # Force step 1 to be standard, Step 2 to be Join
