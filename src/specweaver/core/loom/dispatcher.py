@@ -120,10 +120,17 @@ class ToolDispatcher:
             from specweaver.core.loom.tools.filesystem.interfaces import create_filesystem_interface
 
             grants = []
-            for root in boundary.roots:
-                grants.append(FolderGrant(str(root), AccessMode.FULL, recursive=True))
-            for api_path in boundary.api_paths:
-                grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
+            if role == "scenario_agent":
+                # Strict FR-5a isolation: scenario agent cannot read src/ or tests/
+                for root in boundary.roots:
+                    grants.append(FolderGrant(str(root / "scenarios"), AccessMode.FULL, recursive=True))
+                    grants.append(FolderGrant(str(root / "specs"), AccessMode.READ, recursive=True))
+                    grants.append(FolderGrant(str(root / "contracts"), AccessMode.READ, recursive=True))
+            else:
+                for root in boundary.roots:
+                    grants.append(FolderGrant(str(root), AccessMode.FULL, recursive=True))
+                for api_path in boundary.api_paths:
+                    grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
 
             # The first root acts as the cwd for relative paths
             fs_interface = create_filesystem_interface(role, cwd=boundary.roots[0], grants=grants)

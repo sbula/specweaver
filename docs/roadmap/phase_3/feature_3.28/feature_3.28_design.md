@@ -337,13 +337,13 @@ SF-A (Foundation) ──── SF-B (Scenario Pipeline) ──── SF-C (Arbit
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-A | Foundation: Spec Enforcement + Contract Generation | — | ✅ | ✅ | ✅ | ⬜ | ⬜ |
-| SF-B | Scenario Pipeline: Generate + Convert + Wire | SF-A | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-A | Foundation: Spec Enforcement + Contract Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-B | Scenario Pipeline: Generate + Convert + Wire | SF-A | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-C | Arbiter + Feedback Loop | SF-B | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-A dev COMPLETE (pending pre-commit + commit). SF-B implementation plan in progress.
-**Next step**: Run `/implementation-plan docs/roadmap/phase_3/feature_3.28/feature_3.28_design.md sf-b`
+**Current status**: SF-A COMMITTED (`189b916`). SF-B implementation plan APPROVED.
+**Next step**: Run `/dev docs/roadmap/phase_3/feature_3.28/feature_3.28_sfb_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

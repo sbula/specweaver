@@ -159,33 +159,6 @@ class PipelineRunner:
         finally:
             self._flush_telemetry()
 
-    async def fan_out(
-        self, sub_pipelines: list[PipelineDefinition], parent_run_id: str
-    ) -> list[PipelineRun]:
-        """Execute multiple sub-pipelines concurrently and await their completion.
-
-        Args:
-            sub_pipelines: List of PipelineDefinitions to run concurrently.
-            parent_run_id: The run ID of the executing step's parent pipeline.
-
-        Returns:
-            A list of completed PipelineRun states, one for each sub-pipeline.
-        """
-        import asyncio
-
-        runners = [
-            PipelineRunner(
-                pipe,
-                self._context,
-                registry=self._registry,
-                store=self._store,
-                on_event=self._on_event,
-            )
-            for pipe in sub_pipelines
-        ]
-        return list(
-            await asyncio.gather(*[runner.run(parent_run_id=parent_run_id) for runner in runners])
-        )
 
     # ------------------------------------------------------------------
     # Core execution loop

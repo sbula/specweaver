@@ -37,6 +37,7 @@ class StepAction(enum.StrEnum):
     ENRICH = "enrich"
     DETECT = "detect"
     ORCHESTRATE = "orchestrate"
+    CONVERT = "convert"
 
 
 class StepTarget(enum.StrEnum):
@@ -50,6 +51,7 @@ class StepTarget(enum.StrEnum):
     DRIFT = "drift"
     COMPONENTS = "components"
     CONTRACT = "contract"
+    SCENARIO = "scenario"
 
 
 class GateType(enum.StrEnum):
@@ -120,6 +122,9 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.ORCHESTRATE, StepTarget.COMPONENTS),
         # Contract generation combos (Feature 3.28 SF-A)
         (StepAction.GENERATE, StepTarget.CONTRACT),
+        # Scenario pipeline combos (Feature 3.28 SF-B)
+        (StepAction.GENERATE, StepTarget.SCENARIO),
+        (StepAction.CONVERT, StepTarget.SCENARIO),
     }
 )
 

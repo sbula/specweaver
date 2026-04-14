@@ -211,3 +211,29 @@ class TestMixedPathGrantMatching:
             {"path": "src", "pattern": "*.py"},
         )
         assert "results" in result
+
+
+class TestScenarioAgentIsolation:
+    """FR-5a: scenario_agent must have strictly constrained boundary grants."""
+
+    def test_scenario_agent_grants(self, project: Path) -> None:
+        boundary = WorkspaceBoundary(roots=[project])
+        dispatcher = ToolDispatcher.create_standard_set(
+            boundary,
+            role="scenario_agent",
+            allowed_tools=["fs"],
+        )
+
+        # We need to inspect the internal grants on the fs tool to verify
+        # The tool should be instantiated and registered inside dispatcher._interfaces
+        fs_interface = dispatcher._interfaces[0]
+        # In python, the tool is a class that holds the grants. We can inspect its state.
+        # fs_interface is bound to a FileSystemTool underlying instance
+        tool_instance = fs_interface._tool
+        assert tool_instance.role == "scenario_agent"
+
+        paths = {g.path for g in tool_instance._grants}
+        assert str(project / "scenarios") in paths
+        assert str(project / "specs") in paths
+        assert str(project / "contracts") in paths
+        assert str(project) not in paths  # Full root is NOT granted

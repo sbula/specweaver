@@ -38,9 +38,10 @@ class TestStepAction:
         assert StepAction.ENRICH == "enrich"
         assert StepAction.DETECT == "detect"
         assert StepAction.ORCHESTRATE == "orchestrate"
+        assert StepAction.CONVERT == "convert"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 10
+        assert len(StepAction) == 11
 
 
 # ---------------------------------------------------------------------------
@@ -59,9 +60,10 @@ class TestStepTarget:
         assert StepTarget.STANDARDS == "standards"
         assert StepTarget.DRIFT == "drift"
         assert StepTarget.COMPONENTS == "components"
+        assert StepTarget.SCENARIO == "scenario"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 8
+        assert len(StepTarget) == 9
 
 
 # ---------------------------------------------------------------------------
@@ -91,7 +93,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 17
+        assert len(VALID_STEP_COMBINATIONS) == 19
 
     @pytest.mark.parametrize(
         ("action", "target"),
@@ -117,6 +119,9 @@ class TestValidStepCombinations:
             (StepAction.DETECT, StepTarget.DRIFT),
             # Component orchestration combos
             (StepAction.ORCHESTRATE, StepTarget.COMPONENTS),
+            # Scenario pipeline combos (Feature 3.28 SF-B)
+            (StepAction.GENERATE, StepTarget.SCENARIO),
+            (StepAction.CONVERT, StepTarget.SCENARIO),
         ],
     )
     def test_valid_combination(self, action: StepAction, target: StepTarget) -> None:

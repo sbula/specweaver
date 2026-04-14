@@ -30,6 +30,39 @@ class RunnerEventCallback(Protocol):
     ) -> None: ...
 
 
+async def run_fan_out(
+    runner: Any, sub_pipelines: list[PipelineDefinition], parent_run_id: str
+) -> list[PipelineRun]:
+    """Execute multiple sub-pipelines concurrently and await their completion.
+
+    Args:
+        runner: The parent PipelineRunner instance.
+        sub_pipelines: List of PipelineDefinitions to run concurrently.
+        parent_run_id: The run ID of the executing step's parent pipeline.
+
+    Returns:
+        A list of completed PipelineRun states, one for each sub-pipeline.
+    """
+    import asyncio
+    
+    # Needs to be imported inside or passed properly
+    from specweaver.core.flow.runner import PipelineRunner
+
+    runners = [
+        PipelineRunner(
+            pipe,
+            runner._context,
+            registry=runner._registry,
+            store=runner._store,
+            on_event=runner._on_event,
+        )
+        for pipe in sub_pipelines
+    ]
+    return list(
+        await asyncio.gather(*[r.run(parent_run_id=parent_run_id) for r in runners])
+    )
+
+
 def _now_iso() -> str:
     """Return the current time in ISO format."""
     return datetime.now(UTC).isoformat()

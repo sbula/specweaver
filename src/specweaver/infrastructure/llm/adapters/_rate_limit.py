@@ -3,7 +3,7 @@
 
 import asyncio
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, Message
@@ -93,7 +93,7 @@ class AsyncRateLimiterAdapter(LLMAdapter):
         messages: list[Message],
         config: GenerationConfig,
         tool_executor: object,
-        on_tool_round: object | None = None,
+        on_tool_round: Callable[[int, list[Message]], None] | None = None,
     ) -> LLMResponse:
         """Wraps the function-calling generation sequence inside a lock boundary."""
         semaphore = await self._wait_for_lock()

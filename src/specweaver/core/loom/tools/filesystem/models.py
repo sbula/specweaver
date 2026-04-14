@@ -62,6 +62,19 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
     ),
     "reviewer": frozenset({"read_file", "list_directory", "search_content", "grep", "find_files"}),
     "planner": frozenset({"read_file", "list_directory", "search_content", "grep", "find_files"}),
+    "scenario_agent": frozenset(
+        {
+            "read_file",
+            "write_file",
+            "create_file",
+            "delete_file",
+            "list_directory",
+            "search_content",
+            "find_placement",
+            "grep",
+            "find_files",
+        }
+    ),
     "drafter": frozenset(
         {
             "read_file",

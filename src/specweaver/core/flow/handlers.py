@@ -36,6 +36,10 @@ from specweaver.core.flow._generation import (
     GenerateTestsHandler,
     PlanSpecHandler,
 )
+from specweaver.core.flow._scenario import (
+    ConvertScenarioHandler,
+    GenerateScenarioHandler,
+)
 from specweaver.core.flow._lint_fix import LintFixHandler
 from specweaver.core.flow._review import ReviewCodeHandler, ReviewSpecHandler
 from specweaver.core.flow._standards import EnrichStandardsHandler
@@ -47,12 +51,14 @@ from specweaver.core.flow._validation import (
 from specweaver.core.flow.models import StepAction, StepTarget
 
 __all__ = [
+    "ConvertScenarioHandler",
     "DecomposeFeatureHandler",
     "DraftSpecHandler",
     "DriftCheckHandler",
     "EnrichStandardsHandler",
     "GenerateCodeHandler",
     "GenerateContractHandler",
+    "GenerateScenarioHandler",
     "GenerateTestsHandler",
     "LintFixHandler",
     "OrchestrateComponentsHandler",
@@ -93,6 +99,8 @@ class StepHandlerRegistry:
             (StepAction.DECOMPOSE, StepTarget.FEATURE): DecomposeFeatureHandler(),
             (StepAction.ORCHESTRATE, StepTarget.COMPONENTS): OrchestrateComponentsHandler(),
             (StepAction.GENERATE, StepTarget.CONTRACT): GenerateContractHandler(),
+            (StepAction.GENERATE, StepTarget.SCENARIO): GenerateScenarioHandler(),
+            (StepAction.CONVERT, StepTarget.SCENARIO): ConvertScenarioHandler(),
         }
 
     def get(

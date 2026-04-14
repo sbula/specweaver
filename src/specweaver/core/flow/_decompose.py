@@ -253,8 +253,10 @@ class OrchestrateComponentsHandler(StepHandler):
 
             if deferred_joins:
                 logger.info("Executing Wave N with %d deferred JOIN steps", len(deferred_joins))
-                wave_n_data = {"name": f"auto_wave_n_{context.run_id}", "steps": deferred_joins}
-                wave_n_pipe = PipelineDefinition(**wave_n_data)
+                wave_n_pipe = PipelineDefinition(
+                    name=f"auto_wave_n_{context.run_id}",
+                    steps=deferred_joins,
+                )
 
                 from specweaver.core.flow.runner import PipelineRunner
 

@@ -179,6 +179,20 @@ class TestRoleIntentMapping:
         }
         assert ROLE_INTENTS["drafter"] == frozenset(expected)
 
+    def test_scenario_agent_intents(self) -> None:
+        expected = {
+            "read_file",
+            "write_file",
+            "create_file",
+            "delete_file",
+            "list_directory",
+            "search_content",
+            "find_placement",
+            "grep",
+            "find_files",
+        }
+        assert ROLE_INTENTS["scenario_agent"] == frozenset(expected)
+
     def test_unknown_role_raises(self, executor: FileExecutor) -> None:
         with pytest.raises(ValueError, match="Unknown role"):
             FileSystemTool(executor=executor, role="hacker", grants=[])

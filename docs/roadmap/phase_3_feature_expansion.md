@@ -45,10 +45,10 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.28** | **Scenario Testing — Independent Verification** | _(inspired by agent-system)_ | Dual-pipeline architecture: coding + scenario pipelines run in parallel, meet at JOIN gate. Contract-first (Python Protocols), structured YAML scenarios, arbiter agent for error attribution. |
 | **3.28a** ✅ | ↳ Spec template enforcement | _(subfeature)_ | Require `## Scenarios` section in specs with structured inputs (preconditions, inputs, expected outputs) in YAML code blocks. Enhance S07 to validate. |
 | **3.28b** ✅ | ↳ API contract generation | _(subfeature)_ | New handler: `generate+contract` — extract Python Protocol/ABC from spec Contract section. Output: `api_contract.py`. |
-| **3.28c** | ↳ Scenario generation atom | _(subfeature)_ | New atom: spec + API contract → structured YAML scenarios (LLM). Multiple scenarios per public method. **Must explicitly map to Spec `req_id`s in the YAML schema.** |
-| **3.28d** | ↳ Scenario → pytest conversion | _(subfeature)_ | New atom: structured YAML scenarios → executable parametrized pytest files. Mechanical conversion **must inject zero-dependency `# @trace(FR-X)` tags** for C09. |
-| **3.28e** | ↳ `scenario_agent` role | _(subfeature)_ | New role in loom/tools: sees `specs/` + `scenarios/` only. `FileSystemTool` path allowlist per role. |
-| **3.28f** | ↳ `scenario_validation.yaml` | _(subfeature)_ | New pipeline definition: generate_contract → generate_scenarios → convert_to_pytest → signal READY. |
+| **3.28c** ✅ | ↳ Scenario generation atom | _(subfeature)_ | New atom: spec + API contract → structured YAML scenarios (LLM). Multiple scenarios per public method. **Must explicitly map to Spec `req_id`s in the YAML schema.** **Complete:** 4012 tests. |
+| **3.28d** ✅ | ↳ Scenario → pytest conversion | _(subfeature)_ | New atom: structured YAML scenarios → executable parametrized pytest files. Mechanical conversion **must inject zero-dependency `# @trace(FR-X)` tags** for C09. **Complete.** |
+| **3.28e** ✅ | ↳ `scenario_agent` role | _(subfeature)_ | New role in loom/tools: sees `specs/` + `scenarios/` only. `FileSystemTool` path allowlist per role. **Complete.** |
+| **3.28f** ✅ | ↳ `scenario_validation.yaml` | _(subfeature)_ | New pipeline definition: generate_contract → generate_scenarios → convert_to_pytest → signal READY. **Complete.** |
 | **3.28g** | ↳ JOIN gate type | _(subfeature)_ | New `GateType.JOIN` in `models.py` — waits for two pipelines to both signal READY before proceeding. |
 | **3.28h** | ↳ Pipeline orchestrator | _(subfeature)_ | Runs coding + scenario pipelines in parallel. Synchronizes at JOIN gate. |
 | **3.28i** | ↳ Arbiter agent | _(subfeature)_ | Third agent with full read access. On scenario test failure: determines fault (code/scenario/spec), produces filtered feedback to each pipeline. |

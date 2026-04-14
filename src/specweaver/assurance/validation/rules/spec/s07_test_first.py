@@ -276,7 +276,8 @@ def _validate_scenario_yaml(scenarios_text: str) -> list[Finding]:
       - expected_behavior: str (required)
       - category: str (optional, one of: happy|error|boundary)
     """
-    from ruamel.yaml import YAML, YAMLError
+    from ruamel.yaml import YAML
+    from ruamel.yaml.error import YAMLError
 
     yaml = YAML(typ="safe")
     findings: list[Finding] = []
