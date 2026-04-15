@@ -49,6 +49,10 @@ To add a language, say **Go**, you will create a highly isolated submodule insid
    - Native bindings to `go build`, `go test`, etc.
 4. **`ast_parser.py`**
    - Implements native Tree-Sitter schema endpoints (`extract_skeleton`, `extract_symbol`, `replace_symbol`, `replace_symbol_body`, `delete_symbol`, `add_symbol`) to power the unified `CodeStructureTool` and `CodeStructureAtom` APIs.
+5. **`scenario_converter.py`**
+   - Implements `ScenarioConverterInterface` to translate JSON/YAML abstract scenarios into `_test.go` parameterized execution blocks.
+6. **`stack_trace_filter.py`**
+   - Implements `StackTraceFilterInterface` to strip unhelpful system stack errors, isolating the domain payload emitted from Go native test failures.
 
 ### B. The Interface Contract
 
@@ -89,7 +93,7 @@ We rigorously separate test boundaries. Do not mix Mock constraints into Live fi
 
 ## 5. Checklist for Submitting Support
 
-- [ ] Created submodule at `commons/language/<lang>/` with `runner.py`, `parsers.py`, and `ast_parser.py`.
+- [ ] Created submodule at `commons/language/<lang>/` with `runner.py`, `parsers.py`, `ast_parser.py`, `scenario_converter.py`, and `stack_trace_filter.py`.
 - [ ] No Regex usage where JSON/SARIF is natively supported.
 - [ ] Language dispatcher mapped appropriately inside `QARunnerAtom` and `QARunnerTool`.
 - [ ] Tree-sitter binaries registered inside `CodeStructureAtom`.
