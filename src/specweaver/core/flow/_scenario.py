@@ -6,8 +6,7 @@
 from __future__ import annotations
 
 import logging
-import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from specweaver.core.flow._base import RunContext, _error_result, _now_iso
 from specweaver.core.flow._generation import _resolve_generation_routing
@@ -90,15 +89,17 @@ class GenerateScenarioHandler:
 
 
 class ConvertScenarioHandler:
-    """Handler for convert+scenario — mechanical YAML to pytest conversion."""
+    """Handler for convert+scenario — mechanical YAML to language-native test conversion.
+
+    Language-agnostic: delegates all path decisions to the language-specific
+    ``ScenarioConverterInterface.output_path()`` method. Zero language branching here.
+    """
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
         try:
-
             from ruamel.yaml import YAML
 
-            from specweaver.workflows.scenarios.scenario_converter import ScenarioConverter
             from specweaver.workflows.scenarios.scenario_models import ScenarioSet
 
             # Find scenario YAML from previous step
@@ -115,15 +116,34 @@ class ConvertScenarioHandler:
             data = yaml.load(scenario_yaml_path.read_text(encoding="utf-8"))
             scenario_set = ScenarioSet.model_validate(data)
 
-            pytest_content = ScenarioConverter.convert(scenario_set)
+            # Language-agnostic: Atom proxy picks the right converter
+            from specweaver.core.loom.atoms.language.atom import LanguageAtom
 
-            output_dir = context.project_path / "scenarios" / "generated"
-            output_dir.mkdir(parents=True, exist_ok=True)
-            output_path = output_dir / f"test_{stem}_scenarios.py"
-            output_path.write_text(pytest_content, encoding="utf-8")
+            atom = LanguageAtom(cwd=context.project_path)
+            res = atom.run({
+                "intent": "convert_scenario",
+                "stem": stem,
+                "scenario_set": scenario_set,
+            })
+            if res.status == "failed":
+                raise ValueError(res.message)
+
+            exports = res.exports or {}
+            test_content = exports.get("content", "")
+            output_path_str = exports.get("output_path", "")
+            if not output_path_str:
+                raise ValueError("Atom did not return output path")
+
+            from pathlib import Path
+            output_path = Path(output_path_str)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(test_content, encoding="utf-8")
+
+            # Store path in feedback so SF-C arbiter can locate the test file
+            context.feedback["scenario_test_path"] = str(output_path)
 
             logger.info(
-                "ConvertScenarioHandler: pytest file written to '%s'",
+                "ConvertScenarioHandler: test file written to '%s'",
                 output_path,
             )
 

@@ -38,6 +38,11 @@ class KotlinRunner(QARunnerInterface):
     def __init__(self, cwd: Path) -> None:
         self._cwd = cwd
 
+    @property
+    def language_name(self) -> str:
+        """Canonical language identifier."""
+        return "kotlin"
+
     def _get_build_tool(self) -> str:
         if (self._cwd / "build.gradle").exists() or (self._cwd / "build.gradle.kts").exists():
             return "gradle"

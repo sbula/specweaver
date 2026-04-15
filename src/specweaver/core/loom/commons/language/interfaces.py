@@ -6,7 +6,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
 class CodeStructureError(Exception):
     """Raised when the CodeStructure parser encounters a fatal error or cannot resolve a symbol."""
@@ -97,3 +100,81 @@ class CodeStructureInterface(ABC):
     @abstractmethod
     def delete_symbol(self, code: str, symbol_name: str) -> str:
         """Remove a symbol completely from the file."""
+
+
+# ---------------------------------------------------------------------------
+# Scenario Pipeline Interfaces (Feature 3.28 SF-B2)
+# ---------------------------------------------------------------------------
+
+
+class ScenarioConverterInterface(ABC):
+    """Language-specific converter from ``ScenarioSet`` to test file content.
+
+    Mechanical (non-LLM). Produces language-native parametrized test files
+    with ``# @trace(FR-X)`` tags for C09 compatibility.
+
+    Each implementation fully owns the output path convention for its language.
+    The handler calls ``output_path()`` and writes to the returned location —
+    zero language awareness is required in the handler.
+    """
+
+    @abstractmethod
+    def convert(self, scenario_set: object) -> str:
+        """Convert a ``ScenarioSet`` to test file content.
+
+        Args:
+            scenario_set: The scenarios to convert.
+
+        Returns:
+            The complete test file content as a string.
+        """
+
+    @abstractmethod
+    def output_path(self, stem: str, project_root: Path) -> Path:
+        """Return the full absolute output path for the generated test file.
+
+        Encodes the language's build-tool-enforced test convention:
+
+        - **Python**: ``project_root/scenarios/generated/test_{stem}_scenarios.py``
+        - **Java**: ``project_root/src/test/java/scenarios/generated/{Stem}ScenariosTest.java``
+        - **Kotlin**: ``project_root/src/test/kotlin/scenarios/generated/{Stem}ScenariosTest.kt``
+        - **TypeScript**: ``project_root/scenarios/generated/{stem}.scenarios.test.ts``
+        - **Rust**: ``project_root/tests/{stem}_scenarios.rs``
+
+        Args:
+            stem: Component name  (e.g. ``'payment'``).
+            project_root: Absolute path to the project root directory.
+
+        Returns:
+            Absolute ``Path`` to write the generated test file.
+        """
+
+
+class StackTraceFilterInterface(ABC):
+    """Strips scenario test file frames from stack traces by language.
+
+    Used by the Arbiter (SF-C) to produce coding agent feedback that contains
+    zero scenario vocabulary — only the coding agent's own source frames.
+
+    The scenario frame marker for each language is derived directly from the
+    ``output_path()`` convention in ``ScenarioConverterInterface``:
+
+    - **Python / TypeScript**: ``scenarios/generated/`` in the path string
+    - **Java / Kotlin**: ``scenarios.generated.`` package prefix in JVM frame
+    - **Rust**: ``_scenarios::`` module segment in frame symbol
+    """
+
+    @abstractmethod
+    def filter(self, stack_trace: str) -> str:
+        """Remove scenario file frames; preserve source code frames.
+
+        Args:
+            stack_trace: Raw stack trace text from a failing test.
+
+        Returns:
+            Filtered stack trace with all scenario frames removed.
+        """
+
+    @abstractmethod
+    def is_scenario_frame(self, line: str) -> bool:
+        """Return ``True`` if this line is from a scenario test file's frame."""

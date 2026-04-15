@@ -119,14 +119,35 @@ class QARunnerAtom(Atom):
                 message="Missing 'target' in context for run_tests intent.",
             )
 
-        result = self._runner.run_tests(
-            target=target,
-            kind=context.get("kind", "unit"),
-            scope=context.get("scope", ""),
-            timeout=context.get("timeout", 120),
-            coverage=context.get("coverage", False),
-            coverage_threshold=context.get("coverage_threshold", 70),
-        )
+        # NFR-3: Path Traversal Protection
+        try:
+            resolved_target = (self._cwd / target).resolve()
+            if not resolved_target.is_relative_to(self._cwd.resolve()):
+                return AtomResult(
+                    status=AtomStatus.FAILED,
+                    message="Target cannot traverse outside of the sandbox directory.",
+                )
+        except ValueError:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Invalid target path provided for sandbox execution.",
+            )
+
+        # NFR-4: Process Timeout Graceful Handling
+        try:
+            result = self._runner.run_tests(
+                target=target,
+                kind=context.get("kind", "unit"),
+                scope=context.get("scope", ""),
+                timeout=context.get("timeout", 120),
+                coverage=context.get("coverage", False),
+                coverage_threshold=context.get("coverage_threshold", 70),
+            )
+        except TimeoutError as exc:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"Process timed out: {exc}",
+            )
 
         exports = {
             "passed": result.passed,

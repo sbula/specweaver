@@ -6,13 +6,16 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from specweaver.core.flow._base import RunContext
 from specweaver.core.flow.models import PipelineStep, StepAction, StepTarget
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.asyncio

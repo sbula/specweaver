@@ -74,7 +74,7 @@ class TestC03TestsPass:
         assert result.status == Status.SKIP
         assert "test_mymod" in result.message
 
-    @patch("specweaver.assurance.validation.rules.code.c03_tests_pass.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_pass_when_tests_succeed(
         self,
         mock_runner_cls: MagicMock,
@@ -93,22 +93,26 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=3,
-            failed=0,
-            errors=0,
-            skipped=0,
-            total=3,
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="No failures",
+            exports={
+                "passed": 3,
+                "failed": 0,
+                "errors": 0,
+                "skipped": 0,
+                "total": 3,
+            }
         )
 
         rule = TestsPassRule()
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.PASS
 
-    @patch("specweaver.assurance.validation.rules.code.c03_tests_pass.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_fail_when_tests_fail(
         self,
         mock_runner_cls: MagicMock,
@@ -127,16 +131,20 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestFailure, TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=0,
-            failed=1,
-            errors=0,
-            skipped=0,
-            total=1,
-            failures=[TestFailure(nodeid="test_bad", message="assert False")],
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.FAILED,
+            message="Tests failed",
+            exports={
+                "passed": 0,
+                "failed": 1,
+                "errors": 0,
+                "skipped": 0,
+                "total": 1,
+                "failures": [{"nodeid": "test_bad", "message": "assert False"}],
+            }
         )
 
         rule = TestsPassRule()
@@ -144,7 +152,7 @@ class TestC03TestsPass:
         assert result.status == Status.FAIL
         assert len(result.findings) > 0
 
-    @patch("specweaver.assurance.validation.rules.code.c03_tests_pass.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_fail_when_tests_timeout(
         self,
         mock_runner_cls: MagicMock,
@@ -160,15 +168,15 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.side_effect = TimeoutError("Timed out")
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.side_effect = TimeoutError("Timed out")
 
         rule = TestsPassRule()
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.FAIL
         assert "timed out" in result.message.lower()
 
-    @patch("specweaver.assurance.validation.rules.code.c03_tests_pass.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_fail_output_truncated(
         self,
         mock_runner_cls: MagicMock,
@@ -184,17 +192,21 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestFailure, TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
+        mock_atom = mock_runner_cls.return_value
         long_message = "x" * 1000
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=0,
-            failed=1,
-            errors=0,
-            skipped=0,
-            total=1,
-            failures=[TestFailure(nodeid="test_x", message=long_message)],
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.FAILED,
+            message="Failures",
+            exports={
+                "passed": 0,
+                "failed": 1,
+                "errors": 0,
+                "skipped": 0,
+                "total": 1,
+                "failures": [{"nodeid": "test_x", "message": long_message}],
+            }
         )
 
         rule = TestsPassRule()
@@ -203,7 +215,7 @@ class TestC03TestsPass:
         # Output is truncated to 500 chars
         assert len(result.findings[0].message) <= 500
 
-    @patch("specweaver.assurance.validation.rules.code.c03_tests_pass.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_fail_no_output(
         self,
         mock_runner_cls: MagicMock,
@@ -219,16 +231,20 @@ class TestC03TestsPass:
         code = src / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=0,
-            failed=1,
-            errors=0,
-            skipped=0,
-            total=1,
-            failures=[],  # no failure details
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.FAILED,
+            message="Failed but no details",
+            exports={
+                "passed": 0,
+                "failed": 1,
+                "errors": 0,
+                "skipped": 0,
+                "total": 1,
+                "failures": [],  # no failure details
+            }
         )
 
         rule = TestsPassRule()
@@ -251,7 +267,7 @@ class TestC04Coverage:
         result = rule.check("code content", spec_path=None)
         assert result.status == Status.SKIP
 
-    @patch("specweaver.assurance.validation.rules.code.c04_coverage.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_pass_when_above_threshold(
         self,
         mock_runner_cls: MagicMock,
@@ -262,16 +278,20 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=5,
-            failed=0,
-            errors=0,
-            skipped=0,
-            total=5,
-            coverage_pct=95.0,
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="No failures",
+            exports={
+                "passed": 5,
+                "failed": 0,
+                "errors": 0,
+                "skipped": 0,
+                "total": 5,
+                "coverage_pct": 95.0,
+            }
         )
 
         rule = CoverageRule(threshold=70)
@@ -279,7 +299,7 @@ class TestC04Coverage:
         assert result.status == Status.PASS
         assert "95%" in result.message
 
-    @patch("specweaver.assurance.validation.rules.code.c04_coverage.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_fail_when_below_threshold(
         self,
         mock_runner_cls: MagicMock,
@@ -290,16 +310,20 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=5,
-            failed=0,
-            errors=0,
-            skipped=0,
-            total=5,
-            coverage_pct=40.0,
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="No failures",
+            exports={
+                "passed": 5,
+                "failed": 0,
+                "errors": 0,
+                "skipped": 0,
+                "total": 5,
+                "coverage_pct": 40.0,
+            }
         )
 
         rule = CoverageRule(threshold=70)
@@ -308,7 +332,7 @@ class TestC04Coverage:
         assert "40%" in result.message
         assert len(result.findings) > 0
 
-    @patch("specweaver.assurance.validation.rules.code.c04_coverage.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_warn_when_output_unparseable(
         self,
         mock_runner_cls: MagicMock,
@@ -319,16 +343,20 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=0,
-            failed=0,
-            errors=0,
-            skipped=0,
-            total=0,
-            coverage_pct=None,
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="No failures",
+            exports={
+                "passed": 0,
+                "failed": 0,
+                "errors": 0,
+                "skipped": 0,
+                "total": 0,
+                "coverage_pct": None,
+            }
         )
 
         rule = CoverageRule()
@@ -336,7 +364,7 @@ class TestC04Coverage:
         assert result.status == Status.WARN
         assert "unparseable" in result.message.lower() or "parse" in result.message.lower()
 
-    @patch("specweaver.assurance.validation.rules.code.c04_coverage.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_fail_when_timeout(
         self,
         mock_runner_cls: MagicMock,
@@ -347,15 +375,15 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.side_effect = TimeoutError("Timed out")
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.side_effect = TimeoutError("Timed out")
 
         rule = CoverageRule()
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.FAIL
         assert "timed out" in result.message.lower()
 
-    @patch("specweaver.assurance.validation.rules.code.c04_coverage.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_pass_at_exact_threshold(
         self,
         mock_runner_cls: MagicMock,
@@ -366,23 +394,27 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=5,
-            failed=0,
-            errors=0,
-            skipped=0,
-            total=5,
-            coverage_pct=70.0,
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="No failures",
+            exports={
+                "passed": 5,
+                "failed": 0,
+                "errors": 0,
+                "skipped": 0,
+                "total": 5,
+                "coverage_pct": 70.0,
+            }
         )
 
         rule = CoverageRule(threshold=70)
         result = rule.check("pass", spec_path=code)
         assert result.status == Status.PASS
 
-    @patch("specweaver.assurance.validation.rules.code.c04_coverage.PythonQARunner")
+    @patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom")
     def test_fail_one_below_threshold(
         self,
         mock_runner_cls: MagicMock,
@@ -393,16 +425,20 @@ class TestC04Coverage:
         code = tmp_path / "mymod.py"
         code.write_text("pass", encoding="utf-8")
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestRunResult
+        from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
-        mock_runner = mock_runner_cls.return_value
-        mock_runner.run_tests.return_value = TestRunResult(
-            passed=5,
-            failed=0,
-            errors=0,
-            skipped=0,
-            total=5,
-            coverage_pct=69.0,
+        mock_atom = mock_runner_cls.return_value
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="No failures",
+            exports={
+                "passed": 5,
+                "failed": 0,
+                "errors": 0,
+                "skipped": 0,
+                "total": 5,
+                "coverage_pct": 69.0,
+            }
         )
 
         rule = CoverageRule(threshold=70)

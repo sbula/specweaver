@@ -169,3 +169,7 @@ class TestRustRunner:
             assert "run" in mock_run.call_args[0][0]
             assert result.exit_code == 0
             assert result.events[0].output == "DEBUG OK"
+
+    def test_language_name_property(self, tmp_path: Path) -> None:
+        runner = RustRunner(cwd=tmp_path)
+        assert runner.language_name == "rust"

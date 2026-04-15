@@ -12,7 +12,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
-from specweaver.core.loom.commons.language.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -49,23 +48,30 @@ class CoverageRule(Rule):
                 break
             project_root = project_root.parent
 
-        # Delegate to PythonQARunner
-        runner = PythonQARunner(cwd=project_root)
+        # Delegate to QARunnerAtom via intent
+        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+
+        atom = QARunnerAtom(cwd=project_root)
         try:
-            result = runner.run_tests(
-                target=str(spec_path),
-                kind="",  # no marker filter
-                timeout=120,
-                coverage=True,
-                coverage_threshold=self._threshold,
-            )
+            result = atom.run({
+                "intent": "run_tests",
+                "target": str(spec_path),
+                "kind": "",
+                "timeout": 120,
+                "coverage": True,
+                "coverage_threshold": self._threshold,
+            })
+
+            if result.status == "failed" and "timed out" in (result.message or "").lower():
+                raise TimeoutError("Coverage check timed out")
         except TimeoutError:
             return self._fail(
                 "Coverage check timed out",
                 [Finding(message="Coverage check timed out after 120s", severity=Severity.ERROR)],
             )
 
-        coverage = result.coverage_pct
+        exports = result.exports or {}
+        coverage = exports.get("coverage_pct")
 
         if coverage is None:
             return self._warn(

@@ -51,6 +51,7 @@ def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:
     ctx.llm_routing_enabled = False
     ctx.llm_router = None
     ctx.generation_config = None
+    ctx.feedback = {}
 
     return ctx
 
@@ -200,3 +201,45 @@ class TestConvertScenarioHandler:
 
         assert result.status == StepStatus.ERROR
         assert "Scenario YAML not found" in result.error_message
+
+    async def test_handler_sets_scenario_test_path_in_feedback(self, tmp_path: Path) -> None:
+        """ConvertScenarioHandler must write scenario_test_path into context.feedback."""
+        from ruamel.yaml import YAML
+
+        scenarios_dir = tmp_path / "scenarios" / "definitions"
+        scenarios_dir.mkdir(parents=True)
+        yaml = YAML()
+        yaml.default_flow_style = False
+        yaml.dump(_VALID_RESPONSE, scenarios_dir / "auth_scenarios.yaml")
+
+        ctx = _make_context(tmp_path)
+        handler = ConvertScenarioHandler()
+        result = await handler.execute(_make_step("convert", "scenario"), ctx)
+
+        assert result.status == StepStatus.PASSED
+        assert "scenario_test_path" in ctx.feedback
+        # For Python project (default), path must be in scenarios/generated/
+        assert "scenarios" in ctx.feedback["scenario_test_path"]
+        assert "generated" in ctx.feedback["scenario_test_path"]
+
+    async def test_handler_uses_factory_output_path(self, tmp_path: Path) -> None:
+        """ConvertScenarioHandler must use converter.output_path() — not a hardcoded path."""
+        from ruamel.yaml import YAML
+
+        scenarios_dir = tmp_path / "scenarios" / "definitions"
+        scenarios_dir.mkdir(parents=True)
+        yaml = YAML()
+        yaml.default_flow_style = False
+        yaml.dump(_VALID_RESPONSE, scenarios_dir / "auth_scenarios.yaml")
+
+        # Python project (default): output_path convention
+        ctx = _make_context(tmp_path)
+        handler = ConvertScenarioHandler()
+        result = await handler.execute(_make_step("convert", "scenario"), ctx)
+
+        assert result.status == StepStatus.PASSED
+        expected_path = tmp_path / "scenarios" / "generated" / "test_auth_scenarios.py"
+        assert expected_path.exists()
+        # The result output must also report the path as a string
+        assert "generated_path" in result.output
+        assert "test_auth_scenarios.py" in result.output["generated_path"]

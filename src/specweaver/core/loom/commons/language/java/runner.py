@@ -37,6 +37,11 @@ class JavaRunner(QARunnerInterface):
         self._cwd = cwd
         self._build_tool: str | None = None
 
+    @property
+    def language_name(self) -> str:
+        """Canonical language identifier."""
+        return "java"
+
     def _get_build_tool(self) -> str:
         if self._build_tool is not None:
             return self._build_tool

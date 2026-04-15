@@ -37,43 +37,51 @@ class ImportDirectionRule(Rule):
         import logging
 
         from specweaver.core.config.dal_resolver import DALResolver
-        from specweaver.core.loom.commons.qa_runner.factory import resolve_runner
+        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
 
         logger = logging.getLogger(__name__)
 
         try:
             cwd = spec_path.parent
-            runner = resolve_runner(cwd)
+            atom = QARunnerAtom(cwd=cwd)
 
             # Resolve the active DAL for this boundary
             resolver = DALResolver(project_root=cwd)
             dal_enum = resolver.resolve(target_path=spec_path)
 
-            result = runner.run_architecture_check(
-                target=str(spec_path.absolute()), dal_level=dal_enum
-            )
+            result = atom.run({
+                "intent": "run_architecture",
+                "target": str(spec_path.absolute()),
+                "dal_level": dal_enum,
+            })
         except Exception as e:
             logger.warning("C05 architecture check failed: %s", e)
             return self._skip(f"Architecture engine failure: {e}")
 
-        if result.violation_count == 0:
+        exports = result.exports or {}
+        violation_count = exports.get("violation_count", 0)
+
+        if violation_count == 0:
             return self._pass("All imports follow layering rules")
 
         findings: list[Finding] = []
 
-        for viol in result.violations:
+        violations = exports.get("violations", [])
+        for viol in violations:
+            msg = viol.get("message", "Unknown violation")
+            code = viol.get("code", "UNKNOWN")
             findings.append(
                 Finding(
-                    message=f"Architecture boundary violated: {viol.message}",
+                    message=f"Architecture boundary violated: {msg}",
                     line=0,
                     severity=Severity.ERROR,
-                    suggestion=f"See architectural boundary configuration (Code: {viol.code}).",
+                    suggestion=f"See architectural boundary configuration (Code: {code}).",
                 )
             )
 
         if findings:
             return self._fail(
-                f"Found {result.violation_count} architectural violation(s)", findings
+                f"Found {violation_count} architectural violation(s)", findings
             )
 
         return self._fail("Architectural violations detected.", [])

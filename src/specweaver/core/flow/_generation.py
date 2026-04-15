@@ -449,11 +449,25 @@ class GenerateContractHandler:
             contracts_dir = context.project_path / "contracts"
             contracts_dir.mkdir(parents=True, exist_ok=True)
             stem = context.spec_path.stem.replace("_spec", "")
-            output_path = contracts_dir / f"{stem}_contract.py"
-
             class_name = stem.replace("_", " ").title().replace(" ", "")
-            protocol_content = self._render_protocol(class_name, signatures, docstrings)
-            output_path.write_text(protocol_content, encoding="utf-8")
+
+            # Language-agnostic dispatch using Atom Proxy
+            from specweaver.core.flow._contract_renderers import (
+                contract_extension,
+                render_contract,
+            )
+            from specweaver.core.loom.atoms.language.atom import LanguageAtom
+
+            atom = LanguageAtom(cwd=context.project_path)
+            res = atom.run({"intent": "detect_language"})
+            exports = res.exports or {}
+            language = exports.get("language", "python")
+
+            contract_content = render_contract(language, class_name, signatures, docstrings)
+            ext = contract_extension(language)
+            output_path = contracts_dir / f"{stem}_contract.{ext}"
+
+            output_path.write_text(contract_content, encoding="utf-8")
             logger.info("GenerateContractHandler: contract written to '%s'", output_path)
 
             # Wire contract path into RunContext for downstream consumption (SF-B)

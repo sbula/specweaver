@@ -118,3 +118,7 @@ class TestTypeScriptRunner:
         runner = TypeScriptRunner(cwd=tmp_path)
         result = runner.run_complexity(target="src/")
         assert result.violation_count == 0
+
+    def test_language_name_property(self, tmp_path: Path) -> None:
+        runner = TypeScriptRunner(cwd=tmp_path)
+        assert runner.language_name == "typescript"

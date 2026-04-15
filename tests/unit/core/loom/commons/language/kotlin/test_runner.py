@@ -144,3 +144,7 @@ class TestKotlinRunner:
         res = kotlin_runner.run_debugger(target="", entrypoint="AppKt")
         assert len(res.events) > 0
         assert "5005" in res.events[-1].output or "AppKt" in res.events[0].output
+
+    def test_language_name_property(self, mock_cwd: Path) -> None:
+        runner = KotlinRunner(cwd=mock_cwd)
+        assert runner.language_name == "kotlin"

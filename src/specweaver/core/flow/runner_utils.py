@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     import logging
 
     from specweaver.core.flow.handlers import RunContext
-    from specweaver.core.flow.models import PipelineStep
+    from specweaver.core.flow.models import PipelineDefinition, PipelineStep
     from specweaver.core.flow.state import PipelineRun, StepResult
 
 
@@ -44,7 +44,7 @@ async def run_fan_out(
         A list of completed PipelineRun states, one for each sub-pipeline.
     """
     import asyncio
-    
+
     # Needs to be imported inside or passed properly
     from specweaver.core.flow.runner import PipelineRunner
 

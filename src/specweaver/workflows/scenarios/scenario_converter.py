@@ -152,3 +152,12 @@ class ScenarioConverter:
             scenario.function_under_test, scenario
         )
         return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatibility note (Feature 3.28 SF-B2)
+# ---------------------------------------------------------------------------
+# ``ScenarioConverter`` (above) retains its original @staticmethod API.
+# All existing callers continue to work unchanged.
+# New code should import ``PythonScenarioConverter`` from:
+#   specweaver.core.loom.commons.language.python.scenario_converter

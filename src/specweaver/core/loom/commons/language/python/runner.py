@@ -126,6 +126,11 @@ class PythonQARunner(QARunnerInterface):
     def __init__(self, cwd: Path) -> None:
         self._cwd = cwd
 
+    @property
+    def language_name(self) -> str:
+        """Canonical language identifier."""
+        return "python"
+
     def run_tests(
         self,
         target: str,

@@ -154,3 +154,7 @@ class TestPythonQARunner:
             mock_run.assert_called_once()
             assert result.violation_count == 1
             assert result.violations[0].code == "InvalidOutput"
+
+    def test_language_name_property(self, tmp_path: Path) -> None:
+        runner = PythonQARunner(cwd=tmp_path)
+        assert runner.language_name == "python"

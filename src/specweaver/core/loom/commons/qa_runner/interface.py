@@ -272,6 +272,15 @@ class QARunnerInterface(ABC):
 
     __test__ = False
 
+    @property
+    @abstractmethod
+    def language_name(self) -> str:
+        """Canonical language identifier for this runner.
+
+        Returns:
+            One of: ``"python"``, ``"java"``, ``"kotlin"``, ``"typescript"``, ``"rust"``.
+        """
+
     @abstractmethod
     def run_tests(
         self,

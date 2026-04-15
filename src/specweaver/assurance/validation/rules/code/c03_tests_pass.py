@@ -12,7 +12,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
-from specweaver.core.loom.commons.language.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,25 +53,37 @@ class TestsPassRule(Rule):
 
         test_file = matches[0]
 
-        # Delegate to PythonQARunner
-        runner = PythonQARunner(cwd=project_root)
+        # Delegate to QARunnerAtom via intent
+        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+        from specweaver.core.loom.atoms.base import AtomStatus
+
+        atom = QARunnerAtom(cwd=project_root)
         try:
-            result = runner.run_tests(
-                target=str(test_file.relative_to(project_root)),
-                kind="",  # no marker filter
-                timeout=60,
-            )
+            result = atom.run({
+                "intent": "run_tests",
+                "target": str(test_file.relative_to(project_root)),
+                "kind": "",
+                "timeout": 60,
+            })
+
+            if result.status == AtomStatus.FAILED and "timed out" in (result.message or "").lower():
+                raise TimeoutError("Tests timed out")
         except TimeoutError:
             return self._fail(
                 "Tests timed out after 60 seconds",
                 [Finding(message="Test execution timed out", severity=Severity.ERROR)],
             )
 
-        if result.failed == 0 and result.errors == 0:
+        exports = result.exports or {}
+        failed = exports.get("failed", 0)
+        errors = exports.get("errors", 0)
+
+        if failed == 0 and errors == 0:
             return self._pass(f"All tests in {test_file.name} passed")
 
         # Build failure message from structured results
-        failure_msgs = [f.message for f in result.failures]
+        failures = exports.get("failures", [])
+        failure_msgs = [f.get("message", "") for f in failures]
         if failure_msgs:
             message = "; ".join(failure_msgs)
             # Truncate to 500 chars for consistency

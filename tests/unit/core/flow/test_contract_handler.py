@@ -157,3 +157,46 @@ class TestContractHandlerRegistration:
         handler = registry.get(StepAction.GENERATE, StepTarget.CONTRACT)
         assert handler is not None
         assert isinstance(handler, GenerateContractHandler)
+
+
+# ── T8: Language dispatch (SF-B2) ───────────────────────────────────────────
+
+
+class TestContractHandlerLanguageDispatch:
+    """GenerateContractHandler must use render_contract() dispatch — not hardcode Python."""
+
+    async def test_java_project_generates_java_interface(self, tmp_path: Path) -> None:
+        """Java project (pom.xml) → interface in contracts/greeter_contract.java."""
+        (tmp_path / "pom.xml").write_text("<project/>", encoding="utf-8")
+        ctx = _make_context(tmp_path, _SAMPLE_SPEC)
+        handler = GenerateContractHandler()
+        result = await handler.execute(MagicMock(), ctx)
+        assert result.status == StepStatus.PASSED
+        contract_file = tmp_path / "contracts" / "greeter_contract.java"
+        assert contract_file.exists(), f"Expected {contract_file}"
+        content = contract_file.read_text(encoding="utf-8")
+        assert "interface GreeterContract" in content
+        assert "package contracts;" in content
+
+    async def test_kotlin_project_generates_kotlin_interface(self, tmp_path: Path) -> None:
+        """Kotlin project (build.gradle) → interface in contracts/greeter_contract.kt."""
+        (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
+        ctx = _make_context(tmp_path, _SAMPLE_SPEC)
+        handler = GenerateContractHandler()
+        result = await handler.execute(MagicMock(), ctx)
+        assert result.status == StepStatus.PASSED
+        contract_file = tmp_path / "contracts" / "greeter_contract.kt"
+        assert contract_file.exists(), f"Expected {contract_file}"
+        content = contract_file.read_text(encoding="utf-8")
+        assert "interface GreeterContract" in content
+
+    async def test_python_project_generates_python_protocol(self, tmp_path: Path) -> None:
+        """Python project (default) → Protocol in contracts/greeter_contract.py."""
+        ctx = _make_context(tmp_path, _SAMPLE_SPEC)
+        handler = GenerateContractHandler()
+        result = await handler.execute(MagicMock(), ctx)
+        assert result.status == StepStatus.PASSED
+        contract_file = tmp_path / "contracts" / "greeter_contract.py"
+        assert contract_file.exists()
+        content = contract_file.read_text(encoding="utf-8")
+        assert "class GreeterProtocol(Protocol):" in content
