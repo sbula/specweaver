@@ -30,9 +30,15 @@ logger = logging.getLogger(__name__)
 class CodeStructureAtom(Atom):
     """Atom for retrieving AST structural bounds from project source code."""
 
-    def __init__(self, file_executor: FileExecutor) -> None:
-        """Initialize with a pre-configured FileExecutor for security limits."""
-        self._executor = file_executor
+    def __init__(self, file_executor: FileExecutor | None = None, cwd: Path | None = None) -> None:
+        """Initialize with a FileExecutor or construct one if cwd is provided."""
+        if file_executor:
+            self._executor = file_executor
+        elif cwd:
+            from specweaver.core.loom.commons.filesystem.executor import FileExecutor
+            self._executor = FileExecutor(cwd=cwd)
+        else:
+            raise ValueError("CodeStructureAtom requires either file_executor or cwd")
 
     def _get_parser(self, path: str) -> CodeStructureInterface | None:
         """Map a file extension to its respective TreeSitter AST parser."""

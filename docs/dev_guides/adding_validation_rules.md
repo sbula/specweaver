@@ -20,9 +20,10 @@ Rules are implemented as **Pure Functions** or stateless class handlers. They ab
 
 ### Example Schema (Spec Rule)
 ```python
+from typing import Any
 from specweaver.assurance.validation.models import RuleResult, Finding
 
-def check_no_weasel_words(spec_content: str) -> RuleResult:
+def check_no_weasel_words(spec_content: str, /, params: dict[str, Any] | None = None) -> RuleResult:
     # 1. Evaluate logic
     weasels = ["maybe", "probably", "should"]
     findings = []
@@ -55,4 +56,4 @@ Once your rule is written, you do not hardcode it into an array execution tree. 
 ## 4. Methodologies: Regex vs AST
 
 - **Specs**: Text-based boundaries rely on Regex and simplistic NLP chunking schemas.
-- **Code**: Always rely natively on AST. Do not parse Python/TypeScript code with Regex. For advanced analysis, utilize Tree-Sitter (e.g., the `validation/drift_detector.py` or `validation/rules/code/c09_traceability.py`) to scrape pure method signatures and abstract comments structurally out of source-code blocks without parsing fragile syntax.
+- **Code**: Always rely natively on AST or Dependency Injected structures. Do not parse Python/TypeScript code with Regex. For advanced analysis, Validation Rules must strictly rely on the Flow Engine Orchestrator to execute Tree-Sitter (`CodeStructureAtom`) safely inside the Loom abstraction layer, and inject the results into the rule via `params["ast_payload"]`. See [Adding Framework Validation Rules](adding_framework_guide.md) for detailed Archetype DI patterns.

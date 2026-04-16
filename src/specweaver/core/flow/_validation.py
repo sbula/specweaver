@@ -79,6 +79,7 @@ class ValidateSpecHandler:
                 context.spec_path,
                 merged_settings,
                 kind_str=kind_str,
+                project_path=context.project_path,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -113,6 +114,7 @@ class ValidateSpecHandler:
         settings: Any,
         *,
         kind_str: str | None = None,
+        project_path: Path | None = None,
     ) -> list[RuleResult]:
         """Run spec validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -125,13 +127,26 @@ class ValidateSpecHandler:
             RuleResult,  # noqa: F401 — for type narrowing
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.archetype_resolver import ArchetypeResolver
+
+        archetype = None
+        if project_path:
+            resolver = ArchetypeResolver(project_path)
+            archetype = resolver.resolve(spec_path)
 
         # Map kind to pipeline name
         pipeline_name = "validation_spec_default"
         if kind_str == "feature":
             pipeline_name = "validation_spec_feature"
 
-        pipeline = load_pipeline_yaml(pipeline_name)
+        if archetype:
+            try:
+                pipeline = load_pipeline_yaml(f"{pipeline_name}_{archetype}")
+            except Exception:
+                pipeline = load_pipeline_yaml(pipeline_name)
+        else:
+            pipeline = load_pipeline_yaml(pipeline_name)
+
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
@@ -164,6 +179,7 @@ class ValidateCodeHandler:
                 code_path,
                 context.spec_path,
                 merged_settings,
+                context.project_path,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -205,6 +221,7 @@ class ValidateCodeHandler:
         code_path: Path,
         spec_path: Path,
         settings: Any,
+        project_path: Path | None = None,
     ) -> list[RuleResult]:
         """Run code validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -217,12 +234,35 @@ class ValidateCodeHandler:
             RuleResult,  # noqa: F401 — for type narrowing
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.core.config.archetype_resolver import ArchetypeResolver
+        from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
 
-        pipeline = load_pipeline_yaml("validation_code_default")
+        archetype = None
+        if project_path:
+            resolver = ArchetypeResolver(project_path)
+            archetype = resolver.resolve(code_path)
+
+        pipeline_name = f"validation_code_{archetype}" if archetype else "validation_code_default"
+        try:
+            pipeline = load_pipeline_yaml(pipeline_name)
+        except Exception:
+            pipeline = load_pipeline_yaml("validation_code_default")
+
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
             )
+
+        cwd_path = project_path or code_path.parent
+        atom = CodeStructureAtom(cwd=cwd_path)
+        payload_res = atom.run({"intent": "extract_skeleton", "path": str(code_path)})
+
+        ast_payload: dict[str, Any] = {}
+        if payload_res.status.value == "SUCCESS":
+            ast_payload = payload_res.exports
+
+        for step in pipeline.steps:
+            step.params["ast_payload"] = ast_payload
 
         content = code_path.read_text(encoding="utf-8")
         return execute_validation_pipeline(pipeline, content, spec_path)
