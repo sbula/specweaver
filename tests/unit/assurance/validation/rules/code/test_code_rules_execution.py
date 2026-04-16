@@ -105,7 +105,7 @@ class TestC03TestsPass:
                 "errors": 0,
                 "skipped": 0,
                 "total": 3,
-            }
+            },
         )
 
         rule = TestsPassRule()
@@ -144,7 +144,7 @@ class TestC03TestsPass:
                 "skipped": 0,
                 "total": 1,
                 "failures": [{"nodeid": "test_bad", "message": "assert False"}],
-            }
+            },
         )
 
         rule = TestsPassRule()
@@ -206,7 +206,7 @@ class TestC03TestsPass:
                 "skipped": 0,
                 "total": 1,
                 "failures": [{"nodeid": "test_x", "message": long_message}],
-            }
+            },
         )
 
         rule = TestsPassRule()
@@ -244,7 +244,7 @@ class TestC03TestsPass:
                 "skipped": 0,
                 "total": 1,
                 "failures": [],  # no failure details
-            }
+            },
         )
 
         rule = TestsPassRule()
@@ -291,7 +291,7 @@ class TestC04Coverage:
                 "skipped": 0,
                 "total": 5,
                 "coverage_pct": 95.0,
-            }
+            },
         )
 
         rule = CoverageRule(threshold=70)
@@ -323,7 +323,7 @@ class TestC04Coverage:
                 "skipped": 0,
                 "total": 5,
                 "coverage_pct": 40.0,
-            }
+            },
         )
 
         rule = CoverageRule(threshold=70)
@@ -356,7 +356,7 @@ class TestC04Coverage:
                 "skipped": 0,
                 "total": 0,
                 "coverage_pct": None,
-            }
+            },
         )
 
         rule = CoverageRule()
@@ -407,7 +407,7 @@ class TestC04Coverage:
                 "skipped": 0,
                 "total": 5,
                 "coverage_pct": 70.0,
-            }
+            },
         )
 
         rule = CoverageRule(threshold=70)
@@ -438,7 +438,7 @@ class TestC04Coverage:
                 "skipped": 0,
                 "total": 5,
                 "coverage_pct": 69.0,
-            }
+            },
         )
 
         rule = CoverageRule(threshold=70)

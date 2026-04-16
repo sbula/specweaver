@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -190,10 +190,13 @@ class TestTestsPassRule:
         src.write_text("x = 1\n")
 
         from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
-        mock_result = AtomResult(status=AtomStatus.SUCCESS, message="Passed", exports={"failed": 0, "errors": 0, "failures": []})
-        with patch(
-            "specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom"
-        ) as mock_runner:
+
+        mock_result = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="Passed",
+            exports={"failed": 0, "errors": 0, "failures": []},
+        )
+        with patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom") as mock_runner:
             mock_runner.return_value.run.return_value = mock_result
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)
@@ -209,10 +212,13 @@ class TestTestsPassRule:
         src.write_text("x = 1\n")
 
         from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
-        mock_result = AtomResult(status=AtomStatus.FAILED, message="Failed", exports={"failed": 1, "errors": 0, "failures": [{"message": "assert False"}]})
-        with patch(
-            "specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom"
-        ) as mock_runner:
+
+        mock_result = AtomResult(
+            status=AtomStatus.FAILED,
+            message="Failed",
+            exports={"failed": 1, "errors": 0, "failures": [{"message": "assert False"}]},
+        )
+        with patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom") as mock_runner:
             mock_runner.return_value.run.return_value = mock_result
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)
@@ -228,10 +234,9 @@ class TestTestsPassRule:
         src.write_text("x = 1\n")
 
         from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
+
         mock_result = AtomResult(status=AtomStatus.FAILED, message="timed out after 120s")
-        with patch(
-            "specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom"
-        ) as mock_runner:
+        with patch("specweaver.core.loom.atoms.qa_runner.atom.QARunnerAtom") as mock_runner:
             mock_runner.return_value.run.return_value = mock_result
             rule = TestsPassRule()
             result = rule.check("code", spec_path=src)

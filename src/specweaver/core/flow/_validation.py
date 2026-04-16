@@ -242,7 +242,17 @@ class ValidateTestsHandler:
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
-        target = step.params.get("target", "tests/")
+        target = step.params.get("target")
+        if not target:
+            from specweaver.core.loom.commons.language.scenario_converter_factory import (
+                create_scenario_converter,
+            )
+
+            converter = create_scenario_converter(context.project_path)
+            stem = context.spec_path.stem.replace("_spec", "")
+            target_path = converter.output_path(stem, context.project_path)
+            target = str(target_path)
+
         kind = step.params.get("kind", "unit")
         logger.debug("ValidateTestsHandler: running %s tests in '%s'", kind, target)
 

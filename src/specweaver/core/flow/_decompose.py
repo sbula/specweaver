@@ -85,7 +85,7 @@ class OrchestrateComponentsHandler(StepHandler):
         import json
         import re
 
-        import yaml  # type: ignore
+        import yaml
 
         from specweaver.core.flow.models import PipelineDefinition
 

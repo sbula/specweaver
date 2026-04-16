@@ -877,5 +877,3 @@ async def test_integration_topological_join_wave_n_deferred() -> None:
     assert pipe_join.steps[0].params["component"] in ["AlphaFeature", "BetaFeature"]
     assert pipe_join.steps[1].params["component"] in ["AlphaFeature", "BetaFeature"]
     assert pipe_join.steps[0].params["component"] != pipe_join.steps[1].params["component"]
-
-

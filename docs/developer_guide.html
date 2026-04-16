@@ -936,6 +936,7 @@ classDiagram
         GENERATE
         LINT_FIX
         DECOMPOSE
+        ARBITRATE
     }
     class StepTarget {
         <<enumeration>>
@@ -943,6 +944,7 @@ classDiagram
         CODE
         TESTS
         FEATURE
+        VERDICT
     }
 
     PipelineDefinition "1" o-- "*" PipelineStep
@@ -954,13 +956,14 @@ classDiagram
 
 <h4>Valid Action + Target Combinations</h4>
 <table>
-  <tr><th>Action</th><th>spec</th><th>code</th><th>tests</th><th>feature</th></tr>
-  <tr><td><code>draft</code></td><td>✅</td><td>—</td><td>—</td><td>✅</td></tr>
-  <tr><td><code>validate</code></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
-  <tr><td><code>review</code></td><td>✅</td><td>✅</td><td>—</td><td>—</td></tr>
-  <tr><td><code>generate</code></td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
-  <tr><td><code>lint_fix</code></td><td>—</td><td>✅</td><td>—</td><td>—</td></tr>
-  <tr><td><code>decompose</code></td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
+  <tr><th>Action</th><th>spec</th><th>code</th><th>tests</th><th>feature</th><th>verdict</th></tr>
+  <tr><td><code>draft</code></td><td>✅</td><td>—</td><td>—</td><td>✅</td><td>—</td></tr>
+  <tr><td><code>validate</code></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td></tr>
+  <tr><td><code>review</code></td><td>✅</td><td>✅</td><td>—</td><td>—</td><td>—</td></tr>
+  <tr><td><code>generate</code></td><td>—</td><td>✅</td><td>✅</td><td>—</td><td>—</td></tr>
+  <tr><td><code>lint_fix</code></td><td>—</td><td>✅</td><td>—</td><td>—</td><td>—</td></tr>
+  <tr><td><code>decompose</code></td><td>—</td><td>—</td><td>—</td><td>✅</td><td>—</td></tr>
+  <tr><td><code>arbitrate</code></td><td>—</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
 </table>
 
 <div class="diagram-card">

@@ -96,7 +96,7 @@ class ToolDispatcher:
             return {"error": f"Tool execution failed: {exc!s}"}
 
     @classmethod
-    def create_standard_set(
+    def create_standard_set(  # noqa: C901
         cls,
         boundary: Any,
         role: str,
@@ -126,14 +126,26 @@ class ToolDispatcher:
                     grants.append(FolderGrant(str(root / "scenarios"), AccessMode.FULL, recursive=True))
                     grants.append(FolderGrant(str(root / "specs"), AccessMode.READ, recursive=True))
                     grants.append(FolderGrant(str(root / "contracts"), AccessMode.READ, recursive=True))
+            elif role == "arbiter_agent":
+                from specweaver.core.loom.security import ReadOnlyWorkspaceBoundary
+                if isinstance(boundary, ReadOnlyWorkspaceBoundary):
+                    for api_path in boundary.api_paths:
+                        grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
+                else:
+                    # Degraded fallback: treat all paths as read-only
+                    for root in boundary.roots:
+                        grants.append(FolderGrant(str(root), AccessMode.READ, recursive=True))
+                    for api_path in boundary.api_paths:
+                        grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
             else:
                 for root in boundary.roots:
                     grants.append(FolderGrant(str(root), AccessMode.FULL, recursive=True))
                 for api_path in boundary.api_paths:
                     grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
 
-            # The first root acts as the cwd for relative paths
-            fs_interface = create_filesystem_interface(role, cwd=boundary.roots[0], grants=grants)
+            # The first root acts as the cwd for relative paths. Fallback to api_paths if empty.
+            cwd_path = boundary.roots[0] if boundary.roots else boundary.api_paths[0]
+            fs_interface = create_filesystem_interface(role, cwd=cwd_path, grants=grants)
             interfaces.append(fs_interface)
 
         if "ast" in allowed_tools or "codestructure" in allowed_tools:

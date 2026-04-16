@@ -29,6 +29,7 @@ class TestScenarioDefinition:
     def test_missing_required_field_raises(self) -> None:
         """Missing a required field must raise ValidationError."""
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):  # pydantic ValidationError
             ScenarioDefinition(
                 name="test",
@@ -72,16 +73,12 @@ class TestScenarioDefinition:
 
     def test_req_id_accepts_fr_format(self) -> None:
         """req_id accepts FR-N format."""
-        s = ScenarioDefinition(
-            name="t", description="d", function_under_test="f", req_id="FR-1"
-        )
+        s = ScenarioDefinition(name="t", description="d", function_under_test="f", req_id="FR-1")
         assert s.req_id == "FR-1"
 
     def test_req_id_accepts_nfr_format(self) -> None:
         """req_id accepts NFR-N format."""
-        s = ScenarioDefinition(
-            name="t", description="d", function_under_test="f", req_id="NFR-3"
-        )
+        s = ScenarioDefinition(name="t", description="d", function_under_test="f", req_id="NFR-3")
         assert s.req_id == "NFR-3"
 
     def test_serialization_roundtrip(self) -> None:
@@ -139,9 +136,7 @@ class TestScenarioSet:
 
     def test_reasoning_defaults_empty(self) -> None:
         """reasoning defaults to empty string."""
-        ss = ScenarioSet(
-            spec_path="s", contract_path="c", scenarios=[]
-        )
+        ss = ScenarioSet(spec_path="s", contract_path="c", scenarios=[])
         assert ss.reasoning == ""
 
     def test_not_collected_by_pytest(self) -> None:

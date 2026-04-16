@@ -62,7 +62,11 @@ async def test_high_concurrency_statestore_persistence(tmp_path: Path) -> None:
         sub_pipes.append(pipe)
 
     # Fan out the 10 child pipelines concurrently using the real parent_id
-    results = await runner.fan_out(sub_pipes, parent_run_id=parent_id)
+    tasks = [
+        PipelineRunner(p, ctx, store=store, registry=registry).run(parent_run_id=parent_id)
+        for p in sub_pipes
+    ]
+    results = await asyncio.gather(*tasks)
 
     assert len(results) == 10
 
@@ -110,7 +114,11 @@ async def test_fan_out_log_observability_context_isolation(
         )
         sub_pipes.append(pipe)
 
-    results = await runner.fan_out(sub_pipes, parent_run_id=parent_run.run_id)
+    tasks = [
+        PipelineRunner(p, ctx, store=store, registry=registry).run(parent_run_id=parent_run.run_id)
+        for p in sub_pipes
+    ]
+    results = await asyncio.gather(*tasks)
     assert len(results) == 3
 
     child_ids = {r.run_id for r in results}

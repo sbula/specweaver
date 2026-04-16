@@ -5,7 +5,7 @@
 - **Design Document**: docs/roadmap/phase_3/feature_3.28/feature_3.28_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-C
 - **Implementation Plan**: docs/roadmap/phase_3/feature_3.28/feature_3.28_sfc_implementation_plan.md
-- **Status**: DRAFT
+- **Status**: IMPLEMENTED
 - **Depends on**: SF-B (COMMITTED `d79da22`), SF-B2 (polyglot plan, NOT YET COMMITTED)
 
 > [!IMPORTANT]
@@ -50,8 +50,8 @@ SF-C delivers the Arbiter + Feedback Loop (FR-8, FR-9, FR-10):
 | Q9 | Arbiter agent role | `arbiter_agent` in `ROLE_INTENTS`, read-only intents |
 | Q10 | Handler location | `flow/_arbiter.py` |
 | Q11 | Test strategy | Unit (vocab filter) + Integration (handler pipeline) |
-| Q12 | Monorepo scope | Target = specific file `test_{stem}_scenarios.{ext}` from `context.spec_path` |
-| Q13 | Scenario test runner | Reuse `ValidateTestsHandler` with `target_path_template` param |
+| Q12 | Monorepo scope | Dynamic path resolution via `ScenarioConverterFactory.get_converter(lang).get_output_path(stem)` |
+| Q13 | Scenario test runner | Reuse `ValidateTestsHandler` with `kind: scenario` (delegates pathing internally to Atom) |
 | Q14 | Documentation | Pre-commit phase 6; update `docs/dev_guides/scenario_pipelines.md` |
 | Q15 | `WorkspaceBoundary` tests | Update assertions: `ValueError` only when both `roots=[]` AND `api_paths=[]` |
 
@@ -133,18 +133,22 @@ class ReadOnlyWorkspaceBoundary(WorkspaceBoundary):
         self.api_paths = [p.resolve() for p in api_paths]
 ```
 
-### RN-5: Scenario test file path construction (monorepo safe)
+### RN-5: Scenario test execution pathing (monorepo safe)
 
-The `run_scenario_tests` step uses `target_path_template`. `ValidateTestsHandler` substitutes `{stem}` at runtime from `context.spec_path`. SF-B2 determines the file extension (`{ext}`) based on language. The handler must also support `{ext}`:
+The `run_scenario_tests` step uses `intent="run_tests"` and `kind="scenario"`. The `ValidateTestsHandler` must dynamically resolve the path if the target is empty by heavily leveraging SF-B2 boundaries:
 
 ```python
-template = step.params.get("target_path_template", "")
-stem = context.spec_path.stem.replace("_spec", "")
-ext = _detect_test_extension(context.project_path)  # provided by SF-B2 helper
-target_path = template.replace("{stem}", stem).replace("{ext}", ext)
+target = step.params.get("target")
+if not target:
+    from specweaver.core.loom.commons.language._detect import detect_language
+    from specweaver.core.loom.commons.language.scenario_converter_factory import ScenarioConverterFactory
+    language = detect_language(context.project_path)
+    converter = ScenarioConverterFactory.get_converter(language)
+    stem = context.spec_path.stem.replace("_spec", "")
+    target = str(converter.get_output_path(stem))
 ```
 
-`ValidateTestsHandler` needs this small extension.
+This prevents any string template replacements crashing Java and Rust builds out of the box.
 
 ---
 
@@ -299,12 +303,8 @@ SCENARIO_VOCABULARY: frozenset[str] = frozenset({
 4. Create two isolated `PipelineRunner` instances (same pattern as `OrchestrateComponentsHandler` lines 204-214)
 5. `asyncio.gather(*[coding_runner.run(...), scenario_runner.run(...)])` — true parallel
 6. Store the scenario test file path in `context.feedback`:
-   ```python
-   ext = detect_scenario_extension(context.project_path)  # from SF-B2
-   context.feedback["scenario_test_path"] = str(
-       context.project_path / "scenarios" / "generated" / f"test_{stem}_scenarios.{ext}"
-   )
-   ```
+   # We no longer hardcode paths here. ValidateTestsHandler handles it dynamically.
+   pass
 7. Return `StepStatus.PASSED` if both pass, `StepStatus.FAILED` with details if either fails
 8. Log each pipeline status: `logger.info("dual pipeline: coding=%s scenario=%s", ...)`
 
@@ -333,6 +333,11 @@ description: >
 version: "1.0"
 
 steps:
+  - name: generate_contract
+    action: generate
+    target: contract
+    description: "Extract API Protocol from spec Contract section before fan out"
+
   - name: run_dual_pipelines
     action: orchestrate
     target: components
@@ -349,7 +354,6 @@ steps:
     target: tests
     description: "Execute scenario-generated test files against coding output"
     params:
-      target_path_template: "scenarios/generated/test_{stem}_scenarios.{ext}"
       kind: e2e
     gate:
       type: auto
@@ -394,16 +398,23 @@ Add to `__all__`: `"ArbitrateVerdictHandler"`, `"ArbitrateDualPipelineHandler"`.
 
 #### [MODIFY] [_validation.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/_validation.py)
 
-In `ValidateTestsHandler.execute()`, extend `target_path` resolution to support `{stem}` and `{ext}` templates:
+In `ValidateTestsHandler.execute()`, resolve `target_path` using the SF-B2 `ScenarioConverterFactory`:
 ```python
-target_param = step.params.get("target_path") or step.params.get("target_path_template")
-if target_param and ("{stem}" in target_param or "{ext}" in target_param):
-    from specweaver.core.loom.commons.language.scenario_converter_factory import detect_scenario_extension
-    stem = context.spec_path.stem.replace("_spec", "")
-    ext = detect_scenario_extension(context.project_path)
-    target_param = target_param.replace("{stem}", stem).replace("{ext}", ext)
+    target = step.params.get("target")
+
+    # If no target specified by the yaml, fallback to interrogating the true polyglot converter
+    if not target:
+        from specweaver.core.loom.commons.language._detect import detect_language
+        from specweaver.core.loom.commons.language.scenario_converter_factory import ScenarioConverterFactory
+        
+        language = detect_language(context.project_path)
+        converter = ScenarioConverterFactory.get_converter(language)
+        stem = context.spec_path.stem.replace("_spec", "")
+        # Resolve the fully qualified language-aware test path (e.g. src/test/java/...)
+        target_path = converter.get_output_path(stem)
+        target = str(target_path)
 ```
-~7 lines. Requires SF-B2's `detect_scenario_extension()` helper.
+~10 lines. Integrates flawlessly with SF-B2 boundary isolation.
 
 ---
 

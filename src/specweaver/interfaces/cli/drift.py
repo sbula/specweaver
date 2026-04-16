@@ -152,7 +152,7 @@ def drift_check_rot(  # noqa: C901
     ),
 ) -> None:
     """Bi-Directional Spec Rot Interceptor (SF-1 Stub)."""
-    import yaml  # type: ignore[import-untyped]
+    import yaml
     from rich.table import Table
 
     if not staged:

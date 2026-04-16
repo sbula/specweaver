@@ -189,6 +189,12 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.25 Router-Based Flow Control** — Extends Pipeline YAML schemas via `router` routing logic (`RouterDefinition`, `RouterEvaluator`). Eliminates strict linear execution in favor of declarative conditional branching. Limits backward routes to prevent OS memory exhaustion via predefined `max_total_loops` structural guards.
 
+**3.26 Git Worktree Bouncer (Sandbox)** — Dictatorial validation executing pipeline generations logically into separated physical Git Sandboxes. Strips mathematical patch diffs to forcefully preserve `context.yaml` topological bounds, dropping LLM hallucinations prior to integration. Includes SF-3.26c Interactive Gate Variables for weighted dictator override injection.
+
+**3.27 Multi-Spec Pipeline Fan-Out** — Sub-pipeline spawning mapped to separate isolated sandboxes via `SW_PORT_OFFSET` hashes to prevent SQLite lock collision. Safely coordinates components fully in parallel mapped to Topological dependencies, blocking execution through standard `JOIN` gates.
+
+**3.28 Interactive Sandbox Execution (Arbiter Feedback)** — Dual-pipeline verification resolving correlated hallucinations by physically isolating the Scenario Generator from the Code Generator. A 3rd read-only Arbiter acts as the final decision mechanism to route filtered vocabulary error traces backwards safely without polluting the code agent's system prompt with scenario schemas.
+
 ### How Features Map to Lifecycle Layers
 
 ```
@@ -428,6 +434,7 @@ YAML pipeline definitions:
 |----------|-------|---------|
 | `new_feature` | draft→validate→review→generate→test→validate→review | Full spec-first loop |
 | `feature_decomposition` | draft→validate→decompose | Feature→components via dynamic topological DAG waves |
+| `scenario_integration` | validate→generate_contract→dual_pipeline→run_scenarios→arbitrate | Dual-pipeline scenario verification with error attribution |
 | `validate_only` | validate | Static quality check |
 | `validation_spec_*` | validate (with domain presets) | Domain-specific rules |
 | `validation_code_default` | validate code | Code quality check |
@@ -439,8 +446,8 @@ YAML pipeline definitions:
 ### Step Model
 
 A pipeline is a sequence of **steps**. Each step combines:
-- **Action** (verb): `draft`, `validate`, `review`, `generate`, `lint_fix`, `plan`, `decompose`
-- **Target** (noun): `spec`, `code`, `tests`, `feature`
+- **Action** (verb): `draft`, `validate`, `review`, `generate`, `lint_fix`, `plan`, `decompose`, `arbitrate`
+- **Target** (noun): `spec`, `code`, `tests`, `feature`, `verdict`
 
 ```yaml
 # Example: new_feature.yaml
@@ -491,6 +498,7 @@ The `StepHandlerRegistry` maps `(action, target)` pairs to handler classes:
 | `generate+tests` | `GenerateTestsHandler` | `flow/_generation.py` |
 | `lint_fix+code` | `LintFixHandler` | `flow/_lint_fix.py` |
 | `plan+spec` | `PlanSpecHandler` | `flow/_generation.py` |
+| `arbitrate+verdict` | `ArbitrateVerdictHandler` | `flow/_arbiter.py` |
 
 ### Runner
 

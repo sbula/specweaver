@@ -94,6 +94,7 @@ async def test_scenario_pipeline_end_to_end_integration(
     result = await runner.run()
 
     from specweaver.core.flow.state import RunStatus
+
     assert result.status == RunStatus.COMPLETED
 
     # Validate Generation Output

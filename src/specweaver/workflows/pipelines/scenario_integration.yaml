@@ -1,0 +1,50 @@
+name: scenario_integration
+description: >
+  Master orchestration pipeline for independent test verification.
+  Generates the API contract synchronously, fans out coding and scenario pipelines in parallel,
+  runs the generated scenario tests against the source code, and arbitrates failures.
+version: "1.0"
+
+steps:
+  - name: generate_contract
+    action: generate
+    target: contract
+    description: "Extract API Protocol from spec Contract section before fan-out"
+    gate:
+      type: auto
+      condition: completed
+      on_fail: abort
+
+  - name: run_dual_pipelines
+    action: orchestrate
+    target: components
+    description: "Run coding and scenario pipelines in parallel"
+    params:
+      mode: dual_pipeline
+    gate:
+      type: join
+      condition: completed
+      on_fail: abort
+
+  - name: run_scenario_tests
+    action: validate
+    target: tests
+    description: "Execute scenario-generated test files against coding output"
+    params:
+      kind: scenario
+    gate:
+      type: auto
+      condition: completed
+      on_fail: continue  # Failures must pass to arbiter
+
+  - name: arbitrate_verdict
+    action: arbitrate
+    target: verdict
+    description: "Determine fault if scenario tests failed"
+    gate:
+      type: auto
+      condition: completed
+      on_fail: loop_back
+      loop_target: run_dual_pipelines
+      max_retries: 3
+      max_retries_hitl: 4

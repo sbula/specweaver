@@ -54,8 +54,8 @@ class TestsPassRule(Rule):
         test_file = matches[0]
 
         # Delegate to QARunnerAtom via intent
-        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
         from specweaver.core.loom.atoms.base import AtomStatus
+        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
 
         atom = QARunnerAtom(cwd=project_root)
         try:

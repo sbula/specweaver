@@ -180,66 +180,7 @@ class TestPipelineRunnerSuccess:
         result = await runner.run(parent_run_id=parent_id)
         assert result.parent_run_id == parent_id
 
-    @pytest.mark.asyncio
-    async def test_fan_out_sub_pipelines(self, tmp_path: Path) -> None:
-        pipeline = _make_pipeline(step_count=1)
-        ctx = _make_context(tmp_path)
-        registry = _make_registry(PassHandler())
-        runner = PipelineRunner(pipeline, ctx, registry=registry)
 
-        sub_pipelines = [
-            _make_pipeline(step_count=1),
-            _make_pipeline(step_count=2),
-        ]
-
-        parent_id = "parent-fan-out-id"
-        results = await runner.fan_out(sub_pipelines, parent_run_id=parent_id)
-
-        assert len(results) == 2
-        assert results[0].parent_run_id == parent_id
-        assert results[0].status == RunStatus.COMPLETED
-        assert results[1].parent_run_id == parent_id
-        assert results[1].status == RunStatus.COMPLETED
-        assert results[1].current_step == 2
-
-    @pytest.mark.asyncio
-    async def test_fan_out_empty_pipelines(self, tmp_path: Path) -> None:
-        pipeline = _make_pipeline(step_count=1)
-        ctx = _make_context(tmp_path)
-        registry = _make_registry(PassHandler())
-        runner = PipelineRunner(pipeline, ctx, registry=registry)
-
-        results = await runner.fan_out([], parent_run_id="empty-id")
-        assert results == []
-
-    @pytest.mark.asyncio
-    async def test_fan_out_failure_isolation(self, tmp_path: Path) -> None:
-        pipeline = _make_pipeline(step_count=1)
-        ctx = _make_context(tmp_path)
-
-        # Mix of pass and fail registries
-        pass_reg = _make_registry(PassHandler())
-
-        runner = PipelineRunner(pipeline, ctx, registry=pass_reg)
-
-        # We need to create sub-pipelines that use different handlers,
-        # but runner.fan_out inherits the parent's registry.
-        # So we'll register the ErrorHandler for a specific action/target not handled by PassHandler.
-        pass_reg.register(StepAction.REVIEW, StepTarget.SPEC, ErrorHandler())
-
-        sub_pass = _make_pipeline(step_count=1)
-
-        sub_fail = PipelineDefinition(
-            name="fail_pipe",
-            steps=[PipelineStep(name="s1", action=StepAction.REVIEW, target=StepTarget.SPEC)],
-        )
-
-        results = await runner.fan_out([sub_pass, sub_fail, sub_pass], parent_run_id="fail-isol")
-        assert len(results) == 3
-        # Ensure gather didn't explode and we got back results
-        assert results[0].status == RunStatus.COMPLETED
-        assert results[1].status == RunStatus.FAILED
-        assert results[2].status == RunStatus.COMPLETED
 
 
 class TestPipelineRunnerFailure:

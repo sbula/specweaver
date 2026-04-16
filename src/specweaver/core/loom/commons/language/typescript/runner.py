@@ -197,7 +197,7 @@ class TypeScriptRunner(QARunnerInterface):
         """Run architectural checks dynamically using ESLint."""
         import json
 
-        import yaml  # type: ignore[import-untyped]
+        import yaml
 
         from specweaver.core.loom.commons.qa_runner.interface import ArchitectureViolation
 

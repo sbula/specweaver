@@ -44,6 +44,19 @@ Because both `new_feature.yaml` (coding tree) and `scenario_validation.yaml` (sc
 
 The parent orchestration step maps sub-components and fires `run_fan_out()`. The OS physical write lock wait-queue activates transparently because the JOIN blocks progression of either sub-child branch into phase 4 (test execution) until both the scenario files and the implementation files are persisted.
 
+## The Arbiter Feedback Loop
+
+After the topological JOIN gate completes, the parent pipeline triggers test execution and finally the **Arbiter** (`ArbitrateVerdictHandler`). 
+
+If scenarios fail, the Arbiter's job is fault attribution. It evaluates to either `code_bug`, `scenario_error`, or `spec_ambiguity`.
+
+To maintain total opacity, the Arbiter sends **vocabulary-filtered feedback** to the Coding Agent:
+- It translates "The scenario test validation failed" into "The spec says X, but your code did Y."
+- The Coding Agent NEVER sees the scenario test code or the word "scenario".
+- If it determines a `spec_ambiguity`, it escalates to the human via a HITL gate.
+
+This prevents the Coding Agent from simply hardcoding against the generated test logic, forcing it to continually refer back to the original Spec requirement traces.
+
 ---
 
 **See Also:**

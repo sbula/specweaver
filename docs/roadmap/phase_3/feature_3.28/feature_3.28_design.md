@@ -339,11 +339,11 @@ SF-A (Foundation) ──── SF-B (Scenario Pipeline) ──── SF-C (Arbit
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-A | Foundation: Spec Enforcement + Contract Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-B | Scenario Pipeline: Generate + Convert + Wire | SF-A | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-C | Arbiter + Feedback Loop | SF-B | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-C | Arbiter + Feedback Loop | SF-B | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-B COMMITTED (`d79da22`). SF-C implementation plan pending.
-**Next step**: Run `/implementation-plan docs/roadmap/phase_3/feature_3.28/feature_3.28_design.md SF-C`
+**Current status**: SF-C implementation complete. Pre-commit checklist running.
+**Next step**: Run Phase 8 and commit.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

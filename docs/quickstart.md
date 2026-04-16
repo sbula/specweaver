@@ -217,6 +217,9 @@ sw run new_feature greet_service --project ./my-project
 # Run the feature decomposition pipeline
 sw run feature_decomposition specs/onboarding.md --project ./my-project
 
+# Run the scenario verification pipeline
+sw run scenario_integration specs/greet_service_spec.md --project ./my-project
+
 # Run with verbose output
 sw run validate_only specs/calculator.md --verbose
 

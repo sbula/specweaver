@@ -63,6 +63,7 @@ class TestPythonScenarioConverter:
         from specweaver.core.loom.commons.language.python.scenario_converter import (
             PythonScenarioConverter,
         )
+
         return PythonScenarioConverter()
 
     def test_convert_returns_str(self) -> None:
@@ -101,6 +102,7 @@ class TestPythonScenarioConverter:
             PythonScenarioConverter,
         )
         from specweaver.workflows.scenarios.scenario_converter import ScenarioConverter
+
         ss = _make_scenario_set()
         # Old-style static call must still work
         old_result = ScenarioConverter.convert(ss)
@@ -120,6 +122,7 @@ class TestJavaScenarioConverter:
         from specweaver.core.loom.commons.language.java.scenario_converter import (
             JavaScenarioConverter,
         )
+
         return JavaScenarioConverter()
 
     def test_convert_returns_str(self) -> None:
@@ -168,6 +171,7 @@ class TestKotlinScenarioConverter:
         from specweaver.core.loom.commons.language.kotlin.scenario_converter import (
             KotlinScenarioConverter,
         )
+
         return KotlinScenarioConverter()
 
     def test_convert_returns_str(self) -> None:
@@ -211,6 +215,7 @@ class TestTypeScriptScenarioConverter:
         from specweaver.core.loom.commons.language.typescript.scenario_converter import (
             TypeScriptScenarioConverter,
         )
+
         return TypeScriptScenarioConverter()
 
     def test_convert_returns_str(self) -> None:
@@ -248,6 +253,7 @@ class TestRustScenarioConverter:
         from specweaver.core.loom.commons.language.rust.scenario_converter import (
             RustScenarioConverter,
         )
+
         return RustScenarioConverter()
 
     def test_convert_returns_str(self) -> None:
@@ -296,6 +302,7 @@ class TestScenarioConverterFactory:
         from specweaver.core.loom.commons.language.scenario_converter_factory import (
             create_scenario_converter,
         )
+
         converter = create_scenario_converter(tmp_path)
         assert isinstance(converter, PythonScenarioConverter)
 
@@ -306,6 +313,7 @@ class TestScenarioConverterFactory:
         from specweaver.core.loom.commons.language.scenario_converter_factory import (
             create_scenario_converter,
         )
+
         (tmp_path / "pom.xml").write_text("<project/>", encoding="utf-8")
         assert isinstance(create_scenario_converter(tmp_path), JavaScenarioConverter)
 
@@ -316,6 +324,7 @@ class TestScenarioConverterFactory:
         from specweaver.core.loom.commons.language.scenario_converter_factory import (
             create_scenario_converter,
         )
+
         (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
         assert isinstance(create_scenario_converter(tmp_path), KotlinScenarioConverter)
 
@@ -326,6 +335,7 @@ class TestScenarioConverterFactory:
         from specweaver.core.loom.commons.language.typescript.scenario_converter import (
             TypeScriptScenarioConverter,
         )
+
         (tmp_path / "package.json").write_text("{}", encoding="utf-8")
         assert isinstance(create_scenario_converter(tmp_path), TypeScriptScenarioConverter)
 
@@ -336,5 +346,6 @@ class TestScenarioConverterFactory:
         from specweaver.core.loom.commons.language.scenario_converter_factory import (
             create_scenario_converter,
         )
+
         (tmp_path / "Cargo.toml").write_text("[package]", encoding="utf-8")
         assert isinstance(create_scenario_converter(tmp_path), RustScenarioConverter)

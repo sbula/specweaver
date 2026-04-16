@@ -5,20 +5,15 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
-pytestmark = pytest.mark.integration
-
-if TYPE_CHECKING:
-    pass
-
-from specweaver.core.flow.handlers import RunContext
 from specweaver.core.flow._scenario import ConvertScenarioHandler
+from specweaver.core.flow.handlers import RunContext
+
+pytestmark = pytest.mark.integration
 
 
 @pytest.mark.asyncio()
@@ -64,12 +59,14 @@ scenarios:
     ctx.feedback = {"scenario_yaml_path": str(scenario_yaml_path)}
 
     from specweaver.core.flow.models import PipelineStep
+
     step = PipelineStep(name="test", action="convert", target="scenario")
 
     handler = ConvertScenarioHandler()
     result = await handler.execute(step, ctx)
 
     from specweaver.core.flow.state import StepResult
+
     assert type(result) is StepResult
     if result.status.value != "passed":
         print(f"ERROR: {result.error_message}")

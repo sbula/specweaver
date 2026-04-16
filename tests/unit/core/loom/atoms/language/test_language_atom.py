@@ -50,7 +50,9 @@ class TestLanguageAtom:
         mock_detect.assert_called_once_with(tmp_path)
 
     @patch("specweaver.core.loom.commons.language._detect.detect_language")
-    def test_raises_for_unsupported_language_if_detect_fails(self, mock_detect: MagicMock, tmp_path: Path) -> None:
+    def test_raises_for_unsupported_language_if_detect_fails(
+        self, mock_detect: MagicMock, tmp_path: Path
+    ) -> None:
         """Edge Case: Should propagate LanguageNotFoundError or ValueError if detect_language fails."""
         mock_detect.side_effect = ValueError("Unsupported language 'ruby'")
         atom = LanguageAtom(cwd=tmp_path)
@@ -77,7 +79,9 @@ class TestLanguageAtom:
         assert result3.status == AtomStatus.FAILED
         assert "stem" in result3.message.lower()
 
-    @patch("specweaver.core.loom.commons.language.scenario_converter_factory.create_scenario_converter")
+    @patch(
+        "specweaver.core.loom.commons.language.scenario_converter_factory.create_scenario_converter"
+    )
     def test_handles_convert_scenario(self, mock_create: MagicMock, tmp_path: Path) -> None:
         """Should successfully convert scenario and return output details."""
         mock_converter = MagicMock()
@@ -89,11 +93,13 @@ class TestLanguageAtom:
         mock_scenario_set = MagicMock()
 
         atom = LanguageAtom(cwd=tmp_path)
-        result = atom.run({
-            "intent": "convert_scenario",
-            "stem": "c01",
-            "scenario_set": mock_scenario_set,
-        })
+        result = atom.run(
+            {
+                "intent": "convert_scenario",
+                "stem": "c01",
+                "scenario_set": mock_scenario_set,
+            }
+        )
 
         assert result.status == AtomStatus.SUCCESS
         assert result.exports["content"] == "fn test_c01() {}"

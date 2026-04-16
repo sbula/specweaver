@@ -145,27 +145,38 @@ class TestAtomRunTests:
         """NFR-3 Edge Case: Must prevent execution if target traverses outside cwd."""
         atom = QARunnerAtom(cwd=tmp_path)
 
-        result = atom.run({
-            "intent": "run_tests",
-            "target": "../../../etc/passwd",
-        })
+        result = atom.run(
+            {
+                "intent": "run_tests",
+                "target": "../../../etc/passwd",
+            }
+        )
 
         # We expect a failure due to sandbox violation
         assert result.status == AtomStatus.FAILED
-        assert "traversal" in result.message.lower() or "outside" in result.message.lower() or "sandbox" in result.message.lower()
+        assert (
+            "traversal" in result.message.lower()
+            or "outside" in result.message.lower()
+            or "sandbox" in result.message.lower()
+        )
 
     def test_run_tests_enforces_timeout(self, tmp_path: Path) -> None:
         """NFR-4 Edge Case: Must handle sub-process timeouts gracefully."""
         atom = QARunnerAtom(cwd=tmp_path)
 
-        with patch.object(atom._runner, "run_tests", side_effect=TimeoutError("Process timed out after 120s")):
-            result = atom.run({
-                "intent": "run_tests",
-                "target": "tests/",
-            })
+        with patch.object(
+            atom._runner, "run_tests", side_effect=TimeoutError("Process timed out after 120s")
+        ):
+            result = atom.run(
+                {
+                    "intent": "run_tests",
+                    "target": "tests/",
+                }
+            )
 
         assert result.status == AtomStatus.FAILED
         assert "time" in result.message.lower()
+
 
 # ---------------------------------------------------------------------------
 # run_linter intent

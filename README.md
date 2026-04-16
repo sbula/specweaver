@@ -27,6 +27,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Architectural Enforcement** — Strict Domain-Driven "Layer Cake" isolation via Tach, natively bounded as a PEP-420 Implicit Namespace Package.
 - **Git Worktree Bouncer Sandbox (Feature 3.26)** — Dictatorial worktree sandboxing of LLM handlers via `.git` index diff striping, locking generation to `context.yaml` boundaries safely by dropping unallowed mathematical patch hunks prior to commit.
 - **Interactive Gate Variables (Feature 3.26c)** — Elevates Human-In-The-Loop feedback loops into strictly weighted `<dictator-overrides>` variables to prevent UX frustration during component regeneration loops.
+- **Interactive Sandbox Execution (Feature 3.28)** — Dual-pipeline orchestration engine featuring a strict read-only Arbiter component that mediates faults between Coding and Polyglot Scenario Generation pipelines to prevent hallucination ping-pong.
 - **Risk-Based Constraint Pipelines (DAL)** — Supports DO-178C Mixed Criticality by assigning rule pipelines and thresholds utilizing Pydantic Deep-Merge based on a specific Module's Design Assurance Level declared natively inside boundary topologies.
 - **UI Mockup Generation** — Auto-detects UI/Frontend requirements in specs and calls Google Stitch MCP to generate and attach visual mockups to standard implementation plans
 - **Role-based agent tools** — LLM agents get MCP-like interfaces (git, filesystem) restricted to their role and granted paths
@@ -280,7 +281,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C09, drift detection)
-├── tests/                      # 4012 tests (unit, integration, E2E)
+├── tests/                      # 4168 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

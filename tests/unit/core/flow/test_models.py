@@ -41,7 +41,7 @@ class TestStepAction:
         assert StepAction.CONVERT == "convert"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 11
+        assert len(StepAction) == 12
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ class TestStepTarget:
         assert StepTarget.SCENARIO == "scenario"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 9
+        assert len(StepTarget) == 10
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +93,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 19
+        assert len(VALID_STEP_COMBINATIONS) == 20
 
     @pytest.mark.parametrize(
         ("action", "target"),

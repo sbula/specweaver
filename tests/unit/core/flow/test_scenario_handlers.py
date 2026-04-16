@@ -132,7 +132,6 @@ class TestGenerateScenarioHandler:
         assert handler is not None
         assert isinstance(handler, GenerateScenarioHandler)
 
-
     async def test_missing_spec_file(self, tmp_path: Path) -> None:
         """Handler returns StepStatus.ERROR if spec file is missing."""
         ctx = _make_context(tmp_path, llm=AsyncMock())
@@ -190,6 +189,7 @@ class TestConvertScenarioHandler:
         handler = registry.get(StepAction.CONVERT, StepTarget.SCENARIO)
         assert handler is not None
         assert isinstance(handler, ConvertScenarioHandler)
+
     async def test_missing_scenario_yaml(self, tmp_path: Path) -> None:
         """Handler returns StepStatus.ERROR if scenario YAML is missing."""
         ctx = _make_context(tmp_path)

@@ -436,14 +436,15 @@ class PythonQARunner(QARunnerInterface):
         logger.debug("PythonQARunner.run_architecture_check: target=%s", target)
 
         try:
-            # We use python -m tach to ensure we hit the tach in the current env
             proc = subprocess.run(
-                [sys.executable, "-m", "tach", "check", "--output", "json"],
+                ["python", "-m", "tach", "check", "--output", "json"],
                 capture_output=True,
                 text=True,
                 timeout=60,
                 cwd=str(self._cwd),
             )
+            if proc.stderr:
+                logger.debug(f"PythonQARunner: tach check stderr: {proc.stderr}")
         except subprocess.TimeoutExpired:
             logger.warning("PythonQARunner: tach check timed out (target=%s)", target)
             return ArchitectureRunResult(

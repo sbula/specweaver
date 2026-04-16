@@ -20,11 +20,14 @@ class TestPythonStackTraceFilter:
         from specweaver.core.loom.commons.language.python.stack_trace_filter import (
             PythonStackTraceFilter,
         )
+
         return PythonStackTraceFilter()
 
     def test_is_scenario_frame_true(self) -> None:
         f = self._get_filter()
-        line = '  File "scenarios/generated/test_payment_scenarios.py", line 42, in test_charge_happy'
+        line = (
+            '  File "scenarios/generated/test_payment_scenarios.py", line 42, in test_charge_happy'
+        )
         assert f.is_scenario_frame(line) is True
 
     def test_is_scenario_frame_false_for_src(self) -> None:
@@ -35,12 +38,12 @@ class TestPythonStackTraceFilter:
     def test_filter_removes_scenario_lines(self) -> None:
         f = self._get_filter()
         trace = (
-            'Traceback (most recent call last):\n'
+            "Traceback (most recent call last):\n"
             '  File "scenarios/generated/test_payment_scenarios.py", line 42, in test_charge_happy\n'
-            '    result = charge(100.0)\n'
+            "    result = charge(100.0)\n"
             '  File "src/payment/service.py", line 10, in charge\n'
-            '    raise ValueError\n'
-            'ValueError: invalid amount\n'
+            "    raise ValueError\n"
+            "ValueError: invalid amount\n"
         )
         result = f.filter(trace)
         assert "scenarios/generated" not in result
@@ -67,6 +70,7 @@ class TestJavaStackTraceFilter:
         from specweaver.core.loom.commons.language.java.stack_trace_filter import (
             JavaStackTraceFilter,
         )
+
         return JavaStackTraceFilter()
 
     def test_is_scenario_frame_true(self) -> None:
@@ -110,6 +114,7 @@ class TestKotlinStackTraceFilter:
         from specweaver.core.loom.commons.language.kotlin.stack_trace_filter import (
             KotlinStackTraceFilter,
         )
+
         return KotlinStackTraceFilter()
 
     def test_is_scenario_frame_true(self) -> None:
@@ -144,6 +149,7 @@ class TestTypeScriptStackTraceFilter:
         from specweaver.core.loom.commons.language.typescript.stack_trace_filter import (
             TypeScriptStackTraceFilter,
         )
+
         return TypeScriptStackTraceFilter()
 
     def test_is_scenario_frame_true(self) -> None:
@@ -178,6 +184,7 @@ class TestRustStackTraceFilter:
         from specweaver.core.loom.commons.language.rust.stack_trace_filter import (
             RustStackTraceFilter,
         )
+
         return RustStackTraceFilter()
 
     def test_is_scenario_frame_true(self) -> None:
@@ -204,10 +211,7 @@ class TestRustStackTraceFilter:
 
     def test_filter_preserves_note_line(self) -> None:
         f = self._get_filter()
-        trace = (
-            "   7: payment_scenarios::test_charge_happy\n"
-            "note: run with RUST_BACKTRACE=1\n"
-        )
+        trace = "   7: payment_scenarios::test_charge_happy\nnote: run with RUST_BACKTRACE=1\n"
         result = f.filter(trace)
         assert "note: run with RUST_BACKTRACE=1" in result
 
@@ -225,6 +229,7 @@ class TestStackTraceFilterFactory:
         from specweaver.core.loom.commons.language.stack_trace_filter_factory import (
             create_stack_trace_filter,
         )
+
         assert isinstance(create_stack_trace_filter(tmp_path), PythonStackTraceFilter)
 
     def test_factory_returns_java(self, tmp_path: Path) -> None:
@@ -234,6 +239,7 @@ class TestStackTraceFilterFactory:
         from specweaver.core.loom.commons.language.stack_trace_filter_factory import (
             create_stack_trace_filter,
         )
+
         (tmp_path / "pom.xml").write_text("<project/>", encoding="utf-8")
         assert isinstance(create_stack_trace_filter(tmp_path), JavaStackTraceFilter)
 
@@ -244,6 +250,7 @@ class TestStackTraceFilterFactory:
         from specweaver.core.loom.commons.language.stack_trace_filter_factory import (
             create_stack_trace_filter,
         )
+
         (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
         assert isinstance(create_stack_trace_filter(tmp_path), KotlinStackTraceFilter)
 
@@ -254,6 +261,7 @@ class TestStackTraceFilterFactory:
         from specweaver.core.loom.commons.language.typescript.stack_trace_filter import (
             TypeScriptStackTraceFilter,
         )
+
         (tmp_path / "package.json").write_text("{}", encoding="utf-8")
         assert isinstance(create_stack_trace_filter(tmp_path), TypeScriptStackTraceFilter)
 
@@ -264,5 +272,6 @@ class TestStackTraceFilterFactory:
         from specweaver.core.loom.commons.language.stack_trace_filter_factory import (
             create_stack_trace_filter,
         )
+
         (tmp_path / "Cargo.toml").write_text("[package]", encoding="utf-8")
         assert isinstance(create_stack_trace_filter(tmp_path), RustStackTraceFilter)

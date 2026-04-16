@@ -6,11 +6,6 @@ description: >
 version: "1.0"
 
 steps:
-  - name: generate_contract
-    action: generate
-    target: contract
-    description: "Extract API Protocol from spec Contract section"
-
   - name: generate_scenarios
     action: generate
     target: scenario

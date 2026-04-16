@@ -28,7 +28,7 @@ class QwenAdapter(OpenAIAdapter):
 
     def _get_client(self) -> Any:
         if self._client is None:
-            import openai  # type: ignore[import-not-found]
+            import openai
 
             self._client = openai.AsyncOpenAI(
                 api_key=self._api_key,

@@ -98,11 +98,11 @@ class TestCleanJson:
     """Tests for ScenarioGenerator._clean_json."""
 
     def test_strips_json_fences(self) -> None:
-        text = "```json\n{\"key\": \"value\"}\n```"
+        text = '```json\n{"key": "value"}\n```'
         assert ScenarioGenerator._clean_json(text) == '{"key": "value"}'
 
     def test_strips_plain_fences(self) -> None:
-        text = "```\n{\"key\": \"value\"}\n```"
+        text = '```\n{"key": "value"}\n```'
         assert ScenarioGenerator._clean_json(text) == '{"key": "value"}'
 
     def test_no_fences_unchanged(self) -> None:
@@ -110,7 +110,7 @@ class TestCleanJson:
         assert ScenarioGenerator._clean_json(text) == '{"key": "value"}'
 
     def test_strips_surrounding_whitespace(self) -> None:
-        text = "  ```json\n  {\"key\": \"value\"}\n  ```  "
+        text = '  ```json\n  {"key": "value"}\n  ```  '
         result = ScenarioGenerator._clean_json(text)
         assert '"key"' in result
 

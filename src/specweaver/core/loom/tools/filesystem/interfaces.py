@@ -187,6 +187,7 @@ _ROLE_INTERFACE_MAP: dict[
     "drafter": DrafterFileInterface,
     "planner": ReviewerFileInterface,
     "scenario_agent": DrafterFileInterface,
+    "arbiter_agent": ReviewerFileInterface,
 }
 
 FileInterface = ImplementerFileInterface | ReviewerFileInterface | DrafterFileInterface

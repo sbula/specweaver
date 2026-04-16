@@ -125,3 +125,25 @@ class WorkspaceBoundary:
             return True
         except ValueError:
             return False
+
+
+class ReadOnlyWorkspaceBoundary(WorkspaceBoundary):
+    """Workspace boundary for zero-write agents (arbiters, auditors).
+
+    Has no write roots. All accessible paths are in api_paths (read-only).
+    Uses validate_path() inherited from WorkspaceBoundary — it already
+    checks api_paths when roots is empty.
+    """
+
+    def __init__(self, api_paths: list[Path]) -> None:
+        if not api_paths:
+            msg = "ReadOnlyWorkspaceBoundary requires at least one api_path"
+            raise ValueError(msg)
+        # Bypass parent __init__ — parent raises ValueError on empty roots
+        self.roots: list[Path] = []
+        self.api_paths = [p.resolve() for p in api_paths]
+
+    @property
+    def is_read_only(self) -> bool:
+        """Always True — this boundary has no write roots."""
+        return True
