@@ -151,3 +151,37 @@ impl Target { fn target() {} }
     # Wait, if we search for target, it should find it at least!
     target = parser.extract_symbol(code, "Target")
     assert "Target" in target
+
+
+def test_extract_framework_markers_success(parser: RustCodeStructure) -> None:
+    code = """
+#[derive(Debug, Serialize)]
+#[actix_web::get("/api")]
+pub struct MyController;
+
+impl BaseController for MyController {}
+impl Other for MyController {}
+
+#[my_macro]
+pub fn standalone() {}
+"""
+    markers = parser.extract_framework_markers(code)
+
+    assert "MyController" in markers
+    assert "derive(Debug, Serialize)" in markers["MyController"]["decorators"] or "derive" in markers["MyController"]["decorators"]
+    # We should at least capture the macro paths or full texts:
+    found_actix = any("actix_web" in d for d in markers["MyController"]["decorators"])
+    assert found_actix
+
+    assert "BaseController" in markers["MyController"]["extends"]
+    assert "Other" in markers["MyController"]["extends"]
+
+    assert "standalone" in markers
+    assert "my_macro" in markers["standalone"]["decorators"]
+    assert "extends" not in markers["standalone"]
+
+
+def test_extract_framework_markers_empty(parser: RustCodeStructure) -> None:
+    code = "struct Simple {}"
+    markers = parser.extract_framework_markers(code)
+    assert markers == {"Simple": {"decorators": [], "extends": []}}

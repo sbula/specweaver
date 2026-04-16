@@ -260,6 +260,52 @@ class PythonCodeStructure(CodeStructureInterface):
         mutated = code_bytes[:start_byte] + code_bytes[end_byte:]
         return mutated.decode("utf-8")
 
+    def _extract_marker_text(self, node: typing.Any) -> str:
+        return typing.cast("bytes", node.text).decode("utf-8").strip()
+
+    def _extract_bases(self, target_node: typing.Any) -> list[str]:
+        bases = []
+        for child in target_node.children:
+            if child.type == "argument_list":
+                for arg_child in child.children:
+                    if arg_child.type in ("identifier", "attribute"):
+                        bases.append(self._extract_marker_text(arg_child))
+        return bases
+
+    def _extract_decorators(self, target_node: typing.Any) -> list[str]:
+        decorators = []
+        parent = target_node.parent
+        if parent and parent.type == "decorated_definition":
+            for child in parent.children:
+                if child.type == "decorator":
+                    dec_text = self._extract_marker_text(child)
+                    if dec_text.startswith("@"):
+                        dec_text = dec_text[1:]
+                    if dec_text not in decorators:
+                        decorators.append(dec_text)
+        return decorators
+
+    def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
+        if not code.strip():
+            return {}
+        tree = self.parser.parse(code.encode("utf-8"))
+        query_str = "(class_definition name: (identifier) @name) @cls\n(function_definition name: (identifier) @name) @fn"
+        cursor = QueryCursor(Query(self.language, query_str))
+
+        markers: dict[str, dict[str, list[str]]] = {}
+        for _, match_dict in cursor.matches(tree.root_node):
+            if "name" not in match_dict:
+                continue
+            symbol = self._extract_marker_text(match_dict["name"][0])
+            is_class = "cls" in match_dict
+            target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
+
+            if symbol not in markers:
+                markers[symbol] = {"decorators": self._extract_decorators(target)}
+                if is_class:
+                    markers[symbol]["extends"] = self._extract_bases(target)
+        return markers
+
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         code_bytes = code.encode("utf-8")
 

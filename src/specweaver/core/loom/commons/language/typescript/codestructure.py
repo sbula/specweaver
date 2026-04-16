@@ -291,6 +291,73 @@ class TypeScriptCodeStructure(CodeStructureInterface):
         mutated = code_bytes[: node.start_byte] + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
+    def _extract_marker_text(self, node: typing.Any) -> str:
+        return typing.cast("bytes", node.text).decode("utf-8").strip()
+
+    def _extract_bases(self, target_node: typing.Any) -> list[str]:
+        bases = []
+        for child in target_node.children:
+            if child.type == "class_heritage":
+                for clause in child.children:
+                    if clause.type in ("extends_clause", "implements_clause"):
+                        for t in clause.children:
+                            if t.type in ("identifier", "type_identifier"):
+                                bases.append(self._extract_marker_text(t))
+                            elif t.type == "type_list":
+                                for sub in t.children:
+                                    if sub.type in ("identifier", "type_identifier"):
+                                        bases.append(self._extract_marker_text(sub))
+        return bases
+
+    def _add_dec(self, child: typing.Any, decorators: list[str]) -> None:
+        dec_text = self._extract_marker_text(child)
+        if dec_text.startswith("@"):
+            dec_text = dec_text[1:]
+        if dec_text not in decorators:
+            decorators.append(dec_text)
+
+    def _extract_decorators(self, target_node: typing.Any) -> list[str]:
+        decorators: list[str] = []
+        parent = target_node.parent
+        if parent and parent.type == "export_statement":
+            target_node = parent
+
+        for child in target_node.children:
+            if child.type == "decorator":
+                self._add_dec(child, decorators)
+
+        if target_node.type == "method_definition":
+            prev = target_node.prev_named_sibling
+            temp: list[typing.Any] = []
+            while prev and prev.type == "decorator":
+                temp.insert(0, prev)
+                prev = prev.prev_named_sibling
+            for dec_node in temp:
+                self._add_dec(dec_node, decorators)
+
+        return decorators
+
+    def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
+        if not code.strip():
+            return {}
+        tree = self.parser.parse(code.encode("utf-8"))
+        query_str = "(class_declaration name: (type_identifier) @name) @cls\n(method_definition name: (property_identifier) @name) @fn\n(function_declaration name: (identifier) @name) @fn"
+        cursor = QueryCursor(Query(self.language, query_str))
+
+        markers: dict[str, dict[str, list[str]]] = {}
+        for _, match_dict in cursor.matches(tree.root_node):
+            if "name" not in match_dict:
+                continue
+            symbol = self._extract_marker_text(match_dict["name"][0])
+            is_class = "cls" in match_dict
+            target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
+
+            if symbol not in markers:
+                markers[symbol] = {"decorators": self._extract_decorators(target)}
+                if is_class:
+                    markers[symbol]["extends"] = self._extract_bases(target)
+        return markers
+
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         code_bytes = code.encode("utf-8")
         if not target_parent:

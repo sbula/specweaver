@@ -47,20 +47,22 @@ class C12_FrameworkSpecificBounds(Rule):
         return "C12_FrameworkSpecificBounds"
 
     def check(self, target_text: str, /, params: dict[str, Any] | None = None) -> RuleResult:
-        if not params or "ast_payload" not in params:
+        if not params or "ast_payload" not in params or "markers" not in params["ast_payload"]:
              # Graceful fallback if payload isn't injected.
              return RuleResult(status=RuleStatus.PASSED, ...)
 
-        ast_payload = params["ast_payload"]
+        markers = params["ast_payload"]["markers"]
         
-        # Example validation logic reading the dictionary
-        if "annotations" in ast_payload and "RestController" not in ast_payload["annotations"]:
-             return RuleResult(
-                 status=RuleStatus.FAILED,
-                 findings=["Missing @RestController on primary entrypoint."]
-             )
-             
-        return RuleResult(status=RuleStatus.PASSED, ...)
+        # Example validation logic reading the dictionary (e.g. checking 'SpringHandler')
+        # Structure is markers[symbol_name]["decorators"] and markers[symbol_name]["extends"]
+        for symbol, data in markers.items():
+            if "RestController" in data.get("decorators", []):
+                return RuleResult(status=RuleStatus.PASSED, ...)
+                
+        return RuleResult(
+            status=RuleStatus.FAILED,
+            findings=["Missing @RestController on primary entrypoint."]
+        )
 ```
 
 ### Step 3b: Bind the Rule in the YAML Pipeline Extender

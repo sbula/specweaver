@@ -139,3 +139,29 @@ async def AsyncFunc():
 """
     target = parser.extract_symbol(code, "AsyncFunc")
     assert "async def AsyncFunc():" in target
+
+
+def test_extract_framework_markers_success(parser: PythonCodeStructure) -> None:
+    code = """
+@pytest.mark.asyncio
+@app.route('/api')
+class MyController(BaseController, WebMixin):
+    @property
+    def get_data(self):
+        pass
+"""
+    markers = parser.extract_framework_markers(code)
+
+    assert "MyController" in markers
+    assert markers["MyController"]["decorators"] == ["pytest.mark.asyncio", "app.route('/api')"]
+    assert markers["MyController"]["extends"] == ["BaseController", "WebMixin"]
+
+    assert "get_data" in markers
+    assert markers["get_data"]["decorators"] == ["property"]
+    assert "extends" not in markers["get_data"]
+
+
+def test_extract_framework_markers_empty(parser: PythonCodeStructure) -> None:
+    code = "def simple(): pass"
+    markers = parser.extract_framework_markers(code)
+    assert markers == {"simple": {"decorators": []}}

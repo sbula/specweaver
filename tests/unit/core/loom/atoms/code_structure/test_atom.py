@@ -38,6 +38,17 @@ def test_atom_read_file_structure_success() -> None:
     assert "def my_func():" in result.exports["structure"]
 
 
+def test_atom_extract_framework_markers_success() -> None:
+    executor = MagicMock()
+    py_code = "def my_func():\n    print('hello')\n"
+    executor.read.return_value = ExecutorResult(status="success", data=py_code)
+    atom = CodeStructureAtom(executor)
+
+    result = atom.run({"intent": "extract_framework_markers", "path": "test.py"})
+    assert result.status == AtomStatus.SUCCESS
+    assert "my_func" in result.exports["markers"]
+
+
 def test_atom_read_symbol_success() -> None:
     executor = MagicMock()
     py_code = "class MyClass:\n    pass\n"

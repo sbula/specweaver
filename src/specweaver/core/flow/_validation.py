@@ -261,6 +261,10 @@ class ValidateCodeHandler:
         if payload_res.status.value == "SUCCESS":
             ast_payload = payload_res.exports
 
+        markers_res = atom.run({"intent": "extract_framework_markers", "path": str(code_path)})
+        if markers_res.status.value == "SUCCESS" and "markers" in markers_res.exports:
+            ast_payload["framework_markers"] = markers_res.exports["markers"]
+
         for step in pipeline.steps:
             step.params["ast_payload"] = ast_payload
 

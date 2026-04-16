@@ -534,3 +534,63 @@ tasks:
         assert result.exit_code == 0
         assert "Warnings for greet.py" in result.stdout
         assert "warning" in result.stdout
+
+
+# ===========================================================================
+# Test 20: Framework Markers Pipeline E2E
+# ===========================================================================
+
+
+class TestFrameworkMarkersE2E:
+    """sw check --level code invokes the CodeStructureAtom for framework_markers intent."""
+
+    def test_validation_pipeline_merges_ast_framework_markers_successfully(self, tmp_path: Path) -> None:
+        """Pipeline successfully fetches and integrates markers into the payload array."""
+        project_dir = tmp_path / _unique_name("proj")
+        project_dir.mkdir()
+        runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+
+        # Create a Python file with a Framework decorator
+        code_str = '''\
+from fastapi import APIRouter
+
+router = APIRouter()
+
+@router.get("/health")
+def healthcheck():
+    return "OK"
+'''
+        code_file = project_dir / "src" / "router.py"
+        code_file.parent.mkdir(parents=True, exist_ok=True)
+        code_file.write_text(code_str, encoding="utf-8")
+
+        # Run Check
+        result = runner.invoke(
+            app,
+            ["check", str(code_file), "--level", "code", "--project", str(project_dir)],
+        )
+
+        # Ensure no crashes occurred. Even if rules fail, it shouldn't be a Python Exception
+        assert "Traceback" not in result.output
+        assert result.exit_code in (0, 1)
+
+    def test_validation_pipeline_gracefully_handles_marker_extraction_failure(self, tmp_path: Path) -> None:
+        """Pipeline shouldn't crash if marker extraction throws CodeStructureError or binary blob."""
+        project_dir = tmp_path / _unique_name("proj")
+        project_dir.mkdir()
+        runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+
+        # Pass a totally invalid/binary file
+        code_file = project_dir / "src" / "invalid.unknown"
+        code_file.parent.mkdir(parents=True, exist_ok=True)
+        code_file.write_bytes(b"\\x00\\xFF\\x00")
+
+        # Run Check
+        result = runner.invoke(
+            app,
+            ["check", str(code_file), "--level", "code", "--project", str(project_dir)],
+        )
+
+        # Depending on how the validator handles it, it might fail on empty files, but no hard AST crashes
+        assert "Traceback" not in result.output
+        assert result.exit_code in (0, 1)

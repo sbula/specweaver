@@ -136,3 +136,34 @@ fun target() {}
 """
     target = parser.extract_symbol(code, "target")
     assert "target" in target
+
+
+def test_extract_framework_markers_success(parser: KotlinCodeStructure) -> None:
+    code = """
+@RestController
+@RequestMapping("/api")
+class MyController : BaseController(), InterfaceA, InterfaceB {
+    @get:GetMapping("/")
+    @Transactional
+    fun myMethod() { }
+}
+"""
+    markers = parser.extract_framework_markers(code)
+
+    assert "MyController" in markers
+    assert "RestController" in markers["MyController"]["decorators"]
+    assert 'RequestMapping("/api")' in markers["MyController"]["decorators"]
+    assert "BaseController" in markers["MyController"]["extends"]
+    assert "InterfaceA" in markers["MyController"]["extends"]
+    assert "InterfaceB" in markers["MyController"]["extends"]
+
+    assert "myMethod" in markers
+    assert 'get:GetMapping("/")' in markers["myMethod"]["decorators"] or 'GetMapping("/")' in markers["myMethod"]["decorators"]
+    assert "Transactional" in markers["myMethod"]["decorators"]
+    assert "extends" not in markers["myMethod"]
+
+
+def test_extract_framework_markers_empty(parser: KotlinCodeStructure) -> None:
+    code = "class Simple {}"
+    markers = parser.extract_framework_markers(code)
+    assert markers == {"Simple": {"decorators": [], "extends": []}}

@@ -130,6 +130,7 @@ class CodeStructureAtom(Atom):
             "replace_symbol_body",
             "add_symbol",
             "delete_symbol",
+            "extract_framework_markers",
         }
         if intent not in valid_intents:
             return AtomResult(
@@ -151,9 +152,24 @@ class CodeStructureAtom(Atom):
 
         if intent == "read_file_structure":
             return self._handle_structure(parser, code, path)
+        if intent == "extract_framework_markers":
+            return self._handle_framework_markers(parser, code, path)
         if intent == "list_symbols":
             return self._handle_list(parser, code, context, path)
         return self._handle_symbol(parser, code, context, intent, path)
+
+    def _handle_framework_markers(
+        self, parser: CodeStructureInterface, code: str, path: str
+    ) -> AtomResult:
+        try:
+            markers = parser.extract_framework_markers(code)
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Extracted markers for {path}",
+                exports={"markers": markers},
+            )
+        except CodeStructureError as err:
+            return AtomResult(status=AtomStatus.FAILED, message=str(err))
 
     def _handle_read_symbol(
         self, parser: CodeStructureInterface, code: str, symbol_name: str, intent: str

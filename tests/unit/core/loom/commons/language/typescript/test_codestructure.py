@@ -138,3 +138,32 @@ function target() { return 2; }
 """
     target = parser.extract_symbol(code, "target")
     assert "target" in target
+
+
+def test_extract_framework_markers_success(parser: TypeScriptCodeStructure) -> None:
+    code = """
+@Component
+@Controller("/api")
+export class MyController extends BaseController implements InterfaceA, InterfaceB {
+    @Field
+    public method() { }
+}
+"""
+    markers = parser.extract_framework_markers(code)
+
+    assert "MyController" in markers
+    assert "Component" in markers["MyController"]["decorators"]
+    assert 'Controller("/api")' in markers["MyController"]["decorators"]
+    assert "BaseController" in markers["MyController"]["extends"]
+    assert "InterfaceA" in markers["MyController"]["extends"]
+    assert "InterfaceB" in markers["MyController"]["extends"]
+
+    assert "method" in markers
+    assert "Field" in markers["method"]["decorators"]
+    assert "extends" not in markers["method"]
+
+
+def test_extract_framework_markers_empty(parser: TypeScriptCodeStructure) -> None:
+    code = "class Simple {}"
+    markers = parser.extract_framework_markers(code)
+    assert markers == {"Simple": {"decorators": [], "extends": []}}

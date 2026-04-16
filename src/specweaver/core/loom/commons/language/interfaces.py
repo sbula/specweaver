@@ -86,6 +86,10 @@ class CodeStructureInterface(ABC):
         """
 
     @abstractmethod
+    def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
+        """Extract framework-specific markers like annotations, decorators, and inheritance."""
+
+    @abstractmethod
     def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
         """Replace the entire symbol wrapper (decorators, signature, body)."""
 

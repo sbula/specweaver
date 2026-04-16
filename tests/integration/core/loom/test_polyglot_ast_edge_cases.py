@@ -696,3 +696,130 @@ def test_crlf_safety():
     res = ts.replace_symbol_body(code, "test", "let b = 2;")
     # Ensure no exceptions on body replace with \r\n base string margins
     assert "let b = 2;" in res
+
+
+def test_atom_polyglot_framework_markers_python_complex() -> None:
+    code = """
+from pydantic import BaseModel
+
+@app.get("/items")
+@router.get("/subitems")
+class Model(BaseModel, Mixin):
+    pass
+"""
+    fs = {"test.py": code}
+    res = _run_atom("extract_framework_markers", "test.py", {}, fs)
+    assert res.status.value == "SUCCESS"
+    markers = res.exports["markers"]
+    assert "Model" in markers
+    assert 'app.get("/items")' in markers["Model"]["decorators"]
+    assert 'router.get("/subitems")' in markers["Model"]["decorators"]
+    assert "BaseModel" in markers["Model"]["extends"]
+    assert "Mixin" in markers["Model"]["extends"]
+
+
+def test_atom_polyglot_framework_markers_java_spring() -> None:
+    code = """
+@RestController
+@RequestMapping("/api")
+public class SpringHandler extends BaseFilter implements Handler, Serializable {
+    @PostMapping
+    private void handle() {}
+}
+"""
+    fs = {"SpringHandler.java": code}
+    res = _run_atom("extract_framework_markers", "SpringHandler.java", {}, fs)
+    assert res.status.value == "SUCCESS"
+    markers = res.exports["markers"]
+    assert "SpringHandler" in markers
+    assert "RestController" in markers["SpringHandler"]["decorators"]
+    assert "RequestMapping(\"/api\")" in markers["SpringHandler"]["decorators"] or "RequestMapping" in markers["SpringHandler"]["decorators"]
+    assert "BaseFilter" in markers["SpringHandler"]["extends"]
+    assert "Handler" in markers["SpringHandler"]["extends"]
+    assert "Serializable" in markers["SpringHandler"]["extends"]
+
+    assert "handle" in markers
+    assert "PostMapping" in markers["handle"]["decorators"]
+
+
+def test_atom_polyglot_framework_markers_typescript_nest() -> None:
+    code = """
+@Controller('api')
+export class NestComponent extends BaseAPI implements IHandler {
+    @Get()
+    @UseGuards(AuthGuard)
+    execute() {}
+}
+"""
+    fs = {"component.ts": code}
+    res = _run_atom("extract_framework_markers", "component.ts", {}, fs)
+    assert res.status.value == "SUCCESS"
+    markers = res.exports["markers"]
+    assert "NestComponent" in markers
+    assert "Controller('api')" in markers["NestComponent"]["decorators"] or "Controller" in markers["NestComponent"]["decorators"]
+    assert "BaseAPI" in markers["NestComponent"]["extends"]
+    assert "IHandler" in markers["NestComponent"]["extends"]
+
+    assert "execute" in markers
+    decorators = "".join(markers["execute"]["decorators"])
+    assert "Get" in decorators
+    assert "UseGuards" in decorators
+
+
+def test_atom_polyglot_framework_markers_rust_actix() -> None:
+    code = """
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TargetStruct {}
+
+impl MyTrait for TargetStruct {}
+
+#[actix_web::main]
+fn main() {}
+"""
+    fs = {"main.rs": code}
+    res = _run_atom("extract_framework_markers", "main.rs", {}, fs)
+    assert res.status.value == "SUCCESS"
+    markers = res.exports["markers"]
+    assert "TargetStruct" in markers
+    struct_decs = "".join(markers["TargetStruct"]["decorators"])
+    assert "derive" in struct_decs
+
+    assert "main" in markers
+    assert "actix_web::main" in "".join(markers["main"]["decorators"])
+
+
+def test_atom_polyglot_framework_markers_kotlin_spring() -> None:
+    code = """
+@Entity
+data class User(val id: Int) : Base(1), Interface {
+    @field:NotNull
+    val name: String = ""
+}
+"""
+    fs = {"User.kt": code}
+    res = _run_atom("extract_framework_markers", "User.kt", {}, fs)
+    assert res.status.value == "SUCCESS"
+    markers = res.exports["markers"]
+    assert "User" in markers
+    assert "Entity" in markers["User"]["decorators"]
+    extends_str = " ".join(markers["User"]["extends"])
+    assert "Base" in extends_str
+    assert "Interface" in extends_str
+
+
+def test_atom_polyglot_framework_markers_malformed_syntax() -> None:
+    code = """
+@RestController
+public class Malformed {
+    @GetMapping
+    public void valid() {}
+
+    // missing brace
+    public void broken() {
+"""
+    fs = {"Malformed.java": code}
+    res = _run_atom("extract_framework_markers", "Malformed.java", {}, fs)
+    assert res.status.value == "SUCCESS"
+    markers = res.exports["markers"]
+    assert "valid" in markers
+    assert "GetMapping" in markers["valid"]["decorators"]

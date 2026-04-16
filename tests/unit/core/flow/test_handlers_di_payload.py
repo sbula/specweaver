@@ -63,10 +63,15 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
 
         # Setup CodeStructureAtom
         mock_atom = MagicMock()
-        mock_atom_result = MagicMock()
-        mock_atom_result.status.value = "SUCCESS"
-        mock_atom_result.exports = {"ast": {"type": "module"}}
-        mock_atom.run.return_value = mock_atom_result
+        def run_side_effect(payload):
+            res = MagicMock()
+            res.status.value = "SUCCESS"
+            if payload["intent"] == "extract_skeleton":
+                res.exports = {"ast": {"type": "module"}}
+            else:
+                res.exports = {"markers": {"Foo": {"decorators": ["actix"]}}}
+            return res
+        mock_atom.run.side_effect = run_side_effect
         mock_atom_cls.return_value = mock_atom
 
         # Setup Pipeline
@@ -89,13 +94,12 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
         mock_load.assert_called_once_with("validation_code_spring-boot")
 
         # 2. Rule step was injected
-        assert mock_step.params["ast_payload"] == {"ast": {"type": "module"}}
+        assert mock_step.params["ast_payload"] == {"ast": {"type": "module"}, "framework_markers": {"Foo": {"decorators": ["actix"]}}}
 
-        # 3. CodeStructureAtom was executed
-        mock_atom.run.assert_called_once_with({
-            "intent": "extract_skeleton",
-            "path": str(code_file)
-        })
+        # 3. CodeStructureAtom was executed twice
+        assert mock_atom.run.call_count == 2
+        mock_atom.run.assert_any_call({"intent": "extract_skeleton", "path": str(code_file)})
+        mock_atom.run.assert_any_call({"intent": "extract_framework_markers", "path": str(code_file)})
 
 @pytest.mark.asyncio
 async def test_validate_spec_handler_loads_archetype(tmp_path: Path) -> None:
@@ -187,10 +191,15 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
-        mock_atom_result = MagicMock()
-        mock_atom_result.status.value = "SUCCESS"
-        mock_atom_result.exports = {"ast": {"type": "module"}}
-        mock_atom.run.return_value = mock_atom_result
+        def run_side_effect(payload):
+            res = MagicMock()
+            res.status.value = "SUCCESS"
+            if payload["intent"] == "extract_skeleton":
+                res.exports = {"ast": {"type": "module"}}
+            else:
+                res.exports = {"markers": {"Foo": {"decorators": ["actix"]}}}
+            return res
+        mock_atom.run.side_effect = run_side_effect
         mock_atom_cls.return_value = mock_atom
 
         mock_pipeline = MagicMock()
@@ -206,6 +215,9 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
         await handler.execute(step, context)
 
         mock_load.assert_called_once_with("validation_code_default")
+        assert mock_atom.run.call_count == 2
+        mock_atom.run.assert_any_call({"intent": "extract_skeleton", "path": str(code_file)})
+        mock_atom.run.assert_any_call({"intent": "extract_framework_markers", "path": str(code_file)})
 
 @pytest.mark.asyncio
 async def test_validate_spec_handler_falls_back_when_no_archetype(tmp_path: Path) -> None:

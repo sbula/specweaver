@@ -154,3 +154,34 @@ public class UnclosedClass {
         assert "UnclosedClass" in target
     except CodeStructureError:
         pass  # Graceful failure is also acceptable for catastrophic syntax loss without crashing the runner
+
+
+def test_extract_framework_markers_success(parser: JavaCodeStructure) -> None:
+    code = """
+@RestController
+@RequestMapping("/api")
+public class AnnotatedClass extends BaseController implements Serializable, Cloneable {
+    @Override
+    @Transactional
+    public void myMethod() { }
+}
+"""
+    markers = parser.extract_framework_markers(code)
+
+    assert "AnnotatedClass" in markers
+    assert "RestController" in markers["AnnotatedClass"]["decorators"]
+    assert 'RequestMapping("/api")' in markers["AnnotatedClass"]["decorators"]
+    assert "BaseController" in markers["AnnotatedClass"]["extends"]
+    assert "Serializable" in markers["AnnotatedClass"]["extends"]
+    assert "Cloneable" in markers["AnnotatedClass"]["extends"]
+
+    assert "myMethod" in markers
+    assert "Override" in markers["myMethod"]["decorators"]
+    assert "Transactional" in markers["myMethod"]["decorators"]
+    assert "extends" not in markers["myMethod"]
+
+
+def test_extract_framework_markers_empty(parser: JavaCodeStructure) -> None:
+    code = "public class Simple {}"
+    markers = parser.extract_framework_markers(code)
+    assert markers == {"Simple": {"decorators": [], "extends": []}}

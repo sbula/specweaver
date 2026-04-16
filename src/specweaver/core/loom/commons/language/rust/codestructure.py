@@ -240,6 +240,56 @@ class RustCodeStructure(CodeStructureInterface):
         mutated = code_bytes[: node.start_byte] + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
+    def _extract_marker_text(self, node: typing.Any) -> str:
+        return typing.cast("bytes", node.text).decode("utf-8").strip()
+
+    def _extract_decorators(self, target_node: typing.Any) -> list[str]:
+        decorators: list[str] = []
+        prev = target_node.prev_named_sibling
+        temp: list[typing.Any] = []
+        while prev and prev.type == "attribute_item":
+            temp.insert(0, prev)
+            prev = prev.prev_named_sibling
+
+        for dec_node in temp:
+            dec_text = self._extract_marker_text(dec_node)
+            if dec_text.startswith("#[") and dec_text.endswith("]"):
+                dec_text = dec_text[2:-1].strip()
+            if dec_text not in decorators:
+                decorators.append(dec_text)
+        return decorators
+
+    def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
+        if not code.strip():
+            return {}
+
+        tree = self.parser.parse(code.encode("utf-8"))
+        query_str = "(struct_item name: (type_identifier) @name) @cls\n(function_item name: (identifier) @name) @fn"
+        cursor = QueryCursor(Query(self.language, query_str))
+
+        markers: dict[str, dict[str, list[str]]] = {}
+        for _, match_dict in cursor.matches(tree.root_node):
+            if "name" not in match_dict:
+                continue
+            symbol = self._extract_marker_text(match_dict["name"][0])
+            is_class = "cls" in match_dict
+            target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
+
+            if symbol not in markers:
+                markers[symbol] = {"decorators": self._extract_decorators(target)}
+                if is_class:
+                    markers[symbol]["extends"] = []
+
+        impl_query = Query(self.language, "(impl_item trait: (_) @trait type: (_) @type)")
+        for _, impl_match in QueryCursor(impl_query).matches(tree.root_node):
+            if "trait" in impl_match and "type" in impl_match:
+                trait_name = self._extract_marker_text(impl_match["trait"][0])
+                type_name = self._extract_marker_text(impl_match["type"][0])
+                if type_name in markers and "extends" in markers[type_name]:
+                    markers[type_name]["extends"].append(trait_name)
+
+        return markers
+
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         code_bytes = code.encode("utf-8")
         if not target_parent:
