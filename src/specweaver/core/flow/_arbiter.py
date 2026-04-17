@@ -45,10 +45,18 @@ class ArbitrateResult(BaseModel):
 
 SCENARIO_VOCABULARY: frozenset[str] = frozenset(
     {
-        "scenario", "scenarios/", "test_", "_scenarios",
-        "yaml", "parametrize", "convert", "ScenarioSet",
-        "scenario_validation", "generate_scenarios",
-        "scenario_agent", "scenario pipeline",
+        "scenario",
+        "scenarios/",
+        "test_",
+        "_scenarios",
+        "yaml",
+        "parametrize",
+        "convert",
+        "ScenarioSet",
+        "scenario_validation",
+        "generate_scenarios",
+        "scenario_agent",
+        "scenario pipeline",
     }
 )
 
@@ -61,7 +69,11 @@ def _guard_coding_feedback(text: str) -> str:
     lower_text = text.lower()
     for banned in SCENARIO_VOCABULARY:
         if banned.lower() in lower_text:
-            logger.warning("ArbitrateVerdictHandler: Vocabulary leak caught! Banned term '%s' found in string: %s", banned, text)
+            logger.warning(
+                "ArbitrateVerdictHandler: Vocabulary leak caught! Banned term '%s' found in string: %s",
+                banned,
+                text,
+            )
             return (
                 "The implementation violates the exact behavioral requirement stipulated in the spec. "
                 "The provided code does not behave according to the behavioral constraints on the given inputs. "
@@ -102,7 +114,9 @@ class ArbitrateVerdictHandler(StepHandler):
 
         try:
             # Safely recover test failures (which contain the unfiltered exception traces)
-            test_results = context.feedback.get("run_scenario_tests", {}).get("output", {}).get("results", [])
+            test_results = (
+                context.feedback.get("run_scenario_tests", {}).get("output", {}).get("results", [])
+            )
             raw_tracing = ""
             for res in test_results:
                 if res.get("status") == "FAIL" or res.get("status") == "ERROR":
@@ -112,6 +126,7 @@ class ArbitrateVerdictHandler(StepHandler):
             from specweaver.core.loom.commons.language.stack_trace_filter_factory import (
                 create_stack_trace_filter,
             )
+
             filter_impl = create_stack_trace_filter(context.project_path)
             filtered_trace = filter_impl.filter(raw_tracing)
 
@@ -120,6 +135,7 @@ class ArbitrateVerdictHandler(StepHandler):
                 spec_content = context.spec_path.read_text(encoding="utf-8")
 
             from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
             builder = PromptBuilder()
             builder.add_instructions(ARBITRATE_INSTRUCTIONS)
             builder.add_context(spec_content, label="Spec Definition")
@@ -149,10 +165,21 @@ class ArbitrateVerdictHandler(StepHandler):
                     "from_step": "arbitrate_verdict",
                     "findings": {
                         "verdict": "code_bug",
-                        "results": [{"status": "FAIL", "rule_id": result.spec_clause, "message": safe_coding_feedback}],
+                        "results": [
+                            {
+                                "status": "FAIL",
+                                "rule_id": result.spec_clause,
+                                "message": safe_coding_feedback,
+                            }
+                        ],
                     },
                 }
-                return StepResult(status=StepStatus.FAILED, error_message=f"Arbiter assigned: {safe_coding_feedback}", started_at=started, completed_at=_now_iso())
+                return StepResult(
+                    status=StepStatus.FAILED,
+                    error_message=f"Arbiter assigned: {safe_coding_feedback}",
+                    started_at=started,
+                    completed_at=_now_iso(),
+                )
 
             elif result.verdict == ArbitrateVerdict.SCENARIO_ERROR:
                 logger.info("Arbitrate Verdict: SCENARIO_ERROR (%s)", result.spec_clause)
@@ -160,14 +187,33 @@ class ArbitrateVerdictHandler(StepHandler):
                     "from_step": "arbitrate_verdict",
                     "findings": {
                         "verdict": "scenario_error",
-                        "results": [{"status": "FAIL", "rule_id": result.spec_clause, "message": result.scenario_feedback}],
+                        "results": [
+                            {
+                                "status": "FAIL",
+                                "rule_id": result.spec_clause,
+                                "message": result.scenario_feedback,
+                            }
+                        ],
                     },
                 }
-                return StepResult(status=StepStatus.FAILED, error_message=f"Arbiter assigned: {result.scenario_feedback}", started_at=started, completed_at=_now_iso())
+                return StepResult(
+                    status=StepStatus.FAILED,
+                    error_message=f"Arbiter assigned: {result.scenario_feedback}",
+                    started_at=started,
+                    completed_at=_now_iso(),
+                )
 
             elif result.verdict == ArbitrateVerdict.SPEC_AMBIGUITY:
-                logger.warning("Arbitrate Verdict: SPEC_AMBIGUITY! Pausing for HITL %s", result.spec_clause)
-                return StepResult(status=StepStatus.WAITING_FOR_INPUT, output=result.model_dump(), error_message=f"Ambiguity detected on {result.spec_clause}", started_at=started, completed_at=_now_iso())
+                logger.warning(
+                    "Arbitrate Verdict: SPEC_AMBIGUITY! Pausing for HITL %s", result.spec_clause
+                )
+                return StepResult(
+                    status=StepStatus.WAITING_FOR_INPUT,
+                    output=result.model_dump(),
+                    error_message=f"Ambiguity detected on {result.spec_clause}",
+                    started_at=started,
+                    completed_at=_now_iso(),
+                )
 
             return _error_result(f"Unknown verdict type {result.verdict}", started)
 

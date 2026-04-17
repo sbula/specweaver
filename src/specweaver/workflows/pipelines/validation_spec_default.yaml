@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-# Default spec validation pipeline — all 11 built-in rules.
+# Default spec validation pipeline — all 12 built-in rules.
 # Ordered cheap-to-expensive for fail-fast behavior.
 #
 # This pipeline is the single source of truth for which spec
@@ -10,7 +10,7 @@
 
 name: validation_spec_default
 description: >
-  Default spec validation — all 11 built-in rules.
+  Default spec validation — all 12 built-in rules.
   Ordered cheap-to-expensive for fail-fast behavior.
 version: "1.0"
 
@@ -64,3 +64,7 @@ steps:
   # --- Most expensive: scoring rules ---
   - name: s07_test_first
     rule: S07
+
+  # --- Structural Archetype Bounds ---
+  - name: s12_archetype_bounds
+    rule: S12

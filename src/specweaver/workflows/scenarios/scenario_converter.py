@@ -54,9 +54,7 @@ class ScenarioConverter:
             groups[scenario.function_under_test].append(scenario)
 
         for func_name, scenarios in groups.items():
-            lines.extend(
-                ScenarioConverter._render_test_group(func_name, scenarios)
-            )
+            lines.extend(ScenarioConverter._render_test_group(func_name, scenarios))
             lines.append("")
 
         return "\n".join(lines) + "\n"
@@ -75,13 +73,9 @@ class ScenarioConverter:
             lines.append(f"# @trace({req_id})")
 
         if len(scenarios) > 1:
-            lines.extend(
-                ScenarioConverter._render_parametrize_data(func_name, scenarios)
-            )
+            lines.extend(ScenarioConverter._render_parametrize_data(func_name, scenarios))
         else:
-            lines.extend(
-                ScenarioConverter._render_single_test(func_name, scenarios[0])
-            )
+            lines.extend(ScenarioConverter._render_single_test(func_name, scenarios[0]))
 
         return lines
 
@@ -115,8 +109,7 @@ class ScenarioConverter:
         param_entries: list[str] = []
         for s in scenarios:
             param_entries.append(
-                f"    pytest.param({s.inputs!r}, {s.expected_output!r}, "
-                f'id="{s.name}")'
+                f'    pytest.param({s.inputs!r}, {s.expected_output!r}, id="{s.name}")'
             )
 
         lines.append('@pytest.mark.parametrize("inputs,expected", [')
@@ -131,9 +124,7 @@ class ScenarioConverter:
 
         # Use first scenario's description as docstring
         first = scenarios[0]
-        lines.append(
-            f'    """Scenario group: {func_name} — {first.description}."""'
-        )
+        lines.append(f'    """Scenario group: {func_name} — {first.description}."""')
         lines.append("    ...")
 
         return lines
@@ -148,9 +139,7 @@ class ScenarioConverter:
         Returns:
             String containing the test function code.
         """
-        lines = ScenarioConverter._render_single_test(
-            scenario.function_under_test, scenario
-        )
+        lines = ScenarioConverter._render_single_test(scenario.function_under_test, scenario)
         return "\n".join(lines)
 
 

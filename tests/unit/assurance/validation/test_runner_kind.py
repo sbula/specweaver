@@ -69,10 +69,10 @@ class TestPipelineLevelSelection:
         result = _resolve_pipeline_name("component", "validation_spec_library")
         assert result == "validation_spec_library"
 
-    def test_component_pipeline_has_eleven_steps(self) -> None:
-        """Default component pipeline has 11 spec rules."""
+    def test_component_pipeline_has_twelve_steps(self) -> None:
+        """Default component pipeline has 12 spec rules."""
         pipeline = self._load("validation_spec_default")
-        assert len(pipeline.steps) == 11
+        assert len(pipeline.steps) == 12
 
     def test_feature_pipeline_excludes_s04(self) -> None:
         """Feature pipeline removes S04 (dependency direction)."""
@@ -80,10 +80,10 @@ class TestPipelineLevelSelection:
         rule_ids = {s.rule for s in pipeline.steps}
         assert "S04" not in rule_ids
 
-    def test_feature_pipeline_has_ten_steps(self) -> None:
-        """Feature pipeline has 10 steps (11 - S04 removed)."""
+    def test_feature_pipeline_has_eleven_steps(self) -> None:
+        """Feature pipeline has 11 steps (12 - S04 removed)."""
         pipeline = self._load("validation_spec_feature")
-        assert len(pipeline.steps) == 10
+        assert len(pipeline.steps) == 11
 
     def test_feature_pipeline_inherits_component_rules(self) -> None:
         """Feature pipeline keeps S01, S02, S03, S08 etc."""

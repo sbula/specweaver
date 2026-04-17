@@ -41,28 +41,33 @@ def create_scenario_converter(cwd: Path) -> ScenarioConverterInterface:
         from specweaver.core.loom.commons.language.java.scenario_converter import (
             JavaScenarioConverter,
         )
+
         return JavaScenarioConverter()
 
     if language == "kotlin":
         from specweaver.core.loom.commons.language.kotlin.scenario_converter import (
             KotlinScenarioConverter,
         )
+
         return KotlinScenarioConverter()
 
     if language == "typescript":
         from specweaver.core.loom.commons.language.typescript.scenario_converter import (
             TypeScriptScenarioConverter,
         )
+
         return TypeScriptScenarioConverter()
 
     if language == "rust":
         from specweaver.core.loom.commons.language.rust.scenario_converter import (
             RustScenarioConverter,
         )
+
         return RustScenarioConverter()
 
     # Default: Python
     from specweaver.core.loom.commons.language.python.scenario_converter import (
         PythonScenarioConverter,
     )
+
     return PythonScenarioConverter()

@@ -53,14 +53,16 @@ class CoverageRule(Rule):
 
         atom = QARunnerAtom(cwd=project_root)
         try:
-            result = atom.run({
-                "intent": "run_tests",
-                "target": str(spec_path),
-                "kind": "",
-                "timeout": 120,
-                "coverage": True,
-                "coverage_threshold": self._threshold,
-            })
+            result = atom.run(
+                {
+                    "intent": "run_tests",
+                    "target": str(spec_path),
+                    "kind": "",
+                    "timeout": 120,
+                    "coverage": True,
+                    "coverage_threshold": self._threshold,
+                }
+            )
 
             if result.status == "failed" and "timed out" in (result.message or "").lower():
                 raise TimeoutError("Coverage check timed out")

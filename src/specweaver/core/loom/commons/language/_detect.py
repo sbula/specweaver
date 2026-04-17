@@ -15,9 +15,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 # Canonical language identifiers used across the scenario pipeline
-SUPPORTED_LANGUAGES: frozenset[str] = frozenset(
-    {"python", "java", "kotlin", "typescript", "rust"}
-)
+SUPPORTED_LANGUAGES: frozenset[str] = frozenset({"python", "java", "kotlin", "typescript", "rust"})
 
 # Mapping from canonical language name to scenario test file extension
 _SCENARIO_EXTENSIONS: dict[str, str] = {

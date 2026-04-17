@@ -59,12 +59,14 @@ class TestsPassRule(Rule):
 
         atom = QARunnerAtom(cwd=project_root)
         try:
-            result = atom.run({
-                "intent": "run_tests",
-                "target": str(test_file.relative_to(project_root)),
-                "kind": "",
-                "timeout": 60,
-            })
+            result = atom.run(
+                {
+                    "intent": "run_tests",
+                    "target": str(test_file.relative_to(project_root)),
+                    "kind": "",
+                    "timeout": 60,
+                }
+            )
 
             if result.status == AtomStatus.FAILED and "timed out" in (result.message or "").lower():
                 raise TimeoutError("Tests timed out")

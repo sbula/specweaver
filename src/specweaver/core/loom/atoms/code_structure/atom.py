@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from specweaver.core.loom.commons.filesystem.executor import FileExecutor
 from specweaver.core.loom.commons.language.java.codestructure import JavaCodeStructure
 from specweaver.core.loom.commons.language.kotlin.codestructure import KotlinCodeStructure
+from specweaver.core.loom.commons.language.markdown.codestructure import MarkdownCodeStructure
 from specweaver.core.loom.commons.language.python.codestructure import PythonCodeStructure
 from specweaver.core.loom.commons.language.rust.codestructure import RustCodeStructure
 from specweaver.core.loom.commons.language.typescript.codestructure import TypeScriptCodeStructure
@@ -36,6 +37,7 @@ class CodeStructureAtom(Atom):
             self._executor = file_executor
         elif cwd:
             from specweaver.core.loom.commons.filesystem.executor import FileExecutor
+
             self._executor = FileExecutor(cwd=cwd)
         else:
             raise ValueError("CodeStructureAtom requires either file_executor or cwd")
@@ -53,6 +55,8 @@ class CodeStructureAtom(Atom):
             return KotlinCodeStructure()
         if ext in (".rs",):
             return RustCodeStructure()
+        if ext in (".md",):
+            return MarkdownCodeStructure()
         return None
 
     def _handle_structure(self, parser: CodeStructureInterface, code: str, path: str) -> AtomResult:

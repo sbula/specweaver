@@ -25,7 +25,7 @@ class TestPackagedDefaults:
         """Loads the packaged validation_spec_default pipeline."""
         pipeline = load_pipeline_yaml("validation_spec_default")
         assert pipeline.name == "validation_spec_default"
-        assert len(pipeline.steps) == 11
+        assert len(pipeline.steps) == 12
 
     def test_load_code_default(self):
         """Loads the packaged validation_code_default pipeline."""
@@ -37,8 +37,8 @@ class TestPackagedDefaults:
         """Loads and resolves the library profile (extends spec_default)."""
         pipeline = load_pipeline_yaml("validation_spec_library")
         assert pipeline.name == "validation_spec_library"
-        # After inheritance resolution, should have 11 steps (same as default)
-        assert len(pipeline.steps) == 11
+        # After inheritance resolution, should have 12 steps (same as default)
+        assert len(pipeline.steps) == 12
 
     def test_library_overrides_applied(self):
         """Library profile applies its own threshold overrides."""
@@ -98,8 +98,8 @@ remove:
         (pipelines_dir / "my_custom_pipeline.yaml").write_text(yaml_content, encoding="utf-8")
 
         pipeline = load_pipeline_yaml("my_custom_pipeline", project_dir=tmp_path)
-        # 11 base steps - 2 removed = 9
-        assert len(pipeline.steps) == 9
+        # 12 base steps - 2 removed = 10
+        assert len(pipeline.steps) == 10
         names = [s.name for s in pipeline.steps]
         assert "s04_dependency_dir" not in names
         assert "s07_test_first" not in names

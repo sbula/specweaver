@@ -49,11 +49,13 @@ class ImportDirectionRule(Rule):
             resolver = DALResolver(project_root=cwd)
             dal_enum = resolver.resolve(target_path=spec_path)
 
-            result = atom.run({
-                "intent": "run_architecture",
-                "target": str(spec_path.absolute()),
-                "dal_level": dal_enum,
-            })
+            result = atom.run(
+                {
+                    "intent": "run_architecture",
+                    "target": str(spec_path.absolute()),
+                    "dal_level": dal_enum,
+                }
+            )
         except Exception as e:
             logger.warning("C05 architecture check failed: %s", e)
             return self._skip(f"Architecture engine failure: {e}")
@@ -80,8 +82,6 @@ class ImportDirectionRule(Rule):
             )
 
         if findings:
-            return self._fail(
-                f"Found {violation_count} architectural violation(s)", findings
-            )
+            return self._fail(f"Found {violation_count} architectural violation(s)", findings)
 
         return self._fail("Architectural violations detected.", [])

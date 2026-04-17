@@ -158,7 +158,10 @@ class MyController : BaseController(), InterfaceA, InterfaceB {
     assert "InterfaceB" in markers["MyController"]["extends"]
 
     assert "myMethod" in markers
-    assert 'get:GetMapping("/")' in markers["myMethod"]["decorators"] or 'GetMapping("/")' in markers["myMethod"]["decorators"]
+    assert (
+        'get:GetMapping("/")' in markers["myMethod"]["decorators"]
+        or 'GetMapping("/")' in markers["myMethod"]["decorators"]
+    )
     assert "Transactional" in markers["myMethod"]["decorators"]
     assert "extends" not in markers["myMethod"]
 

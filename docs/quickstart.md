@@ -98,15 +98,15 @@ The result is saved to `specs/greet_service_spec.md`.
 sw check specs/greet_service_spec.md --level component --project ./my-project
 ```
 
-This runs 11 spec rules (S01-S11) against your spec:
+This runs 12 spec rules (S01-S12) against your spec:
 
 ```
-Spec validation — 11 rules
+Spec validation — 12 rules
   ✔ S01 One-Sentence Test        PASS
   ✔ S02 Single Test Setup        PASS
   ✔ S03 Stranger Test            PASS
   ...
-Result: 11 passed, 0 warnings, 0 failed
+Result: 12 passed, 0 warnings, 0 failed
 ```
 
 Use `--strict` to treat warnings as failures, or `--set S08.fail_threshold=5` for one-off threshold overrides.

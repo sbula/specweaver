@@ -72,6 +72,8 @@ class C12ArchetypeCodeBoundsRule(Rule):
                 )
 
         if findings:
-            return self._fail(f"Archetype boundaries breached: {len(findings)} violations", findings)
+            return self._fail(
+                f"Archetype boundaries breached: {len(findings)} violations", findings
+            )
 
         return self._pass("Code safely aligns to archetype bounded constraints")

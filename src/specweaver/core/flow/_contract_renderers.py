@@ -99,9 +99,14 @@ def _py_sig_to_java_method(sig: str, docstring: str | None) -> str:
     if ret_match:
         py_ret = ret_match.group(1)
         _type_map = {
-            "str": "String", "int": "int", "float": "double",
-            "bool": "boolean", "None": "void", "list": "List",
-            "dict": "Map", "Any": "Object",
+            "str": "String",
+            "int": "int",
+            "float": "double",
+            "bool": "boolean",
+            "None": "void",
+            "list": "List",
+            "dict": "Map",
+            "Any": "Object",
         }
         return_type = _type_map.get(py_ret, "Object")
 
@@ -155,9 +160,14 @@ def _py_sig_to_kotlin_fun(sig: str, docstring: str | None) -> str:
     if ret_match:
         py_ret = ret_match.group(1)
         _type_map = {
-            "str": "String", "int": "Int", "float": "Double",
-            "bool": "Boolean", "None": "Unit", "list": "List<Any>",
-            "dict": "Map<String, Any>", "Any": "Any",
+            "str": "String",
+            "int": "Int",
+            "float": "Double",
+            "bool": "Boolean",
+            "None": "Unit",
+            "list": "List<Any>",
+            "dict": "Map<String, Any>",
+            "Any": "Any",
         }
         return_type = _type_map.get(py_ret, "Any")
 
@@ -210,9 +220,14 @@ def _py_sig_to_ts_method(sig: str, docstring: str | None) -> str:
     if ret_match:
         py_ret = ret_match.group(1)
         _type_map = {
-            "str": "string", "int": "number", "float": "number",
-            "bool": "boolean", "None": "void", "list": "unknown[]",
-            "dict": "Record<string, unknown>", "Any": "unknown",
+            "str": "string",
+            "int": "number",
+            "float": "number",
+            "bool": "boolean",
+            "None": "void",
+            "list": "unknown[]",
+            "dict": "Record<string, unknown>",
+            "Any": "unknown",
         }
         return_type = _type_map.get(py_ret, "unknown")
 
@@ -263,8 +278,12 @@ def _py_sig_to_rust_fn(sig: str, docstring: str | None) -> str:
     if ret_match:
         py_ret = ret_match.group(1)
         _type_map = {
-            "str": "String", "int": "i64", "float": "f64",
-            "bool": "bool", "None": "()", "list": "Vec<Box<dyn std::any::Any>>",
+            "str": "String",
+            "int": "i64",
+            "float": "f64",
+            "bool": "bool",
+            "None": "()",
+            "list": "Vec<Box<dyn std::any::Any>>",
             "dict": "std::collections::HashMap<String, Box<dyn std::any::Any>>",
             "Any": "Box<dyn std::any::Any>",
         }

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+
 class CodeStructureError(Exception):
     """Raised when the CodeStructure parser encounters a fatal error or cannot resolve a symbol."""
 

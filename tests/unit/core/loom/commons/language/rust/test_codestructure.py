@@ -168,7 +168,10 @@ pub fn standalone() {}
     markers = parser.extract_framework_markers(code)
 
     assert "MyController" in markers
-    assert "derive(Debug, Serialize)" in markers["MyController"]["decorators"] or "derive" in markers["MyController"]["decorators"]
+    assert (
+        "derive(Debug, Serialize)" in markers["MyController"]["decorators"]
+        or "derive" in markers["MyController"]["decorators"]
+    )
     # We should at least capture the macro paths or full texts:
     found_actix = any("actix_web" in d for d in markers["MyController"]["decorators"])
     assert found_actix

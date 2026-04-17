@@ -574,4 +574,3 @@ class GenerateContractHandler:
                 lines.append("        ...")
             lines.append("")
         return "\n".join(lines) + "\n"
-

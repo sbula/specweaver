@@ -123,11 +123,16 @@ class ToolDispatcher:
             if role == "scenario_agent":
                 # Strict FR-5a isolation: scenario agent cannot read src/ or tests/
                 for root in boundary.roots:
-                    grants.append(FolderGrant(str(root / "scenarios"), AccessMode.FULL, recursive=True))
+                    grants.append(
+                        FolderGrant(str(root / "scenarios"), AccessMode.FULL, recursive=True)
+                    )
                     grants.append(FolderGrant(str(root / "specs"), AccessMode.READ, recursive=True))
-                    grants.append(FolderGrant(str(root / "contracts"), AccessMode.READ, recursive=True))
+                    grants.append(
+                        FolderGrant(str(root / "contracts"), AccessMode.READ, recursive=True)
+                    )
             elif role == "arbiter_agent":
                 from specweaver.core.loom.security import ReadOnlyWorkspaceBoundary
+
                 if isinstance(boundary, ReadOnlyWorkspaceBoundary):
                     for api_path in boundary.api_paths:
                         grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))

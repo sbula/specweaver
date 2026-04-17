@@ -58,9 +58,7 @@ async def run_fan_out(
         )
         for pipe in sub_pipelines
     ]
-    return list(
-        await asyncio.gather(*[r.run(parent_run_id=parent_run_id) for r in runners])
-    )
+    return list(await asyncio.gather(*[r.run(parent_run_id=parent_run_id) for r in runners]))
 
 
 def _now_iso() -> str:

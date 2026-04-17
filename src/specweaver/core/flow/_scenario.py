@@ -39,6 +39,7 @@ class GenerateScenarioHandler:
             contract_content = ""
             if context.api_contract_paths:
                 from pathlib import Path
+
                 for cp in context.api_contract_paths:
                     p = Path(cp)
                     if p.exists():
@@ -63,6 +64,7 @@ class GenerateScenarioHandler:
             import io
 
             from ruamel.yaml import YAML
+
             yaml = YAML()
             yaml.default_flow_style = False
             buf = io.StringIO()
@@ -71,7 +73,8 @@ class GenerateScenarioHandler:
 
             logger.info(
                 "GenerateScenarioHandler: %d scenarios saved to '%s'",
-                len(scenario_set.scenarios), output_path,
+                len(scenario_set.scenarios),
+                output_path,
             )
 
             return StepResult(
@@ -108,9 +111,7 @@ class ConvertScenarioHandler:
             scenario_yaml_path = scenarios_dir / f"{stem}_scenarios.yaml"
 
             if not scenario_yaml_path.exists():
-                return _error_result(
-                    f"Scenario YAML not found: {scenario_yaml_path}", started
-                )
+                return _error_result(f"Scenario YAML not found: {scenario_yaml_path}", started)
 
             yaml = YAML(typ="safe")
             data = yaml.load(scenario_yaml_path.read_text(encoding="utf-8"))
@@ -120,11 +121,13 @@ class ConvertScenarioHandler:
             from specweaver.core.loom.atoms.language.atom import LanguageAtom
 
             atom = LanguageAtom(cwd=context.project_path)
-            res = atom.run({
-                "intent": "convert_scenario",
-                "stem": stem,
-                "scenario_set": scenario_set,
-            })
+            res = atom.run(
+                {
+                    "intent": "convert_scenario",
+                    "stem": stem,
+                    "scenario_set": scenario_set,
+                }
+            )
             if res.status == "failed":
                 raise ValueError(res.message)
 
@@ -135,6 +138,7 @@ class ConvertScenarioHandler:
                 raise ValueError("Atom did not return output path")
 
             from pathlib import Path
+
             output_path = Path(output_path_str)
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(test_content, encoding="utf-8")

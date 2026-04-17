@@ -42,10 +42,7 @@ class TypeScriptScenarioConverter(ScenarioConverterInterface):
         describes = "\n\n".join(describe_blocks)
 
         return (
-            f"// Auto-generated scenario tests from spec scenarios.\n"
-            f"{trace_tags}\n"
-            f"\n"
-            f"{describes}\n"
+            f"// Auto-generated scenario tests from spec scenarios.\n{trace_tags}\n\n{describes}\n"
         )
 
     def _render_describe(self, func_name: str, scenarios: list[Any]) -> str:
@@ -63,7 +60,7 @@ class TypeScriptScenarioConverter(ScenarioConverterInterface):
             f"  test.each([\n"
             f"{rows}\n"
             f"  ])('$scenarioName', ({{ scenarioName, expected }}) => {{\n"
-            f"    // TODO: implement — expected: \" + expected\n"
+            f'    // TODO: implement — expected: " + expected\n'
             f"    expect(true).toBe(true);\n"
             f"  }});\n"
             f"}});"

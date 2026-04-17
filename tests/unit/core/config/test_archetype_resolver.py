@@ -31,6 +31,7 @@ def test_archetype_resolver_finds_nearest_context(tmp_path: Path) -> None:
     assert resolver.resolve(api_dir) == "spring-boot"
     assert resolver.resolve(project_root) is None
 
+
 def test_archetype_resolver_handles_empty_file(tmp_path: Path) -> None:
     project_root = tmp_path
     context = project_root / "context.yaml"
@@ -38,6 +39,7 @@ def test_archetype_resolver_handles_empty_file(tmp_path: Path) -> None:
 
     resolver = ArchetypeResolver(project_root)
     assert resolver.resolve(project_root) is None
+
 
 def test_archetype_resolver_handles_malformed_yaml(tmp_path: Path) -> None:
     project_root = tmp_path

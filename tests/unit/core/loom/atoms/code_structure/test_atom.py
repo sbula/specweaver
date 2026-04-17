@@ -19,10 +19,10 @@ def test_atom_unsupported_intent() -> None:
 def test_atom_unsupported_language_fallback() -> None:
     executor = MagicMock()
     # Mock reading a markdown file
-    executor.read.return_value = ExecutorResult(status="success", data="# README")
+    executor.read.return_value = ExecutorResult(status="success", data="Plain text")
     atom = CodeStructureAtom(executor)
 
-    result = atom.run({"intent": "read_file_structure", "path": "README.md"})
+    result = atom.run({"intent": "read_file_structure", "path": "README.txt"})
     assert result.status == AtomStatus.FAILED
     assert "AST Structure Extraction not supported" in result.message
 

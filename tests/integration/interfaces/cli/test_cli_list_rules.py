@@ -60,7 +60,7 @@ class TestListRulesDefault:
     def test_shows_rule_count(self) -> None:
         """Total rule count is displayed for each pipeline."""
         result = runner.invoke(app, ["list-rules"])
-        assert "11 rules total" in result.output  # spec pipeline
+        assert "12 rules total" in result.output  # spec pipeline
         assert "rules total" in result.output
 
 
@@ -99,7 +99,7 @@ class TestListRulesFiltered:
         assert "validation_spec_feature" in result.output
         assert "S01" in result.output
         assert "S04" not in result.output
-        assert "10 rules total" in result.output
+        assert "11 rules total" in result.output
 
     def test_unknown_pipeline_shows_warning(self) -> None:
         """--pipeline with unknown name shows warning."""

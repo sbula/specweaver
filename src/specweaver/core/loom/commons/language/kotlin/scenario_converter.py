@@ -80,7 +80,7 @@ class KotlinScenarioConverter(ScenarioConverterInterface):
         return (
             f"{trace_line}\n"
             f"    @ParameterizedTest\n"
-            f"    @MethodSource(\"{data_method}\")\n"
+            f'    @MethodSource("{data_method}")\n'
             f"    fun test{method_name}Scenarios(scenarioName: String, expected: String) {{\n"
             f"        // TODO: implement\n"
             f"    }}"
@@ -89,8 +89,7 @@ class KotlinScenarioConverter(ScenarioConverterInterface):
     def _render_data_method(self, func_name: str, scenarios: list[Any]) -> str:
         data_method = f"{func_name}Scenarios"
         entries = "\n".join(
-            f'            Arguments.of("{s.name}", "{s.expected_behavior}"),'
-            for s in scenarios
+            f'            Arguments.of("{s.name}", "{s.expected_behavior}"),' for s in scenarios
         )
         return (
             f"        @JvmStatic\n"
@@ -104,7 +103,10 @@ class KotlinScenarioConverter(ScenarioConverterInterface):
         class_name = _to_pascal_case(stem)
         return (
             project_root
-            / "src" / "test" / "kotlin"
-            / "scenarios" / "generated"
+            / "src"
+            / "test"
+            / "kotlin"
+            / "scenarios"
+            / "generated"
             / f"{class_name}ScenariosTest.kt"
         )

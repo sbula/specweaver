@@ -37,6 +37,7 @@ class PythonScenarioConverter(ScenarioConverterInterface):
         from specweaver.workflows.scenarios.scenario_converter import (
             ScenarioConverter,
         )
+
         return ScenarioConverter.convert(scenario_set)
 
     def output_path(self, stem: str, project_root: Path) -> Path:

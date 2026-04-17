@@ -76,16 +76,15 @@ class JavaScenarioConverter(ScenarioConverterInterface):
         data_method = f"{func_name}Scenarios"
 
         entries = "\n".join(
-            f'            Arguments.of("{s.name}", "{s.expected_behavior}"),'
-            for s in scenarios
+            f'            Arguments.of("{s.name}", "{s.expected_behavior}"),' for s in scenarios
         )
 
         return (
             f"{trace_line}\n"
             f"    @ParameterizedTest\n"
-            f"    @MethodSource(\"{data_method}\")\n"
+            f'    @MethodSource("{data_method}")\n'
             f"    void test{method_name}Scenarios(String scenarioName, String expected) {{\n"
-            f"        // TODO: implement — scenario: \" + scenarioName + \", expected: \" + expected\n"
+            f'        // TODO: implement — scenario: " + scenarioName + ", expected: " + expected\n'
             f"    }}\n"
             f"\n"
             f"    static Stream<Arguments> {data_method}() {{\n"
@@ -100,7 +99,10 @@ class JavaScenarioConverter(ScenarioConverterInterface):
         class_name = _to_pascal_case(stem)
         return (
             project_root
-            / "src" / "test" / "java"
-            / "scenarios" / "generated"
+            / "src"
+            / "test"
+            / "java"
+            / "scenarios"
+            / "generated"
             / f"{class_name}ScenariosTest.java"
         )

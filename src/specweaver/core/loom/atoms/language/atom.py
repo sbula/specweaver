@@ -45,7 +45,7 @@ class LanguageAtom(Atom):
             return AtomResult(
                 status=AtomStatus.SUCCESS,
                 message=f"Detected language: {lang}",
-                exports={"language": lang}
+                exports={"language": lang},
             )
 
         elif intent == "convert_scenario":
@@ -53,8 +53,7 @@ class LanguageAtom(Atom):
             scenario_set = context.get("scenario_set")
             if not stem or not scenario_set:
                 return AtomResult(
-                    status=AtomStatus.FAILED,
-                    message="Missing 'stem' or 'scenario_set' in context."
+                    status=AtomStatus.FAILED, message="Missing 'stem' or 'scenario_set' in context."
                 )
 
             from specweaver.core.loom.commons.language.scenario_converter_factory import (
@@ -68,10 +67,7 @@ class LanguageAtom(Atom):
             return AtomResult(
                 status=AtomStatus.SUCCESS,
                 message="Scenario converted",
-                exports={"content": content, "output_path": str(output_path)}
+                exports={"content": content, "output_path": str(output_path)},
             )
 
-        return AtomResult(
-            status=AtomStatus.FAILED,
-            message=f"Unknown intent: {intent!r}"
-        )
+        return AtomResult(status=AtomStatus.FAILED, message=f"Unknown intent: {intent!r}")

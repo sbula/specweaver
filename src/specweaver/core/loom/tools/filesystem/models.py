@@ -88,13 +88,15 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
             "find_files",
         }
     ),
-    "arbiter_agent": frozenset({
-        "read_file",
-        "list_directory",
-        "search_content",
-        "grep",
-        "find_files",
-    }),
+    "arbiter_agent": frozenset(
+        {
+            "read_file",
+            "list_directory",
+            "search_content",
+            "grep",
+            "find_files",
+        }
+    ),
 }
 
 

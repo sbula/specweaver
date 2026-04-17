@@ -128,6 +128,7 @@ class ValidateSpecHandler:
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.archetype_resolver import ArchetypeResolver
+        from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
 
         archetype = None
         if project_path:
@@ -151,6 +152,17 @@ class ValidateSpecHandler:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
             )
+
+        cwd_path = project_path or spec_path.parent
+        atom = CodeStructureAtom(cwd=cwd_path)
+        payload_res = atom.run({"intent": "read_file_structure", "path": str(spec_path)})
+
+        ast_payload: dict[str, Any] = {}
+        if payload_res.status.value == "SUCCESS":
+            ast_payload = payload_res.exports
+
+        for step in pipeline.steps:
+            step.params["ast_payload"] = ast_payload
 
         content = spec_path.read_text(encoding="utf-8")
         return execute_validation_pipeline(pipeline, content, spec_path)
@@ -255,7 +267,7 @@ class ValidateCodeHandler:
 
         cwd_path = project_path or code_path.parent
         atom = CodeStructureAtom(cwd=cwd_path)
-        payload_res = atom.run({"intent": "extract_skeleton", "path": str(code_path)})
+        payload_res = atom.run({"intent": "read_file_structure", "path": str(code_path)})
 
         ast_payload: dict[str, Any] = {}
         if payload_res.status.value == "SUCCESS":

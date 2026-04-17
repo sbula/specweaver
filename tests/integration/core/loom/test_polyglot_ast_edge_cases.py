@@ -733,7 +733,10 @@ public class SpringHandler extends BaseFilter implements Handler, Serializable {
     markers = res.exports["markers"]
     assert "SpringHandler" in markers
     assert "RestController" in markers["SpringHandler"]["decorators"]
-    assert "RequestMapping(\"/api\")" in markers["SpringHandler"]["decorators"] or "RequestMapping" in markers["SpringHandler"]["decorators"]
+    assert (
+        'RequestMapping("/api")' in markers["SpringHandler"]["decorators"]
+        or "RequestMapping" in markers["SpringHandler"]["decorators"]
+    )
     assert "BaseFilter" in markers["SpringHandler"]["extends"]
     assert "Handler" in markers["SpringHandler"]["extends"]
     assert "Serializable" in markers["SpringHandler"]["extends"]
@@ -756,7 +759,10 @@ export class NestComponent extends BaseAPI implements IHandler {
     assert res.status.value == "SUCCESS"
     markers = res.exports["markers"]
     assert "NestComponent" in markers
-    assert "Controller('api')" in markers["NestComponent"]["decorators"] or "Controller" in markers["NestComponent"]["decorators"]
+    assert (
+        "Controller('api')" in markers["NestComponent"]["decorators"]
+        or "Controller" in markers["NestComponent"]["decorators"]
+    )
     assert "BaseAPI" in markers["NestComponent"]["extends"]
     assert "IHandler" in markers["NestComponent"]["extends"]
 

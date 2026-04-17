@@ -21,7 +21,6 @@ from specweaver.workflows.scenarios.scenario_models import ScenarioSet
 logger = logging.getLogger(__name__)
 
 
-
 class ScenarioGenerator:
     """Generate structured YAML scenarios from spec + API contract via LLM.
 
@@ -124,7 +123,9 @@ class ScenarioGenerator:
                 logger.warning("ScenarioGenerator: %s (attempt %d)", last_error, attempt)
                 continue
 
-        msg = f"ScenarioGenerator: failed after {self._max_retries} retries. Last error: {last_error}"
+        msg = (
+            f"ScenarioGenerator: failed after {self._max_retries} retries. Last error: {last_error}"
+        )
         logger.error(msg)
         raise ValueError(msg)
 
@@ -213,12 +214,14 @@ class ScenarioGenerator:
         if constitution:
             parts.extend(["## Project Constitution", constitution, ""])
 
-        parts.extend([
-            "",
-            "Respond with a JSON object matching this schema:",
-            '{"spec_path": "...", "contract_path": "...", "scenarios": [...], "reasoning": "..."}',
-            "Each scenario: {name, description, function_under_test, req_id, category, "
-            "preconditions, input_summary, inputs, expected_behavior, expected_output}",
-        ])
+        parts.extend(
+            [
+                "",
+                "Respond with a JSON object matching this schema:",
+                '{"spec_path": "...", "contract_path": "...", "scenarios": [...], "reasoning": "..."}',
+                "Each scenario: {name, description, function_under_test, req_id, category, "
+                "preconditions, input_summary, inputs, expected_behavior, expected_output}",
+            ]
+        )
 
         return "\n".join(parts)

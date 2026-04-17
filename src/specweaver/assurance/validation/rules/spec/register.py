@@ -20,6 +20,7 @@ from .s08_ambiguity import AmbiguityRule
 from .s09_error_path import ErrorPathRule
 from .s10_done_definition import DoneDefinitionRule
 from .s11_terminology import TerminologyRule
+from .s12_archetype_spec_bounds import S12ArchetypeSpecBoundsRule
 
 _reg = get_registry()
 _reg.register("S01", OneSentenceRule, "spec")
@@ -33,3 +34,4 @@ _reg.register("S08", AmbiguityRule, "spec")
 _reg.register("S09", ErrorPathRule, "spec")
 _reg.register("S10", DoneDefinitionRule, "spec")
 _reg.register("S11", TerminologyRule, "spec")
+_reg.register("S12", S12ArchetypeSpecBoundsRule, "spec")

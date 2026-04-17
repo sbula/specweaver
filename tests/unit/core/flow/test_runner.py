@@ -181,8 +181,6 @@ class TestPipelineRunnerSuccess:
         assert result.parent_run_id == parent_id
 
 
-
-
 class TestPipelineRunnerFailure:
     """Tests for failure handling."""
 
