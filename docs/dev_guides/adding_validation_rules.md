@@ -1,6 +1,6 @@
 # Developer Guide: Adding New Validation Rules
 
-SpecWeaver guarantees software specification quality using a native **10-Test Battery**. This battery automatically halts agentic workflow drift before LLM tokens are wasted.
+SpecWeaver guarantees software specification quality using a native **12-Test Battery**. This battery automatically halts agentic workflow drift before LLM tokens are wasted.
 
 This guide explains how to add new rules to SpecWeaver's static pipeline.
 

@@ -111,7 +111,7 @@ python -m pytest -m unit -q   # Run unit tests</code></pre>
   <tr><td><code>pipelines/</code></td><td>YAML pipeline definitions</td></tr>
   <tr><td><code>project/</code></td><td>Project scaffolding, detection, Tach integration (SF-8), and constitution loader</td></tr>
   <tr><td><code>review/</code></td><td>LLM-powered spec and code review</td></tr>
-  <tr><td><code>validation/</code></td><td>Rule-based validation (S01–S11, C01–C09, C12) + YAML sub-pipeline engine</td></tr>
+  <tr><td><code>validation/</code></td><td>Rule-based validation (S01–S12, C01–C09, C12) + YAML sub-pipeline engine</td></tr>
   <tr><td><code>workflows/</code></td><td>L1-L5 domain-driven phases (planning, scenarios, drafting, pipelines)</td></tr>
 </table>
 
@@ -182,7 +182,7 @@ graph TB
   <p>The complete lifecycle from spec authoring to validated code.</p>
   <pre class="mermaid">
 flowchart LR
-    A["📝 Draft Spec<br/>(HITL + LLM)"] --> B["✅ Validate Spec<br/>(S01–S11)"]
+    A["📝 Draft Spec<br/>(HITL + LLM)"] --> B["✅ Validate Spec<br/>(S01–S12)"]
     B --> C["🔍 Review Spec<br/>(LLM Semantic)"]
     C -->|DENIED| A
     C -->|ACCEPTED| P["🧭 Plan Implementation<br/>(Architecture & UI)"]
@@ -518,7 +518,7 @@ flowchart TD
 </div>
 
 <div class="diagram-card">
-  <h3>Spec Validation Rules (S01–S11)</h3>
+  <h3>Spec Validation Rules (S01–S12)</h3>
   <pre class="mermaid">
 flowchart LR
     subgraph "Structure Tests"
@@ -628,7 +628,7 @@ flowchart TD
     end
 
     subgraph "Registry + Rules"
-        REG["RuleRegistry<br/>(built-in S01-S11, C01-C08, custom D01+)"]
+        REG["RuleRegistry<br/>(built-in S01-S12, C01-C08, custom D01+)"]
         RULE["Rule.check() &rarr; RuleResult"]
     end
 
@@ -643,10 +643,10 @@ flowchart TD
   <p>Child pipelines can extend a base, then override params, remove steps, or add new steps at specific positions.</p>
   <pre class="mermaid">
 flowchart LR
-    BASE["validation_spec_default<br/>(11 steps: S01-S11)"] --> FEAT["validation_spec_feature<br/>extends: default<br/>remove: [s04_dependency_dir]<br/>(10 steps)"]
-    BASE --> LIB["validation_spec_library<br/>extends: default<br/>override: s05 thresholds<br/>(11 steps, stricter)"]
-    BASE --> WEB["validation_spec_web_app<br/>extends: default<br/>override: s08 thresholds<br/>(11 steps)"]
-    BASE --> ML["validation_spec_ml_model<br/>extends: default<br/>override: lenient thresholds<br/>(11 steps)"]
+    BASE["validation_spec_default<br/>(12 steps: S01-S12)"] --> FEAT["validation_spec_feature<br/>extends: default<br/>remove: [s04_dependency_dir]<br/>(11 steps)"]
+    BASE --> LIB["validation_spec_library<br/>extends: default<br/>override: s05 thresholds<br/>(12 steps, stricter)"]
+    BASE --> WEB["validation_spec_web_app<br/>extends: default<br/>override: s08 thresholds<br/>(12 steps)"]
+    BASE --> ML["validation_spec_ml_model<br/>extends: default<br/>override: lenient thresholds<br/>(12 steps)"]
   </pre>
 </div>
 

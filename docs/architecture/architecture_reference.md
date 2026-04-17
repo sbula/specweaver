@@ -23,7 +23,7 @@
 ## System Overview
 
 SpecWeaver is a specification-driven development lifecycle tool. It enforces
-spec quality through a 10-test battery and manages AI agents via
+spec quality through a 12-test battery and manages AI agents via
 role-restricted tool interfaces.
 
 ```
@@ -64,7 +64,7 @@ specweaver/                       ← level: system, archetype: orchestrator
 ├── project/                      ← Project discovery + scaffolding
 ├── review/                       ← LLM-based spec/code review
 ├── standards/                    ← Codebase standards auto-discovery
-└── validation/                   ← 10-test spec quality battery
+└── validation/                   ← 12-test spec quality battery
     └── rules/                    ← Rule implementations (spec + code)
 ```
 
@@ -600,9 +600,9 @@ Every pipeline step can have a gate that blocks progression:
 - **Loop-back**: failed review → loops back to draft/generate with feedback
 - **Bounded retries**: `max_retries` prevents infinite loops
 
-### Layer 4: 10-Test Battery (Spec Quality)
+### Layer 4: 12-Test Battery (Spec Quality)
 
-Static validation rules (S01-S11, C01-C09, C12) catch structural and completeness
+Static validation rules (S01-S12, C01-C09, C12) catch structural and completeness
 issues before any LLM is involved:
 
 | Category | Rules | Examples |
