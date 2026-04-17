@@ -1,12 +1,16 @@
-# Phase 6: External Validation
+# Phase 6: External Validation & Benchmarking
 
 > **Status**: Pending
-> **Goal**: SpecWeaver is used on a real project that isn't SpecWeaver itself.
+> **Goal**: SpecWeaver is subjected to mathematical quantitative observation against standardized test suites, and deployed on real external projects.
 
 > [!TIP]
 > **Reference**: [Spec Kit](https://github.com/github/spec-kit)'s workflow (Specify → Plan → Tasks → Implement) is a useful model for structuring the external validation runs. See [ORIGINS.md](../../ORIGINS.md) § Spec Kit for blueprint references.
 
-- [ ] Identify a target project (e.g., the automatic trading system — 20 microservices, multi-tenant, multi-strategy)
-- [ ] Run the full workflow: `sw init` → `sw draft` → `sw check` → `sw implement` → `sw check --level code` → `sw review code`
-- [ ] Document the experience: what worked, what didn't, what's missing
-- [ ] **Milestone**: SpecWeaver is **useful** on real-world projects.
+| Priority | Feature |
+|:---|:---|
+| **6.1** | **Standardized Benchmarking CI (`sw benchmark`)** — Adapt an internal pipeline designed specifically to ingest public `SWE-bench` tickets, generate code, and produce normalized dashboard validation of Attributed Lifecycle Scores regression. |
+| **6.2** | **External Proprietary Validation** — Execute `sw init`, `draft`, and `check` workflows externally outside SpecWeaver's boundary (e.g., orchestrating an external 20-microservice proprietary trading system). |
+
+- [ ] Run the full workflow manually on the Target external project.
+- [ ] Record benchmark outputs against native DEV datasets.
+- [ ] **Milestone**: SpecWeaver is **useful and algorithmically proven** on real-world projects.

@@ -22,6 +22,7 @@
 | **4.8** | Blast radius / locality enforcement | `future_capabilities_reference.md` §16 |
 | **4.9** | Containerized deployment (Podman) | `mvp_feature_definition.md` |
 | **4.10** | **Web UI + server mode** | SpecWeaver as a daemon with REST/WebSocket API and browser-based UI. Includes **per-project pipeline storage** (layer 2): SQLite `pipelines` table, CRUD via `sw pipeline` CLI + REST API. _(See also: [A2UI](https://github.com/google/A2UI) declarative component catalog for agent-generated UI, Phase 3.19 structured output schemas as foundation — ORIGINS.md § A2UI)_ |
+| **4.11** | Multi-Modal Visual Quality Gates (V-Series) | _(new)_ | Expanding the validation engine battery with `V-Series` rules using VLM (Vision LLMs) + Headless Browsers (Playwright) via internal Docker rendering, calculating visual UI drift perfectly against the UI component specifications. |
 
 ---
 
