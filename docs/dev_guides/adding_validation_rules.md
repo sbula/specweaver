@@ -61,5 +61,5 @@ Once your rule is written, you do not hardcode it into an array execution tree. 
 
 ## 4. Methodologies: Regex vs AST
 
-- **Specs**: Text-based boundaries rely on Regex and simplistic NLP chunking schemas.
+- **Specs**: Standard text-based boundaries rely on Regex and simplistic NLP chunking schemas. However, advanced architectural spec validation (such as S12 `S12ArchetypeSpecBoundsRule`) natively uses the AST-driven `CodeStructureAtom` to parse Markdown via tree-sitter, injecting `self.context["structure"]` mapping cleanly.
 - **Code**: Always rely natively on AST or Dependency Injected structures. Do not parse Python/TypeScript code with Regex. For advanced analysis, Validation Rules must strictly rely on the Flow Engine Orchestrator to execute Tree-Sitter (`CodeStructureAtom`) safely inside the Loom abstraction layer, and inject the results into the rule via `self.context` inside the Rule object. See `adding_framework_guide.md` for detailed Archetype DI patterns utilizing `C12ArchetypeCodeBoundsRule`.
