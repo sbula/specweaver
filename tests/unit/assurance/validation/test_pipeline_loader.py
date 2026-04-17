@@ -211,3 +211,44 @@ class TestFrameworksPluginLoading:
         c12_step = pipeline.get_step("c12_archetype_code_bounds")
         assert c12_step is not None
         assert c12_step.params["required_markers"] == ["@RestController"]
+
+    def test_framework_package_missing_graceful_fallback(self):
+        """If the framework package is missing or errors, fallback gracefully to FileNotFoundError."""
+        import importlib
+        from unittest.mock import patch
+
+        orig_files = importlib.resources.files
+
+        def _mock_files(pkg):
+            if pkg == "specweaver.workflows.pipelines.frameworks":
+                raise ModuleNotFoundError("No module named 'specweaver.workflows.pipelines.frameworks'")
+            return orig_files(pkg)
+
+        with (
+            patch("specweaver.assurance.validation.pipeline_loader.importlib.resources.files", side_effect=_mock_files),
+            pytest.raises(FileNotFoundError, match=r"not found\. Searched in: packaged defaults, frameworks")
+        ):
+            # this will fail to find it anywhere
+            load_pipeline_yaml("validation_spec_spring-boot-fantasy")
+
+    def test_framework_iterdir_type_error_fallback(self):
+        """If iterdir() logic errors, fallback gracefully."""
+        import importlib
+        from unittest.mock import patch
+
+        orig_files = importlib.resources.files
+
+        class MockPath:
+            def iterdir(self):
+                raise TypeError("Mock iterdir error")
+
+        def _mock_files(pkg):
+            if pkg == "specweaver.workflows.pipelines.frameworks":
+                return MockPath()
+            return orig_files(pkg)
+
+        with (
+            patch("specweaver.assurance.validation.pipeline_loader.importlib.resources.files", side_effect=_mock_files),
+            pytest.raises(FileNotFoundError, match=r"not found\. Searched in: packaged defaults, frameworks")
+        ):
+            load_pipeline_yaml("validation_spec_spring-boot-fantasy")
