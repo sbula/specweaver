@@ -9,6 +9,7 @@ def test_code_structure_schema_valid() -> None:
     assert "list_symbols" in names
     assert "read_symbol" in names
     assert "read_symbol_body" in names
+    assert "read_unrolled_symbol" in names
 
     # Write Side Intents (SF-2)
     assert "replace_symbol" in names

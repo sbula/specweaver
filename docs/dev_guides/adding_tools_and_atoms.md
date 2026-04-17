@@ -13,7 +13,7 @@ Because of this dual-trust model, capabilities are built as decoupled, parallel 
 ```text
 For the Agent (Untrusted):
 LLM Agent ──▶ Role Interface ──▶ Intent Tool ──▶ Executor (Raw I/O)
-(Note: Complex tools like `CodeStructureTool` may securely encapsulate trusted `Atoms` under the hood to prevent duplicating parsing logic, but they still strictly enforce Role/Folder Grants before delegation.)
+(Note: Complex tools like `CodeStructureTool` may securely encapsulate trusted `Atoms` and logical capabilities like `SchemaEvaluator` under the hood to prevent duplicating parsing logic, but they still strictly enforce Role/Folder Grants before delegation.)
 
 For the Engine (Trusted):
 Flow Engine ──▶ Atom ──▶ Executor (Raw I/O)

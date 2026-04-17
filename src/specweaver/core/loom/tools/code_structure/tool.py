@@ -28,6 +28,7 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
             "read_file_structure",
             "read_symbol",
             "read_symbol_body",
+            "read_unrolled_symbol",
             "list_symbols",
             "replace_symbol",
             "replace_symbol_body",
@@ -40,6 +41,7 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
             "read_file_structure",
             "read_symbol",
             "read_symbol_body",
+            "read_unrolled_symbol",
             "list_symbols",
         }
     ),
@@ -146,6 +148,23 @@ class CodeStructureTool:
 
         res = self._atom.run(
             {"intent": "read_symbol_body", "path": path, "symbol_name": symbol_name}
+        )
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
+
+    def read_unrolled_symbol(self, path: str, symbol_name: str) -> ToolResult:
+        self._require_intent("read_unrolled_symbol")
+        grant_err = self._check_grant(
+            path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
+        )
+        if grant_err:
+            return grant_err
+
+        res = self._atom.run(
+            {"intent": "read_unrolled_symbol", "path": path, "symbol_name": symbol_name}
         )
         return ToolResult(
             status="success" if res.status.value == "SUCCESS" else "error",

@@ -38,6 +38,23 @@ READ_SYMBOL_SCHEMA = ToolDefinition(
     ],
 )
 
+READ_UNROLLED_SYMBOL_SCHEMA = ToolDefinition(
+    name="read_unrolled_symbol",
+    description="Returns the full source code block of a symbol, prepended with a commented explanation translating its macros/annotations directly into runtime behaviors using ecosystem knowledge.",
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="The exact relative path of the target file.",
+        ),
+        ToolParameter(
+            name="symbol_name",
+            type="string",
+            description="The target node class or function name to extract.",
+        ),
+    ],
+)
+
 READ_SYMBOL_BODY_SCHEMA = ToolDefinition(
     name="read_symbol_body",
     description="Returns ONLY the internal `{ ... }` curly brace execution block of a symbol, completely omitting its decorators and original signature.",
@@ -164,6 +181,7 @@ def get_code_structure_schema() -> list[Any]:
         READ_FILE_STRUCTURE_SCHEMA,
         READ_SYMBOL_SCHEMA,
         READ_SYMBOL_BODY_SCHEMA,
+        READ_UNROLLED_SYMBOL_SCHEMA,
         LIST_SYMBOLS_SCHEMA,
         REPLACE_SYMBOL_SCHEMA,
         REPLACE_SYMBOL_BODY_SCHEMA,

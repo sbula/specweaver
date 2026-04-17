@@ -53,6 +53,8 @@ To add a language, say **Go**, you will create a highly isolated submodule insid
    - Implements `ScenarioConverterInterface` to translate JSON/YAML abstract scenarios into `_test.go` parameterized execution blocks.
 6. **`stack_trace_filter.py`**
    - Implements `StackTraceFilterInterface` to strip unhelpful system stack errors, isolating the domain payload emitted from Go native test failures.
+7. **Framework Evaluator Schemas**
+   - Provide declarative YAML maps for popular frameworks in the target language (e.g., Gin/Fiber for Go) to unroll runtime markers into `CodeStructureAtom.read_unrolled_symbol`.
 
 ### B. The Interface Contract
 
@@ -97,6 +99,7 @@ We rigorously separate test boundaries. Do not mix Mock constraints into Live fi
 - [ ] No Regex usage where JSON/SARIF is natively supported.
 - [ ] Language dispatcher mapped appropriately inside `QARunnerAtom` and `QARunnerTool`.
 - [ ] Tree-sitter binaries registered inside `CodeStructureAtom`.
+- [ ] Added default YAML schema for macro/annotation unrolling in `workflows/evaluators/frameworks/<lang>/`.
 - [ ] Unit tests constructed with static parsing fixtures.
 - [ ] Live integration tests built against a dummy project fixture folder.
 

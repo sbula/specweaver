@@ -18,6 +18,7 @@
 | **5.6** | Socratic drafting flow — topology-aware questioning during `sw draft` | Phase A+B (seeds in Phase 2) |
 | **5.7** | **Memory consolidation** — LLM-powered knowledge deduplication | _(new)_ When new knowledge overlaps with existing, LLM decides: keep, update, delete, or insert_new. Prevents infinite knowledge growth. _(Blueprint: CrewAI's `consolidation_threshold` and merge logic — ORIGINS.md § CrewAI)_ |
 | **5.8** | 🔬 **Dynamic routing engine + AI Arbiter** | _(split from original 3.12)_ — Automatic model selection using Attributed Lifecycle Score (ALS). AI-powered fault attribution across multi-model, cross-lifecycle pipelines. **Science fiction today** — depends on persistent knowledge graph (5.1-5.5), labeled training data (5.5a), and solving the credit assignment problem. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md). |
+| **5.9** | **Repository Entropy & Garbage Collection** (Entropy Agent) | _(new)_ | An offline cron-agent utilizing the `FalkorDB` persistent topology graph to mathematically detect and automatically delete completely unreferenced AST nodes/dead code modules across the monolithic repository. |
 
 ---
 

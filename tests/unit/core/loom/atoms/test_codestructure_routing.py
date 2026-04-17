@@ -18,17 +18,17 @@ def test_atom_routing_reads() -> None:
     parser.extract_symbol_body.return_value = "body code"
 
     # read_symbol
-    res = atom._handle_read_symbol(parser, "ignored", "my_func", "read_symbol")
+    res = atom._handle_read_symbol(parser, "ignored", "my_func", "read_symbol", "test.py")
     assert res.status == AtomStatus.SUCCESS
     assert res.exports["symbol"] == "symbol code"
 
     # read_symbol_body
-    res = atom._handle_read_symbol(parser, "ignored", "my_func", "read_symbol_body")
+    res = atom._handle_read_symbol(parser, "ignored", "my_func", "read_symbol_body", "test.py")
     assert res.status == AtomStatus.SUCCESS
     assert res.exports["body"] == "body code"
 
     # invalidate read
-    res = atom._handle_read_symbol(parser, "ignored", "my_func", "unknown")
+    res = atom._handle_read_symbol(parser, "ignored", "my_func", "unknown", "test.py")
     assert res.status == AtomStatus.FAILED
 
 

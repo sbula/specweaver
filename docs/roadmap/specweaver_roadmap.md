@@ -91,7 +91,7 @@ Agents use tools; the flow engine orchestrates atoms and subflows. MVP individua
 
 Take each major capability from the architecture docs, isolate it as a self-contained feature, implement one by one. Each feature is proposed → approved → implemented → tested → validated → merged.
 
-**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API 🔧) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10 (Research Tools ✅) → 3.11 (Auto-Mention ✅) → 3.12 (Telemetry ✅) → 3.13 (Multi-Provider Registry ✅) → 3.14 (Static Routing ✅) → 3.15 (Metadata Injection ✅) → 3.16 (Unified Runner ✅) → 3.17 (Artifact Lineage ✅) → 3.18 (AST Drift Detection ✅) → 3.19 (Polyglot Runner ✅) → 3.20a (Internal Layer Enforcement 🚧) → 3.20b (Dynamic Rulesets ✅) → 3.21+ (Upcoming)
+**Features**: 3.1 (L2 Decomposition ✅) → 3.2 (Constitution ✅) → 3.3 (Domain Profiles ✅) → 3.4 (Custom Rules ✅) → 3.5 (Standards Auto-Discover ✅) → 3.6 (Plan Phase ✅) → 3.7 (REST API 🔧) → 3.8 (Web Dashboard ✅) → 3.9 (Container ✅) → 3.10 (Research Tools ✅) → 3.11 (Auto-Mention ✅) → 3.12 (Telemetry ✅) → 3.13 (Multi-Provider Registry ✅) → 3.14 (Static Routing ✅) → 3.15 (Metadata Injection ✅) → 3.16 (Unified Runner ✅) → 3.17 (Artifact Lineage ✅) → 3.18 (AST Drift Detection ✅) → 3.19 (Polyglot Runner ✅) → 3.20a (Internal Layer Enforcement 🚧) → 3.20b (Dynamic Rulesets ✅) → 3.21+ (Upcoming) → 3.46 (Black Box Ledgers) → 3.47 (Platform Benchmarking)
 
 ---
 
@@ -99,7 +99,7 @@ Take each major capability from the architecture docs, isolate it as a self-cont
 
 Features from `future_capabilities_reference.md` that require significant engineering: symbol index, AST chunking, RAG, tiered access, multi-agent review, conversation summarization, mutation testing, Web UI. Also includes LLM cost analytics sub-features that build on 3.13's telemetry data.
 
-**Features**: 4.1 (Symbol Index) → 4.2 (AST Chunking) → 4.3 (RAG) → 4.4 (Access Rights) → 4.5 (Multi-Agent) → 4.5a (Task-Type Cost Analytics — spending dashboards, model comparison) → 4.5b (Artifact Lineage Graph — merges with 3.17) → 4.5c (Deterministic Friction Detection — diff-based upstream attribution) → 4.5d (Data-Driven Routing Recommendations — suggest model swaps) → 4.6–4.10
+**Features**: 4.1 (Symbol Index) → 4.2 (AST Chunking) → 4.3 (RAG) → 4.4 (Access Rights) → 4.5 (Multi-Agent) → 4.5a (Task-Type Cost Analytics — spending dashboards, model comparison) → 4.5b (Artifact Lineage Graph — merges with 3.17) → 4.5c (Deterministic Friction Detection — diff-based upstream attribution) → 4.5d (Data-Driven Routing Recommendations — suggest model swaps) → 4.6–4.10 → 4.10b (Feedback Dashboards) → 4.11–4.14 (Visual Gates, Security Fuzzing)
 
 ---
 
@@ -107,7 +107,7 @@ Features from `future_capabilities_reference.md` that require significant engine
 
 Persistent domain knowledge system: cross-service impact analysis, SLA-aware spec authoring, automated architectural consistency. Extends the in-memory topology graph (Phase 2) into a persistent, event-driven knowledge graph. Enhanced with hierarchical memory scoping, composite scoring (semantic + recency + importance), and LLM-powered memory consolidation (keep/update/delete/insert_new). _(informed by [CrewAI](https://github.com/crewAIInc/crewAI) memory architecture)_
 
-**Features**: 5.1 (Persistent Graph) → 5.2 (EDKG) → 5.3 (GC) → 5.4 (Hybrid RAG + Composite Scoring) → 5.5 (Provenance) → 5.5a (HITL Root-Cause Tagging — label failures for routing data) → 5.6 (Socratic Drafting) → 5.7 (Memory Consolidation) → 5.8 (🔬 Dynamic Routing + AI Arbiter — ALS scoring, auto model selection)
+**Features**: 5.1 (Persistent Graph) → 5.2 (EDKG) → 5.3 (GC) → 5.4 (Hybrid RAG + Composite Scoring) → 5.5 (Provenance) → 5.5a (HITL Root-Cause Tagging — label failures for routing data) → 5.6 (Socratic Drafting) → 5.7 (Memory Consolidation) → 5.8 (🔬 Dynamic Routing + AI Arbiter — ALS scoring, auto model selection) → 5.9 (Repository GC)
 
 ---
 

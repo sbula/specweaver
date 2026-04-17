@@ -22,7 +22,11 @@
 | **4.8** | Blast radius / locality enforcement | `future_capabilities_reference.md` §16 |
 | **4.9** | Containerized deployment (Podman) | `mvp_feature_definition.md` |
 | **4.10** | **Web UI + server mode** | SpecWeaver as a daemon with REST/WebSocket API and browser-based UI. Includes **per-project pipeline storage** (layer 2): SQLite `pipelines` table, CRUD via `sw pipeline` CLI + REST API. _(See also: [A2UI](https://github.com/google/A2UI) declarative component catalog for agent-generated UI, Phase 3.19 structured output schemas as foundation — ORIGINS.md § A2UI)_ |
+| **4.10b**| Real-Time "Feedback Sensor" Dashboard | _(new)_ | Exposes the internal `PipelineRunner` DAG state transitions and file-diffs as a real-time streaming graph. |
 | **4.11** | Multi-Modal Visual Quality Gates (V-Series) | _(new)_ | Expanding the validation engine battery with `V-Series` rules using VLM (Vision LLMs) + Headless Browsers (Playwright) via internal Docker rendering, calculating visual UI drift perfectly against the UI component specifications. |
+| **4.12** | 'Dark Factory' Compliance Logging | _(new)_ | Integrating with Artifact Lineage to emit immutable, signed ledgers matching Model IDs/Spec Hashes directly to physical Lines of Code for Enterprise regulatory audits. |
+| **4.13** | Tool-Augmented Security Fuzzing Harnesses | _(new)_ | Replaces parameterised scenarios with dynamically written `libFuzzer` logic loops against the generated AST for deep memory safety checks on C++/Rust targets. |
+| **4.14** | LLM-Guided Symbolic Execution | _(new)_ | Using heuristics to actively guide strict symbolic compilers (like KLEE) by aggressively pruning execution trees to natively discover 0-days. |
 
 ---
 

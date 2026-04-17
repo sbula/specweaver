@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class CodeStructureAtom(Atom):
     """Atom for retrieving AST structural bounds from project source code."""
 
-    def __init__(self, file_executor: FileExecutor | None = None, cwd: Path | None = None) -> None:
+    def __init__(self, file_executor: FileExecutor | None = None, cwd: Path | None = None, evaluator_schemas: dict[str, Any] | None = None) -> None:
         """Initialize with a FileExecutor or construct one if cwd is provided."""
         if file_executor:
             self._executor = file_executor
@@ -41,6 +41,7 @@ class CodeStructureAtom(Atom):
             self._executor = FileExecutor(cwd=cwd)
         else:
             raise ValueError("CodeStructureAtom requires either file_executor or cwd")
+        self._evaluator_schemas = evaluator_schemas or {}
 
     def _get_parser(self, path: str) -> CodeStructureInterface | None:
         """Map a file extension to its respective TreeSitter AST parser."""
@@ -95,13 +96,13 @@ class CodeStructureAtom(Atom):
         symbol_name = context.get("symbol_name")
 
         try:
-            if intent in ("read_symbol", "read_symbol_body"):
+            if intent in ("read_symbol", "read_symbol_body", "read_unrolled_symbol"):
                 if not symbol_name:
                     return AtomResult(
                         status=AtomStatus.FAILED,
                         message="Missing 'symbol_name' for symbol extraction.",
                     )
-                return self._handle_read_symbol(parser, code, symbol_name, intent)
+                return self._handle_read_symbol(parser, code, symbol_name, intent, path)
             else:
                 return self._handle_write_symbol(parser, code, context, intent, path, symbol_name)
         except CodeStructureError as err:
@@ -129,6 +130,7 @@ class CodeStructureAtom(Atom):
             "read_file_structure",
             "read_symbol",
             "read_symbol_body",
+            "read_unrolled_symbol",
             "list_symbols",
             "replace_symbol",
             "replace_symbol_body",
@@ -176,7 +178,7 @@ class CodeStructureAtom(Atom):
             return AtomResult(status=AtomStatus.FAILED, message=str(err))
 
     def _handle_read_symbol(
-        self, parser: CodeStructureInterface, code: str, symbol_name: str, intent: str
+        self, parser: CodeStructureInterface, code: str, symbol_name: str, intent: str, path: str
     ) -> AtomResult:
         if intent == "read_symbol":
             symbol_code = parser.extract_symbol(code, symbol_name)
@@ -191,6 +193,39 @@ class CodeStructureAtom(Atom):
                 status=AtomStatus.SUCCESS,
                 message=f"Extracted body of '{symbol_name}'",
                 exports={"body": body_code},
+            )
+        elif intent == "read_unrolled_symbol":
+            symbol_code = parser.extract_symbol(code, symbol_name)
+            all_markers = parser.extract_framework_markers(code)
+            symbol_markers = all_markers.get(symbol_name, {})
+
+            from specweaver.core.loom.commons.language.evaluator import SchemaEvaluator
+            evaluator = SchemaEvaluator(self._evaluator_schemas)
+
+            ext = Path(path).suffix.lower()
+            lang_map = {
+                ".py": "python",
+                ".java": "java",
+                ".kt": "kotlin",
+                ".kts": "kotlin",
+                ".ts": "typescript",
+                ".tsx": "typescript",
+                ".rs": "rust"
+            }
+            language = lang_map.get(ext, "")
+
+            try:
+                explanation = evaluator.evaluate_markers(language, symbol_markers)
+            except Exception as e:
+                return AtomResult(status=AtomStatus.FAILED, message=f"Evaluator error: {e!s}")
+
+            if explanation:
+                symbol_code = f"{explanation}\n{symbol_code}"
+
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Extracted and evaluated unrolled symbol '{symbol_name}'",
+                exports={"symbol": symbol_code},
             )
         return AtomResult(status=AtomStatus.FAILED, message="Invalid read intent")
 
