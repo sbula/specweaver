@@ -153,8 +153,11 @@ class ValidateSpecHandler:
                 pipeline, getattr(settings, "validation", settings)
             )
 
+        from specweaver.workflows.evaluators.loader import load_evaluator_schemas
+
         cwd_path = project_path or spec_path.parent
-        atom = CodeStructureAtom(cwd=cwd_path)
+        schemas = load_evaluator_schemas(project_dir=project_path)
+        atom = CodeStructureAtom(cwd=cwd_path, evaluator_schemas=schemas)
         payload_res = atom.run({"intent": "read_file_structure", "path": str(spec_path)})
 
         ast_payload: dict[str, Any] = {}
@@ -265,8 +268,11 @@ class ValidateCodeHandler:
                 pipeline, getattr(settings, "validation", settings)
             )
 
+        from specweaver.workflows.evaluators.loader import load_evaluator_schemas
+
         cwd_path = project_path or code_path.parent
-        atom = CodeStructureAtom(cwd=cwd_path)
+        schemas = load_evaluator_schemas(project_dir=project_path)
+        atom = CodeStructureAtom(cwd=cwd_path, evaluator_schemas=schemas)
         payload_res = atom.run({"intent": "read_file_structure", "path": str(code_path)})
 
         ast_payload: dict[str, Any] = {}

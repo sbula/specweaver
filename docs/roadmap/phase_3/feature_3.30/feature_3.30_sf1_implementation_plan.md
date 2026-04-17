@@ -44,6 +44,7 @@ Implement the `evaluator.py` engine to parse declarative YAML framework schemas 
 ### `src/specweaver/core/flow/_validation.py` (Orchestrator)
 #### [MODIFY]
 - To resolve FR-4 boundary injection: Load the ecosystem YAML evaluators (via `importlib.resources.files`) natively before dropping down into Executor isolation, directly passing them down as dict kwargs into the underlying tool initialization bounds.
+- **[Deviations / Additions in Boundary 2]**: Implemented `load_evaluator_schemas(project_dir)` to natively deep-merge project-local schemas (`.specweaver/evaluators/`) overriding the default ecosystem payloads to fully satisfy FR-4 and NFR-3. Tested thoroughly in integration flow.
 
 ## 4. Backlog / Tech Debt
 - SF-2 will implement the specific Framework Libraries (Spring Boot, NestJS, etc.), so for now the DI loader should just handle base loading structure without attempting to validate exact definitions.

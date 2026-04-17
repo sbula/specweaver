@@ -159,9 +159,13 @@ class ToolDispatcher:
             from specweaver.core.loom.commons.filesystem.executor import EngineFileExecutor
             from specweaver.core.loom.security import AccessMode, FolderGrant
             from specweaver.core.loom.tools.code_structure.tool import CodeStructureTool
+            from specweaver.workflows.evaluators.loader import load_evaluator_schemas
+
+            project_dir = boundary.roots[0] if boundary.roots else None
+            schemas = load_evaluator_schemas(project_dir=project_dir)
 
             # Atom executes locally reading files relative to project root
-            atom = CodeStructureAtom(EngineFileExecutor(boundary.roots[0]))
+            atom = CodeStructureAtom(EngineFileExecutor(boundary.roots[0]), evaluator_schemas=schemas)
 
             # Reuse exact read-only grant logic from fs
             grants = []
