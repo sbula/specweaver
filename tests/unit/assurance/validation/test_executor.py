@@ -82,6 +82,21 @@ class _CrashRule(Rule):
         raise RuntimeError(msg)
 
 
+class _ContextRule(Rule):
+    @property
+    def rule_id(self) -> str:
+        return "T05"
+
+    @property
+    def name(self) -> str:
+        return "Context Rule"
+
+    def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
+        if self.context.get("marker") == "found":
+            return self._pass("found it in context")
+        return self._fail("not found in context")
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -95,6 +110,7 @@ def test_registry():
     reg.register("T02", _AlwaysFailRule, "spec")
     reg.register("T03", _ThresholdRule, "spec")
     reg.register("T04", _CrashRule, "spec")
+    reg.register("T05", _ContextRule, "spec")
     return reg
 
 
@@ -217,3 +233,16 @@ class TestExecuteValidationPipeline:
         assert "instantiate" in results[0].message.lower() or "T03" in results[0].message
         # Second rule still runs
         assert results[1].status == Status.PASS
+
+    def test_ast_payload_assigned_to_context(self, test_registry):
+        """ast_payload is popped from params and assigned to rule.context safely."""
+        pipeline = ValidationPipeline(
+            name="test",
+            steps=[
+                ValidationStep(name="t05", rule="T05", params={"ast_payload": {"marker": "found"}}),
+            ],
+        )
+        results = execute_validation_pipeline(pipeline, "hello", registry=test_registry)
+        assert len(results) == 1
+        assert results[0].status == Status.PASS
+        assert "found it in context" in results[0].message

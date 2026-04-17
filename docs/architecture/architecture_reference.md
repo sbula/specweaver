@@ -602,14 +602,14 @@ Every pipeline step can have a gate that blocks progression:
 
 ### Layer 4: 10-Test Battery (Spec Quality)
 
-Static validation rules (S01-S11, C01-C09) catch structural and completeness
+Static validation rules (S01-S11, C01-C09, C12) catch structural and completeness
 issues before any LLM is involved:
 
 | Category | Rules | Examples |
 |----------|-------|---------|
 | Structure (S01-S05) | One sentence, single setup, size budget, dependency direction, conjunction count | Detects "god specs" |
 | Completeness (S06-S11) | Weasel words, examples, error paths, done definition, scenarios | Detects ambiguity |
-| Code (C01-C09) | Generated code quality validation | Detects spec deviations |
+| Code (C01-C09, C12) | Generated code quality validation and native framework archetype constraints | Detects spec deviations and abstraction drift |
 
 ### Layer 5: LLM Semantic Review
 

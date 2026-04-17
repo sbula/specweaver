@@ -178,7 +178,7 @@ This generates:
 sw check src/greet_service.py --level code --project ./my-project
 ```
 
-Runs 9 code rules (C01-C09): syntax, tests exist, tests pass, coverage, import direction, no bare except, no orphan TODO, type hints, traceability.
+Runs 10 code rules (C01-C09, C12): syntax, tests exist, tests pass, coverage, import direction, no bare except, no orphan TODO, type hints, traceability, native framework archetype bounds.
 
 ## 9. Review Code Against Spec
 

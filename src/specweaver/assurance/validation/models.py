@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import enum
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -99,6 +99,15 @@ class Rule(ABC):
     """
 
     PARAM_MAP: ClassVar[dict[str, str]] = {}
+
+    @property
+    def context(self) -> dict[str, Any]:
+        """Provides dynamic execution context parameters injected by the runner."""
+        return getattr(self, "_context", {})
+
+    @context.setter
+    def context(self, value: dict[str, Any]) -> None:
+        self._context = value
 
     @property
     @abstractmethod

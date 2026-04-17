@@ -28,56 +28,50 @@ When a pipeline executes, the `ValidateCodeHandler`:
 2. Calls the **CodeStructureAtom** securely inside the Loom sandbox to extract the OS string syntax tree into an agnostic Dictionary (`dict[str, Any]`).
 3. Takes that dictionary and injects it into `step.params["ast_payload"]` for the current pipeline.
 
-## 3. Creating the Custom Framework Validation Rule
+### Step 3a: Bind the Native Rule in the YAML Pipeline Extender
+Because SpecWeaver natively bundles `C12ArchetypeCodeBoundsRule` (`src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py`), you do NOT need to write Python code to check simple structural metadata requirements!
 
-Your Validation Rule simply extends `Rule` and queries the injected dictionary directly.
+The `C12ArchetypeCodeBoundsRule` natively evaluates `self.context.get("framework_markers")` looking for arrays of symbols.
 
-### Step 3a: Create the Rule Python Code
-Inside `src/specweaver/assurance/validation/rules/code/`, build your `C12_FrameworkSpecificBounds.py`:
-
-```python
-from typing import Any
-from specweaver.assurance.validation.models import Rule, RuleResult, RuleStatus
-
-class C12_FrameworkSpecificBounds(Rule):
-    """Verifies framework-specific patterns injected from the AST."""
-    
-    @property
-    def check_id(self) -> str:
-        return "C12_FrameworkSpecificBounds"
-
-    def check(self, target_text: str, /, params: dict[str, Any] | None = None) -> RuleResult:
-        if not params or "ast_payload" not in params or "markers" not in params["ast_payload"]:
-             # Graceful fallback if payload isn't injected.
-             return RuleResult(status=RuleStatus.PASSED, ...)
-
-        markers = params["ast_payload"]["markers"]
-        
-        # Example validation logic reading the dictionary (e.g. checking 'SpringHandler')
-        # Structure is markers[symbol_name]["decorators"] and markers[symbol_name]["extends"]
-        for symbol, data in markers.items():
-            if "RestController" in data.get("decorators", []):
-                return RuleResult(status=RuleStatus.PASSED, ...)
-                
-        return RuleResult(
-            status=RuleStatus.FAILED,
-            findings=["Missing @RestController on primary entrypoint."]
-        )
-```
-
-### Step 3b: Bind the Rule in the YAML Pipeline Extender
-Inside `.specweaver/pipelines/validation/validation_code_spring-boot.yaml`:
+Inside `.specweaver/pipelines/frameworks/java/validation_code_spring-boot.yaml` (or your project-local pipelines config):
 
 ```yaml
 version: "1.0"
 extends: validation_code_default
 steps:
   - id: analyze_framework_bounds
-    type: custom
-    rule_id: C12_FrameworkSpecificBounds
+    type: rule
+    rule_id: C12
     params:
-      # ast_payload will be dynamically injected here by the orchestrator at runtime.
-      strict_mode: true 
+      required_markers: ["RestController", "GetMapping"]
+      forbidden_markers: ["Entity"]
+```
+
+When the orchestrator triggers this pipeline, it automatically calculates the Native AST and binds the `ast_payload` markers dictionary explicitly into `C12ArchetypeCodeBoundsRule.context` for purely mathematical dictionary evaluation!
+
+### Step 3b: Creating Proprietary/Advanced Rules
+If `C12`'s simple inclusion/exclusion `PARAM_MAP` logic isn't complex enough for your proprietary framework, you can subclass `Rule` and read directly from `self.context`:
+
+```python
+from specweaver.assurance.validation.models import Rule, RuleResult, Finding, Severity
+
+class MyEnterpriseRule(Rule):
+    @property
+    def rule_id(self) -> str: return "E01"
+
+    def check(self, target_text: str) -> RuleResult:
+        # 1. Read the parsed AST directly from the mathematical context property
+        markers = self.context.get("framework_markers") or {}
+        
+        # 2. Perform advanced proprietary structural validation mapping
+        findings = []
+        for symbol, block in markers.items():
+            if block.get("extends") == "LegacyBaseController":
+                findings.append(Finding(message="LegacyBaseController forbidden.", severity=Severity.ERROR))
+                
+        if findings:
+            return self._fail("Proprietary framework boundaries breached.", findings)
+        return self._pass("Valid enterprise bounds.")
 ```
 
 ---

@@ -67,6 +67,7 @@ class TestBuiltInRegistration:
         "C07",
         "C08",
         "C09",
+        "C12",
     ]
 
     def test_all_spec_rules_registered(self):
@@ -82,9 +83,9 @@ class TestBuiltInRegistration:
         assert code_ids == self.EXPECTED_CODE_IDS
 
     def test_total_rule_count(self):
-        """Total of 20 rules registered."""
+        """Total of 21 rules registered."""
         reg = _populated_registry()
-        assert len(reg.list_all()) == 20
+        assert len(reg.list_all()) == 21
 
     def test_all_rules_are_rule_subclasses(self):
         """Every registered class is a Rule subclass."""

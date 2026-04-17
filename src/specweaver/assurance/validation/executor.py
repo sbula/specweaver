@@ -166,7 +166,15 @@ def execute_validation_pipeline(
             continue
 
         try:
-            rule = rule_cls(**step.params)
+            # Pop ast_payload immediately so it does not fail constructor kwargs
+            # Rules do not expect it inside their signature, but in rule.context
+            step_params = step.params.copy()
+            ast_payload = step_params.pop("ast_payload", {})
+            rule = rule_cls(**step_params)
+
+            # Formally assign payload to rule boundary
+            rule.context = ast_payload if isinstance(ast_payload, dict) else {}
+
         except Exception as exc:
             logger.exception(
                 "execute_validation_pipeline: failed to instantiate rule '%s' with params %s",

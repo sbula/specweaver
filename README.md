@@ -12,7 +12,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 
 - **Interactive spec drafting** — Co-author specs with an LLM, section by section
 - **Feature-level validation** — Two-level spec model: feature specs (Intent, Value Proposition) and component specs (Purpose, Contract, Protocol, Policy, Boundaries) with kind-aware thresholds
-- **Static validation** — 20 built-in rules (11 spec + 9 code) with configurable thresholds that adapt to spec kind, organized as YAML-defined sub-pipelines with inheritance
+- **Static validation** — 21 built-in rules (11 spec + 10 code) with configurable thresholds that adapt to spec kind, organized as YAML-defined sub-pipelines with inheritance
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with confidence-scored findings
 - **Feature decomposition** — Draft feature specs and rapidly decompose them into component-level work items via nested `fan_out()` pipelines that natively assert structural boundary coverage.
 - **Code generation** — Generate implementation + test files from a validated spec
@@ -236,7 +236,7 @@ docker compose up -d
 | S10 | Done Definition | Verifiable completion criteria exist | — |
 | S11 | Terminology | Inconsistent casing + undefined domain terms | ✅ warn/fail threshold |
 
-### Code Rules (C01–C09)
+### Code Rules (C01–C09, C12)
 
 | Rule | Name | What it checks |
 |---|---|---|
@@ -249,6 +249,7 @@ docker compose up -d
 | C07 | No Orphan TODO | No TODOs without ticket references |
 | C08 | Type Hints | Public functions have type annotations |
 | C09 | Traceability | Checks whether all requirements in the spec have `@trace` tags in testing AST |
+| C12 | Archetype Code Bounds | Ensures Dependency Injected framework markers meet structural YAML constraints |
 
 ## Project Structure
 
@@ -280,8 +281,8 @@ docker compose up -d
 │   ├── project/                # Scaffold, discovery, constitution loader
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
-│   └── validation/             # Rules engine (S01-S11, C01-C09, drift detection)
-├── tests/                      # 4168 tests (unit, integration, E2E)
+│   └── validation/             # Rules engine (S01-S11, C01-C09, C12, drift detection)
+├── tests/                      # 4227 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```
