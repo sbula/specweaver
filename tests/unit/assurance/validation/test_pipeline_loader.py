@@ -183,3 +183,31 @@ class TestMalformedYaml:
         )
         with pytest.raises(TypeError):
             load_pipeline_yaml("validation_spec_default", project_dir=tmp_path)
+
+# ---------------------------------------------------------------------------
+# Load from frameworks directories (Plugins)
+# ---------------------------------------------------------------------------
+
+
+class TestFrameworksPluginLoading:
+    """Test recursive loading of framework pipeline plugins."""
+
+    def test_load_java_spring_boot_spec(self):
+        """Loads validation_spec_spring-boot correctly."""
+        pipeline = load_pipeline_yaml("validation_spec_spring-boot")
+        assert pipeline.name == "validation_spec_spring-boot"
+        # Should have extended default (+1 rule = 13 steps if default is 12)
+        assert len(pipeline.steps) > 0 # Depends on default
+
+        # Verify the S12 boundary exists
+        s12_step = pipeline.get_step("s12_archetype_spec_bounds")
+        assert s12_step is not None
+        assert s12_step.params["required_headers"] == ["1. Purpose", "2. Boundaries"]
+
+    def test_load_java_spring_boot_code(self):
+        """Loads validation_code_spring-boot correctly."""
+        pipeline = load_pipeline_yaml("validation_code_spring-boot")
+        assert pipeline.name == "validation_code_spring-boot"
+        c12_step = pipeline.get_step("c12_archetype_code_bounds")
+        assert c12_step is not None
+        assert c12_step.params["required_markers"] == ["@RestController"]

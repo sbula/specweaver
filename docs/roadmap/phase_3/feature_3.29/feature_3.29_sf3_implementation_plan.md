@@ -53,13 +53,13 @@ Implement the `C12` and `S12` generic Archetype validation rules. To maintain Tr
 - Register `S12`.
 
 ### `src/specweaver/assurance/validation/pipeline_loader.py`
-#### [MODIFY] `_load_raw_yaml`
+#### [MODIFY] `_load_raw_yaml` ✓
 - Incorporate `importlib.resources.files("specweaver.workflows.pipelines.frameworks").iterdir()` searching mechanisms cleanly extending `ArchetypeResolver` parameters to natively fall back on plugin libraries.
 
 ### `src/specweaver/workflows/pipelines/frameworks/java/`
-#### [NEW] `validation_code_spring-boot.yaml`
+#### [NEW] `validation_code_spring-boot.yaml` ✓
 - Base Native configuration logic bounding Spring `@RestController` constraints across `C12`.
-#### [NEW] `validation_spec_spring-boot.yaml`
+#### [NEW] `validation_spec_spring-boot.yaml` ✓
 - Base Native configuration logic bounding Spec.md architectural formatting blocks.
 
 ## 4. Backlog / Tech Debt

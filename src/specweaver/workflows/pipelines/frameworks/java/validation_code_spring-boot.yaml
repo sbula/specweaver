@@ -1,0 +1,10 @@
+name: validation_code_spring-boot
+extends: validation_code_default
+description: "Spring Boot archetype code logic bounds"
+version: "1.0"
+add:
+  - name: c12_archetype_code_bounds
+    rule: C12
+    params:
+      required_markers: ["@RestController"]
+    position: end

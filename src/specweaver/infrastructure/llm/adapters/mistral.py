@@ -49,7 +49,7 @@ class MistralAdapter(LLMAdapter):
 
     def _get_client(self) -> Any:
         if self._client is None:
-            from mistralai import Mistral  # type: ignore
+            from mistralai import Mistral
 
             self._client = Mistral(api_key=self._api_key)
         return self._client
@@ -58,7 +58,7 @@ class MistralAdapter(LLMAdapter):
         return bool(self._api_key)
 
     def _handle_error(self, e: Exception) -> None:
-        from mistralai.models import SDKError  # type: ignore
+        from mistralai.models import SDKError
 
         if isinstance(e, SDKError):
             if e.status_code == 401:

@@ -19,7 +19,7 @@ from specweaver.workspace.project.scaffold import scaffold_project
 from specweaver.workspace.project.tach_sync import sync_tach_toml
 
 if TYPE_CHECKING:
-    from specweaver.assurance.graph.inference import ContextInferrer  # type: ignore[import-untyped]
+    from specweaver.assurance.graph.inference import ContextInferrer
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,10 @@
+name: validation_spec_spring-boot
+extends: validation_spec_default
+description: "Spring Boot archetype specification logic bounds"
+version: "1.0"
+add:
+  - name: s12_archetype_spec_bounds
+    rule: S12
+    params:
+      required_headers: ["1. Purpose", "2. Boundaries"]
+    position: end

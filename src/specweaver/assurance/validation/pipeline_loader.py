@@ -87,13 +87,27 @@ def _load_raw_yaml(
     try:
         files = importlib.resources.files("specweaver.workflows.pipelines")
         resource = files.joinpath(f"{name}.yaml")
-        text = resource.read_text(encoding="utf-8")
-        logger.debug("Loading pipeline '%s' from package", name)
-        return cast("dict[str, Any]", _yaml.load(io.StringIO(text)))
+        if resource.is_file():
+            text = resource.read_text(encoding="utf-8")
+            logger.debug("Loading pipeline '%s' from package", name)
+            return cast("dict[str, Any]", _yaml.load(io.StringIO(text)))
     except (FileNotFoundError, ModuleNotFoundError, TypeError):
         pass
 
-    msg = f"Validation pipeline '{name}' not found. Searched in: packaged defaults"
+    # 3. Framework Plugins
+    try:
+        frameworks_dir = importlib.resources.files("specweaver.workflows.pipelines.frameworks")
+        for framework_pkg in frameworks_dir.iterdir():
+            if framework_pkg.is_dir() and framework_pkg.name != "__pycache__":
+                resource = framework_pkg.joinpath(f"{name}.yaml")
+                if resource.is_file():
+                    text = resource.read_text(encoding="utf-8")
+                    logger.debug("Loading pipeline '%s' from framework %s", name, framework_pkg.name)
+                    return cast("dict[str, Any]", _yaml.load(io.StringIO(text)))
+    except (FileNotFoundError, ModuleNotFoundError, TypeError):
+        pass
+
+    msg = f"Validation pipeline '{name}' not found. Searched in: packaged defaults, frameworks"
     if project_dir:
         msg += f", {project_dir / '.specweaver' / 'pipelines'}"
     raise FileNotFoundError(msg)

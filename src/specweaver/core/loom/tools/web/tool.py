@@ -219,7 +219,7 @@ def _strip_html(html: str) -> str:
     Uses html2text if available, falls back to regex.
     """
     try:
-        import html2text  # type: ignore[import-not-found]
+        import html2text
 
         h = html2text.HTML2Text()
         h.ignore_links = False
