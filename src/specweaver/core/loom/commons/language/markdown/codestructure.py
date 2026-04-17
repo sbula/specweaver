@@ -38,12 +38,12 @@ class MarkdownCodeStructure(CodeStructureInterface):
         cursor = QueryCursor(query)
         captures = cursor.captures(tree.root_node)
 
-        skeleton = {"h1": [], "h2": [], "h3": []}
+        skeleton: dict[str, list[str]] = {"h1": [], "h2": [], "h3": []}
 
         for node_type in ["h1", "h2", "h3"]:
             if node_type in captures:
                 for node in captures[node_type]:
-                    header_text = node.text.decode("utf-8").strip()
+                    header_text = node.text.decode("utf-8").strip() if node.text else ""
                     skeleton[node_type].append(header_text)
 
         return json.dumps(skeleton)

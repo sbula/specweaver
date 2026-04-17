@@ -537,11 +537,12 @@ flowchart LR
     end
     subgraph "Consistency"
         S11["S11 Terminology<br/>Consistent terms?"]
+        S12["S12 Archetype Bounds<br/>Structurally valid?"]
     end
 
     SPEC["spec.md"] --> S01 & S02 & S03 & S04 & S05
     SPEC --> S06 & S07 & S08 & S09 & S10
-    SPEC --> S11
+    SPEC --> S11 & S12
   </pre>
   <p style="margin-top:.5rem;color:var(--muted);"><strong>Kind-aware behaviour:</strong> S01 looks for <code>## Intent</code> (feature) or <code>## 1. Purpose</code> (component). S03 switches between external-reference and abstraction-leak mode. S04 is skipped for feature specs. S05/S08 use lenient thresholds for features.</p>
 </div>
@@ -564,6 +565,7 @@ flowchart LR
         C07["C07 No Orphan TODO<br/>No untracked TODOs"]
         C08["C08 Type Hints<br/>Functions annotated"]
         C09["C09 Method Drift<br/>AST Signature Match (SF-1)"]
+        C12["C12 Archetype Bounds<br/>YAML Constraints Match"]
     end
 
     CODE["module.py"] --> C01 & C02 & C05

@@ -49,7 +49,7 @@ This component bounded safely.
     try:
         skeleton = json.loads(res.exports["structure"])
     except json.JSONDecodeError:
-        assert False, "Markdown skeleton should be returned as JSON formatted string"
+        raise AssertionError("Markdown skeleton should be returned as JSON formatted string") from None
 
     assert skeleton["h1"] == ["Main Title"]
     assert "1. Purpose" in skeleton["h2"]
@@ -64,12 +64,12 @@ def test_markdown_unsupported_symbol_extraction() -> None:
 
     atom = MarkdownCodeStructure()
     with pytest.raises(
-        CodeStructureError, match="Markdown extraction logic for symbols is not yet implemented."
+        CodeStructureError, match=r"Markdown extraction logic for symbols is not yet implemented\."
     ):
         atom.extract_symbol("# h1", "symbol")
 
     with pytest.raises(
-        CodeStructureError, match="Markdown extraction logic for symbols is not yet implemented."
+        CodeStructureError, match=r"Markdown extraction logic for symbols is not yet implemented\."
     ):
         atom.extract_symbol_body("# h1", "symbol")
 
@@ -81,16 +81,16 @@ def test_markdown_unsupported_mutators() -> None:
     from specweaver.core.loom.commons.language.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
-    with pytest.raises(CodeStructureError, match="Markdown mutators not implemented."):
+    with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
         atom.replace_symbol("# h1", "sym", "foo")
 
-    with pytest.raises(CodeStructureError, match="Markdown mutators not implemented."):
+    with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
         atom.replace_symbol_body("# h1", "sym", "foo")
 
-    with pytest.raises(CodeStructureError, match="Markdown mutators not implemented."):
+    with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
         atom.delete_symbol("# h1", "sym")
 
-    with pytest.raises(CodeStructureError, match="Markdown mutators not implemented."):
+    with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
         atom.add_symbol("# h1", "target", "foo")
 
 

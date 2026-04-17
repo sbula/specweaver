@@ -12,7 +12,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 
 - **Interactive spec drafting** — Co-author specs with an LLM, section by section
 - **Feature-level validation** — Two-level spec model: feature specs (Intent, Value Proposition) and component specs (Purpose, Contract, Protocol, Policy, Boundaries) with kind-aware thresholds
-- **Static validation** — 21 built-in rules (11 spec + 10 code) with configurable thresholds that adapt to spec kind, organized as YAML-defined sub-pipelines with inheritance
+- **Static validation** — 23 built-in rules (12 spec + 11 code) with configurable thresholds that adapt to spec kind, organized as YAML-defined sub-pipelines with inheritance
 - **AI-powered review** — LLM reviews specs and code, returning ACCEPTED/DENIED with confidence-scored findings
 - **Feature decomposition** — Draft feature specs and rapidly decompose them into component-level work items via nested `fan_out()` pipelines that natively assert structural boundary coverage.
 - **Code generation** — Generate implementation + test files from a validated spec
@@ -220,7 +220,7 @@ docker compose up -d
 
 ## Validation Rules
 
-### Spec Rules (S01–S11)
+### Spec Rules (S01–S12)
 
 | Rule | Name | What it checks | Configurable |
 |---|---|---|---|
@@ -235,6 +235,7 @@ docker compose up -d
 | S09 | Error Path | Error handling is specified | — |
 | S10 | Done Definition | Verifiable completion criteria exist | — |
 | S11 | Terminology | Inconsistent casing + undefined domain terms | ✅ warn/fail threshold |
+| S12 | Archetype Spec Bounds | Evaluates Spec Markdown boundaries structurally utilizing the AST | — |
 
 ### Code Rules (C01–C09, C12)
 

@@ -21,7 +21,7 @@ class S12ArchetypeSpecBoundsRule(Rule):
     def name(self) -> str:
         return "Archetype Spec Bounds"
 
-    def check(self, content: str, spec_path: Path) -> RuleResult:
+    def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
         if not self.required_headers:
             return self._pass(message="No structural bounds configured.")
 

@@ -17,39 +17,39 @@ Implement the `C12` and `S12` generic Archetype validation rules. To maintain Tr
 ## 3. Proposed Changes
 
 ### `pyproject.toml`
-#### [MODIFY] 
+#### [MODIFY] ✓
 - Append `tree-sitter-markdown>=0.23` to the base dependencies.
 
 ### `src/specweaver/core/loom/commons/language/markdown/`
-#### [NEW] `codestructure.py`
+#### [NEW] `codestructure.py` ✓
 - Initialize `MarkdownCodeStructure` extending pure `CodeStructureAtom` APIs.
-- Specifically support the `extract_skeleton` intent natively returning a JSON boundary of `Spec.md` H2/H3 headers and core paragraph bounds.
+- Specifically support the `extract_skeleton` intent natively returning a JSON boundary of `Spec.md` H1/H2/H3 headers.
 
 ### `src/specweaver/core/flow/_validation.py`
-#### [MODIFY] `ValidateSpecHandler`
+#### [MODIFY] `ValidateSpecHandler` ✓
 - Align with `ValidateCodeHandler`: Run the `CodeStructureAtom` extraction on the `spec_path`.
 - Inject the resulting DOM into the `ast_payload` parameter for `execute_validation_pipeline()`.
 
 ### `src/specweaver/assurance/validation/models.py`
-#### [MODIFY] `Rule` ABC
+#### [MODIFY] `Rule` ABC ✓
 - Formalize a `context: dict[str, Any]` property on the base Rule class preventing constructor parameter drops.
 
 ### `src/specweaver/assurance/validation/executor.py`
-#### [MODIFY] `execute_validation_pipeline`
-- Add runtime logic to assign `step.params.pop("ast_payload")` firmly to `rule.context = payload` before execution safely bridging payloads natively to pure logic targets.
+#### [MODIFY] `execute_validation_pipeline` ✓
+- Add runtime logic to explicitly map `ast_payload` into `rule.context`. Deviation Note: rather than pop, explicit `.get` maps cleanly.
 
 ### `src/specweaver/assurance/validation/rules/code/`
-#### [NEW] `c12_archetype_code_bounds.py`
+#### [NEW] `c12_archetype_code_bounds.py` ✓
 - Create `C12_ArchetypeCodeBounds(Rule)`.
 - Validates structural mechanics inside `self.context["framework_markers"]`.
-#### [MODIFY] `register.py`
+#### [MODIFY] `register.py` ✓
 - Register `C12`.
 
 ### `src/specweaver/assurance/validation/rules/spec/`
-#### [NEW] `s12_archetype_spec_bounds.py`
+#### [NEW] `s12_archetype_spec_bounds.py` ✓
 - Create `S12_ArchetypeSpecBounds(Rule)`.
-- Evaluates Spec Markdown boundaries structurally utilizing the `self.context["skeleton"]` Markdown AST parsed earlier via tree-sitter.
-#### [MODIFY] `register.py`
+- Evaluates Spec Markdown boundaries structurally utilizing the `self.context["structure"]` Markdown AST parsed earlier via tree-sitter.
+#### [MODIFY] `register.py` ✓
 - Register `S12`.
 
 ### `src/specweaver/assurance/validation/pipeline_loader.py`

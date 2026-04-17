@@ -75,13 +75,13 @@ class TestDefaultSpecPipeline:
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         assert pipeline.name == "validation_spec_default"
-        assert len(pipeline.steps) == 11
+        assert len(pipeline.steps) == 12
 
         spec_file = tmp_path / "greeter_spec.md"
         spec_file.write_text(_GOOD_SPEC, encoding="utf-8")
 
         results = execute_validation_pipeline(pipeline, _GOOD_SPEC, spec_file)
-        assert len(results) == 11
+        assert len(results) == 12
 
         rule_ids = [r.rule_id for r in results]
         assert "S01" in rule_ids
@@ -93,9 +93,9 @@ class TestDefaultSpecPipeline:
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         rule_ids = [step.rule for step in pipeline.steps]
-        # First step is S01 (cheapest), last is S07 (most expensive)
+        # First step is S01 (cheapest), last is S12 (most expensive)
         assert rule_ids[0] == "S01"
-        assert rule_ids[-1] == "S07"
+        assert rule_ids[-1] == "S12"
 
     def test_default_pipeline_params_applied(self) -> None:
         """Pipeline step params are correctly loaded from YAML."""
@@ -129,7 +129,7 @@ class TestFeatureSpecPipeline:
 
         rule_ids = [step.rule for step in pipeline.steps]
         assert "S04" not in rule_ids
-        assert len(pipeline.steps) == 10  # 11 - 1 removed
+        assert len(pipeline.steps) == 11  # 12 - 1 removed
 
     def test_feature_pipeline_inherits_params(self) -> None:
         """Feature pipeline inherits params from the default pipeline."""
@@ -141,11 +141,11 @@ class TestFeatureSpecPipeline:
         assert s01_step.params["warn_conjunctions"] == 1
         assert s01_step.params["max_h2"] == 8
 
-    def test_feature_pipeline_execute_produces_10_results(
+    def test_feature_pipeline_execute_produces_11_results(
         self,
         tmp_path: Path,
     ) -> None:
-        """Feature pipeline runs 10 rules (no S04)."""
+        """Feature pipeline runs 11 rules (no S04)."""
         from specweaver.assurance.validation.executor import execute_validation_pipeline
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 
@@ -154,7 +154,7 @@ class TestFeatureSpecPipeline:
         spec_file.write_text(_GOOD_SPEC, encoding="utf-8")
 
         results = execute_validation_pipeline(pipeline, _GOOD_SPEC, spec_file)
-        assert len(results) == 10
+        assert len(results) == 11
         assert all(r.rule_id != "S04" for r in results)
 
     def test_default_vs_feature_s04_difference(self, tmp_path: Path) -> None:
@@ -291,7 +291,7 @@ class TestApplySettingsIntegration:
 
         results = execute_validation_pipeline(modified, _GOOD_SPEC, spec_file)
         assert all(r.rule_id != "S04" for r in results)
-        assert len(results) == 10  # 11 - S04
+        assert len(results) == 11  # 12 - S04
 
     def test_override_for_rule_not_in_pipeline(self) -> None:
         """Override for a rule not in the pipeline is silently ignored (#2)."""
@@ -455,7 +455,7 @@ class TestHandlerSubPipelineWiring:
         spec_file.write_text(_GOOD_SPEC, encoding="utf-8")
 
         results = handler._run_validation(spec_file, settings=None)
-        assert len(results) == 11
+        assert len(results) == 12
         rule_ids = [r.rule_id for r in results]
         assert "S04" in rule_ids
 
@@ -472,6 +472,6 @@ class TestHandlerSubPipelineWiring:
         spec_file.write_text(_GOOD_SPEC, encoding="utf-8")
 
         results = handler._run_validation(spec_file, settings=None, kind_str="feature")
-        assert len(results) == 10
+        assert len(results) == 11
         rule_ids = [r.rule_id for r in results]
         assert "S04" not in rule_ids
