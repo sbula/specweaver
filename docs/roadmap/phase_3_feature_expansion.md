@@ -63,7 +63,7 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.36** | Smart scan exclusions (tiered) | _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore` |
 | **3.37** | File watcher (`sw watch`) | _(inspired by PasteMax)_ | Auto-re-validate specs on disk change; DX polish for iterative authoring |
 | **3.38** ⏸ | Pipeline visualization (`sw graph`) | _(deferred)_ | Auto-generate Mermaid diagrams from pipeline YAML definitions. **Postponed** — most valuable after router logic added. |
-| **3.39** | Symbolic Math Validation | _(new)_ | Specialized rules to formally verify mathematical/ML calculations (e.g., FinBERT, trading algorithms) generated in execution code. |
+| **3.39** | Symbolic Math Validation (Optional Plugin) | _(new)_ | **Plugin Architecture**: Specialized domain rules (like formal verification of mathematical/ML calculations) must be engineered as dynamically loaded, optional plugins rather than blooming the core schema pipeline. |
 | **3.40** | External Context Providers | _(new)_ | Arbitrary script injections (e.g., `dump_db_schema.py`) via `context/providers.py` to pipe live environment schema (like a 900-table DB) into LLM prompts without polluting the core. |
 | **3.40b** | **Native CLI Action Nodes** | _(inspired by Archon)_ | Augments 3.40 to introduce declarative `action: bash` pipeline steps. Mandates that all referenced hooks physically reside in the `FolderGrant`-protected `.specweaver/scripts/` directory to prevent Agent RCE. Pipes deterministic `stdout` cleanly into downstream pipeline states, enabling robust terminal orchestration between AI loops. |
 | **3.41** | Industry Standard Bridges | _(new)_ | Adapters to interface seamlessly with massive open-source protocols: Pact.io (Consumer contract testing), Glean (Internal Fact Graphs), and ArchCodex (Drift Prevention). |
@@ -77,6 +77,14 @@ Order will be based on value and dependencies. Likely sequence:
 The full lifecycle is orchestrated by `/feature`. Individual stages can be invoked
 standalone for targeted work. The Design Document's Progress Tracker is the single
 source of truth for what is done and what remains across all sessions.
+
+### Pre-Implementation Re-evaluation (Mandatory)
+Before beginning **any** new feature on the roadmap, the agent must explicitly re-evaluate:
+- **What is already implemented?** (Does a recent subsystem already solve 80% of this?)
+- **What to reuse vs refactor?** (Can we leverage existing `Atoms`, or do we need to split generic logic?)
+- **Already used imports:** (Check existing dependencies to prevent redundant libraries/tool bloat).
+- **Architectural fit:** (Does this violate Tach bounds or the Execution Sandbox layers?)
+- **Still needed / ROI:** (Is this feature currently worth the token cost/complexity, or can it be deferred?)
 
 ### Full lifecycle (recommended)
 ```
