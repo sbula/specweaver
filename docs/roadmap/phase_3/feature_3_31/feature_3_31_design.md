@@ -112,13 +112,13 @@ Topological sort.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | ProtocolSchemaInterface & YAML Parsers | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | gRPC Protobuf Parser | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-2 | gRPC Protobuf Parser | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Core Flow Engine Alignment (Atom/Tool) | SF-1, SF-2 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-4 | Contract Drift Validation Rules | SF-3 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Committed ✅. All SF-1 pre-commit gates closed.
-**Next step**: Run `/dev docs/roadmap/phase_3/feature_3_31/feature_3_31_sf2_implementation_plan.md`
+**Current status**: SF-2 Committed ✅. All SF-1 and SF-2 native adapters completed.
+**Next step**: Run `/dev docs/roadmap/phase_3/feature_3_31/feature_3_31_sf3_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
