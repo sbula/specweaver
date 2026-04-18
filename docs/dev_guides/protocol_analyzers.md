@@ -5,6 +5,7 @@ SpecWeaver utilizes a purely native, zero-compilation protocol parsing layer loc
 Currently supported out of the box:
 - **OpenAPI 3.x**: Extracts `paths` and `components.schemas`.
 - **AsyncAPI 3.x**: Extracts `channels` and `components.messages`.
+- **gRPC (.proto)**: Extracts `service`/`rpc` into equivalent paths, and `message` payloads natively via `proto-schema-parser`.
 
 ## Architectural Constraints
 

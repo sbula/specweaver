@@ -28,6 +28,7 @@ dependencies = [
     "tree-sitter-markdown>=0.3.0",
     "junitparser>=3.1.2",
     "sarif-tools>=1.0.0",
+    "proto-schema-parser>=0.5.0",
 ]
 
 [project.scripts]
