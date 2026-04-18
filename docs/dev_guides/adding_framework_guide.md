@@ -19,6 +19,31 @@ consumes: ["database/"]
 
 The Orchestrator (`flow/`) parses this string via `ArchetypeResolver` and automatically triggers the correct Validation Pipeline extension (e.g., `validation_code_spring-boot.yaml`).
 
+## 1b. Defining Framework Schema Evaluators (Macro Unrolling)
+
+When relying on polyglot agents, AI LLMs struggle to understand abstract macros or annotations like `@RestController`. Instead of starting heavy compilers to evaluate these decorators, SpecWeaver features a **LSP-Bypass Engine** which mathematically "unrolls" decorators structurally using YAML abstractions. 
+
+Whenever you add a new Framework Archetype, you **must** supply a matching flat YAML configuration in `src/specweaver/workflows/evaluators/frameworks/<archetype>.yaml`.
+
+For example, to unroll `spring-boot`, create `src/specweaver/workflows/evaluators/frameworks/spring-boot.yaml`:
+
+```yaml
+metadata:
+  # This mathematically ensures if an LLM hallucinates a node.js syntax into Java, it automatically drops the evaluation
+  supported_languages: ["java", "kotlin"] 
+
+evaluate:
+  annotations:
+    RestController:
+      type: "class"
+      unroll: "Provides HTTP JSON Response APIs routing automatically without explicit ResponseBody bindings."
+    GetMapping:
+      type: "method"
+      unroll: "HTTP GET Request Boundary endpoint bound to >>{0}<<"
+```
+
+The system recursively evaluates these YAML files with a rigid depth protection (Max Depth 5), enabling agents querying the `CodeStructureTool.read_unrolled_symbol` to understand exact runtime behaviors deterministically within 5 milliseconds instead of 5,000 milliseconds.
+
 ## 2. Rule Execution & Dependency Injection
 
 You **must not** attempt to parse the framework AST inside the custom validation rule. The Engine will do it for you mathematically.
