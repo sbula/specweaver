@@ -35,5 +35,13 @@
 ### Feature 3.27: Multi-Spec Pipeline Fan-Out
 - **Deferred Enhancements:** (Refer to `feature_3.27_sf1_implementation_plan.md` and `sf2`).
 
+## Future Architecture (Rust PyO3 Migrations)
+
+To mathematically unlock `10x-50x` performance scaling and guarantee absolute memory-safe LLM sandboxing without sacrificing the massive iteration velocity of our Python/Pydantic agent logic, the following three core modules are targeted for isolated Rust `PyO3` extensions (Strangler Fig pattern):
+
+1. **Polyglot AST Skeleton Extractor & Macro Evaluator:** Rewrite the `tree-sitter` extraction engine and `context.yaml` topological boundary mathematics natively in Rust (using `Rayon` for C-level concurrency). This will prevent the Python GIL from bottlenecking massive monorepo component scans prior to agent prompt ingestion.
+2. **Git Worktree Bouncer Sandbox (Feature 3.26):** Replace the OS-level `subprocess.run(["git"])` Python diff-striping mechanics with native Rust `libgit2` C-bindings. This physically secures the LLM dictator access boundaries inside isolated memory domains, preventing hallucinatory filesystem race conditions bypassing the Sandbox.
+3. **Static Validation Rule Pipelines:** Rewrite regex-heavy mathematical validation tasks (e.g., Markdown cross-reference crawling for *S04 Dependency* rules, semantic weasel word scanning for *S08 Ambiguity* rules) into compiled Rust engine cores to instantly evaluate multi-thousand line specs.
+
 ---
 *(Note: As we proceed, agents should explicitly append explicitly bounded Tech Debt into this document).*
