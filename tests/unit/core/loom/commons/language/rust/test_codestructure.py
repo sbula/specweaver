@@ -188,3 +188,16 @@ def test_extract_framework_markers_empty(parser: RustCodeStructure) -> None:
     code = "struct Simple {}"
     markers = parser.extract_framework_markers(code)
     assert markers == {"Simple": {"decorators": [], "extends": []}}
+
+
+def test_list_symbols_decorator_filter(parser: RustCodeStructure) -> None:
+    code = """
+#[actix_web::get("/api")]
+pub struct MyController;
+
+pub struct OtherController;
+"""
+    symbols = parser.list_symbols(code, decorator_filter="actix_web")
+    assert "MyController" in symbols
+    assert "OtherController" not in symbols
+

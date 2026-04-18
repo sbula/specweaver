@@ -185,3 +185,20 @@ def test_extract_framework_markers_empty(parser: JavaCodeStructure) -> None:
     code = "public class Simple {}"
     markers = parser.extract_framework_markers(code)
     assert markers == {"Simple": {"decorators": [], "extends": []}}
+
+
+def test_list_symbols_decorator_filter(parser: JavaCodeStructure) -> None:
+    code = """
+@RestController
+public class MyController {
+    public void myMethod() { }
+}
+
+public class OtherController {
+    public void otherMethod() { }
+}
+"""
+    symbols = parser.list_symbols(code, decorator_filter="RestController")
+    assert "MyController" in symbols
+    assert "OtherController" not in symbols
+

@@ -108,7 +108,7 @@ class CodeStructureTool:
             data=res.exports,
         )
 
-    def list_symbols(self, path: str, visibility: list[str] | None = None) -> ToolResult:
+    def list_symbols(self, path: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> ToolResult:
         self._require_intent("list_symbols")
         grant_err = self._check_grant(
             path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
@@ -116,7 +116,7 @@ class CodeStructureTool:
         if grant_err:
             return grant_err
 
-        res = self._atom.run({"intent": "list_symbols", "path": path, "visibility": visibility})
+        res = self._atom.run({"intent": "list_symbols", "path": path, "visibility": visibility, "decorator_filter": decorator_filter})
         return ToolResult(
             status="success" if res.status.value == "SUCCESS" else "error",
             message=res.message,

@@ -105,7 +105,8 @@ class CodeStructureAtom(Atom):
     ) -> AtomResult:
         try:
             visibility = context.get("visibility")
-            symbols = parser.list_symbols(code, visibility=visibility)
+            decorator_filter = context.get("decorator_filter")
+            symbols = parser.list_symbols(code, visibility=visibility, decorator_filter=decorator_filter)
             return AtomResult(
                 status=AtomStatus.SUCCESS,
                 message=f"Listed symbols for {path}",

@@ -87,6 +87,12 @@ LIST_SYMBOLS_SCHEMA = ToolDefinition(
             description="Optional comma-separated list to filter extraction strictly by visibility boundaries (e.g. 'public').",
             required=False,
         ),
+        ToolParameter(
+            name="decorator_filter",
+            type="string",
+            description="Optionally filter symbols to only return those possessing a specific framework decorator/annotation (e.g., 'PreAuthorize', 'RestController').",
+            required=False,
+        ),
     ],
 )
 

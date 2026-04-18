@@ -170,3 +170,20 @@ def test_extract_framework_markers_empty(parser: KotlinCodeStructure) -> None:
     code = "class Simple {}"
     markers = parser.extract_framework_markers(code)
     assert markers == {"Simple": {"decorators": [], "extends": []}}
+
+
+def test_list_symbols_decorator_filter(parser: KotlinCodeStructure) -> None:
+    code = """
+@RestController
+class MyController {
+    fun myMethod() { }
+}
+
+class OtherController {
+    fun otherMethod() { }
+}
+"""
+    symbols = parser.list_symbols(code, decorator_filter="RestController")
+    assert "MyController" in symbols
+    assert "OtherController" not in symbols
+

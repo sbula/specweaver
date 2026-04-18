@@ -165,3 +165,18 @@ def test_extract_framework_markers_empty(parser: PythonCodeStructure) -> None:
     code = "def simple(): pass"
     markers = parser.extract_framework_markers(code)
     assert markers == {"simple": {"decorators": []}}
+
+
+def test_list_symbols_decorator_filter(parser: PythonCodeStructure) -> None:
+    code = """
+@app.route('/api')
+class MyController:
+    pass
+
+class OtherController:
+    pass
+"""
+    symbols = parser.list_symbols(code, decorator_filter="app.route")
+    assert "MyController" in symbols
+    assert "OtherController" not in symbols
+

@@ -123,9 +123,13 @@ class PythonCodeStructure(CodeStructureInterface):
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
 
-    def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
+    def list_symbols(self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> list[str]:
         if not code.strip():
             return []
+
+        framework_markers = {}
+        if decorator_filter:
+            framework_markers = self.extract_framework_markers(code)
 
         tree = self.parser.parse(code.encode("utf-8"))
         query = Query(self.language, SCM_SYMBOL_QUERY)
@@ -145,6 +149,11 @@ class PythonCodeStructure(CodeStructureInterface):
                         and not sym_name.startswith("__")
                     ):
                         continue
+
+                    if decorator_filter:
+                        decs = framework_markers.get(sym_name, {}).get("decorators", [])
+                        if not any(decorator_filter in d for d in decs):
+                            continue
 
                     symbols.append(sym_name)
 

@@ -211,3 +211,33 @@ def test_code_structure_atom_unroll_with_plugin(tmp_path):
     assert res.status.value == "SUCCESS"
     assert "// [Framework Eval] JPA Entity" in res.exports["symbol"]
     assert "// [Framework Eval] Security Boundary" in res.exports["symbol"]
+
+def test_code_structure_atom_list_symbols_decorator_filter(tmp_path):
+    """Integration Story: Tool Evaluator securely passes decorator_filter to Atom."""
+    test_file = tmp_path / "Controller.java"
+    test_file.write_text("""
+@RestController
+class UserController {}
+
+class NormalClass {}
+
+@RestController
+class AuthController {}
+""")
+
+    executor = FileExecutor(cwd=tmp_path)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas={}, active_archetype="base")
+
+    res = atom.run({
+        "intent": "list_symbols", 
+        "path": "Controller.java", 
+        "decorator_filter": "RestController"
+    })
+    
+    assert res.status.value == "SUCCESS"
+    
+    symbols = res.exports["symbols"]
+    assert "UserController" in symbols
+    assert "AuthController" in symbols
+    assert "NormalClass" not in symbols
+
