@@ -23,4 +23,10 @@ If you need to add support for GraphQL, Avro, or Thrift, follow these steps:
 2. **Adhere closely to Pydantic**: 
     If a schema concept doesn't cleanly map to an endpoint or message, map the raw dictionary values into the generic `.properties` dictionary of the Model.
 3. **Register the Parser**:
-    (Will be wired up during Atom integrations)
+    Update the `ProtocolParserFactory.create_parser(payload)` regex routing layer in `src/specweaver/core/loom/commons/protocol/factory.py` to sniff and detect your format.
+
+## Atom and Tool Connectors
+
+The lower-level parsers are strictly encapsulated by the Orchestrator via native connectors:
+- **`ProtocolAtom`**: Accepts an intent (`extract_schema_endpoints` or `extract_schema_messages`) and the standard `file_path`, handling raw disk reads and returning mathematically bounded `AtomResult` representations of the payloads. Exception faults (OS or Runtime) are natively mapped to a `FAILED` result.
+- **`ProtocolTool`**: Wraps the Atom securely, returning standard `ToolDefinition` schemas directly usable by provider LLMs. Enables Agents to dynamically extract protocol intents securely inside the boundaries of the execution harness.

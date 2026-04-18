@@ -33,7 +33,10 @@ def load_evaluator_schemas(project_dir: Path | None = None) -> dict[str, Any]:  
                         schemas[language] = deep_merge_dict(schemas[language], content)
                 except Exception as e:
                     import logging
-                    logging.getLogger(__name__).warning("Failed to parse package YAML schema %s: %s", yaml_file.name, e)
+
+                    logging.getLogger(__name__).warning(
+                        "Failed to parse package YAML schema %s: %s", yaml_file.name, e
+                    )
     except (FileNotFoundError, ModuleNotFoundError, TypeError, OSError):
         pass
 
@@ -52,6 +55,9 @@ def load_evaluator_schemas(project_dir: Path | None = None) -> dict[str, Any]:  
                         schemas[language] = deep_merge_dict(schemas[language], content)
                 except Exception as e:
                     import logging
-                    logging.getLogger(__name__).warning("Failed to parse user-supplied YAML schema %s: %s", yaml_file.name, e)
+
+                    logging.getLogger(__name__).warning(
+                        "Failed to parse user-supplied YAML schema %s: %s", yaml_file.name, e
+                    )
 
     return schemas

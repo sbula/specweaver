@@ -28,4 +28,7 @@ def test_load_all_ecosystem_frameworks() -> None:
 
     # Assert Rust Proc-Macros mirror correctly
     assert "decorators" in schemas["actix-web"]
-    assert schemas["actix-web"]["decorators"]["derive(Clone)"] == "impl Clone for >>{Target}<< {\n    fn clone(&self) -> Self\n}"
+    assert (
+        schemas["actix-web"]["decorators"]["derive(Clone)"]
+        == "impl Clone for >>{Target}<< {\n    fn clone(&self) -> Self\n}"
+    )

@@ -42,7 +42,9 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
 
     # We mock _resolve_merged_settings to just return None
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
@@ -122,7 +124,9 @@ async def test_validate_spec_handler_loads_archetype(tmp_path: Path) -> None:
     handler = ValidateSpecHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
         patch("specweaver.assurance.validation.executor.execute_validation_pipeline") as mock_exec,
@@ -166,7 +170,9 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
     handler = ValidateCodeHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
@@ -231,7 +237,9 @@ async def test_validate_spec_handler_falls_back_when_no_archetype(tmp_path: Path
     handler = ValidateSpecHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
         patch("specweaver.assurance.validation.executor.execute_validation_pipeline") as mock_exec,
@@ -250,17 +258,24 @@ async def test_validate_spec_handler_falls_back_when_no_archetype(tmp_path: Path
 
         mock_load.assert_called_once_with("validation_spec_default")
 
+
 @pytest.mark.asyncio
 async def test_validate_spec_handler_atom_fails_fallback(tmp_path: Path) -> None:
     project_root = tmp_path
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
-    context = RunContext(project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock())
-    step = PipelineStep(name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={})
+    context = RunContext(
+        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+    )
+    step = PipelineStep(
+        name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
+    )
     handler = ValidateSpecHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
@@ -271,10 +286,12 @@ async def test_validate_spec_handler_atom_fails_fallback(tmp_path: Path) -> None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
+
         def run_side_effect(payload):
             res = MagicMock()
             res.status.value = "FAILED"
             return res
+
         mock_atom.run.side_effect = run_side_effect
         mock_atom_cls.return_value = mock_atom
 
@@ -296,12 +313,18 @@ async def test_validate_code_handler_atom_fails_fallback(tmp_path: Path) -> None
     code_file.write_text("print('hello')")
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
-    context = RunContext(project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock())
-    step = PipelineStep(name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={})
+    context = RunContext(
+        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+    )
+    step = PipelineStep(
+        name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={}
+    )
     handler = ValidateCodeHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
@@ -312,10 +335,12 @@ async def test_validate_code_handler_atom_fails_fallback(tmp_path: Path) -> None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
+
         def run_side_effect(payload):
             res = MagicMock()
             res.status.value = "FAILED"
             return res
+
         mock_atom.run.side_effect = run_side_effect
         mock_atom_cls.return_value = mock_atom
 
@@ -335,12 +360,18 @@ async def test_validate_spec_handler_load_pipeline_fails_fallback(tmp_path: Path
     project_root = tmp_path
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
-    context = RunContext(project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock())
-    step = PipelineStep(name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={})
+    context = RunContext(
+        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+    )
+    step = PipelineStep(
+        name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
+    )
     handler = ValidateSpecHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
         patch("specweaver.assurance.validation.executor.execute_validation_pipeline") as mock_exec,
@@ -372,12 +403,18 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
     code_file.write_text("print('hello')")
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
-    context = RunContext(project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock())
-    step = PipelineStep(name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={})
+    context = RunContext(
+        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+    )
+    step = PipelineStep(
+        name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={}
+    )
     handler = ValidateCodeHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
@@ -389,11 +426,13 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
 
         # CodeStructureAtom
         mock_atom = MagicMock()
+
         def run_side_effect(payload):
             res = MagicMock()
             res.status.value = "SUCCESS"
             res.exports = {}
             return res
+
         mock_atom.run.side_effect = run_side_effect
         mock_atom_cls.return_value = mock_atom
 
@@ -425,14 +464,22 @@ async def test_validate_spec_handler_e2e_integration(tmp_path: Path) -> None:
 
     project_root = tmp_path
     spec_file = project_root / "foo_spec.md"
-    spec_file.write_text("# Main Title\n\n## 1. Purpose\nTest purpose.\n\n## 2. Boundaries\nTest bounds.\n")
+    spec_file.write_text(
+        "# Main Title\n\n## 1. Purpose\nTest purpose.\n\n## 2. Boundaries\nTest bounds.\n"
+    )
 
-    context = RunContext(project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock())
-    step = PipelineStep(name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={})
+    context = RunContext(
+        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+    )
+    step = PipelineStep(
+        name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
+    )
     handler = ValidateSpecHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
@@ -442,18 +489,31 @@ async def test_validate_spec_handler_e2e_integration(tmp_path: Path) -> None:
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
+
         def run_side_effect(payload):
             res = MagicMock()
             res.status.value = "SUCCESS"
             # It should return a json string for skeleton
-            res.exports = {"structure": '{"h1": ["Main Title"], "h2": ["1. Purpose", "2. Boundaries"], "h3": []}'}
+            res.exports = {
+                "structure": '{"h1": ["Main Title"], "h2": ["1. Purpose", "2. Boundaries"], "h3": []}'
+            }
             return res
+
         mock_atom.run.side_effect = run_side_effect
         mock_atom_cls.return_value = mock_atom
 
-        mock_pipeline = PipelineStep(name="1", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={"required_headers": {"h1": ["Main Title"], "h2": ["1. Purpose", "2. Boundaries"]}})
+        mock_pipeline = PipelineStep(
+            name="1",
+            action=StepAction.VALIDATE,
+            target=StepTarget.SPEC,
+            params={
+                "required_headers": {"h1": ["Main Title"], "h2": ["1. Purpose", "2. Boundaries"]}
+            },
+        )
         # create actual S12 rule
-        s12_rule = S12ArchetypeSpecBoundsRule(required_headers={"h1": ["Main Title"], "h2": ["1. Purpose", "2. Boundaries"]})
+        s12_rule = S12ArchetypeSpecBoundsRule(
+            required_headers={"h1": ["Main Title"], "h2": ["1. Purpose", "2. Boundaries"]}
+        )
 
         # Override execution to practically run S12
         def e2e_exec(pipeline, content, spec_path):
@@ -462,7 +522,10 @@ async def test_validate_spec_handler_e2e_integration(tmp_path: Path) -> None:
                 s12_rule.context = step.params.get("ast_payload", {})
             return [s12_rule.check(content, spec_path)]
 
-        with patch("specweaver.assurance.validation.executor.execute_validation_pipeline", side_effect=e2e_exec):
+        with patch(
+            "specweaver.assurance.validation.executor.execute_validation_pipeline",
+            side_effect=e2e_exec,
+        ):
             mock_pipeline_obj = MagicMock()
             mock_pipeline_obj.steps = [mock_pipeline]
             mock_load.return_value = mock_pipeline_obj
@@ -485,12 +548,18 @@ async def test_validate_spec_handler_e2e_integration_failed_bounds(tmp_path: Pat
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("# Bad Title\n\n## 1. Wrong\nTest purpose.\n")
 
-    context = RunContext(project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock())
-    step = PipelineStep(name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={})
+    context = RunContext(
+        project_path=project_root, spec_path=spec_file, output_dir=project_root, llm=MagicMock()
+    )
+    step = PipelineStep(
+        name="test_step", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={}
+    )
     handler = ValidateSpecHandler()
 
     with (
-        patch("specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None),
+        patch(
+            "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
+        ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
         patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
@@ -500,23 +569,35 @@ async def test_validate_spec_handler_e2e_integration_failed_bounds(tmp_path: Pat
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
+
         def run_side_effect(payload):
             res = MagicMock()
             res.status.value = "SUCCESS"
             res.exports = {"structure": '{"h1": ["Bad Title"], "h2": ["1. Wrong"], "h3": []}'}
             return res
+
         mock_atom.run.side_effect = run_side_effect
         mock_atom_cls.return_value = mock_atom
 
-        mock_pipeline = PipelineStep(name="1", action=StepAction.VALIDATE, target=StepTarget.SPEC, params={"required_headers": {"h1": ["Main Title"], "h2": ["1. Purpose"]}})
-        s12_rule = S12ArchetypeSpecBoundsRule(required_headers={"h1": ["Main Title"], "h2": ["1. Purpose"]})
+        mock_pipeline = PipelineStep(
+            name="1",
+            action=StepAction.VALIDATE,
+            target=StepTarget.SPEC,
+            params={"required_headers": {"h1": ["Main Title"], "h2": ["1. Purpose"]}},
+        )
+        s12_rule = S12ArchetypeSpecBoundsRule(
+            required_headers={"h1": ["Main Title"], "h2": ["1. Purpose"]}
+        )
 
         def e2e_exec(pipeline, content, spec_path):
             for step in pipeline.steps:
                 s12_rule.context = step.params.get("ast_payload", {})
             return [s12_rule.check(content, spec_path)]
 
-        with patch("specweaver.assurance.validation.executor.execute_validation_pipeline", side_effect=e2e_exec):
+        with patch(
+            "specweaver.assurance.validation.executor.execute_validation_pipeline",
+            side_effect=e2e_exec,
+        ):
             mock_pipeline_obj = MagicMock()
             mock_pipeline_obj.steps = [mock_pipeline]
             mock_load.return_value = mock_pipeline_obj
@@ -525,4 +606,3 @@ async def test_validate_spec_handler_e2e_integration_failed_bounds(tmp_path: Pat
 
             assert result.status == StepStatus.FAILED
             assert result.output["failed"] == 1
-

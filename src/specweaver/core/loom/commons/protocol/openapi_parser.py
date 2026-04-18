@@ -17,7 +17,7 @@ class OpenAPIParser(ProtocolSchemaInterface):
     """Parses OpenAPI 3.x yaml into strictly typed protocol nodes."""
 
     def __init__(self) -> None:
-        self.yaml = YAML(typ='safe')
+        self.yaml = YAML(typ="safe")
 
     def _parse(self, raw_schema: str) -> dict[str, Any]:
         try:
@@ -49,7 +49,7 @@ class OpenAPIParser(ProtocolSchemaInterface):
                     ProtocolEndpoint(
                         method=method.upper(),
                         path=path_key,
-                        properties=details if isinstance(details, dict) else {}
+                        properties=details if isinstance(details, dict) else {},
                     )
                 )
         return endpoints

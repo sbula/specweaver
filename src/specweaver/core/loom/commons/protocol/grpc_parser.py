@@ -21,8 +21,14 @@ class GRPCParser(ProtocolSchemaInterface):
     def _parse_proto(self, payload: str) -> Any:
         try:
             ast = Parser().parse(payload)
-            if getattr(ast, "syntax", None) is None and not getattr(ast, "file_elements", []) and payload.strip():
-                raise ProtocolSchemaError("Failed to parse gRPC schema: No elements parsed from non-empty string")
+            if (
+                getattr(ast, "syntax", None) is None
+                and not getattr(ast, "file_elements", [])
+                and payload.strip()
+            ):
+                raise ProtocolSchemaError(
+                    "Failed to parse gRPC schema: No elements parsed from non-empty string"
+                )
             return ast
         except Exception as e:
             if isinstance(e, ProtocolSchemaError):
@@ -72,11 +78,13 @@ class GRPCParser(ProtocolSchemaInterface):
                 fields = []
                 for field in element.elements:
                     if type(field).__name__ == "Field":
-                        fields.append({
-                            "name": getattr(field, "name", ""),
-                            "type": getattr(field, "type", ""),
-                            "number": getattr(field, "number", 0),
-                        })
+                        fields.append(
+                            {
+                                "name": getattr(field, "name", ""),
+                                "type": getattr(field, "type", ""),
+                                "number": getattr(field, "number", 0),
+                            }
+                        )
                 messages.append(
                     ProtocolMessage(
                         name=msg_name,

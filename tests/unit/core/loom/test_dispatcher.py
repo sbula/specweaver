@@ -260,7 +260,9 @@ class TestDispatcherASTInitialization:
         assert atom._active_archetype == "spring-boot"
         assert "spring-security" in atom._plugins
 
-    def test_dispatcher_fallback_graceful_on_exception(self, project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_dispatcher_fallback_graceful_on_exception(
+        self, project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Dispatcher safely defaults to generic and empty plugins if resolver crashes."""
         from specweaver.core.config.archetype_resolver import ArchetypeResolver
 

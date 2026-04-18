@@ -31,7 +31,14 @@ logger = logging.getLogger(__name__)
 class CodeStructureAtom(Atom):
     """Atom for retrieving AST structural bounds from project source code."""
 
-    def __init__(self, file_executor: FileExecutor | None = None, cwd: Path | None = None, evaluator_schemas: dict[str, Any] | None = None, active_archetype: str = "generic", plugins: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        file_executor: FileExecutor | None = None,
+        cwd: Path | None = None,
+        evaluator_schemas: dict[str, Any] | None = None,
+        active_archetype: str = "generic",
+        plugins: list[str] | None = None,
+    ) -> None:
         """Initialize with a FileExecutor or construct one if cwd is provided."""
         if file_executor:
             self._executor = file_executor
@@ -48,6 +55,7 @@ class CodeStructureAtom(Atom):
     @property
     def active_evaluator(self) -> dict[str, Any]:
         """Provides a dynamically composed single evaluator dict merging base archetype and all plugins."""
+
         def _aggregate_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
             merged = dict(base)
             for key, value in overlay.items():
@@ -57,7 +65,9 @@ class CodeStructureAtom(Atom):
                     elif isinstance(merged[key], list) and isinstance(value, list):
                         # FR-3: Aggregate lists (e.g. intents.hide, annotations)
                         merged[key] = list(set(merged[key] + value))
-                    elif isinstance(merged[key], (dict, list)) and not isinstance(value, (dict, list)):
+                    elif isinstance(merged[key], (dict, list)) and not isinstance(
+                        value, (dict, list)
+                    ):
                         # Protect underlying schema objects from being wiped by nulls or scalars in plugins
                         pass
                     else:
@@ -109,7 +119,9 @@ class CodeStructureAtom(Atom):
         try:
             visibility = context.get("visibility")
             decorator_filter = context.get("decorator_filter")
-            symbols = parser.list_symbols(code, visibility=visibility, decorator_filter=decorator_filter)
+            symbols = parser.list_symbols(
+                code, visibility=visibility, decorator_filter=decorator_filter
+            )
             return AtomResult(
                 status=AtomStatus.SUCCESS,
                 message=f"Listed symbols for {path}",
@@ -233,6 +245,7 @@ class CodeStructureAtom(Atom):
             symbol_markers = all_markers.get(symbol_name, {})
 
             from specweaver.core.loom.commons.language.evaluator import SchemaEvaluator
+
             # Use the merged evaluator so plugins unroll appropriately alongside the base archetype
             evaluator = SchemaEvaluator({self._active_archetype: self.active_evaluator})
 
@@ -244,12 +257,14 @@ class CodeStructureAtom(Atom):
                 ".kts": "kotlin",
                 ".ts": "typescript",
                 ".tsx": "typescript",
-                ".rs": "rust"
+                ".rs": "rust",
             }
             language = lang_map.get(ext, "")
 
             try:
-                explanation = evaluator.evaluate_markers(language, self._active_archetype, symbol_markers)
+                explanation = evaluator.evaluate_markers(
+                    language, self._active_archetype, symbol_markers
+                )
             except Exception as e:
                 return AtomResult(status=AtomStatus.FAILED, message=f"Evaluator error: {e!s}")
 

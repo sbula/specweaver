@@ -102,7 +102,9 @@ def _load_raw_yaml(
                 resource = framework_pkg.joinpath(f"{name}.yaml")
                 if resource.is_file():
                     text = resource.read_text(encoding="utf-8")
-                    logger.debug("Loading pipeline '%s' from framework %s", name, framework_pkg.name)
+                    logger.debug(
+                        "Loading pipeline '%s' from framework %s", name, framework_pkg.name
+                    )
                     return cast("dict[str, Any]", _yaml.load(io.StringIO(text)))
     except (FileNotFoundError, ModuleNotFoundError, TypeError):
         pass

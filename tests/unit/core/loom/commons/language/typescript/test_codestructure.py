@@ -183,4 +183,3 @@ export class OtherController {
     symbols = parser.list_symbols(code, decorator_filter="Component")
     assert "MyController" in symbols
     assert "OtherController" not in symbols
-

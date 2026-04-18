@@ -184,6 +184,7 @@ class TestMalformedYaml:
         with pytest.raises(TypeError):
             load_pipeline_yaml("validation_spec_default", project_dir=tmp_path)
 
+
 # ---------------------------------------------------------------------------
 # Load from frameworks directories (Plugins)
 # ---------------------------------------------------------------------------
@@ -197,7 +198,7 @@ class TestFrameworksPluginLoading:
         pipeline = load_pipeline_yaml("validation_spec_spring-boot")
         assert pipeline.name == "validation_spec_spring-boot"
         # Should have extended default (+1 rule = 13 steps if default is 12)
-        assert len(pipeline.steps) > 0 # Depends on default
+        assert len(pipeline.steps) > 0  # Depends on default
 
         # Verify the S12 boundary exists
         s12_step = pipeline.get_step("s12_archetype_spec_bounds")
@@ -221,12 +222,19 @@ class TestFrameworksPluginLoading:
 
         def _mock_files(pkg):
             if pkg == "specweaver.workflows.pipelines.frameworks":
-                raise ModuleNotFoundError("No module named 'specweaver.workflows.pipelines.frameworks'")
+                raise ModuleNotFoundError(
+                    "No module named 'specweaver.workflows.pipelines.frameworks'"
+                )
             return orig_files(pkg)
 
         with (
-            patch("specweaver.assurance.validation.pipeline_loader.importlib.resources.files", side_effect=_mock_files),
-            pytest.raises(FileNotFoundError, match=r"not found\. Searched in: packaged defaults, frameworks")
+            patch(
+                "specweaver.assurance.validation.pipeline_loader.importlib.resources.files",
+                side_effect=_mock_files,
+            ),
+            pytest.raises(
+                FileNotFoundError, match=r"not found\. Searched in: packaged defaults, frameworks"
+            ),
         ):
             # this will fail to find it anywhere
             load_pipeline_yaml("validation_spec_spring-boot-fantasy")
@@ -248,7 +256,12 @@ class TestFrameworksPluginLoading:
             return orig_files(pkg)
 
         with (
-            patch("specweaver.assurance.validation.pipeline_loader.importlib.resources.files", side_effect=_mock_files),
-            pytest.raises(FileNotFoundError, match=r"not found\. Searched in: packaged defaults, frameworks")
+            patch(
+                "specweaver.assurance.validation.pipeline_loader.importlib.resources.files",
+                side_effect=_mock_files,
+            ),
+            pytest.raises(
+                FileNotFoundError, match=r"not found\. Searched in: packaged defaults, frameworks"
+            ),
         ):
             load_pipeline_yaml("validation_spec_spring-boot-fantasy")

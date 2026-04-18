@@ -1,0 +1,17 @@
+from specweaver.assurance.rules.registry import ArchetypeConstraints
+from specweaver.assurance.rules.spec_rules_ext import BoundsConfig
+
+archetype: atom
+layers: 1
+allowed_imports:
+  - 'specweaver.core.loom.commons.protocol.*'
+  - 'specweaver.core.loom.atoms.base.*'
+
+bounds:
+  - type: 'ArchetypeConstraints'
+    severity: 'ERROR'
+    config:
+      max_layers: 2
+      allowed_packages:
+        - 'specweaver.core.loom.commons.protocol.factory'
+        - 'pydantic'

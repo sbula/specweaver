@@ -186,4 +186,3 @@ class OtherController {
     symbols = parser.list_symbols(code, decorator_filter="RestController")
     assert "MyController" in symbols
     assert "OtherController" not in symbols
-

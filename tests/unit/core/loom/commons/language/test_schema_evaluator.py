@@ -11,34 +11,28 @@ def sample_schemas():
             "decorators": {
                 "RestController": "Handles HTTP requests",
                 "GetMapping": "Maps HTTP GET",
-                "SelfReferencing": "Expands to >>{SelfReferencing}<<"
+                "SelfReferencing": "Expands to >>{SelfReferencing}<<",
             },
-            "bases": {
-                "JpaRepository": "Provides database operations"
-            }
+            "bases": {"JpaRepository": "Provides database operations"},
         },
         "fastapi": {
             "metadata": {"supported_languages": ["python"]},
-            "decorators": {
-                "app.get": "FastAPI GET Route"
-            }
-        }
+            "decorators": {"app.get": "FastAPI GET Route"},
+        },
     }
 
 
 def test_schema_evaluator_translates_known_markers(sample_schemas):
     """Test standard mapping of dict elements to comment blocks."""
     evaluator = SchemaEvaluator(sample_schemas)
-    markers = {
-        "decorators": {"RestController": [], "GetMapping": ["'/api/v1'"]},
-        "bases": {}
-    }
+    markers = {"decorators": {"RestController": [], "GetMapping": ["'/api/v1'"]}, "bases": {}}
 
     result = evaluator.evaluate_markers("java", "spring-boot", markers)
 
     # Needs to be prefixed with `//` for java
     assert "// [Framework Eval] Handles HTTP requests" in result
     assert "// [Framework Eval] Maps HTTP GET" in result
+
 
 def test_schema_evaluator_skips_unsupported_languages(sample_schemas):
     """Test that NFR-2 successfully skips applying Java logic to Python files."""
@@ -49,6 +43,7 @@ def test_schema_evaluator_skips_unsupported_languages(sample_schemas):
     result = evaluator.evaluate_markers("python", "spring-boot", markers)
     assert result == ""  # Safely returns empty
 
+
 def test_schema_evaluator_language_comment_prefixes(sample_schemas):
     evaluator = SchemaEvaluator(sample_schemas)
     markers = {"decorators": {"app.get": []}, "bases": {}}
@@ -57,16 +52,15 @@ def test_schema_evaluator_language_comment_prefixes(sample_schemas):
 
     assert "# [Framework Eval] FastAPI GET Route" in result
 
+
 def test_schema_evaluator_recursion_protection(sample_schemas):
     """Test that a cyclic mapping triggers the max depth 5 termination correctly."""
     evaluator = SchemaEvaluator(sample_schemas)
-    markers = {
-        "decorators": {"SelfReferencing": []},
-        "bases": {}
-    }
+    markers = {"decorators": {"SelfReferencing": []}, "bases": {}}
 
     with pytest.raises(EvaluatorDepthError, match="Maximum cyclic evaluator depth"):
         evaluator.evaluate_markers("java", "spring-boot", markers)
+
 
 def test_schema_evaluator_comment_prefix_mapping():
     evaluator = SchemaEvaluator({})
@@ -80,4 +74,3 @@ def test_schema_evaluator_comment_prefix_mapping():
     assert evaluator._get_comment_prefix("rust") == "//"
     assert evaluator._get_comment_prefix("cpp") == "//"
     assert evaluator._get_comment_prefix("unknownXYZ") == "//"
-

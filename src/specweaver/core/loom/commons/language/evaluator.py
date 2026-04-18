@@ -30,14 +30,18 @@ class SchemaEvaluator:
     ) -> str:
         """Resolve recursive marker variables safely with depth limits."""
         if depth > MAX_EVALUATOR_DEPTH:
-            raise EvaluatorDepthError(f"Maximum cyclic evaluator depth exceeded ({MAX_EVALUATOR_DEPTH})")
+            raise EvaluatorDepthError(
+                f"Maximum cyclic evaluator depth exceeded ({MAX_EVALUATOR_DEPTH})"
+            )
 
         matches = re.findall(r">>\{([^}]+)\}<<", template)
         result = template
 
         for key in matches:
             if key in visited:
-                raise EvaluatorDepthError(f"Maximum cyclic evaluator depth or circular loop for '{key}'")
+                raise EvaluatorDepthError(
+                    f"Maximum cyclic evaluator depth or circular loop for '{key}'"
+                )
 
             if key in category_dict:
                 visited.add(key)
@@ -63,7 +67,11 @@ class SchemaEvaluator:
         lang_schema = self._schemas.get(framework, {})
 
         # FR-2/NFR-2: Gracefully ignore languages not supported by this framework archetype
-        if "metadata" in lang_schema and "supported_languages" in lang_schema["metadata"] and language not in lang_schema["metadata"]["supported_languages"]:
+        if (
+            "metadata" in lang_schema
+            and "supported_languages" in lang_schema["metadata"]
+            and language not in lang_schema["metadata"]["supported_languages"]
+        ):
             return ""
 
         lines = []
@@ -74,7 +82,9 @@ class SchemaEvaluator:
             for marker_name in items:
                 if marker_name in schema_category:
                     template = str(schema_category[marker_name])
-                    resolved_desc = self._resolve_template(template, schema_category, 0, {marker_name})
+                    resolved_desc = self._resolve_template(
+                        template, schema_category, 0, {marker_name}
+                    )
                     lines.append(f"{prefix} [Framework Eval] {resolved_desc}")
 
         return "\n".join(lines)

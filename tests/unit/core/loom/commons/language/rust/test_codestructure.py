@@ -200,4 +200,3 @@ pub struct OtherController;
     symbols = parser.list_symbols(code, decorator_filter="actix_web")
     assert "MyController" in symbols
     assert "OtherController" not in symbols
-

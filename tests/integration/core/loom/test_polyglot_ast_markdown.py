@@ -49,7 +49,9 @@ This component bounded safely.
     try:
         skeleton = json.loads(res.exports["structure"])
     except json.JSONDecodeError:
-        raise AssertionError("Markdown skeleton should be returned as JSON formatted string") from None
+        raise AssertionError(
+            "Markdown skeleton should be returned as JSON formatted string"
+        ) from None
 
     assert skeleton["h1"] == ["Main Title"]
     assert "1. Purpose" in skeleton["h2"]

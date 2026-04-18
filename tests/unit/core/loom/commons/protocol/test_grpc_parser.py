@@ -29,6 +29,7 @@ def test_extract_endpoints_success():
     assert hello_rpc.properties["request_type"] == "HelloRequest"
     assert hello_rpc.properties["response_type"] == "HelloReply"
 
+
 def test_extract_messages_success():
     proto_content = """
     syntax = "proto3";
@@ -52,17 +53,20 @@ def test_extract_messages_success():
     assert len(search_req.properties["fields"]) == 3
     assert search_req.properties["fields"][0]["name"] == "query"
 
+
 def test_parse_catches_invalid_syntax():
     proto_content = "this is not valid protobuf syntax at all {} {"
     parser = GRPCParser()
     with pytest.raises(ProtocolSchemaError, match="Failed to parse gRPC schema"):
         parser.extract_endpoints(proto_content)
 
+
 def test_extract_endpoints_no_services():
     proto_content = "syntax = 'proto3'; message Empty {}"
     parser = GRPCParser()
     endpoints = parser.extract_endpoints(proto_content)
     assert len(endpoints) == 0
+
 
 def test_extract_messages_no_messages():
     proto_content = "syntax = 'proto3'; service Search {}"

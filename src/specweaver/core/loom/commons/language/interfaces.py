@@ -75,7 +75,9 @@ class CodeStructureInterface(ABC):
         """
 
     @abstractmethod
-    def list_symbols(self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> list[str]:
+    def list_symbols(
+        self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None
+    ) -> list[str]:
         """Dynamically map and list all targetable symbols within a file.
 
         Args:

@@ -170,6 +170,7 @@ class ToolDispatcher:
             if project_dir:
                 try:
                     from specweaver.core.config.archetype_resolver import ArchetypeResolver
+
                     resolver = ArchetypeResolver(project_dir)
                     resolved_arch = resolver.resolve(project_dir / "stub")
                     active_archetype = resolved_arch if resolved_arch else "generic"
@@ -178,7 +179,12 @@ class ToolDispatcher:
                     pass
 
             # Atom executes locally reading files relative to project root
-            atom = CodeStructureAtom(EngineFileExecutor(boundary.roots[0]), evaluator_schemas=schemas, active_archetype=active_archetype, plugins=plugins)
+            atom = CodeStructureAtom(
+                EngineFileExecutor(boundary.roots[0]),
+                evaluator_schemas=schemas,
+                active_archetype=active_archetype,
+                plugins=plugins,
+            )
 
             # Reuse exact read-only grant logic from fs
             grants = []
@@ -192,7 +198,9 @@ class ToolDispatcher:
             raw_hide = raw_intents.get("hide", []) if isinstance(raw_intents, dict) else []
             hidden_intents = raw_hide if isinstance(raw_hide, list) else [str(raw_hide)]
 
-            ast_interface = CodeStructureTool(atom=atom, role=role, grants=grants, hidden_intents=hidden_intents)
+            ast_interface = CodeStructureTool(
+                atom=atom, role=role, grants=grants, hidden_intents=hidden_intents
+            )
             interfaces.append(ast_interface)
 
         if "web" in allowed_tools:

@@ -10,7 +10,9 @@ from specweaver.core.loom.commons.protocol.models import ProtocolEndpoint, Proto
 
 class ProtocolSchemaError(Exception):
     """Native exception thrown when a schema is violently malformed and untraversable."""
+
     pass
+
 
 class ProtocolSchemaInterface(ABC):
     """Boundary unifying how schema properties are explicitly queried by the sandbox."""

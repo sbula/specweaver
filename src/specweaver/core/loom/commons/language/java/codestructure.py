@@ -113,7 +113,9 @@ class JavaCodeStructure(CodeStructureInterface):
                     return True
         return False
 
-    def list_symbols(self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> list[str]:  # noqa: C901
+    def list_symbols(
+        self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None
+    ) -> list[str]:  # noqa: C901
         if not code.strip():
             return []
 

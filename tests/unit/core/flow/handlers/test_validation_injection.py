@@ -23,21 +23,21 @@ def test_load_evaluator_schemas_success() -> None:
     mock_yaml_file = MagicMock()
     mock_yaml_file.is_file.return_value = True
     mock_yaml_file.name = "spring-boot.yaml"
-    mock_yaml_file.read_text.return_value = '''
+    mock_yaml_file.read_text.return_value = """
 modifiers:
   public: "This is public"
 decorators:
   RestController: "Marks REST"
-'''
+"""
 
     # Another framework to ensure loop works
     mock_py_file = MagicMock()
     mock_py_file.is_file.return_value = True
     mock_py_file.name = "fastapi.yaml"
-    mock_py_file.read_text.return_value = '''
+    mock_py_file.read_text.return_value = """
 decorators:
   app.get: "GET route"
-'''
+"""
 
     mock_frameworks_dir.iterdir.return_value = [mock_yaml_file, mock_py_file]
 
@@ -62,12 +62,12 @@ def test_load_evaluator_schemas_project_override() -> None:
     mock_yaml_file = MagicMock()
     mock_yaml_file.is_file.return_value = True
     mock_yaml_file.name = "spring-boot.yaml"
-    mock_yaml_file.read_text.return_value = '''
+    mock_yaml_file.read_text.return_value = """
 modifiers:
   public: "This is public"
 decorators:
   RestController: "System Default"
-'''
+"""
     mock_frameworks_dir.iterdir.return_value = [mock_yaml_file]
 
     # Mock project directory
@@ -78,11 +78,11 @@ decorators:
 
     mock_override_file = MagicMock()
     mock_override_file.stem = "spring-boot"
-    mock_override_file.read_text.return_value = '''
+    mock_override_file.read_text.return_value = """
 decorators:
   RestController: "User Override"
   UserCustom: "Local Only"
-'''
+"""
     mock_local_dir.glob.return_value = [mock_override_file]
 
     with patch("importlib.resources.files", return_value=mock_frameworks_dir):
@@ -115,13 +115,13 @@ def test_load_evaluator_schemas_malformed_skips_gracefully() -> None:
     mock_corrupt_file = MagicMock()
     mock_corrupt_file.stem = "spring-boot"
     mock_corrupt_file.name = "spring-boot.yaml"
-    mock_corrupt_file.read_text.return_value = '''
+    mock_corrupt_file.read_text.return_value = """
 modifiers:
   public: "This is public"
 decorators:
   - list instead of dict
   : invalid syntax ] } [
-'''
+"""
     mock_local_dir.glob.return_value = [mock_corrupt_file]
 
     with patch("importlib.resources.files", return_value=mock_frameworks_dir):

@@ -81,7 +81,13 @@ class CodeStructureTool:
         grants: List of FolderGrants limiting what paths the LLM can query.
     """
 
-    def __init__(self, atom: CodeStructureAtom, role: str, grants: list[FolderGrant], hidden_intents: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        atom: CodeStructureAtom,
+        role: str,
+        grants: list[FolderGrant],
+        hidden_intents: list[str] | None = None,
+    ) -> None:
         if role not in ROLE_INTENTS:
             msg = f"Unknown role: {role!r}. Known roles: {sorted(ROLE_INTENTS)}"
             raise ValueError(msg)
@@ -109,7 +115,9 @@ class CodeStructureTool:
             data=res.exports,
         )
 
-    def list_symbols(self, path: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> ToolResult:
+    def list_symbols(
+        self, path: str, visibility: list[str] | None = None, decorator_filter: str | None = None
+    ) -> ToolResult:
         self._require_intent("list_symbols")
         grant_err = self._check_grant(
             path, frozenset({AccessMode.READ, AccessMode.WRITE, AccessMode.FULL})
@@ -117,7 +125,14 @@ class CodeStructureTool:
         if grant_err:
             return grant_err
 
-        res = self._atom.run({"intent": "list_symbols", "path": path, "visibility": visibility, "decorator_filter": decorator_filter})
+        res = self._atom.run(
+            {
+                "intent": "list_symbols",
+                "path": path,
+                "visibility": visibility,
+                "decorator_filter": decorator_filter,
+            }
+        )
         return ToolResult(
             status="success" if res.status.value == "SUCCESS" else "error",
             message=res.message,

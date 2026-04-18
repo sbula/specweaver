@@ -82,12 +82,22 @@ def test_tool_intents_propagate_to_atom() -> None:
 
     tool.list_symbols("test.py", visibility=["public"])
     atom.run.assert_called_with(
-        {"intent": "list_symbols", "path": "test.py", "visibility": ["public"], "decorator_filter": None}
+        {
+            "intent": "list_symbols",
+            "path": "test.py",
+            "visibility": ["public"],
+            "decorator_filter": None,
+        }
     )
 
     tool.list_symbols("test.py", decorator_filter="PreAuthorize")
     atom.run.assert_called_with(
-        {"intent": "list_symbols", "path": "test.py", "visibility": None, "decorator_filter": "PreAuthorize"}
+        {
+            "intent": "list_symbols",
+            "path": "test.py",
+            "visibility": None,
+            "decorator_filter": "PreAuthorize",
+        }
     )
 
     atom.run.return_value = AtomResult(
