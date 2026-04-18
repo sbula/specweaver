@@ -16,9 +16,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.handlers.base import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

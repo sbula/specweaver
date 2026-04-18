@@ -57,10 +57,15 @@ def implement(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.core.flow.handlers.base import RunContext
-    from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep, StepAction, StepTarget
+    from specweaver.core.flow.engine.models import (
+        PipelineDefinition,
+        PipelineStep,
+        StepAction,
+        StepTarget,
+    )
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
+    from specweaver.core.flow.handlers.base import RunContext
 
     settings, adapter, _ = _helpers._require_llm_adapter(project_path)
     if settings and getattr(settings, "llm", None):

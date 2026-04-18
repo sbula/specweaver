@@ -209,9 +209,9 @@ def _execute_run(  # noqa: C901
     selector: str,
 ) -> None:
     """Core run logic -- separated for testability."""
-    from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers import RunContext
 
     # Resolve project path
     try:
@@ -341,10 +341,10 @@ def resume(
         sw resume
         sw resume abc12345-...
     """
-    from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import RunStatus
+    from specweaver.core.flow.handlers import RunContext
 
     store = _get_state_store()
 

@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers import StepHandlerRegistry
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.engine.store import StateStore
+from specweaver.core.flow.handlers import StepHandlerRegistry
+from specweaver.core.flow.handlers.base import RunContext
 
 
 @pytest.fixture

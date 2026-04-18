@@ -8,9 +8,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext, _error_result, _now_iso
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
-from specweaver.core.flow.engine.state import StepResult, StepStatus
 
 if TYPE_CHECKING:
     from pathlib import Path

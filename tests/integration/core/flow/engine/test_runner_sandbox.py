@@ -8,10 +8,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.models import (
+    PipelineDefinition,
+    PipelineStep,
+    StepAction,
+    StepTarget,
+)
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
 

@@ -12,9 +12,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from ruamel.yaml import YAML
 
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.handlers.base import RunContext
 
 
 @pytest.fixture()

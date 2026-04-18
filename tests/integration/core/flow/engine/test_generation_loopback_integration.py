@@ -14,10 +14,10 @@ import asyncio
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
+from specweaver.core.flow.handlers.base import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

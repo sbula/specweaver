@@ -8,10 +8,10 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
+from specweaver.core.flow.handlers.base import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

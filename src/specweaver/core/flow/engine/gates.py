@@ -19,9 +19,9 @@ from specweaver.core.flow.engine.models import GateCondition, GateType, OnFailAc
 from specweaver.core.flow.engine.state import StepStatus
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.engine.models import GateDefinition, PipelineDefinition, PipelineStep
     from specweaver.core.flow.engine.state import PipelineRun, StepResult
+    from specweaver.core.flow.handlers import RunContext
 
 logger = logging.getLogger(__name__)
 

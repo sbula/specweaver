@@ -16,6 +16,7 @@ backward compatibility. All existing imports continue to work.
 """
 
 # Re-export base types and helpers
+from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.base import (  # noqa: F401
     RunContext,
@@ -49,7 +50,6 @@ from specweaver.core.flow.handlers.validation import (
     ValidateSpecHandler,
     ValidateTestsHandler,
 )
-from specweaver.core.flow.engine.models import StepAction, StepTarget
 
 __all__ = [
     "ArbitrateVerdictHandler",

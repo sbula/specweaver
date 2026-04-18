@@ -16,8 +16,6 @@ from typing import Any
 
 from ruamel.yaml import YAML
 
-from specweaver.core.flow.handlers.base import RunContext, StepHandler, _now_iso
-from specweaver.core.flow.handlers import StepHandlerRegistry, ValidateSpecHandler
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
     PipelineStep,
@@ -27,6 +25,8 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.engine.store import StateStore
+from specweaver.core.flow.handlers import StepHandlerRegistry, ValidateSpecHandler
+from specweaver.core.flow.handlers.base import RunContext, StepHandler, _now_iso
 
 # ---------------------------------------------------------------------------
 # Paths

@@ -41,4 +41,4 @@ description: "Phase 3: Implement missing tests identified in Phase 2."
      Fix any errors immediately!
 
 > [!IMPORTANT]
-> **CHECKPOINT**: Phase 3 is complete. Update `task.md`. You MUST STOP HERE at the new HITL Gate. Yield your turn entirely.
+> **NO HITL GATE HERE:**: Phase 3 is complete. If all the required tests are implemented and passes flawlessly, update `task.md` and PROCEED IMMEDIATELY to Phase 4. Do NOT stop to ask the user for permission to continue.

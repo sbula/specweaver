@@ -19,12 +19,6 @@ if TYPE_CHECKING:
 import pytest
 
 from specweaver.core.config.database import Database
-from specweaver.core.flow.handlers import (
-    DraftSpecHandler,
-    GenerateCodeHandler,
-    RunContext,
-    StepHandlerRegistry,
-)
 from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
@@ -38,6 +32,12 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.engine.store import StateStore
+from specweaver.core.flow.handlers import (
+    DraftSpecHandler,
+    GenerateCodeHandler,
+    RunContext,
+    StepHandlerRegistry,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -51,8 +51,8 @@ class _FakeFailingReviewHandler:
         self.calls = 0
 
     async def execute(self, step, context):
-        from specweaver.core.flow.handlers.base import _now_iso
         from specweaver.core.flow.engine.state import StepResult
+        from specweaver.core.flow.handlers.base import _now_iso
 
         self.calls += 1
         return StepResult(

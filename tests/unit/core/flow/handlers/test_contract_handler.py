@@ -11,13 +11,13 @@ from unittest.mock import MagicMock
 if typing.TYPE_CHECKING:
     from pathlib import Path
 
-from specweaver.core.flow.handlers.generation import GenerateContractHandler
 from specweaver.core.flow.engine.models import (
     VALID_STEP_COMBINATIONS,
     StepAction,
     StepTarget,
 )
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.handlers.generation import GenerateContractHandler
 
 
 class TestContractEnumAndCombinations:

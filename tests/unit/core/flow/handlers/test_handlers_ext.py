@@ -11,8 +11,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow.handlers import ReviewCodeHandler, RunContext
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.handlers import ReviewCodeHandler, RunContext
 
 # ---------------------------------------------------------------------------
 # Telemetry run_id propagation

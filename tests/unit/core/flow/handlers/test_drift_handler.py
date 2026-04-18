@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.flow.handlers.drift import DriftCheckHandler, _load_plan
 from specweaver.core.flow.engine.runner import RunContext
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.handlers.drift import DriftCheckHandler, _load_plan
 
 
 @pytest.mark.asyncio

@@ -12,11 +12,11 @@ from unittest.mock import AsyncMock, MagicMock
 if TYPE_CHECKING:
     from pathlib import Path
 
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
-from specweaver.core.flow.handlers import StepHandlerRegistry
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.handlers import StepHandlerRegistry
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
 
 
 def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:

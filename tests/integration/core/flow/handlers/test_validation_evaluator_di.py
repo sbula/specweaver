@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler
-from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.loom.dispatcher import ToolDispatcher
 
 

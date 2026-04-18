@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler
 from specweaver.core.flow.handlers import RunContext
+from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler
 
 pytestmark = pytest.mark.integration
 

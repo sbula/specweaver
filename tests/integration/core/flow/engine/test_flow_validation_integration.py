@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow.handlers import GenerateCodeHandler, RunContext, ValidateSpecHandler
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.handlers import GenerateCodeHandler, RunContext, ValidateSpecHandler
 
 
 @pytest.mark.asyncio

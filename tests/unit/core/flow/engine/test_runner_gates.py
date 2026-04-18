@@ -10,7 +10,6 @@ from unittest import mock
 
 import pytest
 
-from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
 from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
@@ -23,6 +22,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
+from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
 
 if TYPE_CHECKING:
     from pathlib import Path

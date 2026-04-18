@@ -199,9 +199,9 @@ class TestLineageE2EFlow:
 
         from specweaver.core.config.database import Database
         from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
-        from specweaver.core.flow.handlers.base import RunContext
         from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
         from specweaver.core.flow.engine.runner import PipelineRunner
+        from specweaver.core.flow.handlers.base import RunContext
 
         pipeline = PipelineDefinition.create_single_step(
             name="plan_spec",

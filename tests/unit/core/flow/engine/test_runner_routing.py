@@ -9,7 +9,6 @@ from typing import Any
 
 import pytest
 
-from specweaver.core.flow.handlers import RunContext, StepHandler, StepHandlerRegistry
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
     PipelineStep,
@@ -21,6 +20,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
+from specweaver.core.flow.handlers import RunContext, StepHandler, StepHandlerRegistry
 
 
 class FakeHandler(StepHandler):

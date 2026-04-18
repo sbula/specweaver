@@ -24,6 +24,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers import (
     GenerateCodeHandler,
     GenerateTestsHandler,
@@ -31,8 +33,6 @@ from specweaver.core.flow.handlers import (
     RunContext,
     StepHandlerRegistry,
 )
-from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.engine.state import StepStatus
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.planning.models import PlanArtifact
 from specweaver.workflows.planning.renderer import render_plan_markdown
@@ -676,10 +676,10 @@ class TestDagOrchestratorIntegration:
     @pytest.mark.asyncio()
     async def test_integration_starvation_and_dependency_bubble_up(self, tmp_path: Path) -> None:
         """Integration Story 2: Failures in dynamic sub-pipelines properly starve dependents and bubble."""
-        from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
-        from specweaver.core.flow.handlers import StepHandlerRegistry
         from specweaver.core.flow.engine.models import PipelineDefinition
         from specweaver.core.flow.engine.runner import PipelineRunner
+        from specweaver.core.flow.handlers import StepHandlerRegistry
+        from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
         ctx.run_id = "parent_run"
@@ -732,9 +732,9 @@ class TestDagOrchestratorIntegration:
         import asyncio
 
         from specweaver.assurance.graph.topology import TopologyGraph
-        from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
         from specweaver.core.flow.engine.models import PipelineDefinition
         from specweaver.core.flow.engine.runner import PipelineRunner
+        from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
         ctx.run_id = "parent_run"
@@ -797,10 +797,10 @@ async def test_integration_topological_join_wave_n_deferred() -> None:
     """
     from pathlib import Path
 
-    from specweaver.core.flow.handlers.base import RunContext
-    from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
+    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 
     ctx = RunContext(project_path=Path("/tmp/path"), spec_path=Path("/tmp/path/spec.md"))
     ctx.run_id = "parent_run"

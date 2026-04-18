@@ -51,10 +51,10 @@ def start_pipeline_run(
     """
     import uuid
 
-    from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.store import StateStore
+    from specweaver.core.flow.handlers import RunContext
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     # Resolve project
@@ -193,10 +193,10 @@ def resume_run(
     db: Database = _db_dep,
 ) -> PipelineRunResponse:
     """Resume a parked pipeline run."""
-    from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.store import StateStore
+    from specweaver.core.flow.handlers import RunContext
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
@@ -302,9 +302,9 @@ def submit_gate_decision(
         return {"detail": f"Run '{run_id}' rejected and marked as failed."}
 
     # Approve → resume
-    from specweaver.core.flow.handlers import RunContext
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers import RunContext
 
     project_root = resolve_project_root(run.project_name, db)
     pipeline_def = load_pipeline(Path(run.pipeline_name))

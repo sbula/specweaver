@@ -67,10 +67,10 @@ def drift_check(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.core.flow.handlers.base import RunContext
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
+    from specweaver.core.flow.handlers.base import RunContext
 
     pipeline = PipelineDefinition.create_single_step(
         name="drift_check",
@@ -191,10 +191,10 @@ def drift_check_rot(  # noqa: C901
 
     drift_found = False
 
-    from specweaver.core.flow.handlers.base import RunContext
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
+    from specweaver.core.flow.handlers.base import RunContext
 
     for target in target_files:
         _core.console.print(f"DEBUG TARGET STR: {target}")

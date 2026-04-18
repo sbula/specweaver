@@ -9,11 +9,16 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.flow.handlers import RunContext, StepHandler, StepHandlerRegistry
-from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.models import (
+    PipelineDefinition,
+    PipelineStep,
+    StepAction,
+    StepTarget,
+)
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.engine.store import StateStore
+from specweaver.core.flow.handlers import RunContext, StepHandler, StepHandlerRegistry
 
 if TYPE_CHECKING:
     from pathlib import Path

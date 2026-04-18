@@ -22,8 +22,11 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.gates import GateEvaluator
-from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
-from specweaver.core.flow.engine.runner_utils import RunnerEventCallback, _now_iso, setup_sandbox_caches
+from specweaver.core.flow.engine.runner_utils import (
+    RunnerEventCallback,
+    _now_iso,
+    setup_sandbox_caches,
+)
 from specweaver.core.flow.engine.state import (
     PipelineRun,
     RunStatus,
@@ -31,6 +34,7 @@ from specweaver.core.flow.engine.state import (
     StepResult,
     StepStatus,
 )
+from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition
@@ -315,7 +319,9 @@ class PipelineRunner:
 
                         # 6. Database Cleanup Hooks bounds guarantee zombie block survival
                         try:
-                            from specweaver.core.flow.engine.reservation import SQLiteReservationSystem
+                            from specweaver.core.flow.engine.reservation import (
+                                SQLiteReservationSystem,
+                            )
 
                             db_path = self._context.project_path / ".specweaver" / "reservations.db"
                             SQLiteReservationSystem(db_path).release(run.run_id)

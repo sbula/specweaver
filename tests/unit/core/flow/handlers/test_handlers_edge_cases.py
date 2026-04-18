@@ -5,6 +5,8 @@ import pytest
 
 from specweaver.assurance.validation.models import RuleResult
 from specweaver.assurance.validation.models import Status as RuleStatus
+from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers import (
     GenerateCodeHandler,
     GenerateTestsHandler,
@@ -15,8 +17,6 @@ from specweaver.core.flow.handlers import (
     ValidateCodeHandler,
     ValidateTestsHandler,
 )
-from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.engine.state import StepStatus
 
 
 @pytest.fixture

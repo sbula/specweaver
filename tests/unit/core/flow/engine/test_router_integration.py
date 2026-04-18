@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from specweaver.core.config.database import Database
-from specweaver.core.flow.handlers.generation import GenerateCodeHandler
-from specweaver.core.flow.handlers import RunContext
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.handlers import RunContext
+from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import TaskType
 from specweaver.infrastructure.llm.router import ModelRouter

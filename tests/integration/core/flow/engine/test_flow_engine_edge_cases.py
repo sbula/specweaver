@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
 import pytest
 
-from specweaver.core.flow.handlers import RunContext
 from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
@@ -26,6 +25,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.store import StateStore
+from specweaver.core.flow.handlers import RunContext
 
 
 @pytest.fixture

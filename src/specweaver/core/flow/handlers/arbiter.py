@@ -17,12 +17,12 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.handlers.base import RunContext
     from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.handlers.base import RunContext
 
 logger = logging.getLogger(__name__)
 

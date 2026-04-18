@@ -60,10 +60,10 @@ def draft(
         )
         raise typer.Exit(code=1)
 
-    from specweaver.core.flow.handlers.base import RunContext
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
+    from specweaver.core.flow.handlers.base import RunContext
     from specweaver.workspace.context.hitl_provider import HITLProvider
 
     settings, adapter, _ = _helpers._require_llm_adapter(project_path)
@@ -152,9 +152,9 @@ def review(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.core.flow.handlers.base import RunContext
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers.base import RunContext
 
     settings, adapter, _ = _helpers._require_llm_adapter(project_path)
     if settings and getattr(settings, "llm", None):

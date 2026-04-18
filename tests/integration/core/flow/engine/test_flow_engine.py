@@ -15,7 +15,6 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from specweaver.core.flow.handlers import RunContext, StepHandler, StepHandlerRegistry
 from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
@@ -29,6 +28,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.engine.store import StateStore
+from specweaver.core.flow.handlers import RunContext, StepHandler, StepHandlerRegistry
 
 if TYPE_CHECKING:
     from pathlib import Path
