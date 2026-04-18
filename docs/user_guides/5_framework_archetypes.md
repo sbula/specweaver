@@ -31,3 +31,7 @@ intents:
     - configure_aws
 ```
 The SpecWeaver LLM physically is blocked from executing shell logic cleanly without brittle `python` wrappers.
+
+## 4. Validating Contract Drift (Features 3.31+)
+Because LLMs often hallucinate endpoints, SpecWeaver features **Contract Drift Analysis (Rule C13)** natively in its validation pipeline Engine.
+If you inject an OpenAPI or gRPC definition (`protocol_schema`), the Architecture framework statically queries your source code's Abstract Syntax Tree (`ast_payload`) post-generation to guarantee mathematically every `ProtocolEndpoint` mapped has a corresponding backend router (e.g. `@app.post("/users")`). Any unresolved endpoints force an automatic rollback!

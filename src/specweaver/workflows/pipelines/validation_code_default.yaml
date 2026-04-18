@@ -33,6 +33,9 @@ steps:
   - name: c08_type_hints
     rule: C08
 
+  - name: c13_contract_drift
+    rule: C13
+
   # --- Subprocess rules (slower) ---
   - name: c03_tests_pass
     rule: C03

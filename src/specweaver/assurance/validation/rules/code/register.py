@@ -19,6 +19,7 @@ from .c07_no_orphan_todo import NoOrphanTodoRule
 from .c08_type_hints import TypeHintsRule
 from .c09_traceability import TraceabilityRule
 from .c12_archetype_code_bounds import C12ArchetypeCodeBoundsRule
+from .c13_contract_drift import C13ContractDriftRule
 
 _reg = get_registry()
 _reg.register("C01", SyntaxValidRule, "code")
@@ -31,3 +32,4 @@ _reg.register("C07", NoOrphanTodoRule, "code")
 _reg.register("C08", TypeHintsRule, "code")
 _reg.register("C09", TraceabilityRule, "code")
 _reg.register("C12", C12ArchetypeCodeBoundsRule, "code")
+_reg.register("C13", C13ContractDriftRule, "code")

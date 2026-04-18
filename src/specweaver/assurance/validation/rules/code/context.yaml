@@ -30,6 +30,9 @@ exposes:
   - NoBareExceptRule
   - NoOrphanTodoRule
   - TypeHintsRule
+  - TraceabilityRule
+  - C12ArchetypeCodeBoundsRule
+  - C13ContractDriftRule
 
 # -- Operational Metadata --------------------------------------------------
 operational:

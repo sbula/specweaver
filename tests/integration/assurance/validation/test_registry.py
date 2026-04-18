@@ -69,6 +69,7 @@ class TestBuiltInRegistration:
         "C08",
         "C09",
         "C12",
+        "C13",
     ]
 
     def test_all_spec_rules_registered(self):
@@ -84,9 +85,9 @@ class TestBuiltInRegistration:
         assert code_ids == self.EXPECTED_CODE_IDS
 
     def test_total_rule_count(self):
-        """Total of 22 rules registered."""
+        """Total of 23 rules registered."""
         reg = _populated_registry()
-        assert len(reg.list_all()) == 22
+        assert len(reg.list_all()) == 23
 
     def test_all_rules_are_rule_subclasses(self):
         """Every registered class is a Rule subclass."""
@@ -162,7 +163,7 @@ class QARunnerRegistryIntegration:
         ]
 
     def test_get_code_rules_without_subprocess(self):
-        """Code default pipeline without subprocess rules returns 7 rules."""
+        """Code default pipeline without subprocess rules returns 8 rules."""
         import specweaver.assurance.validation.rules.code  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
@@ -175,19 +176,19 @@ class QARunnerRegistryIntegration:
         filtered = [s for s in pipeline.steps if s.rule not in subprocess_ids]
         pipeline = pipeline.model_copy(update={"steps": filtered})
         results = execute_validation_pipeline(pipeline, "# Test")
-        assert len(results) == 7
+        assert len(results) == 8
         ids = [r.rule_id for r in results]
         assert "C03" not in ids
         assert "C04" not in ids
 
     def test_get_code_rules_with_subprocess(self):
-        """Code default pipeline with all rules returns 9 rules."""
+        """Code default pipeline with all rules returns 10 rules."""
         import specweaver.assurance.validation.rules.code  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")
         results = execute_validation_pipeline(pipeline, "# Test")
-        assert len(results) == 9
+        assert len(results) == 10
         ids = sorted([r.rule_id for r in results])
-        assert ids == ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09"]
+        assert ids == ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C13"]

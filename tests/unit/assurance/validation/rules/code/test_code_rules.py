@@ -358,6 +358,7 @@ class TestCodeRulesPipeline:
         assert "C01" in ids  # Subprocess rules included
         assert "C03" in ids
         assert "C04" in ids
+        assert "C13" in ids
 
     def test_run_code_rules_on_clean_code(self) -> None:
         import specweaver.assurance.validation.rules.code  # noqa: F401

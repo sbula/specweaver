@@ -1,4 +1,3 @@
-
 from specweaver.core.loom.atoms.base import AtomStatus
 from specweaver.core.loom.atoms.protocol.atom import ProtocolAtom
 

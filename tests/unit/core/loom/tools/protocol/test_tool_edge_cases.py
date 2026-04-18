@@ -1,4 +1,3 @@
-
 from specweaver.core.loom.tools.protocol.tool import ProtocolTool
 
 

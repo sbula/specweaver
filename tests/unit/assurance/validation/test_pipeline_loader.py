@@ -31,7 +31,7 @@ class TestPackagedDefaults:
         """Loads the packaged validation_code_default pipeline."""
         pipeline = load_pipeline_yaml("validation_code_default")
         assert pipeline.name == "validation_code_default"
-        assert len(pipeline.steps) == 9
+        assert len(pipeline.steps) == 10
 
     def test_load_spec_library_profile(self):
         """Loads and resolves the library profile (extends spec_default)."""
