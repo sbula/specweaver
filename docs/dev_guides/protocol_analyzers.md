@@ -2,6 +2,10 @@
 
 SpecWeaver utilizes a purely native, zero-compilation protocol parsing layer located at `specweaver/core/loom/commons/protocol`. This module is designed to structurally map external API definitions (like OpenAPI `paths`, AsyncAPI `channels`, and gRPC `rpc` methods) into standard `ProtocolEndpoint` and `ProtocolMessage` Pydantic models.
 
+Currently supported out of the box:
+- **OpenAPI 3.x**: Extracts `paths` and `components.schemas`.
+- **AsyncAPI 3.x**: Extracts `channels` and `components.messages`.
+
 ## Architectural Constraints
 
 The Protocol module operates inside the Execution layer (Loom) but acts as an **adapter**.
