@@ -25,6 +25,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **AST Drift Detection** — Structural parsing of implementations via `tree-sitter` to automatically pinpoint methods or modules that deviate from original Plan decisions.
 - **Polyglot AST Skeleton Extractor** — High-performance tree-sitter bindings for Python, JS/TS, Java, Kotlin, and Rust allowing Agents to surgical read and write symbols directly without token bloat.
 - **Archetype-Based Rule Sets (Feature 3.29)** — Execute isolated framework bounds checking natively for multi-language components (e.g. enforcing `@RestController` in Spring Boot) using dependency-injected mathematical YAML dictionaries avoiding custom Python wrappers.
+- **Macro & Annotation Evaluator (Feature 3.30)** — Specialized indexer capable of unrolling Rust Procedural Macros (`#[derive]`) and Kotlin Compiler Plugins (Spring Boot annotations) so the LLM understands the true runtime reality.
 - **Architectural Enforcement** — Strict Domain-Driven "Layer Cake" isolation via Tach, natively bounded as a PEP-420 Implicit Namespace Package.
 - **Git Worktree Bouncer Sandbox (Feature 3.26)** — Dictatorial worktree sandboxing of LLM handlers via `.git` index diff striping, locking generation to `context.yaml` boundaries safely by dropping unallowed mathematical patch hunks prior to commit.
 - **Interactive Gate Variables (Feature 3.26c)** — Elevates Human-In-The-Loop feedback loops into strictly weighted `<dictator-overrides>` variables to prevent UX frustration during component regeneration loops.
@@ -284,7 +285,7 @@ docker compose up -d
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C09, C12, drift detection)
-├── tests/                      # 4296 tests (unit, integration, E2E)
+├── tests/                      # 4256 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

@@ -36,11 +36,14 @@ def handler():
     evaluator_dir = project_dir / ".specweaver" / "evaluators"
     evaluator_dir.mkdir(parents=True)
 
-    custom_yaml = evaluator_dir / "python.yaml"
+    custom_yaml = evaluator_dir / "fastapi.yaml"
     custom_yaml.write_text("""
 decorators:
   custom_app.get: "This is a custom GET endpoint override!"
 """, encoding="utf-8")
+
+    # Add context.yaml so ArchetypeResolver detects fastapi
+    (project_dir / "context.yaml").write_text("archetype: fastapi", encoding="utf-8")
 
     # 2. Mock context
     context = RunContext(
@@ -56,11 +59,11 @@ decorators:
     handler = ValidateCodeHandler()
 
     # 3. Patch the pipeline execution so we can just assert the DI AST payload
-    import specweaver.assurance.validation.executor
-
     from typing import Any
+
+    import specweaver.assurance.validation.executor
     from specweaver.assurance.validation.models import RuleResult
-    
+
     stash: dict[str, Any] = {}
 
     def mock_execute(pipeline: Any, content: str, spec_path: Path | None = None, *, registry: Any = None) -> list[RuleResult]:
@@ -94,8 +97,8 @@ decorators:
 
             from specweaver.workflows.evaluators.loader import load_evaluator_schemas
             loaded = load_evaluator_schemas(project_dir)
-            assert "python" in loaded
-            assert loaded["python"]["decorators"]["custom_app.get"] == "This is a custom GET endpoint override!"
+            assert "fastapi" in loaded
+            assert loaded["fastapi"]["decorators"]["custom_app.get"] == "This is a custom GET endpoint override!"
 
             assert result.status.value == "passed"
     finally:
@@ -110,11 +113,13 @@ def test_tool_dispatcher_dynamic_schema_injection(tmp_path: Path) -> None:
     evaluator_dir = project_dir / ".specweaver" / "evaluators"
     evaluator_dir.mkdir(parents=True)
 
-    custom_yaml = evaluator_dir / "python.yaml"
+    custom_yaml = evaluator_dir / "spring-boot.yaml"
     custom_yaml.write_text("""
 decorators:
   test_dispatcher.inject: "Dispatcher Test Passed"
 """, encoding="utf-8")
+
+    (project_dir / "context.yaml").write_text("archetype: spring-boot", encoding="utf-8")
 
     from specweaver.core.loom.security import WorkspaceBoundary
     boundary = WorkspaceBoundary(roots=[project_dir])
@@ -129,4 +134,4 @@ decorators:
     # Direct validation of loader against boundary root
     from specweaver.workflows.evaluators.loader import load_evaluator_schemas
     schemas = load_evaluator_schemas(boundary.roots[0])
-    assert schemas["python"]["decorators"]["test_dispatcher.inject"] == "Dispatcher Test Passed"
+    assert schemas["spring-boot"]["decorators"]["test_dispatcher.inject"] == "Dispatcher Test Passed"

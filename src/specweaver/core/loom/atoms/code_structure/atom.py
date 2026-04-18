@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class CodeStructureAtom(Atom):
     """Atom for retrieving AST structural bounds from project source code."""
 
-    def __init__(self, file_executor: FileExecutor | None = None, cwd: Path | None = None, evaluator_schemas: dict[str, Any] | None = None) -> None:
+    def __init__(self, file_executor: FileExecutor | None = None, cwd: Path | None = None, evaluator_schemas: dict[str, Any] | None = None, active_archetype: str = "generic") -> None:
         """Initialize with a FileExecutor or construct one if cwd is provided."""
         if file_executor:
             self._executor = file_executor
@@ -42,6 +42,7 @@ class CodeStructureAtom(Atom):
         else:
             raise ValueError("CodeStructureAtom requires either file_executor or cwd")
         self._evaluator_schemas = evaluator_schemas or {}
+        self._active_archetype = active_archetype
 
     def _get_parser(self, path: str) -> CodeStructureInterface | None:
         """Map a file extension to its respective TreeSitter AST parser."""
@@ -215,7 +216,7 @@ class CodeStructureAtom(Atom):
             language = lang_map.get(ext, "")
 
             try:
-                explanation = evaluator.evaluate_markers(language, symbol_markers)
+                explanation = evaluator.evaluate_markers(language, self._active_archetype, symbol_markers)
             except Exception as e:
                 return AtomResult(status=AtomStatus.FAILED, message=f"Evaluator error: {e!s}")
 

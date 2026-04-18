@@ -12,7 +12,8 @@ from specweaver.core.loom.tools.code_structure.tool import CodeStructureTool, Co
 @pytest.fixture
 def mock_schemas():
     return {
-        "python": {
+        "fastapi": {
+            "metadata": {"supported_languages": ["python"]},
             "decorators": {
                 "dataclass": "Python standard library dataclass generator."
             }
@@ -24,7 +25,7 @@ def test_code_structure_atom_read_unrolled_symbol(tmp_path, mock_schemas):
     test_file.write_text("@dataclass\nclass User:\n    id: int\n")
 
     executor = FileExecutor(cwd=tmp_path)
-    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas, active_archetype="fastapi")
 
     context = {
         "intent": "read_unrolled_symbol",
@@ -43,7 +44,7 @@ def test_code_structure_tool_exposes_read_unrolled_symbol(tmp_path, mock_schemas
     test_file.write_text("@dataclass\nclass User:\n    id: int\n")
 
     executor = FileExecutor(cwd=tmp_path)
-    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas, active_archetype="fastapi")
 
     tool = CodeStructureTool(atom=atom, role="implementer", grants=[FolderGrant(path="", mode=AccessMode.FULL, recursive=True)])
 
@@ -58,7 +59,7 @@ def test_atom_graceful_unknown_extension_and_bare_symbol(tmp_path, mock_schemas)
     test_file = tmp_path / "test.xyz"
     test_file.write_text("@dataclass\nclass User:\n    id: int\n")
     executor = FileExecutor(cwd=tmp_path)
-    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas, active_archetype="fastapi")
     res = atom.run({"intent": "read_unrolled_symbol", "path": "test.xyz", "symbol_name": "User"})
     assert res.status.value == "FAILED"
     assert "not supported" in res.message.lower()
@@ -74,8 +75,14 @@ def test_atom_graceful_unknown_extension_and_bare_symbol(tmp_path, mock_schemas)
 def test_atom_evaluator_comment_routing_by_extension(tmp_path):
     # Story 7
     schemas = {
-        "java": {"decorators": {"Entity": "JPA Entity"}},
-        "python": {"decorators": {"dataclass": "Python standard library dataclass generator."}}
+        "spring-boot": {
+            "metadata": {"supported_languages": ["java", "kotlin"]},
+            "decorators": {"Entity": "JPA Entity"}
+        },
+        "fastapi": {
+            "metadata": {"supported_languages": ["python"]},
+            "decorators": {"dataclass": "Python standard library dataclass generator."}
+        }
     }
     fjava = tmp_path / "test.java"
     fjava.write_text("@Entity\nclass User {}\n")
@@ -83,23 +90,25 @@ def test_atom_evaluator_comment_routing_by_extension(tmp_path):
     fpy.write_text("@dataclass\nclass User:\n    id: int\n")
 
     executor = FileExecutor(cwd=tmp_path)
-    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=schemas)
-
-    res_j = atom.run({"intent": "read_unrolled_symbol", "path": "test.java", "symbol_name": "User"})
+    # Evaluate specifically as spring-boot
+    atom_java = CodeStructureAtom(file_executor=executor, evaluator_schemas=schemas, active_archetype="spring-boot")
+    res_j = atom_java.run({"intent": "read_unrolled_symbol", "path": "test.java", "symbol_name": "User"})
     assert res_j.status.value == "SUCCESS"
     assert "// [Framework Eval] JPA Entity" in res_j.exports["symbol"]
 
-    res_p = atom.run({"intent": "read_unrolled_symbol", "path": "test.py", "symbol_name": "User"})
+    # Evaluate specifically as fastapi
+    atom_py = CodeStructureAtom(file_executor=executor, evaluator_schemas=schemas, active_archetype="fastapi")
+    res_p = atom_py.run({"intent": "read_unrolled_symbol", "path": "test.py", "symbol_name": "User"})
     assert res_p.status.value == "SUCCESS"
     assert "# [Framework Eval] Python standard library dataclass generator." in res_p.exports["symbol"]
 
 def test_atom_cyclic_recursion_engine_safety(tmp_path):
     # Story 8
-    schemas = {"python": {"decorators": {"SelfReferencing": ">>{SelfReferencing}<<"}}}
+    schemas = {"fastapi": {"metadata": {"supported_languages": ["python"]}, "decorators": {"SelfReferencing": ">>{SelfReferencing}<<"}}}
     fpy = tmp_path / "test.py"
     fpy.write_text("@SelfReferencing\nclass User:\n    id: int\n")
     executor = FileExecutor(cwd=tmp_path)
-    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=schemas)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=schemas, active_archetype="fastapi")
     res = atom.run({"intent": "read_unrolled_symbol", "path": "test.py", "symbol_name": "User"})
 
     # The atom should catch parsing errors or at least bubble up correctly as FAILED?
@@ -114,7 +123,7 @@ def test_atom_graceful_missing_symbol(tmp_path, mock_schemas):
     test_file = tmp_path / "test.py"
     test_file.write_text("@dataclass\nclass User:\n    id: int\n")
     executor = FileExecutor(cwd=tmp_path)
-    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas, active_archetype="fastapi")
     res = atom.run({"intent": "read_unrolled_symbol", "path": "test.py", "symbol_name": "Database"})
     assert res.status.value == "FAILED"
     assert "not found" in res.message.lower()
@@ -124,7 +133,7 @@ def test_tool_blocks_role_without_intent(tmp_path, mock_schemas):
     test_file = tmp_path / "test.py"
     test_file.write_text("class User:\n    id: int\n")
     executor = FileExecutor(cwd=tmp_path)
-    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas, active_archetype="fastapi")
 
     # Reviewer and Implementer have read_unrolled_symbol, but let's say "drafter" does not
     tool = CodeStructureTool(atom=atom, role="drafter", grants=[FolderGrant(path="", mode=AccessMode.FULL, recursive=True)])
@@ -136,7 +145,7 @@ def test_tool_blocks_invalid_folder_grant(tmp_path, mock_schemas):
     test_file = tmp_path / "test.py"
     test_file.write_text("class User:\n    id: int\n")
     executor = FileExecutor(cwd=tmp_path)
-    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=mock_schemas, active_archetype="fastapi")
 
     # Grant ONLY to src/ folder, but we try to access test.py
     tool = CodeStructureTool(atom=atom, role="implementer", grants=[FolderGrant(path="src", mode=AccessMode.FULL, recursive=True)])

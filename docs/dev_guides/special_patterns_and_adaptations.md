@@ -175,3 +175,17 @@ Instead of requiring `def __init__(self, required_markers: list = None, ast_payl
 ### Why we do it:
 If system parameters collided dynamically against pure logic rules during strictly typed `**kwargs` unwrapping via `**step.params`, new rules would permanently crash against `TypeError: unexpected keyword argument` the second the Engine scaled up its contextual system variables. By forcefully splitting payload injection into a post-init hydration wrapper, Validation Rules are mathematically unbound from Executor constraints, allowing `C12ArchetypeCodeBoundsRule` to read directly from `.context` while maintaining `PARAM_MAP` integrity.
 
+---
+
+## 13. Flat Archetype Evaluators (The LSP Bypass)
+
+When configuring the Core Validation Engine to parse structural AST constraints natively against framework-specific annotations (e.g. Kotlin's `@RestController` or Rust's `#[derive(Clone)]`), we deliberately bypassed the standard industry approach of booting up heavy runtime Language Servers (LSPs) or compiler plugins.
+
+### How it works:
+Instead of trying to parse raw source code through heavy background processes, `SchemaEvaluator` parses flat YAML declarative files (e.g., `fastapi.yaml`, `actix-web.yaml`) stored directly in `workflows/evaluators/frameworks/`. These YAML files define strict mathematical unrollings mapping raw decorators/macros directly to their underlying abstract logic. 
+Furthermore, the mappings are isolated by **Archetype** rather than **Language**. There is no `java.yaml` containing Spring Boot and Quarkus. Instead, there is a distinct `spring-boot.yaml` securely guarded by `metadata.supported_languages: ["java", "kotlin"]`.
+
+### Why we do it:
+1. **Speed & Stability**: Firing up a background LSP or rust-analyzer instance during critical AI Generation loops adds a devastating 5–10 second latency tax per check, crippling iterative loop speeds. Unrolling YAML abstractions in-memory dynamically reduces structural mapping times to `0.01` seconds.
+2. **Preventing Cross-Framework Hallucinations**: By enforcing flat archetype models bound natively by `supported_languages`, if an LLM hallucinates a `FastAPI` construct into a `Node.js` Typescript worker, the validation explicitly drops the archetype matching organically rather than tearing down the parser natively.
+

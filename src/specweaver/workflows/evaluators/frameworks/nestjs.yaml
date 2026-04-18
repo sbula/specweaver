@@ -1,0 +1,12 @@
+metadata:
+  framework: nestjs
+  supported_languages: ["typescript", "javascript"]
+
+decorators:
+  Controller: "@Injectable()\n// Binds Express Router Target"
+  Get: "@RequestMapping({ method: RequestMethod.GET })"
+  Post: "@RequestMapping({ method: RequestMethod.POST })"
+  Put: "@RequestMapping({ method: RequestMethod.PUT })"
+  Delete: "@RequestMapping({ method: RequestMethod.DELETE })"
+  Injectable: "// DI Container managed provider"
+  Module: "// IoC Container Boundary"

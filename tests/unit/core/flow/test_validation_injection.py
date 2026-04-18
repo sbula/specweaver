@@ -17,28 +17,20 @@ def test_load_evaluator_schemas_empty() -> None:
 
 
 def test_load_evaluator_schemas_success() -> None:
-    """Test that valid YAMLs are parsed and merged by language."""
+    """Test that valid YAMLs are parsed and merged by framework."""
     mock_frameworks_dir = MagicMock()
-
-    mock_java_dir = MagicMock()
-    mock_java_dir.is_dir.return_value = True
-    mock_java_dir.name = "java"
 
     mock_yaml_file = MagicMock()
     mock_yaml_file.is_file.return_value = True
-    mock_yaml_file.name = "spring.yaml"
+    mock_yaml_file.name = "spring-boot.yaml"
     mock_yaml_file.read_text.return_value = '''
 modifiers:
   public: "This is public"
 decorators:
   RestController: "Marks REST"
 '''
-    mock_java_dir.iterdir.return_value = [mock_yaml_file]
 
-    # Another language to ensure loop works
-    mock_py_dir = MagicMock()
-    mock_py_dir.is_dir.return_value = True
-    mock_py_dir.name = "python"
+    # Another framework to ensure loop works
     mock_py_file = MagicMock()
     mock_py_file.is_file.return_value = True
     mock_py_file.name = "fastapi.yaml"
@@ -46,21 +38,20 @@ decorators:
 decorators:
   app.get: "GET route"
 '''
-    mock_py_dir.iterdir.return_value = [mock_py_file]
 
-    mock_frameworks_dir.iterdir.return_value = [mock_java_dir, mock_py_dir]
+    mock_frameworks_dir.iterdir.return_value = [mock_yaml_file, mock_py_file]
 
     with patch("importlib.resources.files", return_value=mock_frameworks_dir):
         schemas = load_evaluator_schemas()
 
-        assert "java" in schemas
-        assert "python" in schemas
+        assert "spring-boot" in schemas
+        assert "fastapi" in schemas
 
-        java_schema = schemas["java"]
-        assert java_schema["decorators"]["RestController"] == "Marks REST"
-        assert java_schema["modifiers"]["public"] == "This is public"
+        sb_schema = schemas["spring-boot"]
+        assert sb_schema["decorators"]["RestController"] == "Marks REST"
+        assert sb_schema["modifiers"]["public"] == "This is public"
 
-        py_schema = schemas["python"]
+        py_schema = schemas["fastapi"]
         assert py_schema["decorators"]["app.get"] == "GET route"
 
 
@@ -68,21 +59,16 @@ def test_load_evaluator_schemas_project_override() -> None:
     """Test that a user-supplied project configuration deep-merges over the packaged default."""
     mock_frameworks_dir = MagicMock()
 
-    mock_java_dir = MagicMock()
-    mock_java_dir.is_dir.return_value = True
-    mock_java_dir.name = "java"
-
     mock_yaml_file = MagicMock()
     mock_yaml_file.is_file.return_value = True
-    mock_yaml_file.name = "spring.yaml"
+    mock_yaml_file.name = "spring-boot.yaml"
     mock_yaml_file.read_text.return_value = '''
 modifiers:
   public: "This is public"
 decorators:
   RestController: "System Default"
 '''
-    mock_java_dir.iterdir.return_value = [mock_yaml_file]
-    mock_frameworks_dir.iterdir.return_value = [mock_java_dir]
+    mock_frameworks_dir.iterdir.return_value = [mock_yaml_file]
 
     # Mock project directory
     mock_project_dir = MagicMock()
@@ -91,7 +77,7 @@ decorators:
     mock_local_dir.is_dir.return_value = True
 
     mock_override_file = MagicMock()
-    mock_override_file.stem = "java"
+    mock_override_file.stem = "spring-boot"
     mock_override_file.read_text.return_value = '''
 decorators:
   RestController: "User Override"
@@ -102,17 +88,17 @@ decorators:
     with patch("importlib.resources.files", return_value=mock_frameworks_dir):
         schemas = load_evaluator_schemas(project_dir=mock_project_dir)
 
-        assert "java" in schemas
-        java_schema = schemas["java"]
+        assert "spring-boot" in schemas
+        sb_schema = schemas["spring-boot"]
 
         # Original unmodified key should persist
-        assert java_schema["modifiers"]["public"] == "This is public"
+        assert sb_schema["modifiers"]["public"] == "This is public"
 
         # User override should win
-        assert java_schema["decorators"]["RestController"] == "User Override"
+        assert sb_schema["decorators"]["RestController"] == "User Override"
 
         # New user key should be appended
-        assert java_schema["decorators"]["UserCustom"] == "Local Only"
+        assert sb_schema["decorators"]["UserCustom"] == "Local Only"
 
 
 def test_load_evaluator_schemas_malformed_skips_gracefully() -> None:
@@ -127,8 +113,8 @@ def test_load_evaluator_schemas_malformed_skips_gracefully() -> None:
     mock_local_dir.is_dir.return_value = True
 
     mock_corrupt_file = MagicMock()
-    mock_corrupt_file.stem = "java"
-    mock_corrupt_file.name = "java.yaml"
+    mock_corrupt_file.stem = "spring-boot"
+    mock_corrupt_file.name = "spring-boot.yaml"
     mock_corrupt_file.read_text.return_value = '''
 modifiers:
   public: "This is public"
@@ -150,22 +136,16 @@ def test_load_evaluator_schemas_skips_invalid_files() -> None:
 
     # __pycache__ dir
     mock_pycache = MagicMock()
-    mock_pycache.is_dir.return_value = True
+    mock_pycache.is_file.return_value = False
     mock_pycache.name = "__pycache__"
-
-    mock_java_dir = MagicMock()
-    mock_java_dir.is_dir.return_value = True
-    mock_java_dir.name = "java"
 
     mock_txt_file = MagicMock()
     mock_txt_file.is_file.return_value = True
     mock_txt_file.name = "readme.txt"
     mock_txt_file.read_text.return_value = "hello"
 
-    mock_java_dir.iterdir.return_value = [mock_txt_file]
-
-    mock_frameworks_dir.iterdir.return_value = [mock_pycache, mock_java_dir]
+    mock_frameworks_dir.iterdir.return_value = [mock_pycache, mock_txt_file]
 
     with patch("importlib.resources.files", return_value=mock_frameworks_dir):
         schemas = load_evaluator_schemas()
-        assert schemas == {}  # java was empty, pycache skipped
+        assert schemas == {}  # pycache and txt skipped

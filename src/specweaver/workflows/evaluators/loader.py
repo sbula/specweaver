@@ -21,23 +21,19 @@ def load_evaluator_schemas(project_dir: Path | None = None) -> dict[str, Any]:  
 
     try:
         frameworks_dir = importlib.resources.files("specweaver.workflows.evaluators.frameworks")
-        for lang_dir in frameworks_dir.iterdir():
-            if lang_dir.is_dir() and lang_dir.name != "__pycache__":
-                language = lang_dir.name
-                lang_schema: dict[str, Any] = {}
-                for yaml_file in lang_dir.iterdir():
-                    if yaml_file.is_file() and yaml_file.name.endswith(".yaml"):
-                        text = yaml_file.read_text(encoding="utf-8")
-                        try:
-                            content = _yaml.load(io.StringIO(text)) or {}
-                            if isinstance(content, dict):
-                                lang_schema = deep_merge_dict(lang_schema, content)
-                        except Exception as e:
-                            # Catch YAMLError and other parse issues gracefully
-                            import logging
-                            logging.getLogger(__name__).warning("Failed to parse package YAML schema %s: %s", yaml_file.name, e)
-                if lang_schema:
-                    schemas[language] = lang_schema
+        for yaml_file in frameworks_dir.iterdir():
+            if yaml_file.is_file() and yaml_file.name.endswith(".yaml"):
+                language = yaml_file.name[:-5]  # remove .yaml
+                text = yaml_file.read_text(encoding="utf-8")
+                try:
+                    content = _yaml.load(io.StringIO(text)) or {}
+                    if isinstance(content, dict):
+                        if language not in schemas:
+                            schemas[language] = {}
+                        schemas[language] = deep_merge_dict(schemas[language], content)
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning("Failed to parse package YAML schema %s: %s", yaml_file.name, e)
     except (FileNotFoundError, ModuleNotFoundError, TypeError, OSError):
         pass
 

@@ -6,7 +6,8 @@ from specweaver.core.loom.commons.language.evaluator import EvaluatorDepthError,
 @pytest.fixture
 def sample_schemas():
     return {
-        "java": {
+        "spring-boot": {
+            "metadata": {"supported_languages": ["java", "kotlin"]},
             "decorators": {
                 "RestController": "Handles HTTP requests",
                 "GetMapping": "Maps HTTP GET",
@@ -16,7 +17,8 @@ def sample_schemas():
                 "JpaRepository": "Provides database operations"
             }
         },
-        "python": {
+        "fastapi": {
+            "metadata": {"supported_languages": ["python"]},
             "decorators": {
                 "app.get": "FastAPI GET Route"
             }
@@ -32,17 +34,26 @@ def test_schema_evaluator_translates_known_markers(sample_schemas):
         "bases": {}
     }
 
-    result = evaluator.evaluate_markers("java", markers)
+    result = evaluator.evaluate_markers("java", "spring-boot", markers)
 
     # Needs to be prefixed with `//` for java
     assert "// [Framework Eval] Handles HTTP requests" in result
     assert "// [Framework Eval] Maps HTTP GET" in result
 
+def test_schema_evaluator_skips_unsupported_languages(sample_schemas):
+    """Test that NFR-2 successfully skips applying Java logic to Python files."""
+    evaluator = SchemaEvaluator(sample_schemas)
+    markers = {"decorators": {"RestController": []}, "bases": {}}
+
+    # Try to evaluate spring-boot against python AST
+    result = evaluator.evaluate_markers("python", "spring-boot", markers)
+    assert result == ""  # Safely returns empty
+
 def test_schema_evaluator_language_comment_prefixes(sample_schemas):
     evaluator = SchemaEvaluator(sample_schemas)
     markers = {"decorators": {"app.get": []}, "bases": {}}
 
-    result = evaluator.evaluate_markers("python", markers)
+    result = evaluator.evaluate_markers("python", "fastapi", markers)
 
     assert "# [Framework Eval] FastAPI GET Route" in result
 
@@ -55,7 +66,7 @@ def test_schema_evaluator_recursion_protection(sample_schemas):
     }
 
     with pytest.raises(EvaluatorDepthError, match="Maximum cyclic evaluator depth"):
-        evaluator.evaluate_markers("java", markers)
+        evaluator.evaluate_markers("java", "spring-boot", markers)
 
 def test_schema_evaluator_comment_prefix_mapping():
     evaluator = SchemaEvaluator({})

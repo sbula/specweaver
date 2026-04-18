@@ -157,7 +157,8 @@ class ValidateSpecHandler:
 
         cwd_path = project_path or spec_path.parent
         schemas = load_evaluator_schemas(project_dir=project_path)
-        atom = CodeStructureAtom(cwd=cwd_path, evaluator_schemas=schemas)
+        active_archetype = archetype if archetype else "generic"
+        atom = CodeStructureAtom(cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_archetype)
         payload_res = atom.run({"intent": "read_file_structure", "path": str(spec_path)})
 
         ast_payload: dict[str, Any] = {}
@@ -272,7 +273,10 @@ class ValidateCodeHandler:
 
         cwd_path = project_path or code_path.parent
         schemas = load_evaluator_schemas(project_dir=project_path)
-        atom = CodeStructureAtom(cwd=cwd_path, evaluator_schemas=schemas)
+
+        # If the pipeline runner natively resolved to an archetype via folder context early out, use it.
+        active_arch = archetype if archetype else "generic"
+        atom = CodeStructureAtom(cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_arch)
         payload_res = atom.run({"intent": "read_file_structure", "path": str(code_path)})
 
         ast_payload: dict[str, Any] = {}

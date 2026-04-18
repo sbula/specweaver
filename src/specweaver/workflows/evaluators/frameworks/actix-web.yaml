@@ -1,0 +1,9 @@
+metadata:
+  framework: actix-web
+  supported_languages: ["rust"]
+
+decorators:
+  get: "// Actix HTTP GET Route"
+  post: "// Actix HTTP POST Route"
+  "derive(Clone)": "impl Clone for >>{Target}<< {\n    fn clone(&self) -> Self\n}"
+  "derive(Debug)": "impl std::fmt::Debug for >>{Target}<<"

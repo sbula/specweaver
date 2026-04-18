@@ -1,0 +1,9 @@
+metadata:
+  framework: fastapi
+  supported_languages: ["python"]
+
+decorators:
+  app.get: "@api_route(method='GET')"
+  router.get: "@api_route(method='GET')"
+  app.post: "@api_route(method='POST')"
+  router.post: "@api_route(method='POST')"

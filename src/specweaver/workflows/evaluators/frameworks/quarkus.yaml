@@ -1,0 +1,13 @@
+metadata:
+  framework: quarkus
+  supported_languages: ["java", "kotlin"]
+
+decorators:
+  ApplicationScoped: "@Singleton"
+  RequestScoped: "@Scope"
+  GET: "@javax.ws.rs.GET"
+  POST: "@javax.ws.rs.POST"
+  Path: "@javax.ws.rs.Path"
+  Inject: "@javax.inject.Inject"
+  Entity: "@javax.persistence.Entity"
+  Transactional: "@javax.transaction.Transactional"

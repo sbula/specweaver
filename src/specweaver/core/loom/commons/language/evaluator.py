@@ -49,19 +49,25 @@ class SchemaEvaluator:
 
         return result
 
-    def evaluate_markers(self, language: str, markers: dict[str, Any]) -> str:
+    def evaluate_markers(self, language: str, framework: str, markers: dict[str, Any]) -> str:
         """Translate extracted AST dictionary markers to formatted explanation comments.
 
         Args:
-            language: The language being evaluated (e.g. 'java', 'python').
+            language: The language being evaluated (e.g. 'java', 'python') to determine comment prefix.
+            framework: The active archetype string (e.g. 'spring-boot', 'nestjs') to query the dictionary.
             markers: The dictionary extracted from CodeStructureInterface frameworks.
 
         Returns:
-            A block of formatted comments representing the unrolled reality.
+            A block of formatted comments representing the unrolled reality, or an empty string if skipped.
         """
+        lang_schema = self._schemas.get(framework, {})
+
+        # FR-2/NFR-2: Gracefully ignore languages not supported by this framework archetype
+        if "metadata" in lang_schema and "supported_languages" in lang_schema["metadata"] and language not in lang_schema["metadata"]["supported_languages"]:
+            return ""
+
         lines = []
         prefix = self._get_comment_prefix(language)
-        lang_schema = self._schemas.get(language, {})
 
         for category, items in markers.items():
             schema_category = lang_schema.get(category, {})

@@ -1,0 +1,13 @@
+metadata:
+  framework: spring-boot
+  supported_languages: ["java", "kotlin"]
+
+decorators:
+  RestController: "@Controller\n@ResponseBody"
+  Controller: "@Component"
+  GetMapping: "@RequestMapping(method = RequestMethod.GET)"
+  PostMapping: "@RequestMapping(method = RequestMethod.POST)"
+  PutMapping: "@RequestMapping(method = RequestMethod.PUT)"
+  DeleteMapping: "@RequestMapping(method = RequestMethod.DELETE)"
+  Inject: "@Autowired"
+  SpringBootApplication: "@Configuration\n@EnableAutoConfiguration\n@ComponentScan"

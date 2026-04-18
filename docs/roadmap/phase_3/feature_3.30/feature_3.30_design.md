@@ -98,8 +98,8 @@ Feature 3.29 (Archetype-Based Rule Sets) - Loading declarative YAML bounds from 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Core Schema Evaluator Engine | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
-| SF-2 | Native Core Framework Libraries | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Core Schema Evaluator Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Native Core Framework Libraries | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-3 | Tool Intent & Guide Publishing | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff

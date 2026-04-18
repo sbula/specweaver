@@ -54,7 +54,8 @@ To add a language, say **Go**, you will create a highly isolated submodule insid
 6. **`stack_trace_filter.py`**
    - Implements `StackTraceFilterInterface` to strip unhelpful system stack errors, isolating the domain payload emitted from Go native test failures.
 7. **Framework Evaluator Schemas**
-   - Provide declarative YAML maps for popular frameworks in the target language (e.g., Gin/Fiber for Go) to unroll runtime markers into `CodeStructureAtom.read_unrolled_symbol`.
+   - Provide fallback declarative YAML maps for popular frameworks in the target language (e.g., Gin/Fiber for Go) within `specweaver.workflows.evaluators.frameworks` as flat files (e.g. `gin.yaml`). To bind the framework strictly to the Go language and prevent cross-framework hallucinations, include `metadata: supported_languages: ["go"]` natively. Note that users can natively override these defaults by placing their own `<framework>.yaml` inside their isolated project directory at `<project_dir>/.specweaver/evaluators/`.
+   - **Architectural Rationale**: By explicitly mapping meta-annotations or procedural macros to their expanded equivalents in static YAML (e.g., mapping `@RestController` to `@Controller + @ResponseBody`), we provide the LLM with deterministic compiler vision. This novel dictionary-bypass avoids the 5-10 second latency tax of firing up a heavy runtime Language Server (LSP) or compiler plugin (like `cargo expand` or `KSP`) during critical agentic feedback loops, without sacrificing architectural accuracy.
 
 ### B. The Interface Contract
 
@@ -99,7 +100,7 @@ We rigorously separate test boundaries. Do not mix Mock constraints into Live fi
 - [ ] No Regex usage where JSON/SARIF is natively supported.
 - [ ] Language dispatcher mapped appropriately inside `QARunnerAtom` and `QARunnerTool`.
 - [ ] Tree-sitter binaries registered inside `CodeStructureAtom`.
-- [ ] Added default YAML schema for macro/annotation unrolling in `workflows/evaluators/frameworks/<lang>/`.
+- [ ] Added default YAML schema for macro/annotation unrolling in `workflows/evaluators/frameworks/<archetype>.yaml` mapping specifically to `"supported_languages": ["<lang>"]`.
 - [ ] Unit tests constructed with static parsing fixtures.
 - [ ] Live integration tests built against a dummy project fixture folder.
 

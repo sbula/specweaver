@@ -164,8 +164,19 @@ class ToolDispatcher:
             project_dir = boundary.roots[0] if boundary.roots else None
             schemas = load_evaluator_schemas(project_dir=project_dir)
 
+            # Extract archetype dynamically to guarantee framework isolation
+            active_archetype = "generic"
+            if project_dir:
+                try:
+                    from specweaver.core.config.archetype_resolver import ArchetypeResolver
+                    resolver = ArchetypeResolver(project_dir)
+                    resolved_arch = resolver.resolve(project_dir / "stub")
+                    active_archetype = resolved_arch if resolved_arch else "generic"
+                except Exception:
+                    pass
+
             # Atom executes locally reading files relative to project root
-            atom = CodeStructureAtom(EngineFileExecutor(boundary.roots[0]), evaluator_schemas=schemas)
+            atom = CodeStructureAtom(EngineFileExecutor(boundary.roots[0]), evaluator_schemas=schemas, active_archetype=active_archetype)
 
             # Reuse exact read-only grant logic from fs
             grants = []
