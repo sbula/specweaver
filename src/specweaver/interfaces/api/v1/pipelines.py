@@ -31,7 +31,7 @@ _db_dep = Depends(get_db)
 @router.get("/pipelines")
 def list_pipelines() -> list[dict[str, str]]:
     """List available pipeline templates."""
-    from specweaver.core.flow.parser import list_bundled_pipelines
+    from specweaver.core.flow.engine.parser import list_bundled_pipelines
 
     names = list_bundled_pipelines()
     return [{"name": n, "source": "bundled"} for n in names]
@@ -52,9 +52,9 @@ def start_pipeline_run(
     import uuid
 
     from specweaver.core.flow.handlers import RunContext
-    from specweaver.core.flow.parser import load_pipeline
-    from specweaver.core.flow.runner import PipelineRunner
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.parser import load_pipeline
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     # Resolve project
@@ -127,7 +127,7 @@ def get_run_status(
     detail: str = Query(default="summary", description="'summary' or 'full'."),
 ) -> dict[str, object]:
     """Get run status and step results."""
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
@@ -170,7 +170,7 @@ def get_run_status(
 @router.get("/runs/{run_id}/log")
 def get_run_log(run_id: str) -> list[dict[str, object]]:
     """Get audit log for a pipeline run."""
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
@@ -194,9 +194,9 @@ def resume_run(
 ) -> PipelineRunResponse:
     """Resume a parked pipeline run."""
     from specweaver.core.flow.handlers import RunContext
-    from specweaver.core.flow.parser import load_pipeline
-    from specweaver.core.flow.runner import PipelineRunner
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.parser import load_pipeline
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
@@ -262,7 +262,7 @@ def submit_gate_decision(
 
     On approve, the run is resumed as a background task.
     """
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
@@ -295,7 +295,7 @@ def submit_gate_decision(
 
     if body.action == "reject":
         # Mark as failed
-        from specweaver.core.flow.state import RunStatus
+        from specweaver.core.flow.engine.state import RunStatus
 
         run.status = RunStatus.FAILED
         store.save_run(run)
@@ -303,8 +303,8 @@ def submit_gate_decision(
 
     # Approve → resume
     from specweaver.core.flow.handlers import RunContext
-    from specweaver.core.flow.parser import load_pipeline
-    from specweaver.core.flow.runner import PipelineRunner
+    from specweaver.core.flow.engine.parser import load_pipeline
+    from specweaver.core.flow.engine.runner import PipelineRunner
 
     project_root = resolve_project_root(run.project_name, db)
     pipeline_def = load_pipeline(Path(run.pipeline_name))

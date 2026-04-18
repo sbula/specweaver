@@ -94,8 +94,8 @@ class TestGetRunStatus:
 
     def test_known_run_returns_status(self, client, tmp_path) -> None:
         """GET /runs/{id} with a known run returns status data."""
-        from specweaver.core.flow.state import PipelineRun, RunStatus
-        from specweaver.core.flow.store import StateStore
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+        from specweaver.core.flow.engine.store import StateStore
 
         # Create a real state store with test data
         store = StateStore(tmp_path / "state.db")
@@ -130,14 +130,14 @@ class TestGetRunStatus:
 
     def test_parked_run_exposes_pending_gate(self, client, tmp_path) -> None:
         """GET /runs/{id} for a RUNNING or PARKED run exposes pending_gate fields."""
-        from specweaver.core.flow.state import (
+        from specweaver.core.flow.engine.state import (
             PipelineRun,
             RunStatus,
             StepRecord,
             StepResult,
             StepStatus,
         )
-        from specweaver.core.flow.store import StateStore
+        from specweaver.core.flow.engine.store import StateStore
 
         store = StateStore(tmp_path / "state2.db")
         run = PipelineRun(
@@ -181,7 +181,7 @@ class TestGetRunStatus:
         """GET /runs/{id} correctly handles string outputs when creating pending_gate_prompt."""
         from unittest.mock import patch
 
-        from specweaver.core.flow.state import (
+        from specweaver.core.flow.engine.state import (
             PipelineRun,
             RunStatus,
             StepRecord,
@@ -216,7 +216,7 @@ class TestGetRunStatus:
 
         with (
             patch.object(Path, "home", return_value=tmp_path),
-            patch("specweaver.core.flow.store.StateStore") as mock_cls,
+            patch("specweaver.core.flow.engine.store.StateStore") as mock_cls,
         ):
             mock_store = mock_cls.return_value
             mock_store.load_run.return_value = run
@@ -238,8 +238,8 @@ class TestGetRunLog:
 
     def test_known_run_log_returns_events(self, client, tmp_path) -> None:
         """GET /runs/{id}/log returns audit events."""
-        from specweaver.core.flow.state import PipelineRun, RunStatus
-        from specweaver.core.flow.store import StateStore
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+        from specweaver.core.flow.engine.store import StateStore
 
         state_dir = tmp_path / ".specweaver"
         state_dir.mkdir(exist_ok=True)
@@ -280,8 +280,8 @@ class TestGateDecision:
 
     def test_gate_invalid_action_returns_400(self, client, tmp_path) -> None:
         """POST /runs/{id}/gate with invalid action → 400."""
-        from specweaver.core.flow.state import PipelineRun, RunStatus
-        from specweaver.core.flow.store import StateStore
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+        from specweaver.core.flow.engine.store import StateStore
 
         state_dir = tmp_path / ".specweaver"
         state_dir.mkdir(exist_ok=True)
@@ -309,8 +309,8 @@ class TestGateDecision:
 
     def test_gate_reject_marks_failed(self, client, tmp_path) -> None:
         """POST /runs/{id}/gate with reject marks run as failed."""
-        from specweaver.core.flow.state import PipelineRun, RunStatus
-        from specweaver.core.flow.store import StateStore
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+        from specweaver.core.flow.engine.store import StateStore
 
         state_dir = tmp_path / ".specweaver"
         state_dir.mkdir(exist_ok=True)
@@ -341,8 +341,8 @@ class TestGateDecision:
 
     def test_gate_non_parked_run_returns_409(self, client, tmp_path) -> None:
         """POST /runs/{id}/gate on a running (non-parked) run → 409."""
-        from specweaver.core.flow.state import PipelineRun, RunStatus
-        from specweaver.core.flow.store import StateStore
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+        from specweaver.core.flow.engine.store import StateStore
 
         state_dir = tmp_path / ".specweaver"
         state_dir.mkdir(exist_ok=True)
@@ -371,7 +371,7 @@ class TestGateDecision:
 
 def _make_state_store(tmp_path: Path) -> tuple:
     """Helper: create StateStore + .specweaver dir at tmp_path."""
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
 
     state_dir = tmp_path / ".specweaver"
     state_dir.mkdir(exist_ok=True)
@@ -385,7 +385,7 @@ def _make_parked_run(
     spec: str = "/fake/spec.md",
 ):
     """Helper: create and save a PARKED PipelineRun."""
-    from specweaver.core.flow.state import PipelineRun, RunStatus
+    from specweaver.core.flow.engine.state import PipelineRun, RunStatus
 
     run = PipelineRun(
         run_id=run_id,
@@ -407,7 +407,7 @@ class TestGetRunStatusModes:
 
     def test_summary_mode_strips_output(self, client, tmp_path) -> None:
         """detail=summary strips output from step result records."""
-        from specweaver.core.flow.state import (
+        from specweaver.core.flow.engine.state import (
             PipelineRun,
             RunStatus,
             StepRecord,
@@ -449,7 +449,7 @@ class TestGetRunStatusModes:
 
     def test_full_mode_includes_output(self, client, tmp_path) -> None:
         """detail=full includes output in step result records."""
-        from specweaver.core.flow.state import (
+        from specweaver.core.flow.engine.state import (
             PipelineRun,
             RunStatus,
             StepRecord,
@@ -499,7 +499,7 @@ class TestResumeRun:
 
     def test_resume_non_parked_run_returns_409(self, client, tmp_path) -> None:
         """POST /runs/{id}/resume on a running run → 409."""
-        from specweaver.core.flow.state import PipelineRun, RunStatus
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
 
         store, _state_dir = _make_state_store(tmp_path)
         run = PipelineRun(
@@ -536,7 +536,7 @@ class TestMaxConcurrent:
         try:
             with (
                 patch.object(Path, "home", return_value=tmp_path),
-                patch("specweaver.core.flow.parser.load_pipeline") as mock_load,
+                patch("specweaver.core.flow.engine.parser.load_pipeline") as mock_load,
             ):
                 mock_load.return_value = type("P", (), {"name": "test", "steps": []})()
                 resp = client.post(
@@ -569,7 +569,7 @@ class TestStartRunResponse:
                 "specweaver.interfaces.api.app.get_event_bridge",
                 return_value=mock_bridge,
             ),
-            patch("specweaver.core.flow.parser.load_pipeline") as mock_load,
+            patch("specweaver.core.flow.engine.parser.load_pipeline") as mock_load,
         ):
             mock_load.return_value = type("P", (), {"name": "test", "steps": []})()
 

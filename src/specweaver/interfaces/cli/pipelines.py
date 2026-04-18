@@ -26,15 +26,15 @@ logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.display import JsonPipelineDisplay, RichPipelineDisplay
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.display import JsonPipelineDisplay, RichPipelineDisplay
+    from specweaver.core.flow.engine.store import StateStore
 
     PipelineDisplay = JsonPipelineDisplay | RichPipelineDisplay
 
 
 def _get_state_store() -> StateStore:
     """Get the pipeline state store (lazy import)."""
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
 
     return StateStore(state_db_path())
 
@@ -75,11 +75,11 @@ def _create_display(
 ) -> PipelineDisplay:
     """Create the appropriate display backend."""
     if use_json:
-        from specweaver.core.flow.display import JsonPipelineDisplay
+        from specweaver.core.flow.engine.display import JsonPipelineDisplay
 
         return JsonPipelineDisplay()
 
-    from specweaver.core.flow.display import RichPipelineDisplay
+    from specweaver.core.flow.engine.display import RichPipelineDisplay
 
     return RichPipelineDisplay(console=_core.console, verbose=verbose)
 
@@ -87,7 +87,7 @@ def _create_display(
 @_core.app.command()
 def pipelines() -> None:
     """List available pipeline templates."""
-    from specweaver.core.flow.parser import list_bundled_pipelines
+    from specweaver.core.flow.engine.parser import list_bundled_pipelines
 
     bundled = list_bundled_pipelines()
     if not bundled:
@@ -210,8 +210,8 @@ def _execute_run(  # noqa: C901
 ) -> None:
     """Core run logic -- separated for testability."""
     from specweaver.core.flow.handlers import RunContext
-    from specweaver.core.flow.parser import load_pipeline
-    from specweaver.core.flow.runner import PipelineRunner
+    from specweaver.core.flow.engine.parser import load_pipeline
+    from specweaver.core.flow.engine.runner import PipelineRunner
 
     # Resolve project path
     try:
@@ -306,7 +306,7 @@ def _execute_run(  # noqa: C901
         display.stop()
 
     # Exit code based on final status
-    from specweaver.core.flow.state import RunStatus
+    from specweaver.core.flow.engine.state import RunStatus
 
     if final_run.status == RunStatus.FAILED:
         raise typer.Exit(code=1)
@@ -342,9 +342,9 @@ def resume(
         sw resume abc12345-...
     """
     from specweaver.core.flow.handlers import RunContext
-    from specweaver.core.flow.parser import load_pipeline
-    from specweaver.core.flow.runner import PipelineRunner
-    from specweaver.core.flow.state import RunStatus
+    from specweaver.core.flow.engine.parser import load_pipeline
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.state import RunStatus
 
     store = _get_state_store()
 
@@ -364,7 +364,7 @@ def resume(
             raise typer.Exit(code=1)
 
         # Try common pipeline names
-        from specweaver.core.flow.parser import list_bundled_pipelines
+        from specweaver.core.flow.engine.parser import list_bundled_pipelines
 
         run_state = None
         for pipeline_name in list_bundled_pipelines():

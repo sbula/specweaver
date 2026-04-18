@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
 from specweaver.core.flow.handlers import LintFixHandler, RunContext
-from specweaver.core.flow.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.state import StepStatus
+from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.state import StepStatus
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -87,10 +87,10 @@ def standards_scan(  # noqa: C901
     # Discover all files once
     all_files = discover_files(project_path)
 
-    from specweaver.core.flow._base import RunContext
-    from specweaver.core.flow.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.core.flow.runner import PipelineRunner
-    from specweaver.core.flow.state import StepStatus
+    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.state import StepStatus
 
     settings = load_settings(db, name)
     adapter = GeminiAdapter(api_key=settings.llm.api_key or None)

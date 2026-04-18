@@ -77,7 +77,7 @@ def get_dashboard_projects(
 @router.get("/dashboard/runs", response_class=HTMLResponse)
 def get_dashboard_runs(request: Request) -> HTMLResponse:
     """Render the dashboard runs list page."""
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
 
     state_db = state_db_path()
     store = StateStore(state_db)
@@ -93,7 +93,7 @@ def get_dashboard_runs(request: Request) -> HTMLResponse:
 @router.get("/dashboard/runs/{run_id}", response_class=HTMLResponse)
 def get_dashboard_run_detail(request: Request, run_id: str) -> HTMLResponse:
     """Render the details of a specific pipeline run."""
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
 
     state_db = state_db_path()
     store = StateStore(state_db)

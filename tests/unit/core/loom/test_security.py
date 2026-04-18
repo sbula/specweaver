@@ -120,7 +120,7 @@ class TestFromRunContext:
     """Tests for boundary construction from RunContext."""
 
     def test_feature_level_uses_project_path(self, tmp_path: Path) -> None:
-        from specweaver.core.flow._base import RunContext
+        from specweaver.core.flow.handlers.base import RunContext
 
         ctx = RunContext(
             project_path=tmp_path,
@@ -130,7 +130,7 @@ class TestFromRunContext:
         assert boundary.roots == [tmp_path]
 
     def test_component_level_uses_workspace_roots(self, tmp_path: Path) -> None:
-        from specweaver.core.flow._base import RunContext
+        from specweaver.core.flow.handlers.base import RunContext
 
         svc_root = tmp_path / "services" / "auth"
         svc_root.mkdir(parents=True)
@@ -143,7 +143,7 @@ class TestFromRunContext:
         assert boundary.roots == [svc_root]
 
     def test_component_level_with_api_paths(self, tmp_path: Path) -> None:
-        from specweaver.core.flow._base import RunContext
+        from specweaver.core.flow.handlers.base import RunContext
 
         svc_root = tmp_path / "services" / "auth"
         api_path = tmp_path / "services" / "payments" / "api"

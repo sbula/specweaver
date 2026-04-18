@@ -18,7 +18,7 @@ from specweaver.interfaces.cli import _core, _helpers
 from specweaver.workspace.project.discovery import resolve_project_path
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.state import StepResult
+    from specweaver.core.flow.engine.state import StepResult
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +67,10 @@ def drift_check(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.core.flow._base import RunContext
-    from specweaver.core.flow.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.core.flow.runner import PipelineRunner
-    from specweaver.core.flow.state import StepStatus
+    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.state import StepStatus
 
     pipeline = PipelineDefinition.create_single_step(
         name="drift_check",
@@ -191,10 +191,10 @@ def drift_check_rot(  # noqa: C901
 
     drift_found = False
 
-    from specweaver.core.flow._base import RunContext
-    from specweaver.core.flow.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.core.flow.runner import PipelineRunner
-    from specweaver.core.flow.state import StepStatus
+    from specweaver.core.flow.handlers.base import RunContext
+    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.state import StepStatus
 
     for target in target_files:
         _core.console.print(f"DEBUG TARGET STR: {target}")

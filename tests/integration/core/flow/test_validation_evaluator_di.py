@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.flow._base import RunContext
-from specweaver.core.flow._validation import ValidateCodeHandler
-from specweaver.core.flow.models import PipelineStep
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.validation import ValidateCodeHandler
+from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.loom.dispatcher import ToolDispatcher
 
 
@@ -53,7 +53,7 @@ decorators:
         db=None,
         settings=None,
     )
-    from specweaver.core.flow.models import StepAction, StepTarget
+    from specweaver.core.flow.engine.models import StepAction, StepTarget
     step = PipelineStep(name="validate_code", action=StepAction.VALIDATE, target=StepTarget.CODE, params={})
 
     handler = ValidateCodeHandler()

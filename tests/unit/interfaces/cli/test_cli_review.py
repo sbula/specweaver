@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.core.flow.state import PipelineRun, StepRecord, StepResult, StepStatus
+from specweaver.core.flow.engine.state import PipelineRun, StepRecord, StepResult, StepStatus
 from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()
@@ -35,7 +35,7 @@ class TestReviewCommand:
     """Test the review command behavior using PipelineRunner."""
 
     @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
-    @patch("specweaver.core.flow.runner.PipelineRunner.run", new_callable=AsyncMock)
+    @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_success_no_exit(self, mock_run, mock_require, tmp_path: Path) -> None:
         """Pipeline returns completed and step PASSED -> exit 0."""
         project = _scaffold(tmp_path)
@@ -71,7 +71,7 @@ class TestReviewCommand:
         assert "Looks good." in result.output
 
     @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
-    @patch("specweaver.core.flow.runner.PipelineRunner.run", new_callable=AsyncMock)
+    @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_denied_exit_1(self, mock_run, mock_require, tmp_path: Path) -> None:
         """Pipeline PASSED but review verdict DENIED -> exit 1."""
         project = _scaffold(tmp_path)
@@ -112,7 +112,7 @@ class TestReviewCommand:
         assert "No Purpose" in result.output
 
     @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
-    @patch("specweaver.core.flow.runner.PipelineRunner.run", new_callable=AsyncMock)
+    @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_error_exit_1(self, mock_run, mock_require, tmp_path: Path) -> None:
         """Pipeline returns parked or step FAILED -> exit 1."""
         project = _scaffold(tmp_path)

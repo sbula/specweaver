@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from specweaver.core.flow._base import RunContext
+from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers import StepHandlerRegistry
-from specweaver.core.flow.models import PipelineDefinition
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.state import StepStatus
-from specweaver.core.flow.store import StateStore
+from specweaver.core.flow.engine.models import PipelineDefinition
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.engine.store import StateStore
 
 
 @pytest.fixture
@@ -92,7 +92,7 @@ async def test_fan_out_cascade_failures_bubble_up(tmp_path: Path, mock_store: St
     }
     ctx.plan = json.dumps(plan_data)
 
-    with patch("specweaver.core.flow._decompose.OrchestrateComponentsHandler") as _:
+    with patch("specweaver.core.flow.handlers.decompose.OrchestrateComponentsHandler") as _:
         handler_instance = AsyncMock()
         # Mocking the actual fan_out failure
         handler_instance.execute.return_value = AsyncMock(

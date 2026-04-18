@@ -9,10 +9,10 @@ from pathlib import Path
 import pytest
 
 from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
-from specweaver.core.flow.models import PipelineDefinition, PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.state import StepResult, StepStatus
-from specweaver.core.flow.store import StateStore
+from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.store import StateStore
 
 
 class FakeAsyncWorkHandler:
@@ -21,7 +21,7 @@ class FakeAsyncWorkHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         import logging
 
-        log = logging.getLogger("specweaver.core.flow.runner")
+        log = logging.getLogger("specweaver.core.flow.engine.runner")
         log.info("Simulating heavy workload in handler")
         # Sleep forces asyncio to yield, maximizing concurrent interleaved writes
         await asyncio.sleep(0.01)
@@ -93,7 +93,7 @@ async def test_fan_out_log_observability_context_isolation(
     """
     import logging
 
-    caplog.set_level(logging.INFO, logger="specweaver.core.flow.runner")
+    caplog.set_level(logging.INFO, logger="specweaver.core.flow.engine.runner")
 
     store = StateStore(tmp_path / "concurrent_state.db")
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")

@@ -75,14 +75,14 @@ def test_get_dashboard_run_detail(client, tmp_path) -> None:
     from pathlib import Path
     from unittest.mock import patch
 
-    from specweaver.core.flow.state import (
+    from specweaver.core.flow.engine.state import (
         PipelineRun,
         RunStatus,
         StepRecord,
         StepResult,
         StepStatus,
     )
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
 
     run = PipelineRun(
         run_id="test-run-ui-1",
@@ -129,8 +129,8 @@ def test_get_dashboard_run_detail_non_parked(client, tmp_path) -> None:
     from pathlib import Path
     from unittest.mock import patch
 
-    from specweaver.core.flow.state import PipelineRun, RunStatus
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+    from specweaver.core.flow.engine.store import StateStore
 
     run = PipelineRun(
         run_id="test-run-ui-2",
@@ -162,7 +162,7 @@ def test_get_dashboard_run_detail_string_output(client, tmp_path) -> None:
     from pathlib import Path
     from unittest.mock import patch
 
-    from specweaver.core.flow.state import (
+    from specweaver.core.flow.engine.state import (
         PipelineRun,
         RunStatus,
         StepRecord,
@@ -195,7 +195,7 @@ def test_get_dashboard_run_detail_string_output(client, tmp_path) -> None:
 
     with (
         patch.object(Path, "home", return_value=tmp_path),
-        patch("specweaver.core.flow.store.StateStore") as mock_cls,
+        patch("specweaver.core.flow.engine.store.StateStore") as mock_cls,
     ):
         mock_store = mock_cls.return_value
         mock_store.load_run.return_value = run
@@ -215,8 +215,8 @@ def test_submit_hitl_gate(tmp_path) -> None:
     from starlette.testclient import TestClient
 
     from specweaver.core.config.database import Database
-    from specweaver.core.flow.state import PipelineRun, RunStatus
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+    from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api import app as api_app
     from specweaver.interfaces.api.app import create_app
     from specweaver.interfaces.api.event_bridge import EventBridge
@@ -293,8 +293,8 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
     from starlette.testclient import TestClient
 
     from specweaver.core.config.database import Database
-    from specweaver.core.flow.state import PipelineRun, RunStatus
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+    from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.app import create_app
 
     db = Database(db_path=tmp_path / "test.db")

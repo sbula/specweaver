@@ -60,6 +60,7 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.32** | Deep Semantic Hashing | _(new)_ | Replaces shallow file hashing with "Dependency Hashing" (hash changes if imported modules change). Uses Merkle-trees to keep the Topology Graph explicitly in sync without full project crawls. |
 | **3.33** | Topology Provider Abstraction | _(new)_ | Toggle between local `SQLite/BM25` (Bicycle mode) and heavy Sidecars like `FalkorDB + VectorDB` (Rocket mode) to map cross-service topologies based on project size. |
 | **3.34** | Structured output schemas | _(new)_ | Declarative JSON schemas for pipeline results (validation, review, generation). Same data renders as Rich console (CLI), cards (Web UI), or inline decorations (IDE). Prerequisite for dashboard and VS Code ext. |
+| **3.34b** | REST API Synchronization with CLI | _(shifted from 3.48)_ | Update REST API capabilities to achieve full parity with the expanded CLI (e.g., constitution bootstrapping, interactive gate variables, DAL configurations, scenario pipelines). Prerequisite for the VS Code Extension. |
 | **3.35** | **VS Code extension** | _(new)_ | Thin extension that calls `sw serve` REST endpoints. Tree view for registered projects, inline review verdicts, "Approve/Reject" buttons in status bar, pipeline progress panel. |
 | **3.36** | Smart scan exclusions (tiered) | _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore` |
 | **3.37** | File watcher (`sw watch`) | _(inspired by PasteMax)_ | Auto-re-validate specs on disk change; DX polish for iterative authoring |
@@ -74,7 +75,6 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.45** | Ephemeral Execution Containers (Zero-Trust QA) | _(new)_ | Resolves Agent RCE vulnerabilities. When `QARunner` executes LLM-generated tests (`pytest`), execution routes natively into ephemeral, headless Podman/Docker sub-containers instead of the host machine. |
 | **3.46** | **Functional Agent Sandboxing (Black Box Ledgers)** | _(new)_ | Completely disables continuous chat context. Hand-offs managed explicitly via disk ledger: `Request in` → `Context boots` → `Result out` → mechanically valid before next hydration. Prioritizes state determinism over execution speed. |
 | **3.47** | Agent Platform Benchmarking (`sw eval`) | _(new)_ | Built-in command to run SpecWeaver's internal pipelines against a deterministic suite of synthetic SWE-bench bugs to mathematically prove that platform extensions haven't degraded the internal token costs or success rate. |
-| **3.48** | REST API Synchronization with CLI | _(new)_ | Update REST API capabilities to achieve full parity with the expanded CLI (e.g., constitution bootstrapping, interactive gate variables, DAL configurations, scenario pipelines). |
 
 ## Process for Each Feature
 

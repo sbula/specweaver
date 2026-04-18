@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 import pytest
 
 from specweaver.core.flow.handlers import RunContext
-from specweaver.core.flow.models import (
+from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
     OnFailAction,
@@ -24,8 +24,8 @@ from specweaver.core.flow.models import (
     StepAction,
     StepTarget,
 )
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.store import StateStore
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.store import StateStore
 
 
 @pytest.fixture
@@ -102,7 +102,7 @@ async def test_complex_edge_cases_scenario(temp_store: StateStore, tmp_path: Pat
     assert any("started" in entry["event"].lower() for entry in audit_logs)
 
     # Let's verify the display plugin wouldn't crash
-    from specweaver.core.flow.display import RichPipelineDisplay
+    from specweaver.core.flow.engine.display import RichPipelineDisplay
 
     display = RichPipelineDisplay()
     # Ensure starting and immediately stopping with a complex run works

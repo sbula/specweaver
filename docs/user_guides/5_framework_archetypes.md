@@ -1,12 +1,33 @@
 # User Handbook 5: Framework Archetypes & Context Injection
 
-This guide shows you how to securely bind SpecWeaver's agents to your custom framework using `context.yaml` plugins, preventing the AI from hallucinating unsupported tools or decorators.
+SpecWeaver relies on strict Architectural Bounds checks. By default, agents are completely blinded from large external frameworks resulting in hallucinations. **Archetypes** natively inform agents regarding structural realities of external tool chains.
 
-## Table of Contents
-1. What is an Archetype?
-2. Using the `plugins:` array in `context.yaml`
-3. Restricting Capabilities with `intents.hide`
-4. Injecting Specific Framework Decorators (`@RestController`, `#[derive]`)
-5. The Macro Data Structure (`deep_merge_dict`)
+## 1. The `context.yaml`
+Every domain module in SpecWeaver is encapsulated mathematically within a `context.yaml` boundaries file located at the folder boundary.
 
-*(Content to be written...)*
+```yaml
+context:
+  name: "My Backend Domain"
+  archetype: spring-security
+  plugins:
+    - spring-boot
+    - jpa-hibernate
+```
+
+## 2. Injecting Compiler Reality (Macro Evaluator)
+Because LLMs evaluate raw tokens directly, they frequently fail to comprehend hidden runtime logic generated behind Java Annotations or Rust Procedural Macros `#[derive(Debug)]`.
+By declaring `spring-boot`, the internal Tree-sitter AST Extractor recursively unrolls Annotations physically delivering expanded source definitions inside the LLM Generation execution payload solving massive logical omissions.
+
+## 3. The `intents.hide` Shield
+Sometimes you want Agents isolated from specific internal configurations (e.g. banning an LLM from editing a Kubernetes manifest or rewriting `.gitignore` natively).
+
+By routing `plugins` natively, SpecWeaver utilizes **Dynamic Tool Gating**, securely intercepting JSON schema declarations prior to LLM exposure natively, removing tools directly corresponding to explicit strings array `intents.hide`!
+
+```yaml
+# Inside your plugin config dynamically:
+intents:
+  hide:
+    - run_shell_command
+    - configure_aws
+```
+The SpecWeaver LLM physically is blocked from executing shell logic cleanly without brittle `python` wrappers.

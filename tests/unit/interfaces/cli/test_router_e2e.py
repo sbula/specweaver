@@ -29,7 +29,7 @@ def test_cli_pipelines_injects_model_router_in_run(
     with (
         patch("specweaver.interfaces.cli.pipelines._core.get_db", return_value=mock_active_db),
         patch("specweaver.interfaces.cli.pipelines.resolve_project_path", return_value=project_dir),
-        patch("specweaver.core.flow.runner.PipelineRunner") as mock_runner_cls,
+        patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
     ):
         mock_runner = mock_runner_cls.return_value
         mock_runner.run = AsyncMock()
@@ -81,7 +81,7 @@ def test_cli_pipelines_injects_model_router_in_resume(
         patch("specweaver.interfaces.cli.pipelines._core.get_db", return_value=mock_active_db),
         patch("specweaver.interfaces.cli.pipelines.resolve_project_path", return_value=project_dir),
         patch("specweaver.interfaces.cli.pipelines._get_state_store", return_value=mock_state_db),
-        patch("specweaver.core.flow.runner.PipelineRunner") as mock_runner_cls,
+        patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
     ):
         mock_runner = mock_runner_cls.return_value
         mock_runner.resume = AsyncMock()

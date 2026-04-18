@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow._base import RunContext
-from specweaver.core.flow.models import PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,10 +25,10 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
     JOIN steps physically wait for fan_out() parallel component mocks to resolve
     before engaging OS file descriptors on shared artifacts.
     """
-    from specweaver.core.flow._decompose import OrchestrateComponentsHandler
+    from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
     from specweaver.core.flow.handlers import StepHandlerRegistry
-    from specweaver.core.flow.runner import PipelineRunner
-    from specweaver.core.flow.state import StepResult, StepStatus
+    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.state import StepResult, StepStatus
 
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
     ctx.run_id = "parent_run"

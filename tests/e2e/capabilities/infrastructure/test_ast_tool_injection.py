@@ -4,7 +4,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from specweaver.core.flow._review import _build_tool_dispatcher
+from specweaver.core.flow.handlers.review import _build_tool_dispatcher
 from specweaver.core.loom.tools.filesystem.models import AccessMode, FolderGrant
 
 

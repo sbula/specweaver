@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
-from specweaver.core.flow.models import (
+from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
     GateType,
@@ -17,9 +17,9 @@ from specweaver.core.flow.models import (
     StepAction,
     StepTarget,
 )
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.state import RunStatus, StepResult, StepStatus
-from specweaver.core.flow.store import StateStore
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
+from specweaver.core.flow.engine.store import StateStore
 
 
 class FakeHitlHandler:

@@ -8,9 +8,9 @@ import pytest
 import yaml
 
 from specweaver.core.flow.handlers import RunContext
-from specweaver.core.flow.models import PipelineDefinition
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.state import StepResult, StepStatus
+from specweaver.core.flow.engine.models import PipelineDefinition
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.state import StepResult, StepStatus
 
 pytestmark = pytest.mark.integration
 
@@ -73,11 +73,11 @@ async def test_e2e_scenario_integration_pipeline_happy_path(tmp_path: Path):
     mock_handler_inst = MockHandler()
 
     with patch(
-        "specweaver.core.flow.runner.StepHandlerRegistry.get", return_value=mock_handler_inst
+        "specweaver.core.flow.engine.runner.StepHandlerRegistry.get", return_value=mock_handler_inst
     ):
         result = await runner.run()
 
-        from specweaver.core.flow.state import RunStatus
+        from specweaver.core.flow.engine.state import RunStatus
 
         assert result.status == RunStatus.COMPLETED
         # Expect generate -> orchestrate -> validate -> arbitrate -> orchestrate -> validate -> arbitrate

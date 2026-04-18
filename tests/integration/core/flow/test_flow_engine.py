@@ -16,7 +16,7 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from specweaver.core.flow.handlers import RunContext, StepHandler, StepHandlerRegistry
-from specweaver.core.flow.models import (
+from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
     GateType,
@@ -26,9 +26,9 @@ from specweaver.core.flow.models import (
     StepAction,
     StepTarget,
 )
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.state import RunStatus, StepResult, StepStatus
-from specweaver.core.flow.store import StateStore
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
+from specweaver.core.flow.engine.store import StateStore
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -57,7 +57,7 @@ class _AlwaysPassHandler:
         step: PipelineStep,
         context: RunContext,
     ) -> StepResult:
-        from specweaver.core.flow.handlers import _now_iso
+        from specweaver.core.flow.handlers.base import _now_iso
 
         started = _now_iso()
         return StepResult(
@@ -76,7 +76,7 @@ class _AlwaysFailHandler:
         step: PipelineStep,
         context: RunContext,
     ) -> StepResult:
-        from specweaver.core.flow.handlers import _now_iso
+        from specweaver.core.flow.handlers.base import _now_iso
 
         started = _now_iso()
         return StepResult(
@@ -100,7 +100,7 @@ class _CountingHandler:
         step: PipelineStep,
         context: RunContext,
     ) -> StepResult:
-        from specweaver.core.flow.handlers import _now_iso
+        from specweaver.core.flow.handlers.base import _now_iso
 
         self.calls += 1
         started = _now_iso()
@@ -128,7 +128,7 @@ class _HITLHandler:
         step: PipelineStep,
         context: RunContext,
     ) -> StepResult:
-        from specweaver.core.flow.handlers import _now_iso
+        from specweaver.core.flow.handlers.base import _now_iso
 
         started = _now_iso()
         return StepResult(

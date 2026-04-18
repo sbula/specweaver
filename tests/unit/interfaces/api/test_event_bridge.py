@@ -209,7 +209,7 @@ class TestEventBridge:
         """make_event_callback serializes StepResult fields into event record."""
         from unittest.mock import MagicMock
 
-        from specweaver.core.flow.state import StepStatus
+        from specweaver.core.flow.engine.state import StepStatus
 
         bridge = EventBridge()
         queue = bridge.subscribe("r1")
@@ -235,7 +235,7 @@ class TestEventBridge:
         """make_event_callback serializes PipelineRun fields into event record."""
         from unittest.mock import MagicMock
 
-        from specweaver.core.flow.state import RunStatus
+        from specweaver.core.flow.engine.state import RunStatus
 
         bridge = EventBridge()
         queue = bridge.subscribe("r1")

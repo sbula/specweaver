@@ -9,9 +9,9 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from specweaver.core.flow.display import RichPipelineDisplay
+from specweaver.core.flow.engine.display import RichPipelineDisplay
 from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
-from specweaver.core.flow.models import (
+from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
     GateType,
@@ -20,8 +20,8 @@ from specweaver.core.flow.models import (
     StepAction,
     StepTarget,
 )
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.state import StepResult, StepStatus
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.state import StepResult, StepStatus
 
 
 class FakePassHandler:

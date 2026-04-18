@@ -8,15 +8,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow._base import RunContext
-from specweaver.core.flow.models import PipelineDefinition, PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
 
 @pytest.mark.asyncio
-@patch("specweaver.core.flow.reservation.SQLiteReservationSystem.release")
+@patch("specweaver.core.flow.engine.reservation.SQLiteReservationSystem.release")
 async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path: Path):
     """Verifies that Runner intercepts use_worktree, bouncing string-maps cleanly, and flushes DB native bindings."""
 
@@ -57,7 +57,7 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
             autospec=True,
             side_effect=fake_atom_run,
         ),
-        patch("specweaver.core.flow.runner.StepHandlerRegistry.get") as mock_get_handler,
+        patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get_handler,
     ):
         mock_handler = MagicMock()
 
@@ -72,7 +72,7 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
         runner = PipelineRunner(pipeline, context)
         result_run = await runner.run()
 
-        from specweaver.core.flow.state import RunStatus
+        from specweaver.core.flow.engine.state import RunStatus
 
         assert result_run.status == RunStatus.COMPLETED
 
@@ -113,7 +113,7 @@ async def test_bouncer_worktree_add_fail(tmp_path: Path):
         # Actually in runner, exceptions are caught as: `except Exception as exc: StepStatus.FAILED`
         result_run = await runner.run()
 
-        from specweaver.core.flow.state import RunStatus
+        from specweaver.core.flow.engine.state import RunStatus
 
         assert result_run.status == RunStatus.FAILED
 
@@ -142,7 +142,7 @@ async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
             autospec=True,
             side_effect=fake_atom_run,
         ),
-        patch("specweaver.core.flow.runner.StepHandlerRegistry.get") as mock_get,
+        patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get,
     ):
         mock_handler = MagicMock()
 

@@ -2,10 +2,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow._arbiter import ArbitrateVerdictHandler
-from specweaver.core.flow._base import RunContext
-from specweaver.core.flow.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.state import StepStatus
+from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.state import StepStatus
 
 
 @pytest.fixture

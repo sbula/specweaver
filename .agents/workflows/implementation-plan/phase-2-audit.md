@@ -47,7 +47,7 @@ description: "Phase 2: Audit & Analysis — surface every open question, unresol
      12. **External integrations** — SDK maturity, API stability, credential management, fallback when unavailable
      13. **Testing** — what's testable without real LLM calls, fixture strategy, mocking boundaries
      14. **Scope boundaries** — what's explicitly in this sub-feature vs deferred, risk of scope creep
-     15. **Documentation** — what needs updating in README, quickstart, test coverage matrix, roadmap
+     15. **Documentation** — what needs updating in README, quickstart, test coverage matrix, roadmap, user_guides, and dev_guides
      16. **Import chains** — verify no circular imports are introduced; module-level vs lazy imports
 
 2.5. **Do NOT answer any of the questions. Just list them all.**

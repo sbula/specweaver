@@ -27,6 +27,6 @@ def _mock_db(_isolate_env):
 @pytest.fixture
 def _mock_state_db(_isolate_env):
     """Returns the StateStore DB path. Compatibility wrapper."""
-    from specweaver.core.flow.store import StateStore
+    from specweaver.core.flow.engine.store import StateStore
 
     return StateStore(_isolate_env / "pipeline_state.db")

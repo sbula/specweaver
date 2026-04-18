@@ -8,15 +8,15 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from specweaver.core.flow._base import RunContext
-from specweaver.core.flow.models import PipelineDefinition, StepAction, StepTarget
-from specweaver.core.flow.runner import PipelineRunner
-from specweaver.core.flow.state import RunStatus, StepResult, StepStatus
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
+from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.flow.models import PipelineStep
+    from specweaver.core.flow.engine.models import PipelineStep
 
 
 def test_single_step_pipeline_executes_smoothly(tmp_path: Path) -> None:
@@ -39,7 +39,7 @@ def test_single_step_pipeline_executes_smoothly(tmp_path: Path) -> None:
         async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
             import datetime
 
-            from specweaver.core.flow.state import StepResult, StepStatus
+            from specweaver.core.flow.engine.state import StepResult, StepStatus
 
             return StepResult(
                 status=StepStatus.PASSED,

@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.core.flow.state import RunStatus
+from specweaver.core.flow.engine.state import RunStatus
 from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()
@@ -21,13 +21,13 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
     # but we will let the CLI build it and call it.
     (tmp_path / "spec.md").write_text("# Test Spec")
 
-    with patch("specweaver.core.flow.runner.PipelineRunner.run") as mock_run:
-        from specweaver.core.flow.state import PipelineRun
+    with patch("specweaver.core.flow.engine.runner.PipelineRunner.run") as mock_run:
+        from specweaver.core.flow.engine.state import PipelineRun
 
         # Mute adapter creation and pipeline loading
         with (
             patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_adapter,
-            patch("specweaver.core.flow.parser.load_pipeline") as mock_load_pipeline,
+            patch("specweaver.core.flow.engine.parser.load_pipeline") as mock_load_pipeline,
         ):
             # Fake the return
             fake_pr = MagicMock(spec=PipelineRun)

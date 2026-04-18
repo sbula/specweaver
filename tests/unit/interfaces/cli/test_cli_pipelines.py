@@ -64,13 +64,13 @@ class TestResolveSpecPathEdgeCases:
 
 class TestCreateDisplayOptions:
     def test_verbose_flag(self) -> None:
-        from specweaver.core.flow.display import RichPipelineDisplay
+        from specweaver.core.flow.engine.display import RichPipelineDisplay
 
         display = _create_display(verbose=True)
         assert isinstance(display, RichPipelineDisplay)
 
     def test_json_overrides_verbose(self) -> None:
-        from specweaver.core.flow.display import JsonPipelineDisplay
+        from specweaver.core.flow.engine.display import JsonPipelineDisplay
 
         display = _create_display(use_json=True, verbose=True)
         assert isinstance(display, JsonPipelineDisplay)

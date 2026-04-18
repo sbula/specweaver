@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from specweaver.core.flow.models import (
+from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
     OnFailAction,
@@ -24,7 +24,7 @@ from specweaver.core.flow.models import (
     StepAction,
     StepTarget,
 )
-from specweaver.core.flow.state import StepStatus
+from specweaver.core.flow.engine.state import StepStatus
 
 if TYPE_CHECKING:
     from pathlib import Path
