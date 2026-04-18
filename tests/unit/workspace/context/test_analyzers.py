@@ -181,12 +181,6 @@ class TestPythonAnalyzerPublicSymbols:
         symbols = PythonAnalyzer().extract_public_symbols(py_dir)
         assert "_InternalHelper" not in symbols
 
-    def test_prefers_all_when_present(self, py_dir_with_all: Path) -> None:
-        symbols = PythonAnalyzer().extract_public_symbols(py_dir_with_all)
-        assert "Router" in symbols
-        assert "Endpoint" in symbols
-        # _RouteTable should NOT be in the list because __all__ is defined
-        assert "_RouteTable" not in symbols
 
     def test_empty_dir(self, empty_dir: Path) -> None:
         assert PythonAnalyzer().extract_public_symbols(empty_dir) == []

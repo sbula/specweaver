@@ -94,6 +94,14 @@ class CodeStructureInterface(ABC):
         """Extract framework-specific markers like annotations, decorators, and inheritance."""
 
     @abstractmethod
+    def extract_imports(self, code: str) -> list[str]:
+        """Extract all module import paths from the file.
+
+        Returns:
+            A list of string representation of imported module paths, deduplicated.
+        """
+
+    @abstractmethod
     def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
         """Replace the entire symbol wrapper (decorators, signature, body)."""
 

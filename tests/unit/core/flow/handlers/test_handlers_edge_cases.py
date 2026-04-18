@@ -1,3 +1,12 @@
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.generation import GenerateCodeHandler
+from specweaver.core.flow.handlers.generation import GenerateTestsHandler
+from specweaver.core.flow.handlers.lint_fix import LintFixHandler
+from specweaver.core.flow.handlers.review import ReviewCodeHandler
+from specweaver.core.flow.handlers.review import ReviewSpecHandler
+from specweaver.core.flow.handlers.validation import ValidateCodeHandler
+from specweaver.core.flow.handlers.validation import ValidateTestsHandler
+
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -7,16 +16,7 @@ from specweaver.assurance.validation.models import RuleResult
 from specweaver.assurance.validation.models import Status as RuleStatus
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers import (
-    GenerateCodeHandler,
-    GenerateTestsHandler,
-    LintFixHandler,
-    ReviewCodeHandler,
-    ReviewSpecHandler,
-    RunContext,
-    ValidateCodeHandler,
-    ValidateTestsHandler,
-)
+
 
 
 @pytest.fixture

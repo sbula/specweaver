@@ -14,8 +14,8 @@ Instead of relying strictly on full tree parsing, the topology tracks "Dependenc
 
 ### Codebase Patterns
 - **Current State:** `TopologyGraph.from_project()` directly executes `rglob` over all bounds recursively building the entire `DependencyGraph` into memory. 
-- **Available Tooling:** `LanguageAnalyzer.extract_imports()` already natively exists inside `specweaver/workspace/context/analyzers.py` and is fully competent at extracting structural AST imports across bounds.
-- **Architectural Rules:** Because `assurance/graph/context.yaml` explicitly consumes `specweaver/context` (which represents `workspace/context`), we can legally use the `LanguageAnalyzer` inside the graph module without violating the `pure-logic` or `loom/*` isolation boundaries!
+- **Legacy Technical Debt:** `LanguageAnalyzer.extract_imports()` exists in `specweaver/workspace/context/analyzers.py`, but it is heavily tethered to legacy Python `ast` and leaves Java/Kotlin/Rust commented out. To fulfill polyglot semantic hashing, we must adapt the `tree-sitter` pure-logic parsing proven in `core/loom`.
+- **Architectural Rules:** Because `assurance/graph/context.yaml` explicitly consumes `specweaver/context` (which represents `workspace/context`), placing hashing logic in `assurance/graph/hasher.py` fully obeys `dmz` L2-L1 topology downward consumption without violating `pure-logic` or `loom/*` isolation boundaries!
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |
@@ -47,36 +47,46 @@ None required. Uses native `hashlib` and `json`.
 | AD-1 | Project-Local Persistence (Bicycle Mode) | Store cache in `.specweaver/topology.cache.json` at the target `project_root`. Inherently survives Docker/Podman transient teardowns because the root is volume-mounted. Perfect native scaling to microservices without polluting the laptop's global environments. | No |
 | AD-2 | Automated `.gitignore` Injection | Because AD-1 drops an artifact into legacy projects, SpecWeaver must auto-inject `.specweaver/` into the Gitignore to prevent repository pollution. | No |
 | AD-3 | External Semantic Backends (Feature 3.48) | Hardcoded strictly to "Bicycle Mode" (flat-files). A newly postponed feature (3.48) has been explicitly added to the backlog to swap this layer out for 'Rocket Mode' Sidecar databases (Falkor/Neo4j). | No |
-| AD-4 | Leverage `LanguageAnalyzers` | Reuses existing AST parsing logic inside `workspace/context` to map semantic dependencies, preventing code duplication natively. | No |
+| AD-4 | Leverage `LanguageAnalyzers` | Reuses AST parsing logic inside `workspace/context` to map semantic dependencies, preventing code duplication natively. | No |
+| AD-5 | Polyglot Tree-Sitter Decoupling | Decouple pure-logic Tree-Sitter models out of the restricted `loom/commons/language` sandbox and into `workspace/parsers/`. This cures massive parallel AST dependencies, enabling 5 languages natively without breaking the rigid L0/L3 architecture bounds. | Yes |
 
 ## Sub-Feature Breakdown
 
-### SF-1: Semantic State caching (DependencyHasher)
-- **Scope**: Implements a dedicated utility for computing and persisting shallow and structural Merkle dependencies targetting `<project_root>/.specweaver/topology.cache.json`. **MUST** securely inject `/.specweaver/` into the `.gitignore` to prevent tracking pollution!
-- **FRs**: [FR-1, FR-2]
-- **Inputs**: OS file chunks, extracted string imports.
-- **Outputs**: Serialized pure-data cache map.
+### SF-1: Polyglot Parser Decoupling
+- **Scope**: Resolves legacy AST technical debt. Extracts `CodeStructureInterface` and language `codestructure.py` out of `loom/commons/language` and moves them downward into `workspace/parsers/`. Upgrades `workspace/context/analyzers.py` to natively utilize these Tree-Sitter engines instead of raw Python `ast`. Updates all imports across `assurance`, `loom`, and `workspace`.
+- **FRs**: [NFR-2]
+- **Inputs**: Existing tree-sitter bindings.
+- **Outputs**: Centralized `workspace/parsers/` domain.
 - **Depends on**: none
 
-### SF-2: Incremental Topology Crawler
-- **Scope**: Modifies `topology.py` `TopologyGraph.from_project()` to actively diff against the Semantic Cache, applying subtree invalidations natively instead of global recursive parsing.
+### SF-2: Semantic State caching (DependencyHasher)
+- **Scope**: Implements a dedicated utility for computing and persisting shallow and structural Merkle dependencies targetting `<project_root>/.specweaver/topology.cache.json`. **MUST** securely inject `/.specweaver/` into the `.gitignore` using a tracked comment block to prevent tracking pollution!
+- **FRs**: [FR-1, FR-2]
+- **Inputs**: OS file chunks, Tree-Sitter extracted dotted imports.
+- **Outputs**: Serialized pure-data cache map (with versions and mtime signatures to support NFR-1 incremental speeds).
+- **Depends on**: [SF-1]
+
+### SF-3: Incremental Topology Crawler
+- **Scope**: Modifies `topology.py` `TopologyGraph.from_project()` to actively diff against the Semantic Cache, applying subtree invalidations natively via Tarjan's SCC cycle-loop breaking instead of global recursive parsing.
 - **FRs**: [FR-3]
 - **Inputs**: Semantic Cache map.
 - **Outputs**: Instantiated TopologyGraph.
-- **Depends on**: [SF-1]
+- **Depends on**: [SF-2]
 
 ## Execution Order
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
+3. SF-3 (depends on SF-2)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Semantic State Caching | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-2 | Incremental Topology | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Polyglot Parser Decoupling | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Semantic State Caching | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Incremental Topology | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design completed and officially APPROVED by HITL.
-**Next step**: Run `/implementation-plan docs/roadmap/phase_3/feature_3_32/feature_3_32_design.md`
+**Current status**: Design updated and officially APPROVED by HITL.
+**Next step**: Run `/dev docs/roadmap/phase_3/feature_3_32/feature_3_32_sf1_implementation_plan.md`

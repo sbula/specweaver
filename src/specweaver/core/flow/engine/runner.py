@@ -16,6 +16,8 @@ coupling the runner to any UI framework.
 """
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 import logging
 import uuid
@@ -34,7 +36,7 @@ from specweaver.core.flow.engine.state import (
     StepResult,
     StepStatus,
 )
-from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
+
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition

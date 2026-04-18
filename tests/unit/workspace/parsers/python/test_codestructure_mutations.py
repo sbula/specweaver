@@ -3,8 +3,8 @@
 
 import pytest
 
-from specweaver.core.loom.commons.language.interfaces import CodeStructureError
-from specweaver.core.loom.commons.language.python.codestructure import PythonCodeStructure
+from specweaver.workspace.parsers.interfaces import CodeStructureError
+from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
 
 
 @pytest.fixture

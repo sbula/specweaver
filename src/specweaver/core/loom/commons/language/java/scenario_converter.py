@@ -17,7 +17,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.commons.language.interfaces import ScenarioConverterInterface
+from specweaver.workspace.parsers.interfaces import ScenarioConverterInterface
 
 if TYPE_CHECKING:
     from specweaver.workflows.scenarios.scenario_models import ScenarioSet

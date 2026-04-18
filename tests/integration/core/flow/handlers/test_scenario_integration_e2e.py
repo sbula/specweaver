@@ -1,3 +1,7 @@
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import StepHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+
 """E2E test for the scenario_integration.yaml pipeline execution flow."""
 
 import importlib.resources
@@ -10,7 +14,7 @@ import yaml
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers import RunContext
+
 
 pytestmark = pytest.mark.integration
 

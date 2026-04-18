@@ -18,6 +18,7 @@ import tree_sitter
 
 from specweaver.assurance.standards.analyzer import CategoryResult, StandardsAnalyzer
 from specweaver.assurance.standards.recency import recency_weight
+from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -30,11 +31,11 @@ class TreeSitterAnalyzer(StandardsAnalyzer):
     """Base class for standards analyzers using tree-sitter."""
 
     @abstractmethod
-    def get_language(self) -> tree_sitter.Language:
-        """Return the compiled tree-sitter language.
+    def get_code_structure(self) -> CodeStructureInterface:
+        """Return the core parser structure to use for extraction.
 
         Example:
-            return tree_sitter.Language(tree_sitter_javascript.language())
+            return TypeScriptCodeStructure()
         """
         ...
 
@@ -54,7 +55,7 @@ class TreeSitterAnalyzer(StandardsAnalyzer):
         half_life_days: float,
     ) -> list[CategoryResult]:
         """Extract all supported categories from the given files in a single pass."""
-        parser = tree_sitter.Parser(self.get_language())
+        parser = self.get_code_structure().parser
 
         parsed_files: list[tuple[Path, float, tree_sitter.Tree]] = []
         for path in files:

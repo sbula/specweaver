@@ -6,10 +6,10 @@ from __future__ import annotations
 import logging
 import typing
 
-import tree_sitter_java
+import tree_sitter_rust
 from tree_sitter import Language, Parser, Query, QueryCursor
 
-from specweaver.core.loom.commons.language.interfaces import (
+from specweaver.workspace.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
@@ -17,21 +17,24 @@ from specweaver.core.loom.commons.language.interfaces import (
 logger = logging.getLogger(__name__)
 
 SCM_SKELETON_QUERY = """
-(method_declaration body: (block) @block)
-(constructor_declaration body: (constructor_body) @block)
+(function_item body: (block) @block)
+"""
+
+SCM_IMPORT_QUERY = """
+(use_declaration) @imp
 """
 
 SCM_SYMBOL_QUERY = """
-(method_declaration name: (identifier) @name)
-(class_declaration name: (identifier) @name)
-(interface_declaration name: (identifier) @name)
-(enum_declaration name: (identifier) @name)
+(struct_item name: (type_identifier) @name)
+(impl_item type: (type_identifier) @name)
+(impl_item type: (generic_type (type_identifier) @name))
+(function_item name: (identifier) @name)
 """
 
 
-class JavaCodeStructure(CodeStructureInterface):
+class RustCodeStructure(CodeStructureInterface):
     def __init__(self) -> None:
-        self.language = Language(tree_sitter_java.language())
+        self.language = Language(tree_sitter_rust.language())
         self.parser = Parser(self.language)
 
     def extract_skeleton(self, code: str) -> str:
@@ -73,20 +76,52 @@ class JavaCodeStructure(CodeStructureInterface):
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
 
+        collected_blocks: list[str] = []
+
         for _, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in (
-                            "method_declaration",
-                            "class_declaration",
-                            "interface_declaration",
-                        ):
-                            return typing.cast("bytes", parent.text).decode("utf-8")
+                        if parent and parent.type == "generic_type":
+                            parent = parent.parent
+                        if parent and parent.type in ("function_item", "struct_item", "impl_item"):
+                            collected_blocks.append(
+                                typing.cast("bytes", parent.text).decode("utf-8")
+                            )
+
+        if collected_blocks:
+            return "\n\n".join(collected_blocks)
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
+
+    def extract_imports(self, code: str) -> list[str]:
+        if not code.strip():
+            return []
+
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+        query = Query(self.language, SCM_IMPORT_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        imports = set()
+        for _, match_dict in matches:
+            if "imp" in match_dict:
+                for node in match_dict["imp"]:
+                    import_text = typing.cast("bytes", node.text).decode("utf-8").strip()
+                    if import_text.startswith("pub use "):
+                        import_text = import_text[8:].strip()
+                    elif import_text.startswith("use "):
+                        import_text = import_text[4:].strip()
+                        
+                    if import_text.endswith(";"):
+                        import_text = import_text[:-1].strip()
+                        
+                    imports.add(import_text.split("{")[0].strip().rstrip(":"))
+
+        return sorted(list(imports))
 
     def extract_symbol_body(self, code: str, symbol_name: str) -> str:
         symbol_code = self.extract_symbol(code, symbol_name)
@@ -102,14 +137,9 @@ class JavaCodeStructure(CodeStructureInterface):
         return ""
 
     def _is_symbol_public(self, parent: typing.Any) -> bool:
-        if parent and parent.type in (
-            "class_declaration",
-            "method_declaration",
-            "interface_declaration",
-            "enum_declaration",
-        ):
+        if parent:
             for child in parent.children:
-                if child.type == "modifiers" and child.text and b"public" in child.text:
+                if child.type == "visibility_modifier":
                     return True
         return False
 
@@ -133,7 +163,6 @@ class JavaCodeStructure(CodeStructureInterface):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-
                     if (
                         visibility
                         and "public" in visibility
@@ -149,7 +178,6 @@ class JavaCodeStructure(CodeStructureInterface):
                     symbols.append(sym_name)
 
         seen = set()
-
         unique_symbols = []
         for x in symbols:
             if x not in seen:
@@ -162,20 +190,21 @@ class JavaCodeStructure(CodeStructureInterface):
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
 
+        best_match = None
         for _, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in (
-                            "method_declaration",
-                            "class_declaration",
-                            "interface_declaration",
-                            "enum_declaration",
-                        ):
-                            return parent
-        return None
+                        if parent and parent.type == "generic_type":
+                            parent = parent.parent
+                        if parent and parent.type in ("function_item", "struct_item", "impl_item"):
+                            if parent.type == "impl_item":
+                                return parent
+                            if not best_match:
+                                best_match = parent
+        return best_match
 
     def _auto_indent(self, new_code: str, margin: int) -> str:
         if not new_code:
@@ -200,10 +229,12 @@ class JavaCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-
+        mutated = (
+            code_bytes[: node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte :]
+        )
+        # Using _auto_indent here
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin).encode("utf-8")
-
         mutated = code_bytes[: node.start_byte] + indented_code + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
@@ -212,16 +243,16 @@ class JavaCodeStructure(CodeStructureInterface):
             raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
         code_bytes = code.encode("utf-8")
         tree = self.parser.parse(code_bytes)
-
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
 
         target_block = None
         for child in node.children:
-            if child.type in ("block", "class_body", "interface_body", "enum_body"):
+            if child.type == "block" or child.type == "declaration_list":
                 target_block = child
                 break
+
         if not target_block:
             raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
 
@@ -255,42 +286,28 @@ class JavaCodeStructure(CodeStructureInterface):
     def _extract_marker_text(self, node: typing.Any) -> str:
         return typing.cast("bytes", node.text).decode("utf-8").strip()
 
-    def _extract_bases(self, target_node: typing.Any) -> list[str]:
-        bases = []
-        for child in target_node.children:
-            if child.type == "superclass":
-                if len(child.children) >= 2:
-                    bases.append(self._extract_marker_text(child.children[1]))
-            elif child.type == "super_interfaces" and len(child.children) >= 2:
-                type_list_node = child.children[1]
-                for t in type_list_node.children:
-                    if t.type != ",":
-                        bases.append(self._extract_marker_text(t))
-        return bases
-
     def _extract_decorators(self, target_node: typing.Any) -> list[str]:
-        decorators = []
-        modifiers = None
-        for child in target_node.children:
-            if child.type == "modifiers":
-                modifiers = child
-                break
+        decorators: list[str] = []
+        prev = target_node.prev_named_sibling
+        temp: list[typing.Any] = []
+        while prev and prev.type == "attribute_item":
+            temp.insert(0, prev)
+            prev = prev.prev_named_sibling
 
-        if modifiers:
-            for mod in modifiers.children:
-                if mod.type in ("marker_annotation", "annotation"):
-                    dec_text = self._extract_marker_text(mod)
-                    if dec_text.startswith("@"):
-                        dec_text = dec_text[1:]
-                    if dec_text not in decorators:
-                        decorators.append(dec_text)
+        for dec_node in temp:
+            dec_text = self._extract_marker_text(dec_node)
+            if dec_text.startswith("#[") and dec_text.endswith("]"):
+                dec_text = dec_text[2:-1].strip()
+            if dec_text not in decorators:
+                decorators.append(dec_text)
         return decorators
 
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
         if not code.strip():
             return {}
+
         tree = self.parser.parse(code.encode("utf-8"))
-        query_str = "(class_declaration name: (identifier) @name) @cls\n(method_declaration name: (identifier) @name) @fn"
+        query_str = "(struct_item name: (type_identifier) @name) @cls\n(function_item name: (identifier) @name) @fn"
         cursor = QueryCursor(Query(self.language, query_str))
 
         markers: dict[str, dict[str, list[str]]] = {}
@@ -304,7 +321,16 @@ class JavaCodeStructure(CodeStructureInterface):
             if symbol not in markers:
                 markers[symbol] = {"decorators": self._extract_decorators(target)}
                 if is_class:
-                    markers[symbol]["extends"] = self._extract_bases(target)
+                    markers[symbol]["extends"] = []
+
+        impl_query = Query(self.language, "(impl_item trait: (_) @trait type: (_) @type)")
+        for _, impl_match in QueryCursor(impl_query).matches(tree.root_node):
+            if "trait" in impl_match and "type" in impl_match:
+                trait_name = self._extract_marker_text(impl_match["trait"][0])
+                type_name = self._extract_marker_text(impl_match["type"][0])
+                if type_name in markers and "extends" in markers[type_name]:
+                    markers[type_name]["extends"].append(trait_name)
+
         return markers
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
@@ -322,7 +348,7 @@ class JavaCodeStructure(CodeStructureInterface):
 
         target_block = None
         for child in node.children:
-            if child.type in ("class_body", "interface_body", "enum_body", "block"):
+            if child.type == "block" or child.type == "declaration_list":
                 target_block = child
                 break
 

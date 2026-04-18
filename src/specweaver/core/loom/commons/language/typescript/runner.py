@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.loom.commons.language.typescript.parsers import extract_tsc_errors
+from specweaver.workspace.parsers.typescript.parsers import extract_tsc_errors
 from specweaver.core.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     CompileError,

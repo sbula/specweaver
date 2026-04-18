@@ -4,6 +4,8 @@
 """Tests for ValidateTestsHandler — runs tests via QARunnerAtom."""
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.validation import ValidateTestsHandler
 
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
@@ -12,7 +14,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers import RunContext, ValidateTestsHandler
+
 from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:

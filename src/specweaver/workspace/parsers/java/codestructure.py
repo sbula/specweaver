@@ -1,17 +1,15 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Python CodeStructure parser for extracting exact code symbol skeletons."""
-
 from __future__ import annotations
 
 import logging
 import typing
 
-import tree_sitter_python
+import tree_sitter_java
 from tree_sitter import Language, Parser, Query, QueryCursor
 
-from specweaver.core.loom.commons.language.interfaces import (
+from specweaver.workspace.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
@@ -19,21 +17,25 @@ from specweaver.core.loom.commons.language.interfaces import (
 logger = logging.getLogger(__name__)
 
 SCM_SKELETON_QUERY = """
-(function_definition
-  body: (block) @block)
+(method_declaration body: (block) @block)
+(constructor_declaration body: (constructor_body) @block)
+"""
+
+SCM_IMPORT_QUERY = """
+(import_declaration) @imp
 """
 
 SCM_SYMBOL_QUERY = """
-(function_definition name: (identifier) @name)
-(class_definition name: (identifier) @name)
+(method_declaration name: (identifier) @name)
+(class_declaration name: (identifier) @name)
+(interface_declaration name: (identifier) @name)
+(enum_declaration name: (identifier) @name)
 """
 
 
-class PythonCodeStructure(CodeStructureInterface):
-    """Python tree-sitter structural parser."""
-
+class JavaCodeStructure(CodeStructureInterface):
     def __init__(self) -> None:
-        self.language = Language(tree_sitter_python.language())
+        self.language = Language(tree_sitter_java.language())
         self.parser = Parser(self.language)
 
     def extract_skeleton(self, code: str) -> str:
@@ -53,16 +55,6 @@ class PythonCodeStructure(CodeStructureInterface):
             for node in captures["block"]:
                 start_cut = node.start_byte + 1
                 end_cut = node.end_byte - 1
-
-                if node.children:
-                    first_child = node.children[0]
-                    if (
-                        first_child.type == "expression_statement"
-                        and first_child.children
-                        and first_child.children[0].type == "string"
-                    ):
-                        start_cut = first_child.end_byte
-
                 if start_cut < end_cut:
                     nodes_to_blank.append((start_cut, end_cut))
 
@@ -91,37 +83,58 @@ class PythonCodeStructure(CodeStructureInterface):
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in ("function_definition", "class_definition"):
-                            if parent.parent and parent.parent.type == "decorated_definition":
-                                return typing.cast("bytes", parent.parent.text).decode("utf-8")
+                        if parent and parent.type in (
+                            "method_declaration",
+                            "class_declaration",
+                            "interface_declaration",
+                        ):
                             return typing.cast("bytes", parent.text).decode("utf-8")
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
 
-    def extract_symbol_body(self, code: str, symbol_name: str) -> str:
+    def extract_imports(self, code: str) -> list[str]:
         if not code.strip():
-            raise CodeStructureError(f"Cannot extract '{symbol_name}' from empty code.")
+            return []
 
         code_bytes = code.encode("utf-8")
         tree = self.parser.parse(code_bytes)
-
-        query = Query(self.language, SCM_SYMBOL_QUERY)
+        query = Query(self.language, SCM_IMPORT_QUERY)
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
 
+        imports = set()
         for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if node_name_str == symbol_name:
-                        parent = name_node.parent
-                        if parent and parent.type in ("function_definition", "class_definition"):
-                            for child in parent.children:
-                                if child.type == "block":
-                                    return typing.cast("bytes", child.text).decode("utf-8")
-                            return ""
+            if "imp" in match_dict:
+                for node in match_dict["imp"]:
+                    for child in node.children:
+                        if child.type not in ("import", "static", ";"):
+                            imports.add(self._extract_marker_text(child))
+        return sorted(list(imports))
 
-        raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
+    def extract_symbol_body(self, code: str, symbol_name: str) -> str:
+        symbol_code = self.extract_symbol(code, symbol_name)
+        tree = self.parser.parse(symbol_code.encode("utf-8"))
+        query = Query(self.language, SCM_SKELETON_QUERY)
+        cursor = QueryCursor(query)
+        captures = cursor.captures(tree.root_node)
+
+        if captures.get("block"):
+            # Pick the largest block if there are multiple (to avoid nested class bodies parsing issue)
+            # Actually, the first capture is usually the outermost block.
+            return typing.cast("bytes", captures["block"][0].text).decode("utf-8")
+        return ""
+
+    def _is_symbol_public(self, parent: typing.Any) -> bool:
+        if parent and parent.type in (
+            "class_declaration",
+            "method_declaration",
+            "interface_declaration",
+            "enum_declaration",
+        ):
+            for child in parent.children:
+                if child.type == "modifiers" and child.text and b"public" in child.text:
+                    return True
+        return False
 
     def list_symbols(
         self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None
@@ -147,8 +160,7 @@ class PythonCodeStructure(CodeStructureInterface):
                     if (
                         visibility
                         and "public" in visibility
-                        and sym_name.startswith("_")
-                        and not sym_name.startswith("__")
+                        and not self._is_symbol_public(name_node.parent)
                     ):
                         continue
 
@@ -159,7 +171,6 @@ class PythonCodeStructure(CodeStructureInterface):
 
                     symbols.append(sym_name)
 
-        # distinct
         seen = set()
 
         unique_symbols = []
@@ -168,21 +179,6 @@ class PythonCodeStructure(CodeStructureInterface):
                 seen.add(x)
                 unique_symbols.append(x)
         return unique_symbols
-
-    def _auto_indent(self, new_code: str, margin: int) -> str:
-        if not new_code:
-            return new_code
-        lines = new_code.split("\n")
-        padded = []
-        for i, line in enumerate(lines):
-            if i == 0:
-                padded.append(line)
-            else:
-                if line.strip() == "":
-                    padded.append(line)  # preserve empty lines
-                else:
-                    padded.append((" " * margin) + line)
-        return "\n".join(padded)
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
         query = Query(self.language, SCM_SYMBOL_QUERY)
@@ -195,80 +191,88 @@ class PythonCodeStructure(CodeStructureInterface):
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type in ("function_definition", "class_definition"):
-                            if parent.parent and parent.parent.type == "decorated_definition":
-                                return parent.parent
+                        if parent and parent.type in (
+                            "method_declaration",
+                            "class_declaration",
+                            "interface_declaration",
+                            "enum_declaration",
+                        ):
                             return parent
         return None
+
+    def _auto_indent(self, new_code: str, margin: int) -> str:
+        if not new_code:
+            return new_code
+        lines = new_code.split("\n")
+        padded = []
+        for i, line in enumerate(lines):
+            if i == 0:
+                padded.append(line)
+            else:
+                if line.strip() == "":
+                    padded.append(line)
+                else:
+                    padded.append((" " * margin) + line)
+        return "\n".join(padded)
 
     def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
         if not code.strip():
             raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
-
         code_bytes = code.encode("utf-8")
         tree = self.parser.parse(code_bytes)
         node = self._find_symbol_node(tree, symbol_name)
-
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
 
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin).encode("utf-8")
 
-        start_byte = typing.cast("int", node.start_byte)
-        end_byte = typing.cast("int", node.end_byte)
-        mutated = code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
+        mutated = code_bytes[: node.start_byte] + indented_code + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def replace_symbol_body(self, code: str, symbol_name: str, new_code: str) -> str:
         if not code.strip():
-            raise CodeStructureError(f"Cannot replace body of '{symbol_name}' in empty code.")
-
+            raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
         code_bytes = code.encode("utf-8")
         tree = self.parser.parse(code_bytes)
 
-        # We need to find the block explicitly
-        query = Query(self.language, SCM_SYMBOL_QUERY)
-        cursor = QueryCursor(query)
-        matches = cursor.matches(tree.root_node)
+        node = self._find_symbol_node(tree, symbol_name)
+        if not node:
+            raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
 
         target_block = None
-        for _, match_dict in matches:
-            if "name" in match_dict:
-                for name_node in match_dict["name"]:
-                    if typing.cast("bytes", name_node.text).decode("utf-8") == symbol_name:
-                        parent = name_node.parent
-                        if parent and parent.type in ("function_definition", "class_definition"):
-                            for child in parent.children:
-                                if child.type == "block":
-                                    target_block = child
-                                    break
-
+        for child in node.children:
+            if child.type in ("block", "class_body", "interface_body", "enum_body"):
+                target_block = child
+                break
         if not target_block:
             raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
 
-        margin = target_block.start_point[1]
-        indented_code = self._auto_indent(new_code, margin).encode("utf-8")
+        margin = typing.cast("int", node.start_point[1])
+        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
 
-        start_byte = target_block.start_byte
-        end_byte = target_block.end_byte
-        mutated = code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
+        insert_start = target_block.start_byte + 1
+        insert_end = target_block.end_byte - 1
+        mutated = (
+            code_bytes[:insert_start]
+            + b"\n"
+            + (b" " * (margin + 4))
+            + indented_code
+            + b"\n"
+            + (b" " * margin)
+            + code_bytes[insert_end:]
+        )
         return mutated.decode("utf-8")
 
     def delete_symbol(self, code: str, symbol_name: str) -> str:
         if not code.strip():
             return code
-
         code_bytes = code.encode("utf-8")
         tree = self.parser.parse(code_bytes)
         node = self._find_symbol_node(tree, symbol_name)
-
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-
-        start_byte = typing.cast("int", node.start_byte)
-        end_byte = typing.cast("int", node.end_byte)
-        mutated = code_bytes[:start_byte] + code_bytes[end_byte:]
+        mutated = code_bytes[: node.start_byte] + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
     def _extract_marker_text(self, node: typing.Any) -> str:
@@ -277,19 +281,28 @@ class PythonCodeStructure(CodeStructureInterface):
     def _extract_bases(self, target_node: typing.Any) -> list[str]:
         bases = []
         for child in target_node.children:
-            if child.type == "argument_list":
-                for arg_child in child.children:
-                    if arg_child.type in ("identifier", "attribute"):
-                        bases.append(self._extract_marker_text(arg_child))
+            if child.type == "superclass":
+                if len(child.children) >= 2:
+                    bases.append(self._extract_marker_text(child.children[1]))
+            elif child.type == "super_interfaces" and len(child.children) >= 2:
+                type_list_node = child.children[1]
+                for t in type_list_node.children:
+                    if t.type != ",":
+                        bases.append(self._extract_marker_text(t))
         return bases
 
     def _extract_decorators(self, target_node: typing.Any) -> list[str]:
         decorators = []
-        parent = target_node.parent
-        if parent and parent.type == "decorated_definition":
-            for child in parent.children:
-                if child.type == "decorator":
-                    dec_text = self._extract_marker_text(child)
+        modifiers = None
+        for child in target_node.children:
+            if child.type == "modifiers":
+                modifiers = child
+                break
+
+        if modifiers:
+            for mod in modifiers.children:
+                if mod.type in ("marker_annotation", "annotation"):
+                    dec_text = self._extract_marker_text(mod)
                     if dec_text.startswith("@"):
                         dec_text = dec_text[1:]
                     if dec_text not in decorators:
@@ -300,7 +313,7 @@ class PythonCodeStructure(CodeStructureInterface):
         if not code.strip():
             return {}
         tree = self.parser.parse(code.encode("utf-8"))
-        query_str = "(class_definition name: (identifier) @name) @cls\n(function_definition name: (identifier) @name) @fn"
+        query_str = "(class_declaration name: (identifier) @name) @cls\n(method_declaration name: (identifier) @name) @fn"
         cursor = QueryCursor(Query(self.language, query_str))
 
         markers: dict[str, dict[str, list[str]]] = {}
@@ -319,9 +332,7 @@ class PythonCodeStructure(CodeStructureInterface):
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         code_bytes = code.encode("utf-8")
-
         if not target_parent:
-            # Append to EOF
             indented_code = self._auto_indent(new_code, 0).encode("utf-8")
             if not code.endswith("\n"):
                 return (code_bytes + b"\n\n" + indented_code).decode("utf-8")
@@ -329,22 +340,28 @@ class PythonCodeStructure(CodeStructureInterface):
 
         tree = self.parser.parse(code_bytes)
         node = self._find_symbol_node(tree, target_parent)
-
         if not node:
             raise CodeStructureError(f"Parent symbol '{target_parent}' not found.")
 
-        # Target parent should be a class. Inject right before its end_byte.
-        # But we need to indent inside it. Python body block standard indent is parent margin + 4.
-        end_byte = typing.cast("int", node.end_byte)
+        target_block = None
+        for child in node.children:
+            if child.type in ("class_body", "interface_body", "enum_body", "block"):
+                target_block = child
+                break
+
+        if not target_block:
+            raise CodeStructureError(f"Body block for parent symbol '{target_parent}' not found.")
+
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
 
+        insert_point = target_block.end_byte - 1
         mutated = (
-            code_bytes[:end_byte]
-            + b"\n"
+            code_bytes[:insert_point]
             + (b" " * (margin + 4))
             + indented_code
             + b"\n"
-            + code_bytes[end_byte:]
+            + (b" " * margin)
+            + code_bytes[insert_point:]
         )
         return mutated.decode("utf-8")

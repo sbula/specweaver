@@ -8,7 +8,7 @@ import json
 import tree_sitter_markdown
 from tree_sitter import Language, Parser, Query, QueryCursor
 
-from specweaver.core.loom.commons.language.interfaces import (
+from specweaver.workspace.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
@@ -73,3 +73,6 @@ class MarkdownCodeStructure(CodeStructureInterface):
 
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
         return {}
+
+    def extract_imports(self, code: str) -> list[str]:
+        return []

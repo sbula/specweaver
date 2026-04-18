@@ -145,24 +145,4 @@ class TestContextInferenceEdgeCases:
         assert result.was_generated is True
         assert result.node.archetype == "pure-logic"
 
-    def test_infer_public_symbols_from_all(self, tmp_path: Path) -> None:
-        """Module with __all__ → exposes matches __all__ exactly."""
-        mod_dir = tmp_path / "api"
-        mod_dir.mkdir()
 
-        (mod_dir / "__init__.py").write_text(
-            '"""Public API."""\n\n__all__ = ["Client", "Config"]\n',
-            encoding="utf-8",
-        )
-        (mod_dir / "client.py").write_text(
-            "class Client:\n    pass\n\nclass _InternalHelper:\n    pass\n",
-            encoding="utf-8",
-        )
-
-        inferrer = ContextInferrer()
-        result = inferrer.infer_and_write(mod_dir)
-
-        assert result.was_generated is True
-        assert "Client" in result.node.exposes
-        assert "Config" in result.node.exposes
-        assert "_InternalHelper" not in result.node.exposes

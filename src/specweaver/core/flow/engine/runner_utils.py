@@ -1,4 +1,5 @@
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
@@ -8,7 +9,7 @@ if TYPE_CHECKING:
 
     from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
     from specweaver.core.flow.engine.state import PipelineRun, StepResult
-    from specweaver.core.flow.handlers import RunContext
+    
 
 
 @runtime_checkable

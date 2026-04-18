@@ -14,7 +14,6 @@ from collections import Counter
 from typing import TYPE_CHECKING
 
 import tree_sitter
-import tree_sitter_typescript
 
 from specweaver.assurance.standards.analyzer import CategoryResult
 from specweaver.assurance.standards.languages.javascript.analyzer import (
@@ -49,10 +48,9 @@ class TSStandardsAnalyzer(JSStandardsAnalyzer):
             "typescript_types",
         ]
 
-    def get_language(self) -> tree_sitter.Language:
-        # We use the TSX grammar because it safely parses standard TS as well
-        # as TSX components, covering both extensions effectively.
-        return tree_sitter.Language(tree_sitter_typescript.language_tsx())
+    def get_code_structure(self):
+        from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
+        return TypeScriptCodeStructure()
 
     def get_extractors(self) -> list[Callable[..., CategoryResult]]:
         return [

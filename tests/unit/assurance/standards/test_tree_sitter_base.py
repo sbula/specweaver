@@ -13,6 +13,8 @@ import tree_sitter_javascript
 
 from specweaver.assurance.standards.analyzer import CategoryResult
 from specweaver.assurance.standards.tree_sitter_base import TreeSitterAnalyzer
+from specweaver.workspace.parsers.interfaces import CodeStructureInterface
+from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -29,8 +31,8 @@ class DummyJSAnalyzer(TreeSitterAnalyzer):
     def supported_categories(self) -> list[str]:
         return ["dummy_cat"]
 
-    def get_language(self) -> tree_sitter.Language:
-        return tree_sitter.Language(tree_sitter_javascript.language())
+    def get_code_structure(self) -> CodeStructureInterface:
+        return TypeScriptCodeStructure()
 
     def get_extractors(self) -> list[Callable]:
         return [self._extract_dummy]

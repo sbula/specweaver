@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.loom.commons.language.interfaces import CodeStructureError
-from specweaver.core.loom.commons.language.java.codestructure import JavaCodeStructure
+from specweaver.workspace.parsers.interfaces import CodeStructureError
+from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
 
 
 @pytest.fixture

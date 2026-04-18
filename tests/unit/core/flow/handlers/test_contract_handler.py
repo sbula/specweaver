@@ -4,6 +4,10 @@
 """Unit tests for GenerateContractHandler — Feature 3.28 SF-A."""
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import StepHandler
+from specweaver.core.flow.handlers.generation import GenerateContractHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 import typing
 from unittest.mock import MagicMock
@@ -151,7 +155,7 @@ class TestContractHandlerExecute:
 
 class TestContractHandlerRegistration:
     def test_handler_registered_in_registry(self) -> None:
-        from specweaver.core.flow.handlers import StepHandlerRegistry
+        
 
         registry = StepHandlerRegistry()
         handler = registry.get(StepAction.GENERATE, StepTarget.CONTRACT)

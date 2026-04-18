@@ -1,3 +1,7 @@
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import StepHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
@@ -21,7 +25,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers import RunContext, StepHandlerRegistry
+
 
 
 class FakePassHandler:

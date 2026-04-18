@@ -61,8 +61,8 @@ This component bounded safely.
 def test_markdown_unsupported_symbol_extraction() -> None:
     import pytest
 
-    from specweaver.core.loom.commons.language.interfaces import CodeStructureError
-    from specweaver.core.loom.commons.language.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.parsers.interfaces import CodeStructureError
+    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
     with pytest.raises(
@@ -79,8 +79,8 @@ def test_markdown_unsupported_symbol_extraction() -> None:
 def test_markdown_unsupported_mutators() -> None:
     import pytest
 
-    from specweaver.core.loom.commons.language.interfaces import CodeStructureError
-    from specweaver.core.loom.commons.language.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.parsers.interfaces import CodeStructureError
+    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
     with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
@@ -97,7 +97,7 @@ def test_markdown_unsupported_mutators() -> None:
 
 
 def test_markdown_list_symbols_and_markers() -> None:
-    from specweaver.core.loom.commons.language.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
     assert atom.list_symbols("# content") == []

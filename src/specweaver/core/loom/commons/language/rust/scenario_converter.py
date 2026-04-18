@@ -17,7 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.commons.language.interfaces import ScenarioConverterInterface
+from specweaver.workspace.parsers.interfaces import ScenarioConverterInterface
 
 if TYPE_CHECKING:
     from specweaver.workflows.scenarios.scenario_models import ScenarioSet

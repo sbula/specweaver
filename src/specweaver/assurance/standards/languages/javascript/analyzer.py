@@ -13,13 +13,13 @@ from collections import Counter
 from typing import TYPE_CHECKING
 
 import tree_sitter
-import tree_sitter_javascript
 
 from specweaver.assurance.standards.analyzer import CategoryResult
 from specweaver.assurance.standards.languages.python.analyzer import (
-    _classify_name,  # We can reuse the Python naming classifier for basic cases
+    _classify_name,
 )
 from specweaver.assurance.standards.tree_sitter_base import TreeSitterAnalyzer
+from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -83,8 +83,8 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             "async_patterns",
         ]
 
-    def get_language(self) -> tree_sitter.Language:
-        return tree_sitter.Language(tree_sitter_javascript.language())
+    def get_code_structure(self):
+        return TypeScriptCodeStructure()
 
     def get_extractors(self) -> list[Callable[..., CategoryResult]]:
         return [

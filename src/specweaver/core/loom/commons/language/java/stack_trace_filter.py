@@ -11,7 +11,7 @@ and the ``package scenarios.generated;`` declaration in generated files.
 
 from __future__ import annotations
 
-from specweaver.core.loom.commons.language.interfaces import StackTraceFilterInterface
+from specweaver.workspace.parsers.interfaces import StackTraceFilterInterface
 
 # JVM at-frame format: \tat package.ClassName.methodName(FileName.java:line)
 _SCENARIO_PACKAGE_PREFIX = "scenarios.generated."

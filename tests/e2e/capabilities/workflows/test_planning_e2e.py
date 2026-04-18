@@ -8,6 +8,10 @@ E2: Full pipeline: spec → validate → plan → generate (mock LLM, real runne
 """
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.generation import GenerateCodeHandler
+from specweaver.core.flow.handlers.generation import PlanSpecHandler
+from specweaver.core.flow.handlers.validation import ValidateSpecHandler
 
 import json
 from dataclasses import dataclass
@@ -101,12 +105,7 @@ class TestFullPlanPipelineE2E:
     @pytest.mark.asyncio()
     async def test_spec_validate_plan_generate(self, tmp_path: Path) -> None:
         """Full pipeline: spec exists → validate → plan → generate code (mock LLM)."""
-        from specweaver.core.flow.handlers import (
-            GenerateCodeHandler,
-            PlanSpecHandler,
-            RunContext,
-            ValidateSpecHandler,
-        )
+        
 
         # 1. Create a valid spec
         spec = tmp_path / "login_spec.md"
@@ -222,10 +221,7 @@ class TestPlanWithConstitutionAndStandardsE2E:
     @pytest.mark.asyncio()
     async def test_planner_with_constitution_and_standards_e2e(self, tmp_path: Path) -> None:
         """Planner with constitution+standards → plan YAML → verified on disk."""
-        from specweaver.core.flow.handlers import (
-            PlanSpecHandler,
-            RunContext,
-        )
+        
 
         # 1. Create spec
         spec = tmp_path / "auth_spec.md"
@@ -284,10 +280,7 @@ class TestPlannerCleanJsonE2E:
     @pytest.mark.asyncio()
     async def test_planner_handles_fenced_json_in_pipeline(self, tmp_path: Path) -> None:
         """PlanSpecHandler succeeds when LLM returns ```json-fenced plan."""
-        from specweaver.core.flow.handlers import (
-            PlanSpecHandler,
-            RunContext,
-        )
+        
 
         spec = tmp_path / "fenced_spec.md"
         spec.write_text(

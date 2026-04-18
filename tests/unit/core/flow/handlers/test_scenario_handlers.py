@@ -4,6 +4,11 @@
 """Tests for GenerateScenarioHandler and ConvertScenarioHandler."""
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import StepHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler
+from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
 
 import json
 from typing import TYPE_CHECKING
@@ -14,7 +19,7 @@ if TYPE_CHECKING:
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers import StepHandlerRegistry
+
 from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
 

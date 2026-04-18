@@ -1,3 +1,8 @@
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.generation import GenerateCodeHandler
+from specweaver.core.flow.handlers.validation import ValidateCodeHandler
+from specweaver.core.flow.handlers.validation import ValidateSpecHandler
+
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
@@ -10,7 +15,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers import GenerateCodeHandler, RunContext, ValidateSpecHandler
+
 
 
 @pytest.mark.asyncio
@@ -137,7 +142,7 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
         SpecWeaverSettings,
         ValidationSettings,
     )
-    from specweaver.core.flow.handlers import ValidateCodeHandler
+    
 
     code_dir = tmp_path / "src"
     code_dir.mkdir()

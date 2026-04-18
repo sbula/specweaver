@@ -1,6 +1,8 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.review import ReviewCodeHandler
 
 from typing import TYPE_CHECKING
 
@@ -12,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers import ReviewCodeHandler, RunContext
+
 
 # ---------------------------------------------------------------------------
 # Telemetry run_id propagation

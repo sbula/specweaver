@@ -3,7 +3,7 @@
 
 """Tests for TypeScript parsing logic."""
 
-from specweaver.core.loom.commons.language.typescript.parsers import extract_tsc_errors
+from specweaver.workspace.parsers.typescript.parsers import extract_tsc_errors
 
 
 class TestTypeScriptParsers:

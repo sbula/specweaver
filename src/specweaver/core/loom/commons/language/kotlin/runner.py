@@ -11,7 +11,7 @@ import subprocess
 from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.core.loom.commons.language.kotlin.parsers import parse_detekt_complexity
+from specweaver.workspace.parsers.kotlin.parsers import parse_detekt_complexity
 from specweaver.core.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     CompileError,

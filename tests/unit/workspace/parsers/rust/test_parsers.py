@@ -5,7 +5,7 @@
 
 import pytest
 
-from specweaver.core.loom.commons.language.rust.parsers import parse_clippy_complexity
+from specweaver.workspace.parsers.rust.parsers import parse_clippy_complexity
 
 
 def test_parse_clippy_complexity_strict_mapping() -> None:

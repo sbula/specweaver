@@ -20,7 +20,7 @@ from specweaver.core.loom.commons.language._detect import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.loom.commons.language.interfaces import ScenarioConverterInterface
+    from specweaver.workspace.parsers.interfaces import ScenarioConverterInterface
 
 # Re-export so SF-C can import from a single location
 __all__ = ["create_scenario_converter", "detect_scenario_extension"]

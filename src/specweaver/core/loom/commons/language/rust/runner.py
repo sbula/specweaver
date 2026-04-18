@@ -9,7 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.core.loom.commons.language.rust.parsers import parse_clippy_complexity
+from specweaver.workspace.parsers.rust.parsers import parse_clippy_complexity
 from specweaver.core.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     QARunnerInterface,

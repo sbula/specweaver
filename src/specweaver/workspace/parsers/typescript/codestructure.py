@@ -9,7 +9,7 @@ import typing
 import tree_sitter_typescript
 from tree_sitter import Language, Parser, Query, QueryCursor
 
-from specweaver.core.loom.commons.language.interfaces import (
+from specweaver.workspace.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
@@ -20,6 +20,11 @@ SCM_SKELETON_QUERY = """
 (function_declaration body: (statement_block) @block)
 (method_definition body: (statement_block) @block)
 (arrow_function body: (statement_block) @block)
+"""
+
+SCM_IMPORT_QUERY = """
+(import_statement) @imp
+(import_require_clause) @imp
 """
 
 SCM_SYMBOL_QUERY = """
@@ -98,6 +103,35 @@ class TypeScriptCodeStructure(CodeStructureInterface):
                             return typing.cast("bytes", wrapper.text).decode("utf-8")
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
+
+    def extract_imports(self, code: str) -> list[str]:
+        if not code.strip():
+            return []
+
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+        query = Query(self.language, SCM_IMPORT_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        imports = set()
+        for _, match_dict in matches:
+            if "imp" in match_dict:
+                for node in match_dict["imp"]:
+                    import_text = typing.cast("bytes", node.text).decode("utf-8").strip()
+                    if " from " in import_text:
+                        module_part = import_text.split(" from ")[-1].strip()
+                    else:
+                        module_part = import_text.replace("import ", "").replace("require(", "").replace(")", "").strip()
+                    
+                    if module_part.endswith(";"):
+                        module_part = module_part[:-1].strip()
+                    if module_part.startswith(("'", '"')) and module_part.endswith(("'", '"')):
+                        module_part = module_part[1:-1]
+                        
+                    imports.add(module_part)
+
+        return sorted(list(imports))
 
     def extract_symbol_body(self, code: str, symbol_name: str) -> str:
         symbol_code = self.extract_symbol(code, symbol_name)

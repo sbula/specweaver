@@ -1,27 +1,27 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for strict Kotlin SARIF parsing logic."""
+"""Tests for strict Java SARIF parsing logic."""
 
 import pytest
 
-from specweaver.core.loom.commons.language.kotlin.parsers import parse_detekt_complexity
+from specweaver.workspace.parsers.java.parsers import parse_pmd_complexity
 
 
-def test_parse_detekt_complexity_strict_mapping() -> None:
+def test_parse_pmd_complexity_strict_mapping() -> None:
     data = {
         "runs": [
             {
                 "results": [
                     {
-                        "ruleId": "ComplexMethod",
-                        "properties": {"complexity": 18},
+                        "ruleId": "CyclomaticComplexity",
+                        "properties": {"complexity": 15},
                         "message": {"text": "High complexity"},
                         "locations": [
                             {
                                 "physicalLocation": {
-                                    "artifactLocation": {"uri": "src/App.kt"},
-                                    "region": {"startLine": 20},
+                                    "artifactLocation": {"uri": "src/Main.java"},
+                                    "region": {"startLine": 10},
                                 }
                             }
                         ],
@@ -32,23 +32,23 @@ def test_parse_detekt_complexity_strict_mapping() -> None:
     }
 
     # Test above threshold
-    violations = parse_detekt_complexity(data, 10)
+    violations = parse_pmd_complexity(data, 10)
     assert len(violations) == 1
-    assert violations[0].complexity == 18
-    assert violations[0].file == "src/App.kt"
+    assert violations[0].complexity == 15
+    assert violations[0].file == "src/Main.java"
 
     # Test below threshold
-    violations = parse_detekt_complexity(data, 20)
+    violations = parse_pmd_complexity(data, 20)
     assert len(violations) == 0
 
 
-def test_parse_detekt_complexity_hard_fails_without_property() -> None:
+def test_parse_pmd_complexity_hard_fails_without_property() -> None:
     data = {
         "runs": [
             {
                 "results": [
                     {
-                        "ruleId": "ComplexMethod",
+                        "ruleId": "CyclomaticComplexity",
                         "message": {"text": "High complexity"},
                     }
                 ]
@@ -57,4 +57,4 @@ def test_parse_detekt_complexity_hard_fails_without_property() -> None:
     }
 
     with pytest.raises(ValueError, match=r"HARD FAIL: SARIF property 'complexity'.*"):
-        parse_detekt_complexity(data, 10)
+        parse_pmd_complexity(data, 10)

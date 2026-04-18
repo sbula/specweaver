@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.loom.commons.language.interfaces import CodeStructureError
-from specweaver.core.loom.commons.language.rust.codestructure import RustCodeStructure
+from specweaver.workspace.parsers.interfaces import CodeStructureError
+from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
 
 
 @pytest.fixture

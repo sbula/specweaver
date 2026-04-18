@@ -11,19 +11,19 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
-from specweaver.core.loom.commons.language.interfaces import (
+from specweaver.workspace.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
 
 if TYPE_CHECKING:
     from specweaver.core.loom.commons.filesystem.executor import FileExecutor
-from specweaver.core.loom.commons.language.java.codestructure import JavaCodeStructure
-from specweaver.core.loom.commons.language.kotlin.codestructure import KotlinCodeStructure
-from specweaver.core.loom.commons.language.markdown.codestructure import MarkdownCodeStructure
-from specweaver.core.loom.commons.language.python.codestructure import PythonCodeStructure
-from specweaver.core.loom.commons.language.rust.codestructure import RustCodeStructure
-from specweaver.core.loom.commons.language.typescript.codestructure import TypeScriptCodeStructure
+from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
+from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
+from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
+from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
+from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 logger = logging.getLogger(__name__)
 

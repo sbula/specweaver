@@ -4,6 +4,7 @@
 """Pipeline execution API endpoints — list, run, status, log, resume, gate."""
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
 
 import logging
 from pathlib import Path
@@ -54,7 +55,7 @@ def start_pipeline_run(
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.store import StateStore
-    from specweaver.core.flow.handlers import RunContext
+    
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     # Resolve project
@@ -196,7 +197,7 @@ def resume_run(
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.store import StateStore
-    from specweaver.core.flow.handlers import RunContext
+    
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     state_db = state_db_path()
@@ -304,7 +305,7 @@ def submit_gate_decision(
     # Approve → resume
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.handlers import RunContext
+    
 
     project_root = resolve_project_root(run.project_name, db)
     pipeline_def = load_pipeline(Path(run.pipeline_name))

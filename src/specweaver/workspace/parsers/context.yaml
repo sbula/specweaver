@@ -1,0 +1,32 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: parsers
+level: module
+purpose: >
+  Polyglot Tree-Sitter AST extractions and skeletons for the workspace.
+
+description: |
+  Provides pure-logic structural parsers for multiple languages (Java, Python, Rust, TS, Kotlin).
+  These extract standard imports, symbols, and skeletons from native source files using Tree-Sitter grammars.
+  This boundary is strictly pure logic and must not execute code.
+
+archetype: pure-logic
+
+consumes: []
+
+forbids:
+  - specweaver/loom/*  # Pure logic modules must not depend on physical sandboxes.
+
+exposes:
+  - interfaces
+  - python/codestructure
+  - java/codestructure
+  - kotlin/codestructure
+  - rust/codestructure
+  - typescript/codestructure
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: true
+  concurrency_model: none

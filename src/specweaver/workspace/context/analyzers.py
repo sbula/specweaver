@@ -4,8 +4,8 @@
 """Language analyzers for context.yaml auto-inference.
 
 Provides a language-agnostic interface (LanguageAnalyzer ABC) with concrete
-implementations (PythonAnalyzer first, expandable to Java, Kotlin, Rust,
-TypeScript, C++, SQL, etc.).
+implementations for Python, Java, Kotlin, Rust, and TypeScript.
+Powered by Tree-Sitter extractions from workspace/parsers.
 
 AnalyzerFactory auto-detects the language from file extensions in a directory
 and returns the appropriate analyzer. Callers never need to care about the
@@ -14,11 +14,19 @@ language — they just use the interface.
 
 from __future__ import annotations
 
-import ast
 import logging
 from abc import ABC, abstractmethod
-from pathlib import Path  # noqa: TC003 — used at runtime, not just type hints
-from typing import ClassVar
+from pathlib import Path
+from typing import ClassVar, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
+
+from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
+from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
+from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
+from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
+from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 logger = logging.getLogger(__name__)
 
@@ -26,128 +34,22 @@ logger = logging.getLogger(__name__)
 # Used to distinguish external vs internal imports.
 _STDLIB_TOP_MODULES = frozenset(
     {
-        "__future__",
-        "abc",
-        "argparse",
-        "ast",
-        "asyncio",
-        "base64",
-        "builtins",
-        "calendar",
-        "codecs",
-        "collections",
-        "concurrent",
-        "configparser",
-        "contextlib",
-        "copy",
-        "csv",
-        "ctypes",
-        "dataclasses",
-        "datetime",
-        "decimal",
-        "difflib",
-        "dis",
-        "email",
-        "encodings",
-        "enum",
-        "errno",
-        "faulthandler",
-        "fileinput",
-        "fnmatch",
-        "fractions",
-        "ftplib",
-        "functools",
-        "gc",
-        "getpass",
-        "gettext",
-        "glob",
-        "gzip",
-        "hashlib",
-        "heapq",
-        "hmac",
-        "html",
-        "http",
-        "importlib",
-        "inspect",
-        "io",
-        "ipaddress",
-        "itertools",
-        "json",
-        "keyword",
-        "linecache",
-        "locale",
-        "logging",
-        "lzma",
-        "math",
-        "mimetypes",
-        "multiprocessing",
-        "numbers",
-        "operator",
-        "os",
-        "pathlib",
-        "pdb",
-        "pickle",
-        "pkgutil",
-        "platform",
-        "pprint",
-        "profile",
-        "pstats",
-        "py_compile",
-        "queue",
-        "random",
-        "re",
-        "readline",
-        "reprlib",
-        "runpy",
-        "sched",
-        "secrets",
-        "select",
-        "shelve",
-        "shlex",
-        "shutil",
-        "signal",
-        "site",
-        "smtplib",
-        "socket",
-        "socketserver",
-        "sqlite3",
-        "ssl",
-        "stat",
-        "statistics",
-        "string",
-        "struct",
-        "subprocess",
-        "sys",
-        "sysconfig",
-        "tempfile",
-        "test",
-        "textwrap",
-        "threading",
-        "time",
-        "timeit",
-        "token",
-        "tokenize",
-        "tomllib",
-        "trace",
-        "traceback",
-        "tracemalloc",
-        "turtle",
-        "types",
-        "typing",
-        "unicodedata",
-        "unittest",
-        "urllib",
-        "uuid",
-        "venv",
-        "warnings",
-        "wave",
-        "weakref",
-        "webbrowser",
-        "xml",
-        "xmlrpc",
-        "zipfile",
-        "zipimport",
-        "zlib",
+        "__future__", "abc", "argparse", "ast", "asyncio", "base64", "builtins", "calendar",
+        "codecs", "collections", "concurrent", "configparser", "contextlib", "copy", "csv",
+        "ctypes", "dataclasses", "datetime", "decimal", "difflib", "dis", "email", "encodings",
+        "enum", "errno", "faulthandler", "fileinput", "fnmatch", "fractions", "ftplib",
+        "functools", "gc", "getpass", "gettext", "glob", "gzip", "hashlib", "heapq", "hmac",
+        "html", "http", "importlib", "inspect", "io", "ipaddress", "itertools", "json",
+        "keyword", "linecache", "locale", "logging", "lzma", "math", "mimetypes",
+        "multiprocessing", "numbers", "operator", "os", "pathlib", "pdb", "pickle", "pkgutil",
+        "platform", "pprint", "profile", "pstats", "py_compile", "queue", "random", "re",
+        "readline", "reprlib", "runpy", "sched", "secrets", "select", "shelve", "shlex",
+        "shutil", "signal", "site", "smtplib", "socket", "socketserver", "sqlite3", "ssl",
+        "stat", "statistics", "string", "struct", "subprocess", "sys", "sysconfig", "tempfile",
+        "test", "textwrap", "threading", "time", "timeit", "token", "tokenize", "tomllib",
+        "trace", "traceback", "tracemalloc", "turtle", "types", "typing", "unicodedata",
+        "unittest", "urllib", "uuid", "venv", "warnings", "wave", "weakref", "webbrowser",
+        "xml", "xmlrpc", "zipfile", "zipimport", "zlib",
     }
 )
 
@@ -198,79 +100,41 @@ class LanguageAnalyzer(ABC):
         ...
 
 
-class PythonAnalyzer(LanguageAnalyzer):
-    """Python-specific analyzer.
+class TreeSitterAnalyzerBase(LanguageAnalyzer):
+    """Base class for language analyzers powered by Tree-Sitter parsers."""
 
-    - Purpose: from __init__.py module-level docstring
-    - Imports: AST-parsed from all .py files
-    - Public symbols: __all__ or non-underscore class/function names
-    - Archetype: heuristic based on import patterns
-    """
+    def __init__(self, parser: CodeStructureInterface, ext: str) -> None:
+        self.parser = parser
+        self.ext = ext
 
     def detect(self, directory: Path) -> bool:
-        """Check if directory contains any .py files."""
-        return any(directory.glob("*.py"))
-
-    def extract_purpose(self, directory: Path) -> str | None:
-        """Extract docstring from __init__.py."""
-        init_file = directory / "__init__.py"
-        if not init_file.is_file():
-            return None
-
-        try:
-            tree = ast.parse(init_file.read_text(encoding="utf-8"))
-        except SyntaxError:
-            logger.debug("SyntaxError parsing %s, skipping purpose extraction", init_file)
-            return None
-
-        docstring = ast.get_docstring(tree)
-        if docstring:
-            # Take just the first line/sentence
-            first_line = docstring.strip().split("\n")[0].strip()
-            return first_line if first_line else None
-        return None
+        """Check if directory contains any files of this extension."""
+        return any(directory.glob(f"*{self.ext}"))
 
     def extract_imports(self, directory: Path) -> list[str]:
-        """Extract all imports from .py files, deduplicated."""
-        seen: set[str] = set()
-
-        for py_file in directory.glob("*.py"):
+        """Extract all imports, deduplicated, using the underlying tree-sitter parser."""
+        imports: set[str] = set()
+        for file_path in directory.glob(f"*{self.ext}"):
             try:
-                tree = ast.parse(py_file.read_text(encoding="utf-8"))
-            except SyntaxError:
-                continue
-
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Import):
-                    for alias in node.names:
-                        seen.add(alias.name)
-                elif isinstance(node, ast.ImportFrom) and node.module:
-                    seen.add(node.module)
-
-        return sorted(seen)
+                code_text = file_path.read_text(encoding="utf-8")
+                for imp in self.parser.extract_imports(code_text):
+                    if imp:
+                        imports.add(imp)
+            except Exception as e:
+                logger.debug(f"Failed to extract imports from {file_path}: {e}")
+        return sorted(list(imports))
 
     def extract_public_symbols(self, directory: Path) -> list[str]:
-        """Extract public symbols, preferring __all__ if defined."""
-        # First check __init__.py for __all__
-        all_symbols = self._extract_all_from_init(directory)
-        if all_symbols is not None:
-            return sorted(all_symbols)
-
-        # Fallback: scan all .py files for public class/function names
+        """Extract public symbols using the underlying tree-sitter parser."""
         symbols: set[str] = set()
-        for py_file in directory.glob("*.py"):
+        for file_path in directory.glob(f"*{self.ext}"):
             try:
-                tree = ast.parse(py_file.read_text(encoding="utf-8"))
-            except SyntaxError:
-                continue
-
-            for node in ast.iter_child_nodes(tree):
-                if isinstance(
-                    node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
-                ) and not node.name.startswith("_"):
-                    symbols.add(node.name)
-
-        return sorted(symbols)
+                code_text = file_path.read_text(encoding="utf-8")
+                for sym in self.parser.list_symbols(code_text, visibility=["public"]):
+                    symbols.add(sym)
+            except Exception as e:
+                logger.debug(f"Failed to extract symbols from {file_path}: {e}")
+        return sorted(list(symbols))
 
     def infer_archetype(self, directory: Path) -> str:
         """Heuristic: external imports → adapter, otherwise → pure-logic."""
@@ -279,8 +143,8 @@ class PythonAnalyzer(LanguageAnalyzer):
             return "pure-logic"
 
         for imp in imports:
-            top = imp.split(".")[0]
-            if top not in _STDLIB_TOP_MODULES and not top.startswith("specweaver"):
+            top = self._get_import_prefix(imp)
+            if self._is_external(top):
                 logger.debug(
                     "Inferred archetype 'adapter' for %s (external import: %s)", directory.name, top
                 )
@@ -288,45 +152,118 @@ class PythonAnalyzer(LanguageAnalyzer):
 
         return "pure-logic"
 
-    @staticmethod
-    def _extract_all_from_init(directory: Path) -> list[str] | None:
-        """Extract __all__ list from __init__.py, if defined."""
+    @abstractmethod
+    def _get_import_prefix(self, imp: str) -> str:
+        """Extract the root module/namespace from the import string for checking."""
+        ...
+
+    @abstractmethod
+    def _is_external(self, top: str) -> bool:
+        """Return True if the root module belongs to an external library/framework."""
+        ...
+
+
+class PythonAnalyzer(TreeSitterAnalyzerBase):
+    def __init__(self) -> None:
+        super().__init__(PythonCodeStructure(), ".py")
+
+    def extract_purpose(self, directory: Path) -> str | None:
         init_file = directory / "__init__.py"
         if not init_file.is_file():
             return None
-
-        try:
-            tree = ast.parse(init_file.read_text(encoding="utf-8"))
-        except SyntaxError:
-            return None
-
-        for node in ast.iter_child_nodes(tree):
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if (
-                        isinstance(target, ast.Name)
-                        and target.id == "__all__"
-                        and isinstance(node.value, (ast.List, ast.Tuple))
-                    ):
-                        return [
-                            elt.value
-                            for elt in node.value.elts
-                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
-                        ]
+        text = init_file.read_text(encoding="utf-8").strip()
+        if text.startswith('"""'):
+            parts = text[3:].split('"""')
+            if parts:
+                return parts[0].strip().split('\n')[0]
         return None
+
+    def _get_import_prefix(self, imp: str) -> str:
+        return imp.split(".")[0]
+
+    def _is_external(self, top: str) -> bool:
+        return top not in _STDLIB_TOP_MODULES and not top.startswith("specweaver")
+
+
+class JavaAnalyzer(TreeSitterAnalyzerBase):
+    def __init__(self) -> None:
+        super().__init__(JavaCodeStructure(), ".java")
+
+    def extract_purpose(self, directory: Path) -> str | None:
+        return None
+
+    def _get_import_prefix(self, imp: str) -> str:
+        return imp
+
+    def _is_external(self, top: str) -> bool:
+        if top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver"):
+            return False
+        return True
+
+
+class KotlinAnalyzer(TreeSitterAnalyzerBase):
+    def __init__(self) -> None:
+        super().__init__(KotlinCodeStructure(), ".kt")
+
+    def extract_purpose(self, directory: Path) -> str | None:
+        return None
+
+    def _get_import_prefix(self, imp: str) -> str:
+        return imp
+
+    def _is_external(self, top: str) -> bool:
+        if top.startswith("kotlin.") or top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver"):
+            return False
+        return True
+
+
+class RustAnalyzer(TreeSitterAnalyzerBase):
+    def __init__(self) -> None:
+        super().__init__(RustCodeStructure(), ".rs")
+
+    def extract_purpose(self, directory: Path) -> str | None:
+        return None
+
+    def _get_import_prefix(self, imp: str) -> str:
+        return imp.split("::")[0]
+
+    def _is_external(self, top: str) -> bool:
+        return top not in ("std", "core", "alloc", "specweaver")
+
+
+class TypeScriptAnalyzer(TreeSitterAnalyzerBase):
+    def __init__(self) -> None:
+        super().__init__(TypeScriptCodeStructure(), ".ts")
+
+    def extract_purpose(self, directory: Path) -> str | None:
+        return None
+
+    def _get_import_prefix(self, imp: str) -> str:
+        return imp
+
+    def _is_external(self, top: str) -> bool:
+        if top.startswith(".") or top.startswith("/"):
+            return False
+        builtins = {
+            "fs", "path", "crypto", "os", "util", "events", "http", "stream",
+            "buffer", "child_process", "assert", "url", "console"
+        }
+        if top.startswith("node:") or top in builtins:
+            return False
+        if top.startswith("specweaver") or top.startswith("src/"):
+            return False
+        return True
 
 
 class AnalyzerFactory:
-    """Auto-detect language from file extensions, return appropriate analyzer.
-
-    Currently supports Python. Additional languages can be added by
-    creating new LanguageAnalyzer subclasses and registering them here.
-    """
+    """Auto-detect language from file extensions, return appropriate analyzer."""
 
     _analyzers: ClassVar[list[LanguageAnalyzer]] = [
         PythonAnalyzer(),
-        # Future: JavaAnalyzer(), KotlinAnalyzer(), RustAnalyzer(),
-        # TypeScriptAnalyzer(), CppAnalyzer(), SqlAnalyzer()
+        JavaAnalyzer(),
+        KotlinAnalyzer(),
+        RustAnalyzer(),
+        TypeScriptAnalyzer()
     ]
 
     @classmethod

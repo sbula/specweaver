@@ -5,11 +5,11 @@ name: language-commons
 level: module
 purpose: >
   Language-specific implementation repository for external command line test runners
-  and AST parsing functionality securely wrapped for Loom sandbox execution.
+  securely wrapped for Loom sandbox execution.
 
 description: |
-  Provides language-specific implementations for QARunnerInterface (pytest, rust, etc.)
-  and AST parsers (tree-sitter queries). It groups Side-Effects by language.
+  Provides language-specific implementations for QARunnerInterface (pytest, rust, etc.).
+  It groups Side-Effects by language.
   Consumed transparently via dependency-injection into the Pure-Logic systems.
 
 archetype: adapter
@@ -17,6 +17,7 @@ archetype: adapter
 consumes:
   - specweaver/commons
   - specweaver/loom/commons/qa_runner
+  - specweaver/workspace/parsers
 
 forbids:
   - specweaver/loom/tools/*  # Atoms and raw orchestrators must not execute intent-gated agent tools directly.
@@ -29,8 +30,7 @@ exposes:
   - rust
   - typescript
 
-constraints:
-  - "Language definitions strictly separate I/O components from Pure Logic formatters"
+constraints: []
 
 # -- Operational Metadata --------------------------------------------------
 operational:

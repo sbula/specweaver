@@ -6,10 +6,10 @@ from __future__ import annotations
 import logging
 import typing
 
-import tree_sitter_rust
+import tree_sitter_kotlin
 from tree_sitter import Language, Parser, Query, QueryCursor
 
-from specweaver.core.loom.commons.language.interfaces import (
+from specweaver.workspace.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
@@ -17,20 +17,24 @@ from specweaver.core.loom.commons.language.interfaces import (
 logger = logging.getLogger(__name__)
 
 SCM_SKELETON_QUERY = """
-(function_item body: (block) @block)
+(function_declaration (function_body (block) @block))
+(anonymous_initializer (block) @block)
+"""
+
+SCM_IMPORT_QUERY = """
+(import_header) @imp
 """
 
 SCM_SYMBOL_QUERY = """
-(struct_item name: (type_identifier) @name)
-(impl_item type: (type_identifier) @name)
-(impl_item type: (generic_type (type_identifier) @name))
-(function_item name: (identifier) @name)
+(function_declaration (identifier) @name)
+(class_declaration (identifier) @name)
+(object_declaration (identifier) @name)
 """
 
 
-class RustCodeStructure(CodeStructureInterface):
+class KotlinCodeStructure(CodeStructureInterface):
     def __init__(self) -> None:
-        self.language = Language(tree_sitter_rust.language())
+        self.language = Language(tree_sitter_kotlin.language())
         self.parser = Parser(self.language)
 
     def extract_skeleton(self, code: str) -> str:
@@ -72,25 +76,43 @@ class RustCodeStructure(CodeStructureInterface):
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
 
-        collected_blocks: list[str] = []
-
         for _, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type == "generic_type":
-                            parent = parent.parent
-                        if parent and parent.type in ("function_item", "struct_item", "impl_item"):
-                            collected_blocks.append(
-                                typing.cast("bytes", parent.text).decode("utf-8")
-                            )
-
-        if collected_blocks:
-            return "\n\n".join(collected_blocks)
+                        if parent and parent.type in (
+                            "function_declaration",
+                            "class_declaration",
+                            "object_declaration",
+                        ):
+                            return typing.cast("bytes", parent.text).decode("utf-8")
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
+
+    def extract_imports(self, code: str) -> list[str]:
+        if not code.strip():
+            return []
+
+        code_bytes = code.encode("utf-8")
+        tree = self.parser.parse(code_bytes)
+        query = Query(self.language, SCM_IMPORT_QUERY)
+        cursor = QueryCursor(query)
+        matches = cursor.matches(tree.root_node)
+
+        imports = set()
+        for _, match_dict in matches:
+            if "imp" in match_dict:
+                for node in match_dict["imp"]:
+                    import_text = typing.cast("bytes", node.text).decode("utf-8").strip()
+                    if import_text.startswith("import "):
+                        import_text = import_text[7:].strip()
+                    if " as " in import_text:
+                        import_text = import_text.split(" as ")[0].strip()
+                    imports.add(import_text)
+
+        return sorted(list(imports))
 
     def extract_symbol_body(self, code: str, symbol_name: str) -> str:
         symbol_code = self.extract_symbol(code, symbol_name)
@@ -105,11 +127,17 @@ class RustCodeStructure(CodeStructureInterface):
             return typing.cast("bytes", captures["block"][0].text).decode("utf-8")
         return ""
 
-    def _is_symbol_public(self, parent: typing.Any) -> bool:
+    def _is_symbol_private(self, parent: typing.Any) -> bool:
         if parent:
             for child in parent.children:
-                if child.type == "visibility_modifier":
-                    return True
+                if child.type == "modifiers":
+                    mod_text = child.text
+                    if mod_text and (
+                        b"private" in mod_text
+                        or b"protected" in mod_text
+                        or b"internal" in mod_text
+                    ):
+                        return True
         return False
 
     def list_symbols(
@@ -132,10 +160,11 @@ class RustCodeStructure(CodeStructureInterface):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
+
                     if (
                         visibility
                         and "public" in visibility
-                        and not self._is_symbol_public(name_node.parent)
+                        and self._is_symbol_private(name_node.parent)
                     ):
                         continue
 
@@ -147,6 +176,7 @@ class RustCodeStructure(CodeStructureInterface):
                     symbols.append(sym_name)
 
         seen = set()
+
         unique_symbols = []
         for x in symbols:
             if x not in seen:
@@ -159,21 +189,19 @@ class RustCodeStructure(CodeStructureInterface):
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
 
-        best_match = None
         for _, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
                     if node_name_str == symbol_name:
                         parent = name_node.parent
-                        if parent and parent.type == "generic_type":
-                            parent = parent.parent
-                        if parent and parent.type in ("function_item", "struct_item", "impl_item"):
-                            if parent.type == "impl_item":
-                                return parent
-                            if not best_match:
-                                best_match = parent
-        return best_match
+                        if parent and parent.type in (
+                            "function_declaration",
+                            "class_declaration",
+                            "object_declaration",
+                        ):
+                            return parent
+        return None
 
     def _auto_indent(self, new_code: str, margin: int) -> str:
         if not new_code:
@@ -198,12 +226,10 @@ class RustCodeStructure(CodeStructureInterface):
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
-        mutated = (
-            code_bytes[: node.start_byte] + new_code.encode("utf-8") + code_bytes[node.end_byte :]
-        )
-        # Using _auto_indent here
+
         margin = typing.cast("int", node.start_point[1])
         indented_code = self._auto_indent(new_code, margin).encode("utf-8")
+
         mutated = code_bytes[: node.start_byte] + indented_code + code_bytes[node.end_byte :]
         return mutated.decode("utf-8")
 
@@ -212,15 +238,21 @@ class RustCodeStructure(CodeStructureInterface):
             raise CodeStructureError(f"Cannot replace '{symbol_name}' in empty code.")
         code_bytes = code.encode("utf-8")
         tree = self.parser.parse(code_bytes)
+
         node = self._find_symbol_node(tree, symbol_name)
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
 
+        # Kotlin bodies can be (function_body (block)) or (class_body)
         target_block = None
         for child in node.children:
-            if child.type == "block" or child.type == "declaration_list":
+            if child.type == "function_body":
+                for sub in child.children:
+                    if sub.type == "block":
+                        target_block = sub
+                        break
+            elif child.type == "class_body":
                 target_block = child
-                break
 
         if not target_block:
             raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
@@ -255,20 +287,32 @@ class RustCodeStructure(CodeStructureInterface):
     def _extract_marker_text(self, node: typing.Any) -> str:
         return typing.cast("bytes", node.text).decode("utf-8").strip()
 
-    def _extract_decorators(self, target_node: typing.Any) -> list[str]:
-        decorators: list[str] = []
-        prev = target_node.prev_named_sibling
-        temp: list[typing.Any] = []
-        while prev and prev.type == "attribute_item":
-            temp.insert(0, prev)
-            prev = prev.prev_named_sibling
+    def _extract_bases(self, target_node: typing.Any) -> list[str]:
+        bases = []
+        for child in target_node.children:
+            if child.type == "delegation_specifiers":
+                for specifier in child.children:
+                    if specifier.type == "delegation_specifier":
+                        for c in specifier.children:
+                            if c.type == "user_type":
+                                bases.append(self._extract_marker_text(c))
+                            elif c.type == "constructor_invocation":
+                                for cc in c.children:
+                                    if cc.type == "user_type":
+                                        bases.append(self._extract_marker_text(cc))
+        return bases
 
-        for dec_node in temp:
-            dec_text = self._extract_marker_text(dec_node)
-            if dec_text.startswith("#[") and dec_text.endswith("]"):
-                dec_text = dec_text[2:-1].strip()
-            if dec_text not in decorators:
-                decorators.append(dec_text)
+    def _extract_decorators(self, target_node: typing.Any) -> list[str]:
+        decorators = []
+        for child in target_node.children:
+            if child.type == "modifiers":
+                for mod in child.children:
+                    if mod.type == "annotation":
+                        dec_text = self._extract_marker_text(mod)
+                        if dec_text.startswith("@"):
+                            dec_text = dec_text[1:]
+                        if dec_text not in decorators:
+                            decorators.append(dec_text)
         return decorators
 
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
@@ -276,7 +320,7 @@ class RustCodeStructure(CodeStructureInterface):
             return {}
 
         tree = self.parser.parse(code.encode("utf-8"))
-        query_str = "(struct_item name: (type_identifier) @name) @cls\n(function_item name: (identifier) @name) @fn"
+        query_str = "(class_declaration name: (identifier) @name) @cls\n(function_declaration name: (identifier) @name) @fn\n(object_declaration name: (identifier) @name) @cls"
         cursor = QueryCursor(Query(self.language, query_str))
 
         markers: dict[str, dict[str, list[str]]] = {}
@@ -290,16 +334,7 @@ class RustCodeStructure(CodeStructureInterface):
             if symbol not in markers:
                 markers[symbol] = {"decorators": self._extract_decorators(target)}
                 if is_class:
-                    markers[symbol]["extends"] = []
-
-        impl_query = Query(self.language, "(impl_item trait: (_) @trait type: (_) @type)")
-        for _, impl_match in QueryCursor(impl_query).matches(tree.root_node):
-            if "trait" in impl_match and "type" in impl_match:
-                trait_name = self._extract_marker_text(impl_match["trait"][0])
-                type_name = self._extract_marker_text(impl_match["type"][0])
-                if type_name in markers and "extends" in markers[type_name]:
-                    markers[type_name]["extends"].append(trait_name)
-
+                    markers[symbol]["extends"] = self._extract_bases(target)
         return markers
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
@@ -317,9 +352,13 @@ class RustCodeStructure(CodeStructureInterface):
 
         target_block = None
         for child in node.children:
-            if child.type == "block" or child.type == "declaration_list":
+            if child.type == "function_body":
+                for sub in child.children:
+                    if sub.type == "block":
+                        target_block = sub
+                        break
+            elif child.type == "class_body":
                 target_block = child
-                break
 
         if not target_block:
             raise CodeStructureError(f"Body block for parent symbol '{target_parent}' not found.")

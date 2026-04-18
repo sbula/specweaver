@@ -6,6 +6,7 @@ This ensures proper interaction between Runner, Handlers, Gates, and Display.
 """
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
 
 from typing import TYPE_CHECKING
 
@@ -25,7 +26,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.store import StateStore
-from specweaver.core.flow.handlers import RunContext
+
 
 
 @pytest.fixture

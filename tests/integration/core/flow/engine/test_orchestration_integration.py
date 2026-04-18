@@ -4,6 +4,10 @@
 """Integration tests for dynamic orchestration of components."""
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import StepHandler
+from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 import json
 from typing import TYPE_CHECKING
@@ -27,7 +31,7 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
     """
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepResult, StepStatus
-    from specweaver.core.flow.handlers import StepHandlerRegistry
+    
     from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")

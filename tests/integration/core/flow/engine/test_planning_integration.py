@@ -15,6 +15,13 @@ Tests the seams between:
 """
 
 from __future__ import annotations
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import StepHandler
+from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
+from specweaver.core.flow.handlers.generation import GenerateCodeHandler
+from specweaver.core.flow.handlers.generation import GenerateTestsHandler
+from specweaver.core.flow.handlers.generation import PlanSpecHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 import json
 from dataclasses import dataclass
@@ -26,13 +33,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers import (
-    GenerateCodeHandler,
-    GenerateTestsHandler,
-    PlanSpecHandler,
-    RunContext,
-    StepHandlerRegistry,
-)
+
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.planning.models import PlanArtifact
 from specweaver.workflows.planning.renderer import render_plan_markdown
@@ -678,7 +679,7 @@ class TestDagOrchestratorIntegration:
         """Integration Story 2: Failures in dynamic sub-pipelines properly starve dependents and bubble."""
         from specweaver.core.flow.engine.models import PipelineDefinition
         from specweaver.core.flow.engine.runner import PipelineRunner
-        from specweaver.core.flow.handlers import StepHandlerRegistry
+        
         from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
