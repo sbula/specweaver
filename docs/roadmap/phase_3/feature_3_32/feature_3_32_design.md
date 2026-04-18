@@ -46,7 +46,7 @@ None required. Uses native `hashlib` and `json`.
 |---|----------|-----------|----------------------|
 | AD-1 | Project-Local Persistence (Bicycle Mode) | Store cache in `.specweaver/topology.cache.json` at the target `project_root`. Inherently survives Docker/Podman transient teardowns because the root is volume-mounted. Perfect native scaling to microservices without polluting the laptop's global environments. | No |
 | AD-2 | Automated `.gitignore` Injection | Because AD-1 drops an artifact into legacy projects, SpecWeaver must auto-inject `.specweaver/` into the Gitignore to prevent repository pollution. | No |
-| AD-3 | Rocket Mode Backlog (Feature 3.33) | Hardcoded strictly to "Bicycle Mode" (flat-files). Massive Monorepo topologies (100+ services) will utilize Feature 3.33 later to swap this layer out for 'Rocket Mode' Sidecar databases (Falkor/Vector). | No |
+| AD-3 | External Semantic Backends (Feature 3.48) | Hardcoded strictly to "Bicycle Mode" (flat-files). A newly postponed feature (3.48) has been explicitly added to the backlog to swap this layer out for 'Rocket Mode' Sidecar databases (Falkor/Neo4j). | No |
 | AD-4 | Leverage `LanguageAnalyzers` | Reuses existing AST parsing logic inside `workspace/context` to map semantic dependencies, preventing code duplication natively. | No |
 
 ## Sub-Feature Breakdown
