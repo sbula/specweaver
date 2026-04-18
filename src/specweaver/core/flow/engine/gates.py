@@ -11,7 +11,6 @@ action: advance, stop, retry, loop back, or park for human approval.
 """
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
 
 import logging
 from typing import TYPE_CHECKING, Any
@@ -22,7 +21,8 @@ from specweaver.core.flow.engine.state import StepStatus
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import GateDefinition, PipelineDefinition, PipelineStep
     from specweaver.core.flow.engine.state import PipelineRun, StepResult
-    
+    from specweaver.core.flow.handlers.base import RunContext
+
 
 logger = logging.getLogger(__name__)
 

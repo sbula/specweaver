@@ -4,13 +4,12 @@
 """Unit tests for GenerateContractHandler — Feature 3.28 SF-A."""
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.base import StepHandler
-from specweaver.core.flow.handlers.generation import GenerateContractHandler
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 import typing
 from unittest.mock import MagicMock
+
+from specweaver.core.flow.handlers.generation import GenerateContractHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -21,7 +20,6 @@ from specweaver.core.flow.engine.models import (
     StepTarget,
 )
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.generation import GenerateContractHandler
 
 
 class TestContractEnumAndCombinations:
@@ -155,7 +153,7 @@ class TestContractHandlerExecute:
 
 class TestContractHandlerRegistration:
     def test_handler_registered_in_registry(self) -> None:
-        
+
 
         registry = StepHandlerRegistry()
         handler = registry.get(StepAction.GENERATE, StepTarget.CONTRACT)

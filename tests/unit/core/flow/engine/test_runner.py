@@ -4,9 +4,6 @@
 """Tests for the pipeline runner — sequential execution, parking, resume."""
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.base import StepHandler
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 from typing import TYPE_CHECKING
 
@@ -21,7 +18,8 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.engine.store import StateStore
-
+from specweaver.core.flow.handlers.base import RunContext, StepHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
     from pathlib import Path

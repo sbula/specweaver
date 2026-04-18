@@ -128,6 +128,22 @@ class PythonCodeStructure(CodeStructureInterface):
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
 
+    def _process_import_node(self, node: typing.Any, imports: set[str]) -> None:
+        if node.type == "import_statement":
+            for child in node.children:
+                if child.type == "dotted_name":
+                    imports.add(self._extract_marker_text(child))
+                elif child.type == "aliased_import":
+                    for grandchild in child.children:
+                        if grandchild.type == "dotted_name":
+                            imports.add(self._extract_marker_text(grandchild))
+                            break
+        elif node.type == "import_from_statement":
+            for child in node.children:
+                if child.type == "dotted_name":
+                    imports.add(self._extract_marker_text(child))
+                    break
+
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():
             return []
@@ -138,30 +154,38 @@ class PythonCodeStructure(CodeStructureInterface):
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
 
-        imports = set()
+        imports: set[str] = set()
         for _, match_dict in matches:
             if "imp" in match_dict:
                 for node in match_dict["imp"]:
-                    if node.type == "import_statement":
-                        for child in node.children:
-                            if child.type == "dotted_name":
-                                imports.add(self._extract_marker_text(child))
-                            elif child.type == "aliased_import":
-                                for grandchild in child.children:
-                                    if grandchild.type == "dotted_name":
-                                        imports.add(self._extract_marker_text(grandchild))
-                                        break
-                    elif node.type == "import_from_statement":
-                        # The first dotted_name is the module
-                        for child in node.children:
-                            if child.type == "dotted_name":
-                                imports.add(self._extract_marker_text(child))
-                                break
+                    self._process_import_node(node, imports)
         return sorted(list(imports))
+
+    def _is_symbol_valid(
+        self,
+        sym_name: str,
+        visibility: list[str] | None,
+        decorator_filter: str | None,
+        framework_markers: dict[str, typing.Any],
+    ) -> bool:
+        if (
+            visibility
+            and "public" in visibility
+            and sym_name.startswith("_")
+            and not sym_name.startswith("__")
+        ):
+            return False
+
+        if decorator_filter:
+            decs = framework_markers.get(sym_name, {}).get("decorators", [])
+            if not any(decorator_filter in d for d in decs):
+                return False
+
+        return True
 
     def list_symbols(
         self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None
-    ) -> list[str]:  # noqa: C901
+    ) -> list[str]:
         if not code.strip():
             return []
 
@@ -179,25 +203,11 @@ class PythonCodeStructure(CodeStructureInterface):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-
-                    if (
-                        visibility
-                        and "public" in visibility
-                        and sym_name.startswith("_")
-                        and not sym_name.startswith("__")
-                    ):
-                        continue
-
-                    if decorator_filter:
-                        decs = framework_markers.get(sym_name, {}).get("decorators", [])
-                        if not any(decorator_filter in d for d in decs):
-                            continue
-
-                    symbols.append(sym_name)
+                    if self._is_symbol_valid(sym_name, visibility, decorator_filter, framework_markers):
+                        symbols.append(sym_name)
 
         # distinct
         seen = set()
-
         unique_symbols = []
         for x in symbols:
             if x not in seen:

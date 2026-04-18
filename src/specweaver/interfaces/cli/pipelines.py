@@ -4,7 +4,6 @@
 """CLI commands for pipeline execution: pipelines, run, resume."""
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
 
 import asyncio
 import logging
@@ -14,6 +13,7 @@ from typing import TYPE_CHECKING
 import typer
 
 from specweaver.core.config.paths import state_db_path
+from specweaver.core.flow.handlers.base import RunContext
 from specweaver.interfaces.cli import _core, _helpers
 from specweaver.interfaces.cli._helpers import (
     _load_constitution_content,
@@ -212,7 +212,7 @@ def _execute_run(  # noqa: C901
     """Core run logic -- separated for testability."""
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
-    
+
 
     # Resolve project path
     try:
@@ -345,7 +345,7 @@ def resume(
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import RunStatus
-    
+
 
     store = _get_state_store()
 

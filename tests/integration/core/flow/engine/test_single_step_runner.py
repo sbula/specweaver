@@ -4,9 +4,6 @@
 """Integration tests for single_step pipeline execution."""
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.base import StepHandler
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 import asyncio
 from typing import TYPE_CHECKING
@@ -15,6 +12,7 @@ from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, S
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -36,7 +34,7 @@ def test_single_step_pipeline_executes_smoothly(tmp_path: Path) -> None:
 
     # We must patch StepHandlerRegistry or use a fake handler because we don't want to actually draft
     # Let's mock a handler and inject it
-    
+
 
     class DummyHandler:
         async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:

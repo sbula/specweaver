@@ -12,8 +12,6 @@ import logging
 from collections import Counter
 from typing import TYPE_CHECKING
 
-import tree_sitter
-
 from specweaver.assurance.standards.analyzer import CategoryResult
 from specweaver.assurance.standards.languages.python.analyzer import (
     _classify_name,
@@ -24,6 +22,10 @@ from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCode
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
+    
+    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
+
+    import tree_sitter
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +85,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             "async_patterns",
         ]
 
-    def get_code_structure(self):
+    def get_code_structure(self) -> CodeStructureInterface:
         return TypeScriptCodeStructure()
 
     def get_extractors(self) -> list[Callable[..., CategoryResult]]:

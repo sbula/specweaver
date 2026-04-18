@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.flow.engine.runner import RunContext
+from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.drift import DriftCheckHandler, _load_plan
 
@@ -84,7 +84,7 @@ async def test_drift_handler_analyze_drift_logic(tmp_path: Path) -> None:
     from unittest.mock import AsyncMock
 
     from specweaver.assurance.validation.models import DriftFinding, DriftReport, Severity
-    from specweaver.core.flow.engine.runner import RunContext
+    from specweaver.core.flow.handlers.base import RunContext
 
     class MockConfig:
         llm = "mock_config_llm"

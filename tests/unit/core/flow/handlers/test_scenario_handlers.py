@@ -4,24 +4,20 @@
 """Tests for GenerateScenarioHandler and ConvertScenarioHandler."""
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.base import StepHandler
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler
-from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
 
 import json
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
+
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
 
 
 def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:

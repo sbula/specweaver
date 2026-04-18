@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
 

@@ -8,9 +8,6 @@ Verifies that PipelineRunner flushes the TelemetryCollector
 """
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.base import StepHandler
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
@@ -25,7 +22,8 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-
+from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
     from pathlib import Path

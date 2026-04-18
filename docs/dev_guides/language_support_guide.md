@@ -47,15 +47,16 @@ To add a language, say **Go**, you will create a highly isolated submodule insid
 3. **`runner.py`**
    - Implements the `GoQARunner` subclass inheriting from a base `QARunnerInterface`.
    - Native bindings to `go build`, `go test`, etc.
-4. **`ast_parser.py`**
-   - Implements native Tree-Sitter schema endpoints (`extract_skeleton`, `extract_symbol`, `replace_symbol`, `replace_symbol_body`, `delete_symbol`, `add_symbol`, `extract_framework_markers`) to power the unified `CodeStructureTool` and `CodeStructureAtom` APIs.
-5. **`scenario_converter.py`**
-   - Implements `ScenarioConverterInterface` to translate JSON/YAML abstract scenarios into `_test.go` parameterized execution blocks.
-6. **`stack_trace_filter.py`**
-   - Implements `StackTraceFilterInterface` to strip unhelpful system stack errors, isolating the domain payload emitted from Go native test failures.
-7. **Framework Evaluator Schemas**
+4. **`scenario_converter.py`**
+   - Implements `ScenarioConverterInterface` to translate JSON/YAML abstract scenarios into `_test.<ext>` parameterized execution blocks.
+5. **`stack_trace_filter.py`**
+   - Implements `StackTraceFilterInterface` to strip unhelpful system stack errors, isolating the domain payload emitted from native test failures.
+6. **Framework Evaluator Schemas**
    - Provide fallback declarative YAML maps for popular frameworks in the target language (e.g., Gin/Fiber for Go) within `specweaver.workflows.evaluators.frameworks` as flat files (e.g. `gin.yaml`). To bind the framework strictly to the Go language and prevent cross-framework hallucinations, include `metadata: supported_languages: ["go"]` natively. Note that users can natively override these defaults by placing their own `<framework>.yaml` inside their isolated project directory at `<project_dir>/.specweaver/evaluators/`.
    - **Architectural Rationale**: By explicitly mapping meta-annotations or procedural macros to their expanded equivalents in static YAML (e.g., mapping `@RestController` to `@Controller + @ResponseBody`), we provide the LLM with deterministic compiler vision. This novel dictionary-bypass avoids the 5-10 second latency tax of firing up a heavy runtime Language Server (LSP) or compiler plugin (like `cargo expand` or `KSP`) during critical agentic feedback loops, without sacrificing architectural accuracy.
+
+### B. Workspace Parsers Addendum
+*(Note: As of Feature 3.32 SF-1, Tree-Sitter code structural extraction has been strictly decoupled from the QARunner lifecycle to support Deep Semantic Hashing and pure-logic analysis. Do NOT add `ast_parser.py` into the QARunner submodules! Instead, implement the polyglot Tree-Sitter grammar using the `CodeStructureInterface` inside `src/specweaver/workspace/parsers/<lang>/codestructure.py`)*
 
 ### B. The Interface Contract
 

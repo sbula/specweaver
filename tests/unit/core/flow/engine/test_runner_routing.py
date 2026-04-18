@@ -4,9 +4,6 @@
 """Tests for PipelineRunner integration with RouterEvaluator."""
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.base import StepHandler
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 from typing import Any
 
@@ -23,7 +20,8 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
-
+from specweaver.core.flow.handlers.base import RunContext, StepHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 
 class FakeHandler(StepHandler):

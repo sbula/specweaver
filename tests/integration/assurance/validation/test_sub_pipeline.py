@@ -9,13 +9,13 @@ and real built-in rules — only the file content is synthetic.
 """
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.validation import ValidateSpecHandler
 
 from typing import TYPE_CHECKING
 
 import pytest
 
 from specweaver.assurance.validation.models import Status
+from specweaver.core.flow.handlers.validation import ValidateSpecHandler
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -448,7 +448,7 @@ class TestHandlerSubPipelineWiring:
         tmp_path: Path,
     ) -> None:
         """ValidateSpecHandler without kind runs validation_spec_default."""
-        
+
 
         handler = ValidateSpecHandler()
 
@@ -465,7 +465,7 @@ class TestHandlerSubPipelineWiring:
         tmp_path: Path,
     ) -> None:
         """ValidateSpecHandler with kind_str='feature' runs feature pipeline."""
-        
+
 
         handler = ValidateSpecHandler()
 

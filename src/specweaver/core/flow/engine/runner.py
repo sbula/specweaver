@@ -16,8 +16,6 @@ coupling the runner to any UI framework.
 """
 
 from __future__ import annotations
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 import logging
 import uuid
@@ -36,11 +34,12 @@ from specweaver.core.flow.engine.state import (
     StepResult,
     StepStatus,
 )
-
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
+    from specweaver.core.flow.handlers.base import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -263,74 +262,8 @@ class PipelineRunner:
                 self._context.pipeline_runner = self
 
                 if getattr(step_def, "use_worktree", False):
-                    import copy
-
-                    from specweaver.core.loom.atoms.base import AtomStatus
-                    from specweaver.core.loom.atoms.git.atom import GitAtom
-
-                    atom = GitAtom(cwd=self._context.project_path)
-                    clean_pipeline = (self._context.pipeline_name or "default_pipe").replace(
-                        " ", "_"
-                    )
-                    task_id = getattr(
-                        self._context, "task_id", getattr(self._context, "run_id", "default")
-                    )
-                    branch = f"sf-{clean_pipeline}-{task_id}"
-                    wt_path = f".worktrees/{task_id}"
-
-                    # 1. Add worktree
-                    add_res = atom.run(
-                        {"intent": "worktree_add", "path": wt_path, "branch": branch}
-                    )
-                    if add_res.status != AtomStatus.SUCCESS:
-                        raise RuntimeError(f"Failed to create sandbox worktree: {add_res.message}")
-
-                    self._setup_sandbox_caches(wt_path)
-
-                    isolated_context = copy.copy(self._context)
-                    isolated_context.output_dir = self._context.project_path / wt_path
-                    isolated_context.env_vars = self._context.env_vars.copy()
-
-                    try:
-                        # 2. Execute inner handler bounded to the isolated worktree context
-                        result = await handler.execute(step_def, isolated_context)
-
-                        # FR-8: Ensure doc_updates interceptor (TBD, currently agents just write to isolated path)
-
-                        # 3. Continuous Micro-Sync (FR-7)
-                        atom.run({"intent": "worktree_sync", "path": wt_path})
-
-                        # 4. Mathematical diff striping (FR-4, FR-5, NFR-4)
-                        strip_res = atom.run(
-                            {
-                                "intent": "strip_merge",
-                                "branch": branch,
-                                "allowed_paths": getattr(self._context, "allowed_paths", []),
-                            }
-                        )
-                        if strip_res.status != AtomStatus.SUCCESS:
-                            # Log but don't strictly fail the inner step if merging failed
-                            # (could be auto-strip just removed everything). Wait, we should log warning.
-                            logger.warning(
-                                f"Sandbox diff striping returned non-success: {strip_res.message}"
-                            )
-
-                    finally:
-                        # 5. Teardown resilience
-                        atom.run({"intent": "worktree_teardown", "path": wt_path})
-
-                        # 6. Database Cleanup Hooks bounds guarantee zombie block survival
-                        try:
-                            from specweaver.core.flow.engine.reservation import (
-                                SQLiteReservationSystem,
-                            )
-
-                            db_path = self._context.project_path / ".specweaver" / "reservations.db"
-                            SQLiteReservationSystem(db_path).release(run.run_id)
-                        except Exception as e:
-                            logger.error(
-                                "[run_id=%s] Sandbox DB teardown bounds panic: %s", run.run_id, e
-                            )
+                    from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
+                    result = await execute_in_sandbox(self, handler, step_def, run, logger)
                 else:
                     result = await handler.execute(step_def, self._context)
             except Exception as exc:

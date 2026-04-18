@@ -276,3 +276,49 @@ class TestPythonAnalyzerEdgeCases:
             "from specweaver.core.config.settings import load_settings\n"
         )
         assert PythonAnalyzer().infer_archetype(pkg) == "pure-logic"
+
+
+# ---------------------------------------------------------------------------
+# Polyglot Proxy Tests
+# ---------------------------------------------------------------------------
+
+
+class TestPolyglotLanguageAnalyzer:
+    """Verify AnalyzerFactory dynamically maps to non-Python analyzers."""
+
+    def test_gets_python_parser_by_default(self, tmp_path: Path) -> None:
+        (tmp_path / "hello.py").touch()
+        from specweaver.workspace.context.analyzers import AnalyzerFactory, PythonAnalyzer
+        analyzer = AnalyzerFactory.for_directory(tmp_path)
+        assert isinstance(analyzer, PythonAnalyzer)
+
+    def test_gets_java_parser(self, tmp_path: Path) -> None:
+        (tmp_path / "App.java").touch()
+        from specweaver.workspace.context.analyzers import AnalyzerFactory, JavaAnalyzer
+        analyzer = AnalyzerFactory.for_directory(tmp_path)
+        assert isinstance(analyzer, JavaAnalyzer)
+
+    def test_gets_kotlin_parser(self, tmp_path: Path) -> None:
+        (tmp_path / "App.kt").touch()
+        from specweaver.workspace.context.analyzers import AnalyzerFactory, KotlinAnalyzer
+        analyzer = AnalyzerFactory.for_directory(tmp_path)
+        assert isinstance(analyzer, KotlinAnalyzer)
+
+    def test_gets_rust_parser(self, tmp_path: Path) -> None:
+        (tmp_path / "main.rs").touch()
+        from specweaver.workspace.context.analyzers import AnalyzerFactory, RustAnalyzer
+        analyzer = AnalyzerFactory.for_directory(tmp_path)
+        assert isinstance(analyzer, RustAnalyzer)
+
+    def test_gets_typescript_parser(self, tmp_path: Path) -> None:
+        (tmp_path / "app.ts").touch()
+        from specweaver.workspace.context.analyzers import AnalyzerFactory, TypeScriptAnalyzer
+        analyzer = AnalyzerFactory.for_directory(tmp_path)
+        assert isinstance(analyzer, TypeScriptAnalyzer)
+
+    def test_gets_none_for_unknown(self, tmp_path: Path) -> None:
+        (tmp_path / "file.unknown").touch()
+        from specweaver.workspace.context.analyzers import AnalyzerFactory
+        analyzer = AnalyzerFactory.for_directory(tmp_path)
+        assert analyzer is None
+

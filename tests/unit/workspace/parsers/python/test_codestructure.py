@@ -179,3 +179,53 @@ class OtherController:
     symbols = parser.list_symbols(code, decorator_filter="app.route")
     assert "MyController" in symbols
     assert "OtherController" not in symbols
+
+# ---------------------------------------------------------------------------
+# Edge Case Edge Branch Testing
+# ---------------------------------------------------------------------------
+
+
+def test_extract_imports_from_statement(parser: PythonCodeStructure) -> None:
+    code = "from specweaver.core import flow\nfrom os import path"
+    imports = parser.extract_imports(code)
+    assert "specweaver.core" in imports
+    assert "os" in imports
+
+def test_extract_imports_direct_statement(parser: PythonCodeStructure) -> None:
+    code = "import json\nimport sys"
+    imports = parser.extract_imports(code)
+    assert "json" in imports
+    assert "sys" in imports
+
+def test_extract_imports_empty(parser: PythonCodeStructure) -> None:
+    assert parser.extract_imports("") == []
+    assert parser.extract_imports("   ") == []
+
+def test_list_symbols_empty(parser: PythonCodeStructure) -> None:
+    assert parser.list_symbols("") == []
+    assert parser.list_symbols("   ") == []
+
+def test_auto_indent_empty(parser: PythonCodeStructure) -> None:
+    assert parser._auto_indent("", 4) == ""
+
+def test_replace_symbol_empty(parser: PythonCodeStructure) -> None:
+    with pytest.raises(CodeStructureError, match="Cannot replace 'foo' in empty code"):
+        parser.replace_symbol("", "foo", "bar")
+
+def test_replace_symbol_not_found(parser: PythonCodeStructure) -> None:
+    with pytest.raises(CodeStructureError, match="Symbol 'Missing' not found"):
+        parser.replace_symbol("def foo(): pass", "Missing", "bar")
+
+def test_replace_symbol_success(parser: PythonCodeStructure) -> None:
+    code = "def old():\n    pass\n"
+    new_code = "def new():\n    return 42"
+    result = parser.replace_symbol(code, "old", new_code)
+    assert "new()" in result
+    assert "old()" not in result
+
+def test_extract_symbol_finds_decorated_node(parser: PythonCodeStructure) -> None:
+    code = "@pytest.mark.asyncio\nasync def TestFunc():\n    pass\n"
+    node = parser._find_symbol_node(parser.parser.parse(code.encode('utf-8')), "TestFunc")
+    assert node is not None
+    assert node.type == "decorated_definition"
+

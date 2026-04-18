@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import typing
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -23,6 +24,8 @@ class CodeStructureInterface(ABC):
     Tree-Sitter .scm queries to safely extract interface skeletons or symbol bodies.
     IO-bound operations are blocked from entering this component.
     """
+
+    parser: typing.Any
 
     @abstractmethod
     def extract_skeleton(self, code: str) -> str:

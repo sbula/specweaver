@@ -8,17 +8,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-import tree_sitter
-import tree_sitter_javascript
 
 from specweaver.assurance.standards.analyzer import CategoryResult
 from specweaver.assurance.standards.tree_sitter_base import TreeSitterAnalyzer
-from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
+
+    import tree_sitter
+
+    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 
 
 class DummyJSAnalyzer(TreeSitterAnalyzer):

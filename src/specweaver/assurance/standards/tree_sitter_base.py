@@ -14,15 +14,16 @@ import time
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
-import tree_sitter
-
 from specweaver.assurance.standards.analyzer import CategoryResult, StandardsAnalyzer
 from specweaver.assurance.standards.recency import recency_weight
-from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
+
+    import tree_sitter
+
+    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 
 logger = logging.getLogger(__name__)
 

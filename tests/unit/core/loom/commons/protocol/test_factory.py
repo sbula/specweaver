@@ -1,10 +1,10 @@
 import pytest
 
-from specweaver.core.loom.commons.protocol.interfaces import ProtocolSchemaError
-from specweaver.core.loom.commons.protocol.factory import ProtocolParserFactory
-from specweaver.core.loom.commons.protocol.openapi_parser import OpenAPIParser
 from specweaver.core.loom.commons.protocol.asyncapi_parser import AsyncAPIParser
+from specweaver.core.loom.commons.protocol.factory import ProtocolParserFactory
 from specweaver.core.loom.commons.protocol.grpc_parser import GRPCParser
+from specweaver.core.loom.commons.protocol.interfaces import ProtocolSchemaError
+from specweaver.core.loom.commons.protocol.openapi_parser import OpenAPIParser
 
 
 def test_factory_detects_openapi():

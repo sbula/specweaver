@@ -115,10 +115,10 @@ class RustCodeStructure(CodeStructureInterface):
                         import_text = import_text[8:].strip()
                     elif import_text.startswith("use "):
                         import_text = import_text[4:].strip()
-                        
+
                     if import_text.endswith(";"):
                         import_text = import_text[:-1].strip()
-                        
+
                     imports.add(import_text.split("{")[0].strip().rstrip(":"))
 
         return sorted(list(imports))
@@ -143,9 +143,31 @@ class RustCodeStructure(CodeStructureInterface):
                     return True
         return False
 
+    def _is_symbol_valid(
+        self,
+        sym_name: str,
+        name_node: typing.Any,
+        visibility: list[str] | None,
+        decorator_filter: str | None,
+        framework_markers: dict[str, typing.Any],
+    ) -> bool:
+        if (
+            visibility
+            and "public" in visibility
+            and not self._is_symbol_public(name_node.parent)
+        ):
+            return False
+
+        if decorator_filter:
+            decs = framework_markers.get(sym_name, {}).get("decorators", [])
+            if not any(decorator_filter in d for d in decs):
+                return False
+
+        return True
+
     def list_symbols(
         self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None
-    ) -> list[str]:  # noqa: C901
+    ) -> list[str]:
         if not code.strip():
             return []
 
@@ -163,19 +185,8 @@ class RustCodeStructure(CodeStructureInterface):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if (
-                        visibility
-                        and "public" in visibility
-                        and not self._is_symbol_public(name_node.parent)
-                    ):
-                        continue
-
-                    if decorator_filter:
-                        decs = framework_markers.get(sym_name, {}).get("decorators", [])
-                        if not any(decorator_filter in d for d in decs):
-                            continue
-
-                    symbols.append(sym_name)
+                    if self._is_symbol_valid(sym_name, name_node, visibility, decorator_filter, framework_markers):
+                        symbols.append(sym_name)
 
         seen = set()
         unique_symbols = []

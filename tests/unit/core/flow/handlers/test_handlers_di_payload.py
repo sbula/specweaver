@@ -1,10 +1,5 @@
-from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.flow.handlers.validation import ValidateCodeHandler
-from specweaver.core.flow.handlers.validation import ValidateSpecHandler
-
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
-
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -12,7 +7,7 @@ import pytest
 
 from specweaver.assurance.validation.models import Status
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-
+from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
 
 

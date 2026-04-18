@@ -11,7 +11,6 @@ import subprocess
 from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.workspace.parsers.java.parsers import parse_pmd_complexity
 from specweaver.core.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     CompileRunResult,
@@ -22,6 +21,7 @@ from specweaver.core.loom.commons.qa_runner.interface import (
     QARunnerInterface,
     TestRunResult,
 )
+from specweaver.workspace.parsers.java.parsers import parse_pmd_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path

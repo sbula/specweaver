@@ -9,11 +9,11 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.workspace.parsers.rust.parsers import parse_clippy_complexity
 from specweaver.core.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     QARunnerInterface,
 )
+from specweaver.workspace.parsers.rust.parsers import parse_clippy_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -16,15 +16,16 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import ClassVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 
-from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
 from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
 from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
+from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
 from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
 from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
 
@@ -196,9 +197,7 @@ class JavaAnalyzer(TreeSitterAnalyzerBase):
         return imp
 
     def _is_external(self, top: str) -> bool:
-        if top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver"):
-            return False
-        return True
+        return not (top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver"))
 
 
 class KotlinAnalyzer(TreeSitterAnalyzerBase):
@@ -212,9 +211,7 @@ class KotlinAnalyzer(TreeSitterAnalyzerBase):
         return imp
 
     def _is_external(self, top: str) -> bool:
-        if top.startswith("kotlin.") or top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver"):
-            return False
-        return True
+        return not (top.startswith("kotlin.") or top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver"))
 
 
 class RustAnalyzer(TreeSitterAnalyzerBase):
@@ -250,9 +247,7 @@ class TypeScriptAnalyzer(TreeSitterAnalyzerBase):
         }
         if top.startswith("node:") or top in builtins:
             return False
-        if top.startswith("specweaver") or top.startswith("src/"):
-            return False
-        return True
+        return not (top.startswith("specweaver") or top.startswith("src/"))
 
 
 class AnalyzerFactory:
