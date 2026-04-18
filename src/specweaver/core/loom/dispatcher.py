@@ -187,7 +187,12 @@ class ToolDispatcher:
             for api_path in boundary.api_paths:
                 grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
 
-            ast_interface = CodeStructureTool(atom=atom, role=role, grants=grants)
+            # Extract mathematically aggregated tool intent gates mapped by plugins (FR-3, FR-4)
+            raw_intents = atom.active_evaluator.get("intents") or {}
+            raw_hide = raw_intents.get("hide", []) if isinstance(raw_intents, dict) else []
+            hidden_intents = raw_hide if isinstance(raw_hide, list) else [str(raw_hide)]
+
+            ast_interface = CodeStructureTool(atom=atom, role=role, grants=grants, hidden_intents=hidden_intents)
             interfaces.append(ast_interface)
 
         if "web" in allowed_tools:

@@ -57,6 +57,9 @@ class CodeStructureAtom(Atom):
                     elif isinstance(merged[key], list) and isinstance(value, list):
                         # FR-3: Aggregate lists (e.g. intents.hide, annotations)
                         merged[key] = list(set(merged[key] + value))
+                    elif isinstance(merged[key], (dict, list)) and not isinstance(value, (dict, list)):
+                        # Protect underlying schema objects from being wiped by nulls or scalars in plugins
+                        pass
                     else:
                         merged[key] = value
                 else:

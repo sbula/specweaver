@@ -123,7 +123,7 @@ class PythonCodeStructure(CodeStructureInterface):
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
 
-    def list_symbols(self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> list[str]:
+    def list_symbols(self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> list[str]:  # noqa: C901
         if not code.strip():
             return []
 

@@ -90,12 +90,11 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Plugin Composition & AST Search | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Dynamic Tool Gating Intercept | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Dynamic Tool Gating Intercept | SF-1 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design DRAFT — awaiting HITL approval.
-**Next step**: After approval, run:
-`/implementation-plan docs/roadmap/phase_3/feature_3.30a/feature_3.30a_design.md SF-2`
+**Current status**: SF-2 Pre-Commit Gate passed natively. Handing over to user for commit phase.
+**Next step**: User commits the changes using their VCS.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

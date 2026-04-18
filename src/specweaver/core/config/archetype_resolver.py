@@ -118,10 +118,10 @@ class ArchetypeResolver:
             if current.is_dir():
                 context_file = current / "context.yaml"
                 if context_file.is_file():
-                    plugins = self._parse_plugins_from_context(context_file)
-                    if plugins is not None:
-                        self._backfill_plugin_cache(seen_paths, plugins)
-                        return plugins
+                    parsed_plugins = self._parse_plugins_from_context(context_file)
+                    if parsed_plugins is not None:
+                        self._backfill_plugin_cache(seen_paths, parsed_plugins)
+                        return parsed_plugins
 
             # Halt boundaries
             if current == self._project_root:

@@ -54,7 +54,7 @@ class MarkdownCodeStructure(CodeStructureInterface):
     def extract_symbol_body(self, code: str, symbol_name: str) -> str:
         raise CodeStructureError("Markdown extraction logic for symbols is not yet implemented.")
 
-    def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
+    def list_symbols(self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> list[str]:
         return []
 
     def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:

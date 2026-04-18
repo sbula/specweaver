@@ -75,12 +75,13 @@ class CodeStructureInterface(ABC):
         """
 
     @abstractmethod
-    def list_symbols(self, code: str, visibility: list[str] | None = None) -> list[str]:
+    def list_symbols(self, code: str, visibility: list[str] | None = None, decorator_filter: str | None = None) -> list[str]:
         """Dynamically map and list all targetable symbols within a file.
 
         Args:
             code: The raw source code of the file.
             visibility: Optional list to limit the payload to explicit access boundaries (e.g. ['public']).
+            decorator_filter: Optional filter to return exclusively symbols holding specific markers.
 
         Returns:
             A flat array of all targetable symbols.

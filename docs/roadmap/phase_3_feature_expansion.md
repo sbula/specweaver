@@ -74,6 +74,7 @@ Order will be based on value and dependencies. Likely sequence:
 | **3.45** | Ephemeral Execution Containers (Zero-Trust QA) | _(new)_ | Resolves Agent RCE vulnerabilities. When `QARunner` executes LLM-generated tests (`pytest`), execution routes natively into ephemeral, headless Podman/Docker sub-containers instead of the host machine. |
 | **3.46** | **Functional Agent Sandboxing (Black Box Ledgers)** | _(new)_ | Completely disables continuous chat context. Hand-offs managed explicitly via disk ledger: `Request in` → `Context boots` → `Result out` → mechanically valid before next hydration. Prioritizes state determinism over execution speed. |
 | **3.47** | Agent Platform Benchmarking (`sw eval`) | _(new)_ | Built-in command to run SpecWeaver's internal pipelines against a deterministic suite of synthetic SWE-bench bugs to mathematically prove that platform extensions haven't degraded the internal token costs or success rate. |
+| **3.48** | REST API Synchronization with CLI | _(new)_ | Update REST API capabilities to achieve full parity with the expanded CLI (e.g., constitution bootstrapping, interactive gate variables, DAL configurations, scenario pipelines). |
 
 ## Process for Each Feature
 

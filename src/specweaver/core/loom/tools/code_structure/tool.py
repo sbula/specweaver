@@ -81,13 +81,14 @@ class CodeStructureTool:
         grants: List of FolderGrants limiting what paths the LLM can query.
     """
 
-    def __init__(self, atom: CodeStructureAtom, role: str, grants: list[FolderGrant]) -> None:
+    def __init__(self, atom: CodeStructureAtom, role: str, grants: list[FolderGrant], hidden_intents: list[str] | None = None) -> None:
         if role not in ROLE_INTENTS:
             msg = f"Unknown role: {role!r}. Known roles: {sorted(ROLE_INTENTS)}"
             raise ValueError(msg)
         self._atom = atom
         self._role = role
         self._grants = grants
+        self._hidden_intents = hidden_intents or []
 
     @property
     def role(self) -> str:
@@ -250,7 +251,7 @@ class CodeStructureTool:
 
         all_defs = get_code_structure_schema()
         allowed = ROLE_INTENTS[self._role]
-        return [d for d in all_defs if d.name in allowed]
+        return [d for d in all_defs if d.name in allowed and d.name not in self._hidden_intents]
 
     def _require_intent(self, intent: str) -> None:
         if intent not in ROLE_INTENTS[self._role]:

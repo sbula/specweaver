@@ -163,30 +163,28 @@ def test_tool_dispatcher_intent_hide_with_plugins(tmp_path):
     from specweaver.core.loom.security import WorkspaceBoundary
 
     context = tmp_path / "context.yaml"
-    context.write_text("archetype: generic\nplugins: [security]")
+    context.write_text("archetype: generic\nplugins: [security, broken, malformed]")
 
-    frameworks = tmp_path / "frameworks"
-    frameworks.mkdir()
-    # generic doesn't hide list_symbols, but security does
-    (frameworks / "generic.yaml").write_text("intents:\n  hide: [read_unrolled_symbol]")
-    (frameworks / "security.yaml").write_text("intents:\n  hide: [list_symbols]")
+    evaluators = tmp_path / ".specweaver" / "evaluators"
+    evaluators.mkdir(parents=True, exist_ok=True)
+    # generic doesn't hide list_symbols, but security does. broken evaluates to None internally.
+    (evaluators / "generic.yaml").write_text("intents:\n  hide: [read_unrolled_symbol]")
+    (evaluators / "security.yaml").write_text("intents:\n  hide: [list_symbols]")
+    (evaluators / "broken.yaml").write_text("intents: null")
+    (evaluators / "malformed.yaml").write_text("intents:\n  hide: fake_scalar")
 
-    # We patch the ArchetypeResolver base DIR to tmp_path for the test
-    import specweaver.workflows.evaluators.loader as loader
-    loader.FRAMEWORKS_DIR = frameworks
 
     boundary = WorkspaceBoundary(roots=[tmp_path])
-    dispatcher = ToolDispatcher.create_standard_set(boundary, role="planner", allowed_tools=["ast"])
+    dispatcher = ToolDispatcher.create_standard_set(boundary, role="implementer", allowed_tools=["ast"])
 
-    schema_strs = [str(t.to_json_schema()) for t in dispatcher.available_tools()]
+    tool_names = [t.name for t in dispatcher.available_tools()]
 
     # Check that BOTH generic (read_unrolled_symbol) and security (list_symbols) are hidden
     # "anyOf" or "oneOf" list under intents should NOT contain them
-    full_str = " ".join(schema_strs)
-    assert "read_unrolled_symbol" not in full_str
-    assert "list_symbols" not in full_str
-    # Standard tools like edit_file should still be there conceptually
-    # (or whatever is native, but just verify the hidden ones are stripped)
+    assert "read_unrolled_symbol" not in tool_names
+    assert "list_symbols" not in tool_names
+    # Standard tools like read_file_structure should still be there conceptually
+    assert "read_file_structure" in tool_names    # (or whatever is native, but just verify the hidden ones are stripped)
 
 def test_code_structure_atom_unroll_with_plugin(tmp_path):
     """Integration Story (New): Atom unrolls decorators across base and plugin schemas."""
@@ -229,13 +227,13 @@ class AuthController {}
     atom = CodeStructureAtom(file_executor=executor, evaluator_schemas={}, active_archetype="base")
 
     res = atom.run({
-        "intent": "list_symbols", 
-        "path": "Controller.java", 
+        "intent": "list_symbols",
+        "path": "Controller.java",
         "decorator_filter": "RestController"
     })
-    
+
     assert res.status.value == "SUCCESS"
-    
+
     symbols = res.exports["symbols"]
     assert "UserController" in symbols
     assert "AuthController" in symbols
