@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class CodeStructureAtom(Atom):
     """Atom for retrieving AST structural bounds from project source code."""
 
-    def __init__(self, file_executor: FileExecutor | None = None, cwd: Path | None = None, evaluator_schemas: dict[str, Any] | None = None, active_archetype: str = "generic") -> None:
+    def __init__(self, file_executor: FileExecutor | None = None, cwd: Path | None = None, evaluator_schemas: dict[str, Any] | None = None, active_archetype: str = "generic", plugins: list[str] | None = None) -> None:
         """Initialize with a FileExecutor or construct one if cwd is provided."""
         if file_executor:
             self._executor = file_executor
@@ -43,6 +43,34 @@ class CodeStructureAtom(Atom):
             raise ValueError("CodeStructureAtom requires either file_executor or cwd")
         self._evaluator_schemas = evaluator_schemas or {}
         self._active_archetype = active_archetype
+        self._plugins = plugins or []
+
+    @property
+    def active_evaluator(self) -> dict[str, Any]:
+        """Provides a dynamically composed single evaluator dict merging base archetype and all plugins."""
+        def _aggregate_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+            merged = dict(base)
+            for key, value in overlay.items():
+                if key in merged:
+                    if isinstance(merged[key], dict) and isinstance(value, dict):
+                        merged[key] = _aggregate_merge(merged[key], value)
+                    elif isinstance(merged[key], list) and isinstance(value, list):
+                        # FR-3: Aggregate lists (e.g. intents.hide, annotations)
+                        merged[key] = list(set(merged[key] + value))
+                    else:
+                        merged[key] = value
+                else:
+                    merged[key] = value
+            return merged
+
+        merged: dict[str, Any] = {}
+        target_keys = [self._active_archetype, *self._plugins]
+        for key in target_keys:
+            if key in self._evaluator_schemas:
+                schema = self._evaluator_schemas[key]
+                if isinstance(schema, dict):
+                    merged = _aggregate_merge(merged, schema)
+        return merged
 
     def _get_parser(self, path: str) -> CodeStructureInterface | None:
         """Map a file extension to its respective TreeSitter AST parser."""
@@ -201,7 +229,8 @@ class CodeStructureAtom(Atom):
             symbol_markers = all_markers.get(symbol_name, {})
 
             from specweaver.core.loom.commons.language.evaluator import SchemaEvaluator
-            evaluator = SchemaEvaluator(self._evaluator_schemas)
+            # Use the merged evaluator so plugins unroll appropriately alongside the base archetype
+            evaluator = SchemaEvaluator({self._active_archetype: self.active_evaluator})
 
             ext = Path(path).suffix.lower()
             lang_map = {

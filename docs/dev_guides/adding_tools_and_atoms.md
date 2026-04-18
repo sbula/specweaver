@@ -30,9 +30,10 @@ The **Tool** wraps the intent and strictly evaluates the Agent's credentials.
 - **Location:** `src/specweaver/loom/tools/<domain>/tool.py`
 - **Role:** Defines operations based on Intent. Enforces `ROLE_INTENTS` mapping (e.g., stopping a Reviewer from running compilations). Handles contextual `FolderGrant` boundaries.
 
-### Component: Interface (`tools/interfaces.py`)
-The **Interface** strips unauthorized commands out entirely.
-- **Role:** If a role shouldn’t use a command, it is physically absent on the interface class. The LLM dispatcher won't even see the method.
+### Component: Interface (`tools/interfaces.py` & `dispatcher.py`)
+The **Interface** strips unauthorized commands out entirely prior to exposure.
+- **Role:** If a role shouldn’t use a command, it is physically absent from the dispatch table or dynamically removed from the configuration payload before the LLM can perceive it.
+- **Dynamic Masking (Feature 3.30a):** Orthogonal `plugins` (e.g., `spring-security`) defined in `context.yaml` can utilize `intents.hide` natively to instruct `ToolDispatcher` to mathematically erase tool methods (like `edit_file`) globally from the LLM without hard-coding Python changes.
 
 ### Component: Atom (`atoms/`)
 The **Atom** provides unrestricted operations reserved solely for the SpecWeaver flow engine.

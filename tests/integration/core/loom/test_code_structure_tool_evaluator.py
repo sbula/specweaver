@@ -152,3 +152,62 @@ def test_tool_blocks_invalid_folder_grant(tmp_path, mock_schemas):
     res = tool.read_unrolled_symbol("test.py", "User")
     assert res.status == "error"
     assert "no grant covers path" in res.message.lower()
+
+# ---------------------------------------------------------------------------
+# Feature 3.30a: Dynamic Plugin Composition & Testing
+# ---------------------------------------------------------------------------
+
+def test_tool_dispatcher_intent_hide_with_plugins(tmp_path):
+    """Integration Story 4: Dispatcher pipeline filters JSON schema properly."""
+    from specweaver.core.loom.dispatcher import ToolDispatcher
+    from specweaver.core.loom.security import WorkspaceBoundary
+
+    context = tmp_path / "context.yaml"
+    context.write_text("archetype: generic\nplugins: [security]")
+
+    frameworks = tmp_path / "frameworks"
+    frameworks.mkdir()
+    # generic doesn't hide list_symbols, but security does
+    (frameworks / "generic.yaml").write_text("intents:\n  hide: [read_unrolled_symbol]")
+    (frameworks / "security.yaml").write_text("intents:\n  hide: [list_symbols]")
+
+    # We patch the ArchetypeResolver base DIR to tmp_path for the test
+    import specweaver.workflows.evaluators.loader as loader
+    loader.FRAMEWORKS_DIR = frameworks
+
+    boundary = WorkspaceBoundary(roots=[tmp_path])
+    dispatcher = ToolDispatcher.create_standard_set(boundary, role="planner", allowed_tools=["ast"])
+
+    schema_strs = [str(t.to_json_schema()) for t in dispatcher.available_tools()]
+
+    # Check that BOTH generic (read_unrolled_symbol) and security (list_symbols) are hidden
+    # "anyOf" or "oneOf" list under intents should NOT contain them
+    full_str = " ".join(schema_strs)
+    assert "read_unrolled_symbol" not in full_str
+    assert "list_symbols" not in full_str
+    # Standard tools like edit_file should still be there conceptually
+    # (or whatever is native, but just verify the hidden ones are stripped)
+
+def test_code_structure_atom_unroll_with_plugin(tmp_path):
+    """Integration Story (New): Atom unrolls decorators across base and plugin schemas."""
+    schemas = {
+        "spring-boot": {
+            "metadata": {"supported_languages": ["java"]},
+            "decorators": {"Entity": "JPA Entity"}
+        },
+        "spring-security": {
+            "metadata": {"supported_languages": ["java"]},
+            "decorators": {"PreAuthorize": "Security Boundary"}
+        }
+    }
+
+    test_file = tmp_path / "test.java"
+    test_file.write_text("@Entity\n@PreAuthorize\nclass User {}\n")
+
+    executor = FileExecutor(cwd=tmp_path)
+    atom = CodeStructureAtom(file_executor=executor, evaluator_schemas=schemas, active_archetype="spring-boot", plugins=["spring-security"])
+
+    res = atom.run({"intent": "read_unrolled_symbol", "path": "test.java", "symbol_name": "User"})
+    assert res.status.value == "SUCCESS"
+    assert "// [Framework Eval] JPA Entity" in res.exports["symbol"]
+    assert "// [Framework Eval] Security Boundary" in res.exports["symbol"]

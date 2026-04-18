@@ -24,6 +24,7 @@ class ArchetypeResolver:
         """
         self._project_root = project_root.resolve()
         self._cache: dict[Path, str | None] = {}
+        self._plugin_cache: dict[Path, list[str]] = {}
 
     def resolve(self, target_path: Path) -> str | None:
         """Walk up the directory tree to find the nearest archetype.
@@ -91,3 +92,73 @@ class ArchetypeResolver:
             return None
 
         return str(archetype).strip()
+
+    def resolve_plugins(self, target_path: Path) -> list[str]:
+        """Walk up the directory tree to find the nearest context.yaml plugins array.
+
+        Args:
+            target_path: The file or directory to evaluate.
+
+        Returns:
+            A list of plugin string identifiers defined in context.yaml, or an empty list if none are found.
+        """
+        current = target_path.resolve()
+        seen_paths: list[Path] = []
+
+        while True:
+            # Check cache for O(1) resolution
+            if current in self._plugin_cache:
+                plugins = self._plugin_cache[current]
+                self._backfill_plugin_cache(seen_paths, plugins)
+                return plugins
+
+            seen_paths.append(current)
+
+            # Look for context.yaml in current dir
+            if current.is_dir():
+                context_file = current / "context.yaml"
+                if context_file.is_file():
+                    plugins = self._parse_plugins_from_context(context_file)
+                    if plugins is not None:
+                        self._backfill_plugin_cache(seen_paths, plugins)
+                        return plugins
+
+            # Halt boundaries
+            if current == self._project_root:
+                break
+
+            parent = current.parent
+            if parent == current:
+                # Reached filesystem OS root without hitting project_root
+                break
+
+            current = parent
+
+        # Hit the top without finding anything
+        self._backfill_plugin_cache(seen_paths, [])
+        return []
+
+    def _backfill_plugin_cache(self, paths: list[Path], plugins: list[str]) -> None:
+        """Populate the plugin cache for all intermediate paths walked."""
+        for path in paths:
+            self._plugin_cache[path] = plugins
+
+    def _parse_plugins_from_context(self, context_file: Path) -> list[str] | None:
+        """Parse the plugins array from a context.yaml file. Returns None if key is missing."""
+        try:
+            with context_file.open("r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+        except Exception:
+            return None
+
+        if not isinstance(data, dict):
+            return None
+
+        if "plugins" not in data:
+            return None
+
+        plugins = data.get("plugins")
+        if not isinstance(plugins, list):
+            return []
+
+        return [str(p).strip() for p in plugins if str(p).strip()]

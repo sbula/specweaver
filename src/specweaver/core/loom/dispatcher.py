@@ -166,17 +166,19 @@ class ToolDispatcher:
 
             # Extract archetype dynamically to guarantee framework isolation
             active_archetype = "generic"
+            plugins: list[str] = []
             if project_dir:
                 try:
                     from specweaver.core.config.archetype_resolver import ArchetypeResolver
                     resolver = ArchetypeResolver(project_dir)
                     resolved_arch = resolver.resolve(project_dir / "stub")
                     active_archetype = resolved_arch if resolved_arch else "generic"
+                    plugins = resolver.resolve_plugins(project_dir / "stub")
                 except Exception:
                     pass
 
             # Atom executes locally reading files relative to project root
-            atom = CodeStructureAtom(EngineFileExecutor(boundary.roots[0]), evaluator_schemas=schemas, active_archetype=active_archetype)
+            atom = CodeStructureAtom(EngineFileExecutor(boundary.roots[0]), evaluator_schemas=schemas, active_archetype=active_archetype, plugins=plugins)
 
             # Reuse exact read-only grant logic from fs
             grants = []

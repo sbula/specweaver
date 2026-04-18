@@ -99,6 +99,18 @@ Configuration overriding frameworks notoriously clobber massive hierarchies if u
 
 When AI Agents generate structured JSON proposals for complex engineering operations (like Hazard Analysis and Risk Assessment - HARA), we completely ban standard string bindings for critical data classifications.
 
+---
+
+## 8. Mathematical Schema Overlays (Plugin Composition)
+
+SpecWeaver leverages "plugins" defined in `context.yaml` inside of boundary resolutions to combine multiple isolated framework paradigms concurrently (e.g. `spring-boot` serving as the base archetype, overlaid with `spring-security`).
+
+### How it works:
+Instead of treating plugins as monolithic executables, SpecWeaver merges flat YAML definitions mathematically within `CodeStructureAtom._aggregate_merge`. Deep dictionaries merge safely, and crucially, lists (like `["read_unrolled_symbol"]`) mathematically perform Set Union aggregation.
+
+### Why we do it:
+To prevent agent hallucinations natively without forcing C-bindings. If the Security plugin dictates `intents: hide: ["list_symbols"]`, the dynamic merge strictly enforces those safety boundaries globally in the `dispatcher.available_tools()` layer without writing a single line of explicit Python interception logic. It forces cross-concern security into pure mathematics.
+
 ### How it works:
 Inside our decomposition workflows (`ComponentChange`), the target DO-178C data tier (`proposed_dal`) is typed structurally as `DALLevel(str, Enum)` rather than `str`.
 

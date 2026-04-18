@@ -111,3 +111,54 @@ def test_atom_missing_path() -> None:
     result = atom.run({"intent": "read_file_structure"})
     assert result.status == AtomStatus.FAILED
     assert "Missing required fields" in result.message
+
+
+def test_atom_active_evaluator_merges_plugins() -> None:
+    executor = MagicMock()
+    schemas = {
+        "spring-boot": {"evaluate": {"annotations": ["@RestController"]}, "intents": {"hide": ["list_symbols"]}},
+        "spring-security": {"evaluate": {"annotations": ["@PreAuthorize"]}, "intents": {"hide": ["edit_file"]}}
+    }
+
+    # Base archetype only
+    atom1 = CodeStructureAtom(executor, evaluator_schemas=schemas, active_archetype="spring-boot")
+    assert atom1.active_evaluator["intents"]["hide"] == ["list_symbols"]
+    assert "@PreAuthorize" not in atom1.active_evaluator["evaluate"]["annotations"]
+
+    # Archetype + plugin
+    atom2 = CodeStructureAtom(executor, evaluator_schemas=schemas, active_archetype="spring-boot", plugins=["spring-security"])
+
+    merged = atom2.active_evaluator
+    assert "list_symbols" in merged["intents"]["hide"]
+    assert "edit_file" in merged["intents"]["hide"]
+    assert "@RestController" in merged["evaluate"]["annotations"]
+    assert "@PreAuthorize" in merged["evaluate"]["annotations"]
+
+
+def test_atom_active_evaluator_deep_merges_nested_schemas() -> None:
+    executor = MagicMock()
+    schemas = {
+        "base": {"settings": {"timeout": 30, "proxy": {"url": "base.com"}}},
+        "plugin": {"settings": {"retries": 3, "proxy": {"auth": "bearer"}}}
+    }
+
+    atom = CodeStructureAtom(executor, evaluator_schemas=schemas, active_archetype="base", plugins=["plugin"])
+    merged = atom.active_evaluator
+
+    assert merged["settings"]["timeout"] == 30
+    assert merged["settings"]["retries"] == 3
+    assert merged["settings"]["proxy"]["url"] == "base.com"
+    assert merged["settings"]["proxy"]["auth"] == "bearer"
+
+
+def test_atom_active_evaluator_silently_skips_nonexistent_plugins() -> None:
+    executor = MagicMock()
+    schemas = {
+        "generic": {"evaluate": {"annotations": ["@Base"]}}
+    }
+
+    atom = CodeStructureAtom(executor, evaluator_schemas=schemas, active_archetype="generic", plugins=["ghost-plugin", "phantom"])
+    merged = atom.active_evaluator
+
+    # Should safely just return the base generic evaluation without failing
+    assert merged["evaluate"]["annotations"] == ["@Base"]

@@ -44,6 +44,26 @@ evaluate:
 
 The system recursively evaluates these YAML files with a rigid depth protection (Max Depth 5), enabling agents querying the `CodeStructureTool.read_unrolled_symbol` to understand exact runtime behaviors deterministically within 5 milliseconds instead of 5,000 milliseconds.
 
+## 1c. Composing Framework Plugins (Feature 3.30a)
+
+Often, a component uses an orchestration framework (like `spring-boot`) alongside orthogonal capability plugins (like `spring-security` or `flyway`). Instead of resolving a monolithic archetype representing a cross-product of all versions, users can declare a `plugins` array alongside their `archetype` in `context.yaml`:
+
+```yaml
+version: "1.0"
+archetype: "spring-boot"
+plugins: ["spring-security"]
+consumes: ["database/"]
+```
+
+The plugin schemas dynamically aggregate via mathematical supersets into the primary evaluator schema. Additionally, plugins can dynamically strip explicit behaviors from agent tool JSON boundaries without executing code:
+
+```yaml
+# frameworks/spring-security.yaml
+intents:
+  hide: ["list_symbols", "edit_file"]
+```
+This forces agents to interact via safer read-only structural queries without hardcoding tool limitations in core orchestrator Python classes, dramatically improving cross-platform security routing.
+
 ## 2. Rule Execution & Dependency Injection
 
 You **must not** attempt to parse the framework AST inside the custom validation rule. The Engine will do it for you mathematically.

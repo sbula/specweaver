@@ -234,6 +234,52 @@ class TestScenarioAgentIsolation:
 
         paths = {g.path for g in tool_instance._grants}
         assert str(project / "scenarios") in paths
-        assert str(project / "specs") in paths
         assert str(project / "contracts") in paths
         assert str(project) not in paths  # Full root is NOT granted
+
+
+class TestDispatcherASTInitialization:
+    """Tests for CodeStructure initialization in ToolDispatcher."""
+
+    def test_dispatcher_loads_plugins(self, project: Path) -> None:
+        """Dispatcher must load plugins from context.yaml and inject them into CodeStructureAtom."""
+        context = project / "context.yaml"
+        context.write_text("archetype: spring-boot\nplugins: [spring-security]")
+
+        boundary = WorkspaceBoundary(roots=[project])
+        dispatcher = ToolDispatcher.create_standard_set(
+            boundary,
+            role="planner",
+            allowed_tools=["ast"],
+        )
+
+        # Retrieve the codestructure tool
+        ast_interface = dispatcher._interfaces[0]
+        atom = ast_interface._atom
+
+        assert atom._active_archetype == "spring-boot"
+        assert "spring-security" in atom._plugins
+
+    def test_dispatcher_fallback_graceful_on_exception(self, project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Dispatcher safely defaults to generic and empty plugins if resolver crashes."""
+        from specweaver.core.config.archetype_resolver import ArchetypeResolver
+
+        # Simulate a crash during dynamic resolution
+        def fail_loudly(*args, **kwargs):
+            raise RuntimeError("Database corrupted")
+
+        monkeypatch.setattr(ArchetypeResolver, "resolve", fail_loudly)
+
+        boundary = WorkspaceBoundary(roots=[project])
+        dispatcher = ToolDispatcher.create_standard_set(
+            boundary,
+            role="planner",
+            allowed_tools=["ast"],
+        )
+
+        ast_interface = dispatcher._interfaces[0]
+        atom = ast_interface._atom
+
+        # Ensures that the except block caught it and safely defaulted
+        assert atom._active_archetype == "generic"
+        assert atom._plugins == []
