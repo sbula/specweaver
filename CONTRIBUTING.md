@@ -85,10 +85,10 @@ docs/update-readme
 
 See [docs/INDEX.md](docs/INDEX.md) for a guided tour of the documentation. Key entry points:
 
-- **README.md** — Features, CLI reference, agent tools
-- **docs/architecture/methodology_index.md** — Spec methodology (10-test battery, fractal decomposition)
-- **docs/architecture/context_yaml_spec.md** — Context boundary manifest specification
-- **docs/roadmap/specweaver_roadmap.md** — Roadmap and future plans
+- **README.md** — Top-level capabilities and documentation routing.
+- **docs/dev_guides/** — All core maintainer documentation, mapping out the engine, tools, testing layers, and architecture layouts.
+- **docs/user_guides/** — End-user facing documentation for command sequences.
+- **docs/roadmap/phase_3_feature_expansion.md** — Active repository roadmap and internal feature backlog tracking.
 
 ## Submitting Changes
 

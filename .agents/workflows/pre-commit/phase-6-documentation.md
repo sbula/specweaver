@@ -20,10 +20,10 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
 // turbo-all
 
 6.1. Update `docs/test_coverage_matrix.md` with the corrected test count and
-     any new entries for modules added or modified in this feature. Do not forget
-     to update the story -> unit/integr/e2e/... matrices!
+     descriptions for the new/modified `src/` modules. Keep it alphabetized.
+6.2. Evaluate if the README's Mermaid flowchart, Architectural diagrams, or top-level GitHub Badges (e.g. Coverage %) require updating to reflect the new feature bounds. Ensure future LLMs actively maintain graphical Mermaid mappings during pre-commit.
 
-6.2. **MANDATORY**: You MUST explicitly open, read, and update ALL of the following documents if they exist. DO NOT skip any of them under the assumption that they don't need updates:
+6.3. **MANDATORY**: You MUST explicitly open, read, and update ALL of the following documents if they exist. DO NOT skip any of them under the assumption that they don't need updates:
      - `README.md` — updating features list, CLI commands table, project structure, test counts
      - `docs/quickstart.md` — new workflows or commands
      - `docs/testing_guide.md` — new test patterns or quality gates
@@ -41,11 +41,12 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
      Add new anti-patterns discovered during this feature. Update the sub-layer
      structure diagram if new modules were added or moved.
 
-6.4. **MANDATORY: Keep Developer Guides Up to Date (`docs/dev_guides/`)**:
+6.4. **MANDATORY: Keep Developer & User Guides Up to Date (`docs/dev_guides/` & `docs/user_guides/`)**:
      - Review the existing guides in `docs/dev_guides/` (e.g., `pipeline_engine_guide.md`, `adding_tools_and_atoms.md`, etc.).
+     - Review the existing guides in `docs/user_guides/` (e.g., `2_drafting_effective_specs.md`, `4_interactive_hitl_gates.md`, etc.).
      - If this feature modified the systems or processes described in those guides, you MUST update them to reflect the current truth.
      - **SPECIAL PATTERNS**: If this feature invents a new non-standard workaround, unique architecture pattern, or custom adaptation, you MUST append it to `docs/dev_guides/special_patterns_and_adaptations.md`.
-     - **CREATING NEW GUIDES**: Evaluate if this feature introduced a significant new topic or extension point (e.g., a new subsystem) that needs its own guide. If so, create one.
+     - **CREATING NEW GUIDES**: Evaluate if this feature introduced a significant new topic or extension point (e.g., a new subsystem or end-user workflow) that needs its own guide. If so, create one in the appropriate folder.
 
 > [!IMPORTANT]
 > Every bug, lint error, complexity violation, or oversized file MUST be fixed
