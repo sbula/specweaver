@@ -37,14 +37,14 @@ Feature 3.32 SF-4 optimizes the execution pipeline by natively consuming the `st
 
 ### CLI Orchestrator (`specweaver.cli`)
 
-#### [MODIFY] [cli/project_commands.py or CLI entrypoints]
+#### [x] [MODIFY] [cli/project_commands.py or CLI entrypoints]
 - **Post-Validation Cache Flush**: Following the execution of `runner.run()`, the `CLI` (which mathematically possesses access to both `flow` and `graph`) will check if the Pipeline Run was perfectly successful. If so, it invokes `DependencyHasher.save_cache()`. This perfectly resolves the Cache-Flush Dilemma at the exact correct L1 layer!
 
 ---
 
 ### Core Flow Engine (`specweaver.core.flow.engine`)
 
-#### [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/engine/runner.py)
+#### [x] [MODIFY] [runner.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/engine/runner.py)
 - **Staleness Bypass Instruction**: Inject a check inside `_execute_loop` that reads `context.stale_nodes`. 
   - **Optimization**: If `step_def.target != StepTarget.PROJECT` and is not in `stale_nodes`, skip it instantly. 
   - **Optimization**: If `step_def.target == StepTarget.PROJECT`, do NOT skip the step. Instead, inject the `stale_nodes` deeply into the Step payload so the downstream atoms can rewrite physical sub-paths.
@@ -54,11 +54,11 @@ Feature 3.32 SF-4 optimizes the execution pipeline by natively consuming the `st
 
 ### Handlers & Plugins (`specweaver.core.loom`)
 
-#### [MODIFY] [qa_runner/atom.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/atoms/qa_runner/atom.py)
+#### [x] [MODIFY] [qa_runner/atom.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/atoms/qa_runner/atom.py)
 - **Target Rewriting Optimization**: In `_intent_run_tests`, `_intent_run_linter`, etc., check if `stale_nodes` is provided in the `context`. If the `target` parameter is global (e.g., `.`), automatically intercept and route multiple granular checks bounded strictly to the `stale_nodes` paths, aggregating the returns natively. This converts a 1-minute full scan into a <200ms delta scan!
 
-#### [MODIFY] [executor.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/loom/commons/filesystem/executor.py)
-- Strictly rely on `EngineFileExecutor.symlink` to propagate the `.specweaver` directory into the isolated environment to maintain NFR-2 (Architectural Purity).
+#### [x] [MODIFY] [runner_utils.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/flow/engine/runner_utils.py)
+- **Deviation Note on executor.py**: Instead of executing directly on `executor.py` or falling back to raw `os.symlink` (which triggered an architectural violation in our gap analysis), we formally integrated `setup_sandbox_caches` to natively trigger `FileSystemAtom` with `intent: symlink`. This ensures path traversal boundaries remain perfectly secured.
 
 ## Open Questions
 

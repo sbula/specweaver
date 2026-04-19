@@ -153,7 +153,14 @@ class TestRunPipelineMocked:
                 "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
             ) as mock_save_cache,
         ):
+            from unittest.mock import AsyncMock
+
+            from specweaver.core.flow.engine.state import RunStatus
             mock_runner = mock_runner_class.return_value
+            # return a mocked final run
+            class DummyRun:
+                def __init__(self, status: RunStatus) -> None:
+                    self.status = status
             mock_runner.run = AsyncMock(return_value=DummyRun(RunStatus.COMPLETED))
 
             result = runner.invoke(
@@ -180,7 +187,13 @@ class TestRunPipelineMocked:
                 "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
             ) as mock_save_cache,
         ):
+            from unittest.mock import AsyncMock
+
+            from specweaver.core.flow.engine.state import RunStatus
             mock_runner = mock_runner_class.return_value
+            class DummyRun:
+                def __init__(self, status: RunStatus) -> None:
+                    self.status = status
             mock_runner.run = AsyncMock(return_value=DummyRun(RunStatus.COMPLETED))
             mock_save_cache.side_effect = PermissionError("Cannot write")
 

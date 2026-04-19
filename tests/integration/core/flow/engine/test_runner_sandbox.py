@@ -181,9 +181,12 @@ async def test_symlink_cache_folders(tmp_path: Path):
 
     with (
         patch("specweaver.core.loom.atoms.git.atom.GitAtom.run", autospec=True) as mock_atom,
-        patch("os.symlink") as mock_symlink,
+        patch("specweaver.core.loom.atoms.filesystem.atom.FileSystemAtom") as mock_fs_atom_cls,
     ):
         mock_atom.return_value = AtomResult(status=AtomStatus.SUCCESS, message="")
+        mock_fs_atom = mock_fs_atom_cls.return_value
+        mock_fs_atom.run.return_value = AtomResult(status=AtomStatus.SUCCESS, message="")
+
         PipelineRunner(pipeline, context)
 
         import logging
@@ -196,18 +199,14 @@ async def test_symlink_cache_folders(tmp_path: Path):
 
         setup_sandbox_caches(context, target_wt, logging.getLogger())
 
-        # Verify os.symlink was called correctly for both node_modules and .specweaver
-        src_path_nm = tmp_path / "node_modules"
-        dst_path_nm = out_wt / "node_modules"
-        src_path_sw = tmp_path / ".specweaver"
-        dst_path_sw = out_wt / ".specweaver"
+        mock_fs_atom_cls.assert_called_with(cwd=tmp_path)
 
         from unittest.mock import call
 
-        mock_symlink.assert_has_calls(
+        mock_fs_atom.run.assert_has_calls(
             [
-                call(src_path_nm, dst_path_nm, target_is_directory=True),
-                call(src_path_sw, dst_path_sw, target_is_directory=True),
+                call({"intent": "symlink", "target": "node_modules", "link_name": ".worktrees/test1234/node_modules"}),
+                call({"intent": "symlink", "target": ".specweaver", "link_name": ".worktrees/test1234/.specweaver"}),
             ],
             any_order=True,
         )

@@ -18,13 +18,13 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | `_ensure_gitignore()` | ✅ | — | — |
 | `DependencyHasher._hash_directory()` | ✅ | — | — |
 | `DependencyHasher._hash_file()` | ✅ | — | — |
-| `DependencyHasher.load_cache()` | ✅ | ✅ | — |
-| `DependencyHasher.save_cache()` | ✅ | ✅ | — |
-| `DependencyHasher.compute_hashes()` | ✅ | ✅ | — |
+| `DependencyHasher.load_cache()` | ✅ | ✅ | ✅ |
+| `DependencyHasher.save_cache()` | ✅ | ✅ | ✅ |
+| `DependencyHasher.compute_hashes()` | ✅ | ✅ | ✅ |
 
 ## `src/specweaver/assurance/graph/topology.py`
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|
-| `TopologyGraph.from_project()` | ✅ | ✅ | — |
-| `TopologyGraph._calculate_stale_seeds()` | ✅ | ✅ | — |
-| `TopologyGraph.stale_nodes` | ✅ | ✅ | — |
+| `TopologyGraph.from_project()` | ✅ | ✅ | ✅ |
+| `TopologyGraph._calculate_stale_seeds()` | ✅ | ✅ | ✅ |
+| `TopologyGraph.stale_nodes` | ✅ | ✅ | ✅ |

@@ -233,7 +233,7 @@ Instead of recursively parsing the AST mappings globally on every run, SpecWeave
 > Because `TopologyGraph` reads the `.specweaver` cache to compute a set of `graph.stale_nodes`, it has effectively morphed into a **temporal snapshot** representing the codebase's mathematical diff at exact instantiation.
 > **DO NOT AUTO-FLUSH THE CACHE DURING GRAPH BOOTSTRAP!** 
 > If `TopologyGraph.from_project()` evaluates the tree and immediately overwrites `topology.cache.json`, you explicitly destroy the baseline. The very next pipeline operation that boots the Graph will see zero changes and flag everything as clean, letting corrupted test suites bypass the Validation Engine. 
-> The Semantic Cache must ONLY be explicitly saved (`DependencyHasher.save_cache()`) by the root `QARunner` or `PipelineRunner` strictly after the mutated nodes have successfully passed integration workflows.
+> The Semantic Cache must ONLY be explicitly saved (`DependencyHasher.save_cache()`) by the **CLI Orchestrator** (`pipelines.py`) strictly after the `PipelineRunner` yields a successful `RunStatus.COMPLETED` state. Coupling the flush inside the `flow` engine violates DMZ boundaries between `flow` and `graph`.
 
 > [!CAUTION]
 > **Tombstone Discovery (Ghost Dependencies)**

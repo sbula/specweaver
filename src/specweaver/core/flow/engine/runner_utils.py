@@ -87,7 +87,8 @@ def flush_telemetry(context: RunContext, logger: logging.Logger) -> None:
 
 def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logger) -> None:
     """Symlink heavy project caches into the worktree to save disk space (FR-2)."""
-    import os
+    from specweaver.core.loom.atoms.base import AtomStatus
+    from specweaver.core.loom.atoms.filesystem.atom import FileSystemAtom
 
     cache_dirs = [
         ".pytest_cache",
@@ -100,14 +101,20 @@ def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logge
         "venv",
         ".specweaver",
     ]
+    atom = FileSystemAtom(cwd=context.project_path)
     for cache in cache_dirs:
         src = context.project_path / cache
         if src.exists() and src.is_dir():
-            dst = context.project_path / wt_dir / cache
-            try:
-                os.symlink(src, dst, target_is_directory=True)
-            except OSError as e:
-                logger.warning(f"Could not symlink {cache} into worktree: {e}")
+            link_name = f"{wt_dir}/{cache}"
+            res = atom.run(
+                {
+                    "intent": "symlink",
+                    "target": cache,
+                    "link_name": link_name,
+                }
+            )
+            if res.status != AtomStatus.SUCCESS:
+                logger.warning(f"Could not symlink {cache} into worktree: {res.message}")
 
 
 async def execute_in_sandbox(

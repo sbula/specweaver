@@ -665,6 +665,11 @@ To insulate SpecWeaver from breaking changes in standard compilation/debugging s
 |-----------|-------|-------------|--------|
 | `loom/*` consumed by `llm` | `src/specweaver/llm/prompt_builder.py` | `llm` archetype `context.yaml` explicitly `forbids: specweaver/loom/*` | FIXED (CB-2 Gate Phase 1) |
 | `loom/commons/*` consumed by `validation` | `src/specweaver/validation/rules/code/` (C03, C04, C05) | `validation` archetype `context.yaml` explicitly `forbids: specweaver/loom/*` | DEFERRED (Pending review on whether `commons/qa_runner` executor usage is appropriate inside pure-logic rules via contextual bypasses, or if it should be extracted strictly natively into `flow/` orchestrated tasks) |
+| `File I/O` inside `pure-logic` | `src/specweaver/assurance/graph/hasher.py` | `graph` archetype `pure-logic` explicitly forbids OS/File I/O | DEFERRED (Pending Feature 3.48 Sidecar Databases which will abstract this into network bound architecture natively) |
+
+> **Resolved in Feature 3.32 SF-4 (Pipeline Execution Optimization):**
+> - **Sandbox Cache Caching (NFR-2)**: Initially, `flow/engine` utilized `os.symlink` locally. This was struck down as an architectural violation of the FileSystem boundaries. It was refactored strictly to trigger `FileSystemAtom` natively ensuring path traversal boundaries are enforced.
+> - **Cache-Flush Dilemma**: We intentionally prevented `flow/engine` from consuming `assurance/graph/hasher.py` to trigger the actual metric flush post-pipeline. Instead, we shifted the operation purely to the `cli/pipelines.py` orchestrator which legally consumes both layer roots.
 
 > **Resolved in Feature 3.14 (Artifact Tagging Engine)**
 > The implementation plan for SF-2 explicitly instructed `prompt_builder.py` to import `wrap_artifact_tag` from `specweaver.core.loom.commons.lineage`. However, `llm/` strictly forbids all imports from `loom/`. I resolved this by immediately relocating `lineage.py` into the `llm` module natively (`specweaver/llm/lineage.py`) and exposing its utilities via `llm/context.yaml`.
