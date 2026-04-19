@@ -35,3 +35,21 @@
   - Instead of SpecWeaver talking to the DB natively, a custom script `dump_legacy_ddl.py` is invoked during the pipeline. 
   - SpecWeaver pipes the `stdout` (the formatted schema) into the Prompt Builder. 
   - SpecWeaver remains pure but benefits from complete environmental truth.
+
+---
+
+## Rejected Adaptations (Do Not Implement)
+
+The following architectural optimizations were evaluated following the Phase 3 functionality review but have been explicitly rejected due to severe risk profiles or architectural violations. They will NOT be implemented:
+
+### 7. Universal Dispute Resolution (Arbiter for Git Conflicts)
+- **Problem Investigated**: Using the multi-pipeline Arbiter agent to instantly resolve native git merge conflicts.
+- **Reason for Rejection**: Merge conflicts are inherently human semantic collisions. Employing a "mathematical" LLM logic gate strips human intent and introduces severe risks of silently dropping valid business logic without failing compilation. Requires immutable human HITL validation.
+
+### 8. Speculative Auto-Refactoring
+- **Problem Investigated**: Deploying headless executing bots that randomly select complexity modules, repeatedly QA them, and PR improvements synchronously in the background.
+- **Reason for Rejection**: Headless autonomous cycles mutate shared state caches (specifically the `TopologyGraph` and `context.db`) unpredictably causing lock failures for foreground users. Furthermore, infinite refactor looping leads to rapid context-token budget exhaustion if the code repeatedly fails against the Arbiter. 
+
+### 9. Dynamic Ephemeral Mocking
+- **Problem Investigated**: Passing remote OpenAPI schemas into the `QARunner` and dynamically spawning Mountebank/Docker container instances mirroring the contract schema behavior for unverified integration testing.
+- **Reason for Rejection**: Severe sandbox escalation risks. Generating and automatically booting arbitrary container instances strictly fueled by parsing untrusted schemas opens deep Agentic Remote Code Execution (RCE) vectors. Network isolation (`--network none`) cannot fully contain the risk of payload logic escaping the git worktree sandbox.
