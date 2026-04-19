@@ -28,3 +28,14 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | `TopologyGraph.from_project()` | ✅ | ✅ | ✅ |
 | `TopologyGraph._calculate_stale_seeds()` | ✅ | ✅ | ✅ |
 | `TopologyGraph.stale_nodes` | ✅ | ✅ | ✅ |
+
+## `src/specweaver/infrastructure/llm/_skeleton.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `extract_ast_skeleton()` | ✅ | — | — |
+
+## `src/specweaver/infrastructure/llm/prompt_builder.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `PromptBuilder.add_file()` | ✅ | — | — |
+| `PromptBuilder.add_mentioned_files()` | ✅ | — | — |

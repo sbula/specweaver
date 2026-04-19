@@ -83,6 +83,17 @@ class TestPromptBuilderBasic:
         assert "# Hello" in result
         assert "</file>" in result
 
+    def test_add_file_skeleton(self, tmp_path: Path) -> None:
+        """skeleton=True delegates to the pure-logic AST parser for python files."""
+        f = tmp_path / "code.py"
+        f.write_text("def my_func():\n    print('hello world')\n", encoding="utf-8")
+
+        # When skeleton=True, the parser truncates the inner logic into b" ... "
+        result = PromptBuilder().add_file(f, skeleton=True).build()
+        assert "def my_func():" in result
+        assert " ... " in result
+        assert "hello world" not in result
+
     def test_add_context(self) -> None:
         result = PromptBuilder().add_context("Some context", "topology").build()
         assert '<context label="topology">' in result

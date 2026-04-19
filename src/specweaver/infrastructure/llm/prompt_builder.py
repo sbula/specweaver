@@ -135,6 +135,7 @@ class PromptBuilder:
         priority: int = 2,
         label: str = "",
         role: str = "",
+        skeleton: bool = False,
     ) -> PromptBuilder:
         """Read a file and add it as a ``<file>`` block.
 
@@ -144,9 +145,16 @@ class PromptBuilder:
             label: Optional human label.  Defaults to the file name.
             role: Trust signal — ``"reference"`` (read-only context) or
                 ``"target"`` (file being reviewed/generated).  Empty = no signal.
+            skeleton: If True, uses the language's native AST parser to condense the file
+                into only structural interfaces, skipping method implementations directly.
         """
         content = path.read_text(encoding="utf-8")
         lang = detect_language(path)
+
+        if skeleton:
+            from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+            content = extract_ast_skeleton(path, content)
+
         self._blocks.append(
             _ContentBlock(
                 text=content,
@@ -326,6 +334,7 @@ class PromptBuilder:
         mentions: list[ResolvedMention],
         *,
         max_files: int = 5,
+        skeleton: bool = True,
     ) -> PromptBuilder:
         """Add auto-detected file mentions from LLM responses.
 
@@ -336,6 +345,8 @@ class PromptBuilder:
         Args:
             mentions: Resolved file mentions from the mention scanner.
             max_files: Maximum number of mentioned files to add.  Default 5.
+            skeleton: By default, mentioned referenced files are massively
+                condensed via AST boundaries to avoid inflating token constraints.
         """
         # Collect paths already in the builder to avoid duplicates
         existing_paths = {block.file_path for block in self._blocks if block.file_path}
@@ -352,6 +363,11 @@ class PromptBuilder:
             except (OSError, UnicodeDecodeError):
                 continue
             lang = detect_language(mention.resolved_path)
+
+            if skeleton:
+                from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+                content = extract_ast_skeleton(mention.resolved_path, content)
+
             self._blocks.append(
                 _ContentBlock(
                     text=content,
