@@ -228,3 +228,15 @@ Instead of recursively parsing the AST mappings globally on every run, SpecWeave
 1. **The `< 50ms` NFR Guarantee:** An engine scanning thousands of files per `Flow` command loop incurs agonizing I/O drag. By isolating recursive reads behind mathematical semantic fingerprints, SpecWeaver resolves subsequent global boundaries physically in milliseconds.
 2. **The Symlink Sandbox Extension:** As part of the Worktree Bouncer context (Pattern 11), ensuring `.specweaver` is symlinked natively into temporary ephemeral sandboxes means the inner loop instantly tracks against the main trunk's caching speeds without having to manually reconstruct gigabytes of dependencies or AST tree paths.
 
+> [!CAUTION]
+> **The Cache-Flush Dilemma (Topological Stale Nodes)**
+> Because `TopologyGraph` reads the `.specweaver` cache to compute a set of `graph.stale_nodes`, it has effectively morphed into a **temporal snapshot** representing the codebase's mathematical diff at exact instantiation.
+> **DO NOT AUTO-FLUSH THE CACHE DURING GRAPH BOOTSTRAP!** 
+> If `TopologyGraph.from_project()` evaluates the tree and immediately overwrites `topology.cache.json`, you explicitly destroy the baseline. The very next pipeline operation that boots the Graph will see zero changes and flag everything as clean, letting corrupted test suites bypass the Validation Engine. 
+> The Semantic Cache must ONLY be explicitly saved (`DependencyHasher.save_cache()`) by the root `QARunner` or `PipelineRunner` strictly after the mutated nodes have successfully passed integration workflows.
+
+> [!CAUTION]
+> **Tombstone Discovery (Ghost Dependencies)**
+> When computing staleness (`_calculate_stale_seeds`), if a dependent module is completely deleted from the disk, it vanishes from the physical directory scan mapping. However, historical consumers of that module will still explicitly declare an overarching `consumes: [deleted_module]` relationship inside their `context.yaml`. 
+> The crawler explicitly flags any consumer possessing a dangling dependency reference natively as a `stale_seed` to guarantee upstream consumers fail their test suites predictably.
+

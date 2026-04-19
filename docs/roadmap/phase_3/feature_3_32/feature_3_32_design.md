@@ -73,20 +73,29 @@ None required. Uses native `hashlib` and `json`.
 - **Outputs**: Instantiated TopologyGraph.
 - **Depends on**: [SF-2]
 
+### SF-4: Pipeline Execution Optimization
+- **Scope**: Modifies the broader SpecWeaver orchestration engine (`QARunner`, `PipelineRunner`, and `EngineFileExecutor`) to exclusively consume `graph.stale_nodes`. Instructs downstream testing plugins to bypass `clean` nodes conditionally, and dictates explicit cache-flush persistence hooks to trigger strictly post-validation. Integrates `.specweaver` into ephemeral Worktree sandboxes natively.
+- **FRs**: [NFR-1]
+- **Inputs**: Instantiated `TopologyGraph`, `stale_nodes` set.
+- **Outputs**: High-speed incremental validation pipelines, updated Cache.
+- **Depends on**: [SF-3]
+
 ## Execution Order
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
 3. SF-3 (depends on SF-2)
+4. SF-4 (depends on SF-3)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Polyglot Parser Decoupling | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Semantic State Caching | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-3 | Incremental Topology | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Semantic State Caching | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-3 | Incremental Topology | SF-2 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-4 | Pipeline Execution Optimization | SF-3 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 is completed. SF-2 Implementation Plan is **APPROVED** and finalized.
-**Next step**: Execute the `/dev` workflow to implement SF-2 (Semantic State Caching and Universal Orjson Sweep).
+**Current status**: SF-2 is completed. SF-3 Implementation Plan is **APPROVED** and finalized. SF-4 has been formally added to the design tracking the runner integration.
+**Next step**: Run `/dev docs/roadmap/phase_3/feature_3_32/feature_3_32_sf3_implementation_plan.md` to begin TDD implementation of the Incremental Topology Crawler inside `topology.py`!

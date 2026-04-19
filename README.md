@@ -31,6 +31,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Framework Archetype Bounds** — Structural AST extraction (Python, JS/TS, Java, Kotlin, Rust) enforcing macro isolation and dynamic tool constraints based on project topological overlays.
 - **Constitutions & Auto-Discovery** — Analyze legacy codebases mathematically to extract naming, import, and logic standards to constrain generation context implicitly.
 - **Zero-Trust Tool Isolation** — Agent generation occurs strictly inside isolated Git Worktree Sandbox environments utilizing dictatorial grant checks avoiding hallucinatory system overwrites.
+- **Deep Semantic Pipeline Hashing** — Sub-second mathematical incremental crawler computes Merkle-tree state cache over physical structures to bypass unaffected workflows downstream natively.
 
 > 🔎 *For an exhaustive, technical inventory of internal engine mechanics, capabilities, and upcoming architectural deployments, please view the active [SpecWeaver Roadmap](docs/roadmap/phase_3_feature_expansion.md).*
 
@@ -85,7 +86,7 @@ If you are extending SpecWeaver's core Engine, custom tools, or LLM adapters, co
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C09, C12, drift detection)
-├── tests/                      # 4256 tests (unit, integration, E2E)
+├── tests/                      # 4418 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

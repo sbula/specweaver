@@ -137,6 +137,7 @@ def test_dependency_hasher_caching_and_pruning(tmp_path: Path):
 
     hasher = DependencyHasher(tmp_path)
     state = hasher.compute_hashes([m1, m2])
+    hasher.save_cache(state)
 
     assert "mod1" in state
     assert "mod2" in state
@@ -150,6 +151,7 @@ def test_dependency_hasher_caching_and_pruning(tmp_path: Path):
 
     # Prune mod2 by only passing m1
     new_state = hasher2.compute_hashes([m1])
+    hasher2.save_cache(new_state)
     assert "mod1" in new_state
     assert "mod2" not in new_state
 
@@ -175,34 +177,35 @@ def test_hash_file_oserror(tmp_path: Path, monkeypatch):
 
 def test_dependency_hasher_hidden_files_bypass(tmp_path: Path):
     from specweaver.assurance.graph.hasher import DependencyHasher
-    
+
     src_dir = tmp_path / "src"
     src_dir.mkdir()
-    
+
     (src_dir / "valid.py").write_text("import os\n")
-    
+
     secrets_dir = src_dir / ".secrets"
     secrets_dir.mkdir()
     (secrets_dir / "keys.txt").write_text("should_be_skipped")
-    
+
     hasher = DependencyHasher(tmp_path)
     result = hasher._hash_directory(src_dir)
     rendered = result["rendered_payload"]
-    
+
     assert "valid.py" in rendered
     assert ".secrets" not in rendered
     assert "keys.txt" not in rendered
 
 
 def test_dependency_hasher_symlink_traversal_halt(tmp_path: Path):
-    from specweaver.assurance.graph.hasher import DependencyHasher
     import os
-    
+
+    from specweaver.assurance.graph.hasher import DependencyHasher
+
     src_dir = tmp_path / "src"
     src_dir.mkdir()
-    
+
     (src_dir / "valid.py").write_text("import os\n")
-    
+
     try:
         os.symlink(str(src_dir), str(src_dir / "recursive_link"))
     except OSError:
@@ -212,69 +215,69 @@ def test_dependency_hasher_symlink_traversal_halt(tmp_path: Path):
         hasher = DependencyHasher(tmp_path)
         result = hasher._hash_directory(src_dir)
         rendered = result["rendered_payload"]
-        
+
         assert "valid.py" in rendered
         assert "recursive_link" not in rendered
 
 
 def test_dependency_hasher_corrupt_cache(tmp_path: Path):
     from specweaver.assurance.graph.hasher import DependencyHasher
-    
+
     hasher = DependencyHasher(tmp_path)
     hasher.cache_dir.mkdir()
     hasher.cache_path.write_text('{"broken_json_without_end_bracket', encoding="utf-8")
-    
+
     state = hasher.load_cache()
     assert state == {}
 
 
 def test_dependency_hasher_os_lock_save(tmp_path: Path, monkeypatch):
     from specweaver.assurance.graph.hasher import DependencyHasher
-    
+
     hasher = DependencyHasher(tmp_path)
-    
+
     def mock_write_text(*args, **kwargs):
         raise OSError("Permission locked dummy")
-        
+
     monkeypatch.setattr(Path, "write_text", mock_write_text)
-    
+
     # Needs to safely eat the exception
     hasher.save_cache({"dummy": {"merkle_root": "123"}})
-    
-    
+
+
 def test_ensure_gitignore_os_lock(tmp_path: Path, monkeypatch):
     from specweaver.assurance.graph.hasher import _ensure_gitignore
-    
+
     git_dir = tmp_path / ".git"
     git_dir.mkdir()
-    
+
     def mock_exists(*args, **kwargs):
         raise OSError("Dummy lock")
-        
+
     monkeypatch.setattr(Path, "exists", mock_exists)
-    
+
     # Should safely complete the fallback
     _ensure_gitignore(tmp_path)
 
 
 def test_dependency_hasher_path_slash_agnosticism(tmp_path: Path):
     from specweaver.assurance.graph.hasher import DependencyHasher
-    
+
     src_dir = tmp_path / "src"
     src_dir.mkdir()
-    
+
     nested = src_dir / "deep"
     nested.mkdir()
-    
+
     (nested / "valid.py").write_text("import os\n")
-    
+
     manifest = src_dir / "context.yaml"
     manifest.write_text("name: src\n")
 
     hasher = DependencyHasher(tmp_path)
     res = hasher.compute_hashes([manifest])
     rendered = res["src"]["rendered_payload"]
-    
+
     # Windows native path would be "deep\\valid.py", Posix is "deep/valid.py"
     # We insist it converts physically to posix.
     assert "deep/valid.py" in rendered

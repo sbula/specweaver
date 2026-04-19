@@ -185,3 +185,14 @@ In highly parallel execution phases (such as the asynchronous `fan_out()` genera
 
 ### Practical Use Case: Auto-Documentation
 If 5 components generate structural sub-graphs simultaneously over the same internal API contract format, spinning up 5 asynchronous `document` writers causes extreme OS file-lock collision and overwrite starvation (`SQLITE_BUSY` or text overlap). Wrapping the documentation generation step under a `join` gate enforces mathematically guaranteed serialization. The async agents write the AST logic natively in parallel, and single structured synthesis wave finalizes the artifact generation flawlessly.
+
+---
+
+## 9. Incremental Pipeline Bypassing (Topology Crawler)
+
+Starting in Feature 3.32, the SpecWeaver pipeline engine natively supports mathematical incremental execution to reduce pipeline compute time on massive mono-repos.
+
+### Mechanism & Sequence
+- **The Graph Crawler**: The engine evaluates structural drift natively by calling `TopologyGraph.from_project()`. This internally computes Merkel-tree hashes across the OS directory paths.
+- **The Stale Nodes Property**: Handlers executing pipeline iterations explicitly examine `TopologyGraph.stale_nodes`. Any module missing from this mathematically calculated diff set dynamically yields its execution wave entirely, allowing the runner to auto-bypass testing or orchestration of pristine paths.
+- **Tombstone Fallback**: If a component's target dependency was outright deleted from the file system, the `TopologyGraph` statically detects the dangling reference and intrinsically flags the consumer itself as `stale`, preventing silent downstream CI failure propagation.

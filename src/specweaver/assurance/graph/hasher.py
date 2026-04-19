@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import cast
 from pathlib import Path  # noqa: TC003
+from typing import cast
 
 from specweaver.commons import json
 from specweaver.workspace.context.analyzers import AnalyzerFactory
@@ -117,7 +117,7 @@ class DependencyHasher:
             return {}
         try:
             raw = self.cache_path.read_text(encoding="utf-8")
-            return cast(dict[str, dict[str, str]], json.loads(raw))
+            return cast("dict[str, dict[str, str]]", json.loads(raw))
         except Exception as e:
             logger.warning(f"Failed to load semantic cache {self.cache_path}: {e}")
             return {}
@@ -150,6 +150,4 @@ class DependencyHasher:
             # but compute logic runs here)
             new_state[bound_key] = self._hash_directory(directory)
 
-        # Write exact bounds (orphans missing from `manifests` are inherently dropped)
-        self.save_cache(new_state)
         return new_state

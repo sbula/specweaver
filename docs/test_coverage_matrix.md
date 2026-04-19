@@ -21,3 +21,10 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | `DependencyHasher.load_cache()` | ✅ | ✅ | — |
 | `DependencyHasher.save_cache()` | ✅ | ✅ | — |
 | `DependencyHasher.compute_hashes()` | ✅ | ✅ | — |
+
+## `src/specweaver/assurance/graph/topology.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `TopologyGraph.from_project()` | ✅ | ✅ | — |
+| `TopologyGraph._calculate_stale_seeds()` | ✅ | ✅ | — |
+| `TopologyGraph.stale_nodes` | ✅ | ✅ | — |

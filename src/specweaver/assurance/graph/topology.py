@@ -101,9 +101,11 @@ class TopologyGraph:
         self,
         nodes: dict[str, TopologyNode],
         warnings: list[str] | None = None,
+        stale_nodes: set[str] | None = None,
     ) -> None:
         self._nodes = nodes
         self._warnings = list(warnings) if warnings else []
+        self._stale_nodes = set(stale_nodes) if stale_nodes else set()
 
         # Build adjacency lists
         self._forward: dict[str, set[str]] = {}  # module → modules it consumes
@@ -132,6 +134,45 @@ class TopologyGraph:
     def warnings(self) -> list[str]:
         """All warnings generated during graph construction."""
         return list(self._warnings)
+
+    @property
+    def stale_nodes(self) -> set[str]:
+        """All nodes mathematically flagged as stale via the semantic cache."""
+        return set(self._stale_nodes)
+
+    @staticmethod
+    def _calculate_stale_seeds(
+        project_root: Path,
+        nodes: dict[str, TopologyNode],
+    ) -> set[str]:
+        """Verify semantic hashes against cache and return natively stale nodes."""
+        from specweaver.assurance.graph.hasher import DependencyHasher
+        hasher = DependencyHasher(project_root)
+        cache = hasher.load_cache()
+
+        manifest_paths = [n.yaml_path for n in nodes.values() if n.yaml_path]
+        new_hashes = hasher.compute_hashes(manifest_paths)
+
+        stale_seeds: set[str] = set()
+        if not cache:
+            return set(nodes.keys())
+
+        for node_name, node in nodes.items():
+            if not node.yaml_path:
+                continue
+            dir_path = node.yaml_path.parent.relative_to(project_root).as_posix()
+            if dir_path not in cache or dir_path not in new_hashes:
+                stale_seeds.add(node_name)
+                continue
+            if cache[dir_path].get("merkle_root") != new_hashes[dir_path].get("merkle_root"):
+                stale_seeds.add(node_name)
+
+        for node_name, node in nodes.items():
+            for dep in node.consumes:
+                if dep not in nodes:
+                    stale_seeds.add(node_name)
+
+        return stale_seeds
 
     @classmethod
     def from_project(
@@ -207,12 +248,23 @@ class TopologyGraph:
         if auto_infer:
             cls._auto_infer_missing(project_root, nodes, warnings)
 
+        graph = cls(nodes, warnings)
+
+        stale_seeds = cls._calculate_stale_seeds(project_root, nodes)
+
+        final_stale_nodes = set(stale_seeds)
+        for seed in stale_seeds:
+            final_stale_nodes.update(graph.impact_of(seed))
+
+        graph._stale_nodes = final_stale_nodes
+
         logger.info(
-            "TopologyGraph: built graph with %d nodes, %d warnings",
+            "TopologyGraph: built graph with %d nodes, %d warnings. %d stale nodes.",
             len(nodes),
             len(warnings),
+            len(graph._stale_nodes),
         )
-        return cls(nodes, warnings)
+        return graph
 
     @staticmethod
     def _auto_infer_missing(
