@@ -71,6 +71,19 @@ class TestScaffoldProject:
         assert result.specs_dir == tmp_path / "specs"
         assert result.context_file == tmp_path / "context.yaml"
 
+    def test_creates_specweaverignore_with_polyglot_defaults(self, tmp_path: Path) -> None:
+        """scaffold_project gathers all polyglot exclusions globally and seeds .specweaverignore."""
+        result = scaffold_project(tmp_path)
+        ignore_path = tmp_path / ".specweaverignore"
+        assert ignore_path.is_file()
+        assert ".specweaverignore" in result.created
+
+        content = ignore_path.read_text(encoding="utf-8")
+        # Assert specific default outputs from Python/TypeScript/Java parsers
+        assert "__pycache__/" in content
+        assert "node_modules/" in content
+        assert "target/" in content
+
 
 # ---------------------------------------------------------------------------
 # Idempotency tests
@@ -115,6 +128,21 @@ class TestScaffoldIdempotency:
         scaffold_project(tmp_path)
 
         assert tmpl.read_text() == "# My custom template\n"
+
+    def test_does_not_overwrite_existing_specweaverignore_patterns(self, tmp_path: Path) -> None:
+        """Existing .specweaverignore files should gracefully append missing defaults without erasing user rules."""
+        ignore_path = tmp_path / ".specweaverignore"
+        ignore_path.write_text("my_custom_binary.bin\n", encoding="utf-8")
+
+        result = scaffold_project(tmp_path)
+        content = ignore_path.read_text(encoding="utf-8")
+
+        assert "my_custom_binary.bin" in content
+        assert "node_modules/" in content  # Missing polyglot defaults appended
+        # We did not strictly 'create' it, but we appended. Check result lists.
+        # It's an interesting semantic whether it counts as "created" if modified.
+        # For our architecture, since the file physically existed, it is NOT in created array.
+        assert ".specweaverignore" not in result.created
 
     def test_partial_existing_structure(self, tmp_path: Path) -> None:
         """Scaffold fills in missing parts of partially existing structure."""

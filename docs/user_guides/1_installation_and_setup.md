@@ -30,7 +30,7 @@ SpecWeaver relies on an embedded SQLite database to mathematically track your ar
 # Register a project locally 
 sw init my-app --path ./my-project
 ```
-This command physically scaffolds `.specweaver/` directories inside the target path and sets up the active connection.
+This command physically scaffolds `.specweaver/` directories inside the target path, sets up the active connection, and automatically seeds starter templates for both `CONSTITUTION.md` and `.specweaverignore` encompassing polyglot defaults.
 
 If you have multiple projects, you can hot-swap the active context mapping:
 ```bash

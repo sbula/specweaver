@@ -326,3 +326,32 @@ class TestPolyglotLanguageAnalyzer:
 
         analyzer = AnalyzerFactory.for_directory(tmp_path)
         assert analyzer is None
+
+    def test_get_all_analyzers_returns_polyglot_union(self) -> None:
+        """AnalyzerFactory exposes a union of all mapped parsers globally."""
+        from specweaver.workspace.context.analyzers import AnalyzerFactory
+
+        analyzers = AnalyzerFactory.get_all_analyzers()
+        assert len(analyzers) == 5
+        types = [type(a).__name__ for a in analyzers]
+        assert "PythonAnalyzer" in types
+        assert "JavaAnalyzer" in types
+        assert "KotlinAnalyzer" in types
+        assert "RustAnalyzer" in types
+        assert "TypeScriptAnalyzer" in types
+
+    def test_language_analyzer_delegates_binary_ignores_to_parser(self) -> None:
+        """TreeSitterAnalyzerBase correctly passes binary ignore requests down to parser."""
+        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        analyzer = PythonAnalyzer()
+        patterns = analyzer.get_binary_ignore_patterns()
+        assert "*.pyc" in patterns
+
+    def test_language_analyzer_delegates_directory_ignores_to_parser(self) -> None:
+        """TreeSitterAnalyzerBase correctly passes directory ignore requests down to parser."""
+        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        analyzer = PythonAnalyzer()
+        dirs = analyzer.get_default_directory_ignores()
+        # Python parser adds .venv, env, .pytest_cache
+        assert ".venv/" in dirs
+        assert ".pytest_cache/" in dirs

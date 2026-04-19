@@ -206,6 +206,17 @@ class LanguageAnalyzer(ABC):
         """
         ...
 
+    @abstractmethod
+    def get_binary_ignore_patterns(self) -> list[str]:
+        """Get polyglot binary suppression patterns (e.g., *.pyc)."""
+        ...
+
+    @abstractmethod
+    def get_default_directory_ignores(self) -> list[str]:
+        """Get polyglot directory suppression patterns (e.g., target/, node_modules/)."""
+        ...
+
+
 
 class TreeSitterAnalyzerBase(LanguageAnalyzer):
     """Base class for language analyzers powered by Tree-Sitter parsers."""
@@ -258,6 +269,14 @@ class TreeSitterAnalyzerBase(LanguageAnalyzer):
                 return "adapter"
 
         return "pure-logic"
+
+    def get_binary_ignore_patterns(self) -> list[str]:
+        """Delegates binary ignores to the underlying code structure parser."""
+        return self.parser.get_binary_ignore_patterns()
+
+    def get_default_directory_ignores(self) -> list[str]:
+        """Delegates directory ignores to the underlying code structure parser."""
+        return self.parser.get_default_directory_ignores()
 
     @abstractmethod
     def _get_import_prefix(self, imp: str) -> str:
@@ -399,3 +418,8 @@ class AnalyzerFactory:
                 return analyzer
         logger.debug("No analyzer detected for %s", directory)
         return None
+
+    @classmethod
+    def get_all_analyzers(cls) -> list[LanguageAnalyzer]:
+        """Return all registered language analyzers globally for polyglot union aggregations."""
+        return cls._analyzers

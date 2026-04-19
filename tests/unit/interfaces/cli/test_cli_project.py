@@ -74,6 +74,12 @@ class TestCLIInitDB:
         runner.invoke(app, ["init", "my-app", "--path", str(project_dir)])
         assert (project_dir / ".specweaver" / "templates" / "component_spec.md").is_file()
 
+    def test_init_creates_specweaverignore(self, tmp_path: Path):
+        project_dir = tmp_path / "my-project"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "my-app", "--path", str(project_dir)])
+        assert (project_dir / ".specweaverignore").is_file()
+
     def test_init_no_config_yaml(self, tmp_path: Path):
         """Marker-only: .specweaver/config.yaml should NOT be created."""
         project_dir = tmp_path / "my-project"

@@ -49,11 +49,11 @@ The feature will be rolled out by updating native modules while simultaneously r
 
 | Sub-Feature | Design/Arch | Impl Plan | Code (`/dev`) | E2E Tests |
 | :--- | :---: | :---: | :---: | :---: |
-| SF-1: Pure Logic Definitions & Ignorance Parser | ✅ | ✅ | ⬜ | ⬜ |
-| SF-2: Orchestration Factory & Scaffolding | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-3: Technical Debt Refactoring | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-4: Analyzer Dependency Injection | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-1: Pure Logic Definitions & Ignorance Parser | ✅ | ✅ | ✅ | ✅ |
+| SF-2: Orchestration Factory & Scaffolding | ✅ | ✅ | ✅ | ✅ |
+| SF-3: Technical Debt Refactoring | ✅ | [ ] | [ ] | [ ] |
+| SF-4: Analyzer Dependency Injection | ✅ | [ ] | [ ] | [ ] |
 
 ## 6. Session Handoff
 
-**Next Action:** The design is structurally locked and the Implementation Plan for Sub-Feature 1 is formally approved via HITL gate. The immediately actionable step for the subsequent session is to execute the `/dev` workflow exclusively targeting `docs/roadmap/phase_3/feature_3_32b_sf1_impl_plan.md` to manifest the Polyglot Interfaces and `pathspec` aggregators.
+**Next Action:** Sub-Feature 2 Implementation Plan is Approved! The immediately actionable step for the subsequent session is to execute the `/dev` workflow exclusively targeting `docs/roadmap/phase_3/feature_3_32b_sf2_impl_plan.md` to begin test-driven development modifications for the Orchestration Factory & Scaffolding layer.

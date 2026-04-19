@@ -135,6 +135,67 @@ class ScaffoldResult:
     created: list[str]
 
 
+def _scaffold_context_yaml(project_path: Path, created: list[str]) -> Path:
+    context_file = project_path / "context.yaml"
+    if not context_file.exists():
+        project_name = project_path.name.lower().replace(" ", "-")
+        context_content = _DEFAULT_CONTEXT_YAML.format(project_name=project_name)
+        context_file.write_text(context_content, encoding="utf-8")
+        created.append("context.yaml")
+    return context_file
+
+def _scaffold_specweaver_dir(project_path: Path, created: list[str]) -> Path:
+    sw_dir = project_path / ".specweaver"
+    if not sw_dir.exists():
+        sw_dir.mkdir(parents=True)
+        created.append(".specweaver/")
+    return sw_dir
+
+def _scaffold_specs_dir(project_path: Path, created: list[str]) -> Path:
+    specs_dir = project_path / "specs"
+    if not specs_dir.exists():
+        specs_dir.mkdir(parents=True)
+        created.append("specs/")
+    return specs_dir
+
+def _scaffold_templates(sw_dir: Path, created: list[str]) -> None:
+    templates_dir = sw_dir / "templates"
+    if not templates_dir.exists():
+        templates_dir.mkdir(parents=True)
+        created.append(".specweaver/templates/")
+
+    tmpl_file = templates_dir / "component_spec.md"
+    if not tmpl_file.exists():
+        tmpl_file.write_text(_DEFAULT_COMPONENT_SPEC, encoding="utf-8")
+        created.append(".specweaver/templates/component_spec.md")
+
+def _scaffold_constitution(project_path: Path, created: list[str]) -> Path:
+    from specweaver.workspace.project.constitution import generate_constitution
+    constitution_path = project_path / "CONSTITUTION.md"
+    constitution_existed = constitution_path.exists()
+    project_name = project_path.name.lower().replace(" ", "-")
+    constitution_file = generate_constitution(project_path, project_name)
+    if not constitution_existed:
+        created.append("CONSTITUTION.md")
+    return constitution_file
+
+def _scaffold_specweaverignore(project_path: Path, created: list[str]) -> None:
+    from specweaver.workspace.context.analyzers import AnalyzerFactory
+    from specweaver.workspace.parsers.exclusions import SpecWeaverIgnoreParser
+
+    ignore_path = project_path / ".specweaverignore"
+    ignore_existed = ignore_path.exists()
+
+    default_dirs = []
+    for analyzer in AnalyzerFactory.get_all_analyzers():
+        default_dirs.extend(analyzer.get_default_directory_ignores())
+
+    ignore_parser = SpecWeaverIgnoreParser(project_path)
+    ignore_parser.ensure_scaffolded(default_directories=default_dirs)
+
+    if ignore_path.exists() and not ignore_existed:
+        created.append(".specweaverignore")
+
 def scaffold_project(project_path: Path) -> ScaffoldResult:
     """Create the .specweaver/ directory structure in a target project.
 
@@ -156,46 +217,13 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
 
     created: list[str] = []
 
-    # 1. context.yaml — root boundary manifest (only if not present)
-    context_file = project_path / "context.yaml"
-    if not context_file.exists():
-        project_name = project_path.name.lower().replace(" ", "-")
-        context_content = _DEFAULT_CONTEXT_YAML.format(project_name=project_name)
-        context_file.write_text(context_content, encoding="utf-8")
-        created.append("context.yaml")
+    context_file = _scaffold_context_yaml(project_path, created)
+    sw_dir = _scaffold_specweaver_dir(project_path, created)
+    specs_dir = _scaffold_specs_dir(project_path, created)
+    _scaffold_templates(sw_dir, created)
+    constitution_file = _scaffold_constitution(project_path, created)
+    _scaffold_specweaverignore(project_path, created)
 
-    # 2. .specweaver/
-    sw_dir = project_path / ".specweaver"
-    if not sw_dir.exists():
-        sw_dir.mkdir(parents=True)
-        created.append(".specweaver/")
-
-    # 3. specs/
-    specs_dir = project_path / "specs"
-    if not specs_dir.exists():
-        specs_dir.mkdir(parents=True)
-        created.append("specs/")
-
-    # 4. .specweaver/templates/component_spec.md (only if not present)
-    templates_dir = sw_dir / "templates"
-    if not templates_dir.exists():
-        templates_dir.mkdir(parents=True)
-        created.append(".specweaver/templates/")
-
-    tmpl_file = templates_dir / "component_spec.md"
-    if not tmpl_file.exists():
-        tmpl_file.write_text(_DEFAULT_COMPONENT_SPEC, encoding="utf-8")
-        created.append(".specweaver/templates/component_spec.md")
-
-    # 5. CONSTITUTION.md (starter template, only if not present)
-    from specweaver.workspace.project.constitution import generate_constitution
-
-    constitution_path = project_path / "CONSTITUTION.md"
-    constitution_existed = constitution_path.exists()
-    project_name = project_path.name.lower().replace(" ", "-")
-    constitution_file = generate_constitution(project_path, project_name)
-    if not constitution_existed:
-        created.append("CONSTITUTION.md")
 
     result = ScaffoldResult(
         project_path=project_path,
