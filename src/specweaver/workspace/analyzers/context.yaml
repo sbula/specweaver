@@ -1,0 +1,26 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: analyzers
+level: module
+purpose: >
+  Concrete adapter layer binding Tree-Sitter extractions to pure-logic protocols.
+
+description: |
+  Houses the physical implementations of LanguageAnalyzer protocols powered by Tree-Sitter parsers.
+  By isolating these implementations here, the pure-logic boundaries of context inference and graph
+  hashing remain unpolluted by C-bindings and physical I/O execution.
+
+archetype: adapter
+
+consumes:
+  - specweaver/workspace/context
+  - specweaver/workspace/parsers
+
+exposes:
+  - factory
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

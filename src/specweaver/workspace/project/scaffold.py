@@ -21,6 +21,26 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+class NativeIgnoreIOHandler:
+    def __init__(self, ignore_path: Path):
+        self.ignore_path = ignore_path
+
+    def exists(self) -> bool:
+        return self.ignore_path.exists()
+
+    def is_file(self) -> bool:
+        return self.ignore_path.is_file()
+
+    def read_text(self) -> str:
+        return self.ignore_path.read_text(encoding="utf-8")
+
+    def append_lines(self, lines: list[str]) -> None:
+        mode = "a" if self.ignore_path.exists() else "w"
+        with open(self.ignore_path, mode, encoding="utf-8") as f:
+            for line in lines:
+                f.write(f"{line}\n")
+
+
 
 _DEFAULT_CONTEXT_YAML = """\
 # Root boundary manifest — see docs/architecture/context_yaml_spec.md
@@ -180,7 +200,7 @@ def _scaffold_constitution(project_path: Path, created: list[str]) -> Path:
     return constitution_file
 
 def _scaffold_specweaverignore(project_path: Path, created: list[str]) -> None:
-    from specweaver.workspace.context.analyzers import AnalyzerFactory
+    from specweaver.workspace.analyzers.factory import AnalyzerFactory
     from specweaver.workspace.parsers.exclusions import SpecWeaverIgnoreParser
 
     ignore_path = project_path / ".specweaverignore"
@@ -190,7 +210,8 @@ def _scaffold_specweaverignore(project_path: Path, created: list[str]) -> None:
     for analyzer in AnalyzerFactory.get_all_analyzers():
         default_dirs.extend(analyzer.get_default_directory_ignores())
 
-    ignore_parser = SpecWeaverIgnoreParser(project_path)
+    io_handler = NativeIgnoreIOHandler(ignore_path)
+    ignore_parser = SpecWeaverIgnoreParser(io_handler)
     ignore_parser.ensure_scaffolded(default_directories=default_dirs)
 
     if ignore_path.exists() and not ignore_existed:

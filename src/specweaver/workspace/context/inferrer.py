@@ -17,7 +17,7 @@ from pathlib import Path  # noqa: TC003 — used at runtime, not just type hints
 
 from ruamel.yaml import YAML
 
-from specweaver.workspace.context.analyzers import AnalyzerFactory
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 logger = logging.getLogger(__name__)
 

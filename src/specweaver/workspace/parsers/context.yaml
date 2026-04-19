@@ -25,6 +25,7 @@ exposes:
   - kotlin/codestructure
   - rust/codestructure
   - typescript/codestructure
+  - exclusions
 
 # -- Operational Metadata --------------------------------------------------
 operational:

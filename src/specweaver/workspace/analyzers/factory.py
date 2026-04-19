@@ -1,15 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Language analyzers for context.yaml auto-inference.
+"""Physical Tree-Sitter language analyzers and factory implementation.
 
-Provides a language-agnostic interface (LanguageAnalyzer ABC) with concrete
-implementations for Python, Java, Kotlin, Rust, and TypeScript.
-Powered by Tree-Sitter extractions from workspace/parsers.
-
-AnalyzerFactory auto-detects the language from file extensions in a directory
-and returns the appropriate analyzer. Callers never need to care about the
-language — they just use the interface.
+This adapter module binds the pure-logic `LanguageAnalyzer` generic protocols
+to concrete structural extraction mechanisms. It is entirely decoupled from
+the core reasoning loop, allowing arbitrary I/O and C-binding usage.
 """
 
 from __future__ import annotations
@@ -23,6 +19,7 @@ if TYPE_CHECKING:
 
     from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 
+from specweaver.workspace.context.analyzer_protocols import LanguageAnalyzer
 from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
 from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
 from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
@@ -161,78 +158,7 @@ _STDLIB_TOP_MODULES = frozenset(
 )
 
 
-class LanguageAnalyzer(ABC):
-    """Abstract interface for extracting context.yaml-relevant info from source.
-
-    Each concrete implementation handles one programming language.
-    AnalyzerFactory selects the right one based on file extensions.
-    """
-
-    @abstractmethod
-    def detect(self, directory: Path) -> bool:
-        """Return True if this directory contains files of this language."""
-        ...
-
-    @abstractmethod
-    def extract_purpose(self, directory: Path) -> str | None:
-        """Extract a one-sentence purpose from module-level docstrings.
-
-        Returns None if no purpose can be determined.
-        """
-        ...
-
-    @abstractmethod
-    def extract_imports(self, directory: Path) -> list[str]:
-        """Extract all imported module names (top-level, deduplicated).
-
-        Returns full dotted module paths (e.g., 'specweaver.core.config.settings').
-        """
-        ...
-
-    @abstractmethod
-    def extract_public_symbols(self, directory: Path) -> list[str]:
-        """Extract public symbol names (classes, functions, constants).
-
-        Respects __all__ if defined. Otherwise, excludes _private names.
-        """
-        ...
-
-    @abstractmethod
-    def infer_archetype(self, directory: Path) -> str:
-        """Heuristically infer the archetype from code patterns.
-
-        Returns one of the context.yaml archetype values:
-        'pure-logic', 'adapter', 'facade', 'orchestrator', etc.
-        """
-        ...
-
-    @abstractmethod
-    def get_binary_ignore_patterns(self) -> list[str]:
-        """Get polyglot binary suppression patterns (e.g., *.pyc)."""
-        ...
-
-    @abstractmethod
-    def get_default_directory_ignores(self) -> list[str]:
-        """Get polyglot directory suppression patterns (e.g., target/, node_modules/)."""
-        ...
-
-    @abstractmethod
-    def get_test_file_pattern(self) -> str:
-        """Get the language-specific glob pattern for test files (e.g. test_*.py)."""
-        ...
-
-    @abstractmethod
-    def extract_test_mapped_requirements(self, directory: Path) -> set[str]:
-        """Extract all traceability requirements dynamically mapped to test files within this directory.
-
-        Will deeply crawl test directories matching the language's native test patterns and
-        aggregate tags defined in standard tree-sitter comment tags.
-        """
-        ...
-
-
-
-class TreeSitterAnalyzerBase(LanguageAnalyzer):
+class TreeSitterAnalyzerBase(LanguageAnalyzer, ABC):
     """Base class for language analyzers powered by Tree-Sitter parsers."""
 
     def __init__(self, parser: CodeStructureInterface, ext: str) -> None:
@@ -315,6 +241,7 @@ class TreeSitterAnalyzerBase(LanguageAnalyzer):
                 except Exception as e:
                     logger.debug("Failed to extract traceability from %s: %s", file_path, e)
         return tags
+
     @abstractmethod
     def _get_import_prefix(self, imp: str) -> str:
         """Extract the root module/namespace from the import string for checking."""
