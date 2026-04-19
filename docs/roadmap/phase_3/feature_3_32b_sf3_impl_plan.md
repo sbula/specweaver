@@ -4,7 +4,7 @@
 - **Design Document**: docs/roadmap/phase_3/feature_3_32b_design.md
 - **Design Section**: Sub-Feature Breakdown — SF-3
 - **Implementation Plan**: docs/roadmap/phase_3/feature_3_32b_sf3_impl_plan.md
-- **Status**: DRAFT
+- **Status**: COMPLETED
 
 ## Goal Description
 Perform structural technical debt sweeps across the repository to seamlessly integrate the new polyglot orchestrator boundaries created in SF-2. This involves removing all temporary hardcoded Python glob exclusions and integrating pure polyglot hooks into `validation`, file system tooling (`loom`), boundary discovery (`assurance.standards`), and graph hashing (`assurance.graph.hasher`).

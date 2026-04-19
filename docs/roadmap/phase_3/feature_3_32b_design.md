@@ -51,9 +51,9 @@ The feature will be rolled out by updating native modules while simultaneously r
 | :--- | :---: | :---: | :---: | :---: |
 | SF-1: Pure Logic Definitions & Ignorance Parser | ✅ | ✅ | ✅ | ✅ |
 | SF-2: Orchestration Factory & Scaffolding | ✅ | ✅ | ✅ | ✅ |
-| SF-3: Technical Debt Refactoring | ✅ | ✅ | [ ] | [ ] |
+| SF-3: Technical Debt Refactoring | ✅ | ✅ | ✅ | ✅ |
 | SF-4: Analyzer Dependency Injection | ✅ | [ ] | [ ] | [ ] |
 
 ## 6. Session Handoff
 
-**Next Action:** Sub-Feature 3 Implementation Plan is Approved! The immediately actionable step for the subsequent session is to execute the `/dev docs/roadmap/phase_3/feature_3_32b_sf3_impl_plan.md` workflow to begin test-driven development modifications for the Technical Debt Sweeps layer.
+**Next Action:** Sub-Feature 3 is fully implemented and tested! The immediately actionable step for the subsequent session is to execute the `/implementation-plan` workflow for **SF-4: Analyzer Dependency Injection** to design the strict architectural decoupling for the pure-logic layer.
