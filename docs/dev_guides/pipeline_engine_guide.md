@@ -168,7 +168,7 @@ Starting in Feature 3.26, the Orchestrator supports executing dangerous steps in
 ### Mechanism & Sequence
 - **Step Configuration**: Define `use_worktree: true` in your pipeline YAML.
 - **Physical Isolation (FR-1)**: `PipelineRunner` dynamically runs `git worktree add` to create `.worktrees/sf-uuid-temp` and overrides the `RunContext.output_dir`. Handlers natively operate within this temporary git clone.
-- **Cache Symlinking (FR-2)**: To prevent massive disk bloat and network thrashing, the runner seamlessly utilizes `os.symlink` to map `node_modules`, `__pycache__`, and `.venv` directly into the cloned environment before execution.
+- **Cache Symlinking (FR-2)**: To prevent massive disk bloat and network thrashing, the runner seamlessly utilizes `os.symlink` to map `node_modules`, `__pycache__`, `.venv`, and the `.specweaver` semantic cache directory directly into the cloned environment before execution.
 - **Mathematical Diff Striping (FR-4)**: When the step concludes, the `runner` compares the temporary sandbox diff against the explicit architecture bounds defined in `context.yaml`. It performs surgical `git apply` exclusions to reject AI modifications affecting un-allowed paths natively before pulling back to the trunk.
 - **Main-Branch Resilience**: Rebase operations (`_intent_worktree_sync`) execute constantly to merge in the latest trunk changes. Cleanup (`_intent_worktree_teardown`) leverages a resilient 5-iteration progressive backoff timer to override aggressive OS-level file lock injections (such as Windows Defender).
 

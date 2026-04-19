@@ -215,3 +215,16 @@ Instead of forcing developers to use `orjson.dumps().decode('utf-8')` perfectly 
 1. **The Pydantic Poison Pill**: Standard `json.dumps()` returns standard `str` UTF-8 primitives. Fast `orjson.dumps()` natively returns raw `bytes`. Passing raw bytes into downstream Pydantic instantiators, logging frameworks layer formatters, or LLM System Prompts notoriously crashes them with `TypeError: input must be a string, not bytes`. The facade explicitly wraps `orjson` and intercepts the `.decode('utf-8')` transformation strictly to preserve zero-friction string parity across the engine.
 2. **Deterministic Sort Consistency**: LLM caching thrives on exact token string-matching. The facade actively captures mapping flags (like `sort_keys=True`) and strictly routes them into `orjson.OPT_SORT_KEYS`, mathematically ensuring JSON structure guarantees natively at the lowest engine level.
 
+---
+
+## 15. Semantic State Caching (The Persistent `.specweaver` Cache)
+
+When evaluating architecture boundaries and computing execution dependencies (Feature 3.32), SpecWeaver generates a global structural map known as the `TopologyGraph`. Building this graph relies on polyglot TreeSitter parsing for every `context.yaml` source boundary globally.
+
+### How it works:
+Instead of recursively parsing the AST mappings globally on every run, SpecWeaver leverages `DependencyHasher`. It dynamically digests the nested source files into Merkle Root signatures, mapping them deterministically to physical OS structures. It persists this signature matrix in `<project_root>/.specweaver/topology.cache.json`. Crucially, this caching block explicitly injects itself securely into the repo's root `.gitignore` to prevent source pollution.
+
+### Why we do it:
+1. **The `< 50ms` NFR Guarantee:** An engine scanning thousands of files per `Flow` command loop incurs agonizing I/O drag. By isolating recursive reads behind mathematical semantic fingerprints, SpecWeaver resolves subsequent global boundaries physically in milliseconds.
+2. **The Symlink Sandbox Extension:** As part of the Worktree Bouncer context (Pattern 11), ensuring `.specweaver` is symlinked natively into temporary ephemeral sandboxes means the inner loop instantly tracks against the main trunk's caching speeds without having to manually reconstruct gigabytes of dependencies or AST tree paths.
+

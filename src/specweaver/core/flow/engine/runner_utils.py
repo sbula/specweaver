@@ -152,8 +152,6 @@ async def execute_in_sandbox(runner: Any, handler: Any, step_def: Any, run: Any,
         )
         if strip_res.status != AtomStatus.SUCCESS:
             logger.warning(f"Sandbox diff striping returned non-success: {strip_res.message}")
-        if TYPE_CHECKING:
-            from specweaver.core.flow.engine.state import StepResult
         return cast("StepResult", result)
 
     finally:

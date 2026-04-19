@@ -14,7 +14,7 @@ Implements a dedicated utility for computing and persisting shallow and structur
 
 ## 2. Technical Modifications
 
-### A. Dependency Hasher (`src/specweaver/assurance/graph/hasher.py`)
+### A. Dependency Hasher (`src/specweaver/assurance/graph/hasher.py`) [DONE]
 [NEW] `src/specweaver/assurance/graph/hasher.py`
 
 **Purpose**: Responsible for generating hashes from `context.yaml` directories and maintaining the `topology.cache.json`.
@@ -30,7 +30,7 @@ def compute_hashes(self, manifests: list[Path]) -> dict[str, Any]:
     # Analyzes module boundaries via `LanguageAnalyzers` and dedupes natively.
 ```
 
-### A.2 Architecture Strictness Patch
+### A.2 Architecture Strictness Patch [DONE]
 [MODIFY] `src/specweaver/assurance/graph/context.yaml`
 - **Violation Found**: The current context consumes `specweaver/context`. The correct namespace is `specweaver/workspace/context`. This typo will be fixed natively.
 
@@ -45,7 +45,7 @@ def compute_hashes(self, manifests: list[Path]) -> dict[str, Any]:
 > [!WARNING]
 > **ORJSON DECODE TRAP:** Standard `json.dumps()` returns `str`. Fast `orjson.dumps()` natively returns `bytes`. The implementing agent explicitly utilized the facade `commons.json` which appends `.decode('utf-8')` to any payload passed into LLM prompt builders, Pydantic initializers, or logging frameworks, successfully proving zero crashes.
 
-### D. OS Protection (`src/specweaver/workspace/project/git.py` or `.gitignore` injection hook)
+### D. OS Protection (`src/specweaver/workspace/project/git.py` or `.gitignore` injection hook) [DONE]
 [MODIFY/NEW] `src/specweaver/assurance/graph/hasher.py`
 - Exposes `_ensure_gitignore(project_root: Path)`. Walk up from `project_root` until finding a `.git/` directory. If found, safely append `\n/.specweaver/\n` inside a tracked `# SpecWeaver Auto-Generated` comment block to ensure NFR-2 repository purity. Silently ignore if no `.git` is found.
 
