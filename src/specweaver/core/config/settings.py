@@ -109,6 +109,12 @@ class StitchSettings(BaseModel):
     api_key: str = ""
 
 
+class StandardsSettings(BaseModel):
+    """Standards auto-discovery behavioral configurations."""
+
+    mode: Literal["mimicry", "best_practice"] = "mimicry"
+
+
 class SpecWeaverSettings(BaseModel):
     """Root configuration object spanning all domains."""
 
@@ -116,6 +122,27 @@ class SpecWeaverSettings(BaseModel):
     stitch: StitchSettings = StitchSettings()
     validation: ValidationSettings = ValidationSettings()
     dal_matrix: DALImpactMatrix = DALImpactMatrix()
+    standards: StandardsSettings = StandardsSettings()
+
+
+def _load_toml_standards(root_path: object) -> StandardsSettings:
+    """Load and parse the standards configuration from specweaver.toml."""
+    import tomllib
+    from pathlib import Path
+
+    standards = StandardsSettings()
+    if root_path and isinstance(root_path, str):
+        toml_file = Path(root_path) / "specweaver.toml"
+        if toml_file.exists():
+            try:
+                with open(toml_file, "rb") as f:
+                    toml_data = tomllib.load(f)
+                std_data = toml_data.get("standards", {})
+                if std_data:
+                    standards = StandardsSettings(**std_data)
+            except Exception:
+                logger.exception("Failed to parse specweaver.toml at %s", toml_file)
+    return standards
 
 
 def load_settings(
@@ -184,14 +211,17 @@ def load_settings(
     )
 
     # -------------------------------------------------------------
+    # Feature 3.32a: Adaptive Standards Configurations
+    # -------------------------------------------------------------
+    root_path = proj.get("root_path")
+    standards = _load_toml_standards(root_path)
+
+    # -------------------------------------------------------------
     # Feature 3.20b: DAL Impact Matrix Loading and Merging
     # -------------------------------------------------------------
     from pathlib import Path
 
     dal_matrix = DALImpactMatrix()
-
-    # We resolve the project root path
-    root_path = proj.get("root_path")
     if root_path and isinstance(root_path, str):
         dal_file = Path(root_path) / ".specweaver" / "dal_definitions.yaml"
         if dal_file.exists():
@@ -208,7 +238,7 @@ def load_settings(
             except Exception:
                 logger.exception("Failed to parse dal_definitions.yaml at %s", dal_file)
 
-    return SpecWeaverSettings(llm=llm, stitch=stitch, dal_matrix=dal_matrix)
+    return SpecWeaverSettings(llm=llm, stitch=stitch, dal_matrix=dal_matrix, standards=standards)
 
 
 def load_settings_for_active(

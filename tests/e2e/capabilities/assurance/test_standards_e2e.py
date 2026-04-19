@@ -121,6 +121,28 @@ class TestStandardsLifecycleE2E:
         output = show.output.lower()
         assert "python" in output or "naming" in output or "category" in output
 
+    def test_best_practice_mode_hydrates_empty_repo(self, tmp_path: Path) -> None:
+        """Scan of an completely EMPTY project using best_practice should NOT be empty."""
+        name = _unique_name()
+        project = tmp_path / name
+        project.mkdir()
+        r = runner.invoke(app, ["init", name, "--path", str(project)])
+        assert r.exit_code == 0
+
+        # Write specweaver.toml with best_practice
+        toml_path = project / "specweaver.toml"
+        toml_path.write_text("[standards]\nmode = \"best_practice\"\n", encoding="utf-8")
+
+        scan = runner.invoke(app, ["standards", "scan", "--no-review"])
+        assert scan.exit_code == 0
+
+        show = runner.invoke(app, ["standards", "show"])
+        assert show.exit_code == 0
+        output = show.output.lower()
+
+        # Should contain hydrated defaults!
+        assert "no standards" not in output
+
 
 # ---------------------------------------------------------------------------
 # E2E: Standards injected into review prompt

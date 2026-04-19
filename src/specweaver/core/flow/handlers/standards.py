@@ -37,8 +37,26 @@ class EnrichStandardsHandler:
         from specweaver.assurance.standards.enricher import StandardsEnricher
         from specweaver.assurance.standards.scanner import StandardsScanner
 
+        mode = "mimicry"
+        if context.config and hasattr(context.config, "standards"):
+            mode = context.config.standards.mode
+
+        built_in_defaults = None
+        if mode == "best_practice":
+            from specweaver.assurance.standards.analyzer import CategoryResult
+            built_in_defaults = {
+                "python": [CategoryResult(category="naming", dominant={"style": "snake_case"}, confidence=1.0, sample_size=1)],
+                "javascript": [CategoryResult(category="naming", dominant={"style": "camelCase"}, confidence=1.0, sample_size=1)],
+                "typescript": [CategoryResult(category="naming", dominant={"style": "camelCase"}, confidence=1.0, sample_size=1)],
+            }
+
         scanner = StandardsScanner()
-        raw_results = scanner.scan(scope_files, half_life_days)
+        raw_results = scanner.scan(
+            scope_files,
+            half_life_days,
+            mode=mode,
+            built_in_defaults=built_in_defaults,
+        )
         results = [r for r in raw_results if r.confidence >= 0.3]
 
         if not results:

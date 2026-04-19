@@ -104,3 +104,29 @@ class TestStandardsScanner:
         assert ".py" in exts
         assert ".js" in exts
         assert ".ts" in exts
+
+    def test_scan_best_practice_hydrates_defaults_when_empty(self, scanner: StandardsScanner, tmp_path: Path) -> None:
+        """When mode is 'best_practice' and files are empty, it should return hydrated defaults."""
+        defaults = {
+            "python": [
+                CategoryResult(
+                    category="naming",
+                    dominant={"style": "snake_case"},
+                    confidence=1.0,
+                    sample_size=1,
+                    language="python",
+                )
+            ]
+        }
+
+        results = scanner.scan([], 180.0, mode="best_practice", built_in_defaults=defaults)
+
+        assert len(results) == 1
+        assert results[0].category == "naming"
+        assert results[0].dominant == {"style": "snake_case"}
+        assert results[0].language == "python"
+
+    def test_scan_mimicry_returns_empty_when_empty(self, scanner: StandardsScanner, tmp_path: Path) -> None:
+        """When mode is 'mimicry' (default), empty files should just return empty."""
+        results = scanner.scan([])
+        assert len(results) == 0

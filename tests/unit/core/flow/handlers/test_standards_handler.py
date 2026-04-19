@@ -22,6 +22,7 @@ def mock_context(tmp_path: Path) -> RunContext:
     mock_config.llm.model = "gemini-2.5-pro"
     mock_config.llm.temperature = 0.5
     mock_config.llm.max_output_tokens = 4096
+    mock_config.standards.mode = "mimicry"
 
     return RunContext(
         project_path=tmp_path,
@@ -62,7 +63,9 @@ def test_enrich_standards_success(mock_context: RunContext) -> None:
         result = asyncio.run(handler.execute(step, mock_context))
 
         assert result.status == StepStatus.PASSED
-        mock_scanner.scan.assert_called_once_with(["src/main.py"], 90.0)
+        mock_scanner.scan.assert_called_once_with(
+            ["src/main.py"], 90.0, mode="mimicry", built_in_defaults=None
+        )
         mock_enricher.enrich.assert_called_once_with(
             [mock_raw_result], language="auto", force_compare=False
         )

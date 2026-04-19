@@ -23,6 +23,16 @@ sw constitution bootstrap
 ```
 This forces the CLI to compile discovered standards directly into the `CONSTITUTION.md` template file, guaranteeing the agent writes code identical to your senior engineers.
 
+### Adaptive Standards Configuration
+If you are initializing a completely empty project, the scanner will typically find 0 standards to map. However, you can configure SpecWeaver to inject polyglot `best_practice` primitive defaults automatically.
+Simply add the following to your root `specweaver.toml`:
+
+```toml
+[standards]
+mode = "best_practice" # defaults to "mimicry" (strict topology analysis only)
+```
+With `best_practice` mode invoked, running `sw standards scan` on an empty directory will immediately initialize best-practice baselines (such as Python `snake_case` or TypeScript `camelCase` constraints) for agentic generations unconditionally.
+
 ## 3. Enforcing Constitution Bounds
 By default, Constitution files can inflate quickly, costing massive token budgets during pipeline executions containing LLMs. You can throttle the strictness of the framework:
 

@@ -268,7 +268,7 @@ class TestStandardsScan:
         py_file.write_text("x = 1\n", encoding="utf-8")
 
         # Mock scan to always return low confidence
-        def mock_scan(self, files, hld):
+        def mock_scan(self, files, hld, **kwargs):
             return [
                 CategoryResult(
                     category="test",
@@ -416,7 +416,7 @@ class TestStandardsEdgeCases:
 
         call_count = 0
 
-        def mock_scan(self, files, hld):
+        def mock_scan(self, files, hld, **kwargs):
             nonlocal call_count
             call_count += 1
             # First: 0.3 (saved), rest: 0.29 (skipped)

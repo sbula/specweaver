@@ -36,12 +36,32 @@ class StandardsScanner:
             ]
         self.analyzers = analyzers
 
-    def scan(self, files: list[Path], half_life_days: float = 180.0) -> list[CategoryResult]:
+    def _hydrate_from_defaults(
+        self, built_in_defaults: dict[str, list[CategoryResult]]
+    ) -> list[CategoryResult]:
+        logger.debug("scan: extraction empty in best_practice mode. Hydrating from defaults.")
+        results: list[CategoryResult] = []
+        for lang, categories in built_in_defaults.items():
+            for res in categories:
+                if not res.language:
+                    res.language = lang
+                results.append(res)
+        return results
+
+    def scan(
+        self,
+        files: list[Path],
+        half_life_days: float = 180.0,
+        mode: str = "mimicry",
+        built_in_defaults: dict[str, list[CategoryResult]] | None = None,
+    ) -> list[CategoryResult]:
         """Categorize files by language and execute corresponding analyzers.
 
         Args:
             files: A list of paths to source files representing the system scope.
             half_life_days: Decay factor deciding the weight of old code.
+            mode: Analysis mode ('mimicry' or 'best_practice').
+            built_in_defaults: Dictionary map of fallback standards per language.
 
         Returns:
             A list of CategoryResult objects across all detected languages.
@@ -74,6 +94,10 @@ class StandardsScanner:
             for res in lang_results:
                 res.language = analyzer.language_name()
             results.extend(lang_results)
+
+        # 4. Fallback execution for empty extractions in adaptive mode
+        if not results and mode == "best_practice" and built_in_defaults:
+            results = self._hydrate_from_defaults(built_in_defaults)
 
         logger.debug("scan: completed, %d category results", len(results))
         return results
