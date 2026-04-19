@@ -147,6 +147,7 @@ class TopologyGraph:
     ) -> set[str]:
         """Verify semantic hashes against cache and return natively stale nodes."""
         from specweaver.assurance.graph.hasher import DependencyHasher
+
         hasher = DependencyHasher(project_root)
         cache = hasher.load_cache()
 

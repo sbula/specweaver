@@ -122,7 +122,12 @@ class TypeScriptCodeStructure(CodeStructureInterface):
                     if " from " in import_text:
                         module_part = import_text.split(" from ")[-1].strip()
                     else:
-                        module_part = import_text.replace("import ", "").replace("require(", "").replace(")", "").strip()
+                        module_part = (
+                            import_text.replace("import ", "")
+                            .replace("require(", "")
+                            .replace(")", "")
+                            .strip()
+                        )
 
                     if module_part.endswith(";"):
                         module_part = module_part[:-1].strip()
@@ -161,11 +166,7 @@ class TypeScriptCodeStructure(CodeStructureInterface):
         decorator_filter: str | None,
         framework_markers: dict[str, typing.Any],
     ) -> bool:
-        if (
-            visibility
-            and "public" in visibility
-            and not self._is_symbol_public(name_node.parent)
-        ):
+        if visibility and "public" in visibility and not self._is_symbol_public(name_node.parent):
             return False
 
         if decorator_filter:
@@ -195,7 +196,9 @@ class TypeScriptCodeStructure(CodeStructureInterface):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if self._is_symbol_valid(sym_name, name_node, visibility, decorator_filter, framework_markers):
+                    if self._is_symbol_valid(
+                        sym_name, name_node, visibility, decorator_filter, framework_markers
+                    ):
                         symbols.append(sym_name)
 
         seen = set()

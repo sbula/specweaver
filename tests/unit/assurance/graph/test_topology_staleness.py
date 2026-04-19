@@ -39,6 +39,7 @@ class TestStaleNodes:
         """A mutated node must cleanly flag its direct/transitive upstream consumers."""
         # Setup: compute initial hashes and actively save cache to mock "clean state"
         from specweaver.assurance.graph.hasher import DependencyHasher
+
         hasher = DependencyHasher(linear_chain)
         manifests = [linear_chain / n / "context.yaml" for n in ["a", "b", "c"]]
         initial_state = hasher.compute_hashes(manifests)
@@ -49,7 +50,9 @@ class TestStaleNodes:
         assert graph.stale_nodes == set()
 
         # Mutate 'c' (the leaf node) by altering its context file physically
-        (linear_chain / "c" / "context.yaml").write_text("name: c\nlevel: mutated\npurpose: changed\n")
+        (linear_chain / "c" / "context.yaml").write_text(
+            "name: c\nlevel: mutated\npurpose: changed\n"
+        )
 
         # 'c' is consumed by 'b', and 'b' is consumed by 'a'
         # So evaluating from_project should mark 'c' as the seed,
@@ -63,6 +66,7 @@ class TestStaleNodes:
     def test_mutated_node_cascades_only_upstream(self, diamond: Path) -> None:
         """Testing exact isolation of impact_of bounds."""
         from specweaver.assurance.graph.hasher import DependencyHasher
+
         hasher = DependencyHasher(diamond)
         manifests = [diamond / n / "context.yaml" for n in ["a", "b", "c", "d"]]
         initial_state = hasher.compute_hashes(manifests)
@@ -96,7 +100,7 @@ class TestStaleNodes:
         (linear_chain / "c" / "context.yaml").write_text("name: c\nlevel: mutated2\n")
 
         # The cache-flush dilemma: verify save_cache is NOT called!
-        with patch.object(DependencyHasher, 'save_cache') as mock_save:
+        with patch.object(DependencyHasher, "save_cache") as mock_save:
             graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
             assert graph.stale_nodes == {"a", "b", "c"}
             mock_save.assert_not_called()
@@ -131,7 +135,9 @@ class TestStaleNodes:
         def mock_auto_infer(*args, **kwargs) -> None:
             nodes_dict = args[1]
             # Inject a fully virtual module
-            nodes_dict["virtual"] = TopologyNode(name="virtual", level="module", purpose="X", archetype="Y", yaml_path=None)
+            nodes_dict["virtual"] = TopologyNode(
+                name="virtual", level="module", purpose="X", archetype="Y", yaml_path=None
+            )
 
         with patch.object(TopologyGraph, "_auto_infer_missing", side_effect=mock_auto_infer):
             graph = TopologyGraph.from_project(tmp_path, auto_infer=True)

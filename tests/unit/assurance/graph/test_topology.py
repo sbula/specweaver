@@ -8,16 +8,12 @@ from __future__ import annotations
 from pathlib import Path  # noqa: TC003
 
 import pytest
-from ruamel.yaml import YAML
 
 from specweaver.assurance.graph.topology import (
     TopologyContext,
     TopologyGraph,
-    TopologyNode,
 )
-
-
-
+from tests.unit.assurance.graph.conftest import _write_context
 
 # ---------------------------------------------------------------------------
 # Construction tests

@@ -9,6 +9,7 @@ from specweaver.assurance.graph.hasher import DependencyHasher
 
 pytestmark = pytest.mark.integration
 
+
 def test_hasher_tree_sitter_integration(tmp_path: Path):
     """
     Test Story 6: TreeSitter Native Integration

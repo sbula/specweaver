@@ -105,7 +105,6 @@ class TestFullPlanPipelineE2E:
     async def test_spec_validate_plan_generate(self, tmp_path: Path) -> None:
         """Full pipeline: spec exists → validate → plan → generate code (mock LLM)."""
 
-
         # 1. Create a valid spec
         spec = tmp_path / "login_spec.md"
         spec.write_text(
@@ -221,7 +220,6 @@ class TestPlanWithConstitutionAndStandardsE2E:
     async def test_planner_with_constitution_and_standards_e2e(self, tmp_path: Path) -> None:
         """Planner with constitution+standards → plan YAML → verified on disk."""
 
-
         # 1. Create spec
         spec = tmp_path / "auth_spec.md"
         spec.write_text(
@@ -279,7 +277,6 @@ class TestPlannerCleanJsonE2E:
     @pytest.mark.asyncio()
     async def test_planner_handles_fenced_json_in_pipeline(self, tmp_path: Path) -> None:
         """PlanSpecHandler succeeds when LLM returns ```json-fenced plan."""
-
 
         spec = tmp_path / "fenced_spec.md"
         spec.write_text(

@@ -49,7 +49,9 @@ class LintFixHandler:
         last_error_count = 0
 
         # Initial lint
-        lint_result = atom.run({"intent": "run_linter", "target": target})
+        lint_result = atom.run(
+            {"intent": "run_linter", "target": target, "stale_nodes": context.stale_nodes}
+        )
         last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
         logger.debug("LintFixHandler: initial lint found %d errors", last_error_count)
 
@@ -74,10 +76,13 @@ class LintFixHandler:
                 "intent": "run_linter",
                 "target": target,
                 "fix": True,
+                "stale_nodes": context.stale_nodes,
             }
         )
         # Re-lint to see what remains after auto-fix
-        lint_result = atom.run({"intent": "run_linter", "target": target})
+        lint_result = atom.run(
+            {"intent": "run_linter", "target": target, "stale_nodes": context.stale_nodes}
+        )
         last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
         logger.debug("LintFixHandler: after auto-fix, %d errors remain", last_error_count)
 
@@ -155,7 +160,9 @@ class LintFixHandler:
             reflections_used += 1
 
             # Re-lint
-            lint_result = atom.run({"intent": "run_linter", "target": target})
+            lint_result = atom.run(
+                {"intent": "run_linter", "target": target, "stale_nodes": context.stale_nodes}
+            )
             last_error_count = (
                 lint_result.exports.get("error_count", 0) if lint_result.exports else 0
             )

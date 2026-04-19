@@ -449,7 +449,6 @@ class TestHandlerSubPipelineWiring:
     ) -> None:
         """ValidateSpecHandler without kind runs validation_spec_default."""
 
-
         handler = ValidateSpecHandler()
 
         spec_file = tmp_path / "spec.md"
@@ -465,7 +464,6 @@ class TestHandlerSubPipelineWiring:
         tmp_path: Path,
     ) -> None:
         """ValidateSpecHandler with kind_str='feature' runs feature pipeline."""
-
 
         handler = ValidateSpecHandler()
 

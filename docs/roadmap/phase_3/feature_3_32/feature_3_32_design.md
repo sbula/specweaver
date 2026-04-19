@@ -92,10 +92,10 @@ None required. Uses native `hashlib` and `json`.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Polyglot Parser Decoupling | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Semantic State Caching | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Incremental Topology | SF-2 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-4 | Pipeline Execution Optimization | SF-3 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Incremental Topology | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-4 | Pipeline Execution Optimization | SF-3 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-2 is completed. SF-3 Implementation Plan is **APPROVED** and finalized. SF-4 has been formally added to the design tracking the runner integration.
-**Next step**: Run `/dev docs/roadmap/phase_3/feature_3_32/feature_3_32_sf3_implementation_plan.md` to begin TDD implementation of the Incremental Topology Crawler inside `topology.py`!
+**Current status**: SF-4 is fully implemented, pre-commit checked, and committed. Feature 3.32 is complete.
+**Next step**: Run `/dev docs/roadmap/phase_3/feature_3_32/feature_3_32_sf4_implementation_plan.md` to begin TDD implementation!

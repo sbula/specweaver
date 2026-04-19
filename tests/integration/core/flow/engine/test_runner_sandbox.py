@@ -169,8 +169,9 @@ async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_symlink_cache_folders(tmp_path: Path):
     """Verifies that heavy caches are appropriately symlinked (FR-2)."""
-    # Create fake project cache folder
+    # Create fake project cache folders
     (tmp_path / "node_modules").mkdir()
+    (tmp_path / ".specweaver").mkdir()
 
     step = PipelineStep(
         name="s1", action=StepAction.GENERATE, target=StepTarget.CODE, use_worktree=True
@@ -183,16 +184,30 @@ async def test_symlink_cache_folders(tmp_path: Path):
         patch("os.symlink") as mock_symlink,
     ):
         mock_atom.return_value = AtomResult(status=AtomStatus.SUCCESS, message="")
-        runner = PipelineRunner(pipeline, context)
+        PipelineRunner(pipeline, context)
 
-        # Test symlink injection directly
+        import logging
+
+        from specweaver.core.flow.engine.runner_utils import setup_sandbox_caches
+
         target_wt = ".worktrees/test1234"
         out_wt = tmp_path / ".worktrees" / "test1234"
         out_wt.mkdir(parents=True)
 
-        runner._setup_sandbox_caches(target_wt)
+        setup_sandbox_caches(context, target_wt, logging.getLogger())
 
-        # Verify os.symlink was called correctly
-        src_path = tmp_path / "node_modules"
-        dst_path = out_wt / "node_modules"
-        mock_symlink.assert_called_once_with(src_path, dst_path, target_is_directory=True)
+        # Verify os.symlink was called correctly for both node_modules and .specweaver
+        src_path_nm = tmp_path / "node_modules"
+        dst_path_nm = out_wt / "node_modules"
+        src_path_sw = tmp_path / ".specweaver"
+        dst_path_sw = out_wt / ".specweaver"
+
+        from unittest.mock import call
+
+        mock_symlink.assert_has_calls(
+            [
+                call(src_path_nm, dst_path_nm, target_is_directory=True),
+                call(src_path_sw, dst_path_sw, target_is_directory=True),
+            ],
+            any_order=True,
+        )

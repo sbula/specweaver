@@ -213,7 +213,6 @@ def _execute_run(  # noqa: C901
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
 
-
     # Resolve project path
     try:
         project_path = resolve_project_path(project)
@@ -309,6 +308,16 @@ def _execute_run(  # noqa: C901
     # Exit code based on final status
     from specweaver.core.flow.engine.state import RunStatus
 
+    if final_run.status == RunStatus.COMPLETED:
+        from specweaver.assurance.graph.hasher import DependencyHasher
+
+        try:
+            DependencyHasher(project_path).save_cache()
+            logger.info("Pipeline completed successfully, saved staleness topology cache.")
+            _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
+        except Exception as e:
+            logger.warning(f"Failed to save staleness cache: {e}")
+
     if final_run.status == RunStatus.FAILED:
         raise typer.Exit(code=1)
     if final_run.status == RunStatus.PARKED:
@@ -316,7 +325,7 @@ def _execute_run(  # noqa: C901
 
 
 @_core.app.command()
-def resume(
+def resume(  # noqa: C901
     run_id: str | None = typer.Argument(
         None,
         help="Run ID to resume. If omitted, resumes the latest parked/failed run.",
@@ -345,7 +354,6 @@ def resume(
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import RunStatus
-
 
     store = _get_state_store()
 
@@ -437,6 +445,16 @@ def resume(
         raise
     finally:
         display.stop()
+
+    if final_run.status == RunStatus.COMPLETED:
+        from specweaver.assurance.graph.hasher import DependencyHasher
+
+        try:
+            DependencyHasher(project_path).save_cache()
+            logger.info("Pipeline completed successfully, saved staleness topology cache.")
+            _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
+        except Exception as e:
+            logger.warning(f"Failed to save staleness cache: {e}")
 
     if final_run.status == RunStatus.FAILED:
         raise typer.Exit(code=1)

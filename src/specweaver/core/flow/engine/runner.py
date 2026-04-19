@@ -234,6 +234,47 @@ class PipelineRunner:
                 return run
 
             # Execute step
+
+            # --- Feature 3.32 SF-4: Staleness Bypass Instruction ---
+            if self._context.stale_nodes is not None:
+                step_target = step_def.params.get("target") or step_def.params.get("target_path")
+                # Global sweeps (e.g. '.', 'src') are NOT bypassed here.
+                # Downstream tools will natively rewrite targets via the RunContext injection.
+                is_global = not step_target or step_target in {
+                    ".",
+                    "src",
+                    "src/",
+                    "tests",
+                    "tests/",
+                }
+
+                if step_target and not is_global and step_target not in self._context.stale_nodes:
+                    logger.info(
+                        "[run_id=%s] Bypassing step '%s': Target '%s' is pristine (not in stale_nodes).",
+                        run.run_id,
+                        step_def.name,
+                        step_target,
+                    )
+                    bypass_res = StepResult(
+                        status=StepStatus.SKIPPED,
+                        output={"bypassed": True, "reason": "Node is pristine"},
+                        started_at=_now_iso(),
+                        completed_at=_now_iso(),
+                    )
+                    run.mark_step_running()
+                    run.complete_current_step(bypass_res)
+                    self._persist(run)
+                    self._log(run, "step_completed", step_def.name)
+                    self._emit(
+                        "step_completed",
+                        step_idx=step_idx,
+                        step_name=step_def.name,
+                        step_def=step_def,
+                        total_steps=total,
+                        result=bypass_res,
+                    )
+                    continue
+
             run.mark_step_running()
             self._persist(run)
             self._log(run, "step_started", step_def.name)
@@ -263,6 +304,7 @@ class PipelineRunner:
 
                 if getattr(step_def, "use_worktree", False):
                     from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
+
                     result = await execute_in_sandbox(self, handler, step_def, run, logger)
                 else:
                     result = await handler.execute(step_def, self._context)

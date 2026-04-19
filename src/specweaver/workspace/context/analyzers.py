@@ -35,22 +35,128 @@ logger = logging.getLogger(__name__)
 # Used to distinguish external vs internal imports.
 _STDLIB_TOP_MODULES = frozenset(
     {
-        "__future__", "abc", "argparse", "ast", "asyncio", "base64", "builtins", "calendar",
-        "codecs", "collections", "concurrent", "configparser", "contextlib", "copy", "csv",
-        "ctypes", "dataclasses", "datetime", "decimal", "difflib", "dis", "email", "encodings",
-        "enum", "errno", "faulthandler", "fileinput", "fnmatch", "fractions", "ftplib",
-        "functools", "gc", "getpass", "gettext", "glob", "gzip", "hashlib", "heapq", "hmac",
-        "html", "http", "importlib", "inspect", "io", "ipaddress", "itertools", "json",
-        "keyword", "linecache", "locale", "logging", "lzma", "math", "mimetypes",
-        "multiprocessing", "numbers", "operator", "os", "pathlib", "pdb", "pickle", "pkgutil",
-        "platform", "pprint", "profile", "pstats", "py_compile", "queue", "random", "re",
-        "readline", "reprlib", "runpy", "sched", "secrets", "select", "shelve", "shlex",
-        "shutil", "signal", "site", "smtplib", "socket", "socketserver", "sqlite3", "ssl",
-        "stat", "statistics", "string", "struct", "subprocess", "sys", "sysconfig", "tempfile",
-        "test", "textwrap", "threading", "time", "timeit", "token", "tokenize", "tomllib",
-        "trace", "traceback", "tracemalloc", "turtle", "types", "typing", "unicodedata",
-        "unittest", "urllib", "uuid", "venv", "warnings", "wave", "weakref", "webbrowser",
-        "xml", "xmlrpc", "zipfile", "zipimport", "zlib",
+        "__future__",
+        "abc",
+        "argparse",
+        "ast",
+        "asyncio",
+        "base64",
+        "builtins",
+        "calendar",
+        "codecs",
+        "collections",
+        "concurrent",
+        "configparser",
+        "contextlib",
+        "copy",
+        "csv",
+        "ctypes",
+        "dataclasses",
+        "datetime",
+        "decimal",
+        "difflib",
+        "dis",
+        "email",
+        "encodings",
+        "enum",
+        "errno",
+        "faulthandler",
+        "fileinput",
+        "fnmatch",
+        "fractions",
+        "ftplib",
+        "functools",
+        "gc",
+        "getpass",
+        "gettext",
+        "glob",
+        "gzip",
+        "hashlib",
+        "heapq",
+        "hmac",
+        "html",
+        "http",
+        "importlib",
+        "inspect",
+        "io",
+        "ipaddress",
+        "itertools",
+        "json",
+        "keyword",
+        "linecache",
+        "locale",
+        "logging",
+        "lzma",
+        "math",
+        "mimetypes",
+        "multiprocessing",
+        "numbers",
+        "operator",
+        "os",
+        "pathlib",
+        "pdb",
+        "pickle",
+        "pkgutil",
+        "platform",
+        "pprint",
+        "profile",
+        "pstats",
+        "py_compile",
+        "queue",
+        "random",
+        "re",
+        "readline",
+        "reprlib",
+        "runpy",
+        "sched",
+        "secrets",
+        "select",
+        "shelve",
+        "shlex",
+        "shutil",
+        "signal",
+        "site",
+        "smtplib",
+        "socket",
+        "socketserver",
+        "sqlite3",
+        "ssl",
+        "stat",
+        "statistics",
+        "string",
+        "struct",
+        "subprocess",
+        "sys",
+        "sysconfig",
+        "tempfile",
+        "test",
+        "textwrap",
+        "threading",
+        "time",
+        "timeit",
+        "token",
+        "tokenize",
+        "tomllib",
+        "trace",
+        "traceback",
+        "tracemalloc",
+        "turtle",
+        "types",
+        "typing",
+        "unicodedata",
+        "unittest",
+        "urllib",
+        "uuid",
+        "venv",
+        "warnings",
+        "wave",
+        "weakref",
+        "webbrowser",
+        "xml",
+        "xmlrpc",
+        "zipfile",
+        "zipimport",
+        "zlib",
     }
 )
 
@@ -176,7 +282,7 @@ class PythonAnalyzer(TreeSitterAnalyzerBase):
         if text.startswith('"""'):
             parts = text[3:].split('"""')
             if parts:
-                return parts[0].strip().split('\n')[0]
+                return parts[0].strip().split("\n")[0]
         return None
 
     def _get_import_prefix(self, imp: str) -> str:
@@ -197,7 +303,9 @@ class JavaAnalyzer(TreeSitterAnalyzerBase):
         return imp
 
     def _is_external(self, top: str) -> bool:
-        return not (top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver"))
+        return not (
+            top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver")
+        )
 
 
 class KotlinAnalyzer(TreeSitterAnalyzerBase):
@@ -211,7 +319,12 @@ class KotlinAnalyzer(TreeSitterAnalyzerBase):
         return imp
 
     def _is_external(self, top: str) -> bool:
-        return not (top.startswith("kotlin.") or top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver"))
+        return not (
+            top.startswith("kotlin.")
+            or top.startswith("java.")
+            or top.startswith("javax.")
+            or top.startswith("specweaver")
+        )
 
 
 class RustAnalyzer(TreeSitterAnalyzerBase):
@@ -242,8 +355,19 @@ class TypeScriptAnalyzer(TreeSitterAnalyzerBase):
         if top.startswith(".") or top.startswith("/"):
             return False
         builtins = {
-            "fs", "path", "crypto", "os", "util", "events", "http", "stream",
-            "buffer", "child_process", "assert", "url", "console"
+            "fs",
+            "path",
+            "crypto",
+            "os",
+            "util",
+            "events",
+            "http",
+            "stream",
+            "buffer",
+            "child_process",
+            "assert",
+            "url",
+            "console",
         }
         if top.startswith("node:") or top in builtins:
             return False
@@ -258,7 +382,7 @@ class AnalyzerFactory:
         JavaAnalyzer(),
         KotlinAnalyzer(),
         RustAnalyzer(),
-        TypeScriptAnalyzer()
+        TypeScriptAnalyzer(),
     ]
 
     @classmethod

@@ -144,5 +144,3 @@ class TestContextInferenceEdgeCases:
 
         assert result.was_generated is True
         assert result.node.archetype == "pure-logic"
-
-

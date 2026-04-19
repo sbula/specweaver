@@ -89,7 +89,11 @@ class DependencyHasher:
         """Compute the semantic hash payload for a specific boundary directory."""
         file_hashes = {}
         for filepath in sorted(directory.rglob("*")):
-            if filepath.is_file() and not filepath.is_symlink() and not any(part.startswith(".") for part in filepath.parts):
+            if (
+                filepath.is_file()
+                and not filepath.is_symlink()
+                and not any(part.startswith(".") for part in filepath.parts)
+            ):
                 h = self._hash_file(filepath)
                 if h:
                     rel_path = filepath.relative_to(directory).as_posix()
@@ -98,18 +102,12 @@ class DependencyHasher:
         analyzer = AnalyzerFactory.for_directory(directory)
         dependencies = analyzer.extract_imports(directory) if analyzer else []
 
-        payload = {
-            "files": file_hashes,
-            "dependencies": sorted(dependencies)
-        }
+        payload = {"files": file_hashes, "dependencies": sorted(dependencies)}
 
         rendered = json.dumps(payload, sort_keys=True)
         merkle_root = hashlib.sha256(rendered.encode("utf-8")).hexdigest()
 
-        return {
-            "merkle_root": merkle_root,
-            "rendered_payload": rendered
-        }
+        return {"merkle_root": merkle_root, "rendered_payload": rendered}
 
     def load_cache(self) -> dict[str, dict[str, str]]:
         """Read the existing semantic cache from disk."""

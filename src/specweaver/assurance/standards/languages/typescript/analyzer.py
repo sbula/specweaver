@@ -52,6 +52,7 @@ class TSStandardsAnalyzer(JSStandardsAnalyzer):
 
     def get_code_structure(self) -> CodeStructureInterface:
         from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
+
         return TypeScriptCodeStructure()
 
     def get_extractors(self) -> list[Callable[..., CategoryResult]]:

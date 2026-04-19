@@ -52,6 +52,7 @@ def _write_context(
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def empty_project(tmp_path: Path) -> Path:
     """A project with no context.yaml files."""

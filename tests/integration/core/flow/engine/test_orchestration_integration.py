@@ -30,7 +30,6 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepResult, StepStatus
 
-
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
     ctx.run_id = "parent_run"
 

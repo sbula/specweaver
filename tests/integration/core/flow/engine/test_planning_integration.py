@@ -680,7 +680,6 @@ class TestDagOrchestratorIntegration:
         from specweaver.core.flow.engine.models import PipelineDefinition
         from specweaver.core.flow.engine.runner import PipelineRunner
 
-
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
         ctx.run_id = "parent_run"
 

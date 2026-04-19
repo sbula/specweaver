@@ -92,8 +92,6 @@ class QARunnerAtom(Atom):
                 message=f"Unknown intent: {intent!r}. Known: {sorted(self._known_intents())}",
             )
 
-        return handler(context)
-
     def _known_intents(self) -> set[str]:
         """Return the set of known intent names."""
         prefix = "_intent_"
@@ -101,7 +99,7 @@ class QARunnerAtom(Atom):
 
     # -- Intent implementations ----------------------------------------
 
-    def _intent_run_tests(self, context: dict[str, Any]) -> AtomResult:
+    def _intent_run_tests(self, context: dict[str, Any]) -> AtomResult:  # noqa: C901
         """Run tests via the language-specific runner.
 
         Context keys:
@@ -119,59 +117,100 @@ class QARunnerAtom(Atom):
                 message="Missing 'target' in context for run_tests intent.",
             )
 
+        stale_nodes = context.get("stale_nodes")
+        targets: list[str] = [target]
+
+        # Target Rewriting Optimization (Feature 3.32 SF-4)
+        if stale_nodes is not None and (target in {".", "", "src", "src/", "tests", "tests/"}):
+            targets = list(stale_nodes)
+            if not targets:
+                return AtomResult(
+                    status=AtomStatus.SUCCESS,
+                    message="All nodes pristine.",
+                    exports={
+                        "passed": 0,
+                        "failed": 0,
+                        "errors": 0,
+                        "skipped": 0,
+                        "total": 0,
+                        "duration_seconds": 0.0,
+                        "failures": [],
+                    },
+                )
+
         # NFR-3: Path Traversal Protection
         try:
-            resolved_target = (self._cwd / target).resolve()
-            if not resolved_target.is_relative_to(self._cwd.resolve()):
-                return AtomResult(
-                    status=AtomStatus.FAILED,
-                    message="Target cannot traverse outside of the sandbox directory.",
-                )
+            for t in targets:
+                resolved_target = (self._cwd / t).resolve()
+                if not resolved_target.is_relative_to(self._cwd.resolve()):
+                    return AtomResult(
+                        status=AtomStatus.FAILED,
+                        message="Target cannot traverse outside of the sandbox directory.",
+                    )
         except ValueError:
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message="Invalid target path provided for sandbox execution.",
             )
 
-        # NFR-4: Process Timeout Graceful Handling
-        try:
-            result = self._runner.run_tests(
-                target=target,
-                kind=context.get("kind", "unit"),
-                scope=context.get("scope", ""),
-                timeout=context.get("timeout", 120),
-                coverage=context.get("coverage", False),
-                coverage_threshold=context.get("coverage_threshold", 70),
-            )
-        except TimeoutError as exc:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=f"Process timed out: {exc}",
-            )
+        # Execute tests, natively aggregating for multiple dynamically rewritten boundaries
+        agg_passed = 0
+        agg_failed = 0
+        agg_errors = 0
+        agg_skipped = 0
+        agg_total = 0
+        agg_duration = 0.0
+        agg_failures = []
+        last_coverage_pct = None
 
-        exports = {
-            "passed": result.passed,
-            "failed": result.failed,
-            "errors": result.errors,
-            "skipped": result.skipped,
-            "total": result.total,
-            "duration_seconds": result.duration_seconds,
-            "failures": [asdict(f) for f in result.failures],
+        for t in targets:
+            try:
+                result = self._runner.run_tests(
+                    target=t,
+                    kind=context.get("kind", "unit"),
+                    scope=context.get("scope", ""),
+                    timeout=context.get("timeout", 120),
+                    coverage=context.get("coverage", False),
+                    coverage_threshold=context.get("coverage_threshold", 70),
+                )
+            except TimeoutError as exc:
+                return AtomResult(
+                    status=AtomStatus.FAILED,
+                    message=f"Process timed out: {exc}",
+                )
+
+            agg_passed += result.passed
+            agg_failed += result.failed
+            agg_errors += result.errors
+            agg_skipped += result.skipped
+            agg_total += result.total
+            agg_duration += result.duration_seconds
+            agg_failures.extend(result.failures)
+            if result.coverage_pct is not None:
+                last_coverage_pct = result.coverage_pct
+
+        exports: dict[str, Any] = {
+            "passed": agg_passed,
+            "failed": agg_failed,
+            "errors": agg_errors,
+            "skipped": agg_skipped,
+            "total": agg_total,
+            "duration_seconds": agg_duration,
+            "failures": [__import__("dataclasses").asdict(f) for f in agg_failures],
         }
-        if result.coverage_pct is not None:
-            exports["coverage_pct"] = result.coverage_pct
+        if last_coverage_pct is not None:
+            exports["coverage_pct"] = last_coverage_pct
 
-        if result.failed > 0 or result.errors > 0:
+        if agg_failed > 0 or agg_errors > 0:
             return AtomResult(
                 status=AtomStatus.FAILED,
-                message=f"{result.failed} failed, {result.errors} errors "
-                f"out of {result.total} tests.",
+                message=f"{agg_failed} failed, {agg_errors} errors out of {agg_total} tests.",
                 exports=exports,
             )
 
         return AtomResult(
             status=AtomStatus.SUCCESS,
-            message=f"All {result.passed} tests passed.",
+            message=f"All {agg_passed} tests passed.",
             exports=exports,
         )
 
@@ -189,22 +228,45 @@ class QARunnerAtom(Atom):
                 message="Missing 'target' in context for run_linter intent.",
             )
 
-        result = self._runner.run_linter(
-            target=target,
-            fix=context.get("fix", False),
-        )
+        stale_nodes = context.get("stale_nodes")
+        targets: list[str] = [target]
+
+        # Target Rewriting Optimization (Feature 3.32 SF-4)
+        if stale_nodes is not None and (target in {".", "", "src", "src/", "tests", "tests/"}):
+            targets = list(stale_nodes)
+            if not targets:
+                return AtomResult(
+                    status=AtomStatus.SUCCESS,
+                    message="All nodes pristine.",
+                    exports={"error_count": 0, "fixable_count": 0, "fixed_count": 0, "errors": []},
+                )
+
+        agg_errs = 0
+        agg_fixable = 0
+        agg_fixed = 0
+        agg_failures = []
+
+        for t in targets:
+            result = self._runner.run_linter(
+                target=t,
+                fix=context.get("fix", False),
+            )
+            agg_errs += result.error_count
+            agg_fixable += result.fixable_count
+            agg_fixed += result.fixed_count
+            agg_failures.extend(result.errors)
 
         exports: dict[str, Any] = {
-            "error_count": result.error_count,
-            "fixable_count": result.fixable_count,
-            "fixed_count": result.fixed_count,
-            "errors": [asdict(e) for e in result.errors],
+            "error_count": agg_errs,
+            "fixable_count": agg_fixable,
+            "fixed_count": agg_fixed,
+            "errors": [__import__("dataclasses").asdict(e) for e in agg_failures],
         }
 
-        if result.error_count > 0:
+        if agg_errs > 0:
             return AtomResult(
                 status=AtomStatus.FAILED,
-                message=f"{result.error_count} lint error(s) found.",
+                message=f"{agg_errs} lint error(s) found.",
                 exports=exports,
             )
 

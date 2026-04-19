@@ -35,7 +35,6 @@ def test_single_step_pipeline_executes_smoothly(tmp_path: Path) -> None:
     # We must patch StepHandlerRegistry or use a fake handler because we don't want to actually draft
     # Let's mock a handler and inject it
 
-
     class DummyHandler:
         async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
             import datetime

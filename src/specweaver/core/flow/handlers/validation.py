@@ -336,6 +336,7 @@ class ValidateTestsHandler:
                 "timeout": step.params.get("timeout", 120),
                 "coverage": step.params.get("coverage", False),
                 "coverage_threshold": step.params.get("coverage_threshold", 70),
+                "stale_nodes": context.stale_nodes,
             }
         )
 

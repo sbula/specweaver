@@ -304,7 +304,6 @@ def submit_gate_decision(
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
 
-
     project_root = resolve_project_root(run.project_name, db)
     pipeline_def = load_pipeline(Path(run.pipeline_name))
     context = RunContext(

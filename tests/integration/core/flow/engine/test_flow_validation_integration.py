@@ -140,7 +140,6 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
         ValidationSettings,
     )
 
-
     code_dir = tmp_path / "src"
     code_dir.mkdir()
     code_path = code_dir / "example.py"

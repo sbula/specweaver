@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from specweaver.core.flow.handlers.base import RunContext
 
 
-
 @runtime_checkable
 class RunnerEventCallback(Protocol):
     """Protocol for runner event callbacks."""
@@ -99,6 +98,7 @@ def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logge
         "build",
         ".venv",
         "venv",
+        ".specweaver",
     ]
     for cache in cache_dirs:
         src = context.project_path / cache
@@ -109,7 +109,10 @@ def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logge
             except OSError as e:
                 logger.warning(f"Could not symlink {cache} into worktree: {e}")
 
-async def execute_in_sandbox(runner: Any, handler: Any, step_def: Any, run: Any, logger: logging.Logger) -> StepResult:
+
+async def execute_in_sandbox(
+    runner: Any, handler: Any, step_def: Any, run: Any, logger: logging.Logger
+) -> StepResult:
     """Execute a handler step inside an isolated Git worktree."""
     import copy
 
@@ -161,6 +164,7 @@ async def execute_in_sandbox(runner: Any, handler: Any, step_def: Any, run: Any,
         # 6. Database Cleanup Hooks bounds guarantee zombie block survival
         try:
             from specweaver.core.flow.engine.reservation import SQLiteReservationSystem
+
             db_path = context.project_path / ".specweaver" / "reservations.db"
             SQLiteReservationSystem(db_path).release(run.run_id)
         except Exception as e:

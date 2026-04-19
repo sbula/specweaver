@@ -159,6 +159,7 @@ def test_dependency_hasher_caching_and_pruning(tmp_path: Path):
     final_cache = hasher2.load_cache()
     assert "mod2" not in final_cache
 
+
 def test_hash_file_oserror(tmp_path: Path, monkeypatch):
     from specweaver.assurance.graph.hasher import DependencyHasher
 

@@ -154,7 +154,6 @@ class TestContractHandlerExecute:
 class TestContractHandlerRegistration:
     def test_handler_registered_in_registry(self) -> None:
 
-
         registry = StepHandlerRegistry()
         handler = registry.get(StepAction.GENERATE, StepTarget.CONTRACT)
         assert handler is not None

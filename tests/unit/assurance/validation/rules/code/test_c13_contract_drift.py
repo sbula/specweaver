@@ -1,4 +1,3 @@
-
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.rules.code.c13_contract_drift import C13ContractDriftRule
 

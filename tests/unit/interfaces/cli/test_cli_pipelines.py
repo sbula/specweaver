@@ -137,6 +137,45 @@ class TestRunPipelineMocked:
         assert result.exit_code == 1
         assert "error" in result.output.lower()
 
+    def test_run_success_saves_cache(self, tmp_path: Path) -> None:
+        """SF-4: verifies DependencyHasher is called on COMPLETED status."""
+        project_dir = tmp_path / "proj"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "test-proj", "--path", str(project_dir)])
+
+        spec = project_dir / "specs" / "test_spec.md"
+        spec.parent.mkdir(exist_ok=True)
+        spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
+
+        with (
+            patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
+            patch(
+                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
+            ) as mock_save_cache,
+        ):
+            mock_runner = mock_runner_class.return_value
+
+            # return a mocked final run
+            class DummyRun:
+                pass
+
+            from specweaver.core.flow.engine.state import RunStatus
+
+            mock_run = DummyRun()
+            mock_run.status = RunStatus.COMPLETED
+
+            from unittest.mock import AsyncMock
+
+            mock_runner.run = AsyncMock(return_value=mock_run)
+
+            result = runner.invoke(
+                app, ["run", "validate_only", str(spec), "--project", str(project_dir)]
+            )
+
+        assert result.exit_code == 0
+        assert mock_save_cache.called
+        assert "Topology staleness cache saved successfully" in result.output
+
 
 # ── sw resume — unit tests ───────────────────────────────────────────────
 
@@ -172,6 +211,56 @@ class TestResumeMocked:
         result = runner.invoke(app, ["resume"])
         assert result.exit_code == 0
         assert "no resumable" in result.output.lower()
+
+    def test_resume_success_saves_cache(self, tmp_path: Path, monkeypatch) -> None:
+        """SF-4: verifies DependencyHasher is called on Resume COMPLETED."""
+        _state_path = tmp_path / "pipe_state.db"
+        monkeypatch.setattr(
+            "specweaver.core.config.paths.state_db_path",
+            lambda: _state_path,
+        )
+        project_dir = tmp_path / "proj"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "test-proj", "--path", str(project_dir)])
+
+        # mock the get_latest_run to return a stub Run
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+
+        mock_run_state = PipelineRun(
+            run_id="abc1234567890",
+            pipeline_name="validate_only",
+            project_name="test-proj",
+            spec_path=str(project_dir / "specs" / "test_spec.md"),
+            status=RunStatus.PARKED,
+            started_at="",
+            updated_at="",
+        )
+
+        with (
+            patch("specweaver.interfaces.cli.pipelines._get_state_store") as mock_get_store,
+            patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
+            patch(
+                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
+            ) as mock_save_cache,
+        ):
+            mock_store = mock_get_store.return_value
+            mock_store.load_run.return_value = mock_run_state
+
+            mock_runner = mock_runner_class.return_value
+
+            class DummyRun:
+                pass
+            mock_run = DummyRun()
+            mock_run.status = RunStatus.COMPLETED
+
+            from unittest.mock import AsyncMock
+
+            mock_runner.resume = AsyncMock(return_value=mock_run)
+
+            result = runner.invoke(app, ["resume", "abc1234567890"])
+
+        assert result.exit_code == 0
+        assert mock_save_cache.called
 
 
 # ── sw pipelines ─────────────────────────────────────────────────────────

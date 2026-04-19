@@ -15,6 +15,7 @@ from specweaver.core.loom.commons.qa_runner.interface import (
     ComplexityViolation,
     LintError,
     LintRunResult,
+    TestFailure,
     TestRunResult,
 )
 
@@ -177,6 +178,70 @@ class TestAtomRunTests:
         assert result.status == AtomStatus.FAILED
         assert "time" in result.message.lower()
 
+    def test_run_tests_with_stale_nodes_target_rewriting(self, tmp_path: Path) -> None:
+        """SF-4 Edge Case: test target rewriting dynamically bounds runs."""
+        atom = QARunnerAtom(cwd=tmp_path)
+        # Mock results
+        result1 = TestRunResult(
+            passed=2,
+            failed=0,
+            errors=0,
+            skipped=0,
+            total=2,
+            failures=[],
+            coverage_pct=None,
+            duration_seconds=0.1,
+        )
+        result2 = TestRunResult(
+            passed=3,
+            failed=1,
+            errors=0,
+            skipped=0,
+            total=4,
+            failures=[TestFailure(nodeid="a", message="fail")],
+            coverage_pct=None,
+            duration_seconds=0.2,
+        )
+
+        with patch.object(atom._runner, "run_tests", side_effect=[result1, result2]) as mock_rt:
+            result = atom.run(
+                {
+                    "intent": "run_tests",
+                    "target": ".",  # global target!
+                    "stale_nodes": {"src/a.py", "tests/b.py"},
+                }
+            )
+
+        assert mock_rt.call_count == 2
+
+        called_targets = {call.kwargs.get("target") for call in mock_rt.call_args_list}
+        assert called_targets == {"src/a.py", "tests/b.py"}
+
+        assert result.status == AtomStatus.FAILED
+        assert result.exports["passed"] == 5
+        assert result.exports["failed"] == 1
+        assert result.exports["total"] == 6
+        assert len(result.exports["failures"]) == 1
+
+    def test_run_tests_with_empty_stale_nodes_shortcuts(self, tmp_path: Path) -> None:
+        """SF-4 Edge Case: 0 stale nodes shortcut out."""
+        atom = QARunnerAtom(cwd=tmp_path)
+
+        with patch.object(atom._runner, "run_tests") as mock_rt:
+            result = atom.run(
+                {
+                    "intent": "run_tests",
+                    "target": ".",
+                    "stale_nodes": set(),
+                }
+            )
+
+        assert mock_rt.call_count == 0
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["passed"] == 0
+        assert result.exports["failed"] == 0
+        assert result.exports["total"] == 0
+
 
 # ---------------------------------------------------------------------------
 # run_linter intent
@@ -235,6 +300,39 @@ class TestAtomRunLinter:
         result = atom.run({"intent": "run_linter"})
         assert result.status == AtomStatus.FAILED
         assert "target" in result.message.lower()
+
+    def test_linter_with_stale_nodes_target_rewriting(self, tmp_path: Path) -> None:
+        """SF-4 Edge Case: lint target rewriting."""
+        atom = QARunnerAtom(cwd=tmp_path)
+
+        result1 = LintRunResult(
+            error_count=1,
+            fixable_count=0,
+            fixed_count=0,
+            errors=[LintError(file="a", line=1, code="1", message="E")],
+        )
+        result2 = LintRunResult(
+            error_count=2,
+            fixable_count=0,
+            fixed_count=0,
+            errors=[
+                LintError(file="b", line=1, code="2", message="E"),
+                LintError(file="c", line=1, code="3", message="E"),
+            ],
+        )
+
+        with patch.object(atom._runner, "run_linter", side_effect=[result1, result2]) as mock_rl:
+            result = atom.run(
+                {
+                    "intent": "run_linter",
+                    "target": ".",
+                    "stale_nodes": {"src/c.py", "src/d.py"},
+                }
+            )
+
+        assert mock_rl.call_count == 2
+        assert result.status == AtomStatus.FAILED
+        assert result.exports["error_count"] == 3
 
 
 # ---------------------------------------------------------------------------

@@ -203,7 +203,9 @@ class PythonCodeStructure(CodeStructureInterface):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if self._is_symbol_valid(sym_name, visibility, decorator_filter, framework_markers):
+                    if self._is_symbol_valid(
+                        sym_name, visibility, decorator_filter, framework_markers
+                    ):
                         symbols.append(sym_name)
 
         # distinct
