@@ -16,7 +16,6 @@ Usage::
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import replace
 from typing import TYPE_CHECKING
@@ -24,6 +23,8 @@ from typing import TYPE_CHECKING
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
+
+from specweaver.commons import json
 
 if TYPE_CHECKING:
     from specweaver.assurance.standards.analyzer import CategoryResult

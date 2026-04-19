@@ -5,10 +5,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from specweaver.commons import json
 
 logger = logging.getLogger(__name__)
 

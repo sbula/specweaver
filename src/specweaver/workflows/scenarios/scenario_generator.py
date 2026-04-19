@@ -11,11 +11,11 @@ Follows the Planner pattern (prompt → LLM → parse → validate → retry).
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from typing import Any
 
+from specweaver.commons import json
 from specweaver.workflows.scenarios.scenario_models import ScenarioSet
 
 logger = logging.getLogger(__name__)

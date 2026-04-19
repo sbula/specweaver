@@ -10,11 +10,11 @@ and validates the JSON output using reflection retry (max N attempts).
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from specweaver.commons import json
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, ProjectMetadata, Role
 from specweaver.workflows.planning.models import PlanArtifact
 

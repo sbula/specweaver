@@ -202,3 +202,16 @@ Furthermore, the mappings are isolated by **Archetype** rather than **Language**
 2. **Preventing Cross-Framework Hallucinations**: By enforcing flat archetype models bound natively by `supported_languages`, if an LLM hallucinates a `FastAPI` construct into a `Node.js` Typescript worker, the validation explicitly drops the archetype matching organically rather than tearing down the parser natively.
 3. **Targeted AST Filtering (`decorator_filter`)**: Because we extract these framework markers explicitly through internal polyglot tree-sitter mappings (e.g., `extract_framework_markers`), we natively power the Agent's `list_symbols(decorator_filter="PreAuthorize")` tool. This bypasses the need for the LLM to read massive source files line-by-line; instead, the physical AST extractor actively filters and drops any symbol that lacks the declared framework annotation text, guaranteeing pristine targeted visibility.
 
+---
+
+## 14. Deep Serialization Facade (The Orjson Override)
+
+When scaling SpecWeaver's internal logging, payload serialization, and topology caching to meet extreme `< 50ms` NFR targets (Feature 3.32), we systematically replaced all native Python `import json` usage with the Rust-backed `orjson` library.
+
+### How it works:
+Instead of forcing developers to use `orjson.dumps().decode('utf-8')` perfectly every time across 29+ modules, we built a single unified facade module `specweaver.commons.json`. The entire codebase points to this one entrypoint (`from specweaver.commons import json`). 
+
+### Why we do it:
+1. **The Pydantic Poison Pill**: Standard `json.dumps()` returns standard `str` UTF-8 primitives. Fast `orjson.dumps()` natively returns raw `bytes`. Passing raw bytes into downstream Pydantic instantiators, logging frameworks layer formatters, or LLM System Prompts notoriously crashes them with `TypeError: input must be a string, not bytes`. The facade explicitly wraps `orjson` and intercepts the `.decode('utf-8')` transformation strictly to preserve zero-friction string parity across the engine.
+2. **Deterministic Sort Consistency**: LLM caching thrives on exact token string-matching. The facade actively captures mapping flags (like `sort_keys=True`) and strictly routes them into `orjson.OPT_SORT_KEYS`, mathematically ensuring JSON structure guarantees natively at the lowest engine level.
+

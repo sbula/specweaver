@@ -23,11 +23,11 @@ Then in any module::
 
 from __future__ import annotations
 
-import json
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+import orjson
 from rich.logging import RichHandler
 
 # ---------------------------------------------------------------------------
@@ -86,7 +86,7 @@ class JSONFormatter(logging.Formatter):
         }
         if record.exc_info:
             log_dict["exc_info"] = self.formatException(record.exc_info)
-        return json.dumps(log_dict)
+        return orjson.dumps(log_dict).decode("utf-8")
 
 
 def get_log_path(project_name: str) -> Path:

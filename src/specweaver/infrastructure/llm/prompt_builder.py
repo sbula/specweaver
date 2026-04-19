@@ -201,7 +201,7 @@ class PromptBuilder:
         if not metadata:
             return self
 
-        import json
+        from specweaver.commons import json
 
         # We masquarade JSON as YAML block to avoid ruamel.yaml stream parsing overhead
         raw_dict = metadata.model_dump()

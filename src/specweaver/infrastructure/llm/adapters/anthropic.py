@@ -144,7 +144,7 @@ class AnthropicAdapter(LLMAdapter):
         anthropic_messages: list[dict[str, Any]],
         assistant_content: list[Any],
     ) -> None:
-        import json
+        from specweaver.commons import json
 
         # Anthropic requires the assistant's content block and the tool_result in the subsequent user block
         anthropic_messages.append({"role": "assistant", "content": assistant_content})

@@ -148,7 +148,7 @@ class MistralAdapter(LLMAdapter):
         tool_executor: object,
         mistral_messages: list[dict[str, Any]],
     ) -> None:
-        import json
+        from specweaver.commons import json
 
         for tc in tool_calls:
             try:

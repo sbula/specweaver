@@ -139,7 +139,7 @@ class DataExtensionsMixin:
             confidence: Confidence score (0.0-1.0).
             confirmed_by: ``"hitl"`` if user-confirmed, else None.
         """
-        import json
+        from specweaver.commons import json
 
         with self.connect() as conn:  # type: ignore[attr-defined]
             conn.execute(

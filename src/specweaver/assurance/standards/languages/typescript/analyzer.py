@@ -22,10 +22,10 @@ from specweaver.assurance.standards.languages.javascript.analyzer import (
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
-    
-    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 
     import tree_sitter
+
+    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 
 logger = logging.getLogger(__name__)
 

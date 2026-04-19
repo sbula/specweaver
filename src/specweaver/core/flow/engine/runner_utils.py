@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 if TYPE_CHECKING:
     import logging
@@ -112,6 +112,7 @@ def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logge
 async def execute_in_sandbox(runner: Any, handler: Any, step_def: Any, run: Any, logger: logging.Logger) -> StepResult:
     """Execute a handler step inside an isolated Git worktree."""
     import copy
+
     from specweaver.core.loom.atoms.base import AtomStatus
     from specweaver.core.loom.atoms.git.atom import GitAtom
 
@@ -151,7 +152,9 @@ async def execute_in_sandbox(runner: Any, handler: Any, step_def: Any, run: Any,
         )
         if strip_res.status != AtomStatus.SUCCESS:
             logger.warning(f"Sandbox diff striping returned non-success: {strip_res.message}")
-        return result
+        if TYPE_CHECKING:
+            from specweaver.core.flow.engine.state import StepResult
+        return cast("StepResult", result)
 
     finally:
         # 5. Teardown resilience

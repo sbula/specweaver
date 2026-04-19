@@ -10,9 +10,10 @@ WebSocket subscribers receive real-time NDJSON events via asyncio queues.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from typing import Any
+
+from specweaver.commons import json
 
 logger = logging.getLogger(__name__)
 

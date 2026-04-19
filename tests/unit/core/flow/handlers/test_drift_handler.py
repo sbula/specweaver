@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.drift import DriftCheckHandler, _load_plan
 
 

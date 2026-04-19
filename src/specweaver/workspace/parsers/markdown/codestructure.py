@@ -3,11 +3,10 @@
 
 """Markdown CodeStructure parser for extracting semantic structures like Headers."""
 
-import json
-
 import tree_sitter_markdown
 from tree_sitter import Language, Parser, Query, QueryCursor
 
+from specweaver.commons import json
 from specweaver.workspace.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,

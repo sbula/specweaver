@@ -143,7 +143,7 @@ class TestEventBridge:
         """serialize_event returns JSON string."""
         bridge = EventBridge()
         s = bridge.serialize_event({"event": "test", "data": 42})
-        assert '"event": "test"' in s
+        assert '"event":"test"' in s
 
     # --- Gap #11: QueueFull backpressure ---
 

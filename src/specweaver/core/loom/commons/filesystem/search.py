@@ -121,7 +121,7 @@ def _grep_ripgrep(
     except subprocess.TimeoutExpired:
         return [], True, f"Search timed out after {TOOL_TIMEOUT_SECONDS}s"
 
-    import json
+    from specweaver.commons import json
 
     matches: list[dict[str, Any]] = []
     for line in result.stdout.splitlines():

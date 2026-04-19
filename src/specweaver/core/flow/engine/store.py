@@ -13,12 +13,12 @@ for idempotent schema creation.
 
 from __future__ import annotations
 
-import json
 import logging
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
+from specweaver.commons import json
 from specweaver.core.flow.engine.state import (
     PipelineRun,
     RunStatus,

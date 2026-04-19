@@ -9,9 +9,10 @@ can load standards content without depending on Typer/Rich.
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import TYPE_CHECKING, cast
+
+from specweaver.commons import json
 
 if TYPE_CHECKING:
     from pathlib import Path

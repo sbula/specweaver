@@ -5,11 +5,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import subprocess
 from typing import TYPE_CHECKING
 
+from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.core.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,

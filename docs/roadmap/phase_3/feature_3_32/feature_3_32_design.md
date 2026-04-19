@@ -83,10 +83,10 @@ None required. Uses native `hashlib` and `json`.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Polyglot Parser Decoupling | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Semantic State Caching | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Semantic State Caching | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-3 | Incremental Topology | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 is fully refactored, tests are 100% green, and `tach check` passed natively confirming clean boundary separation. Ready for SF-2.
-**Next step**: Research and plan SF-2 (The Dependency Hasher).
+**Current status**: SF-1 is completed. SF-2 Implementation Plan is **APPROVED** and finalized.
+**Next step**: Execute the `/dev` workflow to implement SF-2 (Semantic State Caching and Universal Orjson Sweep).

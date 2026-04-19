@@ -10,7 +10,6 @@ Uses subprocess to run pytest (tests) and ruff (linting).
 from __future__ import annotations
 
 import contextlib
-import json
 import logging
 import re
 import shlex
@@ -19,6 +18,7 @@ import sys
 import time
 from typing import TYPE_CHECKING, TypedDict
 
+from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.core.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,

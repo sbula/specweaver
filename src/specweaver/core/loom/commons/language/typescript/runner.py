@@ -195,10 +195,9 @@ class TypeScriptRunner(QARunnerInterface):
         dal_level: DALLevel | None = None,
     ) -> ArchitectureRunResult:
         """Run architectural checks dynamically using ESLint."""
-        import json
-
         import yaml
 
+        from specweaver.commons import json
         from specweaver.core.loom.commons.qa_runner.interface import ArchitectureViolation
 
         logger.debug(

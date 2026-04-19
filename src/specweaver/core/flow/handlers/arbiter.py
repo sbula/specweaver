@@ -10,13 +10,13 @@ from the existence of the scenario testing engine.
 from __future__ import annotations
 
 import enum
-import json
 import logging
 import re
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
+from specweaver.commons import json
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
 

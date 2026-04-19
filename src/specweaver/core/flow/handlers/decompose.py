@@ -82,11 +82,11 @@ class OrchestrateComponentsHandler(StepHandler):
         import asyncio
         import graphlib
         import importlib.resources
-        import json
         import re
 
         import yaml
 
+        from specweaver.commons import json
         from specweaver.core.flow.engine.models import PipelineDefinition
 
         try:

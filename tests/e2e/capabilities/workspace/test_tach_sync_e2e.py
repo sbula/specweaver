@@ -5,6 +5,7 @@
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -33,7 +34,7 @@ def test_e2e_tach_sync_generates_valid_boundaries(tmp_path: Path):
     env["PYTHONIOENCODING"] = "utf-8"
 
     cli_cmd = [
-        "python",
+        sys.executable,
         "-c",
         "from specweaver.interfaces.cli.main import app; app(prog_name='sw')",
     ]

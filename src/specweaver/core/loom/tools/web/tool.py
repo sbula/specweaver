@@ -133,7 +133,7 @@ class WebTool:
         url = f"https://www.googleapis.com/customsearch/v1?{params}"
 
         try:
-            import json
+            from specweaver.commons import json
 
             req = urllib.request.Request(url, headers={"User-Agent": "SpecWeaver/1.0"})
             with urllib.request.urlopen(req, timeout=TOOL_TIMEOUT_SECONDS) as resp:

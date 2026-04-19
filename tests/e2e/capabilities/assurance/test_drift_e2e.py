@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -52,7 +53,7 @@ tasks:
     # 4. Execute the command just like the wrapper shell hook will
     start_time = time.perf_counter()
     result = subprocess.run(
-        ["python", "-m", "specweaver.interfaces.cli.main", "drift", "check-rot", "--staged"],
+        [sys.executable, "-m", "specweaver.interfaces.cli.main", "drift", "check-rot", "--staged"],
         cwd=proj,
         capture_output=True,
         text=True,
@@ -91,7 +92,7 @@ def test_git_hook_safe_skip_on_deleted_staged_files(tmp_path: Path) -> None:
     subprocess.run(["git", "rm", "src.py"], cwd=proj, check=True)
 
     result = subprocess.run(
-        ["python", "-m", "specweaver.interfaces.cli.main", "drift", "check-rot", "--staged"],
+        [sys.executable, "-m", "specweaver.interfaces.cli.main", "drift", "check-rot", "--staged"],
         cwd=proj,
         capture_output=True,
         text=True,

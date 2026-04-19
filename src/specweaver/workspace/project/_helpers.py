@@ -126,7 +126,7 @@ def build_tech_stack_rows(languages: list[str]) -> str:
 
 def build_standards_section(standards: list[dict[str, Any]]) -> str:
     """Build markdown bullet list from confirmed standards."""
-    import json
+    from specweaver.commons import json
 
     if not standards:
         return (

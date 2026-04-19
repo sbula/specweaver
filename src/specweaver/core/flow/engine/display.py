@@ -14,7 +14,6 @@ for ``PipelineRunner``:
 
 from __future__ import annotations
 
-import json
 import sys
 import time
 from typing import TYPE_CHECKING, Any
@@ -23,6 +22,8 @@ from rich.console import Console
 from rich.live import Live
 from rich.table import Table
 from rich.text import Text
+
+from specweaver.commons import json
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.state import PipelineRun, StepResult

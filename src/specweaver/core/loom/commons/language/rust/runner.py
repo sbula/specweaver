@@ -128,9 +128,9 @@ class RustRunner(QARunnerInterface):
             )
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
-        import json
         import subprocess
 
+        from specweaver.commons import json
         from specweaver.core.loom.commons.qa_runner.interface import LintError, LintRunResult
 
         try:
@@ -182,9 +182,9 @@ class RustRunner(QARunnerInterface):
             return LintRunResult(error_count=1, fixable_count=0, fixed_count=0, errors=[])
 
     def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
-        import json
         import subprocess
 
+        from specweaver.commons import json
         from specweaver.core.loom.commons.qa_runner.interface import ComplexityRunResult
 
         try:

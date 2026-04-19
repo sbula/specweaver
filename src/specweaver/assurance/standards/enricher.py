@@ -6,12 +6,12 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ValidationError
 
+from specweaver.commons import json
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 
 if TYPE_CHECKING:
