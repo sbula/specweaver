@@ -25,24 +25,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Directories to skip unconditionally when walking (non-git fallback).
-_SKIP_DIRS = frozenset(
-    {
-        ".git",
-        "__pycache__",
-        "node_modules",
-        "venv",
-        ".venv",
-        ".tox",
-        ".mypy_cache",
-        ".pytest_cache",
-        "dist",
-        "build",
-        ".eggs",
-        ".ruff_cache",
-        ".nox",
-    }
-)
+
 
 
 def discover_files(project_path: Path) -> list[Path]:
@@ -122,13 +105,20 @@ def _git_ls_files(project_path: Path) -> list[Path] | None:
 
 
 def _walk_with_skips(project_path: Path) -> list[Path]:
-    """Fallback: ``os.walk`` with hardcoded skip patterns."""
+    """Fallback: ``os.walk`` with dynamic AnalyzerFactory skip patterns."""
+    from specweaver.workspace.context.analyzers import AnalyzerFactory
+
     logger.debug("Using os.walk fallback for file discovery")
     files: list[Path] = []
 
+    skip_dirs = {".git"}
+    for analyzer in AnalyzerFactory.get_all_analyzers():
+        for ign in analyzer.get_default_directory_ignores():
+            skip_dirs.add(ign.rstrip("/"))
+
     for root, dirs, filenames in os.walk(project_path):
         # Prune skipped directories in-place (modifies os.walk traversal)
-        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS and not d.startswith(".")]
+        dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
 
         for name in filenames:
             full = Path(root) / name
@@ -141,25 +131,28 @@ def _apply_specweaverignore(
     files: list[Path],
     project_path: Path,
 ) -> list[Path]:
-    """Filter files through ``.specweaverignore`` patterns.
+    """Filter files through ``.specweaverignore`` and AnalyzerFactory binary patterns.
 
     Uses ``pathspec`` library for ``.gitignore``-compatible pattern matching.
-    If ``.specweaverignore`` doesn't exist or ``pathspec`` is not installed,
-    returns files unchanged.
+    If ``pathspec`` is not installed, returns files unchanged.
     """
-    ignore_file = project_path / ".specweaverignore"
-    if not ignore_file.is_file():
-        return files
-
     try:
         import pathspec
     except ImportError:
         logger.warning(
-            ".specweaverignore found but 'pathspec' not installed — ignoring",
+            "pathspec not installed — ignoring AnalyzerFactory binary patterns and .specweaverignore",
         )
         return files
 
-    patterns = ignore_file.read_text(encoding="utf-8").splitlines()
+    from specweaver.workspace.context.analyzers import AnalyzerFactory
+
+    patterns: list[str] = []
+    ignore_file = project_path / ".specweaverignore"
+    if ignore_file.is_file():
+        patterns.extend(ignore_file.read_text(encoding="utf-8").splitlines())
+
+    for analyzer in AnalyzerFactory.get_all_analyzers():
+        patterns.extend(analyzer.get_binary_ignore_patterns())
     spec = pathspec.PathSpec.from_lines("gitignore", patterns)
 
     result: list[Path] = []

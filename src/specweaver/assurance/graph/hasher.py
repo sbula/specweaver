@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from pathlib import Path  # noqa: TC003
+from pathlib import Path
 from typing import cast
 
 from specweaver.commons import json
@@ -85,22 +85,62 @@ class DependencyHasher:
             logger.debug(f"DependencyHasher failed to read {filepath}: {e}")
             return ""
 
-    def _hash_directory(self, directory: Path) -> dict[str, str]:
+    def _hash_directory(self, directory: Path) -> dict[str, str]:  # noqa: C901
         """Compute the semantic hash payload for a specific boundary directory."""
+        import os
+
         file_hashes = {}
-        for filepath in sorted(directory.rglob("*")):
-            if (
-                filepath.is_file()
-                and not filepath.is_symlink()
-                and not any(part.startswith(".") for part in filepath.parts)
-            ):
+        skip_dirs = {".git"}
+        binary_patterns: list[str] = []
+
+        for analyzer in AnalyzerFactory.get_all_analyzers():
+            for ign in analyzer.get_default_directory_ignores():
+                skip_dirs.add(ign.rstrip("/"))
+            binary_patterns.extend(analyzer.get_binary_ignore_patterns())
+
+        ignore_file = self.project_root / ".specweaverignore"
+        if ignore_file.is_file():
+            binary_patterns.extend(ignore_file.read_text(encoding="utf-8").splitlines())
+
+        spec = None
+        if binary_patterns:
+            try:
+                import pathspec
+
+                spec = pathspec.PathSpec.from_lines("gitignore", binary_patterns)
+            except ImportError:
+                logger.warning("pathspec not installed; ignoring binary and .specweaverignore patterns")
+
+        for root, dirs, files in os.walk(directory):
+            dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]
+
+            root_path = Path(root)
+            for f in files:
+                if f.startswith("."):
+                    continue
+
+                filepath = root_path / f
+                if filepath.is_symlink() or not filepath.is_file():
+                    continue
+
+                try:
+                    rel_to_proj = filepath.relative_to(self.project_root).as_posix()
+                except ValueError:
+                    rel_to_proj = filepath.as_posix()
+
+                if spec and spec.match_file(rel_to_proj):
+                    continue
+
                 h = self._hash_file(filepath)
                 if h:
-                    rel_path = filepath.relative_to(directory).as_posix()
+                    try:
+                        rel_path = filepath.relative_to(directory).as_posix()
+                    except ValueError:
+                        rel_path = filepath.as_posix()
                     file_hashes[rel_path] = h
 
-        analyzer = AnalyzerFactory.for_directory(directory)
-        dependencies = analyzer.extract_imports(directory) if analyzer else []
+        local_analyzer = AnalyzerFactory.for_directory(directory)
+        dependencies = local_analyzer.extract_imports(directory) if local_analyzer else []
 
         payload = {"files": file_hashes, "dependencies": sorted(dependencies)}
 
