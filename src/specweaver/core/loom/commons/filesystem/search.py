@@ -39,6 +39,7 @@ def grep_content(
     context_lines: int = 3,
     case_sensitive: bool = False,
     max_results: int = 20,
+    exclude_dirs: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Search for a pattern in file contents.
 
@@ -68,6 +69,7 @@ def grep_content(
             context_lines,
             case_sensitive,
             max_results,
+            exclude_dirs,
         )
     else:
         logger.info(
@@ -80,6 +82,7 @@ def grep_content(
             context_lines,
             case_sensitive,
             max_results,
+            exclude_dirs,
         )
 
     if truncated or warning:
@@ -99,6 +102,7 @@ def _grep_ripgrep(
     context_lines: int,
     case_sensitive: bool,
     max_results: int,
+    exclude_dirs: set[str] | None = None,
 ) -> tuple[list[dict[str, Any]], bool, str]:
     """Run grep using ripgrep."""
     cmd = [
@@ -109,6 +113,10 @@ def _grep_ripgrep(
     ]
     if not case_sensitive:
         cmd.append("-i")
+
+    if (search_dir / ".specweaverignore").is_file():
+        cmd.append(f"--ignore-file={search_dir / '.specweaverignore'}")
+
     cmd.extend([pattern, str(search_dir)])
 
     try:
@@ -155,6 +163,7 @@ def _grep_python(
     context_lines: int,
     case_sensitive: bool,
     max_results: int,
+    exclude_dirs: set[str] | None = None,
 ) -> tuple[list[dict[str, Any]], bool, str]:
     """Fallback grep using Python re module."""
     flags = 0 if case_sensitive else re.IGNORECASE
@@ -168,7 +177,7 @@ def _grep_python(
     truncated = False
     warning = ""
 
-    for file_path in iter_text_files(search_dir):
+    for file_path in iter_text_files(search_dir, exclude_dirs=exclude_dirs):
         if files_scanned >= GREP_FALLBACK_FILE_LIMIT:
             truncated = True
             warning = f"Python fallback: scanned {GREP_FALLBACK_FILE_LIMIT} files limit reached"
@@ -208,12 +217,13 @@ def _grep_python(
 # ---------------------------------------------------------------------------
 
 
-def find_by_glob(
+def find_by_glob(  # noqa: C901
     search_dir: Path,
     pattern: str,
     *,
     file_type: str = "any",
     max_results: int = 30,
+    exclude_dirs: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Find files matching a glob pattern.
 
@@ -229,31 +239,49 @@ def find_by_glob(
     results: list[dict[str, Any]] = []
     truncated = False
 
+    exclude_set = exclude_dirs or set()
+
+    import fnmatch
+    import os
+
     try:
-        for item in sorted(search_dir.rglob(pattern)):
-            if file_type == "file" and not item.is_file():
-                continue
-            if file_type == "directory" and not item.is_dir():
-                continue
+        count = 0
+        for root_str, dirs, files in os.walk(search_dir):
+            if exclude_set:
+                dirs[:] = [d for d in dirs if d not in exclude_set and not d.startswith(".")]
 
-            try:
-                rel_path = str(item.relative_to(search_dir))
-            except ValueError:
-                rel_path = str(item)
+            root_path = Path(root_str)
+            items_to_check: list[Path] = []
 
-            entry: dict[str, Any] = {
-                "path": rel_path,
-                "type": "directory" if item.is_dir() else "file",
-            }
-            if item.is_file():
+            if file_type in ("directory", "any"):
+                items_to_check.extend(root_path / d for d in dirs)
+            if file_type in ("file", "any"):
+                items_to_check.extend(root_path / f for f in files)
+
+            for item in items_to_check:
                 try:
-                    entry["size_bytes"] = item.stat().st_size
-                except OSError:
-                    entry["size_bytes"] = 0
-            results.append(entry)
+                    rel_path_str = str(item.relative_to(search_dir))
+                except ValueError:
+                    rel_path_str = str(item)
 
-            if len(results) >= max_results:
-                truncated = True
+                if fnmatch.fnmatch(rel_path_str, pattern) or fnmatch.fnmatch(item.name, pattern):
+                    entry: dict[str, Any] = {
+                        "path": rel_path_str,
+                        "type": "directory" if item.is_dir() else "file",
+                    }
+                    if item.is_file():
+                        try:
+                            entry["size_bytes"] = item.stat().st_size
+                        except OSError:
+                            entry["size_bytes"] = 0
+                    results.append(entry)
+                    count += 1
+
+                    if count >= max_results:
+                        truncated = True
+                        break
+
+            if truncated:
                 break
     except OSError as exc:
         return [{"error": str(exc)}]
@@ -268,7 +296,7 @@ def find_by_glob(
 # ---------------------------------------------------------------------------
 
 
-def iter_text_files(directory: Path) -> list[Path]:
+def iter_text_files(directory: Path, exclude_dirs: set[str] | None = None) -> list[Path]:
     """Iterate over text files in a directory, skipping binary and hidden files."""
     text_extensions = {
         ".py",
@@ -291,15 +319,22 @@ def iter_text_files(directory: Path) -> list[Path]:
         ".xml",
         ".csv",
     }
+    import os
+
+    exclude_set = exclude_dirs or set()
     files: list[Path] = []
     try:
-        for item in directory.rglob("*"):
-            if (
-                item.is_file()
-                and item.suffix.lower() in text_extensions
-                and not any(part.startswith(".") for part in item.parts)
-            ):
-                files.append(item)
+        for root_str, dirs, file_names in os.walk(directory):
+            # Prune directories
+            dirs[:] = [d for d in dirs if d not in exclude_set and not d.startswith(".")]
+
+            root_path = Path(root_str)
+            for f in file_names:
+                if f.startswith("."):
+                    continue
+                item = root_path / f
+                if item.suffix.lower() in text_extensions:
+                    files.append(item)
     except OSError:
         pass
     return sorted(files)

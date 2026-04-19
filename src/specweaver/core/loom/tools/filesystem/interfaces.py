@@ -197,6 +197,8 @@ def create_filesystem_interface(
     role: str,
     cwd: Path,
     grants: list[FolderGrant],
+    exclude_dirs: set[str] | None = None,
+    exclude_patterns: set[str] | None = None,
 ) -> ImplementerFileInterface | ReviewerFileInterface | DrafterFileInterface:
     """Create a role-specific filesystem interface.
 
@@ -206,6 +208,8 @@ def create_filesystem_interface(
         role: The agent's role ("implementer", "reviewer", "drafter").
         cwd: The target project's working directory (from config, not agent).
         grants: List of FolderGrants defining accessibility boundaries.
+        exclude_dirs: Optional set of directory names to prune from deep scans.
+        exclude_patterns: Optional set of glob patterns to exclude.
 
     Returns:
         A role-specific interface with only the allowed methods.
@@ -218,7 +222,13 @@ def create_filesystem_interface(
         raise ValueError(msg)
 
     executor = FileExecutor(cwd=cwd)
-    tool = FileSystemTool(executor=executor, role=role, grants=grants)
+    tool = FileSystemTool(
+        executor=executor,
+        role=role,
+        grants=grants,
+        exclude_dirs=exclude_dirs,
+        exclude_patterns=exclude_patterns,
+    )
 
     interface_cls = _ROLE_INTERFACE_MAP[role]
     return interface_cls(tool)

@@ -118,6 +118,15 @@ class ToolDispatcher:
             # Isolate imports so flow/ doesn't violate boundaries
             from specweaver.core.loom.security import AccessMode, FolderGrant
             from specweaver.core.loom.tools.filesystem.interfaces import create_filesystem_interface
+            from specweaver.workspace.context.analyzers import AnalyzerFactory
+
+            exclude_dirs: set[str] = set()
+            exclude_patterns: set[str] = set()
+            for analyzer in AnalyzerFactory.get_all_analyzers():
+                for ign in analyzer.get_default_directory_ignores():
+                    exclude_dirs.add(ign.rstrip("/"))
+                for pat in analyzer.get_binary_ignore_patterns():
+                    exclude_patterns.add(pat)
 
             grants = []
             if role == "scenario_agent":
@@ -150,7 +159,13 @@ class ToolDispatcher:
 
             # The first root acts as the cwd for relative paths. Fallback to api_paths if empty.
             cwd_path = boundary.roots[0] if boundary.roots else boundary.api_paths[0]
-            fs_interface = create_filesystem_interface(role, cwd=cwd_path, grants=grants)
+            fs_interface = create_filesystem_interface(
+                role,
+                cwd=cwd_path,
+                grants=grants,
+                exclude_dirs=exclude_dirs,
+                exclude_patterns=exclude_patterns,
+            )
             interfaces.append(fs_interface)
 
         if "ast" in allowed_tools or "codestructure" in allowed_tools:

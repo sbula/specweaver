@@ -54,6 +54,8 @@ class FileSystemTool:
         executor: FileExecutor,
         role: str,
         grants: list[FolderGrant],
+        exclude_dirs: set[str] | None = None,
+        exclude_patterns: set[str] | None = None,
     ) -> None:
         if role not in ROLE_INTENTS:
             msg = f"Unknown role: {role!r}. Known roles: {sorted(ROLE_INTENTS)}"
@@ -61,6 +63,8 @@ class FileSystemTool:
         self._executor = executor
         self._role = role
         self._grants = list(grants)
+        self._exclude_dirs = exclude_dirs or set()
+        self._exclude_patterns = exclude_patterns or set()
 
     @property
     def role(self) -> str:
@@ -194,6 +198,7 @@ class FileSystemTool:
             context_lines=context_lines,
             case_sensitive=case_sensitive,
             max_results=max_results,
+            exclude_dirs=self._exclude_dirs,
         )
         return ToolResult(status="success", data=results)
 
@@ -227,6 +232,7 @@ class FileSystemTool:
             pattern,
             file_type=file_type,
             max_results=max_results,
+            exclude_dirs=self._exclude_dirs,
         )
         return ToolResult(status="success", data=results)
 
@@ -298,6 +304,9 @@ class FileSystemTool:
             return
 
         for dirpath, _dirnames, filenames in os.walk(base):
+            if self._exclude_dirs:
+                _dirnames[:] = [d for d in _dirnames if d not in self._exclude_dirs and not d.startswith(".")]
+
             for fname in filenames:
                 full = os.path.join(dirpath, fname)
                 rel = os.path.relpath(full, self._executor._cwd).replace("\\", "/")
