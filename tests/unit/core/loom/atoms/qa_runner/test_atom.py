@@ -247,6 +247,24 @@ class TestAtomRunTests:
 # run_linter intent
 # ---------------------------------------------------------------------------
 
+    def test_run_linter_with_empty_stale_nodes_shortcuts(self, tmp_path: Path) -> None:
+        """SF-4 Edge Case: 0 stale nodes shortcut out for linter without errors."""
+        atom = QARunnerAtom(cwd=tmp_path)
+
+        with patch.object(atom._runner, "run_linter") as mock_rl:
+            result = atom.run(
+                {
+                    "intent": "run_linter",
+                    "target": ".",
+                    "stale_nodes": set(),
+                }
+            )
+
+        assert mock_rl.call_count == 0
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["error_count"] == 0
+        assert result.exports["fixable_count"] == 0
+        assert result.exports["fixed_count"] == 0
 
 class TestAtomRunLinter:
     """Tests for the run_linter intent."""

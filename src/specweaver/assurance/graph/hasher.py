@@ -120,8 +120,12 @@ class DependencyHasher:
             logger.warning(f"Failed to load semantic cache {self.cache_path}: {e}")
             return {}
 
-    def save_cache(self, cache_state: dict[str, dict[str, str]]) -> None:
+    def save_cache(self, cache_state: dict[str, dict[str, str]] | None = None) -> None:
         """Write the active semantic state securely to disk."""
+        if cache_state is None:
+            manifests = list(self.project_root.rglob("context.yaml"))
+            cache_state = self.compute_hashes(manifests)
+
         try:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
             _ensure_gitignore(self.project_root)

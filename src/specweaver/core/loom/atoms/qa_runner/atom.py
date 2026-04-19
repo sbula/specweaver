@@ -92,6 +92,8 @@ class QARunnerAtom(Atom):
                 message=f"Unknown intent: {intent!r}. Known: {sorted(self._known_intents())}",
             )
 
+        return handler(context)
+
     def _known_intents(self) -> set[str]:
         """Return the set of known intent names."""
         prefix = "_intent_"

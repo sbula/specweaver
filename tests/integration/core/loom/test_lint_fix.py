@@ -100,6 +100,33 @@ class TestLintFixAutoFix:
         assert "import sys" not in (src / "a.py").read_text(encoding="utf-8")
         assert "import json" not in (src / "b.py").read_text(encoding="utf-8")
 
+    def test_lint_fix_stale_node_bounds(self, sample_project: Path) -> None:
+        """SF-4: Ensure reflection loop selectively skips clean targets based on stale_nodes."""
+        src = sample_project / "src" / "stale_test"
+        src.mkdir(parents=True, exist_ok=True)
+
+        # File A is broken but pristine (NOT in stale nodes)
+        file_a = src / "pristine.py"
+        file_a.write_text("import sys\n\ndef a():\n  pass\n", encoding="utf-8")
+
+        # File B is broken and stale
+        file_b = src / "stale.py"
+        file_b.write_text("import json\n\ndef b():\n  pass\n", encoding="utf-8")
+
+        mock_llm = AsyncMock()
+        ctx = _make_context(sample_project, llm=mock_llm)
+        ctx.stale_nodes = {str(file_b)}
+
+        step = _make_step(target="src/")
+        handler = LintFixHandler()
+        result = asyncio.run(handler.execute(step, ctx))
+
+        assert result.status == StepStatus.PASSED
+        # File A should NOT have been auto-fixed because it wasn't in stale_nodes!
+        assert "import sys" in file_a.read_text(encoding="utf-8")
+        # File B SHOULD have been auto-fixed
+        assert "import json" not in file_b.read_text(encoding="utf-8")
+
 
 class TestLintFixCleanCode:
     """Clean code → handler passes immediately."""

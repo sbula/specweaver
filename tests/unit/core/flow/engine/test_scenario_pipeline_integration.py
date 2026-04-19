@@ -89,6 +89,7 @@ async def test_scenario_pipeline_end_to_end_integration(
     ctx.llm_router = None
     ctx.generation_config = None
     ctx.feedback = {}
+    ctx.stale_nodes = None
 
     runner = PipelineRunner(definition, ctx)
     result = await runner.run()

@@ -80,7 +80,7 @@ class TestCreateDisplayOptions:
 
 
 class TestRunPipelineMocked:
-    def test_run_with_failed_pipeline_exits_1(self, tmp_path: Path, monkeypatch) -> None:
+    def test_run_with_failed_pipeline_exits_1(self, tmp_path: Path) -> None:
         """A pipeline that ends FAILED should produce exit code 1."""
 
         project_dir = tmp_path / "proj"
@@ -154,19 +154,7 @@ class TestRunPipelineMocked:
             ) as mock_save_cache,
         ):
             mock_runner = mock_runner_class.return_value
-
-            # return a mocked final run
-            class DummyRun:
-                pass
-
-            from specweaver.core.flow.engine.state import RunStatus
-
-            mock_run = DummyRun()
-            mock_run.status = RunStatus.COMPLETED
-
-            from unittest.mock import AsyncMock
-
-            mock_runner.run = AsyncMock(return_value=mock_run)
+            mock_runner.run = AsyncMock(return_value=DummyRun(RunStatus.COMPLETED))
 
             result = runner.invoke(
                 app, ["run", "validate_only", str(spec), "--project", str(project_dir)]
@@ -175,6 +163,35 @@ class TestRunPipelineMocked:
         assert result.exit_code == 0
         assert mock_save_cache.called
         assert "Topology staleness cache saved successfully" in result.output
+
+    def test_run_success_cache_failure_graceful(self, tmp_path: Path) -> None:
+        """SF-4: verifies DependencyHasher exception is logged but doesn't crash."""
+        project_dir = tmp_path / "proj_err"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "test-proj", "--path", str(project_dir)])
+
+        spec = project_dir / "specs" / "test_spec.md"
+        spec.parent.mkdir(exist_ok=True)
+        spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
+
+        with (
+            patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
+            patch(
+                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
+            ) as mock_save_cache,
+        ):
+            mock_runner = mock_runner_class.return_value
+            mock_runner.run = AsyncMock(return_value=DummyRun(RunStatus.COMPLETED))
+            mock_save_cache.side_effect = PermissionError("Cannot write")
+
+            result = runner.invoke(
+                app, ["run", "validate_only", str(spec), "--project", str(project_dir)]
+            )
+
+        # Pipeline STILL successfully exits with 0 even if caching fails
+        assert result.exit_code == 0
+        assert "Cannot" in result.output
+        assert "write" in result.output
 
 
 # ── sw resume — unit tests ───────────────────────────────────────────────
@@ -185,7 +202,7 @@ class TestResumeMocked:
         result = runner.invoke(app, ["resume"])
         assert result.exit_code == 1
 
-    def test_resume_unknown_run_id_fails(self, tmp_path: Path, monkeypatch) -> None:
+    def test_resume_unknown_run_id_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         _state_path = tmp_path / "pipe_state.db"
         monkeypatch.setattr(
             "specweaver.core.config.paths.state_db_path",
@@ -198,7 +215,7 @@ class TestResumeMocked:
         result = runner.invoke(app, ["resume", "nonexistent-id"])
         assert result.exit_code == 1
 
-    def test_resume_no_resumable_runs(self, tmp_path: Path, monkeypatch) -> None:
+    def test_resume_no_resumable_runs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         _state_path = tmp_path / "pipe_state.db"
         monkeypatch.setattr(
             "specweaver.core.config.paths.state_db_path",

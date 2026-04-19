@@ -263,9 +263,27 @@ class TestLintFixEdgeCases:
             _make_step(),
             _make_context(tmp_path),
         )
-
         assert result.status == StepStatus.FAILED
 
+    @pytest.mark.asyncio
+    async def test_lint_fix_passes_stale_nodes(self, tmp_path: Path) -> None:
+        """SF-4: LintFixHandler natively injects context.stale_nodes into Atom intent payloads."""
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = _clean()
+
+        ctx = _make_context(tmp_path)
+        ctx.stale_nodes = {"src/foo.py", "tests/bar.py"}
+
+        result = await _handler(mock_atom).execute(_make_step(), ctx)
+
+        assert result.status == StepStatus.PASSED
+        mock_atom.run.assert_called_once_with(
+            {
+                "intent": "run_linter",
+                "target": "src/",
+                "stale_nodes": {"src/foo.py", "tests/bar.py"},
+            }
+        )
 
 class TestLintFixInterface:
     """Verify standard interface: generate(messages, config)."""
