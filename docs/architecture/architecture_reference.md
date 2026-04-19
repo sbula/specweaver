@@ -666,6 +666,8 @@ To insulate SpecWeaver from breaking changes in standard compilation/debugging s
 | `loom/*` consumed by `llm` | `src/specweaver/llm/prompt_builder.py` | `llm` archetype `context.yaml` explicitly `forbids: specweaver/loom/*` | FIXED (CB-2 Gate Phase 1) |
 | `loom/commons/*` consumed by `validation` | `src/specweaver/validation/rules/code/` (C03, C04, C05) | `validation` archetype `context.yaml` explicitly `forbids: specweaver/loom/*` | DEFERRED (Pending review on whether `commons/qa_runner` executor usage is appropriate inside pure-logic rules via contextual bypasses, or if it should be extracted strictly natively into `flow/` orchestrated tasks) |
 | `File I/O` inside `pure-logic` | `src/specweaver/assurance/graph/hasher.py` | `graph` archetype `pure-logic` explicitly forbids OS/File I/O | DEFERRED (Pending Feature 3.48 Sidecar Databases which will abstract this into network bound architecture natively) |
+| `File I/O` inside `pure-logic` | `src/specweaver/workspace/parsers/exclusions.py` | `workspace/parsers` archetype `pure-logic` forbids OS/File I/O | DEFERRED (Pending Feature 3.32b SF-4 which abstracts physical OS traversals securely via dependency injection bounds) |
+
 
 > **Resolved in Feature 3.32 SF-4 (Pipeline Execution Optimization):**
 > - **Sandbox Cache Caching (NFR-2)**: Initially, `flow/engine` utilized `os.symlink` locally. This was struck down as an architectural violation of the FileSystem boundaries. It was refactored strictly to trigger `FileSystemAtom` natively ensuring path traversal boundaries are enforced.

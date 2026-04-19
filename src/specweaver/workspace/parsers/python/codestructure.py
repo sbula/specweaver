@@ -396,3 +396,9 @@ class PythonCodeStructure(CodeStructureInterface):
             + code_bytes[end_byte:]
         )
         return mutated.decode("utf-8")
+
+    def get_binary_ignore_patterns(self) -> list[str]:
+        return ["*.pyc", "*.pyo", "*.pyd"]
+
+    def get_default_directory_ignores(self) -> list[str]:
+        return ["__pycache__/", ".pytest_cache/", ".tox/", ".venv/"]

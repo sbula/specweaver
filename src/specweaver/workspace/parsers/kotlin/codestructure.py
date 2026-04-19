@@ -383,3 +383,9 @@ class KotlinCodeStructure(CodeStructureInterface):
             + code_bytes[insert_point:]
         )
         return mutated.decode("utf-8")
+
+    def get_binary_ignore_patterns(self) -> list[str]:
+        return ["*.class", "*.jar"]
+
+    def get_default_directory_ignores(self) -> list[str]:
+        return ["target/", "build/", ".gradle/"]

@@ -75,3 +75,9 @@ class MarkdownCodeStructure(CodeStructureInterface):
 
     def extract_imports(self, code: str) -> list[str]:
         return []
+
+    def get_binary_ignore_patterns(self) -> list[str]:
+        return []
+
+    def get_default_directory_ignores(self) -> list[str]:
+        return []

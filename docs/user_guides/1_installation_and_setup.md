@@ -49,3 +49,16 @@ podman run --env-file .env \
   ghcr.io/sbula/specweaver
 ```
 *Note: SQLite requires standard disk boundaries. You cannot map network-attached volumes (like CIFS) over strict WAL modes without configuring exceptions.*
+
+## 6. Smart Scan Exclusions (`.specweaverignore`)
+SpecWeaver's pipeline engines utilize deep polyglot AST traversal to map your project topology. To prevent SpecWeaver from unnecessarily scanning generated binaries, dependency files, or proprietary logic, it inherently restricts scope via an intelligent fallback sequence:
+
+1. **Native Polyglot Exclusions:** The parser implicitly avoids known compiler artifacts mathematically mapd by Language type (e.g. `*.pyc`, `*.jar`, `node_modules/`, `target/`).
+2. **User Override:** You can strictly override these settings mathematically by creating a `.specweaverignore` physically within your project's root directory, matching the classic `.gitignore` syntax logic precisely.
+
+```bash
+# Example .specweaverignore implementation:
+build/
+docs/legacy_drafts/
+!important_cache.pyc
+```

@@ -39,3 +39,21 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 |------------------|------|-------------|-----|
 | `PromptBuilder.add_file()` | ✅ | — | — |
 | `PromptBuilder.add_mentioned_files()` | ✅ | — | — |
+
+## `src/specweaver/workspace/parsers/exclusions.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| SpecWeaverIgnoreParser.ensure_scaffolded() | ✅ | ❌ | ❌ |
+| SpecWeaverIgnoreParser.get_compiled_spec() | ✅ | ❌ | ❌ |
+
+## `src/specweaver/workspace/parsers/interfaces.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| CodeStructureInterface.get_binary_ignore_patterns() | ✅ | — | — |
+| CodeStructureInterface.get_default_directory_ignores() | ✅ | — | — |
+
+## `src/specweaver/workspace/parsers/*/codestructure.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| get_binary_ignore_patterns() | ✅ | — | — |
+| get_default_directory_ignores() | ✅ | — | — |
