@@ -33,6 +33,10 @@ SCM_SYMBOL_QUERY = """
 (class_definition name: (identifier) @name)
 """
 
+SCM_COMMENT_QUERY = """
+(comment) @comment
+"""
+
 
 class PythonCodeStructure(CodeStructureInterface):
     """Python tree-sitter structural parser."""
@@ -364,6 +368,28 @@ class PythonCodeStructure(CodeStructureInterface):
                 if is_class:
                     markers[symbol]["extends"] = self._extract_bases(target)
         return markers
+
+    def extract_traceability_tags(self, code: str) -> set[str]:
+        if not code.strip():
+            return set()
+        tree = self.parser.parse(code.encode("utf-8"))
+        query = Query(self.language, SCM_COMMENT_QUERY)
+        cursor = QueryCursor(query)
+        tags: set[str] = set()
+
+        import re
+        trace_pattern = re.compile(r"@trace\(([^)]+)\)")
+
+        for _, match_dict in cursor.matches(tree.root_node):
+            if "comment" in match_dict:
+                for comment_node in match_dict["comment"]:
+                    text = typing.cast("bytes", comment_node.text).decode("utf-8")
+                    match = trace_pattern.search(text)
+                    if match:
+                        content = match.group(1)
+                        for part in content.split(","):
+                            tags.add(part.strip())
+        return tags
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
         code_bytes = code.encode("utf-8")

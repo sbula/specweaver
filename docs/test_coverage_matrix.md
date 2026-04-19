@@ -57,3 +57,15 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 |------------------|------|-------------|-----|
 | get_binary_ignore_patterns() | ✅ | — | — |
 | get_default_directory_ignores() | ✅ | — | — |
+| extract_traceability_tags() | ✅ | — | — |
+
+## `src/specweaver/workspace/context/analyzers.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `get_test_file_pattern()` | ✅ | — | — |
+| `extract_test_mapped_requirements()` | ✅ | ❌ | — |
+
+## `src/specweaver/assurance/validation/rules/code/c09_traceability.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `_find_and_parse_tests()` | ✅ | ✅ | ✅ |

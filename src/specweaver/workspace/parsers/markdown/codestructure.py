@@ -81,3 +81,6 @@ class MarkdownCodeStructure(CodeStructureInterface):
 
     def get_default_directory_ignores(self) -> list[str]:
         return []
+
+    def extract_traceability_tags(self, code: str) -> set[str]:
+        return set()

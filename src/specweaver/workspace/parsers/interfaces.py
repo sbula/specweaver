@@ -97,6 +97,17 @@ class CodeStructureInterface(ABC):
         """Extract framework-specific markers like annotations, decorators, and inheritance."""
 
     @abstractmethod
+    def extract_traceability_tags(self, code: str) -> set[str]:
+        """Extract all `@trace(ID)` tags embedded in source comments.
+
+        Args:
+            code: The raw source code of the file.
+
+        Returns:
+            A set of strings containing the exact trace IDs (e.g. {'FR-1', 'NFR-2'}).
+        """
+
+    @abstractmethod
     def extract_imports(self, code: str) -> list[str]:
         """Extract all module import paths from the file.
 

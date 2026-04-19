@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
+from specweaver.workspace.context.analyzers import AnalyzerFactory
 
 logger = logging.getLogger(__name__)
 
@@ -92,56 +93,14 @@ class TraceabilityRule(Rule):
                 logger.debug("Failed reading spec file %s: %s", spec_file, e)
         return target_ids
 
-    def _discover_test_files(self, project_root: Path) -> list[Path]:
-        if not project_root.is_dir():
-            return []
-
-        test_files = list(project_root.rglob("test_*.py"))
-        test_files.extend(project_root.rglob("*_test.py"))
-        return test_files
-
     def _find_and_parse_tests(self, project_root: Path) -> set[str]:
-        """Find test files and parse ASTs to extract trace tags cleanly from comments."""
-        test_files = self._discover_test_files(project_root)
-        if not test_files:
-            return set()
-
+        """Find test files using AnalyzerFactory and aggregate their trace tags."""
         mapped_ids: set[str] = set()
 
-        try:
-            import tree_sitter
-            import tree_sitter_python
-
-            parser = tree_sitter.Parser(tree_sitter.Language(tree_sitter_python.language()))
-        except ImportError:
-            logger.warning(
-                "tree_sitter or tree_sitter_python not installed, skipping trace extraction."
-            )
-            return set()
-
-        for path in test_files:
+        for analyzer in AnalyzerFactory.get_all_analyzers():
             try:
-                source = path.read_bytes()
-                tree = parser.parse(source)
-                self._extract_traces(tree.root_node, source, mapped_ids)
+                mapped_ids.update(analyzer.extract_test_mapped_requirements(project_root))
             except Exception as e:
-                logger.debug("Failed AST parsing for traceability on %s: %s", path, e)
+                logger.debug("Failed extracting tags via %s: %s", type(analyzer).__name__, e)
 
         return mapped_ids
-
-    def _extract_traces(self, root_node: Any, source: bytes, mapped_ids: set[str]) -> None:
-        """Recursively search strictly for AST nodes of type 'comment'."""
-
-        def visit(node: Any) -> None:
-            if node.type == "comment":
-                text = source[node.start_byte : node.end_byte].decode("utf-8", errors="ignore")
-                matches = re.findall(r"@trace\((?:N)?FR-\d+\)", text)
-                for match in matches:
-                    # extract inner requirement ID, e.g. "FR-123"
-                    req_id = match.split("(")[1].split(")")[0]
-                    mapped_ids.add(req_id)
-            elif hasattr(node, "children"):
-                for child in node.children:
-                    visit(child)
-
-        visit(root_node)

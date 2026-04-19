@@ -216,6 +216,20 @@ class LanguageAnalyzer(ABC):
         """Get polyglot directory suppression patterns (e.g., target/, node_modules/)."""
         ...
 
+    @abstractmethod
+    def get_test_file_pattern(self) -> str:
+        """Get the language-specific glob pattern for test files (e.g. test_*.py)."""
+        ...
+
+    @abstractmethod
+    def extract_test_mapped_requirements(self, directory: Path) -> set[str]:
+        """Extract all traceability requirements dynamically mapped to test files within this directory.
+
+        Will deeply crawl test directories matching the language's native test patterns and
+        aggregate tags defined in standard tree-sitter comment tags.
+        """
+        ...
+
 
 
 class TreeSitterAnalyzerBase(LanguageAnalyzer):
@@ -278,6 +292,29 @@ class TreeSitterAnalyzerBase(LanguageAnalyzer):
         """Delegates directory ignores to the underlying code structure parser."""
         return self.parser.get_default_directory_ignores()
 
+    def extract_test_mapped_requirements(self, directory: Path) -> set[str]:
+        """Deeply aggregate trace tags from all test-matching files, preventing traversal of ignored limits."""
+        import fnmatch
+        import os
+        from pathlib import Path
+
+        tags: set[str] = set()
+        pattern = self.get_test_file_pattern()
+        ignores = {ign.rstrip("/") for ign in self.get_default_directory_ignores()}
+
+        for root_str, dirs, files in os.walk(directory):
+            # Prune ignored directories in-place
+            dirs[:] = [d for d in dirs if d not in ignores and not d.startswith(".")]
+
+            for file_name in fnmatch.filter(files, pattern):
+                file_path = Path(root_str) / file_name
+                try:
+                    code_text = file_path.read_text(encoding="utf-8")
+                    extracted = self.parser.extract_traceability_tags(code_text)
+                    tags.update(extracted)
+                except Exception as e:
+                    logger.debug("Failed to extract traceability from %s: %s", file_path, e)
+        return tags
     @abstractmethod
     def _get_import_prefix(self, imp: str) -> str:
         """Extract the root module/namespace from the import string for checking."""
@@ -310,6 +347,9 @@ class PythonAnalyzer(TreeSitterAnalyzerBase):
     def _is_external(self, top: str) -> bool:
         return top not in _STDLIB_TOP_MODULES and not top.startswith("specweaver")
 
+    def get_test_file_pattern(self) -> str:
+        return "test_*.py"
+
 
 class JavaAnalyzer(TreeSitterAnalyzerBase):
     def __init__(self) -> None:
@@ -325,6 +365,9 @@ class JavaAnalyzer(TreeSitterAnalyzerBase):
         return not (
             top.startswith("java.") or top.startswith("javax.") or top.startswith("specweaver")
         )
+
+    def get_test_file_pattern(self) -> str:
+        return "*Test.java"
 
 
 class KotlinAnalyzer(TreeSitterAnalyzerBase):
@@ -345,6 +388,9 @@ class KotlinAnalyzer(TreeSitterAnalyzerBase):
             or top.startswith("specweaver")
         )
 
+    def get_test_file_pattern(self) -> str:
+        return "*Test.kt"
+
 
 class RustAnalyzer(TreeSitterAnalyzerBase):
     def __init__(self) -> None:
@@ -358,6 +404,9 @@ class RustAnalyzer(TreeSitterAnalyzerBase):
 
     def _is_external(self, top: str) -> bool:
         return top not in ("std", "core", "alloc", "specweaver")
+
+    def get_test_file_pattern(self) -> str:
+        return "*_scenarios.rs"
 
 
 class TypeScriptAnalyzer(TreeSitterAnalyzerBase):
@@ -391,6 +440,9 @@ class TypeScriptAnalyzer(TreeSitterAnalyzerBase):
         if top.startswith("node:") or top in builtins:
             return False
         return not (top.startswith("specweaver") or top.startswith("src/"))
+
+    def get_test_file_pattern(self) -> str:
+        return "*.test.ts"
 
 
 class AnalyzerFactory:

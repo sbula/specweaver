@@ -35,6 +35,9 @@ def test_code_structure_interface_enforces_abstract_methods():  # noqa: C901
         def get_default_directory_ignores(self) -> list[str]:
             return ["mock_modules/"]
 
+        def extract_traceability_tags(self, code: str) -> set[str]:
+            return set()
+
     parser = CompleteParser()
     assert parser.get_binary_ignore_patterns() == ["*.mock"]
     assert parser.get_default_directory_ignores() == ["mock_modules/"]

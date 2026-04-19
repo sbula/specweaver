@@ -355,3 +355,102 @@ class TestPolyglotLanguageAnalyzer:
         # Python parser adds .venv, env, .pytest_cache
         assert ".venv/" in dirs
         assert ".pytest_cache/" in dirs
+
+class TestLanguageAnalyzerTraceability:
+    """Test traceability tag extraction across test directories."""
+
+    def test_extract_test_mapped_requirements_aggregates_files(self, tmp_path: Path) -> None:
+        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        # Setup specific test file names so search.py iter_text_files will find them
+        # Wait, the search.py tool isn't used directly here, we just use Path.rglob or iter_test_files
+        pkg = tmp_path / "tests"
+        pkg.mkdir()
+
+        (pkg / "test_one.py").write_text(
+            "def test_1():\n"
+            "    # @trace(FR-1, FR-2)\n"
+            "    pass\n"
+        )
+        (pkg / "test_two.py").write_text(
+            "def test_2():\n"
+            "    # @trace(NFR-1)\n"
+            "    pass\n"
+        )
+
+        analyzer = PythonAnalyzer()
+        tags = analyzer.extract_test_mapped_requirements(pkg)
+        assert tags == {"FR-1", "FR-2", "NFR-1"}
+
+    def test_extract_test_mapped_requirements_filters_test_files_only(self, tmp_path: Path) -> None:
+        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        pkg = tmp_path / "src"
+        pkg.mkdir()
+        (pkg / "main.py").write_text(
+            "def run():\n"
+            "    # @trace(NOT-A-TEST-DONT-INCLUDE)\n"
+            "    pass\n"
+        )
+
+        analyzer = PythonAnalyzer()
+        tags = analyzer.extract_test_mapped_requirements(pkg)
+        assert tags == set()
+
+    def test_extract_test_mapped_requirements_skips_ignored_directories(self, tmp_path: Path) -> None:
+
+        from specweaver.workspace.context.analyzers import TypeScriptAnalyzer
+
+        # Setup a project directory
+        root = tmp_path / "project"
+        root.mkdir()
+
+        # Valid test folder
+        valid_dir = root / "src"
+        valid_dir.mkdir()
+        (valid_dir / "app.test.ts").write_text("// @trace(FR-1)")
+
+        # Ignored node_modules folder
+        node_modules = root / "node_modules"
+        node_modules.mkdir()
+
+        bad_pkg = node_modules / "bad_pkg"
+        bad_pkg.mkdir()
+        (bad_pkg / "something.test.ts").write_text("// @trace(FR-999)")
+
+        # Hidden folder
+        hidden_dir = root / ".hidden"
+        hidden_dir.mkdir()
+        (hidden_dir / "secret.test.ts").write_text("// @trace(FR-888)")
+
+        analyzer = TypeScriptAnalyzer()
+        tags = analyzer.extract_test_mapped_requirements(root)
+
+        assert tags == {"FR-1"}
+        assert "FR-999" not in tags
+        assert "FR-888" not in tags
+
+    def test_extract_test_mapped_requirements_handles_exceptions_safely(self, tmp_path: Path) -> None:
+        from pathlib import Path
+        from unittest.mock import patch
+
+        from specweaver.workspace.context.analyzers import PythonAnalyzer
+
+        root = tmp_path / "project"
+        root.mkdir()
+
+        (root / "test_good.py").write_text("# @trace(FR-1)")
+        (root / "test_bad.py").write_text("# @trace(FR-2)")
+
+        analyzer = PythonAnalyzer()
+
+        original_read_text = Path.read_text
+
+        def mock_read_text(self, *args, **kwargs):
+            if "test_bad.py" in str(self):
+                raise PermissionError("Access denied")
+            return original_read_text(self, *args, **kwargs)
+
+        with patch.object(Path, 'read_text', autospec=True, side_effect=mock_read_text):
+            tags = analyzer.extract_test_mapped_requirements(root)
+
+        # Should gracefully ignore the bad file and return the good one
+        assert tags == {"FR-1"}

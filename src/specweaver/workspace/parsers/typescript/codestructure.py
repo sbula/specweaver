@@ -35,6 +35,10 @@ SCM_SYMBOL_QUERY = """
 """
 
 
+SCM_COMMENT_QUERY = """
+(comment) @comment
+"""
+
 class TypeScriptCodeStructure(CodeStructureInterface):
     def __init__(self) -> None:
         self.language = Language(tree_sitter_typescript.language_typescript())
@@ -103,6 +107,29 @@ class TypeScriptCodeStructure(CodeStructureInterface):
                             return typing.cast("bytes", wrapper.text).decode("utf-8")
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
+
+
+    def extract_traceability_tags(self, code: str) -> set[str]:
+        if not code.strip():
+            return set()
+        tree = self.parser.parse(code.encode("utf-8"))
+        query = Query(self.language, SCM_COMMENT_QUERY)
+        cursor = QueryCursor(query)
+        tags: set[str] = set()
+
+        import re
+        trace_pattern = re.compile(r"@trace\(([^)]+)\)")
+
+        for _, match_dict in cursor.matches(tree.root_node):
+            if "comment" in match_dict:
+                for comment_node in match_dict["comment"]:
+                    text = typing.cast("bytes", comment_node.text).decode("utf-8")
+                    match = trace_pattern.search(text)
+                    if match:
+                        content = match.group(1)
+                        for part in content.split(","):
+                            tags.add(part.strip())
+        return tags
 
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():
