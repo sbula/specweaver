@@ -9,7 +9,7 @@
 
 | Priority | Feature | Proposal Phase |
 |:---|:---|:---|
-| **5.1** | Persistent topology graph (serialized JSON → FalkorDB) | Phase D.1 → D.2 |
+| **5.1** | Persistent topology graph (serialized JSON → PostgreSQL / Apache AGE) | Phase D.1 → D.2 |
 | **5.2** | Event-driven knowledge graph (EDKG) — file/commit triggers update nodes/edges | Phase D |
 | **5.3** | Hash-based garbage collection for graph nodes | Phase D |
 | **5.4** | Hybrid RAG orchestration — graph-guided vector search + **composite scoring** | Phase C + D. _(Enhanced with CrewAI's scoring formula: `semantic × similarity + recency × decay + importance × weight`, configurable half-life profiles per knowledge type — ORIGINS.md § CrewAI)_ |
@@ -18,7 +18,7 @@
 | **5.6** | Socratic drafting flow — topology-aware questioning during `sw draft` | Phase A+B (seeds in Phase 2) |
 | **5.7** | **Memory consolidation** — LLM-powered knowledge deduplication | _(new)_ When new knowledge overlaps with existing, LLM decides: keep, update, delete, or insert_new. Prevents infinite knowledge growth. _(Blueprint: CrewAI's `consolidation_threshold` and merge logic — ORIGINS.md § CrewAI)_ |
 | **5.8** | 🔬 **Dynamic routing engine + AI Arbiter** | _(split from original 3.12)_ — Automatic model selection using Attributed Lifecycle Score (ALS). AI-powered fault attribution across multi-model, cross-lifecycle pipelines. **Science fiction today** — depends on persistent knowledge graph (5.1-5.5), labeled training data (5.5a), and solving the credit assignment problem. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md). |
-| **5.9** | **Repository Entropy & Garbage Collection** (Entropy Agent) | _(new)_ | An offline cron-agent utilizing the `FalkorDB` persistent topology graph to mathematically detect and automatically delete completely unreferenced AST nodes/dead code modules across the monolithic repository. |
+| **5.9** | **Repository Entropy & Garbage Collection** (Entropy Agent) | _(new)_ | An offline cron-agent utilizing the `PostgreSQL` persistent topology graph to mathematically detect and automatically delete completely unreferenced AST nodes/dead code modules across the monolithic repository. |
 
 ---
 

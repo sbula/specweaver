@@ -8,7 +8,7 @@
 - **Markdown AST Mutators (SF-3):** Formally implement `extract_symbols()` and `rewrite_symbol_body()` on the newly established `MarkdownCodeStructure` module (`src/specweaver/core/loom/commons/language/markdown/`). Treat Markdown headings (e.g. `## Intent`) natively as code block symbols. This enables surgical LLM refactoring of documentation to completely eliminate the blind-overwrite truncation risk for large Spec documents.
 
 ### Feature 3.32: Deep Semantic Hashing
-- **External Semantic Hash Backends (Rocket Mode):** Upgrades the mapped local flat-file `.specweaver/topology.cache.json` caching bounds natively to support streaming Merkle-tree hashes dynamically into heavy multi-tenant Graph DB Sidecars (FalkorDB/Neo4j). This allows scaling topology graphs endlessly across 100+ disjoint microservice repos independently of locally structured system directories.
+- **External Semantic Hash Backends (Rocket Mode):** Upgrades the mapped local flat-file `.specweaver/topology.cache.json` caching bounds natively to support streaming Merkle-tree hashes dynamically into a unified PostgreSQL (Apache AGE + pgvector) sidecar. This allows scaling topology graphs endlessly across 100+ disjoint microservice repos independently of locally structured system directories.
 
 ### Feature 3.25: Router-Based Flow Control
 - **Postponed Items:** (Refer to `feature_3_25_implementation_plan.md` for specific deferred router mapping capabilities).
