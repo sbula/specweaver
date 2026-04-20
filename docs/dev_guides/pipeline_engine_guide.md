@@ -196,3 +196,14 @@ Starting in Feature 3.32, the SpecWeaver pipeline engine natively supports mathe
 - **The Graph Crawler**: The engine evaluates structural drift natively by calling `TopologyGraph.from_project()`. This internally computes Merkel-tree hashes across the OS directory paths.
 - **The Stale Nodes Property**: Handlers executing pipeline iterations explicitly examine `TopologyGraph.stale_nodes`. Any module missing from this mathematically calculated diff set dynamically yields its execution wave entirely, allowing the runner to auto-bypass testing or orchestration of pristine paths.
 - **Tombstone Fallback**: If a component's target dependency was outright deleted from the file system, the `TopologyGraph` statically detects the dangling reference and intrinsically flags the consumer itself as `stale`, preventing silent downstream CI failure propagation.
+
+---
+
+## 10. Vault Binding Shield (Option D)
+
+To strictly enforce NFR-2 (Process Isolation and Credential Security) from Feature 3.32c, the Pipeline Engine features a native boot-time security gate called the **Vault Binding Shield**.
+
+### Mechanism & Sequence
+- **Pre-Flight Execution (FR-1)**: Before evaluating any YAML routing steps, `PipelineRunner.run()` and `PipelineRunner.resume()` autonomously interrogate the physical filesystem for the existence of `.specweaver/vault.env`.
+- **Architectural Boundary Adherence**: The engine absolutely NEVER runs explicit `subprocess.run` OS calls from within configuration abstractions. Instead, it delegates purely to `GitAtom` to run `git ls-files --error-unmatch` via an intent (`_intent_is_tracked`). 
+- **Dictatorial Abort**: If `GitAtom` reports that the `vault.env` is tracked in the git index, the Runner violently raises a `RuntimeError` and brutally terminates the Python interpreter process. It assumes the pipeline environment has suffered an unauthorized human git commit exposing plaintext credentials to version control. No loops, no HITL gates—the orchestrator dies immediately to prevent any state writes or upstream pushes.

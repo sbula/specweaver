@@ -29,6 +29,20 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | `TopologyGraph._calculate_stale_seeds()` | ✅ | ✅ | ✅ |
 | `TopologyGraph.stale_nodes` | ✅ | ✅ | ✅ |
 
+## `src/specweaver/core/flow/engine/runner.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `PipelineRunner._verify_vault_security()` | ✅ | — | — |
+| `PipelineRunner.resume()` | ✅ | ✅ | ✅ |
+| `PipelineRunner.run()` | ✅ | ✅ | ✅ |
+
+## `src/specweaver/core/loom/atoms/git/atom.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `GitAtom._intent_is_tracked()` | ✅ | — | — |
+| `GitAtom._intent_worktree_teardown()` | ✅ | — | — |
+| `GitAtom._intent_strip_merge()` | ✅ | — | — |
+
 ## `src/specweaver/infrastructure/llm/_skeleton.py`
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|

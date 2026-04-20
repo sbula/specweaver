@@ -240,3 +240,16 @@ Instead of recursively parsing the AST mappings globally on every run, SpecWeave
 > When computing staleness (`_calculate_stale_seeds`), if a dependent module is completely deleted from the disk, it vanishes from the physical directory scan mapping. However, historical consumers of that module will still explicitly declare an overarching `consumes: [deleted_module]` relationship inside their `context.yaml`. 
 > The crawler explicitly flags any consumer possessing a dangling dependency reference natively as a `stale_seed` to guarantee upstream consumers fail their test suites predictably.
 
+---
+
+## 16. The Vault Binding Shield (Option D)
+
+When upgrading the core pipeline to support external credentials for Model Context Protocol (MCP) integrations (Feature 3.32c), we faced a severe credential leakage risk: how do we prevent users or LLMs from accidentally `git commit`ting `.specweaver/vault.env` to the remote repository?
+
+### How it works:
+Instead of trying to manipulate or parse `Pydantic` settings during YAML loading, we fundamentally bypass the configuration layer. `PipelineRunner.run()` and `PipelineRunner.resume()` autonomously invoke a pre-flight filesystem check early in the boot sequence. If `.specweaver/vault.env` exists, the `PipelineRunner` natively dispatches pure `GitAtom` intents (`_intent_is_tracked`) to check `git ls-files --error-unmatch .specweaver/vault.env`. 
+
+### Why we do it:
+1. **Architectural Pure-Logic Boundaries**: Configuration models (`context.yaml`) are located in L2 `config` and `assurance` layers. Running arbitrary `subprocess.run(["git", "ls-files"])` from inside configuration violates our Tach domain bounds cleanly, cross-contaminating physical executables into pure domain logic. By injecting the check exclusively into the orchestrator layer (L3 Flow), we natively utilize valid `Loom Atom` paths to execute Git binaries securely.
+2. **Dictatorial Execution Integrity**: If `GitAtom` returns that the vault file is tracked, the Runner actively shuts down the interpreter via a violent `RuntimeError`. It assumes the repository is inherently compromised. There is no fallback, no auto-rollback, and noHITL mitigation—it kills the pipeline immediately to prevent pushing credentials upstream.
+

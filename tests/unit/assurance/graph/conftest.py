@@ -23,6 +23,8 @@ def _write_context(
     forbids: list[str] | None = None,
     constraints: list[str] | None = None,
     operational: dict | None = None,
+    mcp_servers: dict[str, dict] | None = None,
+    consumes_resources: list[str] | None = None,
 ) -> Path:
     """Write a context.yaml to a directory."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -42,6 +44,10 @@ def _write_context(
         data["constraints"] = constraints
     if operational:
         data["operational"] = operational
+    if mcp_servers:
+        data["mcp_servers"] = mcp_servers
+    if consumes_resources:
+        data["consumes_resources"] = consumes_resources
     yaml = YAML()
     yaml.default_flow_style = False
     yaml.dump(data, directory / "context.yaml")

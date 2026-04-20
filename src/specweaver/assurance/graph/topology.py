@@ -16,6 +16,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path  # noqa: TC003 — used at runtime in from_project() and dataclass fields
+from typing import Any
 
 from ruamel.yaml import YAML
 
@@ -47,6 +48,8 @@ class TopologyNode:
     exposes: list[str] = field(default_factory=list)
     forbids: list[str] = field(default_factory=list)
     constraints: list[str] = field(default_factory=list)
+    mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)
+    consumes_resources: list[str] = field(default_factory=list)
     operational: OperationalMetadata | None = None
     yaml_path: Path | None = None
 
@@ -242,6 +245,8 @@ class TopologyGraph:
                 exposes=data.get("exposes", []) or [],
                 forbids=data.get("forbids", []) or [],
                 constraints=data.get("constraints", []) or [],
+                mcp_servers=data.get("mcp_servers", {}) or {},
+                consumes_resources=data.get("consumes_resources", []) or [],
                 operational=operational,
                 yaml_path=ctx_file,
             )

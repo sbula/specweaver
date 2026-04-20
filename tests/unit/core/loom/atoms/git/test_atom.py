@@ -67,6 +67,7 @@ class TestDispatch:
             "worktree_teardown",
             "worktree_sync",
             "strip_merge",
+            "is_tracked",
         }
         assert atom._known_intents() == expected
 
@@ -530,6 +531,7 @@ class TestEdgeCases:
             "rebase",
             "tag",
             "worktree",
+            "ls-files",
         }
         assert expected == GitAtom._ENGINE_WHITELIST
 
@@ -611,6 +613,37 @@ class TestWorktreeAdd:
             )
         assert result.status == AtomStatus.FAILED
         assert "fatal" in result.message
+
+
+# ---------------------------------------------------------------------------
+# is_tracked
+# ---------------------------------------------------------------------------
+
+
+class TestIsTracked:
+    """is_tracked checks if a file is explicitly tracked in the git index."""
+
+    def test_missing_path_fails(self, tmp_path: Path) -> None:
+        atom = GitAtom(cwd=tmp_path)
+        result = atom.run({"intent": "is_tracked"})
+        assert result.status == AtomStatus.FAILED
+        assert "Missing 'path'" in result.message
+
+    def test_tracked_file_returns_true(self, tmp_path: Path) -> None:
+        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+            mock.return_value = type("R", (), {"returncode": 0, "stdout": "path/file.txt\n", "stderr": ""})()
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run({"intent": "is_tracked", "path": "path/file.txt"})
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["is_tracked"] is True
+
+    def test_untracked_file_returns_false(self, tmp_path: Path) -> None:
+        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+            mock.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+            atom = GitAtom(cwd=tmp_path)
+            result = atom.run({"intent": "is_tracked", "path": "path/untracked.txt"})
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["is_tracked"] is False
 
 
 # ---------------------------------------------------------------------------

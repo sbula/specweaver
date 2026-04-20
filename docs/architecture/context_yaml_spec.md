@@ -144,6 +144,17 @@ operational:                          # OPTIONAL — runtime/SLA characteristics
   reliability_target: 0.999           #   Target availability (0.0-1.0)
   async_ready: true                   #   Does this module support async/await?
   concurrency_model: asyncio          #   asyncio | threading | process | none
+
+# ── External Model Context (MCP) ──────────────────────────
+mcp_servers:                          # OPTIONAL — External Context providers
+  postgres-dwh:                       #   Alias for the server instance
+    command: "docker"
+    args: ["run", "-i", "--rm", "mcp/postgres"]
+    env:
+      DB_PASS: "${vault.DB_PASS}"     # Native substitution via vault.env
+
+consumes_resources:                   # OPTIONAL — Pre-fetch URIs before generation
+  - "postgres://schema/public"        # Evaluated and injected into Agent Envelope
 ```
 
 ### Required fields
@@ -168,6 +179,8 @@ operational:                          # OPTIONAL — runtime/SLA characteristics
 | `owner` | `string` | Team or person responsible for this boundary |
 | `constraints` | `list[string]` | Free-form rules that the Veto Agent checks against |
 | `operational` | `object` | Runtime/SLA characteristics (see Operational Metadata below) |
+| `mcp_servers` | `object` | Definitions for external Model Context Protocol processes |
+| `consumes_resources` | `list[string]` | MCP URIs strictly injected as pre-fetched schemas before Agent execution |
 
 ---
 

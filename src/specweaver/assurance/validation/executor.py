@@ -13,7 +13,7 @@ synchronous executor internal to validation handlers.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import RuleResult, Status
 

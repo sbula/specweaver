@@ -62,3 +62,15 @@ build/
 docs/legacy_drafts/
 !important_cache.pyc
 ```
+
+## 7. Model Context Protocol (MCP) & Vault Configuration
+Starting with Feature 3.32c, SpecWeaver supports context pre-fetching against live external tools (e.g. Postgres databases or Atlassian APIs) utilizing the Model Context Protocol.
+
+### Setting Up Vault Credentials
+If your pipelines declare `mcp_servers` mappings inside `.specweaver/pipelines`, they will require physical runtime credentials. **It is incredibly dangerous to store database proxies natively inside codebases**. SpecWeaver protects you using the isolated Vault map. 
+
+To inject credentials without causing a pipeline abortion:
+1. Create a raw `.env` file cleanly situated at `.specweaver/vault.env`.
+2. Ensure you immediately add `.specweaver/vault.env` to your global `.gitignore` scope. 
+
+**The Pipeline Orchestrator actively scans this protection boundary. If the Vault configuration file is mathematically tracked inside your Git commit scope, SpecWeaver will dictate an immediate interpreter crash to prevent accidental credentials leakage.**

@@ -40,6 +40,19 @@ class TestFromProject:
         graph = TopologyGraph.from_project(single_node, auto_infer=False)
         assert graph.nodes["alpha"].purpose == "The only module."
 
+    def test_node_mcp_fields(self, tmp_path: Path) -> None:
+        _write_context(
+            tmp_path / "gamma",
+            name="gamma",
+            purpose="MCP test.",
+            mcp_servers={"localdb": {"command": "sqlite"}},
+            consumes_resources=["mcp://localdb/users"]
+        )
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        node = graph.nodes["gamma"]
+        assert node.mcp_servers == {"localdb": {"command": "sqlite"}}
+        assert node.consumes_resources == ["mcp://localdb/users"]
+
 
 # ---------------------------------------------------------------------------
 # Query tests

@@ -470,3 +470,91 @@ class TestPipelineRunnerStalenessBypass:
         assert result.step_records[0].status == StepStatus.PASSED
         assert result.step_records[0].result.output is not None
         # In a real atom, it reads context.stale_nodes
+
+
+class TestPipelineRunnerVaultSecurity:
+    """Tests for SF-1: Vault Bindings Security Option D."""
+
+    @pytest.mark.asyncio
+    async def test_vault_security_bypass_if_missing(self, tmp_path: Path) -> None:
+        """If vault.env is missing, runner proceeds normally."""
+        pipeline = _make_pipeline(step_count=1)
+        ctx = _make_context(tmp_path)
+        registry = _make_registry(PassHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry)
+
+        result = await runner.run()
+        assert result.status == RunStatus.COMPLETED
+
+    @pytest.mark.asyncio
+    async def test_vault_security_aborts_if_tracked(self, tmp_path: Path) -> None:
+        """If vault.env is tracked by Git, runner violently aborts."""
+        # 1. Create a mock project with a vault file
+        vault_file = tmp_path / ".specweaver" / "vault.env"
+        vault_file.parent.mkdir()
+        vault_file.write_text("DB_PASS=secret\n")
+
+        # 2. Make it a git repo and TRACK the file
+        import subprocess
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
+        subprocess.run(["git", "add", ".specweaver/vault.env"], cwd=tmp_path, capture_output=True, check=True)
+
+        pipeline = _make_pipeline(step_count=1)
+        ctx = _make_context(tmp_path)
+        registry = _make_registry(PassHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry)
+
+        # 3. Runner should natively intercept and raise RuntimeError
+        with pytest.raises(RuntimeError, match=r"FATAL: vault\.env is currently tracked by Git!"):
+            await runner.run()
+
+    @pytest.mark.asyncio
+    async def test_vault_security_bypass_if_untracked(self, tmp_path: Path) -> None:
+        """If vault.env exists but is intentionally gitignored/untracked, runner proceeds."""
+        vault_file = tmp_path / ".specweaver" / "vault.env"
+        vault_file.parent.mkdir()
+        vault_file.write_text("DB_PASS=secret\n")
+
+        # Make it a git repo, but DO NOT track the file (we'll ignore it)
+        import subprocess
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
+        # Verify it exists but is untracked
+        ignored_file = tmp_path / ".gitignore"
+        ignored_file.write_text(".specweaver/vault.env\n")
+
+        pipeline = _make_pipeline(step_count=1)
+        ctx = _make_context(tmp_path)
+        registry = _make_registry(PassHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry)
+
+        result = await runner.run()
+        assert result.status == RunStatus.COMPLETED
+
+    @pytest.mark.asyncio
+    async def test_vault_security_aborts_on_resume_if_tracked(self, tmp_path: Path) -> None:
+        """If vault.env becomes tracked during a parked run, resume() violently aborts."""
+        store = StateStore(tmp_path / "state.db")
+        pipeline = _make_pipeline(step_count=2)
+        ctx = _make_context(tmp_path)
+
+        # 1. Start safely
+        park_reg = _make_registry(ParkHandler())
+        runner1 = PipelineRunner(pipeline, ctx, registry=park_reg, store=store)
+        parked = await runner1.run()
+        assert parked.status == RunStatus.PARKED
+
+        # 2. Maliciously track the vault file while parked
+        vault_file = tmp_path / ".specweaver" / "vault.env"
+        vault_file.parent.mkdir(exist_ok=True)
+        vault_file.write_text("DB_PASS=stolen\n")
+
+        import subprocess
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
+        subprocess.run(["git", "add", ".specweaver/vault.env"], cwd=tmp_path, capture_output=True, check=True)
+
+        # 3. Attempt to resume
+        pass_reg = _make_registry(PassHandler())
+        runner2 = PipelineRunner(pipeline, ctx, registry=pass_reg, store=store)
+
+        with pytest.raises(RuntimeError, match=r"FATAL: vault\.env is currently tracked by Git!"):
+            await runner2.resume(parked.run_id)

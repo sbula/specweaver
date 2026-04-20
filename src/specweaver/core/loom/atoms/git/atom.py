@@ -58,6 +58,7 @@ class GitAtom(Atom):
             "rebase",
             "tag",  # tag
             "worktree",
+            "ls-files", # is_tracked
         }
     )
 
@@ -421,47 +422,8 @@ class GitAtom(Atom):
         Context keys:
             path: str - relative path to the worktree to remove.
         """
-        path = context.get("path")
-        if not path:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message="Missing 'path' in context for worktree_teardown intent.",
-            )
-
-        # Primary vector
-        result = self._executor.run("worktree", "remove", "--force", str(path))
-        if result.exit_code == 0:
-            return AtomResult(
-                status=AtomStatus.SUCCESS,
-                message=f"Removed worktree cleanly: {path}",
-            )
-
-        # Windows file locking fallback
-        wt_path = self._cwd / path
-        logger.warning("Git worktree remove failed: %s. Engaging shutil fallback.", result.stderr)
-
-        if wt_path.exists():
-            # NFR-1 / NFR-3: 5 iteration progressive backoff under 2s total
-            delays = [0.05, 0.1, 0.2, 0.4, 0.75]
-            for attempt, delay in enumerate(delays):
-                try:
-                    shutil.rmtree(wt_path, ignore_errors=False)
-                    break
-                except Exception as e:
-                    if attempt == len(delays) - 1:
-                        return AtomResult(
-                            status=AtomStatus.FAILED,
-                            message=f"Fallback rmtree failed: {e!s}",
-                        )
-                    time.sleep(delay)
-
-        # Cleanup Git index
-        self._executor.run("worktree", "prune")
-
-        return AtomResult(
-            status=AtomStatus.SUCCESS,
-            message=f"Fallback: Removed worktree {path} via rmtree.",
-        )
+        from specweaver.core.loom.atoms.git.worktree_ops import handle_worktree_teardown
+        return handle_worktree_teardown(self._executor, self._cwd, context)
 
     def _intent_worktree_sync(self, context: dict[str, Any]) -> AtomResult:
         """Pulls latest main and rebases the worktree on top.
@@ -525,72 +487,30 @@ class GitAtom(Atom):
             branch: str - the branch name of the ephemeral worktree.
             allowed_paths: list[str] - relative paths allowed to be updated.
         """
-        branch = context.get("branch")
-        allowed_paths = context.get("allowed_paths")
+        from specweaver.core.loom.atoms.git.worktree_ops import handle_strip_merge
+        return handle_strip_merge(self._executor, context)
 
-        if not branch or allowed_paths is None:
+    def _intent_is_tracked(self, context: dict[str, Any]) -> AtomResult:
+        """Check if a file path is explicitly tracked in the git index.
+
+        Context keys:
+            path: str - the relative path to check.
+        """
+        path = context.get("path")
+        if not path:
             return AtomResult(
                 status=AtomStatus.FAILED,
-                message="Missing 'branch' or 'allowed_paths' in context for strip_merge intent.",
+                message="Missing 'path' in context for is_tracked intent.",
             )
 
-        # 1. Merge the branch but don't commit it yet
-        self._executor.run("merge", "--no-commit", "--no-ff", branch, "-X", "ours")
-        # Note: If it's already up to date, git merge returns success.
+        # --error-unmatch causes ls-files to exit 1 if the file is NOT tracked.
+        # It exits 0 if the file IS tracked.
+        result = self._executor.run("ls-files", "--error-unmatch", str(path))
 
-        # 2. Extract changed files from the pending index
-        diff_res = self._executor.run("diff", "--name-only", "--cached")
-        if diff_res.exit_code != 0:
-            # Clean up state on crash
-            self._executor.run("merge", "--abort")
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=f"Failed to read index: {diff_res.stderr}",
-            )
-
-        changed_files = [f.strip() for f in diff_res.stdout.split("\n") if f.strip()]
-        if not changed_files:
-            # Nothing changed
-            return AtomResult(
-                status=AtomStatus.SUCCESS,
-                message="No changes to strip and merge.",
-                exports={"stripped_files": []},
-            )
-
-        stripped_files = []
-        for file in changed_files:
-            # FR-8 explicitly allows isolated documentation claims to survive
-            if file.endswith("doc_updates.md"):
-                continue
-
-            # Check NFR-4 Blocklist and FR-4 Allowlist
-            if file == "README.md" or file.startswith("docs/") or file not in allowed_paths:
-                stripped_files.append(file)
-                # Revert this file's staged changes back to HEAD
-                self._executor.run("reset", "HEAD", file)
-                self._executor.run("checkout", "--", file)
-
-        # 3. Commit the surviving hunks
-        commit_res = self._executor.run(
-            "commit", "-m", f"chore(sandbox): mathematical diff strip merge from {branch}"
-        )
-        if commit_res.exit_code != 0:
-            # It's possible that stripping removed ALL changes, so commit fails.
-            self._executor.run("merge", "--abort")
-            # If everything was stripped, it's just a no-op success conceptually
-            if len(stripped_files) == len(changed_files):
-                return AtomResult(
-                    status=AtomStatus.SUCCESS,
-                    message="All changes were mathematically stripped. Nothing merged.",
-                    exports={"stripped_files": stripped_files},
-                )
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=f"Failed to commit stripped merge: {commit_res.stderr}",
-            )
+        is_tracked = (result.exit_code == 0)
 
         return AtomResult(
             status=AtomStatus.SUCCESS,
-            message=f"Successfully merged cleanly, stripped {len(stripped_files)} files.",
-            exports={"stripped_files": stripped_files},
+            message=f"Tracked state for {path}: {is_tracked}",
+            exports={"is_tracked": is_tracked},
         )
