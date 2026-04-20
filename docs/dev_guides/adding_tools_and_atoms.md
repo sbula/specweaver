@@ -34,7 +34,7 @@ The **Tool** wraps the intent and strictly evaluates the Agent's credentials.
 The **Interface** strips unauthorized commands out entirely prior to exposure.
 - **Role:** If a role shouldn’t use a command, it is physically absent from the dispatch table or dynamically removed from the configuration payload before the LLM can perceive it.
 - **Dynamic Masking (Feature 3.30a):** Orthogonal `plugins` (e.g., `spring-security`) defined in `context.yaml` can utilize `intents.hide` natively to instruct `ToolDispatcher` to mathematically erase tool methods (like `edit_file`) globally from the LLM without hard-coding Python changes.
-- **Dynamic System Exclusions (Feature 3.32b):** The `ToolDispatcher` orchestrates polyglot filesystem boundary exclusions on behalf of tools like `FileSystemTool`. It reads `AnalyzerFactory.get_all_analyzers()` at runtime to deeply inject language-specific exclusions (e.g., `node_modules`, `target`) universally downward into the raw executors, bypassing the agent.
+- **Dynamic System Exclusions (Feature 3.32b):** The `ToolDispatcher` orchestrates polyglot filesystem boundary exclusions on behalf of tools like `FileSystemTool`. It reads the injected `analyzer_factory.get_all_analyzers()` at runtime (provided via Flow Context DI) to deeply inject language-specific exclusions (e.g., `node_modules`, `target`) universally downward into the raw executors, bypassing the agent and adhering to strict architectural bounds.
 
 ### Component: Atom (`atoms/`)
 The **Atom** provides unrestricted operations reserved solely for the SpecWeaver flow engine.

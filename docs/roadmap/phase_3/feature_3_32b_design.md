@@ -45,6 +45,11 @@ The feature will be rolled out by updating native modules while simultaneously r
   1. `test_deferred_integration_orchestrator_initializes_ignores_sf4`
   2. `test_deferred_e2e_topological_spec_bypass_hidden_binary_sf4`
 
+### SF-5: Integration Debt Remediation (DI Consistency)
+- Refactor the orchestrating nodes `ToolDispatcher`, `PipelineRunner`, and `C09TraceabilityRule` which statically imported `AnalyzerFactory`, skipping the rigorous DI checks originally scoped in SF-4.
+- Route `AnalyzerFactoryProtocol` sequentially down the Flow Handlers using `RunContext`.
+- Ensure all tests correctly mock or pass dependencies downward without violating the orchestrator barrier.
+
 ## 5. Progress Tracker
 
 | Sub-Feature | Design/Arch | Impl Plan | Code (`/dev`) | E2E Tests |
@@ -53,7 +58,8 @@ The feature will be rolled out by updating native modules while simultaneously r
 | SF-2: Orchestration Factory & Scaffolding | ✅ | ✅ | ✅ | ✅ |
 | SF-3: Technical Debt Refactoring | ✅ | ✅ | ✅ | ✅ |
 | SF-4: Analyzer Dependency Injection | ✅ | ✅ | ✅ | ✅ |
+| SF-5: Integration Debt Remediation (DI) | ✅ | ✅ | ✅ | ✅ |
 
 ## 6. Session Handoff
 
-**Next Action:** Feature 3.32b is exclusively verified and committed to main. Proceed to the next feature in the roadmap!
+**Next Action:** Sub-Feature 5 Implementation Plan is Approved! The immediately actionable step for the subsequent session is to execute the `/dev docs/roadmap/phase_3/feature_3_32b_sf5_impl_plan.md` workflow.

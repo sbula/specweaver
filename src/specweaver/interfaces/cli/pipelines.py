@@ -21,6 +21,7 @@ from specweaver.interfaces.cli._helpers import (
     _load_topology,
     _select_topology_contexts,
 )
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
@@ -238,7 +239,7 @@ def _execute_run(  # noqa: C901
     # Build run context
     from specweaver.infrastructure.llm.router import ModelRouter
 
-    context = RunContext(
+    context = RunContext(analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
@@ -310,7 +311,6 @@ def _execute_run(  # noqa: C901
 
     if final_run.status == RunStatus.COMPLETED:
         from specweaver.assurance.graph.hasher import DependencyHasher
-        from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
         try:
             DependencyHasher(project_path, AnalyzerFactory).save_cache()
@@ -404,7 +404,7 @@ def resume(  # noqa: C901
     project_path = resolve_project_path(None)
     spec_path = Path(run_state.spec_path)
 
-    context = RunContext(
+    context = RunContext(analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
@@ -449,7 +449,6 @@ def resume(  # noqa: C901
 
     if final_run.status == RunStatus.COMPLETED:
         from specweaver.assurance.graph.hasher import DependencyHasher
-        from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
         try:
             DependencyHasher(project_path, AnalyzerFactory).save_cache()

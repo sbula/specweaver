@@ -19,6 +19,7 @@ from specweaver.interfaces.cli._helpers import (
     _load_topology,
     _select_topology_contexts,
 )
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ def draft(
         description=f"Draft spec for {name}",
     )
 
-    context = RunContext(
+    context = RunContext(analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         llm=adapter,
@@ -196,7 +197,7 @@ def review(
         params=params,
     )
 
-    context = RunContext(
+    context = RunContext(analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=actual_spec_path,
         llm=adapter,

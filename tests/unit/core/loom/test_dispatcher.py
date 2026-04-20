@@ -285,3 +285,35 @@ class TestDispatcherASTInitialization:
         # Ensures that the except block caught it and safely defaulted
         assert atom._active_archetype == "generic"
         assert atom._plugins == []
+
+
+class TestDispatcherAnalyzerFactoryDI:
+    """Tests DI extraction of structural exclusions for ToolDispatcher."""
+
+    def test_dispatcher_fallback_safety_null_factory(self, project: Path) -> None:
+        """NFR-1: If analyzer_factory is None, dispatcher initializes smoothly."""
+        boundary = WorkspaceBoundary(roots=[project])
+        dispatcher = ToolDispatcher.create_standard_set(
+            boundary,
+            role="planner",
+            allowed_tools=["fs"],
+            analyzer_factory=None,
+        )
+        assert len(dispatcher._interfaces) == 1
+        fs_tool = dispatcher._interfaces[0]._tool
+        assert len(fs_tool._exclude_dirs) == 0
+
+    def test_dispatcher_extracts_factory_excludes(self, project: Path) -> None:
+        """FR-1/FR-2 Integration: Dispatcher natively hooks factory to build ignore filters."""
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
+        boundary = WorkspaceBoundary(roots=[project])
+        dispatcher = ToolDispatcher.create_standard_set(
+            boundary,
+            role="planner",
+            allowed_tools=["fs"],
+            analyzer_factory=AnalyzerFactory,
+        )
+        fs_tool = dispatcher._interfaces[0]._tool
+        assert "node_modules" in fs_tool._exclude_dirs
+        assert "*.pyc" in fs_tool._exclude_patterns
+

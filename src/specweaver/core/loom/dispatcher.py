@@ -101,6 +101,7 @@ class ToolDispatcher:
         boundary: Any,
         role: str,
         allowed_tools: list[str],
+        analyzer_factory: Any | None = None,
     ) -> ToolDispatcher:
         """Factory method to assemble standard tools for an agent.
 
@@ -118,11 +119,10 @@ class ToolDispatcher:
             # Isolate imports so flow/ doesn't violate boundaries
             from specweaver.core.loom.security import AccessMode, FolderGrant
             from specweaver.core.loom.tools.filesystem.interfaces import create_filesystem_interface
-            from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
             exclude_dirs: set[str] = set()
             exclude_patterns: set[str] = set()
-            for analyzer in AnalyzerFactory.get_all_analyzers():
+            for analyzer in (analyzer_factory.get_all_analyzers() if analyzer_factory else []):
                 for ign in analyzer.get_default_directory_ignores():
                     exclude_dirs.add(ign.rstrip("/"))
                 for pat in analyzer.get_binary_ignore_patterns():

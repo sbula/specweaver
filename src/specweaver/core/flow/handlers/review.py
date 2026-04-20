@@ -86,7 +86,7 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
     if bool(os.environ.get("SEARCH_API_KEY")):
         allowed_tools.append("web")
 
-    return ToolDispatcher.create_standard_set(boundary, role=role, allowed_tools=allowed_tools)
+    return ToolDispatcher.create_standard_set(boundary, role=role, allowed_tools=allowed_tools, analyzer_factory=context.analyzer_factory)
 
 
 class ReviewSpecHandler:

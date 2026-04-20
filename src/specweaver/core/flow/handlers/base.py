@@ -37,6 +37,7 @@ class RunContext(BaseModel):
         settings: Per-project validation settings/overrides.
         output_dir: Output directory for generated code/tests.
         plan: Pre-loaded plan content (populated by runner post-step hook).
+        analyzer_factory: Optional DI injected AnalyzerFactoryProtocol instance.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -48,6 +49,7 @@ class RunContext(BaseModel):
     topology: Any = None  # TopologyContext | None
     settings: Any = None  # ValidationSettings | None
     config: Any = None  # SpecWeaverSettings | None — LLM config for adapters
+    analyzer_factory: Any = None  # AnalyzerFactoryProtocol | None
     output_dir: Path | None = None
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content

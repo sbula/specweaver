@@ -14,6 +14,7 @@ from rich.table import Table
 
 from specweaver.commons import json
 from specweaver.interfaces.cli import _core
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,6 @@ def standards_scan(  # noqa: C901
     from specweaver.assurance.standards.scope_detector import detect_scopes
     from specweaver.core.config.settings import load_settings
     from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
-    from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
     name = _core._require_active_project()
     db = _core.get_db()
@@ -129,7 +129,7 @@ def standards_scan(  # noqa: C901
             },
         )
 
-        context = RunContext(
+        context = RunContext(analyzer_factory=AnalyzerFactory,
             project_path=project_path,
             spec_path=dummy_spec,
             llm=adapter,

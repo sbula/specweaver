@@ -173,3 +173,39 @@ class TestReviewCodeHandlerGuards:
 
         assert result.status == StepStatus.ERROR
         assert "No code file found" in result.error_message
+
+
+# ---------------------------------------------------------------------------
+# DI Injection into ToolDispatcher (gap #1/SF-5)
+# ---------------------------------------------------------------------------
+
+
+class TestBuildToolDispatcherDI:
+    """Verifies that _build_tool_dispatcher accurately threads analyzer_factory from context."""
+
+    def test_build_tool_dispatcher_injects_analyzer_factory(self, tmp_path: Path):
+        from unittest.mock import MagicMock
+
+        from specweaver.core.flow.handlers.review import _build_tool_dispatcher
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
+
+        mock_llm = MagicMock()
+        mock_llm.generate_with_tools = MagicMock()
+
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "spec.md",
+            analyzer_factory=AnalyzerFactory,
+            llm=mock_llm,
+        )
+
+        # Mocking or simulating _build_tool_dispatcher requirement for project paths
+        dispatcher = _build_tool_dispatcher(ctx, role="reviewer")
+        # Ensure it actually resolved
+        assert dispatcher is not None
+
+        # We know AnalyzerFactory will populate the fs tool with python ignore list
+        # verify the propagation
+        fs_tool = dispatcher._interfaces[0]._tool
+        assert "node_modules" in fs_tool._exclude_dirs
+        assert "*.pyc" in fs_tool._exclude_patterns
