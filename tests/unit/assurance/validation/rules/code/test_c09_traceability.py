@@ -200,3 +200,25 @@ def test_ast_regex_boundaries(tmp_path):
     assert "NFR-200" in mapped
     assert "FR-300" in mapped
     assert "FR-400" not in mapped
+
+def test_c09_extracts_analyzer_factory_via_di(tmp_path):
+    """Ensure the rule successfully extracts AnalyzerFactory from the DI context payload, avoiding global imports."""
+    from unittest.mock import MagicMock
+    root = tmp_path / "fake_project"
+    
+    mock_analyzer = MagicMock()
+    mock_analyzer.extract_test_mapped_requirements.return_value = {"FR-777", "NFR-888"}
+    
+    mock_factory = MagicMock()
+    mock_factory.get_all_analyzers.return_value = [mock_analyzer]
+
+    rule = TraceabilityRule()
+    rule.context = {"analyzer_factory": mock_factory}
+    
+    mapped = rule._find_and_parse_tests(root)
+    
+    assert "FR-777" in mapped
+    assert "NFR-888" in mapped
+    mock_factory.get_all_analyzers.assert_called_once()
+    mock_analyzer.extract_test_mapped_requirements.assert_called_once_with(root)
+

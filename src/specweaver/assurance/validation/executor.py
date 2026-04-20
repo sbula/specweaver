@@ -116,6 +116,7 @@ def execute_validation_pipeline(
     spec_path: Path | None = None,
     *,
     registry: RuleRegistry | None = None,
+    context: dict[str, Any] | None = None,
 ) -> list[RuleResult]:
     """Execute a validation pipeline against spec/code content.
 
@@ -129,7 +130,8 @@ def execute_validation_pipeline(
         pipeline: Resolved validation pipeline (no inheritance markers).
         spec_text: Full text content to validate.
         spec_path: Optional path to the spec/code file.
-        registry: Rule registry to look up rules. Uses global if not provided.
+        registry: RuleRegistry to look up rules. Uses global if not provided.
+        context: Optional dictionary of system components (e.g. analyzer_factory).
 
     Returns:
         List of RuleResult, one per step, in pipeline order.
@@ -173,7 +175,10 @@ def execute_validation_pipeline(
             rule = rule_cls(**step_params)
 
             # Formally assign payload to rule boundary
-            rule.context = ast_payload if isinstance(ast_payload, dict) else {}
+            base_context = ast_payload if isinstance(ast_payload, dict) else {}
+            if context:
+                base_context.update(context)
+            rule.context = base_context
 
         except Exception as exc:
             logger.exception(

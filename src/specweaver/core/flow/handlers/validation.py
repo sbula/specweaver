@@ -80,6 +80,7 @@ class ValidateSpecHandler:
                 merged_settings,
                 kind_str=kind_str,
                 project_path=context.project_path,
+                analyzer_factory=context.analyzer_factory,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -115,6 +116,7 @@ class ValidateSpecHandler:
         *,
         kind_str: str | None = None,
         project_path: Path | None = None,
+        analyzer_factory: Any | None = None,
     ) -> list[RuleResult]:
         """Run spec validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -171,7 +173,12 @@ class ValidateSpecHandler:
             step.params["ast_payload"] = ast_payload
 
         content = spec_path.read_text(encoding="utf-8")
-        return execute_validation_pipeline(pipeline, content, spec_path)
+        return execute_validation_pipeline(
+            pipeline,
+            content,
+            spec_path,
+            context={"analyzer_factory": analyzer_factory} if analyzer_factory else None
+        )
 
 
 class ValidateCodeHandler:
@@ -198,6 +205,7 @@ class ValidateCodeHandler:
                 context.spec_path,
                 merged_settings,
                 context.project_path,
+                analyzer_factory=context.analyzer_factory,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -240,6 +248,7 @@ class ValidateCodeHandler:
         spec_path: Path,
         settings: Any,
         project_path: Path | None = None,
+        analyzer_factory: Any | None = None,
     ) -> list[RuleResult]:
         """Run code validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -295,7 +304,12 @@ class ValidateCodeHandler:
             step.params["ast_payload"] = ast_payload
 
         content = code_path.read_text(encoding="utf-8")
-        return execute_validation_pipeline(pipeline, content, spec_path)
+        return execute_validation_pipeline(
+            pipeline,
+            content,
+            spec_path,
+            context={"analyzer_factory": analyzer_factory} if analyzer_factory else None
+        )
 
 
 class ValidateTestsHandler:

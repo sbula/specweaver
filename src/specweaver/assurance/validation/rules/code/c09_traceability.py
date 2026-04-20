@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
-from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +96,12 @@ class TraceabilityRule(Rule):
         """Find test files using AnalyzerFactory and aggregate their trace tags."""
         mapped_ids: set[str] = set()
 
-        for analyzer in AnalyzerFactory.get_all_analyzers():
+        analyzer_factory = self.context.get("analyzer_factory") if hasattr(self, "context") and self.context else None
+        if not analyzer_factory:
+            from specweaver.workspace.analyzers.factory import AnalyzerFactory
+            analyzer_factory = AnalyzerFactory
+
+        for analyzer in analyzer_factory.get_all_analyzers():
             try:
                 mapped_ids.update(analyzer.extract_test_mapped_requirements(project_root))
             except Exception as e:

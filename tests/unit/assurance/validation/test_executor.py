@@ -246,3 +246,18 @@ class TestExecuteValidationPipeline:
         assert len(results) == 1
         assert results[0].status == Status.PASS
         assert "found it in context" in results[0].message
+
+    def test_execute_validation_pipeline_with_context(self, test_registry):
+        """context kwargs are successfully merged into rule.context via DI."""
+        pipeline = ValidationPipeline(
+            name="test",
+            steps=[
+                ValidationStep(name="t05", rule="T05", params={"ast_payload": {"other": "value"}}),
+            ],
+        )
+        context_di = {"marker": "found", "analyzer_factory": "mock_factory"}
+        results = execute_validation_pipeline(pipeline, "hello", registry=test_registry, context=context_di)
+        assert len(results) == 1
+        assert results[0].status == Status.PASS
+        assert "found it in context" in results[0].message
+

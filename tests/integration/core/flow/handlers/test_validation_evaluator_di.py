@@ -76,7 +76,7 @@ decorators:
     stash: dict[str, Any] = {}
 
     def mock_execute(
-        pipeline: Any, content: str, spec_path: Path | None = None, *, registry: Any = None
+        pipeline: Any, content: str, spec_path: Path | None = None, *, registry: Any = None, context: Any = None
     ) -> list[RuleResult]:
         # We capture what was injected into pipeline step params
         # The ValidateCodeHandler injects `ast_payload` into step.params

@@ -515,7 +515,7 @@ async def test_validate_spec_handler_e2e_integration(tmp_path: Path) -> None:
         )
 
         # Override execution to practically run S12
-        def e2e_exec(pipeline, content, spec_path):
+        def e2e_exec(pipeline, content, spec_path, context=None):
             # pipeline step params holds ast_payload
             for step in pipeline.steps:
                 s12_rule.context = step.params.get("ast_payload", {})
@@ -588,7 +588,7 @@ async def test_validate_spec_handler_e2e_integration_failed_bounds(tmp_path: Pat
             required_headers={"h1": ["Main Title"], "h2": ["1. Purpose"]}
         )
 
-        def e2e_exec(pipeline, content, spec_path):
+        def e2e_exec(pipeline, content, spec_path, context=None):
             for step in pipeline.steps:
                 s12_rule.context = step.params.get("ast_payload", {})
             return [s12_rule.check(content, spec_path)]
