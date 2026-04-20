@@ -154,34 +154,6 @@ tool.read_file("src/billing/../../etc/passwd")  # ❌ path traversal blocked
 
 **Security:** All paths are normalized via `posixpath.normpath`, absolute paths are rejected, and `..` traversal beyond grant boundaries returns an error.
 
-### CodeStructureTool
-
-An advanced, Tree-sitter-backed tool that prevents Agent "Lost in the Middle" token hallucination. It allows the LLM to slice massive repository files into AST skeletons or perform surgical mutations natively via byte-offsets without relying on fragile regex string replacement.
-
-```python
-from specweaver.loom.tools.code_structure.tool import CodeStructureTool
-
-tool = CodeStructureTool(executor=executor, role="implementer", grants=grants)
-
-# Read only imports, classes, and method signatures (strips out execution logic)
-skeleton = tool.read_file_structure("src/billing/calc.java")
-
-# Safely replace only the inner {...} block of a single function without damaging decorators
-tool.replace_symbol_body("src/billing/calc.java", "calculateDiscount", "new_logic...")
-```
-
-| Intent | Description | Type |
-|---|---|---|
-| `read_file_structure` | Returns the file's interfaces, classes, and signatures (strips bodies) | Read |
-| `read_symbol_body` | Returns only the inner `{...}` logic block of a specific function | Read |
-| `read_unrolled_symbol` | Exposes compiler-plugin macros (e.g. Spring Boot) as concrete logic | Read |
-| `list_symbols` | Returns a flat array of targetable nodes (e.g. `["MyClass", "main"]`) | Read |
-| `replace_symbol_body` | Overwrites ONLY the inner logic block, permanently protecting its decorators | Write |
-| `add_symbol` | Cleanly injects a new method into a target interface/class | Write |
-| `delete_symbol` | Mechanically erases a method's byte bounds to prevent syntax rot | Write |
-
-> 🔎 *For a comprehensive deep-dive into how these polyglot Tree-Sitter boundaries work under the hood, see the [AST Surgical Editing Developer Guide](docs/dev_guides/code_structure_and_ast_editing.md).*
-
 ### GitTool
 
 High-level git operations that agents call by intent, not raw commands. Each intent maps to a safe sequence of git commands executed on the target project directory (never SpecWeaver's own repo).
