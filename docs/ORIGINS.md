@@ -181,4 +181,14 @@ Blueprint references:
 - [Worktree Provider](https://github.com/coleam00/Archon/blob/main/packages/isolation/src/providers/worktree.ts) — hash-based port allocation and environment execution
 - [Workflow DAG](https://github.com/coleam00/Archon/blob/main/packages/workflows/src/schemas/dag-node.ts) — declarative Bash nodes decoupling deterministic shell processes from AI bounds
 
+### Cavekit — Spec Traceability & Execution UX
 
+[Cavekit](https://github.com/JuliusBrussee/cavekit) by **Julius Brussee** is a high-level agent orchestration plugin for Claude Code and Codex focusing on spec-to-code traceability, cross-model review, and tiered build cycles.
+
+Patterns adopted for SpecWeaver:
+- **Traceability Matrix UX** → While SpecWeaver tracks compliance physically in the AST (C09), Cavekit's presentation of a visual 2D Coverage Matrix is adopted as a human auditing feature to preview architecture coverage before execution. (Phase 3.48)
+- **Work Packet Bundling** → Cavekit groups independent sub-tasks into sequential batches to optimize context limits. SpecWeaver adopts this over its native Dynamic Topology Dispatch to cluster tiny disjoint components into shared Git Worktrees, slashing IO wait times. (Phase 3.49)
+- **Pre-Generation Adversarial Review** → Using a separate model (e.g., Codex) to explicitly rip apart the Spec Design (`/ck:sketch`) before code generation. SpecWeaver adopts this by injecting its Arbiter Agent into the `sw draft` phase to run Red Team scenario challenges before locking the spec. (Phase 3.50)
+
+Blueprint references:
+- [`cavekit/`](https://github.com/JuliusBrussee/cavekit) — The core loop and commands (`/ck:sketch`, `/ck:map`, `/ck:make`, `/ck:check`)
