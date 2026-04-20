@@ -167,6 +167,8 @@ class TestRunPipelineMocked:
                 app, ["run", "validate_only", str(spec), "--project", str(project_dir)]
             )
 
+        if result.exit_code != 0:
+            print(result.stdout)
         assert result.exit_code == 0
         assert mock_save_cache.called
         assert "Topology staleness cache saved successfully" in result.output
@@ -202,6 +204,8 @@ class TestRunPipelineMocked:
             )
 
         # Pipeline STILL successfully exits with 0 even if caching fails
+        if result.exit_code != 0:
+            print(result.stdout)
         assert result.exit_code == 0
         assert "Cannot" in result.output
         assert "write" in result.output
@@ -239,6 +243,8 @@ class TestResumeMocked:
         runner.invoke(app, ["init", "nr-proj", "--path", str(project_dir)])
 
         result = runner.invoke(app, ["resume"])
+        if result.exit_code != 0:
+            print(result.stdout)
         assert result.exit_code == 0
         assert "no resumable" in result.output.lower()
 
@@ -289,6 +295,8 @@ class TestResumeMocked:
 
             result = runner.invoke(app, ["resume", "abc1234567890"])
 
+        if result.exit_code != 0:
+            print(result.stdout)
         assert result.exit_code == 0
         assert mock_save_cache.called
 
@@ -299,6 +307,8 @@ class TestResumeMocked:
 class TestPipelinesCommand:
     def test_pipelines_output_contains_names(self) -> None:
         result = runner.invoke(app, ["pipelines"])
+        if result.exit_code != 0:
+            print(result.stdout)
         assert result.exit_code == 0
         # Should list at least validate_only or new_feature
         output_lower = result.output.lower()

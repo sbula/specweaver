@@ -289,6 +289,7 @@ class TestDiscoveryIntegration:
     def test_discover_skips_venv_and_pycache(self, tmp_path: Path) -> None:
         """discover_files skips all standard skip dirs on real filesystem."""
         from specweaver.assurance.standards.discovery import discover_files
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
         # Create project structure with skip directories
         (tmp_path / "src").mkdir()
@@ -300,7 +301,7 @@ class TestDiscoveryIntegration:
         (tmp_path / "node_modules" / "pkg").mkdir(parents=True)
         (tmp_path / "node_modules" / "pkg" / "index.js").write_text("module.exports={}")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
         assert "main.py" in names
         assert "site.py" not in names

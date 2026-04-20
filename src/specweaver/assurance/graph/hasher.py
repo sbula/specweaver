@@ -12,11 +12,12 @@ from __future__ import annotations
 import hashlib
 import logging
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from specweaver.commons import json
-from specweaver.workspace.context.analyzers import AnalyzerFactory
 
+if TYPE_CHECKING:
+    from specweaver.workspace.context.analyzer_protocols import AnalyzerFactoryProtocol
 logger = logging.getLogger(__name__)
 
 
@@ -67,10 +68,11 @@ def _ensure_gitignore(project_root: Path) -> None:
 class DependencyHasher:
     """Computes semantic merkle-tree hashes for topology boundaries."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path, analyzer_factory: AnalyzerFactoryProtocol):
         self.project_root = project_root.resolve()
         self.cache_dir = self.project_root / ".specweaver"
         self.cache_path = self.cache_dir / "topology.cache.json"
+        self.analyzer_factory = analyzer_factory
 
     @staticmethod
     def _hash_file(filepath: Path) -> str:
@@ -93,7 +95,7 @@ class DependencyHasher:
         skip_dirs = {".git"}
         binary_patterns: list[str] = []
 
-        for analyzer in AnalyzerFactory.get_all_analyzers():
+        for analyzer in self.analyzer_factory.get_all_analyzers():
             for ign in analyzer.get_default_directory_ignores():
                 skip_dirs.add(ign.rstrip("/"))
             binary_patterns.extend(analyzer.get_binary_ignore_patterns())
@@ -139,7 +141,7 @@ class DependencyHasher:
                         rel_path = filepath.as_posix()
                     file_hashes[rel_path] = h
 
-        local_analyzer = AnalyzerFactory.for_directory(directory)
+        local_analyzer = self.analyzer_factory.for_directory(directory)
         dependencies = local_analyzer.extract_imports(directory) if local_analyzer else []
 
         payload = {"files": file_hashes, "dependencies": sorted(dependencies)}

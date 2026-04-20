@@ -12,6 +12,7 @@ from specweaver.assurance.standards.scope_detector import (
     _resolve_scope,
     detect_scopes,
 )
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 # ---------------------------------------------------------------------------
 # detect_scopes()
@@ -23,14 +24,14 @@ class TestDetectScopes:
 
     def test_empty_dir_returns_root_only(self, tmp_path: Path) -> None:
         """Empty project → only root scope '.'."""
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert scopes == ["."]
 
     def test_flat_project_returns_root_only(self, tmp_path: Path) -> None:
         """Single-scope project (files only at root) → ['.']."""
         (tmp_path / "main.py").write_text("pass")
         (tmp_path / "utils.py").write_text("pass")
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert scopes == ["."]
 
     def test_single_level_scopes(self, tmp_path: Path) -> None:
@@ -43,7 +44,7 @@ class TestDetectScopes:
         frontend.mkdir()
         (frontend / "index.ts").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert sorted(scopes) == [".", "backend", "frontend"]
 
     def test_two_level_scopes(self, tmp_path: Path) -> None:
@@ -59,7 +60,7 @@ class TestDetectScopes:
         payments.mkdir()
         (payments / "service.py").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert "backend/auth" in scopes
         assert "backend/payments" in scopes
         assert "." in scopes
@@ -79,7 +80,7 @@ class TestDetectScopes:
         # backend also has a direct file
         (backend / "shared.py").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         # backend/ itself should NOT be a scope because it has sub-scopes
         assert "backend" not in scopes
         assert "backend/auth" in scopes
@@ -91,7 +92,7 @@ class TestDetectScopes:
         service.mkdir()
         (service / "main.py").write_text("pass")
         # No subdirs with source files → "service" is itself a scope
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert "service" in scopes
 
     def test_skips_standard_dirs(self, tmp_path: Path) -> None:
@@ -106,7 +107,7 @@ class TestDetectScopes:
         (tmp_path / "__pycache__").mkdir()
         (tmp_path / "__pycache__" / "mod.cpython-313.pyc").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert scopes == ["."]
 
     def test_skips_hidden_dirs(self, tmp_path: Path) -> None:
@@ -116,7 +117,7 @@ class TestDetectScopes:
         (tmp_path / "visible").mkdir()
         (tmp_path / "visible" / "app.py").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert ".hidden" not in scopes
         assert "visible" in scopes
 
@@ -127,7 +128,7 @@ class TestDetectScopes:
             d.mkdir()
             (d / "mod.py").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert scopes == sorted(scopes)
 
     def test_only_dirs_with_source_files(self, tmp_path: Path) -> None:
@@ -137,7 +138,7 @@ class TestDetectScopes:
         (docs / "readme.md").write_text("# Hello")
         (docs / "config.yaml").write_text("key: val")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert "docs" not in scopes
         assert scopes == ["."]
 
@@ -147,7 +148,7 @@ class TestDetectScopes:
         deep.mkdir(parents=True)
         (deep / "deep.py").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         # a/b/c is too deep → not a scope
         assert "a/b/c" not in scopes
         # a/b is 2-level → should be detected if it has source files
@@ -300,7 +301,7 @@ class TestDetectScopesPermissionError:
             return original_iterdir(self)
 
         with patch.object(Path, "iterdir", mock_iterdir):
-            scopes = detect_scopes(tmp_path)
+            scopes = detect_scopes(tmp_path, AnalyzerFactory)
 
         assert "normal" in scopes
         assert "denied" not in scopes
@@ -339,7 +340,7 @@ class TestDetectScopesL2Filtering:
         visible.mkdir()
         (visible / "handler.py").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert "backend/.internal" not in scopes
         assert "backend/auth" in scopes
 
@@ -356,7 +357,7 @@ class TestDetectScopesL2Filtering:
         src.mkdir()
         (src / "app.ts").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert "frontend/node_modules" not in scopes
         assert "frontend/src" in scopes
 
@@ -377,7 +378,7 @@ class TestDetectScopesMixedLayouts:
         auth.mkdir()
         (auth / "login.py").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         # backend/ has sub-scope (auth/) so backend itself is NOT a scope
         assert "backend" not in scopes
         assert "backend/auth" in scopes
@@ -399,7 +400,7 @@ class TestDetectScopesMixedLayouts:
         payments.mkdir()
         (payments / "stripe.py").write_text("pass")
 
-        scopes = detect_scopes(tmp_path)
+        scopes = detect_scopes(tmp_path, AnalyzerFactory)
         assert "scripts" in scopes  # L1-only
         assert "backend/auth" in scopes  # L2
         assert "backend/payments" in scopes  # L2

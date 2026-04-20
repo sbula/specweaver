@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.context.inferrer import ContextInferrer
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ class TestContextInferenceFixture:
         """no_context module → generates context.yaml with correct fields."""
         mod_dir = sample_project / "src" / "no_context"
 
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(AnalyzerFactory)
         result = inferrer.infer_and_write(mod_dir)
 
         assert result.was_generated is True
@@ -49,7 +50,7 @@ class TestContextInferenceFixture:
         """no_context module → public symbols detected, private excluded."""
         mod_dir = sample_project / "src" / "no_context"
 
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(AnalyzerFactory)
         result = inferrer.infer_and_write(mod_dir)
 
         assert result.was_generated is True
@@ -67,7 +68,7 @@ class TestContextInferenceFixture:
         if ctx_file.exists():
             ctx_file.unlink()
 
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(AnalyzerFactory)
         result = inferrer.infer_and_write(mod_dir)
 
         assert result.was_generated is True
@@ -87,7 +88,7 @@ class TestContextInferenceEdgeCases:
         existing = mod_dir / "context.yaml"
         existing.write_text("name: existing\n", encoding="utf-8")
 
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(AnalyzerFactory)
         result = inferrer.infer_and_write(mod_dir)
 
         assert result.was_generated is False
@@ -99,7 +100,7 @@ class TestContextInferenceEdgeCases:
         mod_dir.mkdir()
         (mod_dir / "readme.md").write_text("# readme\n", encoding="utf-8")
 
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(AnalyzerFactory)
         result = inferrer.infer_and_write(mod_dir)
 
         assert result.was_generated is False
@@ -119,7 +120,7 @@ class TestContextInferenceEdgeCases:
             encoding="utf-8",
         )
 
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(AnalyzerFactory)
         result = inferrer.infer_and_write(mod_dir)
 
         assert result.was_generated is True
@@ -139,7 +140,7 @@ class TestContextInferenceEdgeCases:
             encoding="utf-8",
         )
 
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(AnalyzerFactory)
         result = inferrer.infer_and_write(mod_dir)
 
         assert result.was_generated is True

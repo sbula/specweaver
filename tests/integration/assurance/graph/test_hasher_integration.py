@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from specweaver.assurance.graph.hasher import DependencyHasher
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 pytestmark = pytest.mark.integration
 
@@ -27,7 +28,7 @@ def test_hasher_tree_sitter_integration(tmp_path: Path):
     manifest = src_dir / "context.yaml"
     manifest.write_text("name: src\n")
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, AnalyzerFactory)
     state = hasher.compute_hashes([manifest])
 
     assert "src" in state
@@ -56,7 +57,7 @@ def test_hasher_physical_disk_persistence(tmp_path: Path):
     manifest = src_dir / "context.yaml"
     manifest.write_text("name: core_module\n")
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, AnalyzerFactory)
 
     # Assert cache doesn't exist yet
     assert not hasher.cache_path.exists()
@@ -72,7 +73,7 @@ def test_hasher_physical_disk_persistence(tmp_path: Path):
     assert "logic.py" in raw_disk_bytes
 
     # Re-instantiate generic hasher, testing load_cache natively across memory boundaries
-    hasher2 = DependencyHasher(tmp_path)
+    hasher2 = DependencyHasher(tmp_path, AnalyzerFactory)
     state_b = hasher2.load_cache()
 
     # Verify dict exact parity after orjson round trip

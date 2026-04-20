@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
-from specweaver.workspace.context.analyzers import AnalyzerFactory
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 logger = logging.getLogger(__name__)
 

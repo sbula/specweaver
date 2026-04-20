@@ -22,13 +22,17 @@ import logging
 import os
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from specweaver.workspace.context.analyzer_protocols import AnalyzerFactoryProtocol
 
 logger = logging.getLogger(__name__)
 
 
 
 
-def discover_files(project_path: Path) -> list[Path]:
+def discover_files(project_path: Path, analyzer_factory: AnalyzerFactoryProtocol) -> list[Path]:
     """Discover source files using the priority chain.
 
     Priority:
@@ -39,6 +43,7 @@ def discover_files(project_path: Path) -> list[Path]:
 
     Args:
         project_path: Root directory of the project.
+        analyzer_factory: injected provider for polyglot bounds.
 
     Returns:
         Sorted list of absolute ``Path`` objects for discovered source files.
@@ -51,10 +56,10 @@ def discover_files(project_path: Path) -> list[Path]:
 
     # Fallback to os.walk
     if files is None:
-        files = _walk_with_skips(project_path)
+        files = _walk_with_skips(project_path, analyzer_factory)
 
     # Apply .specweaverignore on top
-    files = _apply_specweaverignore(files, project_path)
+    files = _apply_specweaverignore(files, project_path, analyzer_factory)
 
     return sorted(files)
 
@@ -104,15 +109,14 @@ def _git_ls_files(project_path: Path) -> list[Path] | None:
     return files
 
 
-def _walk_with_skips(project_path: Path) -> list[Path]:
+def _walk_with_skips(project_path: Path, analyzer_factory: AnalyzerFactoryProtocol) -> list[Path]:
     """Fallback: ``os.walk`` with dynamic AnalyzerFactory skip patterns."""
-    from specweaver.workspace.context.analyzers import AnalyzerFactory
 
     logger.debug("Using os.walk fallback for file discovery")
     files: list[Path] = []
 
     skip_dirs = {".git"}
-    for analyzer in AnalyzerFactory.get_all_analyzers():
+    for analyzer in analyzer_factory.get_all_analyzers():
         for ign in analyzer.get_default_directory_ignores():
             skip_dirs.add(ign.rstrip("/"))
 
@@ -130,6 +134,7 @@ def _walk_with_skips(project_path: Path) -> list[Path]:
 def _apply_specweaverignore(
     files: list[Path],
     project_path: Path,
+    analyzer_factory: AnalyzerFactoryProtocol,
 ) -> list[Path]:
     """Filter files through ``.specweaverignore`` and AnalyzerFactory binary patterns.
 
@@ -144,14 +149,12 @@ def _apply_specweaverignore(
         )
         return files
 
-    from specweaver.workspace.context.analyzers import AnalyzerFactory
-
     patterns: list[str] = []
     ignore_file = project_path / ".specweaverignore"
     if ignore_file.is_file():
         patterns.extend(ignore_file.read_text(encoding="utf-8").splitlines())
 
-    for analyzer in AnalyzerFactory.get_all_analyzers():
+    for analyzer in analyzer_factory.get_all_analyzers():
         patterns.extend(analyzer.get_binary_ignore_patterns())
     spec = pathspec.PathSpec.from_lines("gitignore", patterns)
 

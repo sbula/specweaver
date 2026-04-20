@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 from ruamel.yaml import YAML
 
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.context.inferrer import ContextInferrer
 
 if TYPE_CHECKING:
@@ -54,7 +55,7 @@ def empty_module(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def inferrer() -> ContextInferrer:
-    return ContextInferrer()
+    return ContextInferrer(analyzer_factory=AnalyzerFactory)
 
 
 # ---------------------------------------------------------------------------
@@ -231,7 +232,7 @@ class TestInferrerAdditionalEdgeCases:
         tmp_path: Path,
     ) -> None:
         """Unknown parent_level falls back to 'module'."""
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(analyzer_factory=AnalyzerFactory)
         pkg = tmp_path / "unknown_parent"
         pkg.mkdir()
         (pkg / "__init__.py").write_text('"""Some module."""\n')
@@ -245,7 +246,7 @@ class TestInferrerAdditionalEdgeCases:
         tmp_path: Path,
     ) -> None:
         """__init__.py with syntax error → purpose fallback to TODO."""
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(analyzer_factory=AnalyzerFactory)
         pkg = tmp_path / "bad_init"
         pkg.mkdir()
         (pkg / "__init__.py").write_text("def broken(:\n")
@@ -259,7 +260,7 @@ class TestInferrerAdditionalEdgeCases:
         tmp_path: Path,
     ) -> None:
         """Directories starting with . should not be inferred."""
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(analyzer_factory=AnalyzerFactory)
         hidden = tmp_path / ".hidden"
         hidden.mkdir()
         (hidden / "__init__.py").write_text('"""Hidden."""\n')

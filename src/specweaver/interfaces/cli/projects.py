@@ -263,9 +263,10 @@ def scan() -> None:
         _core.console.print(f"[red]Error:[/red] Project root does not exist: {project_path}")
         raise typer.Exit(code=1)
 
+    from specweaver.workspace.analyzers.factory import AnalyzerFactory
     from specweaver.workspace.context.inferrer import ContextInferrer
 
-    inferrer = ContextInferrer()
+    inferrer = ContextInferrer(AnalyzerFactory)
     _core.console.print(f"[bold]Scanning[/bold] {project_path}...")
 
     generated, skipped, existing = _infer_subdirs(project_path, inferrer)

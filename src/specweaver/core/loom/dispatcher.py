@@ -118,7 +118,7 @@ class ToolDispatcher:
             # Isolate imports so flow/ doesn't violate boundaries
             from specweaver.core.loom.security import AccessMode, FolderGrant
             from specweaver.core.loom.tools.filesystem.interfaces import create_filesystem_interface
-            from specweaver.workspace.context.analyzers import AnalyzerFactory
+            from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
             exclude_dirs: set[str] = set()
             exclude_patterns: set[str] = set()

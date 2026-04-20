@@ -147,8 +147,9 @@ class TopologyGraph:
     ) -> set[str]:
         """Verify semantic hashes against cache and return natively stale nodes."""
         from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
-        hasher = DependencyHasher(project_root)
+        hasher = DependencyHasher(project_root, AnalyzerFactory)
         cache = hasher.load_cache()
 
         manifest_paths = [n.yaml_path for n in nodes.values() if n.yaml_path]
@@ -274,9 +275,10 @@ class TopologyGraph:
         warnings: list[str],
     ) -> None:
         """Auto-generate context.yaml for source directories missing one."""
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
         from specweaver.workspace.context.inferrer import ContextInferrer
 
-        inferrer = ContextInferrer()
+        inferrer = ContextInferrer(analyzer_factory=AnalyzerFactory)
         known_dirs = {n.yaml_path.parent for n in nodes.values() if n.yaml_path is not None}
 
         for subdir in sorted(project_root.rglob("*")):

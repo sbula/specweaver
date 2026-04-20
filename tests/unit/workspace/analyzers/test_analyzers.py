@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.workspace.context.analyzers import (
+from specweaver.workspace.analyzers.factory import (
     AnalyzerFactory,
     PythonAnalyzer,
 )
@@ -287,49 +287,49 @@ class TestPolyglotLanguageAnalyzer:
 
     def test_gets_python_parser_by_default(self, tmp_path: Path) -> None:
         (tmp_path / "hello.py").touch()
-        from specweaver.workspace.context.analyzers import AnalyzerFactory, PythonAnalyzer
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory, PythonAnalyzer
 
         analyzer = AnalyzerFactory.for_directory(tmp_path)
         assert isinstance(analyzer, PythonAnalyzer)
 
     def test_gets_java_parser(self, tmp_path: Path) -> None:
         (tmp_path / "App.java").touch()
-        from specweaver.workspace.context.analyzers import AnalyzerFactory, JavaAnalyzer
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory, JavaAnalyzer
 
         analyzer = AnalyzerFactory.for_directory(tmp_path)
         assert isinstance(analyzer, JavaAnalyzer)
 
     def test_gets_kotlin_parser(self, tmp_path: Path) -> None:
         (tmp_path / "App.kt").touch()
-        from specweaver.workspace.context.analyzers import AnalyzerFactory, KotlinAnalyzer
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory, KotlinAnalyzer
 
         analyzer = AnalyzerFactory.for_directory(tmp_path)
         assert isinstance(analyzer, KotlinAnalyzer)
 
     def test_gets_rust_parser(self, tmp_path: Path) -> None:
         (tmp_path / "main.rs").touch()
-        from specweaver.workspace.context.analyzers import AnalyzerFactory, RustAnalyzer
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory, RustAnalyzer
 
         analyzer = AnalyzerFactory.for_directory(tmp_path)
         assert isinstance(analyzer, RustAnalyzer)
 
     def test_gets_typescript_parser(self, tmp_path: Path) -> None:
         (tmp_path / "app.ts").touch()
-        from specweaver.workspace.context.analyzers import AnalyzerFactory, TypeScriptAnalyzer
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory, TypeScriptAnalyzer
 
         analyzer = AnalyzerFactory.for_directory(tmp_path)
         assert isinstance(analyzer, TypeScriptAnalyzer)
 
     def test_gets_none_for_unknown(self, tmp_path: Path) -> None:
         (tmp_path / "file.unknown").touch()
-        from specweaver.workspace.context.analyzers import AnalyzerFactory
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
         analyzer = AnalyzerFactory.for_directory(tmp_path)
         assert analyzer is None
 
     def test_get_all_analyzers_returns_polyglot_union(self) -> None:
         """AnalyzerFactory exposes a union of all mapped parsers globally."""
-        from specweaver.workspace.context.analyzers import AnalyzerFactory
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
         analyzers = AnalyzerFactory.get_all_analyzers()
         assert len(analyzers) == 5
@@ -342,14 +342,14 @@ class TestPolyglotLanguageAnalyzer:
 
     def test_language_analyzer_delegates_binary_ignores_to_parser(self) -> None:
         """TreeSitterAnalyzerBase correctly passes binary ignore requests down to parser."""
-        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        from specweaver.workspace.analyzers.factory import PythonAnalyzer
         analyzer = PythonAnalyzer()
         patterns = analyzer.get_binary_ignore_patterns()
         assert "*.pyc" in patterns
 
     def test_language_analyzer_delegates_directory_ignores_to_parser(self) -> None:
         """TreeSitterAnalyzerBase correctly passes directory ignore requests down to parser."""
-        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        from specweaver.workspace.analyzers.factory import PythonAnalyzer
         analyzer = PythonAnalyzer()
         dirs = analyzer.get_default_directory_ignores()
         # Python parser adds .venv, env, .pytest_cache
@@ -360,7 +360,7 @@ class TestLanguageAnalyzerTraceability:
     """Test traceability tag extraction across test directories."""
 
     def test_extract_test_mapped_requirements_aggregates_files(self, tmp_path: Path) -> None:
-        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        from specweaver.workspace.analyzers.factory import PythonAnalyzer
         # Setup specific test file names so search.py iter_text_files will find them
         # Wait, the search.py tool isn't used directly here, we just use Path.rglob or iter_test_files
         pkg = tmp_path / "tests"
@@ -382,7 +382,7 @@ class TestLanguageAnalyzerTraceability:
         assert tags == {"FR-1", "FR-2", "NFR-1"}
 
     def test_extract_test_mapped_requirements_filters_test_files_only(self, tmp_path: Path) -> None:
-        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        from specweaver.workspace.analyzers.factory import PythonAnalyzer
         pkg = tmp_path / "src"
         pkg.mkdir()
         (pkg / "main.py").write_text(
@@ -397,7 +397,7 @@ class TestLanguageAnalyzerTraceability:
 
     def test_extract_test_mapped_requirements_skips_ignored_directories(self, tmp_path: Path) -> None:
 
-        from specweaver.workspace.context.analyzers import TypeScriptAnalyzer
+        from specweaver.workspace.analyzers.factory import TypeScriptAnalyzer
 
         # Setup a project directory
         root = tmp_path / "project"
@@ -432,7 +432,7 @@ class TestLanguageAnalyzerTraceability:
         from pathlib import Path
         from unittest.mock import patch
 
-        from specweaver.workspace.context.analyzers import PythonAnalyzer
+        from specweaver.workspace.analyzers.factory import PythonAnalyzer
 
         root = tmp_path / "project"
         root.mkdir()

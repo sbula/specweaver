@@ -226,7 +226,7 @@ class TestStandardsScan:
         # Mock discover_files to return no .py files
         monkeypatch.setattr(
             "specweaver.assurance.standards.discovery.discover_files",
-            lambda p: [],
+            lambda p, *args: [],
         )
         result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result.exit_code == 0
@@ -247,7 +247,7 @@ class TestStandardsScan:
 
         monkeypatch.setattr(
             "specweaver.assurance.standards.discovery.discover_files",
-            lambda p: [py_file],
+            lambda p, *args: [py_file],
         )
 
         result = runner.invoke(app, ["standards", "scan", "--no-review"])
@@ -281,7 +281,7 @@ class TestStandardsScan:
 
         monkeypatch.setattr(
             "specweaver.assurance.standards.discovery.discover_files",
-            lambda p: [py_file],
+            lambda p, *args: [py_file],
         )
         monkeypatch.setattr(
             "specweaver.assurance.standards.scanner.StandardsScanner.scan",
@@ -433,7 +433,7 @@ class TestStandardsEdgeCases:
 
         monkeypatch.setattr(
             "specweaver.assurance.standards.discovery.discover_files",
-            lambda p: [py_file],
+            lambda p, *args: [py_file],
         )
         monkeypatch.setattr(
             "specweaver.assurance.standards.scanner.StandardsScanner.scan",
@@ -458,7 +458,7 @@ class TestStandardsEdgeCases:
 
         monkeypatch.setattr(
             "specweaver.assurance.standards.discovery.discover_files",
-            lambda p: [py_file],
+            lambda p, *args: [py_file],
         )
 
         # First scan
@@ -753,7 +753,7 @@ class TestScanScopeFlag:
 
         monkeypatch.setattr(
             "specweaver.assurance.standards.discovery.discover_files",
-            lambda p: [py_file],
+            lambda p, *args: [py_file],
         )
 
         result = runner.invoke(

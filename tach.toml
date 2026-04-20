@@ -20,6 +20,7 @@ modules = [
     { path = "src.specweaver.workflows.planning", depends_on = [] },
     { path = "src.specweaver.workflows.review", depends_on = [] },
     { path = "src.specweaver.workspace.context", depends_on = [] },
+    { path = "src.specweaver.workspace.analyzers", depends_on = [] },
     { path = "src.specweaver.workspace.project", depends_on = [] },
 ]
 
@@ -38,10 +39,18 @@ from = [
     "src.specweaver.workspace.context",
 ]
 expose = [
-    "analyzers",
     "provider",
     "hitl_provider",
     "inferrer",
+    "analyzer_protocols",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.workspace.analyzers",
+]
+expose = [
+    "factory",
 ]
 
 [[interfaces]]

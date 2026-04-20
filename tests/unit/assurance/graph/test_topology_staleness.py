@@ -4,6 +4,7 @@
 from pathlib import Path
 
 from specweaver.assurance.graph.topology import TopologyGraph, TopologyNode
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 
 class TestStaleNodes:
@@ -40,7 +41,7 @@ class TestStaleNodes:
         # Setup: compute initial hashes and actively save cache to mock "clean state"
         from specweaver.assurance.graph.hasher import DependencyHasher
 
-        hasher = DependencyHasher(linear_chain)
+        hasher = DependencyHasher(linear_chain, AnalyzerFactory)
         manifests = [linear_chain / n / "context.yaml" for n in ["a", "b", "c"]]
         initial_state = hasher.compute_hashes(manifests)
         hasher.save_cache(initial_state)
@@ -67,7 +68,7 @@ class TestStaleNodes:
         """Testing exact isolation of impact_of bounds."""
         from specweaver.assurance.graph.hasher import DependencyHasher
 
-        hasher = DependencyHasher(diamond)
+        hasher = DependencyHasher(diamond, AnalyzerFactory)
         manifests = [diamond / n / "context.yaml" for n in ["a", "b", "c", "d"]]
         initial_state = hasher.compute_hashes(manifests)
         hasher.save_cache(initial_state)
@@ -91,7 +92,7 @@ class TestStaleNodes:
 
         from specweaver.assurance.graph.hasher import DependencyHasher
 
-        hasher = DependencyHasher(linear_chain)
+        hasher = DependencyHasher(linear_chain, AnalyzerFactory)
         manifests = [linear_chain / n / "context.yaml" for n in ["a", "b", "c"]]
         initial_state = hasher.compute_hashes(manifests)
         hasher.save_cache(initial_state)
@@ -111,7 +112,7 @@ class TestStaleNodes:
 
         from specweaver.assurance.graph.hasher import DependencyHasher
 
-        hasher = DependencyHasher(diamond)
+        hasher = DependencyHasher(diamond, AnalyzerFactory)
         manifests = [diamond / n / "context.yaml" for n in ["a", "b", "c", "d"]]
         initial_state = hasher.compute_hashes(manifests)
         hasher.save_cache(initial_state)

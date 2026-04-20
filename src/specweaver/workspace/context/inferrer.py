@@ -14,10 +14,12 @@ import logging
 from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path  # noqa: TC003 — used at runtime, not just type hints
+from typing import TYPE_CHECKING
 
 from ruamel.yaml import YAML
 
-from specweaver.workspace.analyzers.factory import AnalyzerFactory
+if TYPE_CHECKING:
+    from specweaver.workspace.context.analyzer_protocols import AnalyzerFactoryProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +64,12 @@ class InferenceResult:
 class ContextInferrer:
     """Auto-generate context.yaml files from source code analysis.
 
-    Uses AnalyzerFactory to detect the language and extract fields.
+    Uses AnalyzerFactoryProtocol via DI to detect the language and extract fields.
     Writes the generated file to disk with an AUTO-GENERATED header.
     """
+
+    def __init__(self, analyzer_factory: AnalyzerFactoryProtocol) -> None:
+        self.analyzer_factory = analyzer_factory
 
     def infer_and_write(
         self,
@@ -89,7 +94,7 @@ class ContextInferrer:
             return InferenceResult(node=None, was_generated=False)
 
         # Skip if no analyzable source files
-        analyzer = AnalyzerFactory.for_directory(directory)
+        analyzer = self.analyzer_factory.for_directory(directory)
         if analyzer is None:
             logger.debug(
                 "ContextInferrer: skipping '%s' — no analyzable source files", directory.name

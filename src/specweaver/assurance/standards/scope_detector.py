@@ -22,10 +22,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.assurance.standards.discovery import _SKIP_DIRS
-
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from specweaver.workspace.context.analyzer_protocols import AnalyzerFactoryProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ _SOURCE_EXTENSIONS: frozenset[str] = frozenset(
 )
 
 
-def detect_scopes(project_path: Path) -> list[str]:
+def detect_scopes(project_path: Path, analyzer_factory: AnalyzerFactoryProtocol) -> list[str]:
     """Detect scope boundaries up to 2 levels deep.
 
     Scans top-level directories (L1) and their direct children (L2) for
@@ -73,17 +73,22 @@ def detect_scopes(project_path: Path) -> list[str]:
     """
     scopes: list[str] = ["."]
 
+    skip_dirs = {".git"}
+    for analyzer in analyzer_factory.get_all_analyzers():
+        for ign in analyzer.get_default_directory_ignores():
+            skip_dirs.add(ign.rstrip("/"))
+
     for entry in sorted(project_path.iterdir()):
         if not entry.is_dir():
             continue
         name = entry.name
 
         # Skip hidden dirs and well-known non-source dirs
-        if name.startswith(".") or name in _SKIP_DIRS:
+        if name.startswith(".") or name in skip_dirs:
             continue
 
         # Check L2 (sub-directories of this L1 dir)
-        l2_scopes = _detect_l2_scopes(entry, name)
+        l2_scopes = _detect_l2_scopes(entry, name, skip_dirs)
 
         if l2_scopes:
             # L1 has sub-scopes → only sub-scopes are scopes (not L1 itself)
@@ -95,7 +100,7 @@ def detect_scopes(project_path: Path) -> list[str]:
     return sorted(scopes)
 
 
-def _detect_l2_scopes(entry: Path, parent_name: str) -> list[str]:
+def _detect_l2_scopes(entry: Path, parent_name: str, skip_dirs: set[str]) -> list[str]:
     """Detect L2 sub-scopes within an L1 directory."""
     l2_scopes: list[str] = []
     try:
@@ -103,7 +108,7 @@ def _detect_l2_scopes(entry: Path, parent_name: str) -> list[str]:
             if not sub.is_dir():
                 continue
             sub_name = sub.name
-            if sub_name.startswith(".") or sub_name in _SKIP_DIRS:
+            if sub_name.startswith(".") or sub_name in skip_dirs:
                 continue
             if _has_source_files(sub):
                 l2_scopes.append(f"{parent_name}/{sub_name}")

@@ -4,6 +4,7 @@
 from pathlib import Path
 
 from specweaver.assurance.graph.hasher import _ensure_gitignore
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 
 def test_ensure_gitignore_creates_file_if_not_exists(tmp_path: Path):
@@ -77,7 +78,7 @@ def test_dependency_hasher_compute_hashes(tmp_path: Path):
     manifest = src_dir / "context.yaml"
     manifest.write_text("name: src\n")
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
     result = hasher.compute_hashes([manifest])
 
     assert "src" in result
@@ -114,7 +115,7 @@ def test_dependency_hasher_determinism(tmp_path: Path):
     manifest = src_dir / "context.yaml"
     manifest.write_text("name: src\n")
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
     res1 = hasher.compute_hashes([manifest])
     res2 = hasher.compute_hashes([manifest])
 
@@ -135,7 +136,7 @@ def test_dependency_hasher_caching_and_pruning(tmp_path: Path):
     m2 = dir2 / "context.yaml"
     m2.write_text("name: mod2\n")
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
     state = hasher.compute_hashes([m1, m2])
     hasher.save_cache(state)
 
@@ -144,7 +145,7 @@ def test_dependency_hasher_caching_and_pruning(tmp_path: Path):
     assert hasher.cache_path.exists()
 
     # Reload from disk
-    hasher2 = DependencyHasher(tmp_path)
+    hasher2 = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
     cache = hasher2.load_cache()
     assert "mod1" in cache
     assert cache["mod1"]["merkle_root"] == state["mod1"]["merkle_root"]
@@ -188,7 +189,7 @@ def test_dependency_hasher_hidden_files_bypass(tmp_path: Path):
     secrets_dir.mkdir()
     (secrets_dir / "keys.txt").write_text("should_be_skipped")
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
     result = hasher._hash_directory(src_dir)
     rendered = result["rendered_payload"]
 
@@ -213,7 +214,7 @@ def test_dependency_hasher_symlink_traversal_halt(tmp_path: Path):
         # Gracefully handle Windows dev environments lacking symlink privs
         pass
     else:
-        hasher = DependencyHasher(tmp_path)
+        hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
         result = hasher._hash_directory(src_dir)
         rendered = result["rendered_payload"]
 
@@ -224,7 +225,7 @@ def test_dependency_hasher_symlink_traversal_halt(tmp_path: Path):
 def test_dependency_hasher_corrupt_cache(tmp_path: Path):
     from specweaver.assurance.graph.hasher import DependencyHasher
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
     hasher.cache_dir.mkdir()
     hasher.cache_path.write_text('{"broken_json_without_end_bracket', encoding="utf-8")
 
@@ -235,7 +236,7 @@ def test_dependency_hasher_corrupt_cache(tmp_path: Path):
 def test_dependency_hasher_os_lock_save(tmp_path: Path, monkeypatch):
     from specweaver.assurance.graph.hasher import DependencyHasher
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
 
     def mock_write_text(*args, **kwargs):
         raise OSError("Permission locked dummy")
@@ -275,7 +276,7 @@ def test_dependency_hasher_path_slash_agnosticism(tmp_path: Path):
     manifest = src_dir / "context.yaml"
     manifest.write_text("name: src\n")
 
-    hasher = DependencyHasher(tmp_path)
+    hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
     res = hasher.compute_hashes([manifest])
     rendered = res["src"]["rendered_payload"]
 

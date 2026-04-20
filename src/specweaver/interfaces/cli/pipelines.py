@@ -310,9 +310,10 @@ def _execute_run(  # noqa: C901
 
     if final_run.status == RunStatus.COMPLETED:
         from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
         try:
-            DependencyHasher(project_path).save_cache()
+            DependencyHasher(project_path, AnalyzerFactory).save_cache()
             logger.info("Pipeline completed successfully, saved staleness topology cache.")
             _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
         except Exception as e:
@@ -448,9 +449,10 @@ def resume(  # noqa: C901
 
     if final_run.status == RunStatus.COMPLETED:
         from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
         try:
-            DependencyHasher(project_path).save_cache()
+            DependencyHasher(project_path, AnalyzerFactory).save_cache()
             logger.info("Pipeline completed successfully, saved staleness topology cache.")
             _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
         except Exception as e:

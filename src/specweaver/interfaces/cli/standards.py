@@ -61,6 +61,7 @@ def standards_scan(  # noqa: C901
     from specweaver.assurance.standards.scope_detector import detect_scopes
     from specweaver.core.config.settings import load_settings
     from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
+    from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
     name = _core._require_active_project()
     db = _core.get_db()
@@ -80,12 +81,12 @@ def standards_scan(  # noqa: C901
     _core.console.print(f"  [dim]Root: {project_path}[/dim]\n")
 
     # Detect scopes
-    scopes = [scope] if scope else detect_scopes(project_path)
+    scopes = [scope] if scope else detect_scopes(project_path, AnalyzerFactory)
 
     _core.console.print(f"  Detected [bold]{len(scopes)}[/bold] scope(s): {', '.join(scopes)}\n")
 
     # Discover all files once
-    all_files = discover_files(project_path)
+    all_files = discover_files(project_path, AnalyzerFactory)
 
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner

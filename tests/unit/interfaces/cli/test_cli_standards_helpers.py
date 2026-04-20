@@ -82,7 +82,7 @@ class TestConfirmedByAuditTrail:
 
         monkeypatch.setattr(
             "specweaver.assurance.standards.discovery.discover_files",
-            lambda p: [py_file],
+            lambda p, *args: [py_file],
         )
 
         runner.invoke(app, ["standards", "scan", "--no-review"])

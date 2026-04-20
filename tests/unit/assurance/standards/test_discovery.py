@@ -9,6 +9,7 @@ import os
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.standards.discovery import discover_files
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -27,7 +28,7 @@ class TestWalkWithSkips:
         (tmp_path / "src" / "main.py").write_text("pass")
         (tmp_path / "src" / "utils.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         py_files = [f for f in files if f.suffix == ".py"]
         assert len(py_files) == 2
 
@@ -38,7 +39,7 @@ class TestWalkWithSkips:
         (cache / "main.cpython-313.pyc").write_text("compiled")
         (tmp_path / "main.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         rels = [str(f.relative_to(tmp_path)) for f in files]
         assert not any("__pycache__" in r for r in rels)
 
@@ -49,7 +50,7 @@ class TestWalkWithSkips:
         (nm / "index.js").write_text("module.exports = {};")
         (tmp_path / "app.js").write_text("const x = 1;")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         rels = [str(f.relative_to(tmp_path)) for f in files]
         assert not any("node_modules" in r for r in rels)
 
@@ -60,7 +61,7 @@ class TestWalkWithSkips:
         (venv / "site.py").write_text("pass")
         (tmp_path / "app.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         rels = [str(f.relative_to(tmp_path)) for f in files]
         assert not any(".venv" in r for r in rels)
 
@@ -71,7 +72,7 @@ class TestWalkWithSkips:
         (git / "pack").write_text("binary")
         (tmp_path / "main.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         rels = [str(f.relative_to(tmp_path)) for f in files]
         assert not any(".git" in r for r in rels)
 
@@ -81,7 +82,7 @@ class TestWalkWithSkips:
         (tmp_path / "app.ts").write_text("const x: number = 1;")
         (tmp_path / "index.js").write_text("module.exports = {};")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         extensions = {f.suffix for f in files}
         assert ".py" in extensions
         assert ".ts" in extensions
@@ -89,7 +90,7 @@ class TestWalkWithSkips:
 
     def test_empty_directory_returns_empty_list(self, tmp_path: Path) -> None:
         """Empty directory produces no files."""
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert files == []
 
     def test_skips_build_and_dist(self, tmp_path: Path) -> None:
@@ -100,7 +101,7 @@ class TestWalkWithSkips:
         (tmp_path / "dist" / "app.py").write_text("pass")
         (tmp_path / "src.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
         assert files[0].name == "src.py"
 
@@ -119,7 +120,7 @@ class TestSpecweaverIgnore:
         (tmp_path / "generated.py").write_text("pass")
         (tmp_path / ".specweaverignore").write_text("generated.py\n")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
         assert "main.py" in names
         assert "generated.py" not in names
@@ -132,14 +133,14 @@ class TestSpecweaverIgnore:
         (tmp_path / "main.py").write_text("pass")
         (tmp_path / ".specweaverignore").write_text("generated/\n")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         rels = [str(f.relative_to(tmp_path)) for f in files]
         assert not any("generated" in r for r in rels)
 
     def test_no_specweaverignore_file_is_fine(self, tmp_path: Path) -> None:
         """Missing .specweaverignore is not an error."""
         (tmp_path / "main.py").write_text("pass")
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
 
 
@@ -165,7 +166,7 @@ class TestGitLsFiles:
             f'cd /d "{tmp_path}" && git add tracked.py .gitignore > nul 2>&1',
         )
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
         assert "tracked.py" in names
         assert "ignored.py" not in names
@@ -187,7 +188,7 @@ class TestGitLsFiles:
 
         monkeypatch.setattr(subprocess, "run", mock_run)
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
         assert files[0].name == "main.py"
 
@@ -203,7 +204,7 @@ class TestDiscoveryEdgeCases:
     def test_returns_absolute_paths(self, tmp_path: Path) -> None:
         """All returned paths should be absolute."""
         (tmp_path / "main.py").write_text("pass")
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert all(f.is_absolute() for f in files)
 
     def test_returns_only_files_not_directories(self, tmp_path: Path) -> None:
@@ -211,7 +212,7 @@ class TestDiscoveryEdgeCases:
         (tmp_path / "subdir").mkdir()
         (tmp_path / "subdir" / "main.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert all(f.is_file() for f in files)
 
     def test_deeply_nested_files(self, tmp_path: Path) -> None:
@@ -220,7 +221,7 @@ class TestDiscoveryEdgeCases:
         deep.mkdir(parents=True)
         (deep / "deep.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
         assert files[0].name == "deep.py"
 
@@ -229,7 +230,7 @@ class TestDiscoveryEdgeCases:
         for name in ("z.py", "a.py", "m.py"):
             (tmp_path / name).write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert files == sorted(files)
 
     def test_skips_all_dot_directories(self, tmp_path: Path) -> None:
@@ -239,7 +240,7 @@ class TestDiscoveryEdgeCases:
         (hidden / "secret.py").write_text("pass")
         (tmp_path / "visible.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
         assert "secret.py" not in names
         assert "visible.py" in names
@@ -252,7 +253,7 @@ class TestDiscoveryEdgeCases:
             (d / "file.py").write_text("pass")
         (tmp_path / "real.py").write_text("pass")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
         assert files[0].name == "real.py"
 
@@ -283,7 +284,7 @@ class TestGitLsFilesIsolated:
         monkeypatch.setattr(sp, "run", mock_run)
 
         # discover_files should fall back to walk
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
         assert files[0].name == "main.py"
 
@@ -304,7 +305,7 @@ class TestGitLsFilesIsolated:
         monkeypatch.setattr(sp, "run", mock_run)
 
         # After fix: TimeoutExpired is now caught → falls back to walk
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
         assert files[0].name == "main.py"
 
@@ -324,7 +325,7 @@ class TestGitLsFilesIsolated:
 
         monkeypatch.setattr(sp, "run", mock_run)
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
         assert files[0].name == "main.py"
 
@@ -350,7 +351,7 @@ class TestGitLsFilesIsolated:
 
         monkeypatch.setattr(sp, "run", mock_run)
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
         assert "exists.py" in names
         assert "deleted.py" not in names
@@ -376,7 +377,7 @@ class TestGitLsFilesIsolated:
 
         monkeypatch.setattr(sp, "run", mock_run)
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
 
     def test_git_success_returns_resolved_paths(
@@ -402,7 +403,7 @@ class TestGitLsFilesIsolated:
 
         monkeypatch.setattr(sp, "run", mock_run)
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         assert len(files) == 1
         assert files[0].is_absolute()
         assert files[0].name == "app.py"
@@ -437,7 +438,7 @@ class TestApplySpecweaverignoreIsolated:
 
         monkeypatch.setattr(builtins, "__import__", mock_import)
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
         # Both should be included since pathspec can't filter
         assert "main.py" in names
@@ -466,6 +467,7 @@ class TestApplySpecweaverignoreIsolated:
         result = _apply_specweaverignore(
             [external.resolve(), internal.resolve()],
             project_root,
+            AnalyzerFactory,
         )
         names = [f.name for f in result]
         assert "external.py" in names
@@ -483,7 +485,7 @@ class TestApplySpecweaverignoreIsolated:
         (tmp_path / "main.py").write_text("pass")
         (tmp_path / ".specweaverignore").write_text("generated/**\n")
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
         assert "main.py" in names
         assert "auto.py" not in names
@@ -501,7 +503,7 @@ class TestApplySpecweaverignoreIsolated:
             "*.log\n!important.log\n",
         )
 
-        files = discover_files(tmp_path)
+        files = discover_files(tmp_path, AnalyzerFactory)
         names = [f.name for f in files]
         assert "main.py" in names
         assert "a.log" not in names

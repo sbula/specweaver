@@ -8,6 +8,8 @@ from specweaver.workspace.parsers.exclusions import SpecWeaverIgnoreParser
 if TYPE_CHECKING:
     import pathspec
 
+from pathlib import Path
+
 import pytest
 
 
@@ -127,10 +129,44 @@ def test_get_compiled_spec_handles_empty_runtime_patterns() -> None:
     assert spec.match_file("anything.pyc") is False
 
 
-@pytest.mark.skip(reason="Deferred to SF-4")
-def test_deferred_integration_orchestrator_initializes_ignores_sf4() -> None:
-    pass
+@pytest.fixture
+def tmp_path_fixture(tmp_path: Path):
+    return tmp_path
 
-@pytest.mark.skip(reason="Deferred to SF-4")
-def test_deferred_e2e_topological_spec_bypass_hidden_binary_sf4() -> None:
-    pass
+def test_integration_orchestrator_initializes_ignores_sf4(tmp_path: Path) -> None:
+    from specweaver.workspace.analyzers.factory import AnalyzerFactory
+    from specweaver.workspace.project.scaffold import NativeIgnoreIOHandler
+
+    io_handler = NativeIgnoreIOHandler(tmp_path / ".specweaverignore")
+    parser = SpecWeaverIgnoreParser(io_handler)
+
+    default_dirs = set()
+    for a in AnalyzerFactory.get_all_analyzers():
+        default_dirs.update(a.get_default_directory_ignores())
+
+    parser.ensure_scaffolded(list(default_dirs))
+
+    assert (tmp_path / ".specweaverignore").exists()
+    content = (tmp_path / ".specweaverignore").read_text()
+    assert ".venv/" in content
+    assert "node_modules/" in content
+
+
+def test_e2e_topological_spec_bypass_hidden_binary_sf4(tmp_path: Path) -> None:
+    from specweaver.workspace.analyzers.factory import AnalyzerFactory
+    from specweaver.workspace.project.scaffold import NativeIgnoreIOHandler
+
+    io_handler = NativeIgnoreIOHandler(tmp_path / ".specweaverignore")
+    parser = SpecWeaverIgnoreParser(io_handler)
+
+    bin_patterns = set()
+    for a in AnalyzerFactory.get_all_analyzers():
+        bin_patterns.update(a.get_binary_ignore_patterns())
+
+    compiled_spec = parser.get_compiled_spec(list(bin_patterns))
+
+    assert compiled_spec.match_file("src/main.class") is True
+    assert compiled_spec.match_file("target/release/lib.so") is True
+    assert compiled_spec.match_file("src/api/handler.pyc") is True
+    assert compiled_spec.match_file("src/main.py") is False
+

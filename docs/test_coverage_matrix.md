@@ -43,8 +43,8 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 ## `src/specweaver/workspace/parsers/exclusions.py`
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|
-| SpecWeaverIgnoreParser.ensure_scaffolded() | ✅ | ❌ | ❌ |
-| SpecWeaverIgnoreParser.get_compiled_spec() | ✅ | ❌ | ❌ |
+| SpecWeaverIgnoreParser.ensure_scaffolded() | ✅ | ✅ | ✅ |
+| SpecWeaverIgnoreParser.get_compiled_spec() | ✅ | ✅ | ✅ |
 
 ## `src/specweaver/workspace/parsers/interfaces.py`
 | Class / Function | Unit | Integration | E2E |
@@ -59,11 +59,11 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | get_default_directory_ignores() | ✅ | — | — |
 | extract_traceability_tags() | ✅ | — | — |
 
-## `src/specweaver/workspace/context/analyzers.py`
+## `src/specweaver/workspace/analyzers/factory.py`
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|
 | `get_test_file_pattern()` | ✅ | — | — |
-| `extract_test_mapped_requirements()` | ✅ | ❌ | — |
+| `extract_test_mapped_requirements()` | ✅ | ✅ | — |
 
 ## `src/specweaver/assurance/validation/rules/code/c09_traceability.py`
 | Class / Function | Unit | Integration | E2E |
