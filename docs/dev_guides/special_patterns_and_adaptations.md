@@ -253,3 +253,17 @@ Instead of trying to manipulate or parse `Pydantic` settings during YAML loading
 1. **Architectural Pure-Logic Boundaries**: Configuration models (`context.yaml`) are located in L2 `config` and `assurance` layers. Running arbitrary `subprocess.run(["git", "ls-files"])` from inside configuration violates our Tach domain bounds cleanly, cross-contaminating physical executables into pure domain logic. By injecting the check exclusively into the orchestrator layer (L3 Flow), we natively utilize valid `Loom Atom` paths to execute Git binaries securely.
 2. **Dictatorial Execution Integrity**: If `GitAtom` returns that the vault file is tracked, the Runner actively shuts down the interpreter via a violent `RuntimeError`. It assumes the repository is inherently compromised. There is no fallback, no auto-rollback, and noHITL mitigation—it kills the pipeline immediately to prevent pushing credentials upstream.
 
+---
+
+## 17. The Thread-Pumped JSON-RPC Executor (Loom Commons)
+
+When integrating Model Context Protocol (MCP) servers locally via standard I/O (stdio) in feature 3.32c SF-2, we entirely rejected external integration SDKs (like `mcp` PyPI packages). Existing libraries force heavy asynchronous event loop requirements which explicitly violate the `async_ready: false` bounding configurations within our core execution layers (`commons`).
+
+### How it works:
+Instead of `asyncio.create_subprocess_exec`, the `MCPExecutor` boots standard `subprocess.Popen` pipelines attached to native `subprocess.PIPE` buffers. To perform timeout-aware stream isolation natively on Windows without `select` or `fcntl` crashes:
+1. It sparks a daemon `threading.Thread` loop executing purely `iter(process.stdout.readline, "")`.
+2. This loop pipes directly into an unbounded `queue.Queue`.
+3. The foreground `call_rpc` process utilizes explicit sequence increment correlation (`self._request_id += 1`) and parses the queue stream blocks via `_queue.get(timeout=...)`.
+
+### Why we do it:
+This architectural separation isolates arbitrary Docker blockages cleanly. `call_rpc` successfully idles and traps delays, rejecting stale queue loops natively without cross-contaminating the main thread execution path. It completely negates the requirement for complex `AsyncIO` integration downline in the engine stack, ensuring validation layers remain functionally pure synchronous generators.

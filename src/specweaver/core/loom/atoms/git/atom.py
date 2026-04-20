@@ -13,8 +13,6 @@ All commands run on the target project directory via EngineGitExecutor.
 from __future__ import annotations
 
 import logging
-import shutil
-import time
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus

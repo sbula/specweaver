@@ -58,6 +58,7 @@ specweaver/                       ← level: system, archetype: orchestrator
 │       ├── filesystem/           ← FileExecutor, search helpers
 │       ├── git/                  ← GitExecutor
 │       ├── language/             ← Polyglot AST Extractor (tree-sitter bindings)
+│       ├── mcp/                  ← MCP JSON-RPC Stdio Bridge
 │       ├── protocol/             ← Protocol & Schema Parsers (native OpenAPI/proto)
 │       └── qa_runner/            ← QARunnerExecutor
 ├── pipelines/                    ← YAML pipeline definitions (data only)

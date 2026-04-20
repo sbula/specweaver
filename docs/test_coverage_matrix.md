@@ -36,6 +36,15 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | `PipelineRunner.resume()` | ✅ | ✅ | ✅ |
 | `PipelineRunner.run()` | ✅ | ✅ | ✅ |
 
+## `src/specweaver/core/loom/commons/mcp/executor.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `MCPExecutor.__init__()` | ✅ | ✅ | ❌ |
+| `MCPExecutor._read_loop()` | ✅ | ✅ | ❌ |
+| `MCPExecutor.close()` | ✅ | ✅ | ❌ |
+| `MCPExecutor.is_alive()` | ✅ | ✅ | ❌ |
+| `MCPExecutor.call_rpc()` | ✅ | ✅ | ❌ |
+
 ## `src/specweaver/core/loom/atoms/git/atom.py`
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|

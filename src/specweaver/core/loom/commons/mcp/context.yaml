@@ -1,0 +1,29 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: mcp
+level: component
+purpose: >
+  Provides native synchronous standard I/O bridging to Model Context Protocol (MCP) servers.
+
+description: |
+  MCP Commons sits at the bottom of the stack, facilitating the pure execution of
+  `docker run` or arbitrary binary invocations and translating raw synchronous
+  JSON-RPC text streams across stdin/stdout.
+  It MUST remain synchronous (`async_ready: false`) to honor Flow pipeline boundaries.
+
+archetype: adapter
+
+consumes: []
+
+forbids:
+  - specweaver/loom/tools/*  # Execution blocks must not access tool intent layers.
+  - specweaver/loom/atoms/*  # Execution blocks must not access orchestration envelopes.
+
+exposes:
+  - executor.py
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

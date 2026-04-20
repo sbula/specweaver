@@ -107,13 +107,13 @@ Key constraints: Must use the Pre-Fetched Context Envelope pattern to avoid Syst
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Context YAML & Vault Bindings | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | MCP Execution Atom | SF-1 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
+| SF-2 | MCP Execution Atom | SF-1 | ✅ | ✅ | ⚪ | ⚪ | ⚪ |
 | SF-3 | The Pre-Fetch Assembler | SF-2 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 | SF-4 | MCP Explorer Tool | SF-2 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
 ## Session Handoff
 
-**Current status**: SF-1 COMMITTED!
+**Current status**: SF-2 IMPL PLAN APPROVED!
 **Next step**: Run:
-`/implementation-plan docs/roadmap/phase_3/feature_3_32c/feature_3_32c_design.md SF-2`
+`/dev docs/roadmap/phase_3/feature_3_32c/feature_3_32c_sf2_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⚪ in any row and resume from there using the appropriate workflow.
