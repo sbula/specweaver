@@ -32,3 +32,8 @@ Adding a new intent natively to the MCP bridging pipe requires extending `MCPAto
 1. Append your expected target vector to `MCPAtom._intent_<your_method>`.
 2. Map the payload securely into the internal `_executor.call_rpc` buffer constraint.
 3. Establish appropriate integration tests tracking your raw JSON string formatting logic inside `test_atom_ipc.py`.
+
+
+### MCP Explorer Tool
+The **MCP Explorer Tool** serves as the dynamic discovery endpoint for L2 Architects. While implementations and code generation handlers simply receive injected pre-fetched context from explicit URIs, the Architect role can actively explore 
+esources/list natively during the planning phase via ArchitectMCPInterface.

@@ -35,3 +35,7 @@ consumes_resources:
 ## 3. Strict Execution Limits (Docker Required)
 
 By architectural mandate, SpecWeaver refuses to boot native `node` processes blindly on your local OS to protect you from remote execution attacks. All target MCP servers must physically be packaged via `docker run -i --rm` or `podman`. SpecWeaver will rigidly trigger a validation halt if you attempt to bypass this isolation limit.
+
+
+## Architecture Design Limitations
+The MCPExplorerTool exposes the JSON-RPC endpoints for MCP. Due to zero-trust execution models within the system, only the **L2 Architect Role** is permitted by the ToolDispatcher to utilize the ArchitectMCPInterface. Standard implementation and validation loops cannot dynamically navigate MCP endpoint mappings.
