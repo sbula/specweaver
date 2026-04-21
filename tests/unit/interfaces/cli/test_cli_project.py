@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import shutil
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner
@@ -163,6 +164,27 @@ class TestCLIInitDB:
         project_dir.mkdir()
         result = runner.invoke(app, ["init", "", "--path", str(project_dir)])
         assert result.exit_code != 0
+
+    def test_init_with_mcp_flag_postgres(self, mock_db, tmp_path: Path):
+        """sw init <name> --mcp postgres provisions the target DB envelope."""
+        project_dir = tmp_path / "mcp-proj"
+        project_dir.mkdir()
+        result = runner.invoke(app, ["init", "mcp-app", "--path", str(project_dir), "--mcp", "postgres"])
+        assert result.exit_code == 0
+        assert (project_dir / ".specweaver_mcp" / "postgres" / "context.yaml").is_file()
+        assert (project_dir / ".specweaver" / "vault.env").is_file()
+
+    @patch("specweaver.interfaces.cli.projects.scaffold_project")
+    def test_init_with_mcp_flag_invalid(self, mock_scaffold, mock_db, tmp_path: Path):
+        """sw init catches ValueError from scaffold_project and rejects invalid mcp boundaries."""
+        project_dir = tmp_path / "mcp-fail-proj"
+        project_dir.mkdir()
+
+        mock_scaffold.side_effect = ValueError("Unsupported MCP Target boundary")
+
+        result = runner.invoke(app, ["init", "fail-app", "--path", str(project_dir), "--mcp", "invalid"])
+        assert result.exit_code == 1
+        assert "Error: Unsupported MCP Target" in result.stdout
 
 
 # ---------------------------------------------------------------------------

@@ -56,7 +56,7 @@ Key constraints: MCP servers MUST run in ephemeral Docker configurations mapped 
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Setup your Project DB Harness | Instructions on read-only DB permissions and `vault.env` configuration. | ⚪ To be written during Pre-commit |
+| Setup your Project DB Harness | Instructions on read-only DB permissions and `vault.env` configuration. | ✅ Written in docs/dev_guides/mcp_db_harness_setup.md |
 
 ## Sub-Feature Breakdown
 
@@ -76,11 +76,10 @@ Key constraints: MCP servers MUST run in ephemeral Docker configurations mapped 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | MCP Scaffold Templates & Vault integration | — | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
+| SF-1 | MCP Scaffold Templates & Vault integration | — | ✅ | ✅ | [/] | ⚪ | ⚪ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED!
-**Next step**: Run:
-`/implementation-plan docs/roadmap/phase_3/feature_3_32c_1/feature_3_32c_1_design.md SF-1`
+**Current status**: Impl Plan APPROVED!
+**Next step**: Run: `/dev docs/roadmap/phase_3/feature_3_32c_1/feature_3_32c_1_design.md` for SF-1
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⚪ in any row and resume from there using the appropriate workflow.

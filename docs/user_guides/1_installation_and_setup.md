@@ -29,6 +29,9 @@ SpecWeaver relies on an embedded SQLite database to mathematically track your ar
 ```bash
 # Register a project locally 
 sw init my-app --path ./my-project
+
+# Or scaffold alongside an external Model Context Protocol integration
+sw init my-app --path ./my-project --mcp postgres
 ```
 This command physically scaffolds `.specweaver/` directories inside the target path, sets up the active connection, and automatically seeds starter templates for both `CONSTITUTION.md` and `.specweaverignore` encompassing polyglot defaults.
 
@@ -70,7 +73,7 @@ Starting with Feature 3.32c, SpecWeaver supports context pre-fetching against li
 If your pipelines declare `mcp_servers` mappings inside `.specweaver/pipelines`, they will require physical runtime credentials. **It is incredibly dangerous to store database proxies natively inside codebases**. SpecWeaver protects you using the isolated Vault map. 
 
 To inject credentials without causing a pipeline abortion:
-1. Create a raw `.env` file cleanly situated at `.specweaver/vault.env`.
-2. Ensure you immediately add `.specweaver/vault.env` to your global `.gitignore` scope. 
+1. Use `sw init <name> --mcp postgres`. This automatically spins up `.specweaver/vault.env` and implicitly appends it to your root `.gitignore`.
+2. Alternatively, create `.specweaver/vault.env` yourself and ensure you immediately add it to your global `.gitignore` scope. 
 
 **The Pipeline Orchestrator actively scans this protection boundary. If the Vault configuration file is mathematically tracked inside your Git commit scope, SpecWeaver will dictate an immediate interpreter crash to prevent accidental credentials leakage.**

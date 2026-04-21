@@ -100,6 +100,31 @@ class MCPAtom(Atom):
             self._executor.close()
             self._executor = None
 
+    def _scrub_telemetry(self, payload: Any) -> Any:
+        """Recursively scrub vault secrets from RPC payloads."""
+        if not self._env:
+            return payload
+
+        secrets = [
+            v for v in self._env.values()
+            if isinstance(v, str) and len(v.strip()) >= 8
+        ]
+
+        if not secrets:
+            return payload
+
+        if isinstance(payload, dict):
+            return {k: self._scrub_telemetry(v) for k, v in payload.items()}
+        if isinstance(payload, list):
+            return [self._scrub_telemetry(item) for item in payload]
+        if isinstance(payload, str):
+            for secret in set(secrets):
+                if secret in payload:
+                    payload = payload.replace(secret, "***RESTRICTED***")
+            return payload
+
+        return payload
+
     # -- Intent implementations ----------------------------------------
 
     def _intent_initialize(self, context: dict[str, Any]) -> AtomResult:
@@ -120,7 +145,7 @@ class MCPAtom(Atom):
             "clientInfo": {"name": "specweaver-atom", "version": "1.0.0"},
         }
 
-        response = self._executor.call_rpc(method="initialize", params=payload, timeout=10.0)
+        response = self._scrub_telemetry(self._executor.call_rpc(method="initialize", params=payload, timeout=10.0))
 
         # Confirm to the protocol the initialization is done
         self._executor.call_rpc(method="notifications/initialized", params={}, timeout=5.0)
@@ -144,8 +169,10 @@ class MCPAtom(Atom):
         if "uri" not in params:
             return AtomResult(status=AtomStatus.FAILED, message="Missing 'uri' in intent params")
 
-        response = self._executor.call_rpc(
-            method="resources/read", params={"uri": params["uri"]}, timeout=15.0
+        response = self._scrub_telemetry(
+            self._executor.call_rpc(
+                method="resources/read", params={"uri": params["uri"]}, timeout=15.0
+            )
         )
 
         return AtomResult(

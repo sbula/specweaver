@@ -143,6 +143,38 @@ _What this component does NOT do._
 """
 
 
+_DEFAULT_VAULT_ENV = """\
+# Secure Vault - Explicitly excluded from source control tracking.
+# MCP Target: Postgres
+# Injected automatically into the MCP runner bounds.
+
+# NFR-2 CONSTRAINT: Ensure POSTGRES_USER is a restricted read-only account.
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+"""
+
+_DEFAULT_MCP_POSTGRES_YAML = """\
+name: mcp-postgres
+level: internal
+purpose: Dynamic Schema Context Adapter via MCP
+archetype: orchestrator
+consumes: []
+forbids: []
+command:
+  - "docker"
+  - "run"
+  - "--rm"
+  - "-i"
+  - "--env-file"
+  - ".specweaver/vault.env"
+  - "node:20"
+  - "sh"
+  - "-c"
+  - "npx -y @modelcontextprotocol/server-postgres postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal/${POSTGRES_DB}"
+"""
+
+
 @dataclass(frozen=True)
 class ScaffoldResult:
     """Summary of what scaffold_project created or found."""
@@ -224,7 +256,40 @@ def _scaffold_specweaverignore(project_path: Path, created: list[str]) -> None:
         created.append(".specweaverignore")
 
 
-def scaffold_project(project_path: Path) -> ScaffoldResult:
+def _scaffold_mcp_postgres(project_path: Path, created: list[str]) -> None:
+    mcp_dir = project_path / ".specweaver_mcp" / "postgres"
+    if not mcp_dir.exists():
+        mcp_dir.mkdir(parents=True)
+        created.append(".specweaver_mcp/postgres/")
+
+    ctx_file = mcp_dir / "context.yaml"
+    if not ctx_file.exists():
+        ctx_file.write_text(_DEFAULT_MCP_POSTGRES_YAML, encoding="utf-8")
+        created.append(".specweaver_mcp/postgres/context.yaml")
+
+
+def _scaffold_vault_file(sw_dir: Path, created: list[str]) -> None:
+    vault_file = sw_dir / "vault.env"
+    if not vault_file.exists():
+        vault_file.write_text(_DEFAULT_VAULT_ENV, encoding="utf-8")
+        created.append(".specweaver/vault.env")
+
+
+def _scaffold_gitignore_vault(project_path: Path) -> None:
+    gitignore = project_path / ".gitignore"
+    io_handler = NativeIgnoreIOHandler(gitignore)
+
+    needs_ignore = True
+    if io_handler.exists():
+        content = io_handler.read_text()
+        if ".specweaver/vault.env" in content:
+            needs_ignore = False
+
+    if needs_ignore:
+        io_handler.append_lines([".specweaver/vault.env"])
+
+
+def scaffold_project(project_path: Path, mcp_target: str | None = None) -> ScaffoldResult:
     """Create the .specweaver/ directory structure in a target project.
 
     Idempotent: existing files are NOT overwritten. Only missing items
@@ -232,12 +297,14 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
 
     Args:
         project_path: Root directory of the target project.
+        mcp_target: Optional MCP capability to bootstrap.
 
     Returns:
         ScaffoldResult with paths and a list of created items.
 
     Raises:
         FileNotFoundError: If project_path does not exist.
+        ValueError: If mcp_target is unsupported.
     """
     if not project_path.exists():
         msg = f"Project path does not exist: {project_path}"
@@ -251,6 +318,14 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
     _scaffold_templates(sw_dir, created)
     constitution_file = _scaffold_constitution(project_path, created)
     _scaffold_specweaverignore(project_path, created)
+
+    if mcp_target:
+        if mcp_target == "postgres":
+            _scaffold_vault_file(sw_dir, created)
+            _scaffold_mcp_postgres(project_path, created)
+            _scaffold_gitignore_vault(project_path)
+        else:
+            raise ValueError(f"Unsupported MCP target: {mcp_target}")
 
     result = ScaffoldResult(
         project_path=project_path,

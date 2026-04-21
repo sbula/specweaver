@@ -164,3 +164,89 @@ class TestMCPAtomIntents:
         result = atom._intent_read_resource({})
         assert result.status == AtomStatus.FAILED
         assert "Executor not initialized" in result.message
+
+    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    def test_telemetry_scrubbing_removes_vault_secrets(self, mock_executor_class: MagicMock) -> None:
+        """Test that vault.env secrets tracked in `_env` are replaced with ***RESTRICTED*** in returned exports."""
+        mock_executor = MagicMock()
+        mock_executor_class.return_value = mock_executor
+
+        mock_executor.call_rpc.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+                "db_uri": "postgres://supersecret@host.docker.internal/db",
+                "nested": {
+                    "password": "supersecret"
+                }
+            },
+        }
+
+        # Initialize with simulated vault vault.env bound via CLI dispatch
+        env_vars = {"POSTGRES_PASSWORD": "supersecret", "TINY": "ok"}
+        atom = MCPAtom([sys.executable], env=env_vars)
+
+        context = {"intent": "read_resource", "params": {"uri": "postgres://schema"}}
+        result = atom.run(context)
+
+        assert result.status == AtomStatus.SUCCESS
+        assert "supersecret" not in result.exports["db_uri"]
+        assert "***RESTRICTED***" in result.exports["db_uri"]
+        assert result.exports["nested"]["password"] == "***RESTRICTED***"
+
+    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    def test_telemetry_scrubbing_ignores_short_strings(self, mock_executor_class: MagicMock) -> None:
+        """Test that short strings (< 8 chars) or whitespace are not scrubbed to prevent false positive log corruption."""
+        mock_executor = MagicMock()
+        mock_executor_class.return_value = mock_executor
+
+        mock_executor.call_rpc.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+                "status": "ok",
+                "empty": " "
+            },
+        }
+
+        # TINY is short, should be ignored
+        env_vars = {"TINY": "ok", "SPACE": " "}
+        atom = MCPAtom([sys.executable], env=env_vars)
+
+        context = {"intent": "read_resource", "params": {"uri": "postgres://schema"}}
+        result = atom.run(context)
+
+        assert result.status == AtomStatus.SUCCESS
+        assert result.exports["status"] == "ok"  # 'ok' isn't scrubbed because len < 8
+        assert result.exports["empty"] == " "
+
+    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    def test_telemetry_scrubbing_removes_vault_secrets_from_lists(self, mock_executor_class: MagicMock) -> None:
+        """Test that vault.env secrets nested deeply in JSON arrays are recursively masked."""
+        mock_executor = MagicMock()
+        mock_executor_class.return_value = mock_executor
+
+        mock_executor.call_rpc.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+                "connections": [
+                    "safe-string",
+                    "postgres://supersecret@host",
+                    {"sub": ["nested", "supersecret"]}
+                ]
+            },
+        }
+
+        env_vars = {"POSTGRES_PASSWORD": "supersecret"}
+        atom = MCPAtom([sys.executable], env=env_vars)
+
+        context = {"intent": "read_resource", "params": {"uri": "postgres://schema"}}
+        result = atom.run(context)
+
+        assert result.status == AtomStatus.SUCCESS
+        connections = result.exports["connections"]
+        assert connections[0] == "safe-string"
+        assert "***RESTRICTED***" in connections[1]
+        assert "supersecret" not in connections[1]
+        assert connections[2]["sub"][1] == "***RESTRICTED***"

@@ -35,6 +35,11 @@ def init(
         "-p",
         help="Path to the project directory. Defaults to cwd.",
     ),
+    mcp: str | None = typer.Option(
+        None,
+        "--mcp",
+        help="Scaffold MCP boundary (e.g., 'postgres').",
+    ),
 ) -> None:
     """Register a project and create SpecWeaver scaffolding.
 
@@ -58,7 +63,11 @@ def init(
     db.set_active_project(name)
 
     # Scaffold files
-    result = scaffold_project(project_path)
+    try:
+        result = scaffold_project(project_path, mcp_target=mcp)
+    except ValueError as exc:
+        _core.console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
 
     _core.console.print(
         f"[green]Project initialized[/green] at [bold]{result.project_path}[/bold]",

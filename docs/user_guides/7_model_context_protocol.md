@@ -10,7 +10,7 @@ In your project's `.specweaver/context.yaml`, you declare exactly which MCP serv
 
 ## 1. Defining Servers
 
-In your Target Project's `context.yaml`, define your external systems in the `mcp_servers` dictionary layer:
+In your Target Project's `context.yaml`, define your external systems in the `mcp_servers` dictionary layer. Alternatively, run `sw init my-app --mcp postgres` which will seamlessly deploy the container bindings for you:
 
 ```yaml
 mcp_servers:

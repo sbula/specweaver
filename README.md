@@ -32,6 +32,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Constitutions & Auto-Discovery** — Analyze legacy codebases mathematically to extract naming, import, and logic standards to constrain generation context implicitly.
 - **Zero-Trust Tool Isolation** — Agent generation occurs strictly inside isolated Git Worktree Sandbox environments utilizing dictatorial grant checks avoiding hallucinatory system overwrites.
 - **Deep Semantic Pipeline Hashing** — Sub-second mathematical incremental crawler computes Merkle-tree state cache over physical structures to bypass unaffected workflows downstream natively.
+- **External DB Context Harness** — Connect externally to persistent databases (e.g. Postgres) via the Model Context Protocol (MCP) securely routing read-only structures through ephemeral Node environments with telemetry scrubbing.
 
 > 🔎 *For an exhaustive, technical inventory of internal engine mechanics, capabilities, and upcoming architectural deployments, please view the active [SpecWeaver Roadmap](docs/roadmap/phase_3_feature_expansion.md).*
 
@@ -53,6 +54,7 @@ If you are extending SpecWeaver's core Engine, custom tools, or LLM adapters, co
 - [Layer Isolation & DI](docs/dev_guides/layer_isolation_and_di.md)
 - [Adding Tools & Atoms](docs/dev_guides/adding_tools_and_atoms.md)
 - [Testing Architecture](docs/dev_guides/testing_guide.md)
+- [MCP DB Harness Setup](docs/dev_guides/mcp_db_harness_setup.md)
 - [View all Developer Guides...](docs/dev_guides/)
 
 ## Project Structure
