@@ -697,8 +697,8 @@ class TestWorktreeTeardown:
         assert "Fallback" in result.message
         assert not worktree_path.exists()
 
-    @patch("specweaver.core.loom.atoms.git.atom.time.sleep")
-    @patch("specweaver.core.loom.atoms.git.atom.shutil.rmtree")
+    @patch("specweaver.core.loom.atoms.git.worktree_ops.time.sleep")
+    @patch("specweaver.core.loom.atoms.git.worktree_ops.shutil.rmtree")
     def test_windows_fallback_exhausts_retries_and_fails(
         self, mock_rmtree, mock_sleep, tmp_path: Path
     ) -> None:

@@ -45,6 +45,15 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | `MCPExecutor.is_alive()` | ✅ | ✅ | ❌ |
 | `MCPExecutor.call_rpc()` | ✅ | ✅ | ❌ |
 
+## `src/specweaver/core/loom/atoms/mcp/atom.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `MCPAtom._ensure_started()` | ✅ | ❌ | ❌ |
+| `MCPAtom.run()` | ✅ | ❌ | ❌ |
+| `MCPAtom.close()` | ✅ | ❌ | ❌ |
+| `MCPAtom._intent_initialize()` | ✅ | ❌ | ❌ |
+| `MCPAtom._intent_read_resource()` | ✅ | ❌ | ❌ |
+
 ## `src/specweaver/core/loom/atoms/git/atom.py`
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|

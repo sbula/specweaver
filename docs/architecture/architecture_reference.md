@@ -52,6 +52,7 @@ specweaver/                       ← level: system, archetype: orchestrator
 │   ├── atoms/                    ← Engine-internal workflow ops
 │   │   ├── filesystem/
 │   │   ├── git/
+│   │   ├── mcp/
 │   │   ├── qa_runner/
 │   │   └── code_structure/
 │   └── commons/                  ← Shared executors + helpers

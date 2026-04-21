@@ -1,0 +1,9 @@
+module: "specweaver.core.loom.atoms.mcp"
+description: "Model Context Protocol (MCP) adapter bounds. This Atom manages JSON-RPC bridging through the secure Commons Executor without relying on forbidden asynchronous SDK libraries."
+archetype: "adapter"
+exposes:
+  - "mcp"
+consumes:
+  - "specweaver.core.loom.commons.mcp"
+forbids:
+  - "specweaver.core.loom.tools.*"

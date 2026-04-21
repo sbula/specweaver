@@ -107,7 +107,7 @@ class MCPExecutor:
                 try:
                     response_payload = json.loads(line)
                     if "jsonrpc" in response_payload and response_payload.get("id") == expected_id:
-                        return cast(dict[str, Any], response_payload)
+                        return cast("dict[str, Any]", response_payload)
                 except json.JSONDecodeError:
                     # Ignore non-JSON lines (e.g. Docker startup logs)
                     continue

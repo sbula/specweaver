@@ -40,7 +40,7 @@ Establishes execution safety boundaries.
 
 ### Loom Atoms (Workflow Orchestration)
 
-#### [NEW] `src/specweaver/core/loom/atoms/mcp/atom.py`
+#### [NEW] `src/specweaver/core/loom/atoms/mcp/atom.py` [✅ COMPLETED]
 Creates the `MCPAtom(Atom)` class.
 - **Inputs**: `context` dictionary mapping the `intent`, the explicit subprocess `command`, and payload params.
 - **Functionality**:
@@ -48,11 +48,6 @@ Creates the `MCPAtom(Atom)` class.
   - Configures sequential sub-handlers: `_intent_initialize` and `_intent_read_resource`.
   - Safely wraps the `MCPExecutor` and ensures standardized `AtomResult(status=AtomStatus.SUCCESS)` returns.
 
-#### [NEW] `src/specweaver/core/loom/atoms/mcp/context.yaml`
-Establishes orchestration boundary controls.
-- **Archetype**: `orchestrator`
-- **Exposes**: `mcp`
-- **Consumes**: `specweaver/loom/commons/mcp`
 - **Forbids**: `specweaver/loom/tools/*`
 
 ---
