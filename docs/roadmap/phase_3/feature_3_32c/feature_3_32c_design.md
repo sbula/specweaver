@@ -108,7 +108,7 @@ Key constraints: Must use the Pre-Fetched Context Envelope pattern to avoid Syst
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Context YAML & Vault Bindings | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | MCP Execution Atom | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | The Pre-Fetch Assembler | SF-2 | ✅ | ✅ | ⚪ | ⚪ | ⚪ |
+| SF-3 | The Pre-Fetch Assembler | SF-2 | ✅ | ✅ | ✅ | ✅ | ⚪ |
 | SF-4 | MCP Explorer Tool | SF-2 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
 ## Session Handoff

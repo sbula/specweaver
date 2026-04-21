@@ -101,3 +101,15 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|
 | `_find_and_parse_tests()` | ✅ | ✅ | ✅ |
+
+
+## src/specweaver/core/flow/handlers/mcp_assembler.py
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| evaluate_and_fetch_mcp_context() | ✅ | ✅ | ✅ |
+
+## src/specweaver/core/flow/handlers/review.py
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| ReviewSpecHandler | ✅ | ⚪ | ✅ |
+| ReviewCodeHandler | ✅ | ⚪ | ✅ |

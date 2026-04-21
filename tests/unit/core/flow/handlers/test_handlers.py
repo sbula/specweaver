@@ -178,26 +178,6 @@ class TestValidateCodeHandler:
 # ---------------------------------------------------------------------------
 
 
-class TestReviewSpecHandler:
-    """Tests for the review+spec handler."""
-
-    @pytest.mark.asyncio
-    async def test_review_spec_no_llm(self, tmp_path: Path) -> None:
-        spec = tmp_path / "test_spec.md"
-        spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec)  # no LLM
-        step = PipelineStep(name="rev", action=StepAction.REVIEW, target=StepTarget.SPEC)
-        handler = ReviewSpecHandler()
-        result = await handler.execute(step, ctx)
-        assert result.status == StepStatus.ERROR
-        assert "llm" in result.error_message.lower()
-
-
-# ---------------------------------------------------------------------------
-# GenerateCodeHandler (mocked LLM)
-# ---------------------------------------------------------------------------
-
-
 class TestGenerateCodeHandler:
     """Tests for the generate+code handler."""
 
@@ -746,26 +726,6 @@ class TestRegistryEdgeCases:
 
 # ---------------------------------------------------------------------------
 # ReviewCodeHandler
-# ---------------------------------------------------------------------------
-
-
-class TestReviewCodeHandler:
-    """Tests for the review+code handler."""
-
-    @pytest.mark.asyncio
-    async def test_review_code_no_llm(self, tmp_path: Path) -> None:
-        spec = tmp_path / "test_spec.md"
-        spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec)
-        step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)
-        handler = ReviewCodeHandler()
-        result = await handler.execute(step, ctx)
-        assert result.status == StepStatus.ERROR
-        assert "llm" in result.error_message.lower()
-
-
-# ---------------------------------------------------------------------------
-# Edge cases: ValidateSpecHandler with kind param
 # ---------------------------------------------------------------------------
 
 

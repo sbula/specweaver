@@ -79,7 +79,6 @@ async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:
         len(servers),
     )
 
-    cwd_str = str(context.project_path)
     snippets: list[str] = ["# Pre-Fetched MCP Context Boundaries\n"]
 
     for uri in resources:
@@ -106,6 +105,18 @@ async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:
             import shlex
 
             command = shlex.split(command)
+        elif not isinstance(command, list):
+            command = []
+
+        args = server_config.get("args")
+        if isinstance(args, list):
+            command.extend(args)
+
+        if not command:
+            snippets.append(
+                f"{uri}:\n  |\n    ERROR: Server '{server_name}' command configuration invalid\n"
+            )
+            continue
 
         env = server_config.get("env") or {}
 

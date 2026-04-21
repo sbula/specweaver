@@ -267,3 +267,19 @@ Instead of `asyncio.create_subprocess_exec`, the `MCPExecutor` boots standard `s
 
 ### Why we do it:
 This architectural separation isolates arbitrary Docker blockages cleanly. `call_rpc` successfully idles and traps delays, rejecting stale queue loops natively without cross-contaminating the main thread execution path. It completely negates the requirement for complex `AsyncIO` integration downline in the engine stack, ensuring validation layers remain functionally pure synchronous generators.
+
+
+## Pre-Fetched Context Envelope (MCP Integration)
+
+**Feature**: 3.32c (Pre-Fetch Assembler)
+
+### The Problem
+Injecting global tools into LLM pipelines for MCP integration causes severe System Prompt token saturation, and allows LLMs to rapidly exhaust tool invocation limits, leading to latency overheads.
+
+### The Solution
+The Flow Engine mathematically analyzes the `context.yaml` `consumes_resources` block to extract standard MCP URIs ahead of time. Before any LLM step is dispatched, the `MCPAtom` fetches remote resources sequentially over `stdio` and formats them into a serialized text block.
+This physical payload is explicitly injected into the `<environment_context>` block of the agent prompt as a static snapshot.
+
+### Architectural Mandates
+1. **No LLM Tool Definitions:** No dynamic tool calling is allowed for Context Schemas.
+2. **Docker Containment:** The `MCPAtom` strictly mandates `docker run -i --rm` for executing node/python servers, explicitly forbidding local `npx` zombie processes and unauthorized shell escalations.

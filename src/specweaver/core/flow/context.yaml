@@ -25,6 +25,7 @@ consumes:
   - specweaver/loom/atoms/git
   - specweaver/loom/atoms/qa_runner
   - specweaver/loom/atoms/code_structure
+  - specweaver/loom/atoms/mcp
   - specweaver/loom/dispatcher
   - specweaver/loom/security
 

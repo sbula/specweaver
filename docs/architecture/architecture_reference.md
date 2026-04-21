@@ -154,7 +154,11 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `loom/tools/qa_runner/tool.py` — `QARunnerTool`: role-gated test execution.
 - `loom/atoms/qa_runner/atom.py` — `QARunnerAtom`: engine-internal test runs + lint-fix reflection.
 
-### Phase 3 — Feature Expansion (Incremental)
+### Phase 3
+
+**Common MCP Client Architecture (3.32c)**
+- low/handlers/mcp_assembler.py and loom/atoms/mcp/ - establishes Pre-Fetched Context Envelope pattern to natively query and serialize Model Context Protocol (MCP) data for prompt environments safely.
+ — Feature Expansion (Incremental)
 
 **3.1 Kind-aware validation** — Added `--level feature` thresholds to `validation/`. Created `feature_decomposition.yaml` pipeline in `pipelines/`. Added `DecomposeHandler` to `flow/`. Each lives where its archetype dictates: rules in pure-logic, pipeline in data, handler in orchestrator.
 
