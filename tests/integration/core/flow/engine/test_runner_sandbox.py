@@ -205,8 +205,20 @@ async def test_symlink_cache_folders(tmp_path: Path):
 
         mock_fs_atom.run.assert_has_calls(
             [
-                call({"intent": "symlink", "target": "node_modules", "link_name": ".worktrees/test1234/node_modules"}),
-                call({"intent": "symlink", "target": ".specweaver", "link_name": ".worktrees/test1234/.specweaver"}),
+                call(
+                    {
+                        "intent": "symlink",
+                        "target": "node_modules",
+                        "link_name": ".worktrees/test1234/node_modules",
+                    }
+                ),
+                call(
+                    {
+                        "intent": "symlink",
+                        "target": ".specweaver",
+                        "link_name": ".worktrees/test1234/.specweaver",
+                    }
+                ),
             ],
             any_order=True,
         )

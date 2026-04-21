@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext, _error_result, _now_iso
+from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
 
 if TYPE_CHECKING:
@@ -129,6 +130,7 @@ class GenerateCodeHandler:
                 artifact_uuid = str(uuid.uuid4())
 
             dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
+            mcp_env = await evaluate_and_fetch_mcp_context(context)
 
             generated = await generator.generate_code(
                 context.spec_path,
@@ -140,6 +142,7 @@ class GenerateCodeHandler:
                 artifact_uuid=artifact_uuid,
                 dictator_overrides=dictator_overrides,
                 validation_findings=validation_findings,
+                environment_context=mcp_env,
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
@@ -203,6 +206,7 @@ class GenerateTestsHandler:
                 artifact_uuid = str(uuid.uuid4())
 
             dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
+            mcp_env = await evaluate_and_fetch_mcp_context(context)
 
             generated = await generator.generate_tests(
                 context.spec_path,
@@ -214,6 +218,7 @@ class GenerateTestsHandler:
                 artifact_uuid=artifact_uuid,
                 dictator_overrides=dictator_overrides,
                 validation_findings=validation_findings,
+                environment_context=mcp_env,
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 

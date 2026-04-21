@@ -153,6 +153,7 @@ class PromptBuilder:
 
         if skeleton:
             from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+
             content = extract_ast_skeleton(path, content)
 
         self._blocks.append(
@@ -366,6 +367,7 @@ class PromptBuilder:
 
             if skeleton:
                 from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+
                 content = extract_ast_skeleton(mention.resolved_path, content)
 
             self._blocks.append(

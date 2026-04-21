@@ -13,7 +13,7 @@ def test_load_settings_toml_overrides_defaults(tmp_path: Path):
 
     # Write specweaver.toml with standards best_practice
     toml_path = project_path / "specweaver.toml"
-    toml_path.write_text("[standards]\nmode = \"best_practice\"\n", encoding="utf-8")
+    toml_path.write_text('[standards]\nmode = "best_practice"\n', encoding="utf-8")
 
     # Load settings
     settings = load_settings(db, "my_project", llm_role="review")
@@ -21,6 +21,7 @@ def test_load_settings_toml_overrides_defaults(tmp_path: Path):
     # Assert
     assert hasattr(settings, "standards")
     assert settings.standards.mode == "best_practice"
+
 
 def test_load_settings_toml_absent_keeps_defaults(tmp_path: Path):
     db = Database(tmp_path / "specweaver.db")

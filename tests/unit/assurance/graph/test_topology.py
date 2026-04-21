@@ -46,7 +46,7 @@ class TestFromProject:
             name="gamma",
             purpose="MCP test.",
             mcp_servers={"localdb": {"command": "sqlite"}},
-            consumes_resources=["mcp://localdb/users"]
+            consumes_resources=["mcp://localdb/users"],
         )
         graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
         node = graph.nodes["gamma"]
@@ -482,6 +482,22 @@ class TestFormatContextSummary:
         assert ctx.purpose == "Auth service."
         assert ctx.archetype == "adapter"
         assert ctx.constraints == ["no-direct-db"]
+
+    def test_includes_mcp_servers_and_resources(self, tmp_path: Path) -> None:
+        """Verify MCP server mappings correctly serialize into TopologyContext."""
+        _write_context(
+            tmp_path / "mcp_target",
+            name="mcp_target",
+            mcp_servers={"db": {"command": "sqlite"}},
+            consumes_resources=["mcp://db/users"],
+        )
+        _write_context(tmp_path / "cli", name="cli", consumes=["mcp_target"])
+        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        contexts = graph.format_context_summary("cli", {"mcp_target"})
+        assert len(contexts) == 1
+        ctx = contexts[0]
+        assert ctx.mcp_servers == {"db": {"command": "sqlite"}}
+        assert ctx.consumes_resources == ["mcp://db/users"]
 
     def test_unknown_module_skipped(self, single_node: Path) -> None:
         """Unknown modules in the related set are silently skipped."""

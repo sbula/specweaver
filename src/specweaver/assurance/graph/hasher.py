@@ -111,7 +111,9 @@ class DependencyHasher:
 
                 spec = pathspec.PathSpec.from_lines("gitignore", binary_patterns)
             except ImportError:
-                logger.warning("pathspec not installed; ignoring binary and .specweaverignore patterns")
+                logger.warning(
+                    "pathspec not installed; ignoring binary and .specweaverignore patterns"
+                )
 
         for root, dirs, files in os.walk(directory):
             dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith(".")]

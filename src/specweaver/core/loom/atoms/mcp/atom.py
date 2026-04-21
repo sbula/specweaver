@@ -32,7 +32,9 @@ class MCPAtom(Atom):
 
     def __init__(self, command: list[str], env: dict[str, str] | None = None) -> None:
         if not command:
-            raise ValueError("Configuration Error: MCP Atom boundary dictates a valid executable string must be provided.")
+            raise ValueError(
+                "Configuration Error: MCP Atom boundary dictates a valid executable string must be provided."
+            )
 
         allowed_executables = {"docker", "podman"}
         # For internal test infrastructure, we safely permit the Python runtime bridge.
@@ -40,7 +42,9 @@ class MCPAtom(Atom):
 
         executor_target = command[0]
         if executor_target not in allowed_executables and executor_target != sys.executable:
-            raise ValueError(f"NFR-2 Boundary Violation: MCP Atom dictates executions must run through isolated environments (docker/podman). Bare executable forbidden: '{executor_target}'")
+            raise ValueError(
+                f"NFR-2 Boundary Violation: MCP Atom dictates executions must run through isolated environments (docker/podman). Bare executable forbidden: '{executor_target}'"
+            )
 
         self._command = command
         self._env = env
@@ -111,12 +115,9 @@ class MCPAtom(Atom):
 
         # MCP Protocol Standard Payload
         payload = {
-            "protocolVersion": "2024-11-05", # Standard MCP 1.0 schema parity string
+            "protocolVersion": "2024-11-05",  # Standard MCP 1.0 schema parity string
             "capabilities": params.get("capabilities", {}),
-            "clientInfo": {
-                "name": "specweaver-atom",
-                "version": "1.0.0"
-            }
+            "clientInfo": {"name": "specweaver-atom", "version": "1.0.0"},
         }
 
         response = self._executor.call_rpc(method="initialize", params=payload, timeout=10.0)
@@ -127,7 +128,7 @@ class MCPAtom(Atom):
         return AtomResult(
             status=AtomStatus.SUCCESS,
             message="Initialized successfully",
-            exports=response.get("result", {})
+            exports=response.get("result", {}),
         )
 
     def _intent_read_resource(self, context: dict[str, Any]) -> AtomResult:
@@ -144,13 +145,11 @@ class MCPAtom(Atom):
             return AtomResult(status=AtomStatus.FAILED, message="Missing 'uri' in intent params")
 
         response = self._executor.call_rpc(
-            method="resources/read",
-            params={"uri": params["uri"]},
-            timeout=15.0
+            method="resources/read", params={"uri": params["uri"]}, timeout=15.0
         )
 
         return AtomResult(
             status=AtomStatus.SUCCESS,
             message="Resource read successfully",
-            exports=response.get("result", {})
+            exports=response.get("result", {}),
         )

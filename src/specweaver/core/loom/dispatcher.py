@@ -122,7 +122,7 @@ class ToolDispatcher:
 
             exclude_dirs: set[str] = set()
             exclude_patterns: set[str] = set()
-            for analyzer in (analyzer_factory.get_all_analyzers() if analyzer_factory else []):
+            for analyzer in analyzer_factory.get_all_analyzers() if analyzer_factory else []:
                 for ign in analyzer.get_default_directory_ignores():
                     exclude_dirs.add(ign.rstrip("/"))
                 for pat in analyzer.get_binary_ignore_patterns():

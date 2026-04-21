@@ -242,10 +242,9 @@ class TestAtomRunTests:
         assert result.exports["failed"] == 0
         assert result.exports["total"] == 0
 
-
-# ---------------------------------------------------------------------------
-# run_linter intent
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # run_linter intent
+    # ---------------------------------------------------------------------------
 
     def test_run_linter_with_empty_stale_nodes_shortcuts(self, tmp_path: Path) -> None:
         """SF-4 Edge Case: 0 stale nodes shortcut out for linter without errors."""
@@ -265,6 +264,7 @@ class TestAtomRunTests:
         assert result.exports["error_count"] == 0
         assert result.exports["fixable_count"] == 0
         assert result.exports["fixed_count"] == 0
+
 
 class TestAtomRunLinter:
     """Tests for the run_linter intent."""

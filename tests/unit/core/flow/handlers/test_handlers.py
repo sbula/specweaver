@@ -254,8 +254,9 @@ class TestGenerateCodeHandler:
 
     @pytest.mark.asyncio
     @patch("specweaver.workflows.implementation.generator.Generator.generate_code")
+    @patch("specweaver.core.flow.handlers.generation.evaluate_and_fetch_mcp_context")
     async def test_generate_code_extracts_loopback_feedback(
-        self, mock_gen_code, tmp_path: Path
+        self, mock_fetch_mcp, mock_gen_code, tmp_path: Path
     ) -> None:
         """Verifies loopback findings from context are passed to Generator."""
         spec = tmp_path / "test_spec.md"
@@ -278,14 +279,18 @@ class TestGenerateCodeHandler:
         handler = GenerateCodeHandler()
 
         mock_gen_code.return_value = tmp_path / "src" / "test.py"
+        mock_fetch_mcp.return_value = "mcp://mock:\n  |\n    mock"
 
         await handler.execute(step, ctx)
 
         mock_gen_code.assert_called_once()
+        mock_fetch_mcp.assert_called_once_with(ctx)
+
         # Verify kwargs
         call_kwargs = mock_gen_code.call_args.kwargs
         assert call_kwargs["dictator_overrides"] == ["Change this to an enum"]
         assert call_kwargs["validation_findings"] == "[LNT01] Line too long"
+        assert call_kwargs["environment_context"] == "mcp://mock:\n  |\n    mock"
         # Verify feedback was consumed
         assert "gen" not in ctx.feedback
 
@@ -439,8 +444,9 @@ class TestGenerateTestsHandler:
 
     @pytest.mark.asyncio
     @patch("specweaver.workflows.implementation.generator.Generator.generate_tests")
+    @patch("specweaver.core.flow.handlers.generation.evaluate_and_fetch_mcp_context")
     async def test_generate_tests_extracts_loopback_feedback(
-        self, mock_gen_tests, tmp_path: Path
+        self, mock_fetch_mcp, mock_gen_tests, tmp_path: Path
     ) -> None:
         """Verifies loopback findings from context are passed to Generator."""
         spec = tmp_path / "test_spec.md"
@@ -463,14 +469,18 @@ class TestGenerateTestsHandler:
         handler = GenerateTestsHandler()
 
         mock_gen_tests.return_value = tmp_path / "tests" / "test_test.py"
+        mock_fetch_mcp.return_value = "mcp://mock:\n  |\n    mock"
 
         await handler.execute(step, ctx)
 
         mock_gen_tests.assert_called_once()
+        mock_fetch_mcp.assert_called_once_with(ctx)
+
         # Verify kwargs
         call_kwargs = mock_gen_tests.call_args.kwargs
         assert call_kwargs["dictator_overrides"] == ["Add more edge cases"]
         assert call_kwargs["validation_findings"] == "[COV01] Coverage low"
+        assert call_kwargs["environment_context"] == "mcp://mock:\n  |\n    mock"
         # Verify feedback was consumed
         assert "gen_tests" not in ctx.feedback
 

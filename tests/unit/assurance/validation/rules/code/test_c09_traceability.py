@@ -71,28 +71,20 @@ def test_ast_comment_extraction(tmp_path):
     test_py.write_text(
         "def test_something():\n"
         "    # @trace(FR-100)\n"
-        "    fake_string = \"# @trace(FR-999)\"\n"
-        "    assert False, \"@trace(FR-555)\"\n"
-        "    \"\"\"\n"
+        '    fake_string = "# @trace(FR-999)"\n'
+        '    assert False, "@trace(FR-555)"\n'
+        '    """\n'
         "    @trace(NFR-200)\n"
-        "    \"\"\"\n"
+        '    """\n'
     )
 
     # Java test
     test_java = tests_dir / "MyFakeTest.java"
-    test_java.write_text(
-        "class MyFakeTest {\n"
-        "    // @trace(FR-101)\n"
-        "    void test() {}\n"
-        "}\n"
-    )
+    test_java.write_text("class MyFakeTest {\n    // @trace(FR-101)\n    void test() {}\n}\n")
 
     # Rust test
     test_rust = tests_dir / "my_fake_scenarios.rs"
-    test_rust.write_text(
-        "// @trace(FR-102)\n"
-        "fn test() {}\n"
-    )
+    test_rust.write_text("// @trace(FR-102)\nfn test() {}\n")
 
     rule = TraceabilityRule()
     mapped = rule._find_and_parse_tests(root)
@@ -201,9 +193,11 @@ def test_ast_regex_boundaries(tmp_path):
     assert "FR-300" in mapped
     assert "FR-400" not in mapped
 
+
 def test_c09_extracts_analyzer_factory_via_di(tmp_path):
     """Ensure the rule successfully extracts AnalyzerFactory from the DI context payload, avoiding global imports."""
     from unittest.mock import MagicMock
+
     root = tmp_path / "fake_project"
 
     mock_analyzer = MagicMock()
@@ -221,4 +215,3 @@ def test_c09_extracts_analyzer_factory_via_di(tmp_path):
     assert "NFR-888" in mapped
     mock_factory.get_all_analyzers.assert_called_once()
     mock_analyzer.extract_test_mapped_requirements.assert_called_once_with(root)
-

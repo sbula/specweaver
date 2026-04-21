@@ -131,7 +131,7 @@ class TestStandardsLifecycleE2E:
 
         # Write specweaver.toml with best_practice
         toml_path = project / "specweaver.toml"
-        toml_path.write_text("[standards]\nmode = \"best_practice\"\n", encoding="utf-8")
+        toml_path.write_text('[standards]\nmode = "best_practice"\n', encoding="utf-8")
 
         scan = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert scan.exit_code == 0

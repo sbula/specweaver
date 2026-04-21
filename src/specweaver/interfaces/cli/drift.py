@@ -85,7 +85,8 @@ def drift_check(
         },
     )
 
-    context = RunContext(analyzer_factory=AnalyzerFactory,
+    context = RunContext(
+        analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=plan_path,
         db=_core.get_db(),
@@ -243,7 +244,12 @@ def drift_check_rot(  # noqa: C901
             },
         )
 
-        context = RunContext(analyzer_factory=AnalyzerFactory, project_path=project_path, spec_path=matched_plan, db=_core.get_db())
+        context = RunContext(
+            analyzer_factory=AnalyzerFactory,
+            project_path=project_path,
+            spec_path=matched_plan,
+            db=_core.get_db(),
+        )
         runner_instance = PipelineRunner(pipeline, context)
         run_state = asyncio.run(runner_instance.run())
 

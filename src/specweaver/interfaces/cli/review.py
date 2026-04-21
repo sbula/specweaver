@@ -89,7 +89,8 @@ def draft(
         description=f"Draft spec for {name}",
     )
 
-    context = RunContext(analyzer_factory=AnalyzerFactory,
+    context = RunContext(
+        analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         llm=adapter,
@@ -197,7 +198,8 @@ def review(
         params=params,
     )
 
-    context = RunContext(analyzer_factory=AnalyzerFactory,
+    context = RunContext(
+        analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=actual_spec_path,
         llm=adapter,

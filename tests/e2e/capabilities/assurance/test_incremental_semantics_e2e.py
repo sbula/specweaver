@@ -39,12 +39,12 @@ def _create_project_with_clean_code(tmp_path: Path, name: str) -> Path:
     tests.mkdir(exist_ok=True)
 
     # Valid pristine code
-    (src / "math_ops.py").write_text("def add(a: int, b: int) -> int:\n    return a + b\n", encoding="utf-8")
+    (src / "math_ops.py").write_text(
+        "def add(a: int, b: int) -> int:\n    return a + b\n", encoding="utf-8"
+    )
     (tests / "test_math.py").write_text(
-        "from src.math_ops import add\n\n"
-        "def test_add():\n"
-        "    assert add(2, 3) == 5\n",
-        encoding="utf-8"
+        "from src.math_ops import add\n\ndef test_add():\n    assert add(2, 3) == 5\n",
+        encoding="utf-8",
     )
 
     spec = project_dir / "specs" / "math_spec.md"
@@ -65,7 +65,7 @@ def _create_project_with_clean_code(tmp_path: Path, name: str) -> Path:
         "name: e2e_code\nsteps:\n"
         "  - name: lint\n    action: lint_fix\n    target: code\n    params:\n      target: src/\n      max_reflections: 2\n"
         "  - name: test\n    action: validate\n    target: tests\n    params:\n      target: tests/\n",
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     return project_dir
@@ -79,7 +79,9 @@ class TestIncrementalPipelineE2E:
         project_dir = _create_project_with_clean_code(tmp_path, "success-proj")
 
         # Run validation pipeline
-        result = runner.invoke(app, ["run", str(project_dir / "e2e_code.yaml"), "src/", "--project", str(project_dir)])
+        result = runner.invoke(
+            app, ["run", str(project_dir / "e2e_code.yaml"), "src/", "--project", str(project_dir)]
+        )
 
         assert result.exit_code == 0, f"Run failed: {result.output}"
 
@@ -96,17 +98,25 @@ class TestIncrementalPipelineE2E:
         project_dir = _create_project_with_clean_code(tmp_path, "bypass-proj")
 
         # Seed the cache natively via first run
-        res1 = runner.invoke(app, ["run", str(project_dir / "e2e_code.yaml"), "src/", "--project", str(project_dir)])
+        res1 = runner.invoke(
+            app, ["run", str(project_dir / "e2e_code.yaml"), "src/", "--project", str(project_dir)]
+        )
         assert res1.exit_code == 0
 
         # Observe execution output natively to verify bypass
-        res2 = runner.invoke(app, ["run", str(project_dir / "e2e_code.yaml"), "src/", "--project", str(project_dir)])
+        res2 = runner.invoke(
+            app, ["run", str(project_dir / "e2e_code.yaml"), "src/", "--project", str(project_dir)]
+        )
         assert res2.exit_code == 0
 
         # The result simply passes without error. Bypassed execution uses <1s typically.
         # Check logs if possible, but assert exit 0 is the primary contract.
         assert res2.exit_code == 0
-        assert "pristine" in res2.output.lower() or "bypass" in res2.output.lower() or "completed" in res2.output.lower()
+        assert (
+            "pristine" in res2.output.lower()
+            or "bypass" in res2.output.lower()
+            or "completed" in res2.output.lower()
+        )
 
     def test_e2e_cache_resiliency_on_failure(self, tmp_path: Path) -> None:
         """Failed pipeline runs strictly DO NOT update the `.specweaver` staleness cache."""
@@ -129,7 +139,9 @@ class TestIncrementalPipelineE2E:
         cache_file = project_dir / ".specweaver" / "topology.cache.json"
         assert not cache_file.exists()
 
-        result = runner.invoke(app, ["run", "validate_only", "specs/bad_spec.md", "--project", str(project_dir)])
+        result = runner.invoke(
+            app, ["run", "validate_only", "specs/bad_spec.md", "--project", str(project_dir)]
+        )
 
         # Pipeline fails gracefully (exiting 1) due to lint errors
         assert result.exit_code != 0

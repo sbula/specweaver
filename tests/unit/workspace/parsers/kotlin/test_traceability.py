@@ -7,9 +7,11 @@ from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructur
 def parser() -> KotlinCodeStructure:
     return KotlinCodeStructure()
 
+
 def test_extract_traceability_tags_empty(parser: KotlinCodeStructure) -> None:
     code = "fun func() {}\n"
     assert parser.extract_traceability_tags(code) == set()
+
 
 def test_extract_traceability_tags_single(parser: KotlinCodeStructure) -> None:
     code = """
@@ -19,6 +21,7 @@ fun test_some_behavior() {
 }
 """
     assert parser.extract_traceability_tags(code) == {"FR-1"}
+
 
 def test_extract_traceability_tags_multiple(parser: KotlinCodeStructure) -> None:
     code = """

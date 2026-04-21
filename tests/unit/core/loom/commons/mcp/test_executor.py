@@ -21,6 +21,7 @@ class MockProcess:
                 return self.stdout_lines.pop(0)
             # simulate blocking forever if no lines left
             import time
+
             time.sleep(10)
             return ""
 
@@ -58,10 +59,7 @@ def test_executor_initialization(mock_popen):
 def test_call_rpc_success(mock_popen):
     # Setup process with out-of-order logs, then the valid JSON-RPC
     valid_response = '{"jsonrpc": "2.0", "id": 1, "result": {"resources": []}}\n'
-    mock_process = MockProcess(stdout_lines=[
-        "Some docker log line ignoring\n",
-        valid_response
-    ])
+    mock_process = MockProcess(stdout_lines=["Some docker log line ignoring\n", valid_response])
     mock_popen.return_value = mock_process
 
     executor = MCPExecutor(["test"])
@@ -76,6 +74,7 @@ def test_call_rpc_success(mock_popen):
     assert mock_process.stdin.write.called
     written = mock_process.stdin.write.call_args[0][0]
     import json as stdjson
+
     payload = stdjson.loads(written)
     assert payload["jsonrpc"] == "2.0"
     assert payload["method"] == "resources/list"
@@ -139,16 +138,14 @@ def test_executor_close_kill_fallback(mock_popen):
     executor = MCPExecutor(["test"])
     executor.close()
 
+
 @patch("subprocess.Popen")
 def test_executor_call_rpc_stale_queue_discard(mock_popen):
     # Simulate a stale message from a PREVIOUS timeout arriving late, then the real one
     stale_response = '{"jsonrpc": "2.0", "id": 1, "result": {"stale": true}}\n'
     valid_response = '{"jsonrpc": "2.0", "id": 2, "result": {"fresh": true}}\n'
 
-    mock_process = MockProcess(stdout_lines=[
-        stale_response,
-        valid_response
-    ])
+    mock_process = MockProcess(stdout_lines=[stale_response, valid_response])
     mock_popen.return_value = mock_process
 
     executor = MCPExecutor(["test"])
@@ -167,4 +164,3 @@ def test_executor_call_rpc_stale_queue_discard(mock_popen):
 
     # Also verify that the next call bumps ID to 3
     assert executor._request_id == 3
-

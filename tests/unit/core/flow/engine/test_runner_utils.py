@@ -22,9 +22,7 @@ def test_setup_sandbox_caches_uses_file_system_atom(tmp_path: Path) -> None:
 
     success_result = AtomResult(status=AtomStatus.SUCCESS, message="OK")
 
-    with patch(
-        "specweaver.core.loom.atoms.filesystem.atom.FileSystemAtom"
-    ) as mock_atom_cls:
+    with patch("specweaver.core.loom.atoms.filesystem.atom.FileSystemAtom") as mock_atom_cls:
         mock_atom_instance = mock_atom_cls.return_value
         mock_atom_instance.run.return_value = success_result
 

@@ -306,6 +306,7 @@ class TestDispatcherAnalyzerFactoryDI:
     def test_dispatcher_extracts_factory_excludes(self, project: Path) -> None:
         """FR-1/FR-2 Integration: Dispatcher natively hooks factory to build ignore filters."""
         from specweaver.workspace.analyzers.factory import AnalyzerFactory
+
         boundary = WorkspaceBoundary(roots=[project])
         dispatcher = ToolDispatcher.create_standard_set(
             boundary,
@@ -316,4 +317,3 @@ class TestDispatcherAnalyzerFactoryDI:
         fs_tool = dispatcher._interfaces[0]._tool
         assert "node_modules" in fs_tool._exclude_dirs
         assert "*.pyc" in fs_tool._exclude_patterns
-

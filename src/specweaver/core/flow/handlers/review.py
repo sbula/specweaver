@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext, _error_result, _now_iso
+from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -86,7 +87,9 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
     if bool(os.environ.get("SEARCH_API_KEY")):
         allowed_tools.append("web")
 
-    return ToolDispatcher.create_standard_set(boundary, role=role, allowed_tools=allowed_tools, analyzer_factory=context.analyzer_factory)
+    return ToolDispatcher.create_standard_set(
+        boundary, role=role, allowed_tools=allowed_tools, analyzer_factory=context.analyzer_factory
+    )
 
 
 class ReviewSpecHandler:
@@ -136,6 +139,8 @@ class ReviewSpecHandler:
                                         )
                                     )
 
+            mcp_env = await evaluate_and_fetch_mcp_context(context)
+
             result = await reviewer.review_spec(
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
@@ -144,6 +149,7 @@ class ReviewSpecHandler:
                 mentioned_files=_get_prior_mentions(context),
                 on_tool_round=on_tool_round,
                 project_metadata=context.project_metadata,
+                environment_context=mcp_env,
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
@@ -223,6 +229,8 @@ class ReviewCodeHandler:
                                         )
                                     )
 
+            mcp_env = await evaluate_and_fetch_mcp_context(context)
+
             result = await reviewer.review_code(
                 code_path,
                 context.spec_path,
@@ -232,6 +240,7 @@ class ReviewCodeHandler:
                 mentioned_files=_get_prior_mentions(context),
                 on_tool_round=on_tool_round,
                 project_metadata=context.project_metadata,
+                environment_context=mcp_env,
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",

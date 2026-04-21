@@ -26,25 +26,32 @@ def extract_ast_skeleton(path: Path, content: str) -> str:
 
         if ext == ".py":
             from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
+
             parser = PythonCodeStructure()
         elif ext in (".ts", ".tsx", ".js", ".jsx"):
             from specweaver.workspace.parsers.typescript.codestructure import (
                 TypeScriptCodeStructure,
             )
+
             parser = TypeScriptCodeStructure()
         elif ext == ".java":
             from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
+
             parser = JavaCodeStructure()
         elif ext in (".kt", ".kts"):
             from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
+
             parser = KotlinCodeStructure()
         elif ext == ".rs":
             from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
+
             parser = RustCodeStructure()
 
         if parser:
             return parser.extract_skeleton(content)
     except Exception as exc:
-        logger.debug("Failed to AST extract skeleton for %s, falling back to exact text: %s", path, exc)
+        logger.debug(
+            "Failed to AST extract skeleton for %s, falling back to exact text: %s", path, exc
+        )
 
     return content

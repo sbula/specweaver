@@ -343,6 +343,7 @@ class TestPolyglotLanguageAnalyzer:
     def test_language_analyzer_delegates_binary_ignores_to_parser(self) -> None:
         """TreeSitterAnalyzerBase correctly passes binary ignore requests down to parser."""
         from specweaver.workspace.analyzers.factory import PythonAnalyzer
+
         analyzer = PythonAnalyzer()
         patterns = analyzer.get_binary_ignore_patterns()
         assert "*.pyc" in patterns
@@ -350,32 +351,27 @@ class TestPolyglotLanguageAnalyzer:
     def test_language_analyzer_delegates_directory_ignores_to_parser(self) -> None:
         """TreeSitterAnalyzerBase correctly passes directory ignore requests down to parser."""
         from specweaver.workspace.analyzers.factory import PythonAnalyzer
+
         analyzer = PythonAnalyzer()
         dirs = analyzer.get_default_directory_ignores()
         # Python parser adds .venv, env, .pytest_cache
         assert ".venv/" in dirs
         assert ".pytest_cache/" in dirs
 
+
 class TestLanguageAnalyzerTraceability:
     """Test traceability tag extraction across test directories."""
 
     def test_extract_test_mapped_requirements_aggregates_files(self, tmp_path: Path) -> None:
         from specweaver.workspace.analyzers.factory import PythonAnalyzer
+
         # Setup specific test file names so search.py iter_text_files will find them
         # Wait, the search.py tool isn't used directly here, we just use Path.rglob or iter_test_files
         pkg = tmp_path / "tests"
         pkg.mkdir()
 
-        (pkg / "test_one.py").write_text(
-            "def test_1():\n"
-            "    # @trace(FR-1, FR-2)\n"
-            "    pass\n"
-        )
-        (pkg / "test_two.py").write_text(
-            "def test_2():\n"
-            "    # @trace(NFR-1)\n"
-            "    pass\n"
-        )
+        (pkg / "test_one.py").write_text("def test_1():\n    # @trace(FR-1, FR-2)\n    pass\n")
+        (pkg / "test_two.py").write_text("def test_2():\n    # @trace(NFR-1)\n    pass\n")
 
         analyzer = PythonAnalyzer()
         tags = analyzer.extract_test_mapped_requirements(pkg)
@@ -383,19 +379,20 @@ class TestLanguageAnalyzerTraceability:
 
     def test_extract_test_mapped_requirements_filters_test_files_only(self, tmp_path: Path) -> None:
         from specweaver.workspace.analyzers.factory import PythonAnalyzer
+
         pkg = tmp_path / "src"
         pkg.mkdir()
         (pkg / "main.py").write_text(
-            "def run():\n"
-            "    # @trace(NOT-A-TEST-DONT-INCLUDE)\n"
-            "    pass\n"
+            "def run():\n    # @trace(NOT-A-TEST-DONT-INCLUDE)\n    pass\n"
         )
 
         analyzer = PythonAnalyzer()
         tags = analyzer.extract_test_mapped_requirements(pkg)
         assert tags == set()
 
-    def test_extract_test_mapped_requirements_skips_ignored_directories(self, tmp_path: Path) -> None:
+    def test_extract_test_mapped_requirements_skips_ignored_directories(
+        self, tmp_path: Path
+    ) -> None:
 
         from specweaver.workspace.analyzers.factory import TypeScriptAnalyzer
 
@@ -428,7 +425,9 @@ class TestLanguageAnalyzerTraceability:
         assert "FR-999" not in tags
         assert "FR-888" not in tags
 
-    def test_extract_test_mapped_requirements_handles_exceptions_safely(self, tmp_path: Path) -> None:
+    def test_extract_test_mapped_requirements_handles_exceptions_safely(
+        self, tmp_path: Path
+    ) -> None:
         from pathlib import Path
         from unittest.mock import patch
 
@@ -449,7 +448,7 @@ class TestLanguageAnalyzerTraceability:
                 raise PermissionError("Access denied")
             return original_read_text(self, *args, **kwargs)
 
-        with patch.object(Path, 'read_text', autospec=True, side_effect=mock_read_text):
+        with patch.object(Path, "read_text", autospec=True, side_effect=mock_read_text):
             tags = analyzer.extract_test_mapped_requirements(root)
 
         # Should gracefully ignore the bad file and return the good one

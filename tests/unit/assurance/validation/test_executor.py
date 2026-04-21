@@ -256,8 +256,9 @@ class TestExecuteValidationPipeline:
             ],
         )
         context_di = {"marker": "found", "analyzer_factory": "mock_factory"}
-        results = execute_validation_pipeline(pipeline, "hello", registry=test_registry, context=context_di)
+        results = execute_validation_pipeline(
+            pipeline, "hello", registry=test_registry, context=context_di
+        )
         assert len(results) == 1
         assert results[0].status == Status.PASS
         assert "found it in context" in results[0].message
-

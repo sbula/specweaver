@@ -38,6 +38,7 @@ SCM_COMMENT_QUERY = """
 (block_comment) @comment
 """
 
+
 class JavaCodeStructure(CodeStructureInterface):
     def __init__(self) -> None:
         self.language = Language(tree_sitter_java.language())
@@ -97,7 +98,6 @@ class JavaCodeStructure(CodeStructureInterface):
 
         raise CodeStructureError(f"Symbol '{symbol_name}' not found in the AST.")
 
-
     def extract_traceability_tags(self, code: str) -> set[str]:
         if not code.strip():
             return set()
@@ -107,6 +107,7 @@ class JavaCodeStructure(CodeStructureInterface):
         tags: set[str] = set()
 
         import re
+
         trace_pattern = re.compile(r"@trace\(([^)]+)\)")
 
         for _, match_dict in cursor.matches(tree.root_node):

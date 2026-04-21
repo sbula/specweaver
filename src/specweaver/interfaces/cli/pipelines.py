@@ -239,7 +239,8 @@ def _execute_run(  # noqa: C901
     # Build run context
     from specweaver.infrastructure.llm.router import ModelRouter
 
-    context = RunContext(analyzer_factory=AnalyzerFactory,
+    context = RunContext(
+        analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
@@ -404,7 +405,8 @@ def resume(  # noqa: C901
     project_path = resolve_project_path(None)
     spec_path = Path(run_state.spec_path)
 
-    context = RunContext(analyzer_factory=AnalyzerFactory,
+    context = RunContext(
+        analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",

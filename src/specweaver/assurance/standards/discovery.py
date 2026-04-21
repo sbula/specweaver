@@ -30,8 +30,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-
-
 def discover_files(project_path: Path, analyzer_factory: AnalyzerFactoryProtocol) -> list[Path]:
     """Discover source files using the priority chain.
 

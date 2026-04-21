@@ -95,11 +95,14 @@ class PipelineRunner:
         vault_path = self._context.project_path / ".specweaver" / "vault.env"
         if vault_path.exists():
             from specweaver.core.loom.atoms.git.atom import GitAtom
+
             git_atom = GitAtom(cwd=self._context.project_path)
             # Check if tracked
             result = git_atom.run({"intent": "is_tracked", "path": ".specweaver/vault.env"})
             if getattr(result, "exports", {}).get("is_tracked", False):
-                raise RuntimeError("FATAL: vault.env is currently tracked by Git! Aborting execution to prevent credential leakage.")
+                raise RuntimeError(
+                    "FATAL: vault.env is currently tracked by Git! Aborting execution to prevent credential leakage."
+                )
 
     async def run(self, parent_run_id: str | None = None) -> PipelineRun:
         """Execute the pipeline from the beginning.

@@ -35,6 +35,8 @@ class MockIgnoreIOHandler:
             self._is_file = True
         self.appended_lines.extend(lines)
         self._content += "".join(f"{line}\n" for line in lines)
+
+
 def test_ignore_parser_scaffolds_defaults() -> None:
     io_handler = MockIgnoreIOHandler(exists=False)
     parser = SpecWeaverIgnoreParser(io_handler)
@@ -47,6 +49,7 @@ def test_ignore_parser_scaffolds_defaults() -> None:
     assert "target/" in io_handler.read_text()
     assert io_handler.appended_lines == ["node_modules/", "target/"]
 
+
 def test_ignore_parser_preserves_existing_content_on_scaffold() -> None:
     io_handler = MockIgnoreIOHandler(content="my_custom_dir/\n")
     parser = SpecWeaverIgnoreParser(io_handler)
@@ -55,6 +58,7 @@ def test_ignore_parser_preserves_existing_content_on_scaffold() -> None:
 
     assert "my_custom_dir/" in io_handler.read_text()
     assert "node_modules/" in io_handler.read_text()
+
 
 def test_ignore_parser_compiles_spec() -> None:
     io_handler = MockIgnoreIOHandler(content="*.log\ntmp/\n")
@@ -68,6 +72,7 @@ def test_ignore_parser_compiles_spec() -> None:
     assert spec.match_file("main.pyc") is True
     assert spec.match_file("main.py") is False
 
+
 def test_ignore_parser_compiles_spec_if_file_missing() -> None:
     io_handler = MockIgnoreIOHandler(exists=False)
     parser = SpecWeaverIgnoreParser(io_handler)
@@ -75,6 +80,7 @@ def test_ignore_parser_compiles_spec_if_file_missing() -> None:
 
     assert spec.match_file("main.pyc") is True
     assert spec.match_file("main.py") is False
+
 
 def test_ensure_scaffolded_handles_whitespace_gracefully() -> None:
     io_handler = MockIgnoreIOHandler(content="node_modules/ \n")
@@ -87,12 +93,14 @@ def test_ensure_scaffolded_handles_whitespace_gracefully() -> None:
     assert lines.count("node_modules/ ") == 1
     assert "node_modules/" not in io_handler.appended_lines
 
+
 def test_ensure_scaffolded_safely_handles_0_byte_file() -> None:
     io_handler = MockIgnoreIOHandler(content="")
     parser = SpecWeaverIgnoreParser(io_handler)
 
     parser.ensure_scaffolded(["target/"])
     assert "target/" in io_handler.read_text()
+
 
 def test_get_compiled_spec_prioritizes_user_overrides_fr3() -> None:
     io_handler = MockIgnoreIOHandler(content="!vital.pyc\n")
@@ -104,6 +112,7 @@ def test_get_compiled_spec_prioritizes_user_overrides_fr3() -> None:
     # The negative override !vital.pyc MUST prevail because it's processed after
     assert spec.match_file("vital.pyc") is False
 
+
 def test_get_compiled_spec_handles_nested_wildcards_fr3() -> None:
     io_handler = MockIgnoreIOHandler(content="**/dist/\n")
     parser = SpecWeaverIgnoreParser(io_handler)
@@ -111,6 +120,7 @@ def test_get_compiled_spec_handles_nested_wildcards_fr3() -> None:
 
     assert spec.match_file("frontend/dist/bundle.js") is True
     assert spec.match_file("dist/index.html") is True
+
 
 def test_parser_fallback_if_specweaverignore_is_directory_security() -> None:
     io_handler = MockIgnoreIOHandler(is_file=False)
@@ -122,6 +132,7 @@ def test_parser_fallback_if_specweaverignore_is_directory_security() -> None:
     spec: pathspec.PathSpec = parser.get_compiled_spec(["*.pyc"])
     assert spec.match_file("main.pyc") is True
 
+
 def test_get_compiled_spec_handles_empty_runtime_patterns() -> None:
     io_handler = MockIgnoreIOHandler(exists=False)
     parser = SpecWeaverIgnoreParser(io_handler)
@@ -132,6 +143,7 @@ def test_get_compiled_spec_handles_empty_runtime_patterns() -> None:
 @pytest.fixture
 def tmp_path_fixture(tmp_path: Path):
     return tmp_path
+
 
 def test_integration_orchestrator_initializes_ignores_sf4(tmp_path: Path) -> None:
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
@@ -169,4 +181,3 @@ def test_e2e_topological_spec_bypass_hidden_binary_sf4(tmp_path: Path) -> None:
     assert compiled_spec.match_file("target/release/lib.so") is True
     assert compiled_spec.match_file("src/api/handler.pyc") is True
     assert compiled_spec.match_file("src/main.py") is False
-

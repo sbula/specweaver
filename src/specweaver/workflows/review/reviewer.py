@@ -127,6 +127,7 @@ class Reviewer:
         mentioned_files: list[ResolvedMention] | None = None,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
         project_metadata: ProjectMetadata | None = None,
+        environment_context: str | None = None,
     ) -> ReviewResult:
         """Review a spec file for quality and completeness.
 
@@ -137,6 +138,7 @@ class Reviewer:
             standards: Optional project standards to inject.
             mentioned_files: Optional auto-detected file mentions from a prior
                 pipeline step, injected as reference context (priority 4).
+            environment_context: Optional mapped string extracting physical MCP bounds.
 
         Returns:
             ReviewResult with verdict and findings.
@@ -160,6 +162,9 @@ class Reviewer:
         if mentioned_files:
             builder.add_mentioned_files(mentioned_files)
             logger.debug("review_spec: %d mentioned files injected", len(mentioned_files))
+        if environment_context:
+            builder.add_context(environment_context, "environment_context")
+            logger.debug("review_spec: MCP env injected (%d chars)", len(environment_context))
         prompt = builder.build()
         logger.info("review_spec: reviewing %s", spec_path)
         return await self._execute_review(prompt)
@@ -175,6 +180,7 @@ class Reviewer:
         mentioned_files: list[ResolvedMention] | None = None,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
         project_metadata: ProjectMetadata | None = None,
+        environment_context: str | None = None,
     ) -> ReviewResult:
         """Review generated code against its source spec.
 
@@ -186,6 +192,7 @@ class Reviewer:
             standards: Optional project standards to inject.
             mentioned_files: Optional auto-detected file mentions from a prior
                 pipeline step, injected as reference context (priority 4).
+            environment_context: Optional mapped string extracting physical MCP bounds.
 
         Returns:
             ReviewResult with verdict and findings.
@@ -210,6 +217,9 @@ class Reviewer:
         if mentioned_files:
             builder.add_mentioned_files(mentioned_files)
             logger.debug("review_code: %d mentioned files injected", len(mentioned_files))
+        if environment_context:
+            builder.add_context(environment_context, "environment_context")
+            logger.debug("review_code: MCP env injected (%d chars)", len(environment_context))
         prompt = builder.build()
         logger.info("review_code: reviewing %s against %s", code_path, spec_path)
         return await self._execute_review(prompt)

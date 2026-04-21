@@ -34,7 +34,9 @@ def test_iter_text_files_excludes_directories(tmp_path: Path) -> None:
     (root / "node_modules").mkdir()
     (root / "node_modules" / "test.txt").touch()
 
-    excludes = {"node_modules/"} # Note: trailing slash or not, the implementation strips it if we pass properly? Wait, does iter_text_files strip? No! The caller is expected to strip!
+    excludes = {
+        "node_modules/"
+    }  # Note: trailing slash or not, the implementation strips it if we pass properly? Wait, does iter_text_files strip? No! The caller is expected to strip!
     excludes_stripped = {e.rstrip("/") for e in excludes}
 
     results = iter_text_files(root, exclude_dirs=excludes_stripped)
@@ -42,4 +44,3 @@ def test_iter_text_files_excludes_directories(tmp_path: Path) -> None:
 
     assert len(names) == 1
     assert "test.txt" in names
-

@@ -129,7 +129,8 @@ def standards_scan(  # noqa: C901
             },
         )
 
-        context = RunContext(analyzer_factory=AnalyzerFactory,
+        context = RunContext(
+            analyzer_factory=AnalyzerFactory,
             project_path=project_path,
             spec_path=dummy_spec,
             llm=adapter,

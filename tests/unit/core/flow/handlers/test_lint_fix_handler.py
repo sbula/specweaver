@@ -285,6 +285,7 @@ class TestLintFixEdgeCases:
             }
         )
 
+
 class TestLintFixInterface:
     """Verify standard interface: generate(messages, config)."""
 

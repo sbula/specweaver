@@ -70,7 +70,9 @@ class MCPExecutor:
         if self._process.stdout:
             self._process.stdout.close()
 
-    def call_rpc(self, method: str, params: dict[str, Any], timeout: float = 10.0) -> dict[str, Any]:
+    def call_rpc(
+        self, method: str, params: dict[str, Any], timeout: float = 10.0
+    ) -> dict[str, Any]:
         """Call an MCP JSON-RPC method synchronously.
 
         Args:
@@ -112,4 +114,6 @@ class MCPExecutor:
                     # Ignore non-JSON lines (e.g. Docker startup logs)
                     continue
         except queue.Empty as e:
-            raise MCPExecutorError(f"Operation timed out after {timeout}s waiting for JSON-RPC response.") from e
+            raise MCPExecutorError(
+                f"Operation timed out after {timeout}s waiting for JSON-RPC response."
+            ) from e

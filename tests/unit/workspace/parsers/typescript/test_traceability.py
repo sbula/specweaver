@@ -7,9 +7,11 @@ from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCode
 def parser() -> TypeScriptCodeStructure:
     return TypeScriptCodeStructure()
 
+
 def test_extract_traceability_tags_empty(parser: TypeScriptCodeStructure) -> None:
     code = "function func() {}\n"
     assert parser.extract_traceability_tags(code) == set()
+
 
 def test_extract_traceability_tags_single(parser: TypeScriptCodeStructure) -> None:
     code = """
@@ -19,6 +21,7 @@ function test_some_behavior() {
 }
 """
     assert parser.extract_traceability_tags(code) == {"FR-1"}
+
 
 def test_extract_traceability_tags_multiple(parser: TypeScriptCodeStructure) -> None:
     code = """

@@ -11,6 +11,7 @@ from specweaver.core.loom.atoms.mcp.atom import MCPAtom
 if TYPE_CHECKING:
     import pathlib
 
+
 @pytest.mark.integration
 def test_atom_ipc_lifecycle(tmp_path: pathlib.Path) -> None:
     # We must mock the sequence of _intent_initialize and _intent_read_resource.
@@ -78,19 +79,15 @@ if __name__ == "__main__":
     atom._ensure_started()
 
     # Handshake Phase
-    init_result = atom._intent_initialize({
-        "intent": "initialize",
-        "params": {"capabilities": {}}
-    })
+    init_result = atom._intent_initialize({"intent": "initialize", "params": {"capabilities": {}}})
 
     assert init_result.status == AtomStatus.SUCCESS
     assert init_result.exports == {"capabilities": {"logging": {}}}
 
     # Read Resource Phase
-    read_result = atom._intent_read_resource({
-        "intent": "read_resource",
-        "params": {"uri": "test://"}
-    })
+    read_result = atom._intent_read_resource(
+        {"intent": "read_resource", "params": {"uri": "test://"}}
+    )
 
     assert read_result.status == AtomStatus.SUCCESS
     assert read_result.exports["contents"][0]["text"] == "Mock IPC Body"

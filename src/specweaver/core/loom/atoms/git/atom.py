@@ -56,7 +56,7 @@ class GitAtom(Atom):
             "rebase",
             "tag",  # tag
             "worktree",
-            "ls-files", # is_tracked
+            "ls-files",  # is_tracked
         }
     )
 
@@ -421,6 +421,7 @@ class GitAtom(Atom):
             path: str - relative path to the worktree to remove.
         """
         from specweaver.core.loom.atoms.git.worktree_ops import handle_worktree_teardown
+
         return handle_worktree_teardown(self._executor, self._cwd, context)
 
     def _intent_worktree_sync(self, context: dict[str, Any]) -> AtomResult:
@@ -486,6 +487,7 @@ class GitAtom(Atom):
             allowed_paths: list[str] - relative paths allowed to be updated.
         """
         from specweaver.core.loom.atoms.git.worktree_ops import handle_strip_merge
+
         return handle_strip_merge(self._executor, context)
 
     def _intent_is_tracked(self, context: dict[str, Any]) -> AtomResult:
@@ -505,7 +507,7 @@ class GitAtom(Atom):
         # It exits 0 if the file IS tracked.
         result = self._executor.run("ls-files", "--error-unmatch", str(path))
 
-        is_tracked = (result.exit_code == 0)
+        is_tracked = result.exit_code == 0
 
         return AtomResult(
             status=AtomStatus.SUCCESS,

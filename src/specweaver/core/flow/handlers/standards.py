@@ -44,10 +44,32 @@ class EnrichStandardsHandler:
         built_in_defaults = None
         if mode == "best_practice":
             from specweaver.assurance.standards.analyzer import CategoryResult
+
             built_in_defaults = {
-                "python": [CategoryResult(category="naming", dominant={"style": "snake_case"}, confidence=1.0, sample_size=1)],
-                "javascript": [CategoryResult(category="naming", dominant={"style": "camelCase"}, confidence=1.0, sample_size=1)],
-                "typescript": [CategoryResult(category="naming", dominant={"style": "camelCase"}, confidence=1.0, sample_size=1)],
+                "python": [
+                    CategoryResult(
+                        category="naming",
+                        dominant={"style": "snake_case"},
+                        confidence=1.0,
+                        sample_size=1,
+                    )
+                ],
+                "javascript": [
+                    CategoryResult(
+                        category="naming",
+                        dominant={"style": "camelCase"},
+                        confidence=1.0,
+                        sample_size=1,
+                    )
+                ],
+                "typescript": [
+                    CategoryResult(
+                        category="naming",
+                        dominant={"style": "camelCase"},
+                        confidence=1.0,
+                        sample_size=1,
+                    )
+                ],
             }
 
         scanner = StandardsScanner()

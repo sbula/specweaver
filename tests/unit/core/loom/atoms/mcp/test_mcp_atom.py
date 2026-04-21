@@ -31,17 +31,19 @@ class TestMCPAtomIntents:
 
         # When initialize is called it parses 'capabilities'
         mock_executor.call_rpc.side_effect = [
-            {"jsonrpc": "2.0", "id": 1, "result": {"capabilities": {"logging": {}}}}, # Method initialize
-            {"jsonrpc": "2.0", "id": 2, "result": {}} # Method notifications/initialized
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {"capabilities": {"logging": {}}},
+            },  # Method initialize
+            {"jsonrpc": "2.0", "id": 2, "result": {}},  # Method notifications/initialized
         ]
 
         atom = MCPAtom([sys.executable])
 
         context = {
             "intent": "initialize",
-            "params": {
-                "capabilities": {"roots": {"listChanged": True}}
-            }
+            "params": {"capabilities": {"roots": {"listChanged": True}}},
         }
 
         result = atom.run(context)
@@ -71,20 +73,15 @@ class TestMCPAtomIntents:
                     {
                         "uri": "postgres://schema",
                         "mimeType": "text/plain",
-                        "text": "CREATE TABLE..."
+                        "text": "CREATE TABLE...",
                     }
                 ]
-            }
+            },
         }
 
         atom = MCPAtom([sys.executable])
 
-        context = {
-            "intent": "read_resource",
-            "params": {
-                "uri": "postgres://schema"
-            }
-        }
+        context = {"intent": "read_resource", "params": {"uri": "postgres://schema"}}
 
         result = atom.run(context)
 
@@ -97,7 +94,7 @@ class TestMCPAtomIntents:
 
         context = {
             "intent": "read_resource",
-            "params": {} # Missing URI payload
+            "params": {},  # Missing URI payload
         }
 
         result = atom.run(context)
@@ -113,10 +110,7 @@ class TestMCPAtomIntents:
         mock_executor.call_rpc.side_effect = MCPExecutorError("Connection refused by binary")
 
         atom = MCPAtom([sys.executable])
-        result = atom.run({
-            "intent": "read_resource",
-            "params": {"uri": "test://test"}
-        })
+        result = atom.run({"intent": "read_resource", "params": {"uri": "test://test"}})
 
         assert result.status == AtomStatus.FAILED
         assert "Connection refused" in result.message
@@ -141,6 +135,7 @@ class TestMCPAtomIntents:
     def test_nfr2_command_violation_guard(self) -> None:
         """Test that MCPAtom enforces strict Docker/Podman isolation rules."""
         import pytest
+
         with pytest.raises(ValueError, match="NFR-2 Boundary Violation"):
             MCPAtom(["node", "index.js"])
 

@@ -9,6 +9,7 @@ from specweaver.assurance.validation.rules.code.c09_traceability import Traceabi
 # Using TraceabilityRule directly, simulating the pipeline executor behavior
 # to create a fully integrated end-to-end trace from Spec > Rule > AnalyzerFactory > TreeSitter Parsers.
 
+
 def test_e2e_polyglot_traceability(tmp_path: Path) -> None:
     """E2E verification of polyglot traceability.
 
@@ -40,19 +41,13 @@ def test_e2e_polyglot_traceability(tmp_path: Path) -> None:
     java_dir = root / "backend_billing"
     java_dir.mkdir()
     (java_dir / "BillingTest.java").write_text(
-        "class BillingTest {\n"
-        "    // @trace(FR-2)\n"
-        "    void testInvoice() {}\n"
-        "}\n"
+        "class BillingTest {\n    // @trace(FR-2)\n    void testInvoice() {}\n}\n"
     )
 
     # Rust
     rust_dir = root / "core_crypto"
     rust_dir.mkdir()
-    (rust_dir / "crypto_scenarios.rs").write_text(
-        "// @trace(FR-3)\n"
-        "fn test_hashing() {}\n"
-    )
+    (rust_dir / "crypto_scenarios.rs").write_text("// @trace(FR-3)\nfn test_hashing() {}\n")
 
     # Instantiate the unified Traceability Rule
     rule = TraceabilityRule()
@@ -61,4 +56,7 @@ def test_e2e_polyglot_traceability(tmp_path: Path) -> None:
 
     # Validate entire engine passed cleanly
     assert result.status == Status.PASS
-    assert "Requirements successfully traced" in result.message or "All 3 requirements" in result.message
+    assert (
+        "Requirements successfully traced" in result.message
+        or "All 3 requirements" in result.message
+    )

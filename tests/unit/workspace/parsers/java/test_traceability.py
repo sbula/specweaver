@@ -7,9 +7,11 @@ from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
 def parser() -> JavaCodeStructure:
     return JavaCodeStructure()
 
+
 def test_extract_traceability_tags_empty(parser: JavaCodeStructure) -> None:
     code = "void func() {}\n"
     assert parser.extract_traceability_tags(code) == set()
+
 
 def test_extract_traceability_tags_single(parser: JavaCodeStructure) -> None:
     code = """
@@ -19,6 +21,7 @@ void test_some_behavior() {
 }
 """
     assert parser.extract_traceability_tags(code) == {"FR-1"}
+
 
 def test_extract_traceability_tags_multiple(parser: JavaCodeStructure) -> None:
     code = """

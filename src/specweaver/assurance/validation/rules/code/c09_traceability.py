@@ -96,9 +96,14 @@ class TraceabilityRule(Rule):
         """Find test files using AnalyzerFactory and aggregate their trace tags."""
         mapped_ids: set[str] = set()
 
-        analyzer_factory = self.context.get("analyzer_factory") if hasattr(self, "context") and self.context else None
+        analyzer_factory = (
+            self.context.get("analyzer_factory")
+            if hasattr(self, "context") and self.context
+            else None
+        )
         if not analyzer_factory:
             from specweaver.workspace.analyzers.factory import AnalyzerFactory
+
             analyzer_factory = AnalyzerFactory
 
         for analyzer in analyzer_factory.get_all_analyzers():

@@ -84,6 +84,7 @@ class Generator:
         artifact_uuid: str | None = None,
         dictator_overrides: list[str] | None = None,
         validation_findings: str | None = None,
+        environment_context: str | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -96,6 +97,7 @@ class Generator:
             plan: Optional implementation plan injected.
             project_metadata: Optional explicit environment boundary target context for models.
             artifact_uuid: Optional UUID string to tag the code with.
+            environment_context: Optional mapped string extracting physical MCP bounds.
 
         Returns:
             Path to the generated code file.
@@ -126,6 +128,9 @@ class Generator:
             logger.debug("generate_code: plan injected (%d chars)", len(plan))
         if topology_contexts:
             builder.add_topology(topology_contexts)
+        if environment_context:
+            builder.add_context(environment_context, "environment_context")
+            logger.debug("generate_code: MCP env injected (%d chars)", len(environment_context))
         prompt = builder.build()
 
         messages = [
@@ -158,6 +163,7 @@ class Generator:
         artifact_uuid: str | None = None,
         dictator_overrides: list[str] | None = None,
         validation_findings: str | None = None,
+        environment_context: str | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -170,6 +176,7 @@ class Generator:
             plan: Optional implementation plan injected.
             project_metadata: Optional explicit environment boundary target context for models.
             artifact_uuid: Optional UUID string to tag the test code with.
+            environment_context: Optional mapped string extracting physical MCP bounds.
 
         Returns:
             Path to the generated test file.
@@ -200,6 +207,9 @@ class Generator:
             logger.debug("generate_tests: plan injected (%d chars)", len(plan))
         if topology_contexts:
             builder.add_topology(topology_contexts)
+        if environment_context:
+            builder.add_context(environment_context, "environment_context")
+            logger.debug("generate_tests: MCP env injected (%d chars)", len(environment_context))
         prompt = builder.build()
 
         messages = [

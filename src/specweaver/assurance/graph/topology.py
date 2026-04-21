@@ -67,6 +67,8 @@ class TopologyContext:
     archetype: str
     relationship: str  # e.g. "direct dependency", "2-hop consumer"
     constraints: list[str] = field(default_factory=list)
+    mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)
+    consumes_resources: list[str] = field(default_factory=list)
 
 
 def _pop_scc(root: str, stack: list[str], on_stack: set[str]) -> list[str]:
@@ -492,7 +494,9 @@ class TopologyGraph:
                     purpose=node.purpose,
                     archetype=node.archetype,
                     relationship=relationship,
-                    constraints=list(node.constraints),
+                    constraints=self.constraints_for(name),
+                    mcp_servers=dict(node.mcp_servers),
+                    consumes_resources=list(node.consumes_resources),
                 )
             )
 

@@ -378,6 +378,7 @@ class PythonCodeStructure(CodeStructureInterface):
         tags: set[str] = set()
 
         import re
+
         trace_pattern = re.compile(r"@trace\(([^)]+)\)")
 
         for _, match_dict in cursor.matches(tree.root_node):

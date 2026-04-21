@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class NativeIgnoreIOHandler:
     def __init__(self, ignore_path: Path):
         self.ignore_path = ignore_path
@@ -39,7 +40,6 @@ class NativeIgnoreIOHandler:
         with open(self.ignore_path, mode, encoding="utf-8") as f:
             for line in lines:
                 f.write(f"{line}\n")
-
 
 
 _DEFAULT_CONTEXT_YAML = """\
@@ -164,6 +164,7 @@ def _scaffold_context_yaml(project_path: Path, created: list[str]) -> Path:
         created.append("context.yaml")
     return context_file
 
+
 def _scaffold_specweaver_dir(project_path: Path, created: list[str]) -> Path:
     sw_dir = project_path / ".specweaver"
     if not sw_dir.exists():
@@ -171,12 +172,14 @@ def _scaffold_specweaver_dir(project_path: Path, created: list[str]) -> Path:
         created.append(".specweaver/")
     return sw_dir
 
+
 def _scaffold_specs_dir(project_path: Path, created: list[str]) -> Path:
     specs_dir = project_path / "specs"
     if not specs_dir.exists():
         specs_dir.mkdir(parents=True)
         created.append("specs/")
     return specs_dir
+
 
 def _scaffold_templates(sw_dir: Path, created: list[str]) -> None:
     templates_dir = sw_dir / "templates"
@@ -189,8 +192,10 @@ def _scaffold_templates(sw_dir: Path, created: list[str]) -> None:
         tmpl_file.write_text(_DEFAULT_COMPONENT_SPEC, encoding="utf-8")
         created.append(".specweaver/templates/component_spec.md")
 
+
 def _scaffold_constitution(project_path: Path, created: list[str]) -> Path:
     from specweaver.workspace.project.constitution import generate_constitution
+
     constitution_path = project_path / "CONSTITUTION.md"
     constitution_existed = constitution_path.exists()
     project_name = project_path.name.lower().replace(" ", "-")
@@ -198,6 +203,7 @@ def _scaffold_constitution(project_path: Path, created: list[str]) -> Path:
     if not constitution_existed:
         created.append("CONSTITUTION.md")
     return constitution_file
+
 
 def _scaffold_specweaverignore(project_path: Path, created: list[str]) -> None:
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
@@ -216,6 +222,7 @@ def _scaffold_specweaverignore(project_path: Path, created: list[str]) -> None:
 
     if ignore_path.exists() and not ignore_existed:
         created.append(".specweaverignore")
+
 
 def scaffold_project(project_path: Path) -> ScaffoldResult:
     """Create the .specweaver/ directory structure in a target project.
@@ -244,7 +251,6 @@ def scaffold_project(project_path: Path) -> ScaffoldResult:
     _scaffold_templates(sw_dir, created)
     constitution_file = _scaffold_constitution(project_path, created)
     _scaffold_specweaverignore(project_path, created)
-
 
     result = ScaffoldResult(
         project_path=project_path,

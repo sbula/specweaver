@@ -156,11 +156,14 @@ class TestRunPipelineMocked:
             from unittest.mock import AsyncMock
 
             from specweaver.core.flow.engine.state import RunStatus
+
             mock_runner = mock_runner_class.return_value
+
             # return a mocked final run
             class DummyRun:
                 def __init__(self, status: RunStatus) -> None:
                     self.status = status
+
             mock_runner.run = AsyncMock(return_value=DummyRun(RunStatus.COMPLETED))
 
             result = runner.invoke(
@@ -192,10 +195,13 @@ class TestRunPipelineMocked:
             from unittest.mock import AsyncMock
 
             from specweaver.core.flow.engine.state import RunStatus
+
             mock_runner = mock_runner_class.return_value
+
             class DummyRun:
                 def __init__(self, status: RunStatus) -> None:
                     self.status = status
+
             mock_runner.run = AsyncMock(return_value=DummyRun(RunStatus.COMPLETED))
             mock_save_cache.side_effect = PermissionError("Cannot write")
 
@@ -219,7 +225,9 @@ class TestResumeMocked:
         result = runner.invoke(app, ["resume"])
         assert result.exit_code == 1
 
-    def test_resume_unknown_run_id_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_resume_unknown_run_id_fails(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _state_path = tmp_path / "pipe_state.db"
         monkeypatch.setattr(
             "specweaver.core.config.paths.state_db_path",
@@ -232,7 +240,9 @@ class TestResumeMocked:
         result = runner.invoke(app, ["resume", "nonexistent-id"])
         assert result.exit_code == 1
 
-    def test_resume_no_resumable_runs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_resume_no_resumable_runs(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         _state_path = tmp_path / "pipe_state.db"
         monkeypatch.setattr(
             "specweaver.core.config.paths.state_db_path",
@@ -286,6 +296,7 @@ class TestResumeMocked:
 
             class DummyRun:
                 pass
+
             mock_run = DummyRun()
             mock_run.status = RunStatus.COMPLETED
 

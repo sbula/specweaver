@@ -305,7 +305,9 @@ class FileSystemTool:
 
         for dirpath, _dirnames, filenames in os.walk(base):
             if self._exclude_dirs:
-                _dirnames[:] = [d for d in _dirnames if d not in self._exclude_dirs and not d.startswith(".")]
+                _dirnames[:] = [
+                    d for d in _dirnames if d not in self._exclude_dirs and not d.startswith(".")
+                ]
 
             for fname in filenames:
                 full = os.path.join(dirpath, fname)

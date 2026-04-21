@@ -496,8 +496,11 @@ class TestPipelineRunnerVaultSecurity:
 
         # 2. Make it a git repo and TRACK the file
         import subprocess
+
         subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
-        subprocess.run(["git", "add", ".specweaver/vault.env"], cwd=tmp_path, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "add", ".specweaver/vault.env"], cwd=tmp_path, capture_output=True, check=True
+        )
 
         pipeline = _make_pipeline(step_count=1)
         ctx = _make_context(tmp_path)
@@ -517,6 +520,7 @@ class TestPipelineRunnerVaultSecurity:
 
         # Make it a git repo, but DO NOT track the file (we'll ignore it)
         import subprocess
+
         subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
         # Verify it exists but is untracked
         ignored_file = tmp_path / ".gitignore"
@@ -549,8 +553,11 @@ class TestPipelineRunnerVaultSecurity:
         vault_file.write_text("DB_PASS=stolen\n")
 
         import subprocess
+
         subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
-        subprocess.run(["git", "add", ".specweaver/vault.env"], cwd=tmp_path, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "add", ".specweaver/vault.env"], cwd=tmp_path, capture_output=True, check=True
+        )
 
         # 3. Attempt to resume
         pass_reg = _make_registry(PassHandler())

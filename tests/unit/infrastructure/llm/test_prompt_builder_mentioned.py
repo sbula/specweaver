@@ -37,7 +37,9 @@ class TestMentionedFilesIntegration:
         """Verify that the tokens representation scales down due to AST application."""
         f = tmp_path / "heavy.py"
         # Massive inner body block
-        f.write_text("class Logic:\n    def load(self):\n" + "        x = 1\n" * 500, encoding="utf-8")
+        f.write_text(
+            "class Logic:\n    def load(self):\n" + "        x = 1\n" * 500, encoding="utf-8"
+        )
         mentions = [ResolvedMention(original="heavy.py", resolved_path=f, kind="code")]
 
         # Test full block without skeleton limits

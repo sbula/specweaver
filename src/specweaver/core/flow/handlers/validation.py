@@ -177,7 +177,7 @@ class ValidateSpecHandler:
             pipeline,
             content,
             spec_path,
-            context={"analyzer_factory": analyzer_factory} if analyzer_factory else None
+            context={"analyzer_factory": analyzer_factory} if analyzer_factory else None,
         )
 
 
@@ -308,7 +308,7 @@ class ValidateCodeHandler:
             pipeline,
             content,
             spec_path,
-            context={"analyzer_factory": analyzer_factory} if analyzer_factory else None
+            context={"analyzer_factory": analyzer_factory} if analyzer_factory else None,
         )
 
 

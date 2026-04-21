@@ -631,7 +631,9 @@ class TestIsTracked:
 
     def test_tracked_file_returns_true(self, tmp_path: Path) -> None:
         with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
-            mock.return_value = type("R", (), {"returncode": 0, "stdout": "path/file.txt\n", "stderr": ""})()
+            mock.return_value = type(
+                "R", (), {"returncode": 0, "stdout": "path/file.txt\n", "stderr": ""}
+            )()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "is_tracked", "path": "path/file.txt"})
         assert result.status == AtomStatus.SUCCESS

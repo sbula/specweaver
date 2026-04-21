@@ -7,9 +7,11 @@ from specweaver.workspace.parsers.python.codestructure import PythonCodeStructur
 def parser() -> PythonCodeStructure:
     return PythonCodeStructure()
 
+
 def test_extract_traceability_tags_empty(parser: PythonCodeStructure) -> None:
     code = "def func(): pass\n"
     assert parser.extract_traceability_tags(code) == set()
+
 
 def test_extract_traceability_tags_single(parser: PythonCodeStructure) -> None:
     code = """
@@ -18,6 +20,7 @@ def test_some_behavior():
     assert True
 """
     assert parser.extract_traceability_tags(code) == {"FR-1"}
+
 
 def test_extract_traceability_tags_multiple(parser: PythonCodeStructure) -> None:
     code = """
@@ -28,6 +31,7 @@ class TestFeature:
         pass
 """
     assert parser.extract_traceability_tags(code) == {"FR-1", "FR-2", "NFR-1"}
+
 
 def test_extract_traceability_tags_different_spacing(parser: PythonCodeStructure) -> None:
     code = """

@@ -121,7 +121,8 @@ def implement(
         ],
     )
 
-    context = RunContext(analyzer_factory=AnalyzerFactory,
+    context = RunContext(
+        analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         llm=adapter,
