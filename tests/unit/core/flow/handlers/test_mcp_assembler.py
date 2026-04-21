@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
@@ -15,6 +14,9 @@ from specweaver.assurance.graph.topology import TopologyContext
 from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
 from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ==============================================================================
 # Fixtures

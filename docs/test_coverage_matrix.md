@@ -113,3 +113,15 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 |------------------|------|-------------|-----|
 | ReviewSpecHandler | ✅ | ⚪ | ✅ |
 | ReviewCodeHandler | ✅ | ⚪ | ✅ |
+
+
+## src/specweaver/core/loom/tools/mcp/tool.py & interfaces.py
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| _execute_mcp_query() | ✅ | ❌ | ❌ |
+| ArchitectMCPInterface | ✅ | ❌ | ❌ |
+
+## src/specweaver/core/loom/dispatcher.py
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| create_standard_set() | ✅ | ✅ | ✅ |

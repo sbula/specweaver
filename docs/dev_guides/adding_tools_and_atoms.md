@@ -73,3 +73,9 @@ To add a new capability string (like `SearchWeb`):
 - **Never** place a Tool inside `commons/`. Tools strictly require the Executor layer.
 - **Never** inject parallel security checks. Use the native `FolderGrant` and path-traversal hooks.
 - **`manifest.yaml` checks**: Ensure that the `context.yaml` inside your tools layer correctly `forbids: atoms/*` to prevent circular leakage between trusted/untrusted realms.
+
+
+### Exception: Dynamic Architect Injection (MCP)
+Certain tools, such as the MCPExplorerTool, are NOT permitted in standard pipelines due to zero-trust architecture rules. These tools implement specialized interfaces like ArchitectMCPInterface, mapped exclusively for L2 Architect intelligence roles.
+When designing tools with strict intent limitations, see mcp/tool.py as a reference for validating 
+ole_intents during ToolDispatcher binding routines within Flow Orchestration.

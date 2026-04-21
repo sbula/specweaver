@@ -102,6 +102,7 @@ class ToolDispatcher:
         role: str,
         allowed_tools: list[str],
         analyzer_factory: Any | None = None,
+        topology: Any | None = None,
     ) -> ToolDispatcher:
         """Factory method to assemble standard tools for an agent.
 
@@ -226,5 +227,18 @@ class ToolDispatcher:
             # but WebTool safely degrades if api_key isn't supplied (web_enabled=False).
             web_tool = WebTool(role=role)
             interfaces.append(web_tool)
+
+        if "mcp" in allowed_tools and role == "architect":
+            from specweaver.core.loom.tools.mcp.interfaces import ArchitectMCPInterface
+            from specweaver.core.loom.tools.mcp.tool import MCPExplorerTool
+
+            # MCP requires the actual topology server mappings
+            class DummyContext: # Temporary bridge since MCPExplorerTool expects context object
+                def __init__(self, topo: Any) -> None:
+                    self.topology = topo
+
+            mcp_tool = MCPExplorerTool(context=DummyContext(topology))
+            mcp_interface = ArchitectMCPInterface(mcp_tool)
+            interfaces.append(mcp_interface)
 
         return cls(interfaces)

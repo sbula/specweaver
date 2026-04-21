@@ -5,12 +5,15 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from specweaver.workflows.review.reviewer import Reviewer
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestReviewerEnvironment:
@@ -30,7 +33,7 @@ class TestReviewerEnvironment:
             environment_context="mcp://database:\n  |\n    Users Schema: id, name",
         )
 
-        args, kwargs = mock_llm.generate.call_args
+        args, _kwargs = mock_llm.generate.call_args
         prompt_built = args[0][1].content
 
         assert "Users Schema: id, name" in prompt_built
@@ -52,7 +55,7 @@ class TestReviewerEnvironment:
             environment_context="mcp://testing:\n  |\n    pytest-helpers-mocked",
         )
 
-        args, kwargs = mock_llm.generate.call_args
+        args, _kwargs = mock_llm.generate.call_args
         prompt_built = args[0][1].content
 
         assert "pytest-helpers-mocked" in prompt_built

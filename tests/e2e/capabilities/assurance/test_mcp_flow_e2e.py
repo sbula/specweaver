@@ -30,7 +30,7 @@ def main():
             req = json.loads(line)
             method = req.get("method")
             msg_id = req.get("id", 1)
-            
+
             if method == "initialize":
                 resp = {"jsonrpc": "2.0", "id": msg_id, "result": {"protocolVersion": "1.0", "capabilities": {}, "serverInfo": {"name": "dummy", "version": "1.0"}}}
             elif method == "resources/read":
@@ -38,7 +38,7 @@ def main():
                 resp = {"jsonrpc": "2.0", "id": msg_id, "result": {"contents": [{"uri": uri, "mimeType": "text/plain", "text": "e2e_db_schema_mock"}]}}
             else:
                 resp = {"jsonrpc": "2.0", "id": msg_id, "error": {"code": -32601, "message": "Method not found"}}
-                
+
             sys.stdout.write(json.dumps(resp) + "\\n")
             sys.stdout.flush()
         except Exception:
@@ -213,3 +213,45 @@ class TestMCPFlowE2E:
         kwargs = mock_generate_code.call_args.kwargs
         env_ctx = kwargs.get("environment_context", "")
         assert "ERROR init resource" in env_ctx
+
+    @pytest.mark.asyncio
+    async def test_mcp_flow_e2e_tool_dispatcher_architect(self, dummy_mcp_script: str, tmp_path: Path) -> None:
+        """Story: E2E Tool Flow: Architect agent invokes ToolDispatcher which calls the proxy."""
+        import sys
+
+        from specweaver.core.loom.dispatcher import ToolDispatcher
+        from specweaver.core.loom.security import WorkspaceBoundary
+
+        topology = TopologyContext(
+            name="demo_node",
+            purpose="DB.",
+            archetype="pure-logic",
+            relationship="self",
+            mcp_servers={
+                "dummy": {"command": [sys.executable], "args": [dummy_mcp_script]},
+            },
+            consumes_resources=["mcp://dummy/users_table"],
+        )
+        boundary = WorkspaceBoundary(roots=[tmp_path], api_paths=[tmp_path])
+
+        dispatcher = ToolDispatcher.create_standard_set(
+            boundary=boundary,
+            role="architect",
+            allowed_tools=["mcp"],
+            topology=topology
+        )
+
+        # Test tool registry execution
+        result_list = await dispatcher.execute("list_resources", {"server_name": "dummy"})
+        assert "result" in result_list
+        result_list["result"]
+
+        # The dummy returns NO contents during list, but in our dummy it doesn't even implement list
+        # Actually our dummy proxy returns Method not found for anything besides read/initialize!
+        # Wait, the dummy script in test_mcp_flow_e2e.py returns:
+        # else: resp = {"error": "Method not found"}
+        # So "list_resources" will return error.
+
+        result_read = await dispatcher.execute("read_resource", {"server_name": "dummy", "uri": "mcp://dummy/users_table"})
+        assert "result" in result_read
+        assert "e2e_db_schema_mock" in result_read["result"]

@@ -5,12 +5,15 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from specweaver.workflows.implementation.generator import Generator
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestGeneratorEnvironment:
@@ -32,7 +35,7 @@ class TestGeneratorEnvironment:
             environment_context="mcp://database:\n  |\n    Users Schema: id, name",
         )
 
-        args, kwargs = mock_llm.generate.call_args
+        args, _kwargs = mock_llm.generate.call_args
         prompt_built = args[0][1].content  # User Message Role is the second element
 
         # Verify the context builder appended the environment context mapped payload natively
@@ -54,7 +57,7 @@ class TestGeneratorEnvironment:
             environment_context="mcp://testing:\n  |\n    pytest-helpers-mocked",
         )
 
-        args, kwargs = mock_llm.generate.call_args
+        args, _kwargs = mock_llm.generate.call_args
         prompt_built = args[0][1].content  # User message Role string
 
         assert "pytest-helpers-mocked" in prompt_built

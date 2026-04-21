@@ -88,7 +88,11 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
         allowed_tools.append("web")
 
     return ToolDispatcher.create_standard_set(
-        boundary, role=role, allowed_tools=allowed_tools, analyzer_factory=context.analyzer_factory
+        boundary,
+        role=role,
+        allowed_tools=allowed_tools,
+        analyzer_factory=context.analyzer_factory,
+        topology=context.topology
     )
 
 
