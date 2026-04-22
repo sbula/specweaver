@@ -192,3 +192,17 @@ Patterns adopted for SpecWeaver:
 
 Blueprint references:
 - [`cavekit/`](https://github.com/JuliusBrussee/cavekit) — The core loop and commands (`/ck:sketch`, `/ck:map`, `/ck:make`, `/ck:check`)
+
+
+### Graphify - Multi-Modal Structural Intelligence
+
+[Graphify](https://github.com/safishamsi/graphify) by **Safi Shamsi** is an open-source knowledge graph skill for AI assistants. It proves that pure structural topological analysis (Leiden clustering, BFS traversals) radically outperforms vector embeddings for codebase RAG.
+
+Patterns adopted for SpecWeaver:
+- **Degree Centrality ('God Nodes')** -> Analyzing the exact AST flow count to map the largest architectural blast radiuses and visualizing them natively in a local HTML UI. (Phase 3.38, sw graph)
+- **In-Memory NetworkX Abstraction** -> Re-architecting the Topology backend (Phase 3.33) to parse the AST directly into an isolated, in-memory Python graph (Bicycle mode) to handle sub-second Math/Clustering before delegating to the massive PostgreSQL sidecar (Rocket mode).
+- **Multi-Modal Edges** -> Piping Diagrams, PDFs, and whiteboards via Vision models to explicitly create [inferred] bounds against the strict AST nodes, powering legacy ingestion. (Phase 3.43)
+
+Blueprint references:
+- [graphify.net](https://graphify.net/) - Architecture concepts on BFS networks over Vector DBs.
+- [graphify/render.py](https://github.com/safishamsi/graphify/blob/v4/graphify/render.py) - God Node math and CLI local visualizations.
