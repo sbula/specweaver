@@ -12,8 +12,8 @@ By leaning into rigorous Graph Theory methodologies, SpecWeaver shifts the ancho
 ## 1. Feature 3.33 Framework: Bicycle vs Rocket Mode
 To ensure SpecWeaver's topology operations remain scalable, the backend abstraction is split:
 
-### Bicycle Mode (In-Memory Graphs)
-- **Mechanism:** Drops complex recursive SQLite CTE graph queries in favor of an **In-Memory Graph object** (`NetworkX` or `rustworkx`) populated locally per query bounds.
+### Bicycle Mode (SQLite/BM25 + In-Memory Graphs)
+- **Mechanism:** Augments the persistent `SQLite/BM25` baseline with an **In-Memory Graph object** (`NetworkX` or `rustworkx`) populated locally per query bounds.
 - **Why it matters:** Local ASTs are parsed and piped into RAM, allowing instantaneous BFS traversal, community clustering, and network flow math without hitting disk I/O.
 - **Limitation:** Fails when spanning massive, polyglot microservice boundaries distributed across separated repositories. 
 
