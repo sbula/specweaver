@@ -207,3 +207,10 @@ To strictly enforce NFR-2 (Process Isolation and Credential Security) from Featu
 - **Pre-Flight Execution (FR-1)**: Before evaluating any YAML routing steps, `PipelineRunner.run()` and `PipelineRunner.resume()` autonomously interrogate the physical filesystem for the existence of `.specweaver/vault.env`.
 - **Architectural Boundary Adherence**: The engine absolutely NEVER runs explicit `subprocess.run` OS calls from within configuration abstractions. Instead, it delegates purely to `GitAtom` to run `git ls-files --error-unmatch` via an intent (`_intent_is_tracked`). 
 - **Dictatorial Abort**: If `GitAtom` reports that the `vault.env` is tracked in the git index, the Runner violently raises a `RuntimeError` and brutally terminates the Python interpreter process. It assumes the pipeline environment has suffered an unauthorized human git commit exposing plaintext credentials to version control. No loops, no HITL gates—the orchestrator dies immediately to prevent any state writes or upstream pushes.
+
+
+## Context Skeletonization Assembly
+
+The Pipeline Engine layer handles complex environment integrations, specifically for gathering contextual data before invoking LLM logic. Background components and target context files must be stripped of bloated method implementations via the **ContextAssembler**.
+
+Due to stringent architectural constraints ensuring non-blocking performance and boundary isolation, handlers implicitly trigger evaluate_and_fetch_skeleton_context() directly within execution contexts. This dynamically proxies CodeStructureAtom through threaded execution buffers, guaranteeing stable string mapping payloads directly into subsequent Workflow abstractions.
