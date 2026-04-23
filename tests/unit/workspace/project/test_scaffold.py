@@ -63,6 +63,27 @@ class TestScaffoldProject:
         expected_name = tmp_path.name.lower().replace(" ", "-")
         assert data["name"] == expected_name
 
+    def test_creates_src_context_yaml(self, tmp_path: Path) -> None:
+        """scaffold_project creates src/context.yaml with pure-logic archetype."""
+        scaffold_project(tmp_path)
+        context_path = tmp_path / "src" / "context.yaml"
+        assert context_path.is_file()
+        yaml = YAML()
+        data = yaml.load(context_path)
+        assert data["level"] == "domain"
+        assert data["archetype"] == "pure-logic"
+        assert "specweaver/loom/*" in data.get("forbids", [])
+
+    def test_creates_tests_context_yaml(self, tmp_path: Path) -> None:
+        """scaffold_project creates tests/context.yaml with adapter archetype."""
+        scaffold_project(tmp_path)
+        context_path = tmp_path / "tests" / "context.yaml"
+        assert context_path.is_file()
+        yaml = YAML()
+        data = yaml.load(context_path)
+        assert data["level"] == "domain"
+        assert data["archetype"] == "adapter"
+
     def test_returns_created_paths(self, tmp_path: Path) -> None:
         """scaffold_project returns a summary of what was created."""
         result = scaffold_project(tmp_path)
@@ -117,6 +138,54 @@ class TestScaffoldIdempotency:
 
         content = context_path.read_text()
         assert "my-custom-project" in content  # preserved, not overwritten
+
+    def test_does_not_overwrite_existing_src_context_yaml(self, tmp_path: Path) -> None:
+        """If src/context.yaml already exists with custom content, don't overwrite."""
+        src_dir = tmp_path / "src"
+        src_dir.mkdir(parents=True)
+        context_path = src_dir / "context.yaml"
+        context_path.write_text("# custom src context\nname: overridesrc\nlevel: domain\n")
+
+        scaffold_project(tmp_path)
+
+        content = context_path.read_text()
+        assert "overridesrc" in content  # preserved, not overwritten
+
+    def test_does_not_raise_on_existing_src_dir_without_context(self, tmp_path: Path) -> None:
+        """If src/ exists but without context.yaml, gracefully populate it."""
+        src_dir = tmp_path / "src"
+        src_dir.mkdir(parents=True)
+        # No context.yaml created
+
+        scaffold_project(tmp_path)
+
+        context_path = src_dir / "context.yaml"
+        assert context_path.exists()
+        assert "pure-logic" in context_path.read_text()
+
+    def test_does_not_overwrite_existing_tests_context_yaml(self, tmp_path: Path) -> None:
+        """If tests/context.yaml already exists with custom content, don't overwrite."""
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir(parents=True)
+        context_path = tests_dir / "context.yaml"
+        context_path.write_text("# custom tests context\nname: overridetests\nlevel: domain\n")
+
+        scaffold_project(tmp_path)
+
+        content = context_path.read_text()
+        assert "overridetests" in content  # preserved, not overwritten
+
+    def test_does_not_raise_on_existing_tests_dir_without_context(self, tmp_path: Path) -> None:
+        """If tests/ exists but without context.yaml, gracefully populate it."""
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir(parents=True)
+        # No context.yaml created
+
+        scaffold_project(tmp_path)
+
+        context_path = tests_dir / "context.yaml"
+        assert context_path.exists()
+        assert "adapter" in context_path.read_text()
 
     def test_does_not_overwrite_existing_template(self, tmp_path: Path) -> None:
         """If templates/component_spec.md exists with custom content, don't overwrite."""

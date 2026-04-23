@@ -59,6 +59,24 @@ exposes: []
 owner: TODO
 """
 
+_DEFAULT_SRC_CONTEXT_YAML = """\
+name: src
+level: domain
+purpose: Pure logic domain.
+archetype: pure-logic
+consumes: []
+forbids:
+  - specweaver/loom/*
+"""
+
+_DEFAULT_TESTS_CONTEXT_YAML = """\
+name: tests
+level: domain
+purpose: Test runner domain mapping.
+archetype: adapter
+consumes: []
+"""
+
 
 _DEFAULT_COMPONENT_SPEC = """\
 # {{ component_name }} - Component Spec
@@ -194,6 +212,29 @@ def _scaffold_context_yaml(project_path: Path, created: list[str]) -> Path:
         context_content = _DEFAULT_CONTEXT_YAML.format(project_name=project_name)
         context_file.write_text(context_content, encoding="utf-8")
         created.append("context.yaml")
+
+    src_dir = project_path / "src"
+    src_ctx = src_dir / "context.yaml"
+    if src_dir.exists() and not src_ctx.exists():
+        src_ctx.write_text(_DEFAULT_SRC_CONTEXT_YAML, encoding="utf-8")
+        created.append("src/context.yaml")
+    elif not src_dir.exists():
+        src_dir.mkdir(parents=True)
+        src_ctx.write_text(_DEFAULT_SRC_CONTEXT_YAML, encoding="utf-8")
+        created.append("src/")
+        created.append("src/context.yaml")
+
+    tests_dir = project_path / "tests"
+    tests_ctx = tests_dir / "context.yaml"
+    if tests_dir.exists() and not tests_ctx.exists():
+        tests_ctx.write_text(_DEFAULT_TESTS_CONTEXT_YAML, encoding="utf-8")
+        created.append("tests/context.yaml")
+    elif not tests_dir.exists():
+        tests_dir.mkdir(parents=True)
+        tests_ctx.write_text(_DEFAULT_TESTS_CONTEXT_YAML, encoding="utf-8")
+        created.append("tests/")
+        created.append("tests/context.yaml")
+
     return context_file
 
 

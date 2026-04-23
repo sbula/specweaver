@@ -90,13 +90,13 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Context Condensation | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Context Condensation | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-2 | Impact-Aware Testing | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design DRAFT — awaiting HITL approval.
+**Current status**: SF-1 Impl Plan APPROVED.
 **Next step**: After approval, run:
-`/implementation-plan docs/roadmap/phase_3/feature_3_32d/feature_3_32d_design.md SF-1`
+/dev docs/roadmap/phase_3/feature_3_32d/feature_3_32d_sf1_implementation_plan.md
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

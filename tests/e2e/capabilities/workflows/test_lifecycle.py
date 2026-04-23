@@ -208,6 +208,8 @@ class TestFullLifecycle:
         assert (tmp_path / ".specweaver").is_dir()
         assert (tmp_path / "specs").is_dir()
         assert (tmp_path / "CONSTITUTION.md").is_file()
+        assert (tmp_path / "src" / "context.yaml").is_file()
+        assert (tmp_path / "tests" / "context.yaml").is_file()
 
     def test_full_pipeline(self, tmp_path: Path) -> None:
         """Full lifecycle: init → draft → check → review → implement → check → review."""

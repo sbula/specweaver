@@ -125,3 +125,10 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|
 | create_standard_set() | ✅ | ✅ | ✅ |
+
+## src/specweaver/workspace/project/scaffold.py
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| _scaffold_context_yaml() | ✅ | ✅ | ✅ |
+| scaffold_project() | ✅ | ✅ | ✅ |
+

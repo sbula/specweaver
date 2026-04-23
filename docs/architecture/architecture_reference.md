@@ -81,7 +81,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 ### Phase 1 — MVP (Prove the Core Loop)
 
 **Project scaffold** (`sw init`)
-- `project/scaffold.py` — creates directory structure, seeds `CONSTITUTION.md` & `.specweaverignore` globally + registers in DB. Lives in `project/` (adapter archetype) because it does filesystem I/O to discover/create project structures.
+- `project/scaffold.py` — creates directory structure, seeds `CONSTITUTION.md` & `.specweaverignore` globally + registers in DB. Scaffolds native topological boundary maps (`src/context.yaml` and `tests/context.yaml`) dynamically to enforce isolated domains preventing Engine access hallucination. Lives in `project/` (adapter archetype) because it does filesystem I/O to discover/create project structures.
 - `config/database.py` — SQLite schema + multi-project registry. Lives in `config/` (pure-logic, leaf) because every module needs settings — it's at the bottom.
 - `cli/project_commands.py` — `sw init/use/projects/remove`. Lives in `cli/` (entry-point) — thin delegation to `project/`.
 

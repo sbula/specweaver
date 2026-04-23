@@ -251,6 +251,10 @@ class TestHighPriorityEdgeCases:
         assert spec_path.exists()
         assert spec_path.read_text(encoding="utf-8") == "# My important spec"
 
+        # Also assert the newly introduced topologies are safe from overwrites
+        assert (dir1 / "src" / "context.yaml").exists()
+        assert (dir1 / "tests" / "context.yaml").exists()
+
     def test_spec_to_code_data_integrity(self, tmp_path: Path) -> None:
         """Generated code should contain concepts from the spec."""
         spec_path = self._init_and_create_spec(tmp_path)
