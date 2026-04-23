@@ -163,7 +163,10 @@ class ValidateSpecHandler:
         schemas = load_evaluator_schemas(project_dir=project_path)
         active_archetype = archetype if archetype else "generic"
         atom = CodeStructureAtom(
-            cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_archetype, parsers=parsers
+            cwd=cwd_path,
+            evaluator_schemas=schemas,
+            active_archetype=active_archetype,
+            parsers=parsers,
         )
         payload_res = atom.run({"intent": "read_file_structure", "path": str(spec_path)})
 

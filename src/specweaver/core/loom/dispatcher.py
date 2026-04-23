@@ -235,7 +235,7 @@ class ToolDispatcher:
             from specweaver.core.loom.tools.mcp.tool import MCPExplorerTool
 
             # MCP requires the actual topology server mappings
-            class DummyContext: # Temporary bridge since MCPExplorerTool expects context object
+            class DummyContext:  # Temporary bridge since MCPExplorerTool expects context object
                 def __init__(self, topo: Any) -> None:
                     self.topology = topo
 

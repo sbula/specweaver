@@ -80,3 +80,10 @@ If you ever wish to add a new AST mutation intent, it must follow this 5-step va
 - **Never rely on String Replacement:** LLM Agents fail to count spaces and indentations. Always prefer native byte offsets supplied by `tree-sitter`.
 - **Enforce Separation of Reads and Writes:** Do not allow `read_file_structure` to mutate bounds or log warnings to the console. Pure function responses ensure maximum context integrity.
 - **Fail Gracefully on Parse Errors:** If Tree-sitter fails to index a file due to severe syntax drift, gracefully fall back to instructing the LLM to use `read_file` instead of crashing the pipeline stack.
+
+
+## Context Skeletonization
+
+Due to architectural latency bounds (NFR-1) and isolation layers, extracting AST skeletons from background and dependency files during prompt hydration is prohibited. Attempting to statically import \CodeStructureAtom\ or tree-sitter bindings within \PromptBuilder\ constitutes an architectural violation.
+
+Instead, the **ContextAssembler** pre-fetches AST skeleton string states asynchronously during the L3 bootstrap using \evaluate_and_fetch_skeleton_context()\ inside the Flow Handlers layer. The resulting dictionary mapping is directly injected into the \PromptBuilder\ kwargs during downstream Workflow initiation, enabling token-aware context without C-binding blocking or cross-layer cyclic dependencies.

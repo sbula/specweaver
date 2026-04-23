@@ -323,11 +323,16 @@ class TestToolDispatcherMCPIntegration:
     def test_mcp_granted_to_architect(self, tmp_path) -> None:
         from specweaver.core.loom.dispatcher import ToolDispatcher
         from specweaver.core.loom.security import WorkspaceBoundary
+
         boundary = WorkspaceBoundary(roots=[tmp_path], api_paths=[tmp_path])
+
         class MockTopology:
             def __init__(self) -> None:
                 self.mcp_servers = {"test-srv": {}}
-        dispatcher = ToolDispatcher.create_standard_set(boundary=boundary, role="architect", allowed_tools=["mcp"], topology=MockTopology())
+
+        dispatcher = ToolDispatcher.create_standard_set(
+            boundary=boundary, role="architect", allowed_tools=["mcp"], topology=MockTopology()
+        )
         names = [d.name for d in dispatcher.available_tools()]
         assert "list_servers" in names
         assert "list_resources" in names
@@ -335,7 +340,10 @@ class TestToolDispatcherMCPIntegration:
     def test_mcp_ignored_for_reviewer(self, tmp_path) -> None:
         from specweaver.core.loom.dispatcher import ToolDispatcher
         from specweaver.core.loom.security import WorkspaceBoundary
+
         boundary = WorkspaceBoundary(roots=[tmp_path], api_paths=[tmp_path])
-        dispatcher = ToolDispatcher.create_standard_set(boundary=boundary, role="reviewer", allowed_tools=["mcp"], topology=None)
+        dispatcher = ToolDispatcher.create_standard_set(
+            boundary=boundary, role="reviewer", allowed_tools=["mcp"], topology=None
+        )
         names = [d.name for d in dispatcher.available_tools()]
         assert "list_servers" not in names

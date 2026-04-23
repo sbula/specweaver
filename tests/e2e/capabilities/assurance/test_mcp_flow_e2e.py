@@ -215,7 +215,9 @@ class TestMCPFlowE2E:
         assert "ERROR init resource" in env_ctx
 
     @pytest.mark.asyncio
-    async def test_mcp_flow_e2e_tool_dispatcher_architect(self, dummy_mcp_script: str, tmp_path: Path) -> None:
+    async def test_mcp_flow_e2e_tool_dispatcher_architect(
+        self, dummy_mcp_script: str, tmp_path: Path
+    ) -> None:
         """Story: E2E Tool Flow: Architect agent invokes ToolDispatcher which calls the proxy."""
         import sys
 
@@ -235,10 +237,7 @@ class TestMCPFlowE2E:
         boundary = WorkspaceBoundary(roots=[tmp_path], api_paths=[tmp_path])
 
         dispatcher = ToolDispatcher.create_standard_set(
-            boundary=boundary,
-            role="architect",
-            allowed_tools=["mcp"],
-            topology=topology
+            boundary=boundary, role="architect", allowed_tools=["mcp"], topology=topology
         )
 
         # Test tool registry execution
@@ -252,6 +251,8 @@ class TestMCPFlowE2E:
         # else: resp = {"error": "Method not found"}
         # So "list_resources" will return error.
 
-        result_read = await dispatcher.execute("read_resource", {"server_name": "dummy", "uri": "mcp://dummy/users_table"})
+        result_read = await dispatcher.execute(
+            "read_resource", {"server_name": "dummy", "uri": "mcp://dummy/users_table"}
+        )
         assert "result" in result_read
         assert "e2e_db_schema_mock" in result_read["result"]

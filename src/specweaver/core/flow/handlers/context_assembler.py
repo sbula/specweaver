@@ -11,7 +11,7 @@ over the files to ensure token limits remain fully stable during large system in
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
 
@@ -74,6 +74,8 @@ def evaluate_and_fetch_skeleton_context(
                     res.message,
                 )
         except Exception as exc:
-            logger.warning("ContextAssembler: Exception extracting skeleton for %s — %s", path_str, exc)
+            logger.warning(
+                "ContextAssembler: Exception extracting skeleton for %s — %s", path_str, exc
+            )
 
     return skeleton_files

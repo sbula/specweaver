@@ -133,7 +133,10 @@ class GenerateCodeHandler:
             dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
-            from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+            from specweaver.core.flow.handlers.context_assembler import (
+                evaluate_and_fetch_skeleton_context,
+            )
+
             targets = []
             if context.api_contract_paths:
                 targets.extend(context.api_contract_paths)
@@ -216,7 +219,10 @@ class GenerateTestsHandler:
             dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
-            from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+            from specweaver.core.flow.handlers.context_assembler import (
+                evaluate_and_fetch_skeleton_context,
+            )
+
             targets = []
             if context.api_contract_paths:
                 targets.extend(context.api_contract_paths)

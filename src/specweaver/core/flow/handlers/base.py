@@ -73,6 +73,7 @@ class RunContext(BaseModel):
         if self.parsers is None:
             try:
                 from specweaver.workspace.parsers.factory import get_default_parsers
+
                 self.parsers = get_default_parsers()
             except BaseException:
                 pass

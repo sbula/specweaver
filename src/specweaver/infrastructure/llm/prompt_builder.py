@@ -162,6 +162,7 @@ class PromptBuilder:
                 # Flow engine missed it; fallback gracefully, though it degrades NFR-1 speed
                 try:
                     from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+
                     content = extract_ast_skeleton(path, content)
                 except ImportError:
                     pass
@@ -382,6 +383,7 @@ class PromptBuilder:
                 else:
                     try:
                         from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+
                         content = extract_ast_skeleton(mention.resolved_path, content)
                     except ImportError:
                         pass

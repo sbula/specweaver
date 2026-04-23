@@ -39,6 +39,7 @@ class TestReviewSpecHandler:
         handler = ReviewSpecHandler()
 
         from specweaver.workflows.review.reviewer import ReviewResult, ReviewVerdict
+
         mock_review_spec.return_value = ReviewResult(
             verdict=ReviewVerdict.ACCEPTED,
             remarks="LGTM",
@@ -55,6 +56,7 @@ class TestReviewSpecHandler:
         # Verify kwargs
         call_kwargs = mock_review_spec.call_args.kwargs
         assert call_kwargs.get("environment_context") == "mcp://mock:\n  |\n    mock"
+
 
 class TestReviewCodeHandler:
     """Tests for the review+code handler."""
@@ -79,7 +81,9 @@ class TestReviewCodeHandler:
         """Verifies MCP environment context is fetched and passed to Reviewer for code evaluation."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock(), output_dir=tmp_path)
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, llm=MagicMock(), output_dir=tmp_path
+        )
         ctx.run_id = "test-run"
         (tmp_path / "test.py").write_text("x = 1")
 
@@ -87,6 +91,7 @@ class TestReviewCodeHandler:
         handler = ReviewCodeHandler()
 
         from specweaver.workflows.review.reviewer import ReviewResult, ReviewVerdict
+
         mock_review_code.return_value = ReviewResult(
             verdict=ReviewVerdict.ACCEPTED,
             remarks="LGTM",

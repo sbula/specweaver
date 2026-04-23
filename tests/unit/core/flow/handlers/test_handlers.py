@@ -44,7 +44,9 @@ class TestRunContext:
         assert ctx.settings is None
 
     @patch("specweaver.workspace.parsers.factory.get_default_parsers")
-    def test_run_context_swallows_parser_exception(self, mock_get_parsers: MagicMock, tmp_path: Path) -> None:
+    def test_run_context_swallows_parser_exception(
+        self, mock_get_parsers: MagicMock, tmp_path: Path
+    ) -> None:
         mock_get_parsers.side_effect = Exception("Malformed tree-sitter binary")
         ctx = RunContext(
             project_path=tmp_path,

@@ -169,7 +169,9 @@ class TestCLIInitDB:
         """sw init <name> --mcp postgres provisions the target DB envelope."""
         project_dir = tmp_path / "mcp-proj"
         project_dir.mkdir()
-        result = runner.invoke(app, ["init", "mcp-app", "--path", str(project_dir), "--mcp", "postgres"])
+        result = runner.invoke(
+            app, ["init", "mcp-app", "--path", str(project_dir), "--mcp", "postgres"]
+        )
         assert result.exit_code == 0
         assert (project_dir / ".specweaver_mcp" / "postgres" / "context.yaml").is_file()
         assert (project_dir / ".specweaver" / "vault.env").is_file()
@@ -182,7 +184,9 @@ class TestCLIInitDB:
 
         mock_scaffold.side_effect = ValueError("Unsupported MCP Target boundary")
 
-        result = runner.invoke(app, ["init", "fail-app", "--path", str(project_dir), "--mcp", "invalid"])
+        result = runner.invoke(
+            app, ["init", "fail-app", "--path", str(project_dir), "--mcp", "invalid"]
+        )
         assert result.exit_code == 1
         assert "Error: Unsupported MCP Target" in result.stdout
 

@@ -93,7 +93,7 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
         role=role,
         allowed_tools=allowed_tools,
         analyzer_factory=context.analyzer_factory,
-        topology=context.topology
+        topology=context.topology,
     )
 
 
@@ -146,7 +146,10 @@ class ReviewSpecHandler:
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
-            from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+            from specweaver.core.flow.handlers.context_assembler import (
+                evaluate_and_fetch_skeleton_context,
+            )
+
             targets = []
             if context.api_contract_paths:
                 targets.extend(context.api_contract_paths)
@@ -192,7 +195,7 @@ class ReviewSpecHandler:
 class ReviewCodeHandler:
     """Handler for review+code — LLM-based code review."""
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         started = _now_iso()
         if context.llm is None:
             logger.error("ReviewCodeHandler: LLM adapter required but not configured")
@@ -243,7 +246,10 @@ class ReviewCodeHandler:
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
-            from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+            from specweaver.core.flow.handlers.context_assembler import (
+                evaluate_and_fetch_skeleton_context,
+            )
+
             targets = []
             if context.api_contract_paths:
                 targets.extend(context.api_contract_paths)

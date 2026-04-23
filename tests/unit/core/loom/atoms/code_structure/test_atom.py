@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import MagicMock
 
 from specweaver.core.loom.atoms.base import AtomStatus
@@ -7,10 +8,9 @@ from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
 from specweaver.core.loom.commons.filesystem.executor import ExecutorResult
 
 
-from typing import Any
-
 def _get_mock_parsers() -> Any:
     from specweaver.workspace.parsers.interfaces import CodeStructureInterface
+
     mock_parser = MagicMock(spec=CodeStructureInterface)
     mock_parser.extract_skeleton.return_value = "def my_func():"
     mock_parser.extract_framework_markers.return_value = {"my_func": {}}
@@ -111,12 +111,14 @@ def test_atom_bubble_up_code_structure_error() -> None:
     # Provide valid file, but cause the parser to fail
     executor.read.return_value = ExecutorResult(status="success", data="def existing(): pass")
 
-    from specweaver.workspace.parsers.interfaces import CodeStructureInterface, CodeStructureError
     from typing import Any
+
+    from specweaver.workspace.parsers.interfaces import CodeStructureError, CodeStructureInterface
+
     mock_parser = MagicMock(spec=CodeStructureInterface)
     mock_parser.extract_symbol.side_effect = CodeStructureError("Symbol 'Ghost' not found")
     parsers: Any = {(".py",): mock_parser}
-    
+
     atom = CodeStructureAtom(executor, parsers=parsers)
 
     # We use python file but request symbol that does not exist
@@ -147,7 +149,12 @@ def test_atom_active_evaluator_merges_plugins() -> None:
     }
 
     # Base archetype only
-    atom1 = CodeStructureAtom(executor, evaluator_schemas=schemas, active_archetype="spring-boot", parsers=_get_mock_parsers())
+    atom1 = CodeStructureAtom(
+        executor,
+        evaluator_schemas=schemas,
+        active_archetype="spring-boot",
+        parsers=_get_mock_parsers(),
+    )
     assert atom1.active_evaluator["intents"]["hide"] == ["list_symbols"]
     assert "@PreAuthorize" not in atom1.active_evaluator["evaluate"]["annotations"]
 
@@ -157,7 +164,7 @@ def test_atom_active_evaluator_merges_plugins() -> None:
         evaluator_schemas=schemas,
         active_archetype="spring-boot",
         plugins=["spring-security"],
-        parsers=_get_mock_parsers()
+        parsers=_get_mock_parsers(),
     )
 
     merged = atom2.active_evaluator
@@ -175,7 +182,11 @@ def test_atom_active_evaluator_deep_merges_nested_schemas() -> None:
     }
 
     atom = CodeStructureAtom(
-        executor, evaluator_schemas=schemas, active_archetype="base", plugins=["plugin"], parsers=_get_mock_parsers()
+        executor,
+        evaluator_schemas=schemas,
+        active_archetype="base",
+        plugins=["plugin"],
+        parsers=_get_mock_parsers(),
     )
     merged = atom.active_evaluator
 
@@ -194,12 +205,13 @@ def test_atom_active_evaluator_silently_skips_nonexistent_plugins() -> None:
         evaluator_schemas=schemas,
         active_archetype="generic",
         plugins=["ghost-plugin", "phantom"],
-        parsers=_get_mock_parsers()
+        parsers=_get_mock_parsers(),
     )
     merged = atom.active_evaluator
 
     # Should safely just return the base generic evaluation without failing
     assert merged["evaluate"]["annotations"] == ["@Base"]
+
 
 def test_atom_skeletonize_alias() -> None:
     executor = MagicMock()
@@ -211,6 +223,7 @@ def test_atom_skeletonize_alias() -> None:
     assert result.status == AtomStatus.SUCCESS
     assert "def my_func():" in result.exports["structure"]
 
+
 def test_atom_skeletonize_unsupported_language_fallback() -> None:
     executor = MagicMock()
     executor.read.return_value = ExecutorResult(status="success", data="Plain text")
@@ -220,11 +233,13 @@ def test_atom_skeletonize_unsupported_language_fallback() -> None:
     assert result.status == AtomStatus.FAILED
     assert "AST Structure Extraction not supported" in result.message
 
+
 def test_atom_skeletonize_latency_boundary() -> None:
     import time
+
     executor = MagicMock()
     # Ensure massive payload (mocked, but checking dispatch overhead)
-    huge_code = ("def my_func():\n    pass\n" * 1000)
+    huge_code = "def my_func():\n    pass\n" * 1000
     executor.read.return_value = ExecutorResult(status="success", data=huge_code)
     atom = CodeStructureAtom(executor, parsers=_get_mock_parsers())
 

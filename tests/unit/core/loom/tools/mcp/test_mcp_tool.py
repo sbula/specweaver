@@ -7,7 +7,6 @@ from specweaver.core.loom.tools.mcp.tool import MCPExplorerTool
 
 
 class TestMCPExplorerTool:
-
     @pytest.fixture
     def mock_context(self) -> MagicMock:
         ctx = MagicMock()
@@ -35,8 +34,8 @@ class TestMCPExplorerTool:
         # Mock 3 rpc calls: initialize, notifications/initialized, resources/list
         mock_instance.call_rpc.side_effect = [
             {"result": {"version": "v1"}},  # init
-            None,                           # notifications
-            {"result": {"resources": [{"uri": "test://my-uri"}]}}, # list
+            None,  # notifications
+            {"result": {"resources": [{"uri": "test://my-uri"}]}},  # list
         ]
 
         tool = MCPExplorerTool(mock_context)
@@ -58,8 +57,8 @@ class TestMCPExplorerTool:
 
         mock_instance.call_rpc.side_effect = [
             {"result": {}},  # init
-            None,            # notifications
-            {"result": {"contents": [{"text": "DB SCHEMA..."}]}}, # read
+            None,  # notifications
+            {"result": {"contents": [{"text": "DB SCHEMA..."}]}},  # read
         ]
 
         tool = MCPExplorerTool(mock_context)
@@ -95,7 +94,9 @@ class TestMCPExplorerTool:
         assert "Context Topology missing" in result.message
 
     @patch("specweaver.core.loom.tools.mcp.tool.MCPExecutor")
-    def test_execute_mcp_query_executor_error(self, mock_executor_class: MagicMock, mock_context: MagicMock) -> None:
+    def test_execute_mcp_query_executor_error(
+        self, mock_executor_class: MagicMock, mock_context: MagicMock
+    ) -> None:
         from specweaver.core.loom.commons.mcp.executor import MCPExecutorError
 
         mock_instance = MagicMock()
@@ -115,6 +116,7 @@ class TestMCPExplorerTool:
         result = tool._execute_mcp_query("test-db", "resources/list", {})
         assert result.status == "error"
         assert "missing target executable command bounds" in result.message
+
 
 class TestArchitectMCPInterface:
     def test_requires_architect_role(self) -> None:

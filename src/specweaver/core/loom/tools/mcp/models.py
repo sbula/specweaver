@@ -8,9 +8,11 @@ from typing import Any
 @dataclass(frozen=True)
 class ToolResult:
     """Standard return type for MCP Explorer Tool."""
+
     status: str  # "success" or "error"
     message: str = ""
     data: Any = None
+
 
 class MCPToolError(Exception):
     """Raised when an MCP Explorer Tool operation is blocked by role or constraints."""

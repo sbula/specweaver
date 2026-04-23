@@ -141,9 +141,12 @@ async def test_handles_atom_failure_gracefully(mock_run_context: RunContext) -> 
 async def test_invalid_mcp_uri_format(mock_run_context: RunContext, tmp_path: Path) -> None:
     """If URI does not start with mcp://, it appends an inline error."""
     mock_run_context.topology = TopologyContext(
-        name="test_module", purpose="Testing.", archetype="pure-logic", relationship="self",
+        name="test_module",
+        purpose="Testing.",
+        archetype="pure-logic",
+        relationship="self",
         mcp_servers={"localdb": {"command": "docker", "args": ["run"]}},
-        consumes_resources=["http://localdb/users"]
+        consumes_resources=["http://localdb/users"],
     )
     result = await evaluate_and_fetch_mcp_context(mock_run_context)
     assert "ERROR: Invalid MCP URI format" in result
@@ -153,9 +156,12 @@ async def test_invalid_mcp_uri_format(mock_run_context: RunContext, tmp_path: Pa
 async def test_missing_mcp_server_config(mock_run_context: RunContext, tmp_path: Path) -> None:
     """If server parsed from mcp URI is absent in topology, it appends an inline error."""
     mock_run_context.topology = TopologyContext(
-        name="test_module", purpose="Testing.", archetype="pure-logic", relationship="self",
+        name="test_module",
+        purpose="Testing.",
+        archetype="pure-logic",
+        relationship="self",
         mcp_servers={"localdb": {"command": "docker", "args": ["run"]}},
-        consumes_resources=["mcp://unknown_db/users"]
+        consumes_resources=["mcp://unknown_db/users"],
     )
     result = await evaluate_and_fetch_mcp_context(mock_run_context)
     assert "ERROR: Server 'unknown_db' not found in topology bounds" in result
@@ -164,10 +170,13 @@ async def test_missing_mcp_server_config(mock_run_context: RunContext, tmp_path:
 @pytest.mark.asyncio
 async def test_init_intent_failure(mock_run_context: RunContext) -> None:
     """Verify that if initialization intent fails, it aborts the read intent and returns error message natively."""
+
     def mock_atom_run_init_fail(inputs: dict[str, Any]) -> AtomResult:
         return AtomResult(status=AtomStatus.FAILED, message="Timeout waiting for Stdio", exports={})
 
-    with patch("specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run_init_fail) as m_atom:
+    with patch(
+        "specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run_init_fail
+    ) as m_atom:
         result = await evaluate_and_fetch_mcp_context(mock_run_context)
 
         # initialization fails instantly
@@ -178,6 +187,7 @@ async def test_init_intent_failure(mock_run_context: RunContext) -> None:
 @pytest.mark.asyncio
 async def test_empty_contents_payload(mock_run_context: RunContext) -> None:
     """Verify that if the read_resource returns successful status but empty content list, it handles cleanly."""
+
     def mock_atom_run_empty(inputs: dict[str, Any]) -> AtomResult:
         if inputs.get("intent") == "initialize":
             return AtomResult(status=AtomStatus.SUCCESS, message="Init OK", exports={})
@@ -189,16 +199,20 @@ async def test_empty_contents_payload(mock_run_context: RunContext) -> None:
 
         assert "No resource data returned for mcp://localdb/users" in result
 
+
 @pytest.mark.asyncio
 async def test_multiple_mcp_servers_integration(mock_run_context: RunContext) -> None:
     """Verify that evaluate_and_fetch_mcp_context retrieves strings across multiple distinct MCP servers simultaneously."""
     mock_run_context.topology = TopologyContext(
-        name="test_module", purpose="Testing.", archetype="pure-logic", relationship="self",
+        name="test_module",
+        purpose="Testing.",
+        archetype="pure-logic",
+        relationship="self",
         mcp_servers={
             "db_server": {"command": "docker", "args": ["run"]},
             "api_server": {"command": "docker", "args": ["run_api"]},
         },
-        consumes_resources=["mcp://db_server/users", "mcp://api_server/schema"]
+        consumes_resources=["mcp://db_server/users", "mcp://api_server/schema"],
     )
 
     def mock_atom_run_multi(inputs: dict[str, Any]) -> AtomResult:
@@ -209,17 +223,23 @@ async def test_multiple_mcp_servers_integration(mock_run_context: RunContext) ->
         uri = inputs.get("params", {}).get("uri", "")
         if "db_server/users" in uri:
             return AtomResult(
-                status=AtomStatus.SUCCESS, message="OK",
-                exports={"contents": [{"uri": uri, "mimeType": "text/plain", "text": "user_data"}]}
+                status=AtomStatus.SUCCESS,
+                message="OK",
+                exports={"contents": [{"uri": uri, "mimeType": "text/plain", "text": "user_data"}]},
             )
         elif "api_server/schema" in uri:
             return AtomResult(
-                status=AtomStatus.SUCCESS, message="OK",
-                exports={"contents": [{"uri": uri, "mimeType": "text/plain", "text": "api_schema"}]}
+                status=AtomStatus.SUCCESS,
+                message="OK",
+                exports={
+                    "contents": [{"uri": uri, "mimeType": "text/plain", "text": "api_schema"}]
+                },
             )
         return AtomResult(status=AtomStatus.FAILED, message="Not found", exports={})
 
-    with patch("specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run_multi) as m_atom:
+    with patch(
+        "specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run_multi
+    ) as m_atom:
         result = await evaluate_and_fetch_mcp_context(mock_run_context)
 
         assert m_atom.call_count == 4

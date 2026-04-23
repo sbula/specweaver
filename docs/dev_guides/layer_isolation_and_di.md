@@ -51,3 +51,9 @@ Houses the physical polyglot syntactic parsers because AST interfaces are heavil
 * `codestructure.py`: Handles external framework syntax parsing (e.g., `.scm` queries fed into tree-sitter C-binaries).
 
 The `Loom Atoms` and validation controllers depend explicitly on Dependency Injection factories mapped to these layers, ensuring the core of SpecWeaver remains mathematically decoupled.
+
+
+### PromptBuilder Context Injection Pattern
+
+The PromptBuilder (src/specweaver/infrastructure/llm/prompt_builder.py) strictly adheres to dependency isolation. It is expressly restricted from resolving file system hierarchies or invoking Atoms directly.
+Features requiring parsed context (e.g., target mentions or skeletonization) must be injected directly into the PromptBuilder instance by the Engine layer. For instance, the **ContextAssembler** pre-condenses CodeStructureAtom skeletons and maps them into PromptBuilder(skeleton_files=...).

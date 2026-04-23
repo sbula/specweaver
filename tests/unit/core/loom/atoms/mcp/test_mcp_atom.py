@@ -166,7 +166,9 @@ class TestMCPAtomIntents:
         assert "Executor not initialized" in result.message
 
     @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
-    def test_telemetry_scrubbing_removes_vault_secrets(self, mock_executor_class: MagicMock) -> None:
+    def test_telemetry_scrubbing_removes_vault_secrets(
+        self, mock_executor_class: MagicMock
+    ) -> None:
         """Test that vault.env secrets tracked in `_env` are replaced with ***RESTRICTED*** in returned exports."""
         mock_executor = MagicMock()
         mock_executor_class.return_value = mock_executor
@@ -176,9 +178,7 @@ class TestMCPAtomIntents:
             "id": 1,
             "result": {
                 "db_uri": "postgres://supersecret@host.docker.internal/db",
-                "nested": {
-                    "password": "supersecret"
-                }
+                "nested": {"password": "supersecret"},
             },
         }
 
@@ -195,7 +195,9 @@ class TestMCPAtomIntents:
         assert result.exports["nested"]["password"] == "***RESTRICTED***"
 
     @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
-    def test_telemetry_scrubbing_ignores_short_strings(self, mock_executor_class: MagicMock) -> None:
+    def test_telemetry_scrubbing_ignores_short_strings(
+        self, mock_executor_class: MagicMock
+    ) -> None:
         """Test that short strings (< 8 chars) or whitespace are not scrubbed to prevent false positive log corruption."""
         mock_executor = MagicMock()
         mock_executor_class.return_value = mock_executor
@@ -203,10 +205,7 @@ class TestMCPAtomIntents:
         mock_executor.call_rpc.return_value = {
             "jsonrpc": "2.0",
             "id": 1,
-            "result": {
-                "status": "ok",
-                "empty": " "
-            },
+            "result": {"status": "ok", "empty": " "},
         }
 
         # TINY is short, should be ignored
@@ -221,7 +220,9 @@ class TestMCPAtomIntents:
         assert result.exports["empty"] == " "
 
     @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
-    def test_telemetry_scrubbing_removes_vault_secrets_from_lists(self, mock_executor_class: MagicMock) -> None:
+    def test_telemetry_scrubbing_removes_vault_secrets_from_lists(
+        self, mock_executor_class: MagicMock
+    ) -> None:
         """Test that vault.env secrets nested deeply in JSON arrays are recursively masked."""
         mock_executor = MagicMock()
         mock_executor_class.return_value = mock_executor
@@ -233,7 +234,7 @@ class TestMCPAtomIntents:
                 "connections": [
                     "safe-string",
                     "postgres://supersecret@host",
-                    {"sub": ["nested", "supersecret"]}
+                    {"sub": ["nested", "supersecret"]},
                 ]
             },
         }

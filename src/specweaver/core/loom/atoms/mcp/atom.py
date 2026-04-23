@@ -105,10 +105,7 @@ class MCPAtom(Atom):
         if not self._env:
             return payload
 
-        secrets = [
-            v for v in self._env.values()
-            if isinstance(v, str) and len(v.strip()) >= 8
-        ]
+        secrets = [v for v in self._env.values() if isinstance(v, str) and len(v.strip()) >= 8]
 
         if not secrets:
             return payload
@@ -145,7 +142,9 @@ class MCPAtom(Atom):
             "clientInfo": {"name": "specweaver-atom", "version": "1.0.0"},
         }
 
-        response = self._scrub_telemetry(self._executor.call_rpc(method="initialize", params=payload, timeout=10.0))
+        response = self._scrub_telemetry(
+            self._executor.call_rpc(method="initialize", params=payload, timeout=10.0)
+        )
 
         # Confirm to the protocol the initialization is done
         self._executor.call_rpc(method="notifications/initialized", params={}, timeout=5.0)
