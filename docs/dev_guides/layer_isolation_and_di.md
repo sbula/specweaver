@@ -34,16 +34,20 @@ Flow Engine (Orchestrator)
 
 **Rule:** Pure logic layers must NEVER parse their own data. They must define Protocols or accept `Any` typed payloads, expecting upstream Orchestrators to inject the parsed context.
 
-## 3. The Language Commons (`loom/commons/language/`)
+## 3. Polyglot Runtimes vs. Structural Parsers
 
-Because all language-specific execution (Running Tests, Parsing AST Skeletons) requires side-effects, **all language specifics MUST live strictly inside the Loom layer.**
+Because Language mechanics are functionally split into execution tasks and structural analysis tasks, they are housed in strictly distinct boundary layers.
 
 If you are adding a new language (e.g., Go, C++):
 - Do NOT put it in `standards/languages/` just because `standards` uses it later.
 - Do NOT create a top-level `src/specweaver/languages/` because it would mix Pure Logic with I/O.
 
-All language mechanics live in `src/specweaver/loom/commons/language/<name>/`:
-* `runner.py`: Handles subprocess I/O (e.g., `cargo test`).
-* `codestructure.py`: Handles external framework I/O (e.g., `.scm` queries fed into tree-sitter C-binaries).
+### A. The Language Commons (`loom/commons/language/`)
+Houses external, stateless sub-process executions since execution implies side-effects.
+* `runner.py`: Handles subprocess test I/O (e.g., `cargo test`, `pytest`).
 
-The `Loom Atoms` and `Loom Tools` simply wrap this unified language commons, ensuring the rest of SpecWeaver remains beautifully pure and highly testable.
+### B. The Workspace Parsers (`workspace/parsers/`)
+Houses the physical polyglot syntactic parsers because AST interfaces are heavily consumed by Pure Logic rules and Context Engines, but cannot be parsed by them safely.
+* `codestructure.py`: Handles external framework syntax parsing (e.g., `.scm` queries fed into tree-sitter C-binaries).
+
+The `Loom Atoms` and validation controllers depend explicitly on Dependency Injection factories mapped to these layers, ensuring the core of SpecWeaver remains mathematically decoupled.

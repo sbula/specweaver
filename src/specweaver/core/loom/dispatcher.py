@@ -103,6 +103,7 @@ class ToolDispatcher:
         allowed_tools: list[str],
         analyzer_factory: Any | None = None,
         topology: Any | None = None,
+        parsers: Any | None = None,
     ) -> ToolDispatcher:
         """Factory method to assemble standard tools for an agent.
 
@@ -200,6 +201,7 @@ class ToolDispatcher:
                 evaluator_schemas=schemas,
                 active_archetype=active_archetype,
                 plugins=plugins,
+                parsers=parsers,
             )
 
             # Reuse exact read-only grant logic from fs

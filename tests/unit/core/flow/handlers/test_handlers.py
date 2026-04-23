@@ -43,6 +43,15 @@ class TestRunContext:
         assert ctx.topology is None
         assert ctx.settings is None
 
+    @patch("specweaver.workspace.parsers.factory.get_default_parsers")
+    def test_run_context_swallows_parser_exception(self, mock_get_parsers: MagicMock, tmp_path: Path) -> None:
+        mock_get_parsers.side_effect = Exception("Malformed tree-sitter binary")
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "specs" / "test.md",
+        )
+        assert ctx.parsers is None
+
     def test_context_with_output_dir(self, tmp_path: Path) -> None:
         ctx = RunContext(
             project_path=tmp_path,
@@ -127,6 +136,24 @@ class TestValidateSpecHandler:
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.ERROR
         assert "Boom" in result.error_message
+
+    @pytest.mark.asyncio
+    @patch.object(ValidateSpecHandler, "_run_validation")
+    async def test_validate_spec_injects_parsers(self, mock_run_val, tmp_path: Path) -> None:
+        """Verify that context.parsers is cleanly passed into the underlying _run_validation method."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        dummy_parsers = {(".custom",): MagicMock()}
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, parsers=dummy_parsers)
+        step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.SPEC)
+        handler = ValidateSpecHandler()
+        mock_run_val.return_value = []
+        await handler.execute(step, ctx)
+
+        # Verify it was passed in kwargs
+        mock_run_val.assert_called_once()
+        _, kwargs = mock_run_val.call_args
+        assert kwargs.get("parsers") == dummy_parsers
 
 
 # ---------------------------------------------------------------------------

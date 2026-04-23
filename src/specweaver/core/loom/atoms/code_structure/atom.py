@@ -18,12 +18,6 @@ from specweaver.workspace.parsers.interfaces import (
 
 if TYPE_CHECKING:
     from specweaver.core.loom.commons.filesystem.executor import FileExecutor
-from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
-from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
-from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
-from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
-from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
-from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +32,7 @@ class CodeStructureAtom(Atom):
         evaluator_schemas: dict[str, Any] | None = None,
         active_archetype: str = "generic",
         plugins: list[str] | None = None,
+        parsers: dict[tuple[str, ...], CodeStructureInterface] | None = None,
     ) -> None:
         """Initialize with a FileExecutor or construct one if cwd is provided."""
         if file_executor:
@@ -51,6 +46,7 @@ class CodeStructureAtom(Atom):
         self._evaluator_schemas = evaluator_schemas or {}
         self._active_archetype = active_archetype
         self._plugins = plugins or []
+        self._parsers = parsers or {}
 
     @property
     def active_evaluator(self) -> dict[str, Any]:
@@ -88,18 +84,11 @@ class CodeStructureAtom(Atom):
     def _get_parser(self, path: str) -> CodeStructureInterface | None:
         """Map a file extension to its respective TreeSitter AST parser."""
         ext = Path(path).suffix.lower()
-        if ext in (".py",):
-            return PythonCodeStructure()
-        if ext in (".ts", ".tsx", ".js", ".jsx"):
-            return TypeScriptCodeStructure()
-        if ext in (".java",):
-            return JavaCodeStructure()
-        if ext in (".kt", ".kts"):
-            return KotlinCodeStructure()
-        if ext in (".rs",):
-            return RustCodeStructure()
-        if ext in (".md",):
-            return MarkdownCodeStructure()
+        if not self._parsers:
+            return None
+        for exts, parser in self._parsers.items():
+            if ext in exts:
+                return parser
         return None
 
     def _handle_structure(self, parser: CodeStructureInterface, code: str, path: str) -> AtomResult:
@@ -173,6 +162,7 @@ class CodeStructureAtom(Atom):
 
         valid_intents = {
             "read_file_structure",
+            "skeletonize",
             "read_symbol",
             "read_symbol_body",
             "read_unrolled_symbol",
@@ -201,7 +191,7 @@ class CodeStructureAtom(Atom):
 
         code = str(read_res.data)
 
-        if intent == "read_file_structure":
+        if intent in ("read_file_structure", "skeletonize"):
             return self._handle_structure(parser, code, path)
         if intent == "extract_framework_markers":
             return self._handle_framework_markers(parser, code, path)

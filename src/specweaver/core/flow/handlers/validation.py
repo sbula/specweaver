@@ -81,6 +81,7 @@ class ValidateSpecHandler:
                 kind_str=kind_str,
                 project_path=context.project_path,
                 analyzer_factory=context.analyzer_factory,
+                parsers=context.parsers,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -117,6 +118,7 @@ class ValidateSpecHandler:
         kind_str: str | None = None,
         project_path: Path | None = None,
         analyzer_factory: Any | None = None,
+        parsers: Any | None = None,
     ) -> list[RuleResult]:
         """Run spec validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -161,7 +163,7 @@ class ValidateSpecHandler:
         schemas = load_evaluator_schemas(project_dir=project_path)
         active_archetype = archetype if archetype else "generic"
         atom = CodeStructureAtom(
-            cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_archetype
+            cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_archetype, parsers=parsers
         )
         payload_res = atom.run({"intent": "read_file_structure", "path": str(spec_path)})
 
@@ -206,6 +208,7 @@ class ValidateCodeHandler:
                 merged_settings,
                 context.project_path,
                 analyzer_factory=context.analyzer_factory,
+                parsers=context.parsers,
             )
             failed = [r for r in results if r.status == RuleStatus.FAIL]
             all_passed = len(failed) == 0
@@ -249,6 +252,7 @@ class ValidateCodeHandler:
         settings: Any,
         project_path: Path | None = None,
         analyzer_factory: Any | None = None,
+        parsers: Any | None = None,
     ) -> list[RuleResult]:
         """Run code validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -288,7 +292,7 @@ class ValidateCodeHandler:
         # If the pipeline runner natively resolved to an archetype via folder context early out, use it.
         active_arch = archetype if archetype else "generic"
         atom = CodeStructureAtom(
-            cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_arch
+            cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_arch, parsers=parsers
         )
         payload_res = atom.run({"intent": "read_file_structure", "path": str(code_path)})
 

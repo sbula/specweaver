@@ -66,9 +66,17 @@ class RunContext(BaseModel):
     env_vars: dict[str, str] = Field(default_factory=dict)
     pipeline_name: str | None = None
     stale_nodes: set[str] | None = None
+    parsers: Any = None  # dict[tuple[str, ...], CodeStructureInterface] | None
 
     def model_post_init(self, __context: Any) -> None:
         """Inject ProjectMetadata into context execution strictly securely."""
+        if self.parsers is None:
+            try:
+                from specweaver.workspace.parsers.factory import get_default_parsers
+                self.parsers = get_default_parsers()
+            except BaseException:
+                pass
+
         if self.project_metadata is not None:
             return
 
