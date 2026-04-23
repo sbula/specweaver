@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -132,6 +133,12 @@ class GenerateCodeHandler:
             dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
+            from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+            targets = []
+            if context.api_contract_paths:
+                targets.extend(context.api_contract_paths)
+            s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
+
             generated = await generator.generate_code(
                 context.spec_path,
                 output_path,
@@ -143,6 +150,7 @@ class GenerateCodeHandler:
                 dictator_overrides=dictator_overrides,
                 validation_findings=validation_findings,
                 environment_context=mcp_env,
+                skeleton_files=s_files,
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
@@ -208,6 +216,12 @@ class GenerateTestsHandler:
             dictator_overrides, validation_findings = _extract_prompt_feedback(context, step)
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
+            from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+            targets = []
+            if context.api_contract_paths:
+                targets.extend(context.api_contract_paths)
+            s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
+
             generated = await generator.generate_tests(
                 context.spec_path,
                 output_path,
@@ -219,6 +233,7 @@ class GenerateTestsHandler:
                 dictator_overrides=dictator_overrides,
                 validation_findings=validation_findings,
                 environment_context=mcp_env,
+                skeleton_files=s_files,
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 

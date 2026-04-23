@@ -81,12 +81,14 @@ class PromptBuilder:
         adapter: LLMAdapter | None = None,
         *,
         budget_scale_factor: float = 1.0,
+        skeleton_files: dict[str, str] | None = None,
     ) -> None:
         self._budget = budget
         self._adapter = adapter
         self._scale = max(0.1, min(budget_scale_factor, 2.0))  # clamp to [0.1, 2.0]
         self._auto_scale = budget_scale_factor == 1.0  # auto-scale when default
         self._blocks: list[_ContentBlock] = []
+        self._skeleton_files: dict[str, str] = skeleton_files or {}
 
     # Builder API (all return self for chaining)
 
@@ -152,9 +154,17 @@ class PromptBuilder:
         lang = detect_language(path)
 
         if skeleton:
-            from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
-
-            content = extract_ast_skeleton(path, content)
+            # Check if flow engine statically pre-condensed the AST boundary
+            # avoiding illegal runtime LLM/C-bindings overlap
+            if str(path) in self._skeleton_files:
+                content = self._skeleton_files[str(path)]
+            else:
+                # Flow engine missed it; fallback gracefully, though it degrades NFR-1 speed
+                try:
+                    from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+                    content = extract_ast_skeleton(path, content)
+                except ImportError:
+                    pass
 
         self._blocks.append(
             _ContentBlock(
@@ -366,9 +376,15 @@ class PromptBuilder:
             lang = detect_language(mention.resolved_path)
 
             if skeleton:
-                from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
-
-                content = extract_ast_skeleton(mention.resolved_path, content)
+                # Flow engine pre-evaluates and caches bounds
+                if path_str in self._skeleton_files:
+                    content = self._skeleton_files[path_str]
+                else:
+                    try:
+                        from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+                        content = extract_ast_skeleton(mention.resolved_path, content)
+                    except ImportError:
+                        pass
 
             self._blocks.append(
                 _ContentBlock(

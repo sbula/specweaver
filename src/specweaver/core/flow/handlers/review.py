@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 from pathlib import Path
@@ -145,6 +146,12 @@ class ReviewSpecHandler:
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
+            from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+            targets = []
+            if context.api_contract_paths:
+                targets.extend(context.api_contract_paths)
+            s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
+
             result = await reviewer.review_spec(
                 context.spec_path,
                 topology_contexts=([context.topology] if context.topology else None),
@@ -154,6 +161,7 @@ class ReviewSpecHandler:
                 on_tool_round=on_tool_round,
                 project_metadata=context.project_metadata,
                 environment_context=mcp_env,
+                skeleton_files=s_files,
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
@@ -235,6 +243,15 @@ class ReviewCodeHandler:
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
+            from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+            targets = []
+            if context.api_contract_paths:
+                targets.extend(context.api_contract_paths)
+            # also extract code target if reviewing code
+            if code_path and str(code_path) not in targets:
+                targets.append(str(code_path))
+            s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
+
             result = await reviewer.review_code(
                 code_path,
                 context.spec_path,
@@ -245,6 +262,7 @@ class ReviewCodeHandler:
                 on_tool_round=on_tool_round,
                 project_metadata=context.project_metadata,
                 environment_context=mcp_env,
+                skeleton_files=s_files,
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",

@@ -85,6 +85,7 @@ class Generator:
         dictator_overrides: list[str] | None = None,
         validation_findings: str | None = None,
         environment_context: str | None = None,
+        skeleton_files: dict[str, str] | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -104,7 +105,7 @@ class Generator:
         """
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
-        builder = PromptBuilder()
+        builder = PromptBuilder(skeleton_files=skeleton_files)
         if artifact_uuid:
             builder.add_artifact_tagging(artifact_uuid, "python")
 
@@ -164,6 +165,7 @@ class Generator:
         dictator_overrides: list[str] | None = None,
         validation_findings: str | None = None,
         environment_context: str | None = None,
+        skeleton_files: dict[str, str] | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -183,7 +185,7 @@ class Generator:
         """
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
-        builder = PromptBuilder()
+        builder = PromptBuilder(skeleton_files=skeleton_files)
         if artifact_uuid:
             builder.add_artifact_tagging(artifact_uuid, "python")
 

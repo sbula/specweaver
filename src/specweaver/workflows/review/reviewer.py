@@ -128,6 +128,7 @@ class Reviewer:
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
         project_metadata: ProjectMetadata | None = None,
         environment_context: str | None = None,
+        skeleton_files: dict[str, str] | None = None,
     ) -> ReviewResult:
         """Review a spec file for quality and completeness.
 
@@ -146,7 +147,7 @@ class Reviewer:
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
         builder = (
-            PromptBuilder()
+            PromptBuilder(skeleton_files=skeleton_files)
             .add_instructions(SPEC_REVIEW_INSTRUCTIONS)
             .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, role="target")
@@ -181,6 +182,7 @@ class Reviewer:
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
         project_metadata: ProjectMetadata | None = None,
         environment_context: str | None = None,
+        skeleton_files: dict[str, str] | None = None,
     ) -> ReviewResult:
         """Review generated code against its source spec.
 
@@ -200,7 +202,7 @@ class Reviewer:
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
         builder = (
-            PromptBuilder()
+            PromptBuilder(skeleton_files=skeleton_files)
             .add_instructions(CODE_REVIEW_INSTRUCTIONS)
             .add_project_metadata(project_metadata)
             .add_file(spec_path, priority=1, label="specification", role="reference")
