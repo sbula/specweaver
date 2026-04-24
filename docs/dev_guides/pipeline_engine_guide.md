@@ -194,7 +194,8 @@ Starting in Feature 3.32, the SpecWeaver pipeline engine natively supports mathe
 
 ### Mechanism & Sequence
 - **The Graph Crawler**: The engine evaluates structural drift natively by calling `TopologyGraph.from_project()`. This internally computes Merkel-tree hashes across the OS directory paths.
-- **The Stale Nodes Property**: Handlers executing pipeline iterations explicitly examine `TopologyGraph.stale_nodes`. Any module missing from this mathematically calculated diff set dynamically yields its execution wave entirely, allowing the runner to auto-bypass testing or orchestration of pristine paths.
+- **The Stale Nodes Property**: Handlers executing pipeline iterations (like `ValidateTestsHandler` and `LintFixHandler`) explicitly examine `TopologyGraph.stale_nodes`. 
+- **Pristine Short-Circuiting**: Any module missing from this mathematically calculated diff set dynamically yields its execution wave entirely. If `stale_nodes` resolves to an explicitly empty list for a given target context, the Handlers invoke a "pristine" short-circuit mechanism bypassing `pytest`/`ruff` execution altogether, returning a `SUCCESS` atom intent instantly to save CI latency.
 - **Tombstone Fallback**: If a component's target dependency was outright deleted from the file system, the `TopologyGraph` statically detects the dangling reference and intrinsically flags the consumer itself as `stale`, preventing silent downstream CI failure propagation.
 
 ---

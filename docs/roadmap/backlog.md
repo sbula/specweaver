@@ -38,6 +38,9 @@
 ### Feature 3.27: Multi-Spec Pipeline Fan-Out
 - **Deferred Enhancements:** (Refer to `feature_3.27_sf1_implementation_plan.md` and `sf2`).
 
+### Technical Debt: CLI Command Architecture
+- **Validation vs Discovery Separation:** Audit and refactor the `specweaver/interfaces/cli/` layer. Strictly separate Discovery (e.g. `sw scan`) from Validation (e.g. `sw check`). Document the exact use case, DAL interaction, and expected behavior for every CLI entrypoint to eliminate ambiguity.
+
 ## Future Architecture (Rust PyO3 Migrations)
 
 To mathematically unlock `10x-50x` performance scaling and guarantee absolute memory-safe LLM sandboxing without sacrificing the massive iteration velocity of our Python/Pydantic agent logic, the following three core modules are targeted for isolated Rust `PyO3` extensions (Strangler Fig pattern):

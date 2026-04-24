@@ -20,3 +20,19 @@ class DALLevel(enum.StrEnum):
     DAL_C = "DAL_C"  # Major failure
     DAL_D = "DAL_D"  # Minor failure
     DAL_E = "DAL_E"  # No safety effect
+
+    @property
+    def is_strict(self) -> bool:
+        """Return True if this DAL requires strict enforcement (warnings treated as failures)."""
+        return self in (DALLevel.DAL_A, DALLevel.DAL_B)
+
+    @property
+    def confidence_threshold(self) -> float:
+        """Return the minimum required confidence for auto-discovered standards."""
+        return {
+            DALLevel.DAL_A: 0.95,
+            DALLevel.DAL_B: 0.90,
+            DALLevel.DAL_C: 0.80,
+            DALLevel.DAL_D: 0.70,
+            DALLevel.DAL_E: 0.50,
+        }[self]

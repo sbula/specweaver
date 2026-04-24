@@ -46,7 +46,13 @@ class CodeStructureAtom(Atom):
         self._evaluator_schemas = evaluator_schemas or {}
         self._active_archetype = active_archetype
         self._plugins = plugins or []
-        self._parsers = parsers or {}
+
+        if parsers is not None:
+            self._parsers = parsers
+        else:
+            from specweaver.workspace.parsers.factory import get_default_parsers
+
+            self._parsers = get_default_parsers()
 
     @property
     def active_evaluator(self) -> dict[str, Any]:

@@ -34,7 +34,7 @@ class LintFixHandler:
         max_reflections: int — max fix cycles (default: 3).
     """
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         started = _now_iso()
         max_reflections: int = step.params.get("max_reflections", 3)
         target: str = step.params.get("target", "src/")
@@ -48,10 +48,24 @@ class LintFixHandler:
         reflections_used = 0
         last_error_count = 0
 
+        # Resolve targets topologically if stale_nodes is present
+        if context.stale_nodes is not None:
+            target_path = (context.project_path / target).resolve()
+            all_py = []
+            if target_path.is_file():
+                all_py = [target_path]
+            elif target_path.is_dir():
+                all_py = list(target_path.rglob("*.py"))
+
+            resolved_abs = [str(f) for f in all_py if str(f) in context.stale_nodes]
+            from pathlib import Path
+            resolved_targets = [str(Path(t).relative_to(context.project_path)) for t in resolved_abs]
+            run_kwargs: dict[str, Any] = {"intent": "run_linter", "targets": resolved_targets}
+        else:
+            run_kwargs: dict[str, Any] = {"intent": "run_linter", "target": target}
+
         # Initial lint
-        lint_result = atom.run(
-            {"intent": "run_linter", "target": target, "stale_nodes": context.stale_nodes}
-        )
+        lint_result = atom.run(run_kwargs)
         last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
         logger.debug("LintFixHandler: initial lint found %d errors", last_error_count)
 
@@ -71,18 +85,12 @@ class LintFixHandler:
 
         # Phase 1: Try ruff auto-fix first (cheaper than LLM)
         logger.info("LintFixHandler: attempting ruff auto-fix on %d errors", last_error_count)
-        atom.run(
-            {
-                "intent": "run_linter",
-                "target": target,
-                "fix": True,
-                "stale_nodes": context.stale_nodes,
-            }
-        )
+        fix_kwargs = dict(run_kwargs)
+        fix_kwargs["fix"] = True
+        atom.run(fix_kwargs)
+
         # Re-lint to see what remains after auto-fix
-        lint_result = atom.run(
-            {"intent": "run_linter", "target": target, "stale_nodes": context.stale_nodes}
-        )
+        lint_result = atom.run(run_kwargs)
         last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
         logger.debug("LintFixHandler: after auto-fix, %d errors remain", last_error_count)
 
@@ -160,9 +168,7 @@ class LintFixHandler:
             reflections_used += 1
 
             # Re-lint
-            lint_result = atom.run(
-                {"intent": "run_linter", "target": target, "stale_nodes": context.stale_nodes}
-            )
+            lint_result = atom.run(run_kwargs)
             last_error_count = (
                 lint_result.exports.get("error_count", 0) if lint_result.exports else 0
             )

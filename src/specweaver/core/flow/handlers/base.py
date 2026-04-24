@@ -65,6 +65,7 @@ class RunContext(BaseModel):
     step_records: list[dict[str, Any]] | None = None
     env_vars: dict[str, str] = Field(default_factory=dict)
     pipeline_name: str | None = None
+    dal_level: Any = None  # DALLevel | None — Enforced boundary strictness
     stale_nodes: set[str] | None = None
     parsers: Any = None  # dict[tuple[str, ...], CodeStructureInterface] | None
 

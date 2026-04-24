@@ -218,6 +218,14 @@ These tests pass on Linux/macOS. No action needed.
 
 `TestImplementerMethodVisibility::test_missing_method` — the implementer role has **all** filesystem methods (`_ALL_METHODS == _IMPLEMENTER_METHODS`), so `_ALL_METHODS - _IMPLEMENTER_METHODS` is empty. Pytest skips parameterized tests with no parameters. This is correct by design — there are no methods the implementer should lack.
 
+## 13. Impact-Aware Validation Testing
+
+SpecWeaver implements an advanced "Pristine Topology Bypass" during CI. If a module's AST hash has not changed (i.e. it is not in the `stale_nodes` set), the testing and linting atom execution skips immediately, returning a mathematically pure `SUCCESS` intent to save latency.
+
+Furthermore, SpecWeaver features **strict DAL (Data Assurance Level) enforcement**. 
+- Tests verifying `DAL_A` and `DAL_B` boundary violations mathematically upgrade soft-warnings to fatal `FAIL` exit codes.
+- E2E tests validating this architecture execute physically within temporary `git worktrees` and inject bespoke lightweight validation pipelines (e.g. `C06 - Bare Except`) to ensure testing occurs realistically without relying on `unittest.mock`. 
+
 ---
 
 **Related Documents:**

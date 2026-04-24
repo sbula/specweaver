@@ -112,20 +112,10 @@ class QARunnerAtom(Atom):
             coverage: bool — measure coverage (default: False).
             coverage_threshold: int — minimum % (default: 70).
         """
-        target = context.get("target")
-        if not target:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message="Missing 'target' in context for run_tests intent.",
-            )
-
-        stale_nodes = context.get("stale_nodes")
-        targets: list[str] = [target]
-
-        # Target Rewriting Optimization (Feature 3.32 SF-4)
-        if stale_nodes is not None and (target in {".", "", "src", "src/", "tests", "tests/"}):
-            targets = list(stale_nodes)
-            if not targets:
+        targets_kwarg = context.get("targets")
+        if targets_kwarg is not None:
+            if not targets_kwarg:
+                # Explicit empty list means all nodes pristine
                 return AtomResult(
                     status=AtomStatus.SUCCESS,
                     message="All nodes pristine.",
@@ -139,6 +129,15 @@ class QARunnerAtom(Atom):
                         "failures": [],
                     },
                 )
+            targets = targets_kwarg
+        else:
+            target = context.get("target")
+            if not target:
+                return AtomResult(
+                    status=AtomStatus.FAILED,
+                    message="Missing 'target' or 'targets' in context for run_tests intent.",
+                )
+            targets = [target]
 
         # NFR-3: Path Traversal Protection
         try:
@@ -223,25 +222,23 @@ class QARunnerAtom(Atom):
             target: str — file or directory to lint (required).
             fix: bool — auto-fix fixable issues (default: False).
         """
-        target = context.get("target")
-        if not target:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message="Missing 'target' in context for run_linter intent.",
-            )
-
-        stale_nodes = context.get("stale_nodes")
-        targets: list[str] = [target]
-
-        # Target Rewriting Optimization (Feature 3.32 SF-4)
-        if stale_nodes is not None and (target in {".", "", "src", "src/", "tests", "tests/"}):
-            targets = list(stale_nodes)
-            if not targets:
+        targets_kwarg = context.get("targets")
+        if targets_kwarg is not None:
+            if not targets_kwarg:
                 return AtomResult(
                     status=AtomStatus.SUCCESS,
                     message="All nodes pristine.",
                     exports={"error_count": 0, "fixable_count": 0, "fixed_count": 0, "errors": []},
                 )
+            targets = targets_kwarg
+        else:
+            target = context.get("target")
+            if not target:
+                return AtomResult(
+                    status=AtomStatus.FAILED,
+                    message="Missing 'target' or 'targets' in context for run_linter intent.",
+                )
+            targets = [target]
 
         agg_errs = 0
         agg_fixable = 0

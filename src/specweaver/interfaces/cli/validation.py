@@ -166,11 +166,18 @@ def check(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
+    from specweaver.core.config.dal_resolver import DALResolver
+    project_root = project_dir or Path.cwd()
+    dal_resolver = DALResolver(project_root)
+    dal_level = dal_resolver.resolve(target_path)
+    effective_strict = strict or (dal_level.is_strict if dal_level else False)
+
     results = execute_validation_pipeline(resolved, content, target_path)
 
     label = _build_result_label(level, pipeline, pipeline_name)
-    _display_results(results, f"{label} Validation: {target_path.name}")
-    _print_summary(results, strict=strict)
+    dal_str = dal_level.value if dal_level else "Unbound"
+    _display_results(results, f"{label} Validation: {target_path.name} (DAL: {dal_str})")
+    _print_summary(results, strict=effective_strict)
 
 
 @_core.app.command("list-rules")

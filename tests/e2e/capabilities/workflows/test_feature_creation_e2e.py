@@ -1,9 +1,9 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""E2E tests — new_feature pipeline flow engine.
+"""E2E tests — feature_creation pipeline flow engine.
 
-Exercises the sw run new_feature pipeline with mocked LLM and HITL:
+Exercises the sw run feature_creation pipeline with mocked LLM and HITL:
   1. Validation fails in validate_spec step → pipeline aborts before review
   3. Validation fails in validate_spec step → pipeline stops (abort gate)
   5. LLM error mid-pipeline during generate_code → FAILED run state
@@ -147,22 +147,22 @@ def _create_project_with_spec(
 
 
 # ===========================================================================
-# Test 1: Full new_feature pipeline completes with mocked LLM
+# Test 1: Full feature_creation pipeline completes with mocked LLM
 # ===========================================================================
 
 
-class TestNewFeatureFullCycle:
-    """sw run new_feature — validate_only segment runs end to end."""
+class TestFeatureCreationFullCycle:
+    """sw run feature_creation — validate_only segment runs end to end."""
 
-    def test_new_feature_validate_spec_step_runs(
+    def test_feature_creation_validate_spec_step_runs(
         self,
         tmp_path: Path,
         _mock_state_db,
         monkeypatch,
     ) -> None:
-        """sw run new_feature on a good spec → validate_spec step executes.
+        """sw run feature_creation on a good spec → validate_spec step executes.
 
-        The new_feature pipeline starts with draft_spec (HITL gate) which
+        The feature_creation pipeline starts with draft_spec (HITL gate) which
         immediately parks without a real HITL session. We verify that:
         - The pipeline starts and doesn't crash
         - It enters the first step (draft) before parking
@@ -192,7 +192,7 @@ class TestNewFeatureFullCycle:
                 )
 
         # Should not crash (park is a valid state)
-        assert result.exit_code in (0, 1), f"new_feature pipeline crashed: {result.output}"
+        assert result.exit_code in (0, 1), f"feature_creation pipeline crashed: {result.output}"
         assert "Traceback" not in result.output
 
 
@@ -201,10 +201,10 @@ class TestNewFeatureFullCycle:
 # ===========================================================================
 
 
-class TestNewFeatureValidationFailsStops:
+class TestFeatureCreationValidationFailsStops:
     """validate_spec with all_passed gate and a failing spec → aborts early."""
 
-    def test_new_feature_validation_fails_stops(
+    def test_feature_creation_validation_fails_stops(
         self,
         tmp_path: Path,
         _mock_state_db,
@@ -212,7 +212,7 @@ class TestNewFeatureValidationFailsStops:
     ) -> None:
         """sw run validate_only on a minimal (bad) spec → fails, shows rule failures.
 
-        We use validate_only pipeline here because new_feature's first step is
+        We use validate_only pipeline here because feature_creation's first step is
         draft (HITL). validate_only directly runs spec rules — confirms that a
         spec failing rules causes a pipeline abort (exit code 1) before any LLM
         call.
@@ -245,10 +245,10 @@ class TestNewFeatureValidationFailsStops:
 # ===========================================================================
 
 
-class TestNewFeatureLlmErrorMidPipeline:
+class TestFeatureCreationLlmErrorMidPipeline:
     """LLM error during a pipeline step → FAILED run state, no crash."""
 
-    def test_new_feature_llm_error_mid_pipeline(
+    def test_feature_creation_llm_error_mid_pipeline(
         self,
         tmp_path: Path,
         _mock_state_db,
@@ -298,10 +298,10 @@ class TestNewFeatureLlmErrorMidPipeline:
 # ===========================================================================
 
 
-class TestNewFeatureWithConstitution:
+class TestFeatureCreationWithConstitution:
     """sw review invokes LLM with constitution content injected."""
 
-    def test_new_feature_with_constitution(
+    def test_feature_creation_with_constitution(
         self,
         tmp_path: Path,
         _mock_state_db,

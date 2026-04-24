@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import Status as RuleStatus
@@ -14,7 +15,6 @@ from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext, _error_result, _now_iso
 
 if TYPE_CHECKING:
-    from pathlib import Path
 
     from specweaver.assurance.validation.models import RuleResult
     from specweaver.core.flow.engine.models import PipelineStep
@@ -345,19 +345,21 @@ class ValidateTestsHandler:
             target = str(target_path)
 
         kind = step.params.get("kind", "unit")
-        logger.debug("ValidateTestsHandler: running %s tests in '%s'", kind, target)
+        logger.debug("ValidateTestsHandler: resolving %s test targets for '%s'", kind, target)
+
+        targets = self._resolve_targets(context, target, kind)
 
         atom = self._get_atom(context)
         result = atom.run(
             {
                 "intent": "run_tests",
                 "target": target,
+                "targets": targets,
                 "kind": kind,
                 "scope": step.params.get("scope", ""),
                 "timeout": step.params.get("timeout", 120),
                 "coverage": step.params.get("coverage", False),
                 "coverage_threshold": step.params.get("coverage_threshold", 70),
-                "stale_nodes": context.stale_nodes,
             }
         )
 
@@ -389,3 +391,46 @@ class ValidateTestsHandler:
         from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
 
         return QARunnerAtom(cwd=context.project_path)
+
+    def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:
+        """Resolve precise test directories from TopologyGraph stale nodes."""
+        stale_nodes = context.stale_nodes
+        if stale_nodes is None or target not in {".", "", "src", "src/", "tests", "tests/"}:
+            return [target]
+
+        if len(stale_nodes) == 0:
+            return []  # All nodes pristine, trigger short-circuit
+
+        try:
+            from specweaver.assurance.graph.topology import TopologyGraph
+
+            graph = TopologyGraph.from_project(context.project_path, auto_infer=False)
+
+            resolved: set[str] = set()
+            src_dir = context.project_path / "src"
+
+            for node_name in stale_nodes:
+                node = graph.nodes.get(node_name)
+                if not node or not node.yaml_path:
+                    continue
+
+                try:
+                    rel_to_src = node.yaml_path.parent.relative_to(src_dir)
+                    parts = rel_to_src.parts
+                    if len(parts) > 1:
+                        # e.g. specweaver/core/flow -> tests/unit/core/flow
+                        rel_test_path = Path("tests") / kind / Path(*parts[1:])
+                        if (context.project_path / rel_test_path).exists():
+                            resolved.add(str(rel_test_path))
+                        else:
+                            # If targeted test directory doesn't exist, fallback to root tests/kind
+                            resolved.add(str(Path("tests") / kind))
+                    else:
+                        resolved.add(str(Path("tests") / kind))
+                except ValueError:
+                    resolved.add(str(Path("tests") / kind))
+
+            return sorted(list(resolved)) if resolved else [target]
+        except Exception as exc:
+            logger.warning("ValidateTestsHandler: failed to resolve topology targets: %s", exc)
+            return [target]

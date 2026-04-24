@@ -207,8 +207,7 @@ class TestAtomRunTests:
             result = atom.run(
                 {
                     "intent": "run_tests",
-                    "target": ".",  # global target!
-                    "stale_nodes": {"src/a.py", "tests/b.py"},
+                    "targets": ["src/a.py", "tests/b.py"],
                 }
             )
 
@@ -231,8 +230,7 @@ class TestAtomRunTests:
             result = atom.run(
                 {
                     "intent": "run_tests",
-                    "target": ".",
-                    "stale_nodes": set(),
+                    "targets": [],
                 }
             )
 
@@ -254,8 +252,7 @@ class TestAtomRunTests:
             result = atom.run(
                 {
                     "intent": "run_linter",
-                    "target": ".",
-                    "stale_nodes": set(),
+                    "targets": [],
                 }
             )
 
@@ -343,8 +340,7 @@ class TestAtomRunLinter:
             result = atom.run(
                 {
                     "intent": "run_linter",
-                    "target": ".",
-                    "stale_nodes": {"src/c.py", "src/d.py"},
+                    "targets": ["src/c.py", "src/d.py"],
                 }
             )
 
