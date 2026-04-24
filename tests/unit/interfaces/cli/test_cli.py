@@ -284,13 +284,13 @@ class TestCheckDALStrictness:
         """DAL_A targets treat warnings as failures automatically."""
         from specweaver.commons.enums.dal import DALLevel
         monkeypatch.setattr("specweaver.core.config.dal_resolver.DALResolver.resolve", lambda self, target: DALLevel.DAL_A)
-        
+
         runner.invoke(app, ["init", "proj", "--path", str(tmp_path)])
         spec = tmp_path / "spec.md"
         spec.write_text("# Spec\n\n## 1. Purpose\n\nMissing things to trigger warnings.\n", encoding="utf-8")
-        
+
         result = runner.invoke(app, ["check", str(spec), "--level", "component"])
-        
+
         # Should exit 1 due to DAL_A strictness converting warnings
         assert result.exit_code == 1
 
@@ -298,7 +298,7 @@ class TestCheckDALStrictness:
         """DAL_E targets allow warnings to pass (Exit 0) if no hard failures exist."""
         from specweaver.commons.enums.dal import DALLevel
         monkeypatch.setattr("specweaver.core.config.dal_resolver.DALResolver.resolve", lambda self, target: DALLevel.DAL_E)
-        
+
         runner.invoke(app, ["init", "proj", "--path", str(tmp_path)])
         spec = tmp_path / "spec.md"
         # We need a spec that produces ONLY warnings, no hard failures.
@@ -313,9 +313,9 @@ class TestCheckDALStrictness:
             "- Done when greet() returns a greeting.\n",
             encoding="utf-8",
         )
-        
+
         result = runner.invoke(app, ["check", str(spec), "--level", "component"])
-        
+
         # Should exit 0 because DAL_E is not strict (if it only warns)
         if "PASSED with warnings" in result.output:
             assert result.exit_code == 0

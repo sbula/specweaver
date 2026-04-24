@@ -274,16 +274,24 @@ class TestLintFixEdgeCases:
         ctx = _make_context(tmp_path)
         ctx.stale_nodes = {"src/foo.py", "tests/bar.py"}
 
-        result = await _handler(mock_atom).execute(_make_step(), ctx)
+        # Create the files so that LintFixHandler can resolve them
+        (tmp_path / "src").mkdir(exist_ok=True)
+        (tmp_path / "src" / "foo.py").touch()
+        (tmp_path / "tests").mkdir(exist_ok=True)
+        (tmp_path / "tests" / "bar.py").touch()
+
+        # Execute with target="." to cover all files
+        result = await _handler(mock_atom).execute(_make_step(target="."), ctx)
 
         assert result.status == StepStatus.PASSED
-        mock_atom.run.assert_called_once_with(
-            {
-                "intent": "run_linter",
-                "target": "src/",
-                "stale_nodes": {"src/foo.py", "tests/bar.py"},
-            }
-        )
+
+        # Verify it was called with the resolved targets list
+        mock_atom.run.assert_called_once()
+        args, _kwargs = mock_atom.run.call_args
+        called_intent = args[0]
+        assert called_intent["intent"] == "run_linter"
+        assert set(called_intent["targets"]) == {"src/foo.py", "tests/bar.py"}
+
 
 
 class TestLintFixInterface:

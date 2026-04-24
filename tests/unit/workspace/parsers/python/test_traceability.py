@@ -40,3 +40,8 @@ def test_extract_traceability_tags_different_spacing(parser: PythonCodeStructure
 #    @trace(FR-3)
 """
     assert parser.extract_traceability_tags(code) == {"FR-1", "FR-2", "FR-3"}
+
+
+def test_extract_traceability_tags_whitespace_only(parser: PythonCodeStructure) -> None:
+    assert parser.extract_traceability_tags("   \\n  ") == set()
+

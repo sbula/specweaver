@@ -84,12 +84,26 @@ This document acts as a live, explicitly maintained manifest of unit, integratio
 | CodeStructureInterface.get_binary_ignore_patterns() | ✅ | — | — |
 | CodeStructureInterface.get_default_directory_ignores() | ✅ | — | — |
 
-## `src/specweaver/workspace/parsers/*/codestructure.py`
+## `src/specweaver/workspace/parsers/base.py`
 | Class / Function | Unit | Integration | E2E |
 |------------------|------|-------------|-----|
-| get_binary_ignore_patterns() | ✅ | — | — |
-| get_default_directory_ignores() | ✅ | — | — |
-| extract_traceability_tags() | ✅ | — | — |
+| `BaseTreeSitterParser` | ✅ | ✅ | ✅ |
+
+
+## `src/specweaver/workspace/parsers/markdown/codestructure.py`
+| Class / Function | Unit | Integration | E2E |
+|------------------|------|-------------|-----|
+| `SCM_*_QUERY` | — | ✅ | ✅ |
+| `add_symbol()` | — | ✅ | ✅ |
+| `_is_symbol_valid()` | — | ✅ | — |
+| `_find_symbol_node()` | — | ✅ | — |
+| `_find_target_block()` | — | ✅ | — |
+| `_format_replacement()` | — | ✅ | — |
+| `_format_body_injection()` | — | ✅ | — |
+| `extract_framework_markers()` | — | ✅ | — |
+| `extract_traceability_tags()` | ✅ | ✅ | — |
+| `get_binary_ignore_patterns()` | ✅ | ✅ | — |
+| `get_default_directory_ignores()` | ✅ | ✅ | — |
 
 ## `src/specweaver/workspace/analyzers/factory.py`
 | Class / Function | Unit | Integration | E2E |

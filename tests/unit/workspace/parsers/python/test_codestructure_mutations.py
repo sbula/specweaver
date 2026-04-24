@@ -92,3 +92,29 @@ def test_add_symbol_nested_target(parser: PythonCodeStructure) -> None:
     # Should still contain Parent and a
     assert "class Parent:" in mutated
     assert "def a(self):" in mutated
+
+
+def test_extract_symbol_body_missing_symbol(parser: PythonCodeStructure) -> None:
+    with pytest.raises(CodeStructureError, match="Symbol 'Missing' not found in the AST"):
+        parser.extract_symbol_body("def existing(): pass", "Missing")
+
+
+def test_extract_symbol_body_empty_code(parser: PythonCodeStructure) -> None:
+    with pytest.raises(CodeStructureError, match="Cannot extract body of 'Missing' from empty code"):
+        parser.extract_symbol_body("   ", "Missing")
+
+
+def test_extract_symbol_body_missing_target_block(parser: PythonCodeStructure) -> None:
+    # A decorated definition without a block inside it, or just a malformed tree if possible.
+    # To simulate missing target block, we mock _find_target_block to return None since standard Python syntax always parses a block.
+    code = "def valid(): pass"
+    parser._find_target_block = lambda node: None
+    with pytest.raises(CodeStructureError, match="Body block for symbol 'valid' not found"):
+        parser.extract_symbol_body(code, "valid")
+
+
+def test_replace_symbol_body_missing_target_block(parser: PythonCodeStructure) -> None:
+    code = "def valid(): pass"
+    parser._find_target_block = lambda node: None
+    with pytest.raises(CodeStructureError, match="Body block for symbol 'valid' not found"):
+        parser.replace_symbol_body(code, "valid", "pass")

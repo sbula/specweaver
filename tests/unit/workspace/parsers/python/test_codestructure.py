@@ -237,3 +237,22 @@ def test_extract_symbol_finds_decorated_node(parser: PythonCodeStructure) -> Non
     node = parser._find_symbol_node(parser.parser.parse(code.encode("utf-8")), "TestFunc")
     assert node is not None
     assert node.type == "decorated_definition"
+
+
+def test_find_target_block_no_children(parser: PythonCodeStructure) -> None:
+    # A decorated definition that somehow has no children (malformed tree)
+    class DummyNode:
+        def __init__(self, type_str):
+            self.type = type_str
+            self.children = []
+
+    res = parser._find_target_block(DummyNode("decorated_definition"))
+    assert res is None
+
+
+def test_process_import_node_aliased_nested(parser: PythonCodeStructure) -> None:
+    code = "import json as js\nfrom os import path as p"
+    imports = parser.extract_imports(code)
+    # The current SCM query extracts "json" as dotted_name for aliased import
+    assert "json" in imports
+    assert "os" in imports

@@ -48,6 +48,7 @@ class LintFixHandler:
         reflections_used = 0
         last_error_count = 0
 
+        run_kwargs: dict[str, Any]
         # Resolve targets topologically if stale_nodes is present
         if context.stale_nodes is not None:
             target_path = (context.project_path / target).resolve()
@@ -57,12 +58,16 @@ class LintFixHandler:
             elif target_path.is_dir():
                 all_py = list(target_path.rglob("*.py"))
 
-            resolved_abs = [str(f) for f in all_py if str(f) in context.stale_nodes]
-            from pathlib import Path
-            resolved_targets = [str(Path(t).relative_to(context.project_path)) for t in resolved_abs]
-            run_kwargs: dict[str, Any] = {"intent": "run_linter", "targets": resolved_targets}
+            resolved_targets = []
+            for f in all_py:
+                abs_str = str(f)
+                rel_str = f.relative_to(context.project_path).as_posix()
+                if abs_str in context.stale_nodes or rel_str in context.stale_nodes:
+                    resolved_targets.append(rel_str)
+
+            run_kwargs = {"intent": "run_linter", "targets": resolved_targets}
         else:
-            run_kwargs: dict[str, Any] = {"intent": "run_linter", "target": target}
+            run_kwargs = {"intent": "run_linter", "target": target}
 
         # Initial lint
         lint_result = atom.run(run_kwargs)

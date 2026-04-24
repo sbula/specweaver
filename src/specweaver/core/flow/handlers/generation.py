@@ -445,14 +445,8 @@ class PlanSpecHandler:
 
 class GenerateContractHandler:
     """Handler for generate+contract — extracts API Protocol from spec Contract section.
-
-    This is a mechanical (non-LLM) extraction. It reads the spec's ## Contract
-    section, extracts Python function signatures from code blocks, and generates
-    a Protocol class file at contracts/{stem}_contract.py.
-
-    No LLM adapter is required.
+    This is a mechanical (non-LLM) extraction generating a Protocol class file at contracts/{stem}_contract.py.
     """
-
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         """Execute contract generation from spec."""
 

@@ -1,7 +1,6 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-import json
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -45,60 +44,137 @@ This component bounded safely.
 
     assert res.status.value == "SUCCESS"
 
-    # Must be JSON payload representing headers
-    try:
-        skeleton = json.loads(res.exports["structure"])
-    except json.JSONDecodeError:
-        raise AssertionError(
-            "Markdown skeleton should be returned as JSON formatted string"
-        ) from None
-
-    assert skeleton["h1"] == ["Main Title"]
-    assert "1. Purpose" in skeleton["h2"]
-    assert "2. Boundaries" in skeleton["h2"]
+    skeleton = res.exports["structure"]
+    assert "# Main Title" in skeleton
+    assert "S ... " in skeleton
+    assert "## 1. Purpose" in skeleton
+    assert "T ... " in skeleton
+    assert "## 2. Boundaries" in skeleton
 
 
-def test_markdown_unsupported_symbol_extraction() -> None:
-    import pytest
-
-    from specweaver.workspace.parsers.interfaces import CodeStructureError
+def test_markdown_symbol_extraction() -> None:
     from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
-    with pytest.raises(
-        CodeStructureError, match=r"Markdown extraction logic for symbols is not yet implemented\."
-    ):
-        atom.extract_symbol("# h1", "symbol")
+    code = "# h1\n\nsymbol content\n\n## sub\n"
 
-    with pytest.raises(
-        CodeStructureError, match=r"Markdown extraction logic for symbols is not yet implemented\."
-    ):
-        atom.extract_symbol_body("# h1", "symbol")
+    assert atom.extract_symbol(code, "h1") == "# h1\n\nsymbol content\n\n## sub\n"
+    assert atom.extract_symbol_body(code, "h1") == "\nsymbol content\n\n## sub\n"
 
 
-def test_markdown_unsupported_mutators() -> None:
-    import pytest
-
-    from specweaver.workspace.parsers.interfaces import CodeStructureError
+def test_markdown_mutators() -> None:
     from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
-    with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
-        atom.replace_symbol("# h1", "sym", "foo")
+    code = "# h1\n\nold text\n\n## sub\n"
 
-    with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
-        atom.replace_symbol_body("# h1", "sym", "foo")
+    res = atom.replace_symbol(code, "h1", "# h1 modified\n\nnew text\n")
+    assert res == "# h1 modified\n\nnew text\n"
 
-    with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
-        atom.delete_symbol("# h1", "sym")
+    res_body = atom.replace_symbol_body(code, "h1", "\nnew text body\n")
+    assert res_body == "# h1\n\nnew text body\n"
 
-    with pytest.raises(CodeStructureError, match=r"Markdown mutators not implemented\."):
-        atom.add_symbol("# h1", "target", "foo")
+    res_delete = atom.delete_symbol(code, "h1")
+    assert res_delete == ""
+
+    res_add = atom.add_symbol(code, None, "## added\n")
+    assert res_add == "# h1\n\nold text\n\n## sub\n\n## added\n"
 
 
 def test_markdown_list_symbols_and_markers() -> None:
     from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
-    assert atom.list_symbols("# content") == []
-    assert atom.extract_framework_markers("# content") == {}
+    assert atom.list_symbols("# content\n") == ["content"]
+    assert atom.extract_framework_markers("# content\n") == {}
+
+
+def test_markdown_add_symbol_edge_cases() -> None:
+    import pytest
+
+    from specweaver.workspace.parsers.interfaces import CodeStructureError
+    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+
+    atom = MarkdownCodeStructure()
+
+    # 1. returns new_code if code is empty
+    assert atom.add_symbol("", None, "# h1\n") == "# h1\n"
+    assert atom.add_symbol("   \n", None, "# h1\n") == "# h1\n"
+
+    # 2. raises CodeStructureError if target_parent is passed
+    with pytest.raises(CodeStructureError, match="Markdown does not support injecting into target_parent"):
+        atom.add_symbol("# content\n", "parent", "## child\n")
+
+    # 3. appends newlines cleanly
+    assert atom.add_symbol("# content", None, "## added") == "# content\n\n## added"
+    assert atom.add_symbol("# content\n", None, "## added") == "# content\n\n## added"
+
+
+def test_markdown_missing_symbols() -> None:
+    import pytest
+
+    from specweaver.workspace.parsers.interfaces import CodeStructureError
+    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+
+    atom = MarkdownCodeStructure()
+    code = "# content\n"
+
+    with pytest.raises(CodeStructureError, match=r"Symbol 'missing' not found.*"):
+        atom.extract_symbol(code, "missing")
+
+    with pytest.raises(CodeStructureError, match=r"Symbol 'missing' not found.*"):
+        atom.extract_symbol_body(code, "missing")
+
+    with pytest.raises(CodeStructureError, match=r"Symbol 'missing' not found.*"):
+        atom.replace_symbol(code, "missing", "foo")
+
+    with pytest.raises(CodeStructureError, match=r"Symbol 'missing' not found.*"):
+        atom.replace_symbol_body(code, "missing", "foo")
+
+    with pytest.raises(CodeStructureError, match=r"Symbol 'missing' not found.*"):
+        atom.delete_symbol(code, "missing")
+
+
+def test_markdown_stub_handlers() -> None:
+    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+
+    atom = MarkdownCodeStructure()
+    code = "# content\n"
+
+    assert atom.extract_traceability_tags(code) == set()
+    assert atom.extract_imports(code) == []
+    assert atom.get_binary_ignore_patterns() == []
+    assert atom.get_default_directory_ignores() == []
+
+
+def test_markdown_atom_mutate_code() -> None:
+    """E2E assert that CodeStructureAtom successfully mutates Markdown files."""
+    markdown_doc = "# Main\n\ncontent\n"
+    fs = {"spec.md": markdown_doc}
+
+    # Replace
+    res_replace = _run_atom(
+        "replace_symbol",
+        "spec.md",
+        {
+            "symbol_name": "Main",
+            "new_code": "# Main modified\n\nnew content\n"
+        },
+        fs
+    )
+    assert res_replace.status.value == "SUCCESS"
+    assert fs["spec.md"] == "# Main modified\n\nnew content\n"
+
+    # Add
+    res_add = _run_atom(
+        "add_symbol",
+        "spec.md",
+        {
+            "target_parent": None,
+            "new_code": "## Add\n"
+        },
+        fs
+    )
+    assert res_add.status.value == "SUCCESS"
+    assert fs["spec.md"] == "# Main modified\n\nnew content\n\n## Add\n"
+

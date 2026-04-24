@@ -44,16 +44,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Event callback protocol (prepared for future typed emitter)
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# Pipeline runner
-# ---------------------------------------------------------------------------
-
-
 class PipelineRunner:
     """Executes a pipeline definition step by step.
 

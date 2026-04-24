@@ -42,9 +42,6 @@ from specweaver.infrastructure.llm._prompt_constants import (
 
 logger = logging.getLogger(__name__)
 
-# Internal content blocks
-
-
 @dataclass
 class _ContentBlock:
     """A single block of content to include in the prompt."""
@@ -60,9 +57,6 @@ class _ContentBlock:
     role: str = ""  # trust signal: "reference" | "target" | ""
     tokens: int = 0
     truncated: bool = False
-
-
-# PromptBuilder
 
 
 class PromptBuilder:
@@ -89,8 +83,6 @@ class PromptBuilder:
         self._auto_scale = budget_scale_factor == 1.0  # auto-scale when default
         self._blocks: list[_ContentBlock] = []
         self._skeleton_files: dict[str, str] = skeleton_files or {}
-
-    # Builder API (all return self for chaining)
 
     def add_instructions(self, text: str) -> PromptBuilder:
         """Add instruction text (priority 0 — never truncated).
@@ -424,8 +416,6 @@ class PromptBuilder:
             )
         return self
 
-    # Build
-
     def build(self) -> str:
         """Assemble the prompt as an XML-tagged string.
 
@@ -456,8 +446,6 @@ class PromptBuilder:
 
         return self._render(blocks)
 
-    # Auto budget scaling
-
     def _compute_auto_scale(self, blocks: list[_ContentBlock]) -> None:
         """Auto-adjust ``_scale`` based on content-to-budget ratio.
 
@@ -486,15 +474,11 @@ class PromptBuilder:
             self._scale = 0.5  # Tight budget → compress topology
         # else: keep at 1.0
 
-    # Token estimation
-
     def _count(self, text: str) -> int:
         """Estimate token count for *text*."""
         if self._adapter is not None:
             return self._adapter.estimate_tokens(text)
         return len(text) // 4
-
-    # Hybrid truncation
 
     def _apply_truncation(self, blocks: list[_ContentBlock]) -> list[_ContentBlock]:
         """Apply hybrid priority-ordered + proportional truncation."""
@@ -595,8 +579,6 @@ class PromptBuilder:
             # else: share == 0, block is dropped entirely
 
         return result
-
-    # XML rendering (delegated to _prompt_render)
 
     @staticmethod
     def _render_files(blocks: list[_ContentBlock]) -> str | None:
