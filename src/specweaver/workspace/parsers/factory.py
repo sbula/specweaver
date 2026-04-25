@@ -9,6 +9,7 @@ This centralizes the physical instantiation of CodeStructureInterfaces so orches
 
 from specweaver.workspace.parsers.c.codestructure import CCodeStructure
 from specweaver.workspace.parsers.cpp.codestructure import CppCodeStructure
+from specweaver.workspace.parsers.go.codestructure import GoCodeStructure
 from specweaver.workspace.parsers.interfaces import CodeStructureInterface
 from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
 from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
@@ -29,4 +30,6 @@ def get_default_parsers() -> dict[tuple[str, ...], CodeStructureInterface]:
         (".rs",): RustCodeStructure(),
         (".kt", ".kts"): KotlinCodeStructure(),
         (".md", ".mdx"): MarkdownCodeStructure(),
+        (".go",): GoCodeStructure(),
     }
+

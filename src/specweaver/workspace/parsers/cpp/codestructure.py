@@ -65,6 +65,15 @@ class CppCodeStructure(BaseTreeSitterParser):
         (comment) @comment
         """
 
+    def supported_intents(self) -> list[str]:
+        return [
+            "skeleton", "symbol", "symbol_body", "list", "replace",
+            "replace_body", "add", "delete", "traceability", "imports"
+        ]
+
+    def supported_parameters(self) -> list[str]:
+        return ["visibility"]
+
     def _get_symbol_visibility(self, name_node: typing.Any) -> str:
         # Find the function_definition or declaration node
         parent = name_node.parent
@@ -154,14 +163,33 @@ class CppCodeStructure(BaseTreeSitterParser):
 
         return True
 
+    def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        if not name_node.parent:
+            return None
+        parent = name_node.parent.parent
+        while parent:
+            if parent.type in ("class_specifier", "struct_specifier", "namespace_definition"):
+                name_child = parent.child_by_field_name("name")
+                if name_child:
+                    return typing.cast("bytes", name_child.text).decode("utf-8")
+            parent = parent.parent
+        return None
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
+        target_scope = None
+        target_name = symbol_name
+        if "." in symbol_name:
+            target_scope, target_name = symbol_name.split(".", 1)
+
         query = Query(self.language, self.SCM_SYMBOL_QUERY)
         cursor = QueryCursor(query)
         for _, match_dict in cursor.matches(tree.root_node):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
-                    if typing.cast("bytes", name_node.text).decode("utf-8") == symbol_name:
-                        return match_dict.get("block", [None])[0]
+                    if typing.cast("bytes", name_node.text).decode("utf-8") == target_name:
+                        scope = self._get_symbol_scope(name_node)
+                        if scope == target_scope:
+                            return match_dict.get("block", [None])[0]
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:

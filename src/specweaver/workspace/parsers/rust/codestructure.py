@@ -56,6 +56,15 @@ class RustCodeStructure(BaseTreeSitterParser):
         (block_comment) @comment
         """
 
+    def supported_intents(self) -> list[str]:
+        return [
+            "skeleton", "symbol", "symbol_body", "list", "replace",
+            "replace_body", "add", "delete", "traceability", "imports"
+        ]
+
+    def supported_parameters(self) -> list[str]:
+        return ["visibility"]
+
     def _is_symbol_public(self, parent: typing.Any) -> bool:
         if parent:
             for child in parent.children:
@@ -86,7 +95,45 @@ class RustCodeStructure(BaseTreeSitterParser):
 
         return True
 
+    def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        if not name_node.parent or name_node.parent.type != "function_item":
+            return None
+        parent = name_node.parent.parent
+        while parent:
+            if parent.type == "impl_item":
+                type_node = parent.child_by_field_name("type")
+                if type_node:
+                    if type_node.type == "type_identifier":
+                        return typing.cast("bytes", type_node.text).decode("utf-8")
+                    elif type_node.type == "generic_type":
+                        for gc in type_node.children:
+                            if gc.type == "type_identifier":
+                                return typing.cast("bytes", gc.text).decode("utf-8")
+            parent = parent.parent
+        return None
+
+    def _process_symbol_match(self, name_node: typing.Any, target_name: str, target_scope: str | None) -> typing.Any | None:
+        node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
+        if node_name_str != target_name:
+            return None
+
+        scope = self._get_symbol_scope(name_node)
+        if scope != target_scope:
+            return None
+
+        parent = name_node.parent
+        if parent and parent.type == "generic_type":
+            parent = parent.parent
+        if parent and parent.type in ("function_item", "struct_item", "impl_item"):
+            return parent
+        return None
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
+        target_scope = None
+        target_name = symbol_name
+        if "." in symbol_name:
+            target_scope, target_name = symbol_name.split(".", 1)
+
         query = Query(self.language, self.SCM_SYMBOL_QUERY)
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
@@ -95,16 +142,12 @@ class RustCodeStructure(BaseTreeSitterParser):
         for _, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
-                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if node_name_str == symbol_name:
-                        parent = name_node.parent
-                        if parent and parent.type == "generic_type":
-                            parent = parent.parent
-                        if parent and parent.type in ("function_item", "struct_item", "impl_item"):
-                            if parent.type == "impl_item":
-                                return parent
-                            if not best_match:
-                                best_match = parent
+                    parent = self._process_symbol_match(name_node, target_name, target_scope)
+                    if parent:
+                        if parent.type == "impl_item":
+                            return parent
+                        if not best_match:
+                            best_match = parent
         return best_match
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
@@ -148,19 +191,19 @@ class RustCodeStructure(BaseTreeSitterParser):
         matches = cursor.matches(tree.root_node)
 
         collected_blocks: list[str] = []
+        target_scope = None
+        target_name = symbol_name
+        if "." in symbol_name:
+            target_scope, target_name = symbol_name.split(".", 1)
 
         for _, match_dict in matches:
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
-                    node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if node_name_str == symbol_name:
-                        parent = name_node.parent
-                        if parent and parent.type == "generic_type":
-                            parent = parent.parent
-                        if parent and parent.type in ("function_item", "struct_item", "impl_item"):
-                            collected_blocks.append(
-                                typing.cast("bytes", parent.text).decode("utf-8")
-                            )
+                    parent = self._process_symbol_match(name_node, target_name, target_scope)
+                    if parent:
+                        collected_blocks.append(
+                            typing.cast("bytes", parent.text).decode("utf-8")
+                        )
 
         if collected_blocks:
             return "\n\n".join(collected_blocks)
@@ -222,14 +265,18 @@ class RustCodeStructure(BaseTreeSitterParser):
         for _, match_dict in cursor.matches(tree.root_node):
             if "name" not in match_dict:
                 continue
-            symbol = self._extract_marker_text(match_dict["name"][0])
+            name_node = match_dict["name"][0]
+            symbol = self._extract_marker_text(name_node)
+            scope = self._get_symbol_scope(name_node)
+            full_name = f"{scope}.{symbol}" if scope else symbol
+
             is_class = "cls" in match_dict
             target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
 
-            if symbol not in markers:
-                markers[symbol] = {"decorators": self._extract_decorators(target)}
+            if full_name not in markers:
+                markers[full_name] = {"decorators": self._extract_decorators(target)}
                 if is_class:
-                    markers[symbol]["extends"] = []
+                    markers[full_name]["extends"] = []
 
         impl_query = Query(self.language, "(impl_item trait: (_) @trait type: (_) @type)")
         for _, impl_match in QueryCursor(impl_query).matches(tree.root_node):

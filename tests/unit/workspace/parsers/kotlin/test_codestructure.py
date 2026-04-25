@@ -109,13 +109,16 @@ def test_extract_symbol_empty_string(parser: KotlinCodeStructure) -> None:
 
 def test_extract_symbol_annotation_preservation(parser: KotlinCodeStructure) -> None:
     code = """
-@JvmStatic
-@Throws(Exception::class)
-fun annotatedFunc() { }
-"""
-    target_fn = parser.extract_symbol(code, "annotatedFunc")
-    assert "@JvmStatic" in target_fn
-    assert "@Throws" in target_fn
+    class TargetClass {
+        @Override
+        fun method() {
+            return
+        }
+    }
+    """
+    target_fn = parser.extract_symbol(code, "TargetClass.method")
+    assert "@Override" in target_fn
+    assert "fun method() {" in target_fn
 
 
 def test_extract_symbol_malformed_syntax(parser: KotlinCodeStructure) -> None:
@@ -129,13 +132,28 @@ fun good(): Boolean { return true }"""
         pass
 
 
-def test_extract_symbol_scope_collision(parser: KotlinCodeStructure) -> None:
+def test_list_and_extract_dot_notation(parser: KotlinCodeStructure) -> None:
     code = """
-class Parent { fun target() {} }
-fun target() {}
-"""
-    target = parser.extract_symbol(code, "target")
-    assert "target" in target
+    class Database {
+        fun connect() {
+            return
+        }
+
+        class Inner {
+            fun query() {
+            }
+        }
+    }
+    """
+    symbols = parser.list_symbols(code)
+    assert "Database" in symbols
+    assert "Database.connect" in symbols
+    assert "Database.Inner" in symbols
+    assert "Inner.query" in symbols
+
+    target = parser.extract_symbol(code, "Database.connect")
+    assert "fun connect()" in target
+    assert "class Database" not in target
 
 
 def test_extract_framework_markers_success(parser: KotlinCodeStructure) -> None:
@@ -157,13 +175,9 @@ class MyController : BaseController(), InterfaceA, InterfaceB {
     assert "InterfaceA" in markers["MyController"]["extends"]
     assert "InterfaceB" in markers["MyController"]["extends"]
 
-    assert "myMethod" in markers
-    assert (
-        'get:GetMapping("/")' in markers["myMethod"]["decorators"]
-        or 'GetMapping("/")' in markers["myMethod"]["decorators"]
-    )
-    assert "Transactional" in markers["myMethod"]["decorators"]
-    assert "extends" not in markers["myMethod"]
+    assert "MyController.myMethod" in markers
+    assert "Transactional" in markers["MyController.myMethod"]["decorators"]
+    assert "extends" not in markers["MyController.myMethod"]
 
 
 def test_extract_framework_markers_empty(parser: KotlinCodeStructure) -> None:

@@ -76,6 +76,10 @@ class BaseTreeSitterParser(CodeStructureInterface, ABC):
     ) -> bytes:
         """Hook to format injecting new code into an existing block body."""
 
+    def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        """Returns the scope (e.g., class name or receiver) of a symbol."""
+        return None
+
     def _extract_marker_text(self, node: typing.Any) -> str:
         return typing.cast("bytes", node.text).decode("utf-8").strip()
 
@@ -176,10 +180,12 @@ class BaseTreeSitterParser(CodeStructureInterface, ABC):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
+                    scope = self._get_symbol_scope(name_node)
+                    full_name = f"{scope}.{sym_name}" if scope else sym_name
                     if self._is_symbol_valid(
-                        sym_name, name_node, visibility, decorator_filter, framework_markers
+                        full_name, name_node, visibility, decorator_filter, framework_markers
                     ):
-                        symbols.append(sym_name)
+                        symbols.append(full_name)
 
         seen = set()
         unique_symbols = []

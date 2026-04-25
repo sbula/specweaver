@@ -181,16 +181,42 @@ REPLACE_SYMBOL_SCHEMA = ToolDefinition(
 )
 
 
-def get_code_structure_schema() -> list[Any]:
+def _filter_list_schema(list_schema: Any, supported_params: dict[str, set[str]] | None) -> Any:
+    import copy
+    if (
+        supported_params is not None
+        and "list_symbols" in supported_params
+        and "decorator_filter" not in supported_params["list_symbols"]
+    ):
+        filtered = copy.deepcopy(list_schema)
+        filtered.parameters = [p for p in filtered.parameters if p.name != "decorator_filter"]
+        return filtered
+    return list_schema
+
+
+def get_code_structure_schema(
+    supported_intents: set[str] | None = None,
+    supported_params: dict[str, set[str]] | None = None,
+) -> list[Any]:
     """Returns the JSON Schema tools injected into the Prompt."""
-    return [
-        READ_FILE_STRUCTURE_SCHEMA,
-        READ_SYMBOL_SCHEMA,
-        READ_SYMBOL_BODY_SCHEMA,
-        READ_UNROLLED_SYMBOL_SCHEMA,
-        LIST_SYMBOLS_SCHEMA,
-        REPLACE_SYMBOL_SCHEMA,
-        REPLACE_SYMBOL_BODY_SCHEMA,
-        ADD_SYMBOL_SCHEMA,
-        DELETE_SYMBOL_SCHEMA,
-    ]
+    schemas = []
+
+    intent_map = {
+        "skeleton": READ_FILE_STRUCTURE_SCHEMA,
+        "symbol": READ_SYMBOL_SCHEMA,
+        "symbol_body": READ_SYMBOL_BODY_SCHEMA,
+        "framework_markers": READ_UNROLLED_SYMBOL_SCHEMA,
+        "replace": REPLACE_SYMBOL_SCHEMA,
+        "replace_body": REPLACE_SYMBOL_BODY_SCHEMA,
+        "add": ADD_SYMBOL_SCHEMA,
+        "delete": DELETE_SYMBOL_SCHEMA,
+    }
+
+    for intent, schema in intent_map.items():
+        if supported_intents is None or intent in supported_intents:
+            schemas.append(schema)
+
+    if supported_intents is None or "list" in supported_intents:
+        schemas.append(_filter_list_schema(LIST_SYMBOLS_SCHEMA, supported_params))
+
+    return schemas

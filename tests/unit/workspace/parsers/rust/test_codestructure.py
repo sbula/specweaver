@@ -143,14 +143,53 @@ fn good() -> bool { true }"""
         pass
 
 
+def test_list_and_extract_dot_notation(parser: RustCodeStructure) -> None:
+    code = """
+    pub struct Database;
+
+    impl Database {
+        pub fn connect(&self) {
+        }
+    }
+
+    pub struct Inner;
+    impl Inner {
+        pub fn query(&self) {
+        }
+    }
+    """
+    symbols = parser.list_symbols(code)
+    assert "Database" in symbols
+    assert "Database.connect" in symbols
+    assert "Inner" in symbols
+    assert "Inner.query" in symbols
+
+    target = parser.extract_symbol(code, "Database.connect")
+    assert "pub fn connect(&self) {" in target
+    assert "pub struct Database;" not in target
+
+def test_rust_impl_trait_scope(parser: RustCodeStructure) -> None:
+    code = """
+    pub struct MyStruct;
+
+    impl std::fmt::Display for MyStruct {
+        fn fmt(&self) {}
+    }
+    """
+    symbols = parser.list_symbols(code)
+    # The method should be mapped to the struct 'MyStruct', not the trait 'Display'
+    assert "MyStruct.fmt" in symbols
+    assert "Display.fmt" not in symbols
+    assert "std::fmt::Display.fmt" not in symbols
+
 def test_extract_symbol_scope_collision(parser: RustCodeStructure) -> None:
     code = """
 struct Target {}
-impl Target { fn target() {} }
+impl Target { fn target() { return 1; } }
+fn target() { return 2; }
 """
-    # Wait, if we search for target, it should find it at least!
-    target = parser.extract_symbol(code, "Target")
-    assert "Target" in target
+    target = parser.extract_symbol(code, "Target.target")
+    assert "fn target() { return 1; }" in target
 
 
 def test_extract_framework_markers_success(parser: RustCodeStructure) -> None:

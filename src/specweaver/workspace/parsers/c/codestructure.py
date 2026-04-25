@@ -55,6 +55,15 @@ class CCodeStructure(BaseTreeSitterParser):
         (comment) @comment
         """
 
+    def supported_intents(self) -> list[str]:
+        return [
+            "skeleton", "symbol", "symbol_body", "list", "replace",
+            "replace_body", "add", "delete", "traceability", "imports"
+        ]
+
+    def supported_parameters(self) -> list[str]:
+        return []
+
     def _is_symbol_valid(
         self,
         sym_name: str,
@@ -71,7 +80,15 @@ class CCodeStructure(BaseTreeSitterParser):
         # C does not have class visibility (public/private).
         return visibility is None
 
+    def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        return None
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
+        target_scope = None
+        target_name = symbol_name
+        if "." in symbol_name:
+            target_scope, target_name = symbol_name.split(".", 1)
+
         from tree_sitter import Query, QueryCursor
 
         query = Query(self.language, self.SCM_SYMBOL_QUERY)
@@ -79,8 +96,10 @@ class CCodeStructure(BaseTreeSitterParser):
         for _, match_dict in cursor.matches(tree.root_node):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
-                    if typing.cast("bytes", name_node.text).decode("utf-8") == symbol_name:
-                        return match_dict.get("block", [None])[0]
+                    if typing.cast("bytes", name_node.text).decode("utf-8") == target_name:
+                        scope = self._get_symbol_scope(name_node)
+                        if scope == target_scope:
+                            return match_dict.get("block", [None])[0]
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:

@@ -97,6 +97,21 @@ class CodeStructureAtom(Atom):
                 return parser
         return None
 
+    def get_supported_capabilities(self) -> tuple[set[str], set[str]]:
+        """Return the aggregate supported intents and parameters across all active parsers.
+
+        TODO(Architectural): Once the AST Knowledge Tree is implemented, we must pass
+        the active `FolderGrant` file extensions into this method so we can dynamically
+        filter out capabilities for languages that do not exist in the agent's area.
+        Currently, this aggregates capabilities globally across all registered parsers.
+        """
+        supported_intents = set()
+        supported_params_flat = set()
+        for parser in self._parsers.values():
+            supported_intents.update(parser.supported_intents())
+            supported_params_flat.update(parser.supported_parameters())
+        return supported_intents, supported_params_flat
+
     def _handle_structure(self, parser: CodeStructureInterface, code: str, path: str) -> AtomResult:
         try:
             skeleton = parser.extract_skeleton(code)

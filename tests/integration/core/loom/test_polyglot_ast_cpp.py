@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def test_polyglot_cpp_ast_integration(tmp_path: Path) -> None:
     cpp_file = tmp_path / "main.cpp"
     cpp_file.write_text(
@@ -25,17 +26,17 @@ public:
     # Test visibility and decorator filtering
     res = atom.run({"intent": "list_symbols", "path": "main.cpp", "decorator_filter": "nodiscard"})
     symbols = res.exports["symbols"]
-    assert "run" in symbols
+    assert "Engine.run" in symbols
     assert "Engine" not in symbols
 
     # Test imports (not natively exposed via Atom intents, but we can verify it doesn't crash)
     # The atom intent 'read_file_structure' is typically used for skeleton.
     # We will test read_symbol
-    res = atom.run({"intent": "read_symbol", "path": "main.cpp", "symbol_name": "run"})
+    res = atom.run({"intent": "read_symbol", "path": "main.cpp", "symbol_name": "Engine.run"})
     assert "int run() { return 0; }" in res.exports["symbol"]
 
     # Test delete_symbol
-    res = atom.run({"intent": "delete_symbol", "path": "main.cpp", "symbol_name": "run"})
+    res = atom.run({"intent": "delete_symbol", "path": "main.cpp", "symbol_name": "Engine.run"})
     assert res.status.value == "SUCCESS"
     assert "int run()" not in cpp_file.read_text("utf-8")
 

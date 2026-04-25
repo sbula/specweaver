@@ -88,7 +88,24 @@ class TypeScriptCodeStructure(BaseTreeSitterParser):
 
         return True
 
+    def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        if not name_node.parent:
+            return None
+        parent = name_node.parent.parent
+        while parent:
+            if parent.type == "class_declaration":
+                for child in parent.children:
+                    if child.type == "type_identifier":
+                        return typing.cast("bytes", child.text).decode("utf-8")
+            parent = parent.parent
+        return None
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
+        target_scope = None
+        target_name = symbol_name
+        if "." in symbol_name:
+            target_scope, target_name = symbol_name.split(".", 1)
+
         query = Query(self.language, self.SCM_SYMBOL_QUERY)
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
@@ -97,24 +114,26 @@ class TypeScriptCodeStructure(BaseTreeSitterParser):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if node_name_str == symbol_name:
-                        parent = name_node.parent
-                        if parent and parent.type in (
-                            "function_declaration",
-                            "method_definition",
-                            "class_declaration",
-                            "variable_declarator",
-                        ):
-                            wrapper = parent
-                            if (
-                                wrapper.type == "variable_declarator"
-                                and wrapper.parent
-                                and wrapper.parent.type == "lexical_declaration"
+                    if node_name_str == target_name:
+                        scope = self._get_symbol_scope(name_node)
+                        if scope == target_scope:
+                            parent = name_node.parent
+                            if parent and parent.type in (
+                                "function_declaration",
+                                "method_definition",
+                                "class_declaration",
+                                "variable_declarator",
                             ):
-                                wrapper = wrapper.parent
-                            if wrapper.parent and wrapper.parent.type == "export_statement":
-                                wrapper = wrapper.parent
-                            return wrapper
+                                wrapper = parent
+                                if (
+                                    wrapper.type == "variable_declarator"
+                                    and wrapper.parent
+                                    and wrapper.parent.type == "lexical_declaration"
+                                ):
+                                    wrapper = wrapper.parent
+                                if wrapper.parent and wrapper.parent.type == "export_statement":
+                                    wrapper = wrapper.parent
+                                return wrapper
         return None
 
     def _search_declarator(self, child: typing.Any) -> typing.Any | None:
@@ -266,14 +285,18 @@ class TypeScriptCodeStructure(BaseTreeSitterParser):
         for _, match_dict in cursor.matches(tree.root_node):
             if "name" not in match_dict:
                 continue
-            symbol = self._extract_marker_text(match_dict["name"][0])
+            name_node = match_dict["name"][0]
+            symbol = self._extract_marker_text(name_node)
+            scope = self._get_symbol_scope(name_node)
+            full_name = f"{scope}.{symbol}" if scope else symbol
+
             is_class = "cls" in match_dict
             target = match_dict["cls"][0] if is_class else match_dict["fn"][0]
 
-            if symbol not in markers:
-                markers[symbol] = {"decorators": self._extract_decorators(target)}
+            if full_name not in markers:
+                markers[full_name] = {"decorators": self._extract_decorators(target)}
                 if is_class:
-                    markers[symbol]["extends"] = self._extract_bases(target)
+                    markers[full_name]["extends"] = self._extract_bases(target)
         return markers
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:

@@ -36,6 +36,7 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
 *   **FR-4:** The system SHALL parse Standard SQL source files (`.sql`) using `tree-sitter-sql` to extract structural schemas (tables/views) and symbols (functions/procedures).
 *   **FR-5:** The system SHALL complete the existing `MarkdownCodeStructure` stub, ensuring it implements the full `CodeStructureInterface` (including traceability tag extraction and symbol mutation) using the new `BaseTreeSitterParser`.
 *   **FR-6:** The system SHALL register all new file extensions in `specweaver.workspace.parsers.factory.get_default_parsers()`.
+*   **FR-7:** The system SHALL dynamically prune `ToolDefinition` schemas (e.g. hiding `decorator_filter` or `extract_framework_markers`) if no active language parser supports them, ensuring agents never see useless capabilities.
 
 ---
 
@@ -54,12 +55,12 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
 | **AST Base Class Refactoring** | SF-1 | None | ✅ | ✅ | ✅ | ✅ |
 | **Markdown Parser Completion** | SF-2 | SF-1 | ✅ | ✅ | ✅ | ✅ |
 | **C/C++ Parser Implementation** | SF-3 | SF-1 | ✅ | ✅ | ✅ | ✅ |
-| **Go Parser Implementation** | SF-4 | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ |
+| **Go Parser Implementation** | SF-4 | SF-1 | ✅ | ✅ | ✅ | ✅ |
 | **SQL Parser Implementation** | SF-5 | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ---
 
 ## 6. Session Handoff
 Status: **COMPLETED**
-The implementation and pre-commit phase for SF-3 (C/C++ Parser Implementation) are fully complete and committed.
-Next Step: Design and create the implementation plan for SF-4 (Go Parser Implementation) using `/implementation-plan docs/roadmap/phase_3/feature_3_32e/feature_3_32e_design.md SF-4`.
+The implementation plan for SF-4 (Go Parser Implementation & Polyglot Technical Debt Cleanup) is complete and approved.
+Next Step: Run `/dev docs/roadmap/phase_3/feature_3_32e/feature_3_32e_sf4_implementation_plan.md` to begin implementation of SF-4.

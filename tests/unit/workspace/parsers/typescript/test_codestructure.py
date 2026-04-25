@@ -131,13 +131,37 @@ export function good() { return true; }"""
         pass  # Graceful failure is expected if severely malformed AST drops the symbol
 
 
+def test_list_and_extract_dot_notation(parser: TypeScriptCodeStructure) -> None:
+    code = """
+    class Database {
+        public connect() {
+            return;
+        }
+    }
+
+    class Inner {
+        public query() {
+        }
+    }
+    """
+    symbols = parser.list_symbols(code)
+    assert "Database" in symbols
+    assert "Database.connect" in symbols
+    assert "Inner" in symbols
+    assert "Inner.query" in symbols
+
+    target = parser.extract_symbol(code, "Database.connect")
+    assert "public connect()" in target
+    assert "class Database" not in target
+
+
 def test_extract_symbol_scope_collision(parser: TypeScriptCodeStructure) -> None:
     code = """
 class Parent { target() { return 1; } }
 function target() { return 2; }
 """
-    target = parser.extract_symbol(code, "target")
-    assert "target" in target
+    target = parser.extract_symbol(code, "Parent.target")
+    assert "target() { return 1; }" in target
 
 
 def test_extract_framework_markers_success(parser: TypeScriptCodeStructure) -> None:
@@ -158,9 +182,9 @@ export class MyController extends BaseController implements InterfaceA, Interfac
     assert "InterfaceA" in markers["MyController"]["extends"]
     assert "InterfaceB" in markers["MyController"]["extends"]
 
-    assert "method" in markers
-    assert "Field" in markers["method"]["decorators"]
-    assert "extends" not in markers["method"]
+    assert "MyController.method" in markers
+    assert "Field" in markers["MyController.method"]["decorators"]
+    assert "extends" not in markers["MyController.method"]
 
 
 def test_extract_framework_markers_empty(parser: TypeScriptCodeStructure) -> None:

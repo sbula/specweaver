@@ -25,8 +25,8 @@ SpecWeaver formally injects nine `ToolDefinitions` into the Agent's runtime prom
     *   **Behavior**: Slices out the execution body of every class and function natively, leaving only framework decorators, import lists, signatures, and docstrings.
     
 *   **`list_symbols`**
-    *   **Goal**: Return a flattened array of all targetable symbols (e.g., `["MyClass", "MyClass.process_data", "main"]`).
-    *   **Behavior**: Optionally uses `visibility` or `decorator_filter` parameters (such as `'public'` or `'RestController'`) to return exact topological matches without dumping their bodies.
+    *   **Goal**: Return a flattened array of all targetable symbols.
+    *   **Behavior**: Optionally uses `visibility` or `decorator_filter` parameters (such as `'public'` or `'RestController'`) to return exact topological matches without dumping their bodies. **Note:** Returns symbols strictly in Dot-Notation (e.g., `['Database', 'Database.connect']`) to prevent scope ambiguity.
     
 *   **`read_symbol`**
     *   **Goal**: Pinpoint a precise code block inside a large file.
@@ -62,7 +62,29 @@ When it comes time to edit files, Agents are strictly guided to prefer semantic 
 
 ---
 
-## 3. How It Works Under The Hood
+## 3. Strict Dot-Notation Symbol Resolution
+
+A core architectural principle of SpecWeaver's polyglot ecosystem is the mandatory use of **Dot-Notation** for symbol resolution across all languages (Python, Java, Kotlin, C++, Rust, Go, JavaScript, TypeScript, Markdown, etc.). 
+
+When an agent requests a symbol mutation or extraction, it MUST supply the fully qualified scope path (e.g., `Class.Method` instead of just `Method`). 
+
+**Why?**
+1. **Ambiguity Prevention**: Classes and trait implementations often share common method names like `run`, `execute`, or `start`. Passing just `"run"` causes the parser to either crash or accidentally replace the first matched implementation it finds in the file.
+2. **Predictable Extraction**: The `list_symbols` command guarantees it returns the fully-qualified dot-notation paths. Agents should always run `list_symbols` first, copy the exact string returned (e.g., `"Engine.run"`), and pass it verbatim into the mutation/extraction intent.
+
+---
+
+## 4. Dynamic Capability Filtering
+
+Not all programming languages support every AST operation due to parser constraints or language syntax definitions (e.g., Markdown doesn't have "imports" and Rust might not safely support generic body replacing without breaking lifetimes). 
+
+SpecWeaver implements **Dynamic Capability Filtering**. Each language parser explicitly overrides `supported_intents()` and `supported_parameters()` to communicate its limitations natively to the `CodeStructureTool`. 
+
+When an Agent mounts a tool for a specific file type, the Tool Definition Schema is dynamically pruned in the LLM's prompt. If a parser does not support `replace_symbol_body`, the LLM will simply never see that option in its tool schema for that specific file. This prevents hallucinated tool calls and improves pipeline stability.
+
+---
+
+## 5. How It Works Under The Hood
 
 If you are expanding the engine's functionality, here is the operational flow logic of the AST tool layer:
 
@@ -75,7 +97,7 @@ If you ever wish to add a new AST mutation intent, it must follow this 5-step va
 
 ---
 
-## 4. Best Practices for Tool Development
+## 6. Best Practices for Tool Development
 
 - **Never rely on String Replacement:** LLM Agents fail to count spaces and indentations. Always prefer native byte offsets supplied by `tree-sitter`.
 - **Enforce Separation of Reads and Writes:** Do not allow `read_file_structure` to mutate bounds or log warnings to the console. Pure function responses ensure maximum context integrity.

@@ -141,6 +141,27 @@ async def AsyncFunc():
     assert "async def AsyncFunc():" in target
 
 
+def test_list_and_extract_dot_notation(parser: PythonCodeStructure) -> None:
+    code = """
+class Database:
+    def connect(self):
+        return True
+
+    class Inner:
+        def query(self):
+            pass
+"""
+    symbols = parser.list_symbols(code)
+    assert "Database" in symbols
+    assert "Database.connect" in symbols
+    assert "Database.Inner" in symbols
+    assert "Inner.query" in symbols
+
+    target = parser.extract_symbol(code, "Database.connect")
+    assert "def connect(self):" in target
+    assert "class Database" not in target
+
+
 def test_extract_framework_markers_success(parser: PythonCodeStructure) -> None:
     code = """
 @pytest.mark.asyncio
@@ -156,9 +177,9 @@ class MyController(BaseController, WebMixin):
     assert markers["MyController"]["decorators"] == ["pytest.mark.asyncio", "app.route('/api')"]
     assert markers["MyController"]["extends"] == ["BaseController", "WebMixin"]
 
-    assert "get_data" in markers
-    assert markers["get_data"]["decorators"] == ["property"]
-    assert "extends" not in markers["get_data"]
+    assert "MyController.get_data" in markers
+    assert markers["MyController.get_data"]["decorators"] == ["property"]
+    assert "extends" not in markers["MyController.get_data"]
 
 
 def test_extract_framework_markers_empty(parser: PythonCodeStructure) -> None:

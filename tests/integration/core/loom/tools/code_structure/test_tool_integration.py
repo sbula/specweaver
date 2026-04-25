@@ -44,7 +44,7 @@ class Target:
     rel_path = file_path.name
 
     # Replace Body
-    res = physical_tool.replace_symbol_body(rel_path, "original_math", "return 42")
+    res = physical_tool.replace_symbol_body(rel_path, "Target.original_math", "return 42")
     assert res.status == "success", res.message
 
     # Read back physical file
@@ -53,7 +53,7 @@ class Target:
     assert "return 1 + 1" not in content
 
     # Delete Symbol
-    res2 = physical_tool.delete_symbol(rel_path, "erase_me")
+    res2 = physical_tool.delete_symbol(rel_path, "Target.erase_me")
     assert res2.status == "success", res2.message
     assert "erase_me" not in file_path.read_text(encoding="utf-8")
 
@@ -78,7 +78,7 @@ public class JavaTarget {
     rel_path = file_path.name
 
     res = physical_tool.replace_symbol(
-        rel_path, "originalMath", "public int brandNewMath() {\n    return 42;\n}"
+        rel_path, "JavaTarget.originalMath", "public int brandNewMath() {\n    return 42;\n}"
     )
     assert res.status == "success", res.message
 
@@ -99,7 +99,7 @@ class KotlinTarget {
     file_path.write_text(code, encoding="utf-8")
     rel_path = file_path.name
 
-    res = physical_tool.replace_symbol_body(rel_path, "run", 'println("kt")')
+    res = physical_tool.replace_symbol_body(rel_path, "KotlinTarget.run", 'println("kt")')
     assert res.status == "success", res.message
 
     content = file_path.read_text(encoding="utf-8")
@@ -120,7 +120,7 @@ export class TsTarget {
     file_path.write_text(code, encoding="utf-8")
     rel_path = file_path.name
 
-    res = physical_tool.delete_symbol(rel_path, "execute")
+    res = physical_tool.delete_symbol(rel_path, "TsTarget.execute")
     assert res.status == "success", res.message
 
     content = file_path.read_text(encoding="utf-8")

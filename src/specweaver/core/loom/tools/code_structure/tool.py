@@ -264,7 +264,11 @@ class CodeStructureTool:
     def definitions(self) -> list[Any]:
         from specweaver.core.loom.tools.code_structure.definitions import get_code_structure_schema
 
-        all_defs = get_code_structure_schema()
+        supported_intents, supported_params_flat = self._atom.get_supported_capabilities()
+
+        supported_params = {"list_symbols": supported_params_flat}
+
+        all_defs = get_code_structure_schema(supported_intents, supported_params)
         allowed = ROLE_INTENTS[self._role]
         return [d for d in all_defs if d.name in allowed and d.name not in self._hidden_intents]
 

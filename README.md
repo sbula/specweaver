@@ -24,7 +24,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 
 ## Core Capabilities
 
-- **Polyglot Ecosystem Support** — Natively extracts and manipulates ASTs across Python, JavaScript/TypeScript, Java, Kotlin, Rust, and C/C++, allowing seamless integration into virtually any enterprise stack.
+- **Polyglot Ecosystem Support** — Natively extracts and manipulates ASTs across Python, JavaScript/TypeScript, Java, Kotlin, Rust, C/C++, Go, and Markdown, allowing seamless integration into virtually any enterprise stack.
 - **Interactive spec drafting** — Co-author markdown specifications natively with an LLM, validating logical consistency before a single line of code is written.
 - **AI-powered Code Generation & Review** — Agents implement tests and code sequentially from specs, returning ACCEPTED/DENIED verdicts mapped with confidence-scored findings.
 - **Deterministic Pipeline Engine** — YAML-defined rule pipelines orchestrating Human-In-The-Loop feedback loops, Scenario Generation validations, and strict pipeline rollbacks.

@@ -47,7 +47,7 @@ def test_java_missing_closing_brackets() -> None:
     """
 
     res = _run_atom(
-        "read_symbol_body", "file.java", {"symbol_name": "myTargetMethod"}, {"file.java": code}
+        "read_symbol_body", "file.java", {"symbol_name": "MalformedClass.myTargetMethod"}, {"file.java": code}
     )
 
     assert res.status.value == "SUCCESS"
@@ -89,7 +89,7 @@ def test_rust_overloaded_methods() -> None:
     }
     """
 
-    res = _run_atom("read_symbol", "file.rs", {"symbol_name": "execute"}, {"file.rs": code})
+    res = _run_atom("read_symbol", "file.rs", {"symbol_name": "Target.execute"}, {"file.rs": code})
 
     assert res.status.value == "SUCCESS"
     assert "fn execute<T>(&self)" in res.exports["symbol"]
@@ -117,7 +117,7 @@ def test_kotlin_symbol_not_found() -> None:
     }
     """
 
-    res = _run_atom("read_symbol_body", "file.kt", {"symbol_name": "GhostClass"}, {"file.kt": code})
+    res = _run_atom("read_symbol_body", "file.kt", {"symbol_name": "ValidClass.GhostClass"}, {"file.kt": code})
 
     assert res.status.value == "FAILED"
     assert "not found" in res.message
@@ -181,7 +181,7 @@ public class Container {
     res = _run_atom(
         "read_symbol",
         "Container.java",
-        {"symbol_name": "HiddenInterface"},
+        {"symbol_name": "Container.HiddenInterface"},
         {"Container.java": code},
     )
     assert res.status.value == "SUCCESS"
@@ -199,7 +199,7 @@ public class Target {
 }
 """
     res = _run_atom(
-        "read_symbol_body", "Target.java", {"symbol_name": "transformData"}, {"Target.java": code}
+        "read_symbol_body", "Target.java", {"symbol_name": "Target.transformData"}, {"Target.java": code}
     )
     assert res.status.value == "SUCCESS"
     assert "return null;" in res.exports["body"]
@@ -230,7 +230,7 @@ export namespace GlobalAPI {
     }
 }
 """
-    res = _run_atom("read_symbol", "api.ts", {"symbol_name": "TargetInterface"}, {"api.ts": code})
+    res = _run_atom("read_symbol", "api.ts", {"symbol_name": "GlobalAPI.TargetInterface"}, {"api.ts": code})
     # Currently TS Tree-sitter might not recurse into module boundaries easily
     # We test that the failure is graceful
     if res.status.value == "FAILED":
@@ -265,7 +265,7 @@ impl Clone for Target {
     }
 }
 """
-    res = _run_atom("read_symbol_body", "target.rs", {"symbol_name": "clone"}, {"target.rs": code})
+    res = _run_atom("read_symbol_body", "target.rs", {"symbol_name": "Target.clone"}, {"target.rs": code})
     assert res.status.value == "SUCCESS"
     assert "Target { val: self.val }" in res.exports["body"]
 
@@ -297,7 +297,7 @@ class Wrapper {
 }
 """
     res = _run_atom(
-        "read_symbol_body", "Wrapper.kt", {"symbol_name": "create"}, {"Wrapper.kt": code}
+        "read_symbol_body", "Wrapper.kt", {"symbol_name": "Wrapper.create"}, {"Wrapper.kt": code}
     )
     assert res.status.value == "SUCCESS"
     assert "return Wrapper()" in res.exports["body"]
@@ -331,7 +331,7 @@ class TargetClass:
     res = _run_atom(
         "replace_symbol_body",
         "file.py",
-        {"symbol_name": "original_math", "new_code": "return 42"},
+        {"symbol_name": "TargetClass.original_math", "new_code": "return 42"},
         fs,
     )
     assert res.status.value == "SUCCESS"
@@ -350,7 +350,7 @@ class TargetClass:
     assert "def added_method(self):" in fs["file.py"]
 
     # 3. Delete Symbol
-    res = _run_atom("delete_symbol", "file.py", {"symbol_name": "method_to_delete"}, fs)
+    res = _run_atom("delete_symbol", "file.py", {"symbol_name": "TargetClass.method_to_delete"}, fs)
     assert res.status.value == "SUCCESS"
     assert "def method_to_delete" not in fs["file.py"]
 
@@ -358,7 +358,7 @@ class TargetClass:
     res = _run_atom(
         "replace_symbol",
         "file.py",
-        {"symbol_name": "original_math", "new_code": "def brand_new_math(self):\n    return 100"},
+        {"symbol_name": "TargetClass.original_math", "new_code": "def brand_new_math(self):\n    return 100"},
         fs,
     )
     assert res.status.value == "SUCCESS"
@@ -379,7 +379,7 @@ class OuterClass:
     # 1. Multi-line auto-indentation in nested scopes
     new_body = "for i in range(3):\n    print('nested ' + str(i))"
     res = _run_atom(
-        "replace_symbol_body", "file.py", {"symbol_name": "do_nested", "new_code": new_body}, fs
+        "replace_symbol_body", "file.py", {"symbol_name": "InnerClass.do_nested", "new_code": new_body}, fs
     )
 
     assert res.status.value == "SUCCESS"
@@ -389,7 +389,7 @@ class OuterClass:
 
     # 2. Target not found
     res = _run_atom(
-        "replace_symbol", "file.py", {"symbol_name": "NonExistentMethod", "new_code": "pass"}, fs
+        "replace_symbol", "file.py", {"symbol_name": "OuterClass.NonExistentMethod", "new_code": "pass"}, fs
     )
     assert res.status.value == "FAILED"
     assert "not found" in res.message
@@ -419,7 +419,7 @@ def corrupted_syntax()
     fs = {"file.py": code}
 
     # Tree-sitter's fault tolerance should still locate good_method accurately.
-    res = _run_atom("delete_symbol", "file.py", {"symbol_name": "good_method"}, fs)
+    res = _run_atom("delete_symbol", "file.py", {"symbol_name": "TargetClass.good_method"}, fs)
     assert res.status.value == "SUCCESS"
     assert "def good_method(self):" not in fs["file.py"]
     # The bad syntax should be completely untouched
@@ -444,7 +444,7 @@ public class TargetClass {
     res = _run_atom(
         "replace_symbol_body",
         "TargetClass.java",
-        {"symbol_name": "originalMath", "new_code": "return 42;"},
+        {"symbol_name": "TargetClass.originalMath", "new_code": "return 42;"},
         fs,
     )
     assert res.status.value == "SUCCESS"
@@ -466,7 +466,7 @@ public class TargetClass {
     assert "}\n}" in fs["TargetClass.java"].replace(" ", "")
 
     # 3. Delete Symbol
-    res = _run_atom("delete_symbol", "TargetClass.java", {"symbol_name": "methodToDelete"}, fs)
+    res = _run_atom("delete_symbol", "TargetClass.java", {"symbol_name": "TargetClass.methodToDelete"}, fs)
     assert res.status.value == "SUCCESS"
     assert "methodToDelete" not in fs["TargetClass.java"]
 
@@ -475,7 +475,7 @@ public class TargetClass {
         "replace_symbol",
         "TargetClass.java",
         {
-            "symbol_name": "originalMath",
+            "symbol_name": "TargetClass.originalMath",
             "new_code": "public int brandNewMath() {\n    return 100;\n}",
         },
         fs,
@@ -498,7 +498,7 @@ class TargetClass {
     res = _run_atom(
         "replace_symbol_body",
         "TargetClass.kt",
-        {"symbol_name": "originalMath", "new_code": "return 42"},
+        {"symbol_name": "TargetClass.originalMath", "new_code": "return 42"},
         fs,
     )
     assert res.status.value == "SUCCESS"
@@ -526,7 +526,7 @@ impl TargetClass {
     fs = {"target.rs": code}
 
     res = _run_atom(
-        "replace_symbol_body", "target.rs", {"symbol_name": "original_math", "new_code": "42"}, fs
+        "replace_symbol_body", "target.rs", {"symbol_name": "TargetClass.original_math", "new_code": "42"}, fs
     )
     assert res.status.value == "SUCCESS", getattr(res, "message", "unknown error")
     assert "42" in fs["target.rs"]
@@ -551,7 +551,7 @@ export class TargetClass {
     res = _run_atom(
         "replace_symbol_body",
         "TargetClass.ts",
-        {"symbol_name": "originalMath", "new_code": "return 42;"},
+        {"symbol_name": "TargetClass.originalMath", "new_code": "return 42;"},
         fs,
     )
     assert res.status.value == "SUCCESS"
@@ -674,17 +674,17 @@ def test_syntax_error_recovery_e2e():
     java = JavaCodeStructure()
     code = "public class T { public void broken() { int x = 1; /* no semi */ } public void valid() { int y = 2; } }"
     # Tree-sitter still manages to find the valid symbol
-    res = java.extract_symbol(code, "valid")
+    res = java.extract_symbol(code, "T.valid")
     assert "int y" in res
     # Verify mutation is safely applied despite broken syntax
-    res2 = java.replace_symbol(code, "valid", "public void replaced() {}")
+    res2 = java.replace_symbol(code, "T.valid", "public void replaced() {}")
     assert "replaced" in res2
 
 
 def test_multi_byte_utf8_truncation():
     kt = KotlinCodeStructure()
     code = 'class A { fun start() { val x = "🚀🚀🚀"; } }'
-    res = kt.replace_symbol(code, "start", 'fun replaced() { val y = "🥳"; }')
+    res = kt.replace_symbol(code, "A.start", 'fun replaced() { val y = "🥳"; }')
     assert "🥳" in res
     assert "🚀🚀🚀" not in res
     # if byte slicing failed, encode/decode would throw UnicodeDecodeError
@@ -693,7 +693,7 @@ def test_multi_byte_utf8_truncation():
 def test_crlf_safety():
     ts = TypeScriptCodeStructure()
     code = "class Safe {\r\n  test() {\r\n    let a = 1;\r\n  }\r\n}"
-    res = ts.replace_symbol_body(code, "test", "let b = 2;")
+    res = ts.replace_symbol_body(code, "Safe.test", "let b = 2;")
     # Ensure no exceptions on body replace with \r\n base string margins
     assert "let b = 2;" in res
 
@@ -741,8 +741,8 @@ public class SpringHandler extends BaseFilter implements Handler, Serializable {
     assert "Handler" in markers["SpringHandler"]["extends"]
     assert "Serializable" in markers["SpringHandler"]["extends"]
 
-    assert "handle" in markers
-    assert "PostMapping" in markers["handle"]["decorators"]
+    assert "SpringHandler.handle" in markers
+    assert "PostMapping" in markers["SpringHandler.handle"]["decorators"]
 
 
 def test_atom_polyglot_framework_markers_typescript_nest() -> None:
@@ -766,8 +766,8 @@ export class NestComponent extends BaseAPI implements IHandler {
     assert "BaseAPI" in markers["NestComponent"]["extends"]
     assert "IHandler" in markers["NestComponent"]["extends"]
 
-    assert "execute" in markers
-    decorators = "".join(markers["execute"]["decorators"])
+    assert "NestComponent.execute" in markers
+    decorators = "".join(markers["NestComponent.execute"]["decorators"])
     assert "Get" in decorators
     assert "UseGuards" in decorators
 
@@ -827,5 +827,5 @@ public class Malformed {
     res = _run_atom("extract_framework_markers", "Malformed.java", {}, fs)
     assert res.status.value == "SUCCESS"
     markers = res.exports["markers"]
-    assert "valid" in markers
-    assert "GetMapping" in markers["valid"]["decorators"]
+    assert "Malformed.valid" in markers
+    assert "GetMapping" in markers["Malformed.valid"]["decorators"]

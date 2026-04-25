@@ -9,6 +9,10 @@ from specweaver.core.loom.tools.code_structure.tool import CodeStructureTool
 def test_code_structure_tool_respects_hidden_intents() -> None:
     """FR-3 Edge Case: tool definitions cleanly isolate schema rejection via internal list comprehension."""
     mock_atom = MagicMock()
+    mock_atom.get_supported_capabilities.return_value = (
+        {"skeleton", "symbol", "symbol_body", "list", "replace", "add", "delete", "replace_body", "framework_markers"},
+        {"list_symbols": {"visibility", "decorator_filter"}},
+    )
 
     # Empty hidden
     tool = CodeStructureTool(atom=mock_atom, role="implementer", grants=[], hidden_intents=[])
@@ -35,6 +39,10 @@ def test_code_structure_tool_respects_hidden_intents() -> None:
 def test_code_structure_tool_handles_none_intents() -> None:
     """FR-3 Edge Case: internal init transforms None hidden_intents to safe array gracefully."""
     mock_atom = MagicMock()
+    mock_atom.get_supported_capabilities.return_value = (
+        {"skeleton", "symbol", "symbol_body", "list", "replace", "add", "delete", "replace_body", "framework_markers"},
+        {"list_symbols": {"visibility", "decorator_filter"}},
+    )
     tool = CodeStructureTool(atom=mock_atom, role="implementer", grants=[], hidden_intents=None)
     assert tool._hidden_intents == []
 

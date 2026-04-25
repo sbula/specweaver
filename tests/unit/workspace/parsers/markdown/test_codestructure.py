@@ -27,3 +27,22 @@ def test_extract_skeleton_empty(parser: MarkdownCodeStructure) -> None:
 def test_extract_symbol_success(parser: MarkdownCodeStructure) -> None:
     code = "# H1\n\nsymbol content\n"
     assert parser.extract_symbol(code, "H1") == "# H1\n\nsymbol content\n"
+
+
+def test_list_and_extract_dot_notation(parser: MarkdownCodeStructure) -> None:
+    code = """# H1
+Some text
+
+## H2
+Inside H2
+
+### H3
+Inside H3
+"""
+    symbols = parser.list_symbols(code)
+    assert "H1" in symbols
+    assert "H1.H2" in symbols
+    assert "H1.H2.H3" in symbols
+
+    target = parser.extract_symbol(code, "H1.H2.H3")
+    assert "### H3\nInside H3\n" in target

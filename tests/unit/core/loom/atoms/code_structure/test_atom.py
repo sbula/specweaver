@@ -249,3 +249,26 @@ def test_atom_skeletonize_latency_boundary() -> None:
 
     assert result.status == AtomStatus.SUCCESS
     assert (t1 - t0) < 1.0, "Skeletonize logic exceeded NFR-1 1.0s latency bound!"
+
+
+def test_atom_get_supported_capabilities_aggregates_parsers() -> None:
+    executor = MagicMock()
+
+    mock_parser_1 = MagicMock()
+    mock_parser_1.supported_intents.return_value = {"skeleton", "symbol"}
+    mock_parser_1.supported_parameters.return_value = {"visibility"}
+
+    mock_parser_2 = MagicMock()
+    mock_parser_2.supported_intents.return_value = {"skeleton", "framework_markers"}
+    mock_parser_2.supported_parameters.return_value = {"decorator_filter"}
+
+    parsers = {
+        (".py",): mock_parser_1,
+        (".java",): mock_parser_2,
+    }
+
+    atom = CodeStructureAtom(executor, parsers=parsers)
+    intents, params = atom.get_supported_capabilities()
+
+    assert intents == {"skeleton", "symbol", "framework_markers"}
+    assert params == {"visibility", "decorator_filter"}

@@ -55,6 +55,15 @@ class MarkdownCodeStructure(BaseTreeSitterParser):
     def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
         return "(html_block) @comment"
 
+    def supported_intents(self) -> list[str]:
+        return [
+            "skeleton", "symbol", "symbol_body", "list", "replace",
+            "replace_body", "add", "delete", "traceability", "imports"
+        ]
+
+    def supported_parameters(self) -> list[str]:
+        return []
+
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
         return {}
 
@@ -95,7 +104,32 @@ class MarkdownCodeStructure(BaseTreeSitterParser):
     ) -> bool:
         return True
 
+    def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
+        if not name_node.parent:
+            return None
+        section_node = name_node.parent.parent
+        if not section_node or section_node.type != "section":
+            return None
+        scopes: list[str] = []
+        parent_section = section_node.parent
+        while parent_section and parent_section.type == "section":
+            for child in parent_section.children:
+                if child.type == "atx_heading":
+                    for gc in child.children:
+                        if gc.type == "inline":
+                            scopes.insert(0, typing.cast("bytes", gc.text).decode("utf-8").strip())
+            parent_section = parent_section.parent
+
+        if scopes:
+            return ".".join(scopes)
+        return None
+
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
+        target_scope = None
+        target_name = symbol_name
+        if "." in symbol_name:
+            target_scope, target_name = symbol_name.rsplit(".", 1)
+
         query = Query(self.language, self.SCM_SYMBOL_QUERY)
         cursor = QueryCursor(query)
         matches = cursor.matches(tree.root_node)
@@ -104,8 +138,10 @@ class MarkdownCodeStructure(BaseTreeSitterParser):
                 for name_node, block_node in zip(
                     match_dict["name"], match_dict["block"], strict=False
                 ):
-                    if typing.cast("bytes", name_node.text).decode("utf-8").strip() == symbol_name:
-                        return block_node
+                    if typing.cast("bytes", name_node.text).decode("utf-8").strip() == target_name:
+                        scope = self._get_symbol_scope(name_node)
+                        if scope == target_scope:
+                            return block_node
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:

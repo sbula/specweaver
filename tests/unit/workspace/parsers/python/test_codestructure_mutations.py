@@ -25,7 +25,7 @@ def test_auto_indent_multiline_preserves_first_line(parser: PythonCodeStructure)
 def test_replace_symbol_exact_indentation(parser: PythonCodeStructure) -> None:
     code = "class Top:\n    def original(self):\n        return 1\n"
     new_code = "def new_method(self):\n    return 2"
-    mutated = parser.replace_symbol(code, "original", new_code)
+    mutated = parser.replace_symbol(code, "Top.original", new_code)
 
     assert "def new_method(self):" in mutated
     assert "        return 2" in mutated
@@ -35,7 +35,7 @@ def test_replace_symbol_exact_indentation(parser: PythonCodeStructure) -> None:
 def test_replace_symbol_body_indents_nested(parser: PythonCodeStructure) -> None:
     code = "class A:\n    def target(self):\n        pass\n"
     new_code = "print(1)\nprint(2)"
-    mutated = parser.replace_symbol_body(code, "target", new_code)
+    mutated = parser.replace_symbol_body(code, "A.target", new_code)
 
     assert "def target(self):" in mutated
     assert "        print(1)\n        print(2)" in mutated

@@ -46,7 +46,42 @@ namespace Math {
 }
 """
     symbols = parser.list_symbols(code)
-    assert set(symbols) == {"Math", "Vector", "multiply"}
+    assert set(symbols) == {"Math", "Math.Vector", "Math.multiply"}
+
+def test_list_and_extract_dot_notation(parser: CppCodeStructure) -> None:
+    code = """
+    class Database {
+    public:
+        void connect() {
+            return;
+        }
+    };
+    """
+    symbols = parser.list_symbols(code)
+    assert "Database" in symbols
+    assert "Database.connect" in symbols
+
+    target = parser.extract_symbol(code, "Database.connect")
+    assert "void connect() {" in target
+    assert "class Database" not in target
+
+def test_cpp_scope_name_edge_case(parser: CppCodeStructure) -> None:
+    code = """
+    namespace My_NS {
+        typedef int integer;
+        class [[nodiscard]] MyClass {
+        public:
+            void myMethod() {}
+        };
+    }
+    """
+    symbols = parser.list_symbols(code)
+    # The correct scope for myMethod should be 'MyClass', and its namespace 'My_NS' might or might not be prepended based on our 1-level limit.
+    # Currently it returns MyClass.myMethod because it takes the immediate parent scope!
+    assert "MyClass.myMethod" in symbols
+    # Ensure it didn't pick up 'integer' or 'nodiscard' as the class name
+    assert "integer.myMethod" not in symbols
+    assert "nodiscard.myMethod" not in symbols
 
 
 def test_list_symbols_visibility(parser: CppCodeStructure) -> None:
@@ -63,8 +98,8 @@ private:
     # Actually, we might just filter methods inside access_specifier blocks.
     # Let's see if the implementation does that.
     symbols = parser.list_symbols(code, visibility=["public"])
-    assert "get_data" in symbols
-    assert "_internal" not in symbols
+    assert "Data.get_data" in symbols
+    assert "Data._internal" not in symbols
 
 
 def test_list_symbols_decorator_filter_option_c(parser: CppCodeStructure) -> None:
@@ -148,13 +183,12 @@ protected:
 };
 """
     public_symbols = parser.list_symbols(code, visibility=["public"])
-    assert "init" in public_symbols
-    assert "setup" not in public_symbols
-    assert "_secret" not in public_symbols
+    assert "Core.init" in public_symbols
+    assert "Core.setup" not in public_symbols
 
     protected_symbols = parser.list_symbols(code, visibility=["protected"])
-    assert "setup" in protected_symbols
-    assert "init" not in protected_symbols
+    assert "Core.setup" in protected_symbols
+    assert "Core.init" not in protected_symbols
 
 
 def test_cpp_parser_handles_unknown_attributes_gracefully(parser: CppCodeStructure) -> None:

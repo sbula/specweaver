@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def test_polyglot_c_ast_integration(tmp_path: Path) -> None:
     c_file = tmp_path / "main.c"
     c_file.write_text(

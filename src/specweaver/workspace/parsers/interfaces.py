@@ -123,6 +123,21 @@ class CodeStructureInterface(ABC):
     def get_default_directory_ignores(self) -> list[str]:
         """Return default directory paths to scaffold into .specweaverignore (e.g. ['target/', 'node_modules/'])."""
 
+    def supported_intents(self) -> list[str]:
+        """Return a list of operation intents supported by this parser.
+        Default is all standard operations. Can be overridden by specific languages to prune capabilities.
+        """
+        return [
+            "skeleton", "symbol", "symbol_body", "list", "replace",
+            "replace_body", "add", "delete", "traceability", "imports", "framework_markers"
+        ]
+
+    def supported_parameters(self) -> list[str]:
+        """Return a list of optional parameters supported by this parser.
+        Default is all parameters. Can be overridden to prune unsupported filters.
+        """
+        return ["visibility", "decorator_filter"]
+
     @abstractmethod
     def replace_symbol(self, code: str, symbol_name: str, new_code: str) -> str:
         """Replace the entire symbol wrapper (decorators, signature, body)."""

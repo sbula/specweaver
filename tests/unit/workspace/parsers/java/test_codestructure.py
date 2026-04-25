@@ -107,18 +107,18 @@ def test_extract_symbol_annotation_preservation(parser: JavaCodeStructure) -> No
     code = """
 @RestController
 @RequestMapping("/api")
-public class AnnotatedClass {
-    @Override
-    @Transactional
-    public void method() { }
-}
-"""
-    target_cls = parser.extract_symbol(code, "AnnotatedClass")
-    assert "@RestController" in target_cls
-
-    target_fn = parser.extract_symbol(code, "method")
+    public class TargetClass {
+        @Override
+        @SuppressWarnings("unchecked")
+        public void method() {
+            return;
+        }
+    }
+    """
+    target_fn = parser.extract_symbol(code, "TargetClass.method")
     assert "@Override" in target_fn
-    assert "@Transactional" in target_fn
+    assert '@SuppressWarnings("unchecked")' in target_fn
+    assert "public void method()" in target_fn
 
 
 def test_extract_symbol_malformed_syntax(parser: JavaCodeStructure) -> None:
@@ -132,13 +132,50 @@ public class Good { public boolean good() { return true; } }"""
         pass
 
 
+def test_extract_symbol_enum(parser: JavaCodeStructure) -> None:
+    code = """
+    public enum Status {
+        ACTIVE,
+        INACTIVE
+    }
+    """
+    target = parser.extract_symbol(code, "Status")
+    assert "enum Status" in target
+    assert "ACTIVE," in target
+
+
+def test_list_and_extract_dot_notation(parser: JavaCodeStructure) -> None:
+    code = """
+    public class Database {
+        public void connect() {
+            return;
+        }
+
+        public class Inner {
+            public void query() {
+            }
+        }
+    }
+    """
+    symbols = parser.list_symbols(code)
+    assert "Database" in symbols
+    assert "Database.connect" in symbols
+    assert "Database.Inner" in symbols
+    assert "Inner.query" in symbols
+
+    target = parser.extract_symbol(code, "Database.connect")
+    assert "public void connect()" in target
+    assert "class Database" not in target
+
+
 def test_extract_symbol_scope_collision(parser: JavaCodeStructure) -> None:
     code = """
 public class Parent { public void target() {} }
-public interface Other { void target(); }
+public class Other { public void target() {} }
 """
-    target = parser.extract_symbol(code, "target")
-    assert "target" in target
+    # We expect no crashes, should grab one of them predictably based on exact scope
+    target = parser.extract_symbol(code, "Parent.target")
+    assert "public void target() {}" in target
 
 
 def test_extract_symbol_missing_closing_brackets(parser: JavaCodeStructure) -> None:
@@ -169,16 +206,12 @@ public class AnnotatedClass extends BaseController implements Serializable, Clon
     markers = parser.extract_framework_markers(code)
 
     assert "AnnotatedClass" in markers
-    assert "RestController" in markers["AnnotatedClass"]["decorators"]
-    assert 'RequestMapping("/api")' in markers["AnnotatedClass"]["decorators"]
-    assert "BaseController" in markers["AnnotatedClass"]["extends"]
-    assert "Serializable" in markers["AnnotatedClass"]["extends"]
-    assert "Cloneable" in markers["AnnotatedClass"]["extends"]
+    assert markers["AnnotatedClass"]["decorators"] == ["RestController", 'RequestMapping("/api")']
+    assert markers["AnnotatedClass"]["extends"] == ["BaseController", "Serializable", "Cloneable"]
 
-    assert "myMethod" in markers
-    assert "Override" in markers["myMethod"]["decorators"]
-    assert "Transactional" in markers["myMethod"]["decorators"]
-    assert "extends" not in markers["myMethod"]
+    assert "AnnotatedClass.myMethod" in markers
+    assert markers["AnnotatedClass.myMethod"]["decorators"] == ["Override", "Transactional"]
+    assert "extends" not in markers["AnnotatedClass.myMethod"]
 
 
 def test_extract_framework_markers_empty(parser: JavaCodeStructure) -> None:

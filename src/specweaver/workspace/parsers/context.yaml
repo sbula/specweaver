@@ -20,11 +20,16 @@ forbids:
 
 exposes:
   - interfaces
+  - factory
   - python/codestructure
   - java/codestructure
   - kotlin/codestructure
   - rust/codestructure
   - typescript/codestructure
+  - c/codestructure
+  - cpp/codestructure
+  - go/codestructure
+  - markdown/codestructure
   - exclusions
 
 # -- Operational Metadata --------------------------------------------------

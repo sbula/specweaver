@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def test_e2e_cpp_flow(tmp_path: Path) -> None:
     # Set up project
     project_dir = tmp_path / "project"
@@ -25,7 +26,7 @@ public:
     atom = CodeStructureAtom(cwd=project_dir)
 
     # Extract
-    res = atom.run({"intent": "read_symbol", "path": "calc.cpp", "symbol_name": "add"})
+    res = atom.run({"intent": "read_symbol", "path": "calc.cpp", "symbol_name": "Calculator.add"})
     assert res.status.value == "SUCCESS"
     assert "return a + b;" in res.exports["symbol"]
 
@@ -34,7 +35,7 @@ public:
         {
             "intent": "replace_symbol_body",
             "path": "calc.cpp",
-            "symbol_name": "add",
+            "symbol_name": "Calculator.add",
             "new_code": "{\n    return a - b;\n}",
         }
     )
