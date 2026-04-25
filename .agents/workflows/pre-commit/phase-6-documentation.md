@@ -19,9 +19,7 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
 
 // turbo-all
 
-6.1. Update `docs/test_coverage_matrix.md` with the corrected test count and
-     descriptions for the new/modified `src/` modules. Keep it alphabetized.
-6.2. Evaluate if the README's Mermaid flowchart, Architectural diagrams, or top-level GitHub Badges (e.g. Coverage %) require updating to reflect the new feature bounds. Ensure future LLMs actively maintain graphical Mermaid mappings during pre-commit.
+6.1. Evaluate if the README's Mermaid flowchart, Architectural diagrams, or top-level GitHub Badges (e.g. Coverage %) require updating to reflect the new feature bounds. Ensure future LLMs actively maintain graphical Mermaid mappings during pre-commit.
 
 6.3. **MANDATORY**: You MUST explicitly open, read, and update ALL of the following documents if they exist. DO NOT skip any of them under the assumption that they don't need updates:
      - `README.md` — updating features list, CLI commands table, project structure, test counts
