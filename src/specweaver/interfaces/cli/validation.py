@@ -167,6 +167,7 @@ def check(
         raise typer.Exit(code=1) from exc
 
     from specweaver.core.config.dal_resolver import DALResolver
+
     project_root = project_dir or Path.cwd()
     dal_resolver = DALResolver(project_root)
     dal_level = dal_resolver.resolve(target_path)

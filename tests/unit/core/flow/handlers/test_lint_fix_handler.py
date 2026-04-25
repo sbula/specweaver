@@ -293,7 +293,6 @@ class TestLintFixEdgeCases:
         assert set(called_intent["targets"]) == {"src/foo.py", "tests/bar.py"}
 
 
-
 class TestLintFixInterface:
     """Verify standard interface: generate(messages, config)."""
 

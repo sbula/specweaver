@@ -42,6 +42,7 @@ from specweaver.infrastructure.llm._prompt_constants import (
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class _ContentBlock:
     """A single block of content to include in the prompt."""

@@ -101,7 +101,9 @@ class MarkdownCodeStructure(BaseTreeSitterParser):
         matches = cursor.matches(tree.root_node)
         for _match_id, match_dict in matches:
             if "name" in match_dict and "block" in match_dict:
-                for name_node, block_node in zip(match_dict["name"], match_dict["block"], strict=False):
+                for name_node, block_node in zip(
+                    match_dict["name"], match_dict["block"], strict=False
+                ):
                     if typing.cast("bytes", name_node.text).decode("utf-8").strip() == symbol_name:
                         return block_node
         return None
@@ -141,7 +143,9 @@ class MarkdownCodeStructure(BaseTreeSitterParser):
 
         return prefix + new_code.encode("utf-8") + suffix
 
-    def _format_body_injection(self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int) -> bytes:
+    def _format_body_injection(
+        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
+    ) -> bytes:
         start_byte = typing.cast("int", target_block.start_byte)
         end_byte = typing.cast("int", target_block.end_byte)
 

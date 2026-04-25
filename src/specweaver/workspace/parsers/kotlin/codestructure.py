@@ -77,7 +77,12 @@ class KotlinCodeStructure(BaseTreeSitterParser):
         decorator_filter: str | None,
         framework_markers: dict[str, typing.Any],
     ) -> bool:
-        if visibility and "public" in visibility and name_node and self._is_symbol_private(name_node.parent):
+        if (
+            visibility
+            and "public" in visibility
+            and name_node
+            and self._is_symbol_private(name_node.parent)
+        ):
             return False
 
         if decorator_filter:
@@ -123,7 +128,9 @@ class KotlinCodeStructure(BaseTreeSitterParser):
         end_byte = typing.cast("int", node.end_byte)
         return code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
 
-    def _format_body_injection(self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int) -> bytes:
+    def _format_body_injection(
+        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
+    ) -> bytes:
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
         insert_start = target_block.start_byte + 1
         insert_end = target_block.end_byte - 1

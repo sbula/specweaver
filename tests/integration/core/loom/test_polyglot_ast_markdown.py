@@ -102,7 +102,9 @@ def test_markdown_add_symbol_edge_cases() -> None:
     assert atom.add_symbol("   \n", None, "# h1\n") == "# h1\n"
 
     # 2. raises CodeStructureError if target_parent is passed
-    with pytest.raises(CodeStructureError, match="Markdown does not support injecting into target_parent"):
+    with pytest.raises(
+        CodeStructureError, match="Markdown does not support injecting into target_parent"
+    ):
         atom.add_symbol("# content\n", "parent", "## child\n")
 
     # 3. appends newlines cleanly
@@ -156,25 +158,15 @@ def test_markdown_atom_mutate_code() -> None:
     res_replace = _run_atom(
         "replace_symbol",
         "spec.md",
-        {
-            "symbol_name": "Main",
-            "new_code": "# Main modified\n\nnew content\n"
-        },
-        fs
+        {"symbol_name": "Main", "new_code": "# Main modified\n\nnew content\n"},
+        fs,
     )
     assert res_replace.status.value == "SUCCESS"
     assert fs["spec.md"] == "# Main modified\n\nnew content\n"
 
     # Add
     res_add = _run_atom(
-        "add_symbol",
-        "spec.md",
-        {
-            "target_parent": None,
-            "new_code": "## Add\n"
-        },
-        fs
+        "add_symbol", "spec.md", {"target_parent": None, "new_code": "## Add\n"}, fs
     )
     assert res_add.status.value == "SUCCESS"
     assert fs["spec.md"] == "# Main modified\n\nnew content\n\n## Add\n"
-

@@ -15,8 +15,11 @@ def mock_run_context(tmp_path: Path):
         stale_nodes={"flow", "graph"},
     )
 
+
 @patch("specweaver.assurance.graph.topology.TopologyGraph.from_project")
-def test_validate_tests_handler_resolves_topology_targets(mock_from_project, mock_run_context: RunContext):
+def test_validate_tests_handler_resolves_topology_targets(
+    mock_from_project, mock_run_context: RunContext
+):
     """Test that ValidateTestsHandler correctly maps topology nodes to explicit test paths."""
 
     # Mock TopologyGraph
@@ -25,15 +28,21 @@ def test_validate_tests_handler_resolves_topology_targets(mock_from_project, moc
 
     # Mock TopologyNode.yaml_path
     node_flow = MagicMock()
-    node_flow.yaml_path = mock_run_context.project_path / "src" / "specweaver" / "core" / "flow" / "context.yaml"
+    node_flow.yaml_path = (
+        mock_run_context.project_path / "src" / "specweaver" / "core" / "flow" / "context.yaml"
+    )
 
     node_graph = MagicMock()
-    node_graph.yaml_path = mock_run_context.project_path / "src" / "specweaver" / "assurance" / "graph" / "context.yaml"
+    node_graph.yaml_path = (
+        mock_run_context.project_path
+        / "src"
+        / "specweaver"
+        / "assurance"
+        / "graph"
+        / "context.yaml"
+    )
 
-    mock_graph.nodes = {
-        "flow": node_flow,
-        "graph": node_graph
-    }
+    mock_graph.nodes = {"flow": node_flow, "graph": node_graph}
 
     # We must pretend the test directories exist so they aren't pruned to fallback
     def mock_exists(*args, **kwargs):
@@ -52,15 +61,20 @@ def test_validate_tests_handler_resolves_topology_targets(mock_from_project, moc
     assert expected_graph in targets
     assert len(targets) == 2
 
+
 @patch("specweaver.assurance.graph.topology.TopologyGraph.from_project")
-def test_validate_tests_handler_fallback_when_path_not_exists(mock_from_project, mock_run_context: RunContext):
+def test_validate_tests_handler_fallback_when_path_not_exists(
+    mock_from_project, mock_run_context: RunContext
+):
     """Test that ValidateTestsHandler falls back to tests/<kind> when the exact path doesn't exist."""
 
     mock_graph = MagicMock()
     mock_from_project.return_value = mock_graph
 
     node_flow = MagicMock()
-    node_flow.yaml_path = mock_run_context.project_path / "src" / "specweaver" / "core" / "flow" / "context.yaml"
+    node_flow.yaml_path = (
+        mock_run_context.project_path / "src" / "specweaver" / "core" / "flow" / "context.yaml"
+    )
 
     mock_graph.nodes = {"flow": node_flow}
 

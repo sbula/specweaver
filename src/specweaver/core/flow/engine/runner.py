@@ -80,7 +80,11 @@ class PipelineRunner:
         # SF-2 (FR-3): Intrinsically load the DALLevel of the execution target
         if getattr(self._context, "dal_level", None) is None:
             resolver = DALResolver(self._context.project_path)
-            target = self._context.spec_path if self._context.spec_path.exists() else self._context.project_path
+            target = (
+                self._context.spec_path
+                if self._context.spec_path.exists()
+                else self._context.project_path
+            )
             self._context.dal_level = resolver.resolve(target)
 
     def _setup_sandbox_caches(self, wt_dir: str) -> None:

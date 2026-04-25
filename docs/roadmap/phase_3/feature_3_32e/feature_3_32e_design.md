@@ -53,7 +53,7 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
 | **AST Base Class Refactoring** | SF-1 | None | ✅ | ✅ | ✅ | ✅ |
 | **Markdown Parser Completion** | SF-2 | SF-1 | ✅ | ✅ | ✅ | ⬜ |
-| **C/C++ Parser Implementation** | SF-3 | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ |
+| **C/C++ Parser Implementation** | SF-3 | SF-1 | ✅ | ✅ | ✅ | ⬜ |
 | **Go Parser Implementation** | SF-4 | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ |
 | **SQL Parser Implementation** | SF-5 | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -61,5 +61,5 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
 
 ## 6. Session Handoff
 Status: **APPROVED**
-The pre-commit workflow for SF-2 is complete.
-Next Step: Run `/implementation-plan docs/roadmap/phase_3/feature_3_32e/feature_3_32e_design.md SF-3` to begin planning SF-3.
+The implementation plan for SF-3 is complete and approved.
+Next Step: Run `/dev docs/roadmap/phase_3/feature_3_32e/feature_3_32e_sf3_implementation_plan.md` to begin implementation of SF-3.

@@ -117,7 +117,9 @@ class PythonCodeStructure(BaseTreeSitterParser):
         end_byte = typing.cast("int", node.end_byte)
         return code_bytes[:start_byte] + indented_code + code_bytes[end_byte:]
 
-    def _format_body_injection(self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int) -> bytes:
+    def _format_body_injection(
+        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
+    ) -> bytes:
         indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
         start_byte = typing.cast("int", target_block.start_byte)
         end_byte = typing.cast("int", target_block.end_byte)

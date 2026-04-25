@@ -100,7 +100,9 @@ def test_extract_symbol_body_missing_symbol(parser: PythonCodeStructure) -> None
 
 
 def test_extract_symbol_body_empty_code(parser: PythonCodeStructure) -> None:
-    with pytest.raises(CodeStructureError, match="Cannot extract body of 'Missing' from empty code"):
+    with pytest.raises(
+        CodeStructureError, match="Cannot extract body of 'Missing' from empty code"
+    ):
         parser.extract_symbol_body("   ", "Missing")
 
 

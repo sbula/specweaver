@@ -17,6 +17,7 @@ def mock_project_path(tmp_path: Path) -> Path:
 def test_pipeline_runner_injects_dal_level(mock_project_path: Path):
     """PipelineRunner should resolve and inject DALLevel into RunContext."""
     from specweaver.core.flow.handlers.base import RunContext
+
     context = RunContext(project_path=mock_project_path, spec_path=mock_project_path / "spec.yaml")
     pipeline = MagicMock()
     _ = PipelineRunner(pipeline=pipeline, context=context)
@@ -25,11 +26,13 @@ def test_pipeline_runner_injects_dal_level(mock_project_path: Path):
     assert context.dal_level.value == "DAL_D"
     assert not context.dal_level.is_strict
 
+
 def test_pipeline_runner_injects_strict_dal_level(tmp_path: Path):
     proj = tmp_path / "strict_dal_project"
     proj.mkdir()
     (proj / "context.yaml").write_text("operational:\n  dal_level: DAL_A")
     from specweaver.core.flow.handlers.base import RunContext
+
     context = RunContext(project_path=proj, spec_path=proj / "spec.yaml")
     pipeline = MagicMock()
     _ = PipelineRunner(pipeline=pipeline, context=context)
@@ -37,9 +40,11 @@ def test_pipeline_runner_injects_strict_dal_level(tmp_path: Path):
     assert context.dal_level.value == "DAL_A"
     assert context.dal_level.is_strict
 
+
 def test_pipeline_runner_passes_dal_level_to_context(mock_project_path: Path):
     """Ensure the DALLevel makes it into the RunContext created for step handlers."""
     from specweaver.core.flow.handlers.base import RunContext
+
     context = RunContext(project_path=mock_project_path, spec_path=mock_project_path / "spec.yaml")
     pipeline = MagicMock()
     pipeline.steps = []

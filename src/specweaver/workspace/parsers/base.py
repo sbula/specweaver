@@ -71,7 +71,9 @@ class BaseTreeSitterParser(CodeStructureInterface, ABC):
         """Hook to format a full symbol replacement."""
 
     @abstractmethod
-    def _format_body_injection(self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int) -> bytes:
+    def _format_body_injection(
+        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
+    ) -> bytes:
         """Hook to format injecting new code into an existing block body."""
 
     def _extract_marker_text(self, node: typing.Any) -> str:
@@ -174,7 +176,9 @@ class BaseTreeSitterParser(CodeStructureInterface, ABC):
             if "name" in match_dict:
                 for name_node in match_dict["name"]:
                     sym_name = typing.cast("bytes", name_node.text).decode("utf-8")
-                    if self._is_symbol_valid(sym_name, name_node, visibility, decorator_filter, framework_markers):
+                    if self._is_symbol_valid(
+                        sym_name, name_node, visibility, decorator_filter, framework_markers
+                    ):
                         symbols.append(sym_name)
 
         seen = set()
@@ -243,6 +247,7 @@ class BaseTreeSitterParser(CodeStructureInterface, ABC):
         tags: set[str] = set()
 
         import re
+
         trace_pattern = re.compile(r"@trace\(([^)]+)\)")
 
         for _, match_dict in cursor.matches(tree.root_node):

@@ -283,11 +283,17 @@ class TestCheckDALStrictness:
     def test_dal_a_enforces_strictness_exit_1(self, tmp_path, monkeypatch):
         """DAL_A targets treat warnings as failures automatically."""
         from specweaver.commons.enums.dal import DALLevel
-        monkeypatch.setattr("specweaver.core.config.dal_resolver.DALResolver.resolve", lambda self, target: DALLevel.DAL_A)
+
+        monkeypatch.setattr(
+            "specweaver.core.config.dal_resolver.DALResolver.resolve",
+            lambda self, target: DALLevel.DAL_A,
+        )
 
         runner.invoke(app, ["init", "proj", "--path", str(tmp_path)])
         spec = tmp_path / "spec.md"
-        spec.write_text("# Spec\n\n## 1. Purpose\n\nMissing things to trigger warnings.\n", encoding="utf-8")
+        spec.write_text(
+            "# Spec\n\n## 1. Purpose\n\nMissing things to trigger warnings.\n", encoding="utf-8"
+        )
 
         result = runner.invoke(app, ["check", str(spec), "--level", "component"])
 
@@ -297,7 +303,11 @@ class TestCheckDALStrictness:
     def test_dal_e_tolerates_warnings_exit_0(self, tmp_path, monkeypatch):
         """DAL_E targets allow warnings to pass (Exit 0) if no hard failures exist."""
         from specweaver.commons.enums.dal import DALLevel
-        monkeypatch.setattr("specweaver.core.config.dal_resolver.DALResolver.resolve", lambda self, target: DALLevel.DAL_E)
+
+        monkeypatch.setattr(
+            "specweaver.core.config.dal_resolver.DALResolver.resolve",
+            lambda self, target: DALLevel.DAL_E,
+        )
 
         runner.invoke(app, ["init", "proj", "--path", str(tmp_path)])
         spec = tmp_path / "spec.md"
