@@ -4,13 +4,13 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 
 ## DAL-E: Prototyping
 * **`E-SENS-01` ✅: Loom FS Tools** (Legacy: Step 1b)<br>
-  > Loom Filesystem Tools
+  > _(new)_ | Agents and Engine have secure, role-gated filesystem access. Agents see only whitelisted boundaries.
 * **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)<br>
   > `mvp_feature_definition.md` | LLM function-calling via provider-agnostic abstraction. 6 tools (4 filesystem + 2 web) in `loom/commons/research/`. `WorkspaceBoundary` enforcement, `ToolExecutor`, `generate_with_tools()` on adapter. Wired into Reviewer + Planner. **Complete**: boundaries, executor, tool definitions, adapter integration, 3353 tests. See [implementation plan](features/topic_02_sensors/E-SENS-02/E-SENS-02_implementation_plan.md).
 
 ## DAL-D: Internal Tooling
 * **`D-SENS-01` ✅: Topology Graph** (Legacy: Step 7)<br>
-  > Topology Graph (`context.yaml`)
+  > _(new)_ | In-memory dependency graph from `context.yaml` files. Foundation for impact analysis and context-enriched prompts. Language-agnostic code analysis framework for auto-generating missing `context.yaml`.
 * **`D-SENS-02` ✅: Polyglot AST Extractor** (Legacy: 3.22)<br>
   > _(new)_ | _Pivoted from Context Ledger (304 Caching) to prevent LLM memory hallucination._ Provides read_skeleton, read_symbol, and AST mutation capabilities via Tree-Sitter. Target expansion to 25 languages mapping native graph relationships. **Complete**: SF-1 (Read) and SF-2 (Write) across 5 languages fully completed and bound to Engine with 90%+ coverage.
 * **`D-SENS-03` ✅: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)<br>
@@ -22,7 +22,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`C-SENS-02` ✅: Smart Scan Exclusions** (Legacy: 3.32b)<br>
   > _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore`. **Complete:** SF-1, SF-2, SF-3 (Polyglot Hashing), SF-4 (Analyzer DI), and SF-5 (DI Remediation).
 * **`C-SENS-03` 🔜: Symbol Index Gates** (Legacy: 4.1)<br>
-  > `future_capabilities_reference.md` §11
+  > `future_capabilities_reference.md` §11 | Symbol index + anti-hallucination gate
 
 ## DAL-B: High-Assurance
 * **`B-SENS-01` ✅: Artifact Lineage Graph** (Legacy: 3.17)<br>
@@ -30,7 +30,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`B-SENS-02` 🔜: Knowledge Graph Builder** (Legacy: 3.32f)<br>
   > _(new)_ | Constructs a deep class/function-level semantic Knowledge Graph from the AST. Persists the nodes and edges directly to specweaver.db (SQLite) to ensure cross-session persistence (no rebuilding from scratch on boot). Wraps local query operations in NetworkX purely for fast in-memory execution over the persistent SQL data. **-> NOTE: Once implemented, use the graph to extract active workspace languages and dynamically inject them into CodeStructureAtom to perfectly prune unsupported tool schemas.**
 * **`B-SENS-03` 🔜: AST Semantic Chunking** (Legacy: 4.2)<br>
-  > `future_capabilities_reference.md` §3. _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) for RAG source patterns, embedder config, query rewriting — ORIGINS.md § CrewAI)_
+  > `future_capabilities_reference.md` §3 | AST-based semantic chunking (RAG foundation). _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) for RAG source patterns, embedder config, query rewriting — ORIGINS.md § CrewAI)_
 
 ## DAL-A: Mission-Critical
 * **`A-SENS-01` ✅: Deep Semantic Hashing** (Legacy: 3.32)<br>
@@ -38,4 +38,4 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`A-SENS-02` 🔜: Postgres pgvector Sidecar** (Legacy: 3.33 / 5.1)<br>
   > _(new)_ | Toggle between local SQLite/BM25 (Bicycle mode) and a unified **PostgreSQL (Apache AGE + pgvector)** sidecar (Rocket mode) to map cross-service GraphRAG topologies and vectors in a single transactional backend. Phase D.1 → D.2
 * **`A-SENS-03` 🔜: Event-Driven Knowledge Graph** (Legacy: 5.2)<br>
-  > Phase D
+  > Phase D | Event-driven knowledge graph (EDKG) — file/commit triggers update nodes/edges

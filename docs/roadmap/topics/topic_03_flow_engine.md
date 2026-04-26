@@ -4,9 +4,9 @@ This document tracks all capabilities related to the pipeline runner, routing, s
 
 ## DAL-E: Prototyping
 * **`E-FLOW-01` ✅: Config DB** (Legacy: Step 8)<br>
-  > SQLite Config DB & Overrides
+  > _(new)_ | SQLite database at `~/.specweaver/` for multi-project management. Configurable thresholds per validation rule, stored in the project config DB.
 * **`E-FLOW-02` ✅: YAML Pipelines** (Legacy: Step 10)<br>
-  > YAML Pipeline Models
+  > _(new)_ | Define what a pipeline IS — YAML schema, step model (action + target), gate definitions, parser. No execution yet, just the data model and parsing.
 * **`E-FLOW-03` ✅: Multi-Provider Registry** (Legacy: 3.13)<br>
   > _(split from original 3.12)_ | Auto-discovery registry: each adapter is self-describing (`provider_name`, `api_key_env_var`, `default_costs`). System scans `llm/adapters/` at import → builds registry automatically. Adding a new provider = one file, zero other changes. **Complete**: Registry auto-discovery, schemas V10, 5 adapters (Gemini, OpenAI, Anthropic, Mistral, Qwen), factory integration, and `sw config set-provider`. 3531 tests.
 
@@ -14,7 +14,7 @@ This document tracks all capabilities related to the pipeline runner, routing, s
 * **`D-FLOW-01` ✅: Pipeline Runner** (Legacy: Step 11)<br>
   > SQLite Pipeline Runner & State Persistence
 * **`D-FLOW-02` ✅: sw run CLI** (Legacy: Step 13)<br>
-  > `sw run` CLI & Enterprise Logging
+  > _(new)_ | `sw run` command to invoke pipelines from CLI. Rich step-by-step progress. `--verbose` / `--json` output. Robust error handling with friendly one-liners. Structured file-based logging across all SpecWeaver modules.
 * **`D-FLOW-03` ✅: Static Model Routing** (Legacy: 3.14)<br>
   > _(split from original 3.12)_ | Map task types to models in config: `review → claude`, `implement → gemini-pro`. Uses registry to resolve provider+model. No AI, no learning — pure user configuration. **Complete:** 3568 tests total.
 * **`D-FLOW-04` ✅: Unified Runner Architecture** (Legacy: 3.16)<br>
@@ -30,6 +30,10 @@ This document tracks all capabilities related to the pipeline runner, routing, s
 * **`C-FLOW-04` 🔜: Work Packet Bundling** (Legacy: 3.49)<br>
   > _(inspired by Cavekit)_ | Optimizes the Dynamic DAG Topology Dispatcher (3.27) by bundling tiny, independent components into aggregated "Work Packets" assigned to a single Git Worktree. Reduces Git I/O overhead and LLM context initialization tokens drastically.
 
+* **`C-FLOW-05` ✅: Interactive Gate Variables (HITL)** (Legacy: 3.26c)<br>
+  > _(new)_ | Immediately actionable. Updates `PromptBuilder` to explicitly isolate human `GateType.HITL` rejections into a mathematically bound `<dictator-overrides>` XML section, granting them strict promotional weight above standard linter error findings in loop-back generation sequences. **Complete**: 3934 tests.
+* **`C-FLOW-06` ✅: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)<br>
+  > _(new)_ | Execute High-ROI adaptations immediately: Context Condensation (AST Skeletons), Impact-Aware Test Limiting, DAL CI/CD Risk Evaluation, Standards Scaffolding, and Dynamic Context Routing. See [design doc](features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md). **Complete:** All refactorings, Impact-Aware gates, and DI boundaries successfully validated.
 ## DAL-B: High-Assurance
 * **`B-FLOW-01` ✅: Scenario Testing Pipeline** (Legacy: 3.28)<br>
   > _(inspired by agent-system)_ | Dual-pipeline architecture: coding + scenario pipelines run in parallel, meet at JOIN gate. Contract-first (Python Protocols), structured YAML scenarios, arbiter agent for error attribution. **Complete:** 4168 tests.
@@ -44,6 +48,6 @@ This document tracks all capabilities related to the pipeline runner, routing, s
 * **`A-FLOW-01` 🔜: Data-Driven Routing** (Legacy: 4.5d)<br>
   > _(split from original 3.12)_ — Analyze telemetry + friction data to **suggest** (not auto-apply) model swaps. "Model X has 3× more friction on planning tasks than Model Y." See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`A-FLOW-02` 🔜: Hash GC** (Legacy: 5.3)<br>
-  > Phase D
+  > Phase D | Hash-based garbage collection for graph nodes
 * **`A-FLOW-03` 🔜: Entropy GC** (Legacy: 5.9)<br>
   > _(new)_ | An offline cron-agent utilizing the `PostgreSQL` persistent topology graph to mathematically detect and automatically delete completely unreferenced AST nodes/dead code modules across the monolithic repository.

@@ -3,7 +3,7 @@
 - **Feature ID**: 3.32d
 - **Phase**: 3
 - **Status**: DRAFT
-- **Design Doc**: docs/roadmap/features/unmapped/feature_3_32d/feature_3_32d_design.md
+- **Design Doc**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md
 
 ## Feature Overview
 
@@ -71,7 +71,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Inputs**: Polyglot parsers, `PromptBuilder` context lists, CLI initialization paths.
 - **Outputs**: Truncated XML payloads and initialized `.specweaver/` structures.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/unmapped/feature_3_32d/feature_3_32d_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_sf1_implementation_plan.md
 
 ### SF-2: Impact-Aware Testing & DAL Enforcements
 - **Scope**: Re-wires `QARunnerTool` to filter targets via the Topology Graph and implements native DAL boundaries to enforce validation failures.
@@ -79,7 +79,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Inputs**: DAG nodes, Pytest targets, `DALResolver` thresholds.
 - **Outputs**: Truncated Pytest stdout logs, and non-zero OS level exit boundaries.
 - **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/unmapped/feature_3_32d/feature_3_32d_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_sf2_implementation_plan.md
 
 ## Execution Order
 

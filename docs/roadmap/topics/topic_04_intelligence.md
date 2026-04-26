@@ -4,13 +4,13 @@ This document tracks all capabilities related to LLM integration, specification 
 
 ## DAL-E: Prototyping
 * **`E-INTL-01` ✅: LLM Adapter** (Legacy: Step 3)<br>
-  > LLM Adapter (Gemini)
+  > _(new)_ | LLM adapter works. The 2 LLM-dependent spec rules (S03, S07) are implemented. The dependency-direction rule (S04) is wired.
 * **`E-INTL-02` ✅: Spec Drafting** (Legacy: Step 4)<br>
   > Spec Drafting (`sw draft`) & HITL Provider
 
 ## DAL-D: Internal Tooling
 * **`D-INTL-01` ✅: Implementation Generator** (Legacy: Step 5)<br>
-  > Implementation Generator
+  > _(new)_ | The full loop works. Spec -> code -> tests -> validation -> review.
 * **`D-INTL-02` ✅: Feature Decomposition** (Legacy: 3.1)<br>
   > `lifecycle_layers.md` | `SpecKind` enum (feature/component), kind-aware rule presets, `DecomposeHandler`, confidence-based review scoring, `feature_decomposition.yaml` pipeline. **Complete**: 8 components, 1886 tests. See [implementation plan](features/topic_04_intelligence/D-INTL-02/D-INTL-02_implementation_plan.md).
 * **`D-INTL-03` ✅: Explicit Plan Phase** (Legacy: 3.6)<br>
@@ -18,6 +18,8 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`D-INTL-04` 🔜: Design Questionnaire** (Legacy: 3.52)<br>
   > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Eliminates "Blank Canvas" LLM hallucinations during greenfield bootstrap. Injects an interactive CLI wizard (persistence, authentication, archetype choices) bounding the LLM's solution space securely into a localized `context.yaml` before `sw plan` or `sw draft` engages.
 
+* **`D-INTL-05` ✅: Project Metadata Injection** (Legacy: 3.15)<br>
+  > _(new)_ | Inject project name, archetype, language target, date, active config into system prompt; similar to Aider's `get_platform_info()`. **Complete**: 3587 tests.
 ## DAL-C: Enterprise Standard
 * **`C-INTL-01` ✅: Iterative Decomposition** (Legacy: 3.24)<br>
   > `future_capabilities_reference.md` §18 | Builds on basic foundation: DMZ-style iterative loop, automated quality gates, recursive decomposition (feature → sub-features → components).
@@ -38,12 +40,14 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`B-INTL-04` 🔜: Dynamic AI Arbiter** (Legacy: 5.8)<br>
   > _(split from original 3.12)_ — Automatic model selection using Attributed Lifecycle Score (ALS). AI-powered fault attribution across multi-model, cross-lifecycle pipelines. **Science fiction today** — depends on persistent knowledge graph (5.1-5.5), labeled training data (5.5a), and solving the credit assignment problem. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 
+* **`B-INTL-05` 🔜: Dynamic Tool Gating via Archetypes** (Legacy: 3.30a)<br>
+  > _(new)_ | Branch off from 3.30. Intercepts the `context.yaml` active archetype to mathematically remove or inject specific JSON Schema Tool Definitions (`list_symbols`) to the Agent at generation runtime, strictly enforcing framework-specific capabilities.
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>
   > _(inspired by Cavekit)_ | Branches the Arbiter Agent into the `sw draft` phase to run a Red Team adversarial challenge on the Spec. Mathematically disproves/attacks the L3 Spec for contradictions and edge-cases *before* generation, minimizing downstream rollout failures.
 * **`A-INTL-02` 🔜: LLM Symbolic Execution** (Legacy: 4.14)<br>
   > _(new)_ | Using heuristics to actively guide strict symbolic compilers (like KLEE) by aggressively pruning execution trees to natively discover 0-days.
 * **`A-INTL-03` 🔜: Socratic Drafting** (Legacy: 5.6)<br>
-  > Phase A+B (seeds in Phase 2)
+  > Phase A+B (seeds in Phase 2) | Socratic drafting flow — topology-aware questioning during `sw draft`
 * **`A-INTL-04` 🔜: Memory Consolidation** (Legacy: 5.7)<br>
   > _(new)_ When new knowledge overlaps with existing, LLM decides: keep, update, delete, or insert_new. Prevents infinite knowledge growth. _(Blueprint: CrewAI's `consolidation_threshold` and merge logic — ORIGINS.md § CrewAI)_

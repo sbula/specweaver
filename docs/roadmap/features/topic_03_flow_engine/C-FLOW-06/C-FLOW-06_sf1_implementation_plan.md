@@ -1,7 +1,7 @@
 # Implementation Plan: Context Condensation & Scaffolding [SF-1]
 - **Feature ID**: 3.32d
 - **Sub-Feature**: SF-1 — Context Condensation & Scaffolding
-- **Design Document**: docs/roadmap/features/unmapped/feature_3_32d/feature_3_32d_design.md
+- **Design Document**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md
 - **Design Section**: §Sub-Feature Breakdown -> SF-1
 - **Status**: APPROVED
 

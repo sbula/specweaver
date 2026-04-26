@@ -1,9 +1,9 @@
 # Implementation Plan: Adaptive Assurance Standards [SF-1: Adaptive Standard Configurations]
 - **Feature ID**: 3.32a
 - **Sub-Feature**: SF-1 — Adaptive Standard Configurations
-- **Design Document**: docs/roadmap/features/unmapped/feature_3_32a/feature_3_32a_design.md
+- **Design Document**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
-- **Implementation Plan**: docs/roadmap/features/unmapped/feature_3_32a/feature_3_32a_sf1_implementation_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_sf1_implementation_plan.md
 - **Status**: DRAFT
 
 ## Research Notes

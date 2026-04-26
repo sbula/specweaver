@@ -4,7 +4,7 @@ This document tracks all capabilities related to static analysis, linting, rules
 
 ## DAL-E: Prototyping
 * **`E-VAL-01` ✅: Core Validation Engine** (Legacy: Step 2)<br>
-  > Validation Engine (Foundation)
+  > _(new)_ | `sw check path/to/spec.md` runs rules and reports results. This is the highest-leverage MVP feature — it proves the core concept without LLM cost.
 * **`E-VAL-02` ✅: Auto-Discover Standards** (Legacy: 3.5)<br>
   > _(new)_ | Extend `sw scan --standards` → extract naming, error handling, type hints, docstring style, test patterns, import patterns from code (Python + JS/TS). Store in DB (schema v6 `project_standards` table). Auto-inject via `PromptBuilder.add_standards()`. Bootstrap `CONSTITUTION.md` from conventions. **Complete**: 4 sub-phases (Python analyzer, scanner+CLI+DB, JS/TS analyzers, constitution bootstrap), 2774 tests. See [implementation plan](features/topic_05_validation/E-VAL-02/E-VAL-02_implementation_plan.md). _(inspired by [Agent OS v3](https://github.com/buildermethods/agent-os))_
 
@@ -16,6 +16,8 @@ This document tracks all capabilities related to static analysis, linting, rules
 * **`D-VAL-03` ✅: Polyglot QARunner** (Legacy: 3.19)<br>
   > _(new)_ | Wraps target-language CLI commands (`cargo`, `gradlew`, `pytest`) into a unified `LanguageRunnerInterface`. Treats execution as a Black Box (validating exit codes/stderr) to prevent Python AST hardcoding. **Complete.**
 
+* **`D-VAL-04` ✅: Adaptive Assurance Standards** (Legacy: 3.32a)<br>
+  > _(new)_ | Toggles `StandardsAnalyzer` behavior between mining legacy styles ("Mimicry") vs injecting built-in idiomatic targets ("Best Practice"). Configured via `specweaver.toml`. Prevents the "Empty Repository" context vacuum for greenfield builds. **Complete:** SF-1 (Adaptive standard targeting) and SF-2 (Context Condensation Skeletons) fully integrated and heavily optimized.
 ## DAL-C: Enterprise Standard
 * **`C-VAL-01` ✅: Constitution Artifact** (Legacy: 3.2)<br>
   > `constitution_template.md` | Project-wide governing doc (`CONSTITUTION.md`) injected into every LLM call. Walk-up resolution, configurable size limits, CLI management (`sw constitution show/check/init`). **Complete**: constitution loader, PromptBuilder integration, handler threading, CLI commands, 1974 tests. See [implementation plan](features/topic_05_validation/C-VAL-01/C-VAL-01_implementation_plan.md). _(inspired by [Spec Kit](https://github.com/github/spec-kit), [DMZ SOUL.md](https://github.com/TheMorpheus407/the-dmz))_
@@ -42,6 +44,6 @@ This document tracks all capabilities related to static analysis, linting, rules
 * **`A-VAL-02` 🔜: Symbolic Math Validation** (Legacy: 3.39)<br>
   > _(new)_ | Specialized rules to formally verify mathematical/ML calculations (e.g., FinBERT, trading algorithms) generated in execution code.
 * **`A-VAL-03` 🔜: Mutation Testing Gates** (Legacy: 4.7)<br>
-  > `future_capabilities_reference.md` §13, §14
+  > `future_capabilities_reference.md` §13, §14 | Verification gates (mutation testing, assertion density)
 * **`A-VAL-04` 🔜: Rust PyO3 Validations** (Legacy: Backlog)<br>
-  > *(Please refer to backlog.md for the full technical debt and postponed items description)*
+  > _(new)_ | To mathematically unlock 10x-50x performance scaling and guarantee absolute memory-safe LLM sandboxing. Static Validation Rule Pipelines: Rewrite regex-heavy mathematical validation tasks natively in compiled Rust engine cores to instantly evaluate multi-thousand line specs.

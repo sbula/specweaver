@@ -10,7 +10,7 @@ This document tracks all capabilities related to the User Interface, visual dash
 * **`E-UI-03` 🔜: File Watcher** (Legacy: 3.37)<br>
   > _(inspired by PasteMax)_ | Auto-re-validate specs on disk change; DX polish for iterative authoring
 * **`E-UI-04` 🔜: CLI Command Arch Separation** (Legacy: Backlog)<br>
-  > *(Please refer to backlog.md for the full technical debt and postponed items description)*
+  > _(new)_ | Audit and refactor the `specweaver/interfaces/cli/` layer. Strictly separate Discovery (e.g. `sw scan`) from Validation (e.g. `sw check`). Document the exact use case, DAL interaction, and expected behavior for every CLI entrypoint to eliminate ambiguity.
 
 ## DAL-D: Internal Tooling
 * **`D-UI-01` 🔧: REST API Server** (Legacy: 3.7)<br>
@@ -32,10 +32,10 @@ This document tracks all capabilities related to the User Interface, visual dash
 * **`B-UI-01` 🔜: Real-Time Feedback Sensor Dashboard** (Legacy: 4.10b)<br>
   > _(new)_ | Exposes the internal `PipelineRunner` DAG state transitions and file-diffs as a real-time streaming graph.
 * **`B-UI-02` 🔜: External Proprietary Validation** (Legacy: 6.2)<br>
-  > *(Description not found)*
+  > _(new)_ | Adapt an internal pipeline designed specifically to ingest public `SWE-bench` tickets, generate code, and produce normalized dashboard validation of Attributed Lifecycle Scores regression.
 
 ## DAL-A: Mission-Critical
 * **`A-UI-01` 🔜: Dark Factory Compliance Logging** (Legacy: 4.12)<br>
   > _(new)_ | Integrating with Artifact Lineage to emit immutable, signed ledgers matching Model IDs/Spec Hashes directly to physical Lines of Code for Enterprise regulatory audits.
 * **`A-UI-02` 🔜: Standardized Benchmarking CI** (Legacy: 6.1)<br>
-  > *(Description not found)*
+  > _(new)_ | Execute `sw init`, `draft`, and `check` workflows externally outside SpecWeaver's boundary (e.g., orchestrating an external 20-microservice proprietary trading system).

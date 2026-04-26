@@ -3,7 +3,7 @@
 - **Feature ID**: 3.32a
 - **Phase**: 3
 - **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/unmapped/feature_3_32a/feature_3_32a_design.md
+- **Design Doc**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_design.md
 
 ## Feature Overview
 
@@ -69,7 +69,7 @@ Based on the explicit request for **ROI analysis and optimization**, an analysis
 - **Inputs**: `specweaver.toml` config settings, greenfield target paths.
 - **Outputs**: Resolved built-in standard rules payloads.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/unmapped/feature_3_32a/feature_3_32a_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_sf1_implementation_plan.md
 
 ### SF-2: Context Condensation Skeletons (Performance ROI)
 - **Scope**: Integration of AST extraction skeletons natively into the context layer limiting token payload sizes.
@@ -77,7 +77,7 @@ Based on the explicit request for **ROI analysis and optimization**, an analysis
 - **Inputs**: Legacy source dependencies topological structures.
 - **Outputs**: Truncated prompt boundaries reflecting identical semantic data maps.
 - **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/unmapped/feature_3_32a/feature_3_32a_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_sf2_implementation_plan.md
 
 ## Execution Order
 

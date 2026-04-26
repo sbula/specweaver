@@ -3,7 +3,7 @@
 - **Feature ID**: feature_3_15
 - **Phase**: 3
 - **Status**: APPROVED
-- **Design Doc**: docs/roadmap/features/unmapped/feature_3_15/feature_3_15_design.md
+- **Design Doc**: docs/roadmap/features/topic_04_intelligence/D-INTL-05/D-INTL-05_design.md
 
 ## Feature Overview
 
@@ -66,7 +66,7 @@ Single feature — no decomposition.
 - **Inputs**: Current `SpecWeaverSettings`, Project name from context, system state.
 - **Outputs**: `<project_metadata>` tag within LLM prompt.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/unmapped/feature_3_15/feature_3_15_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/D-INTL-05/feature_3_15_sf1_implementation_plan.md
 
 ## Execution Order
 

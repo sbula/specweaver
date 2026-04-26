@@ -1,7 +1,7 @@
 # Implementation Plan: Refactoring Phase 3 Optimizations [SF-2: Impact-Aware Testing & DAL Enforcements]
 - **Feature ID**: 3.32d
 - **Sub-Feature**: SF-2 — Impact-Aware Testing & DAL Enforcements
-- **Design Document**: docs/roadmap/features/unmapped/feature_3_32d/feature_3_32d_design.md
+- **Design Document**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md
 - **Status**: FINAL
 - **Approvals**: HITL Phase 4 Approved
 
