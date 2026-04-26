@@ -32,10 +32,10 @@ This document tracks all capabilities related to the User Interface, visual dash
 * **`B-UI-01` 🔜: Real-Time Feedback Sensor Dashboard** (Legacy: 4.10b)<br>
   > _(new)_ | Exposes the internal `PipelineRunner` DAG state transitions and file-diffs as a real-time streaming graph.
 * **`B-UI-02` 🔜: External Proprietary Validation** (Legacy: 6.2)<br>
-  > _(new)_ | Adapt an internal pipeline designed specifically to ingest public `SWE-bench` tickets, generate code, and produce normalized dashboard validation of Attributed Lifecycle Scores regression.
+  > _(new)_ | Execute `sw init`, `draft`, and `check` workflows externally outside SpecWeaver's boundary (e.g., orchestrating an external 20-microservice proprietary trading system).
 
 ## DAL-A: Mission-Critical
 * **`A-UI-01` 🔜: Dark Factory Compliance Logging** (Legacy: 4.12)<br>
   > _(new)_ | Integrating with Artifact Lineage to emit immutable, signed ledgers matching Model IDs/Spec Hashes directly to physical Lines of Code for Enterprise regulatory audits.
 * **`A-UI-02` 🔜: Standardized Benchmarking CI** (Legacy: 6.1)<br>
-  > _(new)_ | Execute `sw init`, `draft`, and `check` workflows externally outside SpecWeaver's boundary (e.g., orchestrating an external 20-microservice proprietary trading system).
+  > _(new)_ | Adapt an internal pipeline designed specifically to ingest public `SWE-bench` tickets, generate code, and produce normalized dashboard validation of Attributed Lifecycle Scores regression.
