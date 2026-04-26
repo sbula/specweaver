@@ -16,10 +16,10 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ### 🟡 US-1: The Validation Engine
 **Benefit:** *I can write a spec in Markdown and mathematically prove its structural quality before writing any code.*
 *   **Core Required (MVS):**
-    *   `✅` **Step 1:** CLI Scaffold
-    *   `✅` **Step 1b:** Loom Filesystem Tools
-    *   `✅` **Step 2:** Validation Engine (Foundation)
-    *   `✅` **Step 3:** LLM Adapter (Gemini)
+    *   `✅` **E-UI-01:** CLI Scaffold
+    *   `✅` **E-SENS-01:** Loom Filesystem Tools
+    *   `✅` **E-VAL-01:** Validation Engine (Foundation)
+    *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
 *   **Sub-Story Add-Ons:**
     *   **Enforce Internal Architecture:**
         *   `✅` 3.20a Internal Layer Enforcement
@@ -33,11 +33,11 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ### 🟡 US-2: The Interactive Drafter
 **Benefit:** *I can have the LLM co-author a spec with me section-by-section, interactively prompting me for missing context.*
 *   **Core Required (MVS):**
-    *   `✅` **Step 1:** CLI Scaffold
-    *   `✅` **Step 1b:** Loom Filesystem Tools
-    *   `✅` **Step 3:** LLM Adapter (Gemini)
-    *   `✅` **Step 4:** Spec Drafting (`sw draft`) & HITL Provider
-    *   `✅` **Step 4:** Spec Review Engine
+    *   `✅` **E-UI-01:** CLI Scaffold
+    *   `✅` **E-SENS-01:** Loom Filesystem Tools
+    *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
+    *   `✅` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
+    *   `✅` **E-INTL-02:** Spec Review Engine
 *   **Sub-Story Add-Ons:**
     *   **Surgical Spec Refactoring:**
         *   `[ ]` 3.29 Markdown AST Mutators
@@ -46,9 +46,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 **Benefit:** *I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.*
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
-    *   `✅` **Step 5:** Implementation Generator
-    *   `✅` **Step 5:** Code Validation Rules (C01-C08, Type hints, Coverage)
-    *   `✅` **Step 12:** QA Runner Tool & Lint-Fix Reflection Loop
+    *   `✅` **D-INTL-01:** Implementation Generator
+    *   `✅` **D-INTL-01:** Code Validation Rules (C01-C08, Type hints, Coverage)
+    *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   **Multi-Language Test Support:**
         *   `[ ]` 3.19 Polyglot QA Runner
@@ -58,13 +58,13 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ### 🟡 US-4: Context-Aware Flow Orchestration
 **Benefit:** *I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.*
 *   **Core Required (MVS):**
-    *   `✅` **Step 2:** Validation Engine
-    *   `✅` **Step 7:** Topology Graph (`context.yaml`)
-    *   `✅` **Step 8:** SQLite Config DB & Overrides
+    *   `✅` **E-VAL-01:** Validation Engine
+    *   `✅` **D-SENS-01:** Topology Graph (`context.yaml`)
+    *   `✅` **E-FLOW-01:** SQLite Config DB & Overrides
     *   `✅` **Step 9:** Context-Enriched Prompts (Token Budgeting, Injection Selectors)
-    *   `✅` **Step 10:** YAML Pipeline Models
-    *   `✅` **Step 11:** SQLite Pipeline Runner & State Persistence
-    *   `✅` **Step 13:** `sw run` CLI & Enterprise Logging
+    *   `✅` **E-FLOW-02:** YAML Pipeline Models
+    *   `✅` **D-FLOW-01:** SQLite Pipeline Runner & State Persistence
+    *   `✅` **D-FLOW-02:** `sw run` CLI & Enterprise Logging
 *   **Sub-Story Add-Ons:**
     *   **Parallel Multi-Spec Execution:**
         *   `✅` 3.27 Multi-Spec Pipeline Fan-Out
@@ -80,10 +80,10 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config & Flow Engine)*
     *   `✅` **3.10 / 3.22:** Context Ledgers & Workspace Boundaries
-    *   `✅` **3.22:** Base Tree-Sitter AST Skeleton Extractor
-    *   `✅` **3.25:** Router-based flow control
-    *   `✅` **3.26:** Git Worktree Bouncer (Safe diff striping)
-    *   `✅` **3.32e:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
+    *   `✅` **D-SENS-02:** Base Tree-Sitter AST Skeleton Extractor
+    *   `✅` **C-FLOW-02:** Router-based flow control
+    *   `✅` **D-EXEC-02:** Git Worktree Bouncer (Safe diff striping)
+    *   `✅` **D-SENS-03:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
 *   **Sub-Story Add-Ons:**
     *   **Mathematical Speed & Security (Rust):**
         *   `[ ]` Polyglot AST Extractor via Rayon (Rust PyO3)
@@ -94,7 +94,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 **Benefit:** *I can review specs and control SpecWeaver pipelines from my browser on a tablet, without needing to run the heavy AI engine locally.*
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
-    *   `✅` **3.25:** Router-based flow control
+    *   `✅` **C-FLOW-02:** Router-based flow control
     *   `[ ]` **3.7 / 4.10:** `sw serve` REST API Server
     *   `[ ]` **3.8 / 4.10:** Web dashboard
 *   **Sub-Story Add-Ons:**
@@ -108,9 +108,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 **Benefit:** *I can interact with the engine and approve/reject generated code seamlessly inside VS Code without switching to the terminal.*
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
-    *   `✅` **3.25:** Router-based flow control
+    *   `✅` **C-FLOW-02:** Router-based flow control
     *   `[ ]` **3.7 / 4.10:** `sw serve` REST API Server
-    *   `[ ]` **3.35:** VS Code Extension
+    *   `[ ]` **D-UI-03:** VS Code Extension
 *   **Sub-Story Add-Ons:**
     *   **Strict UI Data Contracts:**
         *   `[ ]` 3.34 Structured output schemas
@@ -122,8 +122,8 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 **Benefit:** *When starting a new project, an interactive wizard bounds the LLM's architecture choices so it doesn't hallucinate invalid tech stacks.*
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Interactive Drafter)*
-    *   `✅` **Step 7:** Topology Graph
-    *   `[ ]` **3.52:** Interactive Design Questionnaire
+    *   `✅` **D-SENS-01:** Topology Graph
+    *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire
 *   **Sub-Story Add-Ons:**
     *   **Socratic Context Gathering:**
         *   `[ ]` 5.6 Socratic drafting flow
@@ -136,7 +136,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
     *   `[ ]` **3.45 / 4.9:** Containerized deployment (Podman/Docker)
-    *   `[ ]` **3.40:** Native CLI Action Nodes
+    *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   **Extreme Execution Paranoia:**
         *   `[ ]` 3.46 Functional Agent Sandboxing (Black Box Ledgers)
@@ -149,7 +149,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `[ ]` **3.32f / 5.1:** Persistent Knowledge Graph Builder (SQLite)
-    *   `[ ]` **3.33a:** Pipeline visualization (`sw graph` HTML export)
+    *   `[ ]` **C-UI-01:** Pipeline visualization (`sw graph` HTML export)
 *   **Sub-Story Add-Ons:**
     *   **Code-to-Spec Drift Checking:**
         *   `[ ]` 3.18 AST Drift Detection
@@ -159,9 +159,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Context Prompts)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[ ]` **3.32f:** Persistent Knowledge Graph Builder (SQLite)
+    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **3.33 / 4.3:** Postgres (Apache AGE + pgvector) sidecar
-    *   `[ ]` **4.2:** AST-based semantic chunking
+    *   `[ ]` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
     *   **Dynamic Knowledge Relevance:**
         *   `[ ]` 5.4 Hybrid RAG orchestration (composite scoring)
@@ -176,11 +176,11 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Spec Drafting)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[ ]` **3.32f:** Persistent Knowledge Graph Builder (SQLite)
-    *   `[ ]` **3.43:** Reverse-Weaving (`sw capture`)
+    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `[ ]` **C-INTL-03:** Reverse-Weaving (`sw capture`)
 *   **Sub-Story Add-Ons:**
     *   **Massive Scale Context Retrieval:**
-        *   `[ ]` **3.33:** Postgres (Apache AGE + pgvector) sidecar
+        *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
     *   **Automated Code Purging:**
         *   `[ ]` 5.9 Repository Entropy & Garbage Collection (finding dead code)
 
@@ -189,7 +189,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[ ]` **3.39:** Symbolic Math Validation
+    *   `[ ]` **A-VAL-02:** Symbolic Math Validation
 *   **Sub-Story Add-Ons:**
     *   **Symbolic Tree Traversal:**
         *   `[ ]` 4.14 LLM-Guided Symbolic Execution
@@ -202,7 +202,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Spec Review Engine)*
     *   `✅` **US-3 Core** *(provides QA Runner)*
-    *   `[ ]` **3.50:** Pre-Generation Adversarial Spec Review
+    *   `[ ]` **A-INTL-01:** Pre-Generation Adversarial Spec Review
 *   **Sub-Story Add-Ons:**
     *   **Mathematical Mutation Checks:**
         *   `[ ]` 3.42 / 4.7 Semantic Test Completeness & Mutation testing
@@ -214,8 +214,8 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Pipeline Runner)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[ ]` **3.32f:** Persistent Knowledge Graph Builder
-    *   `[ ]` **3.48:** Traceability Matrix UX
+    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder
+    *   `[ ]` **C-UI-02:** Traceability Matrix UX
 *   **Sub-Story Add-Ons:**
     *   **Enterprise Compliance Protocols:**
         *   `[ ]` 4.5b Artifact lineage graph
@@ -244,7 +244,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
-    *   `[ ]` **3.47:** Agent Platform Benchmarking (`sw eval`)
+    *   `[ ]` **B-VAL-04:** Agent Platform Benchmarking (`sw eval`)
 *   **Sub-Story Add-Ons:**
     *   **Continuous Integration:**
         *   `[ ]` 6.1 Standardized Benchmarking CI
@@ -254,14 +254,14 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
     *   `✅` **US-5 Core** *(provides Worktree Bouncer & AST extractors)*
-    *   `✅` **3.27:** Multi-Spec Pipeline Fan-Out
+    *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
     *   `[ ]` **US-9 Core** *(provides Containerized deployment)*
     *   `[ ]` **US-13 Core** *(provides Math Validation)*
     *   `[ ]` **US-14 Core** *(provides Adversarial Review)*
-    *   `[ ]` **6.2:** External Proprietary Validation
+    *   `[ ]` **B-UI-02:** External Proprietary Validation
 *   **Sub-Story Add-Ons:**
     *   **Secure Sandboxed Operations:**
-        *   `[ ]` **3.52:** Interactive Design Questionnaire
+        *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire
     *   **CI/CD Pipeline Integration:**
         *   `[ ]` Custom deployment hooks
 
@@ -270,12 +270,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core**
     *   `✅` **US-5 Core**
-    *   `✅` **3.27:** Multi-Spec Pipeline Fan-Out
-    *   `[ ]` **3.32f:** Persistent Knowledge Graph Builder (SQLite)
-    *   `[ ]` **3.49:** Work Packet Bundling (Coordinated multi-agent dispatch)
+    *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
+    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `[ ]` **C-FLOW-04:** Work Packet Bundling (Coordinated multi-agent dispatch)
 *   **Sub-Story Add-Ons:**
     *   **Cross-Service Contract Validation:**
         *   `[ ]` 3.41 Industry Standard Bridges (Pact.io for consumer-driven contracts)
     *   **Distributed Topology Scaling:**
-        *   `[ ]` **3.33:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
-        *   `[ ]` **3.32:** Deep Semantic Hashing (Rocket Mode streaming)
+        *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
+        *   `[ ]` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)

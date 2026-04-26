@@ -20,7 +20,13 @@ All development, tracking, and prioritization is managed via the 19-Story Master
 
 ---
 
-## Current Focus (Active)
+## The Capability Matrix (DO-178C)
+
+While the Master Story Roadmap tracks *deliverables*, the Capability Matrix acts as the "Periodic Table" of SpecWeaver's internal architecture. It maps every atomic capability (from Phase 1 through Phase 6 + Backlog) against its **Domain Assurance Level (DAL)** and groups them by functional **Topic**.
+
+👉 **[View the full Capability Matrix & Topic Files](capability_matrix.md)**
+
+---
 
 We are currently tracking against the Master Story Roadmap to complete **US-5 (Polyglot Code Understanding)** and **US-19 (Microservice Fleet Orchestration)**. By building out robust parsing support for enterprise languages (C/C++, Markdown, Go), we are securing the physical "Sensors" required to power the downstream engine capabilities like Deep Semantic Hashing and the Persistent Knowledge Graph.
 

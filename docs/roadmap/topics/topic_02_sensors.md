@@ -1,0 +1,41 @@
+# Topic 02: Context & Sensors (Perception)
+
+This document tracks all capabilities related to the AST, knowledge graphs, and workspace understanding.
+
+## DAL-E: Prototyping
+* **`E-SENS-01` ✅: Loom FS Tools** (Legacy: Step 1b)<br>
+  > Loom Filesystem Tools
+* **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)<br>
+  > `mvp_feature_definition.md` | LLM function-calling via provider-agnostic abstraction. 6 tools (4 filesystem + 2 web) in `loom/commons/research/`. `WorkspaceBoundary` enforcement, `ToolExecutor`, `generate_with_tools()` on adapter. Wired into Reviewer + Planner. **Complete**: boundaries, executor, tool definitions, adapter integration, 3353 tests. See [implementation plan](phase_3/feature_3_10/feature_3_10_implementation_plan.md).
+
+## DAL-D: Internal Tooling
+* **`D-SENS-01` ✅: Topology Graph** (Legacy: Step 7)<br>
+  > Topology Graph (`context.yaml`)
+* **`D-SENS-02` ✅: Polyglot AST Extractor** (Legacy: 3.22)<br>
+  > _(new)_ | _Pivoted from Context Ledger (304 Caching) to prevent LLM memory hallucination._ Provides read_skeleton, read_symbol, and AST mutation capabilities via Tree-Sitter. Target expansion to 25 languages mapping native graph relationships. **Complete**: SF-1 (Read) and SF-2 (Write) across 5 languages fully completed and bound to Engine with 90%+ coverage.
+* **`D-SENS-03` ✅: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)<br>
+  > _(new)_ | Targeted expansion of Tree-sitter grammars focusing strictly on high-value enterprise domains: **Markdown** (mandatory for Spec.md traceability bounds), **C/C++** (Systems/Legacy), **Go** (Cloud-Native infrastructure), and **Standard SQL** (baseline ANSI schemas to empower the DB Context Harness), avoiding dialect nightmare traps. **Complete:** Markdown, C/C++, Go, and SQL parsers are completed with Dot-Notation and capability filtering.
+
+## DAL-C: Enterprise Standard
+* **`C-SENS-01` ✅: Spec-Mention Detection** (Legacy: 3.11)<br>
+  > _(new)_ | Scan LLM responses for spec/file names → auto-pull into context for follow-up calls. Pure-logic `llm/mention_scanner/` module + resolver with workspace boundary enforcement. Follow-up injection wired through `Reviewer.mentioned_files` param. **Complete**: scanner, resolver, PromptBuilder integration, follow-up injection, 3353 tests. See [implementation plan](phase_3/feature_3_11/feature_3_11_implementation_plan.md).
+* **`C-SENS-02` ✅: Smart Scan Exclusions** (Legacy: 3.32b)<br>
+  > _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore`. **Complete:** SF-1, SF-2, SF-3 (Polyglot Hashing), SF-4 (Analyzer DI), and SF-5 (DI Remediation).
+* **`C-SENS-03` 🔜: Symbol Index Gates** (Legacy: 4.1)<br>
+  > `future_capabilities_reference.md` §11
+
+## DAL-B: High-Assurance
+* **`B-SENS-01` ✅: Artifact Lineage Graph** (Legacy: 3.17)<br>
+  > `future_capabilities_reference.md` §17 | Core database-backed lineage tracking and #sw-artifact tagging. Enables exact LLM provenance attribution and cost-per-feature analysis while remaining orthogonal to AST dependencies. **Complete**: 3591 tests.
+* **`B-SENS-02` 🔜: Knowledge Graph Builder** (Legacy: 3.32f)<br>
+  > _(new)_ | Constructs a deep class/function-level semantic Knowledge Graph from the AST. Persists the nodes and edges directly to specweaver.db (SQLite) to ensure cross-session persistence (no rebuilding from scratch on boot). Wraps local query operations in NetworkX purely for fast in-memory execution over the persistent SQL data. **-> NOTE: Once implemented, use the graph to extract active workspace languages and dynamically inject them into CodeStructureAtom to perfectly prune unsupported tool schemas.**
+* **`B-SENS-03` 🔜: AST Semantic Chunking** (Legacy: 4.2)<br>
+  > `future_capabilities_reference.md` §3. _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) for RAG source patterns, embedder config, query rewriting — ORIGINS.md § CrewAI)_
+
+## DAL-A: Mission-Critical
+* **`A-SENS-01` ✅: Deep Semantic Hashing** (Legacy: 3.32)<br>
+  > _(new)_ | Replaces shallow file hashing with "Dependency Hashing" (hash changes if imported modules change). Uses Merkle-trees to keep the Topology Graph explicitly in sync without full project crawls. **Complete:** SF-1, SF-2, SF-3, and SF-4 (Incremental Pipeline Bypassing).
+* **`A-SENS-02` 🔜: Postgres pgvector Sidecar** (Legacy: 3.33 / 5.1)<br>
+  > _(new)_ | Toggle between local SQLite/BM25 (Bicycle mode) and a unified **PostgreSQL (Apache AGE + pgvector)** sidecar (Rocket mode) to map cross-service GraphRAG topologies and vectors in a single transactional backend. Phase D.1 → D.2
+* **`A-SENS-03` 🔜: Event-Driven Knowledge Graph** (Legacy: 5.2)<br>
+  > Phase D
