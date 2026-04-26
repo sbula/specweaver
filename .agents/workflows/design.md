@@ -36,7 +36,7 @@ description: "Feature design workflow. Intake → Research → Feature Detail �
 Usage: /design <feature_id>
 ```
 
-Output: `docs/roadmap/phase_<X>/feature_<feature_id>/feature_<feature_id>_design.md`
+Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 
 > [!CAUTION]
 > **MANDATORY SEQUENCING — DO NOT SKIP OR REORDER PHASES.**

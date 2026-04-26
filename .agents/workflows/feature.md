@@ -53,7 +53,7 @@ automatically continues from where the Progress Tracker shows work stopped.
 ## Phase 1: Design
 
 1.1. Locate the Design Document:
-     `docs/proposals/design/phase<X>/<feature_id>_design.md`
+     `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 
 1.2. If it exists and `Status: APPROVED`:
      Read it fully. Extract the sub-feature list and dependency graph.
@@ -81,7 +81,7 @@ For each sub-feature in topological execution order (from the Design Document):
 
 2.3. Read `.agents/workflows/implementation-plan.md` and execute the full
      `/implementation-plan` workflow for this SF.
-     Output: `docs/roadmap/phase<X>/<feature_id>_sf<N>_implementation_plan.md`
+     Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_sf[N]_implementation_plan.md`
      (no `_sf<N>` suffix for non-decomposed features)
 
 2.4. **STOP at Phase 4 HITL gate.** Wait for user response.

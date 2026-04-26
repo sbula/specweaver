@@ -34,7 +34,7 @@ description: "Phase 1: Preparation — read the Design Document, architecture re
      - The existing pipeline YAMLs (`pipelines/*.yaml`)
      - Existing Developer and User Guides (`docs/dev_guides/`, `docs/user_guides/`)
      - Patterns established by completed features (check adjacent impl plans in the same phase dir)
-     - The roadmap (`phase_3_feature_expansion.md`) for downstream feature dependencies
+     - The Capability Matrix (`docs/roadmap/capability_matrix.md`) and User Stories (`docs/roadmap/master_story_roadmap.md`) for downstream feature dependencies
      - The pre-commit quality gate workflow (`.agents/workflows/pre-commit.md`)
 
 > [!IMPORTANT]

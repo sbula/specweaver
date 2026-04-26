@@ -25,10 +25,11 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
      - `README.md` — updating features list, CLI commands table, project structure, test counts
      - `docs/quickstart.md` — new workflows or commands
      - `docs/testing_guide.md` — new test patterns or quality gates
-     - `docs/proposals/specweaver_roadmap.md` — updating the feature's completion status and timeline
+     - `docs/roadmap/master_story_roadmap.md and docs/roadmap/capability_matrix.md` — updating the feature's completion status and timeline
      - `docs/developer_guide.html` - add diagrams and short descriptions for new/updated feature
-     - `docs/roadmap/phase_3_feature_expansion.md` — mark milestone tracking and tables
-     - `docs/roadmap/.../<feature_implementation_plan>.md` — The specific plan for this feature MUST be updated to reflect what was actually implemented (e.g. check off boxes, add notes on deviations).
+     - `docs/roadmap/topics/topic_*.md` — mark milestone tracking and tables
+     - `docs/roadmap/master_story_roadmap.md`
+     - `docs/roadmap/features/[Topic]/[ID]/[ID]_implementation_plan.md` — The specific plan for this feature MUST be updated to reflect what was actually implemented (e.g. check off boxes, add notes on deviations).
 
 6.3. **MANDATORY: Update the architecture reference and developer guide** if this feature
      changed any module placement, dependency direction, layer boundaries, security
