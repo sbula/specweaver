@@ -13,6 +13,25 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ---
 
+## Success Criteria
+
+**The platform is PROVEN when you can:**
+1. ✅ sw init my-app --path . registers and scaffolds the project
+2. ✅ sw check some_spec.md reports PASS/FAIL with findings
+3. ✅ sw draft greet_service produces a real spec via HITL interaction
+4. ✅ sw implement greet_service_spec.md generates code + tests
+5. ✅ sw check --level code greet_service.py checks syntax, tests, coverage
+6. ✅ sw review code greet_service.py provides LLM semantic judgment
+
+**The platform is ENTERPRISE-READY when additionally:**
+7. ✅ You've used it on SpecWeaver itself (dogfooding)
+8. 🔜 You've used it to build an external proprietary trading system (US-18)
+9. ✅ Features can be added without restructuring (interface extensibility confirmed)
+10. 🔜 Topology-aware spec authoring catches cross-service issues before code generation (US-19)
+11. ✅ Multi-project management: sw projects, sw use, sw remove, sw update, sw scan
+
+---
+
 ### 🟡 US-1: The Validation Engine
 **Benefit:** *I can write a spec in Markdown and mathematically prove its structural quality before writing any code.*
 *   **Core Required (MVS):**
