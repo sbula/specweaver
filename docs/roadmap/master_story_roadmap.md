@@ -1,0 +1,281 @@
+# Master User Story Roadmap
+
+This is the unified, single-numbering format (US-1 to US-18) covering the entire lifespan of the platform.
+
+### Story Status Flags
+*   🟢 **Completed** (All Core MVS and Sub-Story Add-Ons are 100% delivered)
+*   🟡 **In Progress** (Active development, or Core is done but Add-Ons remain)
+*   🔴 **Pending** (Core MVS is not yet delivered)
+
+Following the **"Good Enough" principle**, every User Story is strictly divided into:
+1. **Core Required (MVS):** The absolute minimum required to achieve the user benefit.
+2. **Sub-Story Add-Ons:** Optional, self-contained enhancements that group technical features into deliverable improvements.
+
+---
+
+### 🟡 US-1: The Validation Engine
+**Benefit:** *I can write a spec in Markdown and mathematically prove its structural quality before writing any code.*
+*   **Core Required (MVS):**
+    *   `✅` **Step 1:** CLI Scaffold
+    *   `✅` **Step 1b:** Loom Filesystem Tools
+    *   `✅` **Step 2:** Validation Engine (Foundation)
+    *   `✅` **Step 3:** LLM Adapter (Gemini)
+*   **Sub-Story Add-Ons:**
+    *   **Enforce Internal Architecture:**
+        *   `✅` 3.20a Internal Layer Enforcement
+        *   `[ ]` CLI Command Architecture Separation (Discovery vs Validation)
+    *   **Configurable Multi-Stage Reviews:**
+        *   `✅` 3.05 Auto-discover Standards
+        *   `[ ]` 3.05 Multi-stage Reviews
+    *   **Mathematical Speed & Security (Rust):**
+        *   `[ ]` Static Validation Rule Pipelines (Rust PyO3)
+
+### 🟡 US-2: The Interactive Drafter
+**Benefit:** *I can have the LLM co-author a spec with me section-by-section, interactively prompting me for missing context.*
+*   **Core Required (MVS):**
+    *   `✅` **Step 1:** CLI Scaffold
+    *   `✅` **Step 1b:** Loom Filesystem Tools
+    *   `✅` **Step 3:** LLM Adapter (Gemini)
+    *   `✅` **Step 4:** Spec Drafting (`sw draft`) & HITL Provider
+    *   `✅` **Step 4:** Spec Review Engine
+*   **Sub-Story Add-Ons:**
+    *   **Surgical Spec Refactoring:**
+        *   `[ ]` 3.29 Markdown AST Mutators
+
+### 🟡 US-3: Autonomous Implementation
+**Benefit:** *I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.*
+*   **Core Required (MVS):**
+    *   `✅` **US-1 Core** *(provides Validation Engine)*
+    *   `✅` **Step 5:** Implementation Generator
+    *   `✅` **Step 5:** Code Validation Rules (C01-C08, Type hints, Coverage)
+    *   `✅` **Step 12:** QA Runner Tool & Lint-Fix Reflection Loop
+*   **Sub-Story Add-Ons:**
+    *   **Multi-Language Test Support:**
+        *   `[ ]` 3.19 Polyglot QA Runner
+    *   **Visual UI Drift Detection:**
+        *   `[ ]` 4.11 Multi-Modal Visual Quality Gates / V-Series
+
+### 🟡 US-4: Context-Aware Flow Orchestration
+**Benefit:** *I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.*
+*   **Core Required (MVS):**
+    *   `✅` **Step 2:** Validation Engine
+    *   `✅` **Step 7:** Topology Graph (`context.yaml`)
+    *   `✅` **Step 8:** SQLite Config DB & Overrides
+    *   `✅` **Step 9:** Context-Enriched Prompts (Token Budgeting, Injection Selectors)
+    *   `✅` **Step 10:** YAML Pipeline Models
+    *   `✅` **Step 11:** SQLite Pipeline Runner & State Persistence
+    *   `✅` **Step 13:** `sw run` CLI & Enterprise Logging
+*   **Sub-Story Add-Ons:**
+    *   **Parallel Multi-Spec Execution:**
+        *   `✅` 3.27 Multi-Spec Pipeline Fan-Out
+    *   **Context Mention Highlighting:**
+        *   `✅` 3.11 Auto Spec-Mention Detection
+    *   **Advanced Routing & Conditional Flows:**
+        *   `[ ]` 3.25 Deferred Router Mapping Capabilities
+    *   **Infinite Memory Management:**
+        *   `[ ]` 4.6 Conversation Summarization (Token compression)
+
+### 🟡 US-5: Polyglot Code Understanding
+**Benefit:** *SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core** *(provides Config & Flow Engine)*
+    *   `✅` **3.10 / 3.22:** Context Ledgers & Workspace Boundaries
+    *   `✅` **3.22:** Base Tree-Sitter AST Skeleton Extractor
+    *   `✅` **3.25:** Router-based flow control
+    *   `✅` **3.26:** Git Worktree Bouncer (Safe diff striping)
+    *   `✅` **3.32e:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
+*   **Sub-Story Add-Ons:**
+    *   **Mathematical Speed & Security (Rust):**
+        *   `[ ]` Polyglot AST Extractor via Rayon (Rust PyO3)
+
+---
+
+### 🔴 US-6: The Remote Dashboard (Tablet on a Train)
+**Benefit:** *I can review specs and control SpecWeaver pipelines from my browser on a tablet, without needing to run the heavy AI engine locally.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core** *(provides Flow Engine)*
+    *   `✅` **3.25:** Router-based flow control
+    *   `[ ]` **3.7 / 4.10:** `sw serve` REST API Server
+    *   `[ ]` **3.8 / 4.10:** Web dashboard
+*   **Sub-Story Add-Ons:**
+    *   **Strict UI Data Contracts:**
+        *   `[ ]` 3.34 Structured output schemas
+        *   `[ ]` 3.34b REST API Sync
+    *   **Live Pipeline Streaming:**
+        *   `[ ]` 4.10b Real-Time Feedback Sensor Dashboard
+
+### 🔴 US-7: The IDE Copilot (VS Code)
+**Benefit:** *I can interact with the engine and approve/reject generated code seamlessly inside VS Code without switching to the terminal.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core** *(provides Flow Engine)*
+    *   `✅` **3.25:** Router-based flow control
+    *   `[ ]` **3.7 / 4.10:** `sw serve` REST API Server
+    *   `[ ]` **3.35:** VS Code Extension
+*   **Sub-Story Add-Ons:**
+    *   **Strict UI Data Contracts:**
+        *   `[ ]` 3.34 Structured output schemas
+        *   `[ ]` 3.34b REST API Synchronization
+    *   **Real-time File Tracking:**
+        *   `[ ]` 3.37 File watcher (Auto-re-validate specs on save)
+
+### 🔴 US-8: The Greenfield Bootstrap Wizard
+**Benefit:** *When starting a new project, an interactive wizard bounds the LLM's architecture choices so it doesn't hallucinate invalid tech stacks.*
+*   **Core Required (MVS):**
+    *   `✅` **US-2 Core** *(provides Interactive Drafter)*
+    *   `✅` **Step 7:** Topology Graph
+    *   `[ ]` **3.52:** Interactive Design Questionnaire
+*   **Sub-Story Add-Ons:**
+    *   **Socratic Context Gathering:**
+        *   `[ ]` 5.6 Socratic drafting flow
+    *   **Architectural De-duplication:**
+        *   `[ ]` 3.51 Synthetic Commons Extraction
+
+### 🔴 US-9: The Zero-Trust Sandbox
+**Benefit:** *The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.*
+*   **Core Required (MVS):**
+    *   `✅` **US-3 Core** *(provides QA Runner)*
+    *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
+    *   `[ ]` **3.45 / 4.9:** Containerized deployment (Podman/Docker)
+    *   `[ ]` **3.40:** Native CLI Action Nodes
+*   **Sub-Story Add-Ons:**
+    *   **Extreme Execution Paranoia:**
+        *   `[ ]` 3.46 Functional Agent Sandboxing (Black Box Ledgers)
+        *   `[ ]` 4.5 Agent isolation patterns
+    *   **Mathematical Speed & Security (Rust):**
+        *   `[ ]` Git Worktree Bouncer C-Bindings (Rust PyO3)
+
+### 🔴 US-10: The Monolith Dependency Visualizer
+**Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*
+*   **Core Required (MVS):**
+    *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
+    *   `[ ]` **3.32f / 5.1:** Persistent Knowledge Graph Builder (SQLite)
+    *   `[ ]` **3.33a:** Pipeline visualization (`sw graph` HTML export)
+*   **Sub-Story Add-Ons:**
+    *   **Code-to-Spec Drift Checking:**
+        *   `[ ]` 3.18 AST Drift Detection
+
+### 🔴 US-11: GraphRAG for Brownfield Scale
+**Benefit:** *The agent can instantly recall exact context from 20 interacting microservices without blowing up the context window.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core** *(provides Context Prompts)*
+    *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
+    *   `[ ]` **3.32f:** Persistent Knowledge Graph Builder (SQLite)
+    *   `[ ]` **3.33 / 4.3:** Postgres (Apache AGE + pgvector) sidecar
+    *   `[ ]` **4.2:** AST-based semantic chunking
+*   **Sub-Story Add-Ons:**
+    *   **Dynamic Knowledge Relevance:**
+        *   `[ ]` 5.4 Hybrid RAG orchestration (composite scoring)
+        *   `[ ]` 5.2 Event-driven knowledge graph updates
+    *   **Infinite Scale Management:**
+        *   `[ ]` 3.32 Deep Semantic Hashing (Rocket Mode streaming)
+        *   `[ ]` 5.3 Hash-based garbage collection
+        *   `[ ]` 5.7 Memory consolidation
+
+### 🔴 US-12: Legacy Spec Extraction (Reverse-Weaving)
+**Benefit:** *SpecWeaver automatically reverse-engineers and drafts Spec.md contracts by reading my old undocumented Java/C++ code.*
+*   **Core Required (MVS):**
+    *   `✅` **US-2 Core** *(provides Spec Drafting)*
+    *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
+    *   `[ ]` **3.32f:** Persistent Knowledge Graph Builder (SQLite)
+    *   `[ ]` **3.43:** Reverse-Weaving (`sw capture`)
+*   **Sub-Story Add-Ons:**
+    *   **Massive Scale Context Retrieval:**
+        *   `[ ]` **3.33:** Postgres (Apache AGE + pgvector) sidecar
+    *   **Automated Code Purging:**
+        *   `[ ]` 5.9 Repository Entropy & Garbage Collection (finding dead code)
+
+### 🔴 US-13: Financial-Grade Math Proofs
+**Benefit:** *The agent mathematically proves its algorithms are secure before I deploy them to production, discovering 0-days natively.*
+*   **Core Required (MVS):**
+    *   `✅` **US-1 Core** *(provides Validation Engine)*
+    *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
+    *   `[ ]` **3.39:** Symbolic Math Validation
+*   **Sub-Story Add-Ons:**
+    *   **Symbolic Tree Traversal:**
+        *   `[ ]` 4.14 LLM-Guided Symbolic Execution
+        *   `[ ]` 4.1 Symbol index + anti-hallucination gate
+    *   **Dynamic Memory Attacks:**
+        *   `[ ]` 4.13 Tool-Augmented Security Fuzzing Harnesses
+
+### 🔴 US-14: Adversarial Red-Teaming
+**Benefit:** *An adversarial AI attacks my spec to find logic holes and edge-cases before I waste money generating bad code.*
+*   **Core Required (MVS):**
+    *   `✅` **US-2 Core** *(provides Spec Review Engine)*
+    *   `✅` **US-3 Core** *(provides QA Runner)*
+    *   `[ ]` **3.50:** Pre-Generation Adversarial Spec Review
+*   **Sub-Story Add-Ons:**
+    *   **Mathematical Mutation Checks:**
+        *   `[ ]` 3.42 / 4.7 Semantic Test Completeness & Mutation testing
+    *   **Architectural Sandboxing:**
+        *   `[ ]` 4.8 Blast radius / locality enforcement
+
+### 🔴 US-15: Enterprise Audit & Traceability
+**Benefit:** *I can hand a compliance auditor a ledger that proves exactly which LLM generated which line of code based on which business requirement.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core** *(provides Pipeline Runner)*
+    *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
+    *   `[ ]` **3.32f:** Persistent Knowledge Graph Builder
+    *   `[ ]` **3.48:** Traceability Matrix UX
+*   **Sub-Story Add-Ons:**
+    *   **Enterprise Compliance Protocols:**
+        *   `[ ]` 4.5b Artifact lineage graph
+        *   `[ ]` 4.12 'Dark Factory' Compliance Logging
+    *   **Zero-Trust ACL:**
+        *   `[ ]` 4.4 / 5.5 Tiered access rights & Provenance tracking
+
+### 🔴 US-16: AI Operations & Cost Routing
+**Benefit:** *I can see exactly how much money each agent is spending, detect LLM friction, and dynamically route tasks to cheaper models.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core** *(provides Config DB)*
+    *   `✅` **Step 9a:** Token Tracking
+    *   `[ ]` **3.12 / 3.14:** Telemetry DB & Static Routing
+*   **Sub-Story Add-Ons:**
+    *   **Dynamic Data-Driven Routing:**
+        *   `[ ]` 4.5d / 5.8 Data-driven routing recommendations & Dynamic AI Arbiter
+    *   **Friction Analytics Dashboard:**
+        *   `[ ]` 4.5a Task-type cost analytics dashboard
+        *   `[ ]` 4.5c Deterministic friction detection (git diff math)
+        *   `[ ]` 5.5a HITL root-cause tagging
+    *   **Enterprise Thought Observability:**
+        *   `[ ]` 3.44 OpenTelemetry Agent Tracing
+
+### 🔴 US-17: The SWE-Bench Guarantee
+**Benefit:** *SpecWeaver proves it hasn't degraded by autonomously solving standardized SWE-Bench tickets before every release.*
+*   **Core Required (MVS):**
+    *   `✅` **US-3 Core** *(provides QA Runner)*
+    *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
+    *   `[ ]` **3.47:** Agent Platform Benchmarking (`sw eval`)
+*   **Sub-Story Add-Ons:**
+    *   **Continuous Integration:**
+        *   `[ ]` 6.1 Standardized Benchmarking CI
+
+### 🔴 US-18: Productionizing External Targets
+**Benefit:** *We prove the entire platform works by using it to build and manage an external proprietary trading system.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
+    *   `✅` **US-5 Core** *(provides Worktree Bouncer & AST extractors)*
+    *   `✅` **3.27:** Multi-Spec Pipeline Fan-Out
+    *   `[ ]` **US-9 Core** *(provides Containerized deployment)*
+    *   `[ ]` **US-13 Core** *(provides Math Validation)*
+    *   `[ ]` **US-14 Core** *(provides Adversarial Review)*
+    *   `[ ]` **6.2:** External Proprietary Validation
+*   **Sub-Story Add-Ons:**
+    *   **Secure Sandboxed Operations:**
+        *   `[ ]` **3.52:** Interactive Design Questionnaire
+    *   **CI/CD Pipeline Integration:**
+        *   `[ ]` Custom deployment hooks
+
+### 🔴 US-19: Microservice Fleet Orchestration
+**Benefit:** *I can design, generate, and orchestrate an entire fleet of 20+ microservices, automatically keeping their API contracts and topology synchronized across independent repositories.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core**
+    *   `✅` **US-5 Core**
+    *   `✅` **3.27:** Multi-Spec Pipeline Fan-Out
+    *   `[ ]` **3.32f:** Persistent Knowledge Graph Builder (SQLite)
+    *   `[ ]` **3.49:** Work Packet Bundling (Coordinated multi-agent dispatch)
+*   **Sub-Story Add-Ons:**
+    *   **Cross-Service Contract Validation:**
+        *   `[ ]` 3.41 Industry Standard Bridges (Pact.io for consumer-driven contracts)
+    *   **Distributed Topology Scaling:**
+        *   `[ ]` **3.33:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
+        *   `[ ]` **3.32:** Deep Semantic Hashing (Rocket Mode streaming)

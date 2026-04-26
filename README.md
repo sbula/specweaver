@@ -34,7 +34,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Deep Semantic Pipeline Hashing** — Sub-second mathematical incremental crawler computes Merkle-tree state cache over physical structures to bypass unaffected workflows downstream natively.
 - **External DB Context Harness** — Connect externally to persistent databases (e.g. Postgres) via the Model Context Protocol (MCP) securely routing read-only structures through ephemeral Node environments with telemetry scrubbing.
 
-> 🔎 *For an exhaustive, technical inventory of internal engine mechanics, capabilities, and upcoming architectural deployments, please view the active [SpecWeaver Roadmap](docs/roadmap/phase_3_feature_expansion.md).*
+> 🔎 *For an exhaustive, technical inventory of internal engine mechanics, capabilities, and upcoming architectural deployments, please view the active [SpecWeaver Master Story Roadmap](docs/roadmap/master_story_roadmap.md).*
 
 ## Documentation
 
