@@ -6,7 +6,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`E-SENS-01` ✅: Loom FS Tools** (Legacy: Step 1b)<br>
   > Loom Filesystem Tools
 * **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)<br>
-  > `mvp_feature_definition.md` | LLM function-calling via provider-agnostic abstraction. 6 tools (4 filesystem + 2 web) in `loom/commons/research/`. `WorkspaceBoundary` enforcement, `ToolExecutor`, `generate_with_tools()` on adapter. Wired into Reviewer + Planner. **Complete**: boundaries, executor, tool definitions, adapter integration, 3353 tests. See [implementation plan](phase_3/feature_3_10/feature_3_10_implementation_plan.md).
+  > `mvp_feature_definition.md` | LLM function-calling via provider-agnostic abstraction. 6 tools (4 filesystem + 2 web) in `loom/commons/research/`. `WorkspaceBoundary` enforcement, `ToolExecutor`, `generate_with_tools()` on adapter. Wired into Reviewer + Planner. **Complete**: boundaries, executor, tool definitions, adapter integration, 3353 tests. See [implementation plan](features/topic_02_sensors/E-SENS-02/E-SENS-02_implementation_plan.md).
 
 ## DAL-D: Internal Tooling
 * **`D-SENS-01` ✅: Topology Graph** (Legacy: Step 7)<br>
@@ -18,7 +18,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 
 ## DAL-C: Enterprise Standard
 * **`C-SENS-01` ✅: Spec-Mention Detection** (Legacy: 3.11)<br>
-  > _(new)_ | Scan LLM responses for spec/file names → auto-pull into context for follow-up calls. Pure-logic `llm/mention_scanner/` module + resolver with workspace boundary enforcement. Follow-up injection wired through `Reviewer.mentioned_files` param. **Complete**: scanner, resolver, PromptBuilder integration, follow-up injection, 3353 tests. See [implementation plan](phase_3/feature_3_11/feature_3_11_implementation_plan.md).
+  > _(new)_ | Scan LLM responses for spec/file names → auto-pull into context for follow-up calls. Pure-logic `llm/mention_scanner/` module + resolver with workspace boundary enforcement. Follow-up injection wired through `Reviewer.mentioned_files` param. **Complete**: scanner, resolver, PromptBuilder integration, follow-up injection, 3353 tests. See [implementation plan](features/topic_02_sensors/C-SENS-01/C-SENS-01_implementation_plan.md).
 * **`C-SENS-02` ✅: Smart Scan Exclusions** (Legacy: 3.32b)<br>
   > _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore`. **Complete:** SF-1, SF-2, SF-3 (Polyglot Hashing), SF-4 (Analyzer DI), and SF-5 (DI Remediation).
 * **`C-SENS-03` 🔜: Symbol Index Gates** (Legacy: 4.1)<br>

@@ -12,7 +12,7 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`D-INTL-01` ✅: Implementation Generator** (Legacy: Step 5)<br>
   > Implementation Generator
 * **`D-INTL-02` ✅: Feature Decomposition** (Legacy: 3.1)<br>
-  > `lifecycle_layers.md` | `SpecKind` enum (feature/component), kind-aware rule presets, `DecomposeHandler`, confidence-based review scoring, `feature_decomposition.yaml` pipeline. **Complete**: 8 components, 1886 tests. See [implementation plan](phase_3/feature_3_01/feature_3_01_implementation_plan.md).
+  > `lifecycle_layers.md` | `SpecKind` enum (feature/component), kind-aware rule presets, `DecomposeHandler`, confidence-based review scoring, `feature_decomposition.yaml` pipeline. **Complete**: 8 components, 1886 tests. See [implementation plan](features/topic_04_intelligence/D-INTL-02/D-INTL-02_implementation_plan.md).
 * **`D-INTL-03` ✅: Explicit Plan Phase** (Legacy: 3.6)<br>
   > _(new)_ | New `PLAN+SPEC` handler between validate and implement. Captures architecture decisions, tech stack choices, constraint reasoning in a structured Plan artifact before code generation. Includes [Google Stitch](https://stitch.withgoogle.com/) via its SDK to auto-generate interactive UI mockups from the spec's Contract section.
 * **`D-INTL-04` 🔜: Design Questionnaire** (Legacy: 3.52)<br>
