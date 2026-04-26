@@ -128,7 +128,7 @@ Instead of requiring Python developers to use `@pytest.mark.trace("FR-1")`, they
 
 ### Why we do it:
 1. **No Application Dependencies**: The engine operates purely statistically and leaves zero import overhead in the user application.
-2. **Infinite Language Support**: Since `tree-sitter` bindings natively abstract comment scraping, our single codebase natively provides requirement traceability into Python, Rust, Go, JavaScript, TypeScript, and C++ indiscriminately, completely insulating SpecWeaver rules from framework-specific lock-in.
+2. **Infinite Language Support**: Since `tree-sitter` bindings natively abstract comment scraping, our single codebase natively provides requirement traceability into Python, Rust, Go, JavaScript, TypeScript, C++, and SQL indiscriminately, completely insulating SpecWeaver rules from framework-specific lock-in.
 
 ---
 
@@ -144,7 +144,7 @@ When building our polyglot CodeStructure AST extraction layer (Feature 3.22), we
 Instead of trying to architect convoluted SCM query strings to capture every possible decorator, we inverted the parsing model. We perform a precise "inner target" SCM query to find the raw symbol name (`node_name`), and then execute a mathematical parent-walking algorithm (e.g., checking if `name_node.parent.parent.type == 'decorated_definition'`) to organically swallow all external prefixes surrounding the target.
 
 ### Why we do it:
-This abstraction anomaly completely removes the need for infinite grammar mappings. Since the parent-tree strictly cascades mathematically in all 8 supported languages (C/C++, Rust, Python, Java, Kotlin, TS, Markdown), a single logical upward-walker uniformly preserves `@app.route` or `export async` wrappers indiscriminately.
+This abstraction anomaly completely removes the need for infinite grammar mappings. Since the parent-tree strictly cascades mathematically in all 9 supported languages (C/C++, Rust, Python, Java, Kotlin, TS, SQL, Markdown), a single logical upward-walker uniformly preserves `@app.route` or `export async` wrappers indiscriminately.
 
 ---
 

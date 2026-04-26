@@ -30,6 +30,7 @@ exposes:
   - cpp/codestructure
   - go/codestructure
   - markdown/codestructure
+  - sql/codestructure
   - exclusions
 
 # -- Operational Metadata --------------------------------------------------

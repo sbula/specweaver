@@ -56,11 +56,11 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
 | **Markdown Parser Completion** | SF-2 | SF-1 | ✅ | ✅ | ✅ | ✅ |
 | **C/C++ Parser Implementation** | SF-3 | SF-1 | ✅ | ✅ | ✅ | ✅ |
 | **Go Parser Implementation** | SF-4 | SF-1 | ✅ | ✅ | ✅ | ✅ |
-| **SQL Parser Implementation** | SF-5 | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ |
+| **SQL Parser Implementation** | SF-5 | SF-1 | ✅ | ✅ | ✅ | ⬜ |
 
 ---
 
 ## 6. Session Handoff
 Status: **COMPLETED**
-The implementation plan for SF-4 (Go Parser Implementation & Polyglot Technical Debt Cleanup) is complete and approved.
-Next Step: Run `/dev docs/roadmap/phase_3/feature_3_32e/feature_3_32e_sf4_implementation_plan.md` to begin implementation of SF-4.
+The implementation plan for SF-5 (SQL Parser Implementation) is complete and approved.
+Next Step: Run `/dev docs/roadmap/phase_3/feature_3_32e/feature_3_32e_sf5_implementation_plan.md` to begin implementation of SF-5.

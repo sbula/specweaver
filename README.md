@@ -24,11 +24,11 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 
 ## Core Capabilities
 
-- **Polyglot Ecosystem Support** — Natively extracts and manipulates ASTs across Python, JavaScript/TypeScript, Java, Kotlin, Rust, C/C++, Go, and Markdown, allowing seamless integration into virtually any enterprise stack.
+- **Polyglot Ecosystem Support** — Natively extracts and manipulates ASTs across Python, JavaScript/TypeScript, Java, Kotlin, Rust, C/C++, Go, SQL, and Markdown, allowing seamless integration into virtually any enterprise stack.
 - **Interactive spec drafting** — Co-author markdown specifications natively with an LLM, validating logical consistency before a single line of code is written.
 - **AI-powered Code Generation & Review** — Agents implement tests and code sequentially from specs, returning ACCEPTED/DENIED verdicts mapped with confidence-scored findings.
 - **Deterministic Pipeline Engine** — YAML-defined rule pipelines orchestrating Human-In-The-Loop feedback loops, Scenario Generation validations, and strict pipeline rollbacks.
-- **Framework Archetype Bounds** — Structural AST extraction (Python, JS/TS, Java, Kotlin, Rust) enforcing macro isolation and dynamic tool constraints based on project topological overlays.
+- **Framework Archetype Bounds** — Structural AST extraction (Python, JS/TS, Java, Kotlin, Rust, Go, SQL) enforcing macro isolation and dynamic tool constraints based on project topological overlays.
 - **Constitutions & Auto-Discovery** — Analyze legacy codebases mathematically to extract naming, import, and logic standards to constrain generation context implicitly.
 - **Zero-Trust Tool Isolation** — Agent generation occurs strictly inside isolated Git Worktree Sandbox environments utilizing dictatorial grant checks avoiding hallucinatory system overwrites.
 - **Deep Semantic Pipeline Hashing** — Sub-second mathematical incremental crawler computes Merkle-tree state cache over physical structures to bypass unaffected workflows downstream natively.
@@ -88,7 +88,7 @@ If you are extending SpecWeaver's core Engine, custom tools, or LLM adapters, co
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C09, C12, drift detection)
-├── tests/                      # 4602 tests (unit, integration, E2E)
+├── tests/                      # 4644 tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

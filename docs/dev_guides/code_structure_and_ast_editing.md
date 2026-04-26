@@ -64,7 +64,7 @@ When it comes time to edit files, Agents are strictly guided to prefer semantic 
 
 ## 3. Strict Dot-Notation Symbol Resolution
 
-A core architectural principle of SpecWeaver's polyglot ecosystem is the mandatory use of **Dot-Notation** for symbol resolution across all languages (Python, Java, Kotlin, C++, Rust, Go, JavaScript, TypeScript, Markdown, etc.). 
+A core architectural principle of SpecWeaver's polyglot ecosystem is the mandatory use of **Dot-Notation** for symbol resolution across all languages (Python, Java, Kotlin, C++, Rust, Go, JavaScript, TypeScript, SQL, Markdown, etc.). 
 
 When an agent requests a symbol mutation or extraction, it MUST supply the fully qualified scope path (e.g., `Class.Method` instead of just `Method`). 
 

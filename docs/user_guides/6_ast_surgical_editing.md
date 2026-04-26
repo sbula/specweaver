@@ -8,7 +8,7 @@ To solve this, **SpecWeaver uses polyglot AST (Abstract Syntax Tree) manipulatio
 
 ## The CodeStructureTool
 
-Instead of viewing files as raw text, SpecWeaver mounts Native Tree-Sitter boundaries across Python, Java, Kotlin, Javascript, Typescript, Rust, C/C++, Go, and Markdown. Let's look at how agents surgically interact with your codebase.
+Instead of viewing files as raw text, SpecWeaver mounts Native Tree-Sitter boundaries across Python, Java, Kotlin, Javascript, Typescript, Rust, C/C++, Go, SQL, and Markdown. Let's look at how agents surgically interact with your codebase.
 
 ### 1. Minimal Reads (Skeletal Mapping)
 Instead of executing a full `read_file`, SpecWeaver agents prefer using `read_file_structure`. 
