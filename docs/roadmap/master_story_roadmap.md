@@ -393,3 +393,25 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
         *   `[ ]` **D-VAL-02:** Custom Rule Paths
         *   `[ ]` **D-VAL-04:** Adaptive Assurance Standards
         *   `[ ]` **C-VAL-03:** Dynamic Risk Rulesets
+
+---
+
+### 🔵 US-26: Fleet-Wide CVE Remediation
+**Benefit:** *When a zero-day vulnerability drops, SpecWeaver instantly scans the polyglot AST across all repositories to find every usage of the vulnerable function, and safely refactors the implementation across the entire fleet.*
+*   **Core Required (MVS):**
+    *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
+    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder
+    *   `[ ]` **B-SENS-04:** OSV Vulnerability Feed Ingestion
+*   **Sub-Story Add-Ons:**
+    *   **Massive Scale Orchestration:**
+        *   `[ ]` **A-INTL-05:** Multi-Repo Refactoring Orchestration
+
+### 🔵 US-27: Autonomous Production Self-Healing
+**Benefit:** *SpecWeaver hooks directly into Datadog/Sentry. When a production exception fires, it reads the stack trace, uses the Knowledge Graph to pinpoint the failing AST node, and autonomously drafts a Hotfix Spec and PR to resolve the crash.*
+*   **Core Required (MVS):**
+    *   `✅` **US-4 Core** *(provides Flow Engine)*
+    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder
+    *   `[ ]` **A-SENS-04:** APM Telemetry Ingestion (Sentry/Datadog)
+*   **Sub-Story Add-Ons:**
+    *   **Infinite Loop Protection:**
+        *   `[ ]` **A-FLOW-04:** Blast-Radius Circuit Breaker (Prevents bad hotfixes from cascading)
