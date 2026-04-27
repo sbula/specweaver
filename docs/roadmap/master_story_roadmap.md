@@ -42,10 +42,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Sub-Story Add-Ons:**
     *   **Enforce Internal Architecture:**
         *   `✅` **C-EXEC-01:** Internal Layer Enforcement
-        *   `[ ]` CLI Command Architecture Separation (Discovery vs Validation)
+        *   `✅` **C-EXEC-03:** Domain-Driven Module Consolidation
+        *   `[ ]` **E-UI-04:** CLI Command Arch Separation (Discovery vs Validation)
     *   **Configurable Multi-Stage Reviews:**
         *   `✅` **E-VAL-02:** Auto-discover Standards
         *   `[ ]` E-VAL-02 Multi-stage Reviews
+        *   `[ ]` **B-VAL-02:** Spec Rot Interceptor
     *   **Mathematical Speed & Security (Rust):**
         *   `[ ]` Static Validation Rule Pipelines (Rust PyO3)
 
@@ -57,6 +59,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
     *   `✅` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
     *   `✅` **E-INTL-02:** Spec Review Engine
+    *   `[ ]` **D-INTL-05:** Project Metadata Injection
 *   **Sub-Story Add-Ons:**
     *   **Surgical Spec Refactoring:**
         *   `[ ]` B-INTL-01 Markdown AST Mutators
@@ -86,6 +89,8 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `✅` **E-FLOW-02:** YAML Pipeline Models
     *   `✅` **D-FLOW-01:** SQLite Pipeline Runner & State Persistence
     *   `✅` **D-FLOW-02:** `sw run` CLI & Enterprise Logging
+    *   `[ ]` **D-FLOW-04:** Unified Runner Architecture
+    *   `[ ]` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
     *   **Parallel Multi-Spec Execution:**
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
@@ -93,6 +98,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
         *   `✅` **C-SENS-01:** Auto Spec-Mention Detection
     *   **Advanced Routing & Conditional Flows:**
         *   `[ ]` C-FLOW-02 Deferred Router Mapping Capabilities
+        *   `✅` **C-FLOW-05:** Interactive Gate Variables (HITL)
     *   **Infinite Memory Management:**
         *   `[ ]` C-INTL-04 Conversation Summarization (Token compression)
     *   **Remote UI Integration:**
@@ -108,6 +114,10 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `✅` **D-EXEC-02:** Git Worktree Bouncer (Safe diff striping)
     *   `✅` **D-SENS-03:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
 *   **Sub-Story Add-Ons:**
+    *   **Intelligent Code Exclusions:**
+        *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
+    *   **Framework Native Understanding:**
+        *   `✅` **B-INTL-02:** Macro Evaluator (Rust/Kotlin plugin expansion)
     *   **Mathematical Speed & Security (Rust):**
         *   `[ ]` Polyglot AST Extractor via Rayon (Rust PyO3)
 
@@ -159,13 +169,15 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
+    *   `[ ]` **E-EXEC-01:** Standard Local Execution
+    *   `✅` **D-EXEC-01:** Podman/Docker Integration
     *   `[ ]` **B-EXEC-01:** Containerized deployment (Podman/Docker)
     *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   **Extreme Execution Paranoia:**
         *   `[ ]` A-EXEC-01 Functional Agent Sandboxing (Black Box Ledgers)
     *   **Mathematical Speed & Security (Rust):**
-        *   `[ ]` Git Worktree Bouncer C-Bindings (Rust PyO3)
+        *   `[ ]` **A-EXEC-03:** Git Worktree Bouncer C-Bindings (Rust PyO3)
 
 ### 🔴 US-10: The Monolith Dependency Visualizer
 **Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*
@@ -306,6 +318,75 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Sub-Story Add-Ons:**
     *   **Cross-Service Contract Validation:**
         *   `[ ]` A-VAL-06 Industry Standard Bridges
+    *   **Parallel Execution Safety:**
+        *   `[ ]` **C-EXEC-04:** Concurrent Git Merge Orchestration
     *   **Distributed Topology Scaling:**
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
         *   `[ ]` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
+
+### 🔴 US-20: Enterprise Architecture Enforcement
+**Benefit:** *SpecWeaver mathematically prevents my project from degrading by enforcing strict test intensities (e.g., DAL-A requires mutation tests) and blocking forbidden dependencies across the DAG.*
+*   **Core Required (MVS):**
+    *   `✅` **US-1 Core** *(provides Validation Engine)*
+    *   `✅` **D-SENS-01:** Topology Graph (Dependency mapping)
+    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder (Provides deep DAG traversal)
+    *   `[ ]` **C-EXEC-01:** Internal Layer Enforcement (Validating dependency direction)
+    *   `[ ]` **B-VAL-05:** DAL Architecture Gate (Dependency tier validation)
+*   **Sub-Story Add-Ons:**
+    *   **Test Intensity Gating:**
+        *   `[ ]` **B-VAL-03:** Semantic Test Completeness (Required for DAL-B)
+        *   `[ ]` **A-VAL-03:** Mutation Testing Gates (Required for DAL-A)
+    *   **Automated Degradation Prevention:**
+        *   `[ ]` **C-FLOW-06:** DAL CI/CD Risk Evaluation (Auto-rejects PRs on degradation)
+    *   **DAG Visualization:**
+        *   `[ ]` **C-UI-01:** Pipeline visualizer (Color-codes DAG by DAL risk)
+
+
+### 🟡 US-21: Autonomous Feature Decomposition
+**Benefit:** *I can give the agent a massive, epic-level Spec, and it will automatically break it down into a DAG of small, testable sub-components before writing any code.*
+*   **Core Required (MVS):**
+    *   `✅` **US-2 Core** *(provides Interactive Drafter)*
+    *   `✅` **D-INTL-02:** Feature Decomposition
+    *   `✅` **D-INTL-03:** Explicit Plan Phase
+*   **Sub-Story Add-Ons:**
+    *   **Recursive Planning:**
+        *   `✅` **C-INTL-01:** Iterative Decomposition
+
+### 🔴 US-22: Polyglot Contract Enforcement
+**Benefit:** *SpecWeaver mathematically proves that my Python microservice didn't break the REST/gRPC contract of my Rust worker.*
+*   **Core Required (MVS):**
+    *   `✅` **US-1 Core** *(provides Validation Engine)*
+    *   `✅` **A-VAL-01:** Protocol/Schema Analyzers (.proto, openapi)
+    *   `[ ]` **C-VAL-04:** Traceability Matrix Check
+*   **Sub-Story Add-Ons:**
+    *   **Mathematical Speed & Security:**
+        *   `[ ]` **A-VAL-04:** Rust PyO3 Validations (Massive performance scale for deep contract checking)
+
+### 🟡 US-23: Enterprise Tool Extension (MCP)
+**Benefit:** *I can instantly plug SpecWeaver into my company's internal tools (Jira, Confluence) using the Model Context Protocol without writing custom Python adapters.*
+*   **Core Required (MVS):**
+    *   `✅` **C-INTL-02:** MCP Client Architecture
+*   **Sub-Story Add-Ons:**
+    *   **Strict Security Gating:**
+        *   `[ ]` **B-INTL-05:** Dynamic Tool Gating via Archetypes
+
+### 🔴 US-24: Behavioral Scenario Verification
+**Benefit:** *SpecWeaver runs parallel behavioral verification pipelines to prove the generated code actually solves the business scenario, not just syntax tests.*
+*   **Core Required (MVS):**
+    *   `✅` **US-3 Core** *(provides QA Runner)*
+    *   `✅` **B-FLOW-01:** Scenario Testing Pipeline
+    *   `[ ]` **D-VAL-01:** QA Runner Tool
+*   **Sub-Story Add-Ons:**
+    *   **Intelligent Resolution:**
+        *   `[ ]` **B-INTL-07:** Error Attribution Arbiter
+
+### 🟡 US-25: Compliance & Constitution Governance
+**Benefit:** *I can enforce project-wide rules (Constitutions) and domain-specific profiles (e.g., 'Web App' vs 'ML Model') that dynamically override agent behavior.*
+*   **Core Required (MVS):**
+    *   `✅` **C-VAL-01:** Constitution Artifact
+    *   `✅` **C-VAL-02:** Domain Profiles
+*   **Sub-Story Add-Ons:**
+    *   **Dynamic Risk Controls:**
+        *   `[ ]` **D-VAL-02:** Custom Rule Paths
+        *   `[ ]` **D-VAL-04:** Adaptive Assurance Standards
+        *   `[ ]` **C-VAL-03:** Dynamic Risk Rulesets

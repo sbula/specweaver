@@ -206,3 +206,16 @@ Patterns adopted for SpecWeaver:
 Blueprint references:
 - [graphify.net](https://graphify.net/) - Architecture concepts on BFS networks over Vector DBs.
 - [graphify/render.py](https://github.com/safishamsi/graphify/blob/v4/graphify/render.py) - God Node math and CLI local visualizations.
+
+### Tree Climber — Abstract Dataflow Analysis & CFGs
+
+[tree-climber](https://github.com/bstee615/tree-climber) by **bstee615** is a comprehensive static analysis framework built entirely in Python that constructs Control Flow Graphs (CFGs) directly from Tree-Sitter syntax trees. It proves that deep program topology (like Value Numbering and Dataflow Analysis) can be resolved deterministically without requiring heavy external compilers.
+
+Patterns adopted for SpecWeaver:
+- **Round-Robin Dataflow Solver** -> Utilizing Kildall's iterative dataflow analysis framework (`IN` and `OUT` set convergence) to mathematically resolve Def-Use Chains (Variable Definition to Variable Usage) across complex syntax trees. (Informs Phase 5 capabilities for `B-SENS-02: Persistent Knowledge Graph Builder`).
+- **AST Visitor Pattern for CFGs** -> Translating "dumb" Tree-Sitter skeleton nodes into intelligent execution edges by mapping True/False conditional branches.
+- **Value Numbering Deduplication** -> Merging mathematically identical sub-expressions into a single graph vertex to prevent state explosion during DAG traversal, aligning perfectly with SpecWeaver's Deep Semantic Hashing approach (`A-SENS-01`).
+
+Blueprint references:
+- [`src/tree_climber/dataflow/solver.py`](https://github.com/bstee615/tree-climber/blob/main/src/tree_climber/dataflow/solver.py) - Iterative set convergence algorithm for IN/OUT facts.
+- [`src/tree_climber/ast_utils.py`](https://github.com/bstee615/tree-climber/blob/main/src/tree_climber/ast_utils.py) - Mapping Tree-Sitter nodes to edges via visitors.

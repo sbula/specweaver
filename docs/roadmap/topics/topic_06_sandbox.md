@@ -19,6 +19,9 @@ This document tracks all capabilities related to process isolation, execution bo
 
 * **`C-EXEC-03` ✅: Domain-Driven Module Consolidation** (Legacy: 3.26a)<br>
   > _(from 3.26 discussion)_ | Massive architectural refactoring of flat directories into strict DDD boundaries. Moves L1-L5 phases to `workflows/` (drafting, review, implementation, planning), pure-logic discovery to `assurance/` (standards, validation), physical state to `workspace/` (project, context), and external endpoints to `interfaces/` (api, cli). Fixes all absolute Python imports across 3800 tests.
+* **`C-EXEC-04` 🔜: Concurrent Git Merge Orchestration**<br>
+  > _(new)_ | Advanced flow-engine capability for Multi-Spec Pipeline Fan-Out. Uses 3-way AST semantic merging (rather than text-line merging) to automatically resolve non-overlapping AST conflicts from parallel agent worktrees. Halts and flags AST collisions for HITL.
+
 ## DAL-B: High-Assurance
 * **`B-EXEC-01` 🔜: Ephemeral Podman Sub-Containers** (Legacy: 3.45)<br>
   > _(new)_ | Resolves Agent RCE vulnerabilities. When `QARunner` executes LLM-generated tests (`pytest`), execution routes natively into ephemeral, headless Podman/Docker sub-containers instead of the host machine.

@@ -37,6 +37,8 @@ This document tracks all capabilities related to static analysis, linting, rules
   > _(new)_ | An LLM-backed Code Validation Rule (`C10_test_completeness.py`) that analyzes the agent's generated test suite against the target spec to assert whether all unhappy paths, error bounds, and expected outcomes are semantically verified. Emits ERRORs for missing branch coverage to ensure thorough completeness.
 * **`B-VAL-04` 🔜: SWE-Bench QA Gates** (Legacy: 3.47)<br>
   > _(new)_ | Built-in command to run SpecWeaver's internal pipelines against a deterministic suite of synthetic SWE-bench bugs to mathematically prove that platform extensions haven't degraded the internal token costs or success rate.
+* **`B-VAL-05` 🔜: DAL Architecture Gate**<br>
+  > _(new)_ | A new `sw check` Validation Engine rule that asserts a package's dependencies do not violate DAL boundaries (e.g., ensuring a DAL-A component never imports a DAL-C component). Enforces architectural testing intensity requirements using the Persistent Knowledge Graph.
 
 ## DAL-A: Mission-Critical
 * **`A-VAL-01` ✅: Protocol/Schema Analyzers** (Legacy: 3.31)<br>

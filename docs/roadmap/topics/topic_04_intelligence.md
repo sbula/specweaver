@@ -44,6 +44,9 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | Branch off from 3.30. Intercepts the `context.yaml` active archetype to mathematically remove or inject specific JSON Schema Tool Definitions (`list_symbols`) to the Agent at generation runtime, strictly enforcing framework-specific capabilities.
 * **`B-INTL-06` 🔜: Multi-Agent Isolation Patterns** (Legacy: 4.5)<br>
   > _(new)_ | Agent isolation patterns (multi-agent review). Ensures that multiple agents reviewing the same architecture operate in secure, independent sandboxes to prevent contextual contamination or collective hallucinations.
+* **`B-INTL-07` 🔜: Error Attribution Arbiter**<br>
+  > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario, and mathematically determines whether the code failed the scenario, or if the scenario was written incorrectly.
+
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>
   > _(inspired by Cavekit)_ | Branches the Arbiter Agent into the `sw draft` phase to run a Red Team adversarial challenge on the Spec. Mathematically disproves/attacks the L3 Spec for contradictions and edge-cases *before* generation, minimizing downstream rollout failures.
