@@ -72,7 +72,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   **Multi-Language Test Support:**
         *   `[ ]` D-VAL-03 Polyglot QA Runner
     *   **Visual UI Drift Detection:**
-        *   `[ ]` 4.11 Multi-Modal Visual Quality Gates / V-Series
+        *   `[ ]` 4.11 Multi-Modal Visual Quality Gates / V-Series <!-- TODO: investigate orphaned legacy ID today in the evening -->
 
 ### 🟡 US-4: Context-Aware Flow Orchestration
 **Benefit:** *I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.*
@@ -119,7 +119,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Sub-Story Add-Ons:**
     *   **Strict UI Data Contracts:**
         *   `[ ]` D-UI-02 Structured output schemas
-        *   `[ ]` 3.34b REST API Sync
+        *   `[ ]` 3.34b REST API Sync <!-- TODO: investigate orphaned legacy ID today in the evening -->
     *   **Live Pipeline Streaming:**
         *   `[ ]` B-UI-01 Real-Time Feedback Sensor Dashboard
 
@@ -133,7 +133,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Sub-Story Add-Ons:**
     *   **Strict UI Data Contracts:**
         *   `[ ]` D-UI-02 Structured output schemas
-        *   `[ ]` 3.34b REST API Synchronization
+        *   `[ ]` 3.34b REST API Synchronization <!-- TODO: investigate orphaned legacy ID today in the evening -->
     *   **Real-time File Tracking:**
         *   `[ ]` E-UI-03 File watcher (Auto-re-validate specs on save)
 
@@ -159,7 +159,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Sub-Story Add-Ons:**
     *   **Extreme Execution Paranoia:**
         *   `[ ]` A-EXEC-01 Functional Agent Sandboxing (Black Box Ledgers)
-        *   `[ ]` 4.5 Agent isolation patterns
+        *   `[ ]` 4.5 Agent isolation patterns <!-- TODO: investigate orphaned legacy ID today in the evening -->
     *   **Mathematical Speed & Security (Rust):**
         *   `[ ]` Git Worktree Bouncer C-Bindings (Rust PyO3)
 
@@ -179,7 +179,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `✅` **US-4 Core** *(provides Context Prompts)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
-    *   `[ ]` **A-SENS-02 / 4.3:** Postgres (Apache AGE + pgvector) sidecar
+    *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
     *   `[ ]` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
     *   **Dynamic Knowledge Relevance:**
@@ -237,10 +237,10 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `[ ]` **C-UI-02:** Traceability Matrix UX
 *   **Sub-Story Add-Ons:**
     *   **Enterprise Compliance Protocols:**
-        *   `[ ]` 4.5b Artifact lineage graph
+        *   `[ ]` **B-SENS-01:** Artifact lineage graph
         *   `[ ]` A-UI-01 'Dark Factory' Compliance Logging
     *   **Zero-Trust ACL:**
-        *   `[ ]` B-EXEC-02 / 5.5 Tiered access rights & Provenance tracking
+        *   `[ ]` **B-EXEC-02:** Tiered access rights & Provenance tracking
 
 ### 🔴 US-16: AI Operations & Cost Routing
 **Benefit:** *I can see exactly how much money each agent is spending, detect LLM friction, and dynamically route tasks to cheaper models.*
@@ -254,7 +254,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   **Friction Analytics Dashboard:**
         *   `[ ]` C-UI-03 Task-type cost analytics dashboard
         *   `[ ]` B-FLOW-03 Deterministic friction detection (git diff math)
-        *   `[ ]` 5.5a HITL root-cause tagging
+        *   `[ ]` 5.5a HITL root-cause tagging <!-- TODO: investigate orphaned legacy ID today in the evening -->
     *   **Enterprise Thought Observability:**
         *   `[ ]` B-FLOW-02 OpenTelemetry Agent Tracing
 
@@ -294,7 +294,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `[ ]` **C-FLOW-04:** Work Packet Bundling (Coordinated multi-agent dispatch)
 *   **Sub-Story Add-Ons:**
     *   **Cross-Service Contract Validation:**
-        *   `[ ]` 3.41 Industry Standard Bridges (Pact.io for consumer-driven contracts)
+        *   `[ ]` 3.41 Industry Standard Bridges (Pact.io for consumer-driven contracts) <!-- TODO: investigate orphaned legacy ID today in the evening -->
     *   **Distributed Topology Scaling:**
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
         *   `[ ]` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
