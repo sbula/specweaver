@@ -128,7 +128,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `✅` **C-FLOW-02:** Router-based flow control
-    *   `[ ]` **D-UI-01 / E-UI-02:** `sw serve` REST API Server
+    *   `[ ]` **D-UI-01:** `sw serve` REST API Server
     *   `[ ]` **D-UI-03:** VS Code Extension
 *   **Sub-Story Add-Ons:**
     *   **Strict UI Data Contracts:**
