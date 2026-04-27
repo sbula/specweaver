@@ -34,6 +34,8 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > _(new)_ | Immediately actionable. Updates `PromptBuilder` to explicitly isolate human `GateType.HITL` rejections into a mathematically bound `<dictator-overrides>` XML section, granting them strict promotional weight above standard linter error findings in loop-back generation sequences. **Complete**: 3934 tests.
 * **`C-FLOW-06` ✅: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)<br>
   > _(new)_ | Execute High-ROI adaptations immediately: Context Condensation (AST Skeletons), Impact-Aware Test Limiting, DAL CI/CD Risk Evaluation, Standards Scaffolding, and Dynamic Context Routing. See [design doc](features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md). **Complete:** All refactorings, Impact-Aware gates, and DI boundaries successfully validated.
+* **`C-FLOW-07` 🔜: HITL Root-Cause Tagging** (Legacy: 5.5a)<br>
+  > _(new)_ | Direct integration with the Friction Analytics dashboard. When the Agent encounters friction, a human steps in (HITL) and actively tags *why* the pipeline failed (e.g., "Bad Spec", "Hallucination"), feeding the attribution engine.
 ## DAL-B: High-Assurance
 * **`B-FLOW-01` ✅: Scenario Testing Pipeline** (Legacy: 3.28)<br>
   > _(inspired by agent-system)_ | Dual-pipeline architecture: coding + scenario pipelines run in parallel, meet at JOIN gate. Contract-first (Python Protocols), structured YAML scenarios, arbiter agent for error attribution. **Complete:** 4168 tests.

@@ -47,3 +47,7 @@ This document tracks all capabilities related to static analysis, linting, rules
   > `future_capabilities_reference.md` §13, §14 | Verification gates (mutation testing, assertion density)
 * **`A-VAL-04` 🔜: Rust PyO3 Validations** (Legacy: Backlog)<br>
   > _(new)_ | To mathematically unlock 10x-50x performance scaling and guarantee absolute memory-safe LLM sandboxing. Static Validation Rule Pipelines: Rewrite regex-heavy mathematical validation tasks natively in compiled Rust engine cores to instantly evaluate multi-thousand line specs.
+* **`A-VAL-05` 🔜: Multi-Modal Visual Quality Gates (V-Series)** (Legacy: 4.11)<br>
+  > _(new)_ | Expanding the validation engine battery with `V-Series` rules using VLM (Vision LLMs) + Headless Browsers (Playwright) via internal Docker rendering, calculating visual UI drift perfectly against the UI component specifications.
+* **`A-VAL-06` 🔜: Industry Standard Bridges** (Legacy: 3.41)<br>
+  > _(new)_ | Adapters to interface seamlessly with massive open-source protocols: Pact.io (Consumer contract testing), Glean (Internal Fact Graphs), and ArchCodex (Drift Prevention).

@@ -60,6 +60,8 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Sub-Story Add-Ons:**
     *   **Surgical Spec Refactoring:**
         *   `[ ]` B-INTL-01 Markdown AST Mutators
+    *   **Remote UI Integration:**
+        *   `[ ]` D-UI-04 REST API - Interactive Authoring
 
 ### 🟡 US-3: Autonomous Implementation
 **Benefit:** *I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.*
@@ -72,7 +74,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   **Multi-Language Test Support:**
         *   `[ ]` D-VAL-03 Polyglot QA Runner
     *   **Visual UI Drift Detection:**
-        *   `[ ]` 4.11 Multi-Modal Visual Quality Gates / V-Series <!-- TODO: investigate orphaned legacy ID today in the evening -->
+        *   `[ ]` A-VAL-05 Multi-Modal Visual Quality Gates
 
 ### 🟡 US-4: Context-Aware Flow Orchestration
 **Benefit:** *I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.*
@@ -93,12 +95,14 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
         *   `[ ]` C-FLOW-02 Deferred Router Mapping Capabilities
     *   **Infinite Memory Management:**
         *   `[ ]` C-INTL-04 Conversation Summarization (Token compression)
+    *   **Remote UI Integration:**
+        *   `[ ]` D-UI-05 REST API - Enterprise Configuration
 
 ### 🟡 US-5: Polyglot Code Understanding
 **Benefit:** *SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.*
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config & Flow Engine)*
-    *   `✅` **E-SENS-02 / D-SENS-02:** Context Ledgers & Workspace Boundaries
+    *   `✅` **E-SENS-02:** Context Ledgers & Workspace Boundaries
     *   `✅` **D-SENS-02:** Base Tree-Sitter AST Skeleton Extractor
     *   `✅` **C-FLOW-02:** Router-based flow control
     *   `✅` **D-EXEC-02:** Git Worktree Bouncer (Safe diff striping)
@@ -114,26 +118,27 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `✅` **C-FLOW-02:** Router-based flow control
-    *   `[ ]` **D-UI-01:** `sw serve` REST API Server
+    *   `[ ]` **D-UI-01:** `sw serve` Core Orchestration API
     *   `[ ]` **E-UI-02:** Web dashboard
 *   **Sub-Story Add-Ons:**
     *   **Strict UI Data Contracts:**
         *   `[ ]` D-UI-02 Structured output schemas
-        *   `[ ]` 3.34b REST API Sync <!-- TODO: investigate orphaned legacy ID today in the evening -->
     *   **Live Pipeline Streaming:**
         *   `[ ]` B-UI-01 Real-Time Feedback Sensor Dashboard
+    *   **Remote Systems Integration:**
+        *   `[ ]` D-UI-07 REST API - Systems Integration
+
 
 ### 🔴 US-7: The IDE Copilot (VS Code)
 **Benefit:** *I can interact with the engine and approve/reject generated code seamlessly inside VS Code without switching to the terminal.*
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `✅` **C-FLOW-02:** Router-based flow control
-    *   `[ ]` **D-UI-01:** `sw serve` REST API Server
+    *   `[ ]` **D-UI-01:** `sw serve` Core Orchestration API
     *   `[ ]` **D-UI-03:** VS Code Extension
 *   **Sub-Story Add-Ons:**
     *   **Strict UI Data Contracts:**
         *   `[ ]` D-UI-02 Structured output schemas
-        *   `[ ]` 3.34b REST API Synchronization <!-- TODO: investigate orphaned legacy ID today in the evening -->
     *   **Real-time File Tracking:**
         *   `[ ]` E-UI-03 File watcher (Auto-re-validate specs on save)
 
@@ -154,12 +159,11 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
-    *   `[ ]` **B-EXEC-01 / 4.9:** Containerized deployment (Podman/Docker)
+    *   `[ ]` **B-EXEC-01:** Containerized deployment (Podman/Docker)
     *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   **Extreme Execution Paranoia:**
         *   `[ ]` A-EXEC-01 Functional Agent Sandboxing (Black Box Ledgers)
-        *   `[ ]` 4.5 Agent isolation patterns <!-- TODO: investigate orphaned legacy ID today in the evening -->
     *   **Mathematical Speed & Security (Rust):**
         *   `[ ]` Git Worktree Bouncer C-Bindings (Rust PyO3)
 
@@ -167,7 +171,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 **Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*
 *   **Core Required (MVS):**
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[ ]` **B-SENS-02 / A-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-UI-01:** Pipeline visualization (`sw graph` HTML export)
 *   **Sub-Story Add-Ons:**
     *   **Code-to-Spec Drift Checking:**
@@ -224,9 +228,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `[ ]` **A-INTL-01:** Pre-Generation Adversarial Spec Review
 *   **Sub-Story Add-Ons:**
     *   **Mathematical Mutation Checks:**
-        *   `[ ]` B-VAL-03 / A-VAL-03 Semantic Test Completeness & Mutation testing
+        *   `[ ]` B-VAL-03 Semantic Test Completeness
+        *   `[ ]` A-VAL-03 Mutation testing
     *   **Architectural Sandboxing:**
         *   `[ ]` B-EXEC-03 Blast radius / locality enforcement
+    *   **Agent Independence Protocols:**
+        *   `[ ]` B-INTL-06 Multi-Agent Isolation Patterns
 
 ### 🔴 US-15: Enterprise Audit & Traceability
 **Benefit:** *I can hand a compliance auditor a ledger that proves exactly which LLM generated which line of code based on which business requirement.*
@@ -247,16 +254,20 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config DB)*
     *   `✅` **Step 9a:** Token Tracking
-    *   `[ ]` **C-FLOW-01 / D-FLOW-03:** Telemetry DB & Static Routing
+    *   `[ ]` **C-FLOW-01:** Telemetry DB
+    *   `[ ]` **D-FLOW-03:** Static Routing
 *   **Sub-Story Add-Ons:**
     *   **Dynamic Data-Driven Routing:**
-        *   `[ ]` A-FLOW-01 / B-INTL-04 Data-driven routing recommendations & Dynamic AI Arbiter
+        *   `[ ]` A-FLOW-01 Data-driven routing recommendations
+        *   `[ ]` B-INTL-04 Dynamic AI Arbiter
     *   **Friction Analytics Dashboard:**
         *   `[ ]` C-UI-03 Task-type cost analytics dashboard
         *   `[ ]` B-FLOW-03 Deterministic friction detection (git diff math)
-        *   `[ ]` 5.5a HITL root-cause tagging <!-- TODO: investigate orphaned legacy ID today in the evening -->
+        *   `[ ]` C-FLOW-07 HITL Root-Cause Tagging
     *   **Enterprise Thought Observability:**
         *   `[ ]` B-FLOW-02 OpenTelemetry Agent Tracing
+    *   **Remote UI Integration:**
+        *   `[ ]` D-UI-06 REST API - Telemetry & Auditing
 
 ### 🔴 US-17: The SWE-Bench Guarantee
 **Benefit:** *SpecWeaver proves it hasn't degraded by autonomously solving standardized SWE-Bench tickets before every release.*
@@ -294,7 +305,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `[ ]` **C-FLOW-04:** Work Packet Bundling (Coordinated multi-agent dispatch)
 *   **Sub-Story Add-Ons:**
     *   **Cross-Service Contract Validation:**
-        *   `[ ]` 3.41 Industry Standard Bridges (Pact.io for consumer-driven contracts) <!-- TODO: investigate orphaned legacy ID today in the evening -->
+        *   `[ ]` A-VAL-06 Industry Standard Bridges
     *   **Distributed Topology Scaling:**
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
         *   `[ ]` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
