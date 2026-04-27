@@ -6,6 +6,7 @@ This is the unified, single-numbering format (US-1 to US-18) covering the entire
 *   🟢 **Completed** (All Core MVS and Sub-Story Add-Ons are 100% delivered)
 *   🟡 **In Progress** (Active development, or Core is done but Add-Ons remain)
 *   🔴 **Pending** (Core MVS is not yet delivered)
+*   🔵 **On Hold** (Visionary, blocked by extreme complexity, or parked for re-evaluation)
 
 Following the **"Good Enough" principle**, every User Story is strictly divided into:
 1. **Core Required (MVS):** The absolute minimum required to achieve the user benefit.
@@ -221,7 +222,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   **Automated Code Purging:**
         *   `[ ]` A-FLOW-03 Repository Entropy & Garbage Collection (finding dead code)
 
-### 🔴 US-13: Financial-Grade Math Proofs
+### 🔵 US-13: Financial-Grade Math Proofs
 **Benefit:** *The agent mathematically proves its algorithms are secure before I deploy them to production, discovering 0-days natively.*
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
@@ -354,7 +355,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   **Recursive Planning:**
         *   `✅` **C-INTL-01:** Iterative Decomposition
 
-### 🔴 US-22: Polyglot Contract Enforcement
+### 🔵 US-22: Polyglot Contract Enforcement
 **Benefit:** *SpecWeaver mathematically proves that my Python microservice didn't break the REST/gRPC contract of my Rust worker.*
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
