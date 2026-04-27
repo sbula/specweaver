@@ -23,6 +23,8 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
   > _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore`. **Complete:** SF-1, SF-2, SF-3 (Polyglot Hashing), SF-4 (Analyzer DI), and SF-5 (DI Remediation).
 * **`C-SENS-03` 🔜: Symbol Index Gates** (Legacy: 4.1)<br>
   > `future_capabilities_reference.md` §11 | Symbol index + anti-hallucination gate
+* **`C-SENS-04` 🔜: Infrastructure-as-Code Extraction (HCL2)**<br>
+  > _(new)_ | Expansion of the Tree-Sitter Polyglot engine to specifically parse HashiCorp Configuration Language (Terraform/OpenTofu). Allows the agent to understand infrastructure topology, map cloud resource dependencies, and validate IAC spec drift.
 
 ## DAL-B: High-Assurance
 * **`B-SENS-01` ✅: Artifact Lineage Graph** (Legacy: 3.17)<br>

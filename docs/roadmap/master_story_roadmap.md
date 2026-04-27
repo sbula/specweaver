@@ -113,6 +113,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `✅` **C-FLOW-02:** Router-based flow control
     *   `✅` **D-EXEC-02:** Git Worktree Bouncer (Safe diff striping)
     *   `✅` **D-SENS-03:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
+    *   `[ ]` **C-SENS-04:** Infrastructure-as-Code Extraction (HCL2)
 *   **Sub-Story Add-Ons:**
     *   **Intelligent Code Exclusions:**
         *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
