@@ -39,6 +39,11 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`B-SENS-03` 🔜: AST Semantic Chunking** (Legacy: 4.2)<br>
   > `future_capabilities_reference.md` §3 | AST-based semantic chunking (RAG foundation). _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) for RAG source patterns, embedder config, query rewriting — ORIGINS.md § CrewAI)_
 
+* **\B-SENS-04\ 🔮: Static Control Flow Graph (CFG)**<br>
+  > _(extracted from B-SENS-02)_ | Maps execution branches (True/False edges). Restricted strictly to statically typed languages (Java, C++) to avoid dynamic scoping tar pits.
+* **\B-SENS-05\ 🔮: Static Dataflow Solver**<br>
+  > _(extracted from B-SENS-02)_ | Computes Def-Use chains using Kildall's framework. Highly experimental. Restricted to statically typed languages.
+
 ## DAL-A: Mission-Critical
 * **`A-SENS-01` ✅: Deep Semantic Hashing** (Legacy: 3.32)<br>
   > _(new)_ | Replaces shallow file hashing with "Dependency Hashing" (hash changes if imported modules change). Uses Merkle-trees to keep the Topology Graph explicitly in sync without full project crawls. **Complete:** SF-1, SF-2, SF-3, and SF-4 (Incremental Pipeline Bypassing).

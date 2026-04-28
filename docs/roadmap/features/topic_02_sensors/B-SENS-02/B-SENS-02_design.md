@@ -35,8 +35,6 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | FR-1 | Parse AST | Graph Builder | Parses AST dictionaries from `D-SENS-02` | In-memory `NetworkX` nodes are created |
 | FR-2 | Deduplicate Nodes | Graph Builder | Applies `A-SENS-01` hashing | Exact structural duplicates are merged to a single Node ID |
 | FR-3 | Persist Graph | Graph Builder | Writes Nodes and Edges to local SQLite | Data is saved to `.specweaver/graph.db` |
-| FR-4 | Dataflow Chains | Graph Builder | Executes Round-Robin solver | Def-Use edges are calculated and stored |
-| FR-5 | Control Flow | Graph Builder | Executes Visitor Pattern | Execution branches (True/False edges) are stored |
 | FR-6 | Query Interface | System | Queries subgraph by symbol/file | Returns a `NetworkX` subgraph up to specified depth |
 | FR-7 | Visualization Export | Graph Builder | Exports graph to `NetworkX` GraphML | Generates `.specweaver/graph.graphml` for external 3D visualizers like Gephi |
 | [EXP-1] | Structural Hashing | Graph Builder | Computes a secondary hash ignoring variable names | Experimental: Detects and flags code clones mathematically |
@@ -83,9 +81,9 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` and explicitly enforce **randomized jitter** in exponential backoff retries for concurrent multi-agent graph updates. | SF-1 |
 | RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-3 |
 | RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-1 & SF-2 |
-| RT-7 | **Tarjan Recursion Limit OOM** | Use a strictly iterative (stack-based) Tarjan algorithm for SCC condensation instead of recursive DFS. | SF-5 |
 | RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-2 |
 | RT-9 | **NetworkX Memory Leak** | The `NetworkX` `DiGraph` instance MUST be strictly ephemeral. It cannot be stored in global `RunContext` state. | SF-3 |
+| RT-10 | **Concurrent Deadlocks** | Implement a Single-Writer Queue (Actor Pattern) for SQLite. Parallel agents push to an in-memory queue; a single background thread executes INSERTs. | SF-1 |
 
 ## Developer Guides Required
 
@@ -122,7 +120,7 @@ The `GraphRepository` MUST implement at least this baseline schema:
 ## Sub-Feature Breakdown
 
 ### SF-1: Local Project Database Engine
-- **Scope**: Implements the SQLite schema and connection manager for `.specweaver/graph.db`. Enforces an Abstract Repository pattern (AD-12) to ensure a future drop-in replacement for PostgreSQL (Apache AGE).
+- **Scope**: Implements the SQLite schema and connection manager for `.specweaver/graph.db`. Enforces an Abstract Repository pattern (AD-12) to ensure a future drop-in replacement for PostgreSQL (Apache AGE). Enforces a Single-Writer Queue (RT-10) to prevent concurrency locks.
 - **FRs**: [FR-3]
 - **Inputs**: File system paths from workspace root.
 - **Outputs**: `ProjectDatabase` connection object.
@@ -145,27 +143,11 @@ The `GraphRepository` MUST implement at least this baseline schema:
 - **Depends on**: [SF-1, SF-2]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf3_implementation_plan.md
 
-### SF-4: Control Flow Visitor Pattern
-- **Scope**: Maps the explicit execution branches (True/False edges) between nodes.
-- **FRs**: [FR-5]
-- **Inputs**: Raw AST control flow structures (if/else/while).
-- **Outputs**: Directed execution edges in the SQLite database.
-- **Depends on**: [SF-2]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf4_implementation_plan.md
-
-### SF-5: Round-Robin Dataflow Solver
-- **Scope**: Computes the variable Def-Use chains across scope boundaries. MUST explicitly implement Kildall's iterative framework (see `docs/analysis/B-SENS-02_tree_climber_analysis.md` blueprint) and an iterative (stack-based) Tarjan algorithm.
-- **FRs**: [FR-4]
-- **Inputs**: Variable declarations and usage nodes.
-- **Outputs**: Dataflow edges in the SQLite database.
-- **Depends on**: [SF-2]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf5_implementation_plan.md
-
 ## Execution Order
 
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
-3. SF-3, SF-4, and SF-5 in parallel (all depend only on SF-2)
+3. SF-3 (depends on SF-2)
 
 ## Progress Tracker
 
@@ -174,8 +156,6 @@ The `GraphRepository` MUST implement at least this baseline schema:
 | SF-1 | Local Project DB | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-2 | AST Ingestion & Mapper | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-3 | NetworkX Query Engine | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-4 | Control Flow Visitor | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-5 | Dataflow Solver | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
