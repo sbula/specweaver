@@ -38,6 +38,8 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | FR-4 | Dataflow Chains | Graph Builder | Executes Round-Robin solver | Def-Use edges are calculated and stored |
 | FR-5 | Control Flow | Graph Builder | Executes Visitor Pattern | Execution branches (True/False edges) are stored |
 | FR-6 | Query Interface | System | Queries subgraph by symbol/file | Returns a `NetworkX` subgraph up to specified depth |
+| FR-7 | Visualization Export | Graph Builder | Exports graph to `NetworkX` GraphML | Generates `.specweaver/graph.graphml` for external 3D visualizers like Gephi |
+| [EXP-1] | Structural Hashing | Graph Builder | Computes a secondary hash ignoring variable names | Experimental: Detects and flags code clones mathematically |
 
 ## Non-Functional Requirements
 
@@ -97,10 +99,10 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf1_implementation_plan.md
 
 ### SF-2: NetworkX Integration & Node Deduplication
-- **Scope**: Parses AST dictionaries, applies semantic hashes, and exposes the read query API.
-- **FRs**: [FR-1, FR-2, FR-6]
+- **Scope**: Parses AST dictionaries, applies semantic hashes (and experimental structural hashes), and exposes the read query and GraphML export APIs.
+- **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
 - **Inputs**: AST output from `D-SENS-02`.
-- **Outputs**: `NetworkX` `DiGraph` instance.
+- **Outputs**: `NetworkX` `DiGraph` instance and `.graphml` export.
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
 
