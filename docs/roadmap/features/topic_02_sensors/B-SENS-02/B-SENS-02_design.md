@@ -79,10 +79,12 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | RT-1 | **SQL Injection (AST Poisoning)** | 100% parameterized queries (`?` bindings) required for all inserts. Raw AST string concatenation is forbidden. | SF-1 |
 | RT-2 | **AST Bomb (Stack Overflow)** | Strict recursion depth bounds (e.g., `MAX_AST_DEPTH = 500`). Graceful failure with `is_partial=True` flag. | SF-3 & SF-4 |
 | RT-3 | **Ghost Node Spoofing** | Prioritize internal `D-SENS-01` topology resolution over package manifest resolution to prevent attackers from spoofing internal RPCs. | SF-2 |
-| RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` and exponential backoff retries for concurrent multi-agent graph updates. | SF-1 |
-| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-2 |
+| RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` and explicitly enforce **randomized jitter** in exponential backoff retries for concurrent multi-agent graph updates. | SF-1 |
+| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-3 |
 | RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-1 & SF-2 |
-| RT-7 | **Tarjan Recursion Limit OOM** | Use a strictly iterative (stack-based) Tarjan algorithm for SCC condensation instead of recursive DFS. | SF-4 |
+| RT-7 | **Tarjan Recursion Limit OOM** | Use a strictly iterative (stack-based) Tarjan algorithm for SCC condensation instead of recursive DFS. | SF-5 |
+| RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-2 |
+| RT-9 | **NetworkX Memory Leak** | The `NetworkX` `DiGraph` instance MUST be strictly ephemeral. It cannot be stored in global `RunContext` state. | SF-3 |
 
 ## Developer Guides Required
 
@@ -101,44 +103,53 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf1_implementation_plan.md
 
-### SF-2: NetworkX Integration & Node Deduplication
-- **Scope**: Parses AST dictionaries, applies semantic hashes (and experimental structural hashes), and exposes the read query and GraphML export APIs.
-- **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
+### SF-2: AST Ingestion & Ontology Mapper
+- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes (and EXP-1 structural hashes), and safely UPSERTs to SQLite. Enforces bi-directional edge wiping (RT-8) to prevent ghost edges.
+- **FRs**: [FR-2, EXP-1]
 - **Inputs**: AST output from `D-SENS-02`.
-- **Outputs**: `NetworkX` `DiGraph` instance and `.graphml` export.
+- **Outputs**: Normalized nodes and structural edges in SQLite.
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
 
-### SF-3: Control Flow Visitor Pattern
+### SF-3: NetworkX Query & Export Engine
+- **Scope**: Exposes the read query API by translating SQLite rows into ephemeral `NetworkX` subgraphs (RT-9). Handles `GraphML` exports safely (RT-5).
+- **FRs**: [FR-1, FR-6, FR-7]
+- **Inputs**: SQLite database connection.
+- **Outputs**: Ephemeral `NetworkX` `DiGraph` instance and `.graphml` export.
+- **Depends on**: [SF-1, SF-2]
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf3_implementation_plan.md
+
+### SF-4: Control Flow Visitor Pattern
 - **Scope**: Maps the explicit execution branches (True/False edges) between nodes.
 - **FRs**: [FR-5]
 - **Inputs**: Raw AST control flow structures (if/else/while).
-- **Outputs**: Directed edges in the SQLite database.
+- **Outputs**: Directed execution edges in the SQLite database.
 - **Depends on**: [SF-2]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf3_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf4_implementation_plan.md
 
-### SF-4: Round-Robin Dataflow Solver
-- **Scope**: Computes the variable Def-Use chains across scope boundaries using Kildall's iterative framework.
+### SF-5: Round-Robin Dataflow Solver
+- **Scope**: Computes the variable Def-Use chains across scope boundaries using Kildall's iterative framework and an iterative (stack-based) Tarjan algorithm.
 - **FRs**: [FR-4]
 - **Inputs**: Variable declarations and usage nodes.
 - **Outputs**: Dataflow edges in the SQLite database.
 - **Depends on**: [SF-2]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf4_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf5_implementation_plan.md
 
 ## Execution Order
 
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
-3. SF-3 and SF-4 in parallel (both depend only on SF-2)
+3. SF-3, SF-4, and SF-5 in parallel (all depend only on SF-2)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Local Project DB | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-2 | NetworkX Integration | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-3 | Control Flow Visitor | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-4 | Dataflow Solver | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | AST Ingestion & Mapper | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | NetworkX Query Engine | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-4 | Control Flow Visitor | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-5 | Dataflow Solver | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
