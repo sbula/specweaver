@@ -80,6 +80,9 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | RT-2 | **AST Bomb (Stack Overflow)** | Strict recursion depth bounds (e.g., `MAX_AST_DEPTH = 500`). Graceful failure with `is_partial=True` flag. | SF-3 & SF-4 |
 | RT-3 | **Ghost Node Spoofing** | Prioritize internal `D-SENS-01` topology resolution over package manifest resolution to prevent attackers from spoofing internal RPCs. | SF-2 |
 | RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` and exponential backoff retries for concurrent multi-agent graph updates. | SF-1 |
+| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-2 |
+| RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-1 & SF-2 |
+| RT-7 | **Tarjan Recursion Limit OOM** | Use a strictly iterative (stack-based) Tarjan algorithm for SCC condensation instead of recursive DFS. | SF-4 |
 
 ## Developer Guides Required
 

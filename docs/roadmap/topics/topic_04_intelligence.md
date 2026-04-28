@@ -47,6 +47,9 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`B-INTL-07` 🔜: Error Attribution Arbiter**<br>
   > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario, and mathematically determines whether the code failed the scenario, or if the scenario was written incorrectly.
 
+* **\B-INTL-08\ 🔜: Semantic Code Review**<br>
+  > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system.
+
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>
   > _(inspired by Cavekit)_ | Branches the Arbiter Agent into the `sw draft` phase to run a Red Team adversarial challenge on the Spec. Mathematically disproves/attacks the L3 Spec for contradictions and edge-cases *before* generation, minimizing downstream rollout failures.
