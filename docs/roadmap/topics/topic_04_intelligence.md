@@ -37,7 +37,7 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | Specialized indexer capable of unrolling Rust Procedural Macros (`#[derive]`) and Kotlin Compiler Plugins (Spring Boot annotations) so the LLM understands the true runtime reality, not just the raw signature. **Complete:** SF-1, SF-2, and SF-3 implemented. 4241 tests natively passing.
 * **`B-INTL-03` 🔜: Synthetic Commons** (Legacy: 3.51)<br>
   > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Pre-emptive architectural de-duplication. Scans drafted subfeatures in `DecomposeHandler` for cross-cutting overlaps (e.g. shared schemas/utils) and extracts them into a synthetic "Tier 0" feature, forcing subfeatures to share logic rather than parallelizing duplicate implementations.
-* **`B-INTL-04` 🔜: Dynamic AI Arbiter** (Legacy: 5.8)<br>
+* **`B-INTL-04` 🔮: Dynamic AI Arbiter** (Legacy: 5.8)<br>
   > _(split from original 3.12)_ — Automatic model selection using Attributed Lifecycle Score (ALS). AI-powered fault attribution across multi-model, cross-lifecycle pipelines. **Science fiction today** — depends on persistent knowledge graph (5.1-5.5), labeled training data (5.5a), and solving the credit assignment problem. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 
 * **`B-INTL-05` 🔜: Dynamic Tool Gating via Archetypes** (Legacy: 3.30a)<br>
@@ -47,7 +47,7 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`B-INTL-07` 🔜: Error Attribution Arbiter**<br>
   > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario, and mathematically determines whether the code failed the scenario, or if the scenario was written incorrectly.
 
-* **\B-INTL-08\ 🔜: Semantic Code Review**<br>
+* **`B-INTL-08` 🔮: Semantic Code Review**<br>
   > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system.
 
 ## DAL-A: Mission-Critical

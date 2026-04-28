@@ -26,10 +26,10 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`C-SENS-04` 🔜: Infrastructure-as-Code Extraction (HCL2)**<br>
   > _(new)_ | Expansion of the Tree-Sitter Polyglot engine to specifically parse HashiCorp Configuration Language (Terraform/OpenTofu). Allows the agent to understand infrastructure topology, map cloud resource dependencies, and validate IAC spec drift.
 
-* **\C-SENS-05\ 🔜: Embedded SQL Extraction**<br>
+* **`C-SENS-05` 🔮: Embedded SQL Extraction**<br>
   > _(new)_ | Extracts embedded SQL strings from host languages (e.g., Python, Java) and parses them using the SQL Tree-Sitter grammar to map cross-domain dependencies between code and database schemas. Deferred from B-SENS-02 to prevent scope creep.
-* **\C-SENS-06\ 🔜: Event-Sourced 4D Graph**<br>
-  > _(new)_ | Upgrades the SQLite Knowledge Graph to be event-sourced (valid_from/valid_to tracking). Allows semantic \git bisect\ and point-in-time architectural queries without executing git checkouts.
+* **`C-SENS-06` 🔮: Event-Sourced 4D Graph**<br>
+  > _(new)_ | Upgrades the SQLite Knowledge Graph to be event-sourced (valid_from/valid_to tracking). Allows semantic `git bisect` and point-in-time architectural queries without executing git checkouts.
 
 ## DAL-B: High-Assurance
 * **`B-SENS-01` ✅: Artifact Lineage Graph** (Legacy: 3.17)<br>
