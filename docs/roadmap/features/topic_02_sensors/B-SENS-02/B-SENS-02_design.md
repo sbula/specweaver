@@ -94,6 +94,31 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | Knowledge Graph Querying | How to extract context using the `NetworkX` wrapper | ⬜ To be written during Pre-commit |
 | OntologyMapper Integration | Documentation on how to map a new language's Tree-Sitter CST to the Universal Graph Ontology | ⬜ To be written during Pre-commit |
 
+## Core Data Model & Ontology
+
+To prevent contextual handoff failures between implementation agents, the Knowledge Graph MUST strictly adhere to this universal ontology. Raw Tree-Sitter CST nodes must be translated into these constraints before ingestion.
+
+### Allowed Node Types
+*   `FILE`: A physical source code file.
+*   `DATA_STRUCTURE`: A Class, Struct, Interface, Trait, or ORM Model.
+*   `PROCEDURE`: A Function, Method, Lambda, or Receiver.
+*   `STATE`: Global variables, Enums, or Class-level attributes (local variables are serialized into procedure metadata).
+*   `API_CONTRACT`: Cross-language endpoints (e.g., REST routes, gRPC definitions).
+*   `GHOST`: Third-party external dependencies (parsed via package manifests).
+
+### Allowed Edge Types
+*   `IMPORTS`: File A imports File B.
+*   `CALLS`: Procedure A invokes Procedure B.
+*   `DEF_USE`: Dataflow mapping; State A mutates State B.
+*   `IMPLEMENTS`: Data Structure A fulfills Data Structure B (resolves IoC).
+*   `CONSUMES` / `FULFILLS`: Service A consumes an `API_CONTRACT` that Service B fulfills.
+*   `CONTROL_FLOW`: Execution ordering (True/False branches).
+
+### SQLite Schema Contract (SF-1)
+The `GraphRepository` MUST implement at least this baseline schema:
+*   `nodes` table: `(id UUID PRIMARY KEY, type TEXT, name TEXT, semantic_hash TEXT UNIQUE, clone_hash TEXT, file_id UUID, metadata JSON)`
+*   `edges` table: `(source_id UUID, target_id UUID, type TEXT, metadata JSON, PRIMARY KEY (source_id, target_id, type))`
+
 ## Sub-Feature Breakdown
 
 ### SF-1: Local Project Database Engine
@@ -129,7 +154,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf4_implementation_plan.md
 
 ### SF-5: Round-Robin Dataflow Solver
-- **Scope**: Computes the variable Def-Use chains across scope boundaries using Kildall's iterative framework and an iterative (stack-based) Tarjan algorithm.
+- **Scope**: Computes the variable Def-Use chains across scope boundaries. MUST explicitly implement Kildall's iterative framework (see `docs/analysis/B-SENS-02_tree_climber_analysis.md` blueprint) and an iterative (stack-based) Tarjan algorithm.
 - **FRs**: [FR-4]
 - **Inputs**: Variable declarations and usage nodes.
 - **Outputs**: Dataflow edges in the SQLite database.
