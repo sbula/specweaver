@@ -71,6 +71,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | AD-9 | Defer Embedded SQL Parsing | Too complex for MVS. Split into new backlog feature `C-SENS-05: Embedded SQL Extraction`. | No |
 | AD-10 | Accept Framework Blind Spots | Prevents becoming a compiler for Django/Spring. Uses semantic tags (`framework: django_orm`) to let LLMs infer implicit methods. | No |
 | AD-11 | Functional Paradigm Support | Scala/Clojure lambdas map perfectly to `PROCEDURE` and `PASSED_TO` dataflow edges. | No |
+| AD-12 | Abstract Repository Pattern | DB interactions must be abstracted behind an interface (e.g., `GraphRepository`). Hardcoding SQLite syntax outside the adapter is forbidden to ensure future compatibility with `A-SENS-02` (Postgres). | No |
 
 ## Security & Red Team Mitigations
 
@@ -96,7 +97,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 ## Sub-Feature Breakdown
 
 ### SF-1: Local Project Database Engine
-- **Scope**: Implements the SQLite schema and connection manager for `.specweaver/graph.db`.
+- **Scope**: Implements the SQLite schema and connection manager for `.specweaver/graph.db`. Enforces an Abstract Repository pattern (AD-12) to ensure a future drop-in replacement for PostgreSQL (Apache AGE).
 - **FRs**: [FR-3]
 - **Inputs**: File system paths from workspace root.
 - **Outputs**: `ProjectDatabase` connection object.
