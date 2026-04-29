@@ -70,6 +70,10 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | AD-10 | Accept Framework Blind Spots | Prevents becoming a compiler for Django/Spring. Uses semantic tags (`framework: django_orm`) to let LLMs infer implicit methods. | No |
 | AD-11 | Functional Paradigm Support | Scala/Clojure lambdas map perfectly to `PROCEDURE` and `PASSED_TO` dataflow edges. | No |
 | AD-12 | Abstract Repository Pattern | DB interactions must be abstracted behind an interface (e.g., `GraphRepository`). Hardcoding SQLite syntax outside the adapter is forbidden to ensure future compatibility with `A-SENS-02` (Postgres). | No |
+| AD-13 | Soft Deletes (Tombstoning) | When a node's hash disappears (e.g., during Git branch switching), use `is_active=FALSE` instead of hard `DELETE` to preserve LLM-generated metadata if the branch returns. | No |
+| AD-14 | Flattened Closures | Inner functions (e.g., Python nested `def`) must be serialized inside their parent's body, not extracted as standalone nodes, to prevent graph pollution. | No |
+| AD-15 | Overload Ambiguity Fallback | If an edge target is ambiguous in dynamic languages (e.g., overloaded `execute`), the `CALLS` edge must link to the parent `DATA_STRUCTURE` rather than guessing the wrong `PROCEDURE`. | No |
+| AD-16 | KISS Principle Enforcement | The engine must use direct Python functions and `NetworkX`. Building complex PubSub event brokers or Observer patterns inside SF-1 is explicitly forbidden. | No |
 
 ## Security & Red Team Mitigations
 
@@ -78,12 +82,24 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | RT-1 | **SQL Injection (AST Poisoning)** | 100% parameterized queries (`?` bindings) required for all inserts. Raw AST string concatenation is forbidden. | SF-1 |
 | RT-2 | **AST Bomb (Stack Overflow)** | Strict recursion depth bounds (e.g., `MAX_AST_DEPTH = 500`). Graceful failure with `is_partial=True` flag. | SF-3 & SF-4 |
 | RT-3 | **Ghost Node Spoofing** | Prioritize internal `D-SENS-01` topology resolution over package manifest resolution to prevent attackers from spoofing internal RPCs. | SF-2 |
-| RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` and explicitly enforce **randomized jitter** in exponential backoff retries for concurrent multi-agent graph updates. | SF-1 |
-| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-3 |
+| RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` to allow smooth asynchronous background flushes to the database. | SF-2 |
+| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-1 |
 | RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-1 & SF-2 |
-| RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-2 |
-| RT-9 | **NetworkX Memory Leak** | The `NetworkX` `DiGraph` instance MUST be strictly ephemeral. It cannot be stored in global `RunContext` state. | SF-3 |
-| RT-10 | **Concurrent Deadlocks** | Implement a Single-Writer Queue (Actor Pattern) for SQLite. Parallel agents push to an in-memory queue; a single background thread executes INSERTs. | SF-1 |
+| RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-1 |
+| RT-11 | **Stale Graph Boot Trap** | SF-2 MUST compare `A-SENS-01` file hashes against the DB on boot. Any mismatch triggers an immediate purge and re-parse of that file's subgraph. | SF-2 |
+| RT-12 | **Orphaned Node Accumulation** | Updating a modified file MUST trigger a hard reset (`DELETE FROM nodes WHERE file_id = X`) before inserting the new AST nodes to wipe deleted functions/ghosts. | SF-1 |
+| RT-13 | **Memory Bloat Eviction** | The in-memory `NetworkX` graph MUST be tied to the CLI process lifecycle. If running as a daemon, it MUST support an explicit `clear_cache()` command. | SF-1 |
+| RT-14 | **Declarative AST Crash** | The `OntologyMapper` MUST NOT assume files contain executable `PROCEDURE` nodes (e.g., TypeSpec/HCL2). It must map `API_CONTRACT` gracefully without throwing exceptions. | SF-1 |
+| RT-15 | **Syntax Error Poisoning** | `D-SENS-02` ASTs will contain `ERROR` nodes if code is half-written. The mapper MUST gracefully skip `ERROR` blocks rather than crashing the ingestion pipeline. | SF-1 |
+| RT-16 | **GraphML Path Traversal** | The `export_graph` path target MUST be explicitly sanitized and bounded strictly inside `workspace_root` to prevent `../../../etc/passwd` overwrites. | SF-1 |
+| RT-17 | **Centrality Math Collapse** | Internal NetworkX routing should use fast `INTEGER` node IDs for matrix math (Feature 3.38), restricting the massive string `semantic_hash` to external lookup dictionaries. | SF-1 & SF-2 |
+| RT-18 | **NetworkX Thread Contention** | NetworkX is not thread-safe. All in-memory `DiGraph` mutations (INSERT/DELETE) MUST be wrapped in a `threading.Lock()` to prevent fatal process crashes during parallel agent execution. | SF-1 |
+| RT-19 | **Auto-Generated Code Bloat** | The ingestion engine MUST skip files exceeding 1MB or containing known auto-generated headers (e.g., protobuf, minified JS) to prevent severe graph bloating and performance degradation. | SF-1 |
+| RT-20 | **Symlink Infinite Recursion** | The file scanner MUST explicitly ignore OS symlinks (`os.path.islink()`) to prevent `RecursionError` crashes caused by recursive directory loops. | SF-1 |
+| RT-21 | **Case-Insensitive Path Thrashing** | All `file_id` and import paths MUST be normalized (e.g., absolute and lowercased on Windows/Mac) to prevent OS capitalization changes from triggering massive ghost-deletions. | SF-1 |
+| RT-22 | **Serialization Infinite Loops** | Functions that serialize NetworkX subgraphs into Markdown strings for the LLM MUST maintain a `visited_nodes` set to break circular import cycles and prevent stringifier crashes. | SF-1 |
+| RT-23 | **AST Metadata Prompt Injection** | Data injected into `metadata JSON` from the AST MUST be sanitized to strip potential LLM hijack strings (e.g., `<|im_start|>`) hiding in developer comments. | SF-1 |
+| RT-24 | **OOM Memory Bombing** | Implementation of RT-19 (File size limits) MUST use `os.path.getsize(path)` to check the file size *before* opening the I/O stream, preventing massive 5GB files from triggering an Out-Of-Memory crash. | SF-1 |
 
 ## Developer Guides Required
 
@@ -107,55 +123,67 @@ To prevent contextual handoff failures between implementation agents, the Knowle
 ### Allowed Edge Types
 *   `IMPORTS`: File A imports File B.
 *   `CALLS`: Procedure A invokes Procedure B.
-*   `DEF_USE`: Dataflow mapping; State A mutates State B.
 *   `IMPLEMENTS`: Data Structure A fulfills Data Structure B (resolves IoC).
 *   `CONSUMES` / `FULFILLS`: Service A consumes an `API_CONTRACT` that Service B fulfills.
-*   `CONTROL_FLOW`: Execution ordering (True/False branches).
 
-### SQLite Schema Contract (SF-1)
-The `GraphRepository` MUST implement at least this baseline schema:
-*   `nodes` table: `(id UUID PRIMARY KEY, type TEXT, name TEXT, semantic_hash TEXT UNIQUE, clone_hash TEXT, file_id UUID, metadata JSON)`
-*   `edges` table: `(source_id UUID, target_id UUID, type TEXT, metadata JSON, PRIMARY KEY (source_id, target_id, type))`
+### SQLite Schema Contract (SF-2)
+The `GraphRepository` MUST implement at least this baseline schema to prevent B-Tree fragmentation:
+*   `nodes` table: `(id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, name TEXT, semantic_hash TEXT UNIQUE, clone_hash TEXT, file_id TEXT, metadata JSON)`
+*   `edges` table: `(source_id INTEGER, target_id INTEGER, type TEXT, metadata JSON, PRIMARY KEY (source_id, target_id, type))`
+
+## Data Lifecycle & Ingestion Flow
+
+To handle continuous codebase evolution (refactoring, file deletions, moving functions) without accumulating "Ghost Nodes" or duplicating data, the graph MUST adhere to this strict lifecycle:
+
+### 1. The Cold Start (Boot)
+When SpecWeaver initializes, SF-2 reads the SQLite backup. It cross-references the stored `semantic_hash` of each file against the current filesystem (`A-SENS-01`). 
+*   **Match:** The file's subgraph is safely loaded into the in-memory NetworkX engine.
+*   **Mismatch / Missing:** The file is flagged as `DIRTY` for re-ingestion.
+
+### 2. The Update Cycle (Node-Level Semantic Diffing)
+When a file is flagged as `DIRTY`, the engine avoids rebuilding the entire file's subgraph by using strict semantic diffing:
+1.  **Parse & Map:** Extract the fresh AST via `D-SENS-02` and pass it through the `OntologyMapper` to generate the new `GraphNode` objects.
+2.  **Hash Diffing:** Compare the `semantic_hash` of the new nodes against the existing nodes stored in memory/SQLite for `file_id = X`.
+3.  **Insert (New):** If a new hash appears, INSERT the new node and calculate/insert its edges.
+4.  **Purge (Deleted/Ghost):** If a hash exists in the DB but is missing from the new AST (e.g., function was deleted or renamed), DELETE that specific node and sever only its attached edges.
+5.  **Preserve (Unchanged):** If the hash matches (e.g., you just added a comment or a blank line elsewhere in the file), DO NOTHING. The existing node and all its inbound/outbound edges remain perfectly intact.
+
+### 3. The Synchronization Cycle (Async Flush)
+Once the NetworkX graph is updated, SF-2 asynchronously pushes the new subgraphs to SQLite via an `UPSERT` operation, ensuring the persistent save-state matches memory.
+
+### 4. Handling Refactoring (Moving Functions)
+Because the Knowledge Graph relies on `semantic_hash` (A-SENS-01) as the unique identifier rather than arbitrary IDs, moving a function from `auth.py` to `utils.py` without changing its code preserves its hash. 
+The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. Any external edges (like `CALLS`) pointing to that `semantic_hash` will seamlessly reconnect without manual graph patching.
 
 ## Sub-Feature Breakdown
 
-### SF-1: Local Project Database Engine
-- **Scope**: Implements the SQLite schema and connection manager for `.specweaver/graph.db`. Enforces an Abstract Repository pattern (AD-12) to ensure a future drop-in replacement for PostgreSQL (Apache AGE). Enforces a Single-Writer Queue (RT-10) to prevent concurrency locks.
-- **FRs**: [FR-3]
-- **Inputs**: File system paths from workspace root.
-- **Outputs**: `ProjectDatabase` connection object.
+### SF-1: In-Memory Knowledge Graph Engine
+- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes (and EXP-1 structural hashes), and builds the primary in-memory `NetworkX` graph. Exposes the read query API and handles `GraphML` exports safely (RT-5). Enforces bi-directional edge wiping (RT-8) to prevent ghost edges.
+- **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
+- **Inputs**: AST output from `D-SENS-02`.
+- **Outputs**: In-memory `NetworkX` graph and `.graphml` export.
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf1_implementation_plan.md
 
-### SF-2: AST Ingestion & Ontology Mapper
-- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes (and EXP-1 structural hashes), and safely UPSERTs to SQLite. Enforces bi-directional edge wiping (RT-8) to prevent ghost edges.
-- **FRs**: [FR-2, EXP-1]
-- **Inputs**: AST output from `D-SENS-02`.
-- **Outputs**: Normalized nodes and structural edges in SQLite.
+### SF-2: Persistent Storage Adapter (SQLite Backup)
+- **Scope**: Implements the `GraphRepository` interface (AD-12) to ensure a seamless future drop-in replacement for PostgreSQL (A-SENS-02). Handles asynchronously flushing the in-memory graph to `.specweaver/graph.db` on save, and loading it from SQLite on boot so the graph doesn't have to be rebuilt from scratch.
+- **FRs**: [FR-3]
+- **Inputs**: In-memory `NetworkX` graph, File system paths.
+- **Outputs**: `ProjectDatabase` SQLite connection object.
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
-
-### SF-3: NetworkX Query & Export Engine
-- **Scope**: Exposes the read query API by translating SQLite rows into ephemeral `NetworkX` subgraphs (RT-9). Handles `GraphML` exports safely (RT-5).
-- **FRs**: [FR-1, FR-6, FR-7]
-- **Inputs**: SQLite database connection.
-- **Outputs**: Ephemeral `NetworkX` `DiGraph` instance and `.graphml` export.
-- **Depends on**: [SF-1, SF-2]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf3_implementation_plan.md
 
 ## Execution Order
 
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
-3. SF-3 (depends on SF-2)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Local Project DB | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-2 | AST Ingestion & Mapper | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-3 | NetworkX Query Engine | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | In-Memory Graph Engine | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Persistent Storage Adapter | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 

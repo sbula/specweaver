@@ -117,6 +117,8 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Sub-Story Add-Ons:**
     *   **Infrastructure Understanding:**
         *   `[ ]` **C-SENS-04:** Infrastructure-as-Code Extraction (HCL2)
+    *   **API Contract Understanding:**
+        *   `[ ]` **C-SENS-07:** Polyglot Expansion (TypeSpec)
     *   **Intelligent Code Exclusions:**
         *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
     *   **Framework Native Understanding:**
@@ -204,6 +206,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   **Dynamic Knowledge Relevance:**
         *   `[ ]` B-FLOW-04 Hybrid RAG orchestration (composite scoring)
         *   `[ ]` A-SENS-03 Event-driven knowledge graph updates
+    *   **Static Code Flow Analysis:**
+        *   `[ ]` **B-SENS-04:** Static Control Flow Graph (CFG)
+        *   `[ ]` **B-SENS-05:** Static Dataflow Solver
     *   **Infinite Scale Management:**
         *   `[ ]` A-SENS-01 Deep Semantic Hashing (Rocket Mode streaming)
         *   `[ ]` A-FLOW-02 Hash-based garbage collection

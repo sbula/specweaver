@@ -31,6 +31,9 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`C-SENS-06` 🔮: Event-Sourced 4D Graph**<br>
   > _(new)_ | Upgrades the SQLite Knowledge Graph to be event-sourced (valid_from/valid_to tracking). Allows semantic `git bisect` and point-in-time architectural queries without executing git checkouts.
 
+* **`C-SENS-07` 🔜: Polyglot Expansion (TypeSpec)**<br>
+  > _(new)_ | Targeted expansion of Tree-sitter grammars to parse TypeSpec (https://typespec.io/), using the community parser (https://github.com/happenslol/tree-sitter-typespec). This is crucial for securely mapping cross-platform API contracts and enabling deterministic semantic truth engines.
+
 ## DAL-B: High-Assurance
 * **`B-SENS-01` ✅: Artifact Lineage Graph** (Legacy: 3.17)<br>
   > `future_capabilities_reference.md` §17 | Core database-backed lineage tracking and #sw-artifact tagging. Enables exact LLM provenance attribution and cost-per-feature analysis while remaining orthogonal to AST dependencies. **Complete**: 3591 tests.
@@ -39,9 +42,9 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`B-SENS-03` 🔜: AST Semantic Chunking** (Legacy: 4.2)<br>
   > `future_capabilities_reference.md` §3 | AST-based semantic chunking (RAG foundation). _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) for RAG source patterns, embedder config, query rewriting — ORIGINS.md § CrewAI)_
 
-* **\B-SENS-04\ 🔮: Static Control Flow Graph (CFG)**<br>
+* **`B-SENS-04` 🔮: Static Control Flow Graph (CFG)**<br>
   > _(extracted from B-SENS-02)_ | Maps execution branches (True/False edges). Restricted strictly to statically typed languages (Java, C++) to avoid dynamic scoping tar pits.
-* **\B-SENS-05\ 🔮: Static Dataflow Solver**<br>
+* **`B-SENS-05` 🔮: Static Dataflow Solver**<br>
   > _(extracted from B-SENS-02)_ | Computes Def-Use chains using Kildall's framework. Highly experimental. Restricted to statically typed languages.
 
 ## DAL-A: Mission-Critical
