@@ -31,6 +31,11 @@ description: "Phase 6: Update documentation — test matrix, README, quickstart,
      - `docs/roadmap/master_story_roadmap.md`
      - `docs/roadmap/features/[Topic]/[ID]/[ID]_implementation_plan.md` — The specific plan for this feature MUST be updated to reflect what was actually implemented (e.g. check off boxes, add notes on deviations).
 
+6.3.1. **[🚨 MANDATORY STATE SYNC]** You MUST physically update the `master_story_roadmap.md` to reflect the correct state:
+     - Update colors (`🟢`, `🟡`, `🔴`) and check off boxes (`[x]`) for the User Story and any Add-Ons you implemented.
+     - **[🚨 PROOF MANDATE]**: If you change a status to `🟢 Completed` or check an `[x]` box, you **MUST** paste the exact filepath of the passing E2E integration test into the `Verifiable Proof:` field for that Story or Add-On. Do not check the box if no E2E test exists.
+     - Evaluate and rotate the **Active Routing Queue** based on the Selection Matrix if a story was finished.
+
 6.3. **MANDATORY: Update the architecture reference and developer guide** if this feature
      changed any module placement, dependency direction, layer boundaries, security
      patterns, or dispatch mechanisms. You MUST explicitly open, read, and update these:

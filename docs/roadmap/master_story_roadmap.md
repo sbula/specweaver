@@ -14,6 +14,28 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 ---
 
+## 🎯 Active Routing Queue
+*The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
+
+1. **Candidate A: US-9 The Zero-Trust Sandbox (Security)**
+   * **Pros:** Unblocks safe, autonomous code execution (`US-3`). Prevents host-machine compromise.
+   * **Cons:** High infrastructure complexity (Podman/Docker orchestration).
+2. **Candidate B: US-5 Baseline Code Understanding (Capability)**
+   * **Pros:** Allows the agent to read existing repositories securely via AST, unblocking legacy refactoring.
+   * **Cons:** Deep dependency on Tree-Sitter C-bindings.
+3. **Candidate C: US-6 Pipeline Observability (Trust)**
+   * **Pros:** Developers can actually see what the autonomous fleet is doing, reducing anxiety.
+   * **Cons:** UI/UX heavy; does not expand core mathematical capabilities.
+
+### 📋 Routing Selection Matrix
+A story only enters the Active Routing Queue if it satisfies one of these rules:
+1. **The Prove It Rule:** Directly contributes to achieving Success Criteria #1 through #6.
+2. **The Hard Blocker Rule:** If a feature requires a dependency, the dependency evicts it from the queue.
+3. **The Security Mandate:** Mitigating critical threats (e.g. Sandbox Escape) preempts UX work.
+4. **The DAL Batching Rule:** Batching features that touch the same high-criticality modules to prevent paying the integration cost twice.
+
+---
+
 ## Success Criteria
 
 **The platform is PROVEN when you can:**
@@ -34,13 +56,20 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ---
 
 ### 🟡 US-1: The Validation Engine
-**Benefit:** *I can write a spec in Markdown and mathematically prove its structural quality before writing any code.*
+*   **User Benefit:** I can write a spec in Markdown and mathematically prove its structural quality before writing any code.
+*   **Integration Contract:** The CLI (`E-UI-01`) must parse the file using Loom (`E-SENS-01`) and pass it to the Validation Engine (`E-VAL-01`), ensuring no unvalidated LLM generation occurs.
+*   **Verifiable Proof:** `tests/e2e/capabilities/assurance/test_standards_e2e.py`
 *   **Core Required (MVS):**
     *   `✅` **E-UI-01:** CLI Scaffold
     *   `✅` **E-SENS-01:** Loom Filesystem Tools
     *   `✅` **E-VAL-01:** Validation Engine (Foundation)
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
 *   **Sub-Story Add-Ons:**
+    *   **Security Defenses:**
+        *   `[ ]` **E-VAL-03:** AST Prompt Injection Sanitization
+        *       *User Benefit:* Malicious instructions hidden in specs cannot hijack the implementation agent.
+        *       *Integration Contract:* The Validation Engine must strip adversarial syntax before the prompt enters the LLM Adapter context.
+        *       *Verifiable Proof:* `[Pending]`
     *   **Enforce Internal Architecture:**
         *   `✅` **C-EXEC-01:** Internal Layer Enforcement
         *   `✅` **C-EXEC-03:** Domain-Driven Module Consolidation
@@ -53,7 +82,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
         *   `[ ]` Static Validation Rule Pipelines (Rust PyO3)
 
 ### 🟡 US-2: The Interactive Drafter
-**Benefit:** *I can have the LLM co-author a spec with me section-by-section, interactively prompting me for missing context.*
+*   **User Benefit:** I can have the LLM co-author a spec with me section-by-section.
+*   **Integration Contract:** The interactive loop (`E-INTL-02`) must seamlessly hand off the generated context to the Review Engine, ensuring no manual copy-pasting is required.
+*   **Verifiable Proof:** `[Pending e2e draft test]`
 *   **Core Required (MVS):**
     *   `✅` **E-UI-01:** CLI Scaffold
     *   `✅` **E-SENS-01:** Loom Filesystem Tools
@@ -67,8 +98,10 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   **Remote UI Integration:**
         *   `[ ]` D-UI-04 REST API - Interactive Authoring
 
-### 🟡 US-3: Autonomous Implementation
-**Benefit:** *I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.*
+### 🟡 US-3: Autonomous Implementation [Execution Blocker: Requires US-9]
+*   **User Benefit:** I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.
+*   **Integration Contract:** The Implementation Generator (`D-INTL-01`) must pipe natively into the QA Runner (`D-VAL-01`). The QA Runner MUST execute exclusively inside the Zero-Trust Podman Sandbox (`D-EXEC-01`).
+*   **Verifiable Proof:** `[Pending e2e sandbox loop test]`
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **D-INTL-01:** Implementation Generator
@@ -81,7 +114,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
         *   `[ ]` A-VAL-05 Multi-Modal Visual Quality Gates
 
 ### 🟡 US-4: Context-Aware Flow Orchestration
-**Benefit:** *I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.*
+*   **User Benefit:** I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.
+*   **Integration Contract:** The SQLite Config DB (`E-FLOW-01`) must statefully persist outputs from the Validation Engine (`E-VAL-01`), allowing the Pipeline Runner (`D-FLOW-01`) to pass sanitized, verified context into subsequent prompt steps.
+*   **Verifiable Proof:** `tests/e2e/capabilities/assurance/test_mcp_flow_e2e.py`
 *   **Core Required (MVS):**
     *   `✅` **E-VAL-01:** Validation Engine
     *   `✅` **D-SENS-01:** Topology Graph (`context.yaml`)
@@ -93,6 +128,11 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `[ ]` **D-FLOW-04:** Unified Runner Architecture
     *   `[ ]` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
+    *   **Security Defenses:**
+        *   `[ ]` **B-FLOW-03:** Token-Burn Circuit Breakers (EDoS Prevention)
+        *       *User Benefit:* The agent cannot burn my API budget if it gets stuck in an infinite Lint-Fix loop.
+        *       *Integration Contract:* The Pipeline Runner must count prompt attempts and mechanically pause the execution thread, triggering a HITL gate before retry 4.
+        *       *Verifiable Proof:* `[Pending]`
     *   **Parallel Multi-Spec Execution:**
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
     *   **Context Mention Highlighting:**
@@ -106,7 +146,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
         *   `[ ]` D-UI-05 REST API - Enterprise Configuration
 
 ### 🟡 US-5: Polyglot Code Understanding
-**Benefit:** *SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.*
+*   **User Benefit:** SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.
+*   **Integration Contract:** The AST Skeleton Extractor (`D-SENS-02`) must natively resolve edges against the Git Worktree Bouncer (`D-EXEC-02`) to ensure extracted context accurately reflects the current filesystem state without hallucinatory paths.
+*   **Verifiable Proof:** `tests/e2e/capabilities/core/test_lineage_e2e.py`
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config & Flow Engine)*
     *   `✅` **E-SENS-02:** Context Ledgers & Workspace Boundaries
@@ -170,7 +212,9 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
         *   `[ ]` B-INTL-03 Synthetic Commons Extraction
 
 ### 🔴 US-9: The Zero-Trust Sandbox
-**Benefit:** *The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.*
+*   **User Benefit:** The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.
+*   **Integration Contract:** The QA Runner (`US-3 Core`) must be forcefully injected into the Podman/Docker Integration (`D-EXEC-01`), with host filesystem mounts set strictly to read-only for source files, and write-only for designated temporary test artifacts.
+*   **Verifiable Proof:** `[Pending e2e sandbox test]`
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
@@ -179,6 +223,11 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
     *   `[ ]` **B-EXEC-01:** Containerized deployment (Podman/Docker)
     *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
+    *   **Security Defenses:**
+        *   `[ ]` **E-EXEC-02:** Air-Gapped Network Egress Control
+        *       *User Benefit:* Prevents the agent from downloading unvetted malicious dependencies via hallucination.
+        *       *Integration Contract:* The Docker daemon must physically disable external networking during the QA execution phase, allowing only pre-cached dependencies.
+        *       *Verifiable Proof:* `[Pending]`
     *   **Extreme Execution Paranoia:**
         *   `[ ]` A-EXEC-01 Functional Agent Sandboxing (Black Box Ledgers)
     *   **Mathematical Speed & Security (Rust):**
