@@ -21,7 +21,7 @@ class TestSelectorMap:
         assert "impact" in selector_map
 
     def test_classes_are_correct(self) -> None:
-        from specweaver.graph.selectors import (
+        from specweaver.assurance.graph.selectors import (
             ConstraintOnlySelector,
             DirectNeighborSelector,
             ImpactWeightedSelector,
@@ -47,7 +47,7 @@ class TestSelectTopologyContexts:
         mock_graph = MagicMock()
         # DirectNeighborSelector().select() returns empty set
         with patch(
-            "specweaver.graph.selectors.DirectNeighborSelector.select",
+            "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
             return_value=set(),
         ):
             result = _select_topology_contexts(
@@ -64,7 +64,7 @@ class TestSelectTopologyContexts:
         mock_graph.format_context_summary.return_value = mock_contexts
 
         with patch(
-            "specweaver.graph.selectors.DirectNeighborSelector.select",
+            "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
             return_value={"auth_service", "user_store"},
         ):
             result = _select_topology_contexts(
@@ -85,7 +85,7 @@ class TestSelectTopologyContexts:
         mock_graph.format_context_summary.return_value = [MagicMock()]
 
         with patch(
-            "specweaver.graph.selectors.DirectNeighborSelector.select",
+            "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
             return_value={"some_module"},
         ):
             result = _select_topology_contexts(
@@ -103,7 +103,7 @@ class TestSelectTopologyContexts:
         mock_graph.format_context_summary.return_value = [MagicMock()]
 
         with patch(
-            "specweaver.graph.selectors.NHopConstraintSelector.select",
+            "specweaver.assurance.graph.selectors.NHopConstraintSelector.select",
             return_value={"related_module"},
         ) as mock_select:
             _select_topology_contexts(

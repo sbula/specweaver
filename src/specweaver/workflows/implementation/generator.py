@@ -18,7 +18,7 @@ from specweaver.infrastructure.llm.models import GenerationConfig, Message, Proj
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.graph.topology import TopologyContext
+    from specweaver.assurance.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 
 logger = logging.getLogger(__name__)

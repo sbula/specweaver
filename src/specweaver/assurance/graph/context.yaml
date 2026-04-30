@@ -16,7 +16,6 @@ archetype: pure-logic
 
 consumes:
   - workspace/context
-  - workspace/parsers
 
 forbids:
   - specweaver/loom/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
@@ -27,10 +26,6 @@ forbids:
 exposes:
   - TopologyGraph
   - Selectors
-  - models
-  - ontology
-  - engine
-  - export
 
 # -- Operational Metadata --------------------------------------------------
 operational:

@@ -36,7 +36,7 @@ class TestAddPlan:
 
     def test_plan_positioned_between_standards_and_topology(self) -> None:
         """Plan renders after standards, before topology."""
-        from specweaver.graph.topology import TopologyContext
+        from specweaver.assurance.graph.topology import TopologyContext
 
         ctx = [
             TopologyContext(

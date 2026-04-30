@@ -4,7 +4,7 @@ import pytest
 import tomlkit
 from tomlkit.exceptions import ParseError
 
-from specweaver.graph.topology import TopologyGraph, TopologyNode
+from specweaver.assurance.graph.topology import TopologyGraph, TopologyNode
 from specweaver.workspace.project.tach_sync import sync_tach_toml
 
 

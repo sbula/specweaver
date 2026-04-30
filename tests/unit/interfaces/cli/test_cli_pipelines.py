@@ -150,7 +150,7 @@ class TestRunPipelineMocked:
         with (
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch(
-                "specweaver.graph.hasher.DependencyHasher.save_cache"
+                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
             ) as mock_save_cache,
         ):
             from unittest.mock import AsyncMock
@@ -189,7 +189,7 @@ class TestRunPipelineMocked:
         with (
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch(
-                "specweaver.graph.hasher.DependencyHasher.save_cache"
+                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
             ) as mock_save_cache,
         ):
             from unittest.mock import AsyncMock
@@ -286,7 +286,7 @@ class TestResumeMocked:
             patch("specweaver.interfaces.cli.pipelines._get_state_store") as mock_get_store,
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch(
-                "specweaver.graph.hasher.DependencyHasher.save_cache"
+                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
             ) as mock_save_cache,
         ):
             mock_store = mock_get_store.return_value

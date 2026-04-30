@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.graph.hasher import DependencyHasher
+from specweaver.assurance.graph.hasher import DependencyHasher
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 pytestmark = pytest.mark.integration

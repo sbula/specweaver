@@ -111,7 +111,7 @@ class TestSelectTopologyContexts:
         # The fallback DirectNeighborSelector will call select() on the graph
         # — mock returns empty list → function returns None
         with patch(
-            "specweaver.graph.selectors.DirectNeighborSelector.select",
+            "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
             return_value=[],
         ):
             result = _select_topology_contexts(
@@ -134,7 +134,7 @@ class TestSelectTopologyContexts:
                 "direct": MagicMock(return_value=MagicMock(select=MagicMock(return_value=[])))
             },
         ):
-            from specweaver.graph.selectors import DirectNeighborSelector
+            from specweaver.assurance.graph.selectors import DirectNeighborSelector
 
             with patch.object(
                 DirectNeighborSelector,

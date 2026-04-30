@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from specweaver.graph.topology import TopologyContext
+    from specweaver.assurance.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
     from specweaver.infrastructure.llm.models import ToolDispatcherProtocol
