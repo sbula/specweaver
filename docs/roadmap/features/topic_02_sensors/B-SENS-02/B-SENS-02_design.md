@@ -105,8 +105,8 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Knowledge Graph Querying | How to extract context using the `NetworkX` wrapper | ⬜ To be written during Pre-commit |
-| OntologyMapper Integration | Documentation on how to map a new language's Tree-Sitter CST to the Universal Graph Ontology | ⬜ To be written during Pre-commit |
+| Knowledge Graph Querying | How to extract context using the `NetworkX` wrapper | 🟩 Completed (`docs/dev_guides/knowledge_graph_querying.md`) |
+| OntologyMapper Integration | Documentation on how to map a new language's Tree-Sitter CST to the Universal Graph Ontology | 🟩 Completed (`docs/dev_guides/ontology_mapping.md`) |
 
 ## Core Data Model & Ontology
 
@@ -182,12 +182,14 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | In-Memory Graph Engine | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | In-Memory Graph Engine | — | ✅ | ✅ | ✅ | 🟡 (Paused at Phase 5/6) | ⬜ |
 | SF-2 | Persistent Storage Adapter | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED.
-**Next step**: Start implementation planning by running:
-`/implementation-plan docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_design.md SF-1`
+**Current status**: SF-1 Implementation Complete. Pre-Commit Quality Gate Paused.
+**Next step**: 
+1. Discuss the new Analysis Document (`docs/analysis/automated_architecture_enforcement_insights.md`) regarding systemic workflow failures and the new SpecWeaver Domain/Architecture verification product features.
+2. Complete Phase 6 (Documentation) and Phase 7 (Walkthrough) of the `/pre-commit` quality gate.
+3. Commit B-SENS-02 SF-1.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

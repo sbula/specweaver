@@ -50,17 +50,23 @@ description: "Phase 2: Test gap analysis — coverage matrix, proposed test stor
 
 2.5. **Deliverable 2 — Proposed Test Stories** (flat list, grouped by kind):
 
+     > [!CAUTION]
+     > **ADVERSARIAL TEST MATRIX MANDATE:** When proposing new test stories, you MUST explicitly categorize them into the 4 Adversarial Matrix buckets: `[Happy Path]`, `[Boundary/Edge Case]`, `[Graceful Degradation]`, or `[Hostile/Wrong Input]`.
+     > Every single module with a gap MUST have at least one story covering each of these 4 buckets unless explicitly justified.
+
      Each proposed new test is written as a **story** with the kind clearly
      tagged. Stories are grouped under headings: `### Unit`, `### Integration`,
-     `### E2E`.
+     `### E2E`. Include the Matrix Category in the Story description.
 
      Example:
 
      ### Unit
      | # | Story | Target Class/Function | Source Line |
      |---|-------|-----------------------|-------------|
-     | 1 | Resolver skips candidates outside workspace boundary | `_resolve_mentions()` | L247 |
-     | 2 | Scanner stores nothing when no mentions found | `_scan_and_store_mentions()` | L193 |
+     | 1 | [Happy Path] Resolver skips candidates outside workspace boundary | `_resolve_mentions()` | L247 |
+     | 2 | [Boundary] Scanner stores nothing when no mentions found | `_scan_and_store_mentions()` | L193 |
+     | 3 | [Degradation] Resolver throws specific timeout error if LLM is offline | `_resolve_mentions()` | L250 |
+     | 4 | [Hostile] Scanner safely rejects malicious path traversal string | `_scan_and_store_mentions()` | L195 |
 
      ### Integration
      | # | Story | Target Seam | Source Lines |

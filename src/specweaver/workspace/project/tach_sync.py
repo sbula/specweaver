@@ -14,7 +14,7 @@ import tomlkit
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyGraph
+    from specweaver.graph.topology import TopologyGraph
 
 logger = logging.getLogger(__name__)
 

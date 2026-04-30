@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyContext, TopologyGraph
+    from specweaver.graph.topology import TopologyContext, TopologyGraph
     from specweaver.assurance.validation.models import RuleResult
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
@@ -132,7 +132,7 @@ def _load_topology(project_path: Path) -> TopologyGraph | None:
     Returns ``None`` (with a dim console note) if no context.yaml files
     are found -- this keeps all LLM commands usable without context.
     """
-    from specweaver.assurance.graph.topology import TopologyGraph
+    from specweaver.graph.topology import TopologyGraph
 
     graph = TopologyGraph.from_project(project_path, auto_infer=False)
     if not graph.nodes:
@@ -153,7 +153,7 @@ _SELECTOR_MAP: dict[str, type] = {}
 def _get_selector_map() -> dict[str, type]:
     """Lazily populate and return the selector name->class mapping."""
     if not _SELECTOR_MAP:
-        from specweaver.assurance.graph.selectors import (
+        from specweaver.graph.selectors import (
             ConstraintOnlySelector,
             DirectNeighborSelector,
             ImpactWeightedSelector,
@@ -197,7 +197,7 @@ def _select_topology_contexts(
             f"[yellow]Warning:[/yellow] Unknown selector '{selector_name}', "
             "falling back to 'direct'.",
         )
-        from specweaver.assurance.graph.selectors import DirectNeighborSelector
+        from specweaver.graph.selectors import DirectNeighborSelector
 
         selector_cls = DirectNeighborSelector
 

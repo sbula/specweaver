@@ -174,7 +174,7 @@ class TestPromptBuilderPlanIntegration:
 
     def test_plan_between_standards_and_topology(self) -> None:
         """I5: Plan positioned between <standards> and <topology> in built prompt."""
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.graph.topology import TopologyContext
 
         ctx = [
             TopologyContext(
@@ -589,7 +589,7 @@ class TestRenderBlocksOrderPreserved:
 
     def test_full_render_order_with_all_block_types(self, tmp_path: Path) -> None:
         """All block types rendered in correct architectural order."""
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.graph.topology import TopologyContext
 
         f = tmp_path / "code.py"
         f.write_text("x = 1", encoding="utf-8")
@@ -730,7 +730,7 @@ class TestDagOrchestratorIntegration:
         """Integration Story 1: DAG Orchestrator physically blocks overlapping impact chains."""
         import asyncio
 
-        from specweaver.assurance.graph.topology import TopologyGraph
+        from specweaver.graph.topology import TopologyGraph
         from specweaver.core.flow.engine.models import PipelineDefinition
         from specweaver.core.flow.engine.runner import PipelineRunner
 

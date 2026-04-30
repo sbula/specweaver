@@ -12,14 +12,14 @@ from typing import TYPE_CHECKING
 import typer
 from rich.table import Table
 
-from specweaver.assurance.graph.topology import TopologyGraph
+from specweaver.graph.topology import TopologyGraph
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.project.discovery import resolve_project_path
 from specweaver.workspace.project.scaffold import scaffold_project
 from specweaver.workspace.project.tach_sync import sync_tach_toml
 
 if TYPE_CHECKING:
-    from specweaver.assurance.graph.inference import ContextInferrer  # type: ignore
+    from specweaver.graph.inference import ContextInferrer  # type: ignore
 
 logger = logging.getLogger(__name__)
 

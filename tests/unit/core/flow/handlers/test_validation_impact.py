@@ -16,7 +16,7 @@ def mock_run_context(tmp_path: Path):
     )
 
 
-@patch("specweaver.assurance.graph.topology.TopologyGraph.from_project")
+@patch("specweaver.graph.topology.TopologyGraph.from_project")
 def test_validate_tests_handler_resolves_topology_targets(
     mock_from_project, mock_run_context: RunContext
 ):
@@ -62,7 +62,7 @@ def test_validate_tests_handler_resolves_topology_targets(
     assert len(targets) == 2
 
 
-@patch("specweaver.assurance.graph.topology.TopologyGraph.from_project")
+@patch("specweaver.graph.topology.TopologyGraph.from_project")
 def test_validate_tests_handler_fallback_when_path_not_exists(
     mock_from_project, mock_run_context: RunContext
 ):

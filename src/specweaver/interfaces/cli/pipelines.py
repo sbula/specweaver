@@ -311,7 +311,7 @@ def _execute_run(  # noqa: C901
     from specweaver.core.flow.engine.state import RunStatus
 
     if final_run.status == RunStatus.COMPLETED:
-        from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.graph.hasher import DependencyHasher
 
         try:
             DependencyHasher(project_path, AnalyzerFactory).save_cache()
@@ -450,7 +450,7 @@ def resume(  # noqa: C901
         display.stop()
 
     if final_run.status == RunStatus.COMPLETED:
-        from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.graph.hasher import DependencyHasher
 
         try:
             DependencyHasher(project_path, AnalyzerFactory).save_cache()

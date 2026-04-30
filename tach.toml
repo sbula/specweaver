@@ -4,7 +4,7 @@ source_roots = [
 ]
 exact = true
 modules = [
-    { path = "src.specweaver.assurance.graph", depends_on = [] },
+    { path = "src.specweaver.graph", depends_on = [] },
     { path = "src.specweaver.assurance.standards", depends_on = [] },
     { path = "src.specweaver.assurance.validation", depends_on = [] },
     { path = "src.specweaver.core.config", depends_on = [] },
@@ -55,7 +55,7 @@ expose = [
 
 [[interfaces]]
 from = [
-    "src.specweaver.assurance.graph",
+    "src.specweaver.graph",
 ]
 expose = [
     "topology",

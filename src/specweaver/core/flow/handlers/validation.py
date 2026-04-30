@@ -401,7 +401,7 @@ class ValidateTestsHandler:
             return []  # All nodes pristine, trigger short-circuit
 
         try:
-            from specweaver.assurance.graph.topology import TopologyGraph
+            from specweaver.graph.topology import TopologyGraph
 
             graph = TopologyGraph.from_project(context.project_path, auto_infer=False)
 

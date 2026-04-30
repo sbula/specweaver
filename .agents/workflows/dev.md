@@ -101,10 +101,24 @@ For each task in the breakdown:
 
 ### 3.1 Red — Write Failing Tests First
 
-- Write the test(s) for the task. Include:
+> [!CAUTION]
+> **STRICT SEQUENCING MANDATE:** You MUST write the test file(s) in `tests/` and run `pytest` to verify they fail (Red) **BEFORE** you are allowed to write or modify ANY implementation code in `src/`. 
+> You are permitted to batch this: you may write 20 failing test cases at once. But you MUST run them and confirm they fail before moving to Phase 3.2. Generating `src/` implementation code before proving the tests fail is a severe process violation.
+
+> [!CAUTION]
+> **ADVERSARIAL TEST MATRIX MANDATE:** Before generating any tests, you MUST explicitly output a test matrix classifying your proposed tests into exactly 4 buckets:
+> 1. **Happy Path:** Expected Input -> Expected Output.
+> 2. **Boundary/Edge Cases:** Empty arrays, massive files, max constraints, cyclic graphs.
+> 3. **Graceful Degradation:** Dependencies failing, network timeouts, unparseable ASTs.
+> 4. **Hostile/Wrong Input:** Path traversal strings, completely wrong types, `None` injections.
+> 
+> You MUST write at least one test story for EACH of these 4 buckets. If a bucket is mathematically impossible for the current feature, explicitly justify why.
+
+- Write the test(s) for the task according to your matrix. Include:
   - Happy path
-  - Edge cases / corner cases (but keep it simple — avoid over-engineering!)
-  - Error paths where relevant
+  - Boundary/Edge cases
+  - Graceful Degradation error paths
+  - Hostile input handling
 - Run the test(s) — they MUST fail (red). If they pass, the test is wrong.
 // turbo
 ```

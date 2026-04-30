@@ -22,7 +22,7 @@ class TestAddStandards:
 
     def test_standards_renders_after_constitution(self) -> None:
         """Standards renders after constitution, before topology."""
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.graph.topology import TopologyContext
 
         ctx = [
             TopologyContext(
@@ -115,7 +115,7 @@ class TestAddStandards:
 
     def test_full_render_order(self, tmp_path: Path) -> None:
         """Full render order: instructions → constitution → standards → topology → files → context → reminder."""
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.graph.topology import TopologyContext
 
         f = tmp_path / "code.py"
         f.write_text("pass", encoding="utf-8")

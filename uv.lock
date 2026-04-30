@@ -2199,6 +2199,7 @@ dependencies = [
     { name = "google-genai" },
     { name = "jinja2" },
     { name = "junitparser" },
+    { name = "networkx" },
     { name = "orjson" },
     { name = "pathspec" },
     { name = "proto-schema-parser" },
@@ -2257,6 +2258,7 @@ serve = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "types-networkx" },
     { name = "types-pyyaml" },
 ]
 
@@ -2274,6 +2276,7 @@ requires-dist = [
     { name = "mistralai", marker = "extra == 'all-llm'", specifier = ">=1.0" },
     { name = "mistralai", marker = "extra == 'mistral'", specifier = ">=1.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15" },
+    { name = "networkx", specifier = "==3.6.1" },
     { name = "openai", marker = "extra == 'all-llm'", specifier = ">=1.5" },
     { name = "openai", marker = "extra == 'openai'", specifier = ">=1.5" },
     { name = "orjson", specifier = ">=3.9.0" },
@@ -2309,7 +2312,10 @@ requires-dist = [
 provides-extras = ["openai", "anthropic", "mistral", "all-llm", "serve", "dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "types-pyyaml", specifier = ">=6.0.12.20260408" }]
+dev = [
+    { name = "types-networkx", specifier = ">=3.6.1.20260408" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
+]
 
 [[package]]
 name = "starlette"
@@ -2673,6 +2679,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f5/24/cb09efec5cc954f7f9b930bf8279447d24618bb6758d4f6adf2574c41780/typer-0.24.1.tar.gz", hash = "sha256:e39b4732d65fbdcde189ae76cf7cd48aeae72919dea1fdfc16593be016256b45", size = 118613, upload-time = "2026-02-21T16:54:40.609Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4a/91/48db081e7a63bb37284f9fbcefda7c44c277b18b0e13fbc36ea2335b71e6/typer-0.24.1-py3-none-any.whl", hash = "sha256:112c1f0ce578bfb4cab9ffdabc68f031416ebcc216536611ba21f04e9aa84c9e", size = 56085, upload-time = "2026-02-21T16:54:41.616Z" },
+]
+
+[[package]]
+name = "types-networkx"
+version = "3.6.1.20260408"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a9/06/fe448df6a42cc938d36fa6e88cb0c6a269059cd4ce05347ec52da306e007/types_networkx-3.6.1.20260408.tar.gz", hash = "sha256:63f94902b2d99d6d4f448eb1bc23b8a327d4022f5098bc0d22d42b13003b106e", size = 73828, upload-time = "2026-04-08T04:34:38.471Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/1d/870a15630dc37a85aa0364bf623fad6ef9ef7cad14be62a0bab7541839f5/types_networkx-3.6.1.20260408-py3-none-any.whl", hash = "sha256:dc957f12bc9ffe7cab6704ccb719722fc5e508a491273c49b45c8786162a6f08", size = 162537, upload-time = "2026-04-08T04:34:37.385Z" },
 ]
 
 [[package]]

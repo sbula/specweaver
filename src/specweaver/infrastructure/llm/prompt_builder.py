@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyContext
+    from specweaver.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
     from specweaver.infrastructure.llm.models import ProjectMetadata, TokenBudget

@@ -337,7 +337,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **D-SENS-01:** Topology Graph (Dependency mapping)
-    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder (Provides deep DAG traversal)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (Provides deep DAG traversal)
     *   `[ ]` **C-EXEC-01:** Internal Layer Enforcement (Validating dependency direction)
     *   `[ ]` **B-VAL-05:** DAL Architecture Gate (Dependency tier validation)
 *   **Sub-Story Add-Ons:**
