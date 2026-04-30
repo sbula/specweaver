@@ -44,7 +44,7 @@ Create the actual persistent backup mechanism for the NetworkX graph.
 - Define a generic `GraphRepository` interface (for future Postgres extensibility).
 - Implement `SqliteGraphRepository(SqliteBase)`.
 - Defines the local schema migrations (`nodes`, `edges`, and the merged `artifact_events`).
-- `nodes` schema will include explicit columns for `service_name` and `package_name` (to support SF-3 routing).
+- `nodes` schema will include explicit columns for `service_name` and `package_name` (to support SF-1 Enterprise Ontology routing).
 - Implement `flush_to_db(nx_graph)`: Uses **chunked `executemany` inserts** (batch size = 5,000) to prevent `database is locked` deadlock traps (Red Team Mitigation).
 - Implement `load_from_db()`: Rebuilds the `nx.DiGraph` from the SQL tables on boot.
 
