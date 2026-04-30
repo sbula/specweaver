@@ -173,10 +173,19 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
 
+### SF-3: Universal Graph Harmonization
+- **Scope**: Refactor the project's existing independent trees (Topology Graph `D-SENS-01`, Lineage Graph, and raw AST Graph `D-SENS-02`) to natively populate and query from the unified `NetworkX` InMemoryGraphEngine. Standardize all their node schemas and data structures to use the new Enterprise Ontology, ensuring a single, harmonized data model across the entire SpecWeaver ecosystem.
+- **FRs**: [FR-1, FR-6]
+- **Inputs**: Existing standalone graph generators.
+- **Outputs**: Harmonized NetworkX routing across all graph-based domains.
+- **Depends on**: [SF-1]
+- **Impl Plan**: ⬜
+
 ## Execution Order
 
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
+3. SF-3 (depends on SF-1)
 
 ## Progress Tracker
 
@@ -184,10 +193,11 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | In-Memory Graph Engine & Enterprise Ontology | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-2 | Persistent Storage Adapter | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Universal Graph Harmonization | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 code was reverted due to workflow violations. SF-3 Enterprise Ontology has been cleanly merged into SF-1.
+**Current status**: SF-1 code was reverted due to workflow violations. SF-3 Universal Graph Harmonization design has been injected.
 **Next step**: 
 1. Run the `/implementation-plan` workflow to architect SF-1 (In-Memory Graph Engine & Enterprise Ontology) from scratch.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
