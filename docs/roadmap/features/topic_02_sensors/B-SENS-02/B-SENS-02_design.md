@@ -166,30 +166,38 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf1_implementation_plan.md
 
 ### SF-2: Persistent Storage Adapter (SQLite Backup)
-- **Scope**: Implements the `GraphRepository` interface (AD-12) to ensure a seamless future drop-in replacement for PostgreSQL (A-SENS-02). Handles asynchronously flushing the in-memory graph to `.specweaver/graph.db` on save, and loading it from SQLite on boot so the graph doesn't have to be rebuilt from scratch.
+- **Scope**: Implements the `GraphRepository` interface (AD-12) to ensure a seamless future drop-in replacement for PostgreSQL (A-SENS-02). Handles asynchronously flushing the in-memory graph to `.specweaver/graph.db` on save, and loading it from SQLite on boot so the graph doesn't have to be rebuilt from scratch. Will use the new `SqliteBase` generic DB class.
 - **FRs**: [FR-3]
 - **Inputs**: In-memory `NetworkX` graph, File system paths.
 - **Outputs**: `ProjectDatabase` SQLite connection object.
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
 
+### SF-3: Enterprise Ontology Expansion
+- **Scope**: Expands the universal, language-agnostic ontology to capture macro-architectural boundaries (Microservice, Package/Module, Interface). Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse during enterprise querying. Models all hierarchies and interfaces strictly as Edges (`CONTAINS`, `IMPLEMENTS`) rather than DB columns to prevent schema bloat. Excludes overly granular local variable collection to maintain high performance. Also merges the `artifact_events` (Lineage Graph) from the global DB into the local `graph.db`.
+- **FRs**: [FR-6]
+- **Inputs**: Tree-Sitter AST, `context.yaml` boundaries.
+- **Outputs**: Expanded `GraphNode` schema, new Edge types (`CONTAINS`, `IMPLEMENTS`, `FULFILLS`).
+- **Depends on**: [SF-1]
+- **Impl Plan**: ⬜
+
 ## Execution Order
 
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
+3. SF-3 (depends on SF-1, can be done parallel or after SF-2)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | In-Memory Graph Engine | — | ✅ | ✅ | ✅ | 🟡 (Paused at Phase 5/6) | ⬜ |
-| SF-2 | Persistent Storage Adapter | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | In-Memory Graph Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Persistent Storage Adapter | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Enterprise Ontology Expansion | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Implementation Complete. Pre-Commit Quality Gate Paused.
+**Current status**: SF-2 Implementation Plan generated and approved. SF-3 Design injected.
 **Next step**: 
-1. Discuss the new Analysis Document (`docs/analysis/automated_architecture_enforcement_insights.md`) regarding systemic workflow failures and the new SpecWeaver Domain/Architecture verification product features.
-2. Complete Phase 6 (Documentation) and Phase 7 (Walkthrough) of the `/pre-commit` quality gate.
-3. Commit B-SENS-02 SF-1.
+1. Begin `/dev` workflow for SF-2 (SqliteBase Refactoring + GraphRepository).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
