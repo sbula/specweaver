@@ -87,7 +87,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-1 |
 | RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-1 & SF-2 |
 | RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-1 |
-| RT-11 | **Stale Graph Boot Trap** | SF-2 MUST compare `A-SENS-01` file hashes against the DB on boot. Any mismatch triggers an immediate purge and re-parse of that file's subgraph. | SF-2 |
+| RT-11 | **Stale Graph Boot Trap** | SF-3 MUST compare `A-SENS-01` file hashes against the DB on boot. Any mismatch triggers an immediate purge and re-parse of that file's subgraph. | SF-3 |
 | RT-12 | **Orphaned Node Accumulation** | Updating a modified file MUST trigger a hard reset (`DELETE FROM nodes WHERE file_id = X`) before inserting the new AST nodes to wipe deleted functions/ghosts. | SF-1 |
 | RT-13 | **Memory Bloat Eviction** | The in-memory `NetworkX` graph MUST be tied to the CLI process lifecycle. If running as a daemon, it MUST support an explicit `clear_cache()` command. | SF-1 |
 | RT-14 | **Declarative AST Crash** | The `OntologyMapper` MUST NOT assume files contain executable `PROCEDURE` nodes (e.g., TypeSpec/HCL2). It must map `API_CONTRACT` gracefully without throwing exceptions. | SF-1 |
@@ -106,7 +106,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | RT-27 | **Infinite Depth OOM Crash** | The `InMemoryGraphEngine` MUST enforce a hard-coded maximum depth (e.g., `max(requested, 5)`) on all subgraph extraction queries to prevent catastrophic enterprise-wide memory loads. | SF-1 |
 | RT-28 | **Standard Library Ghost Swarm** | The `OntologyMapper` MUST detect and silently drop `CALLS` edges pointing to native language standard libraries (e.g., `sys.stdlib_module_names`) to prevent millions of useless nodes. | SF-1 |
 | RT-29 | **Metadata Key Obfuscation** | The `metadata` JSON blob MUST be strictly validated via Pydantic Discriminated Unions per `NodeKind`. Unstructured `Dict[str, Any]` is forbidden. Unrecognized keys must be silently dropped to prevent data smuggling. | SF-1 |
-| RT-30 | **Local Context YAML Poisoning** | The `GraphRepository` MUST validate the local `context.yaml` `service_name` against the global `~/.specweaver/specweaver.db` registry on boot to prevent rogue agents from hijacking other microservice namespaces. | SF-2 |
+| RT-30 | **Local Context YAML Poisoning** | The Orchestrator MUST validate the local `context.yaml` `service_name` against the global `~/.specweaver/specweaver.db` registry on boot to prevent rogue agents from hijacking other microservice namespaces, before passing the validated name to the GraphRepository. | SF-3 |
 | RT-31 | **Parallel Query Exhaustion** | The `InMemoryGraphEngine` MUST use an async `Semaphore` to limit concurrent subgraph extractions (e.g., max 3) to prevent LLM loops from triggering an OOM crash via parallel `NetworkX` instances. | SF-1 |
 | RT-32 | **Polyglot Ghost Blindspot** | Language-specific AST parsers (`D-SENS-02`) MUST provide standard library exclusion Regexes (e.g., `^java\..*`) to the `OntologyMapper` because the Python `sys` module cannot identify Java/Go/Rust built-ins. | SF-1 |
 
