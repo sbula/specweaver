@@ -183,17 +183,17 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 ## Sub-Feature Breakdown
 
 ### SF-1: In-Memory Knowledge Graph Engine & Enterprise Ontology
-- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds the primary in-memory `NetworkX` graph. Expands the language-agnostic ontology to capture macro-architectural boundaries (Microservice, Package/Module, Interface). Models all hierarchies and interfaces strictly as Edges (`CONTAINS`, `IMPLEMENTS`, `FULFILLS`) rather than DB columns to prevent schema bloat. Excludes overly granular local variable collection to maintain high performance. Exposes the read query API and handles `GraphML` exports safely. Enforces bi-directional edge wiping to prevent ghost edges.
+- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/core/graph/` (pure-logic). Because it forbids `loom/*`, it CANNOT import the AST parser directly; it must accept raw JSON dicts passed down from the `flow/` orchestrator. Expands the ontology to capture macro-architectural boundaries. Models hierarchies as Edges to prevent DB bloat. Exposes the read query API and handles `GraphML` exports safely. Enforces bi-directional edge wiping to prevent ghost edges.
 - **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
-- **Inputs**: AST output from `D-SENS-02`, `context.yaml` boundaries.
+- **Inputs**: Raw JSON dictionaries (AST data, topology data) passed via orchestration.
 - **Outputs**: Expanded `GraphNode` schema, new Edge types, in-memory `NetworkX` graph, and `.graphml` export.
 - **Depends on**: none
 - **Impl Plan**: ⬜
 
 ### SF-2: Persistent Storage Adapter (SQLite Backup)
-- **Scope**: Implements the `GraphRepository` interface (AD-12) to ensure a seamless future drop-in replacement for PostgreSQL (A-SENS-02). Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse during enterprise querying. Merges the `artifact_events` (Lineage Graph) from the global DB into the local project-specific `graph.db`. Handles asynchronously flushing the in-memory graph to `.specweaver/graph.db` on save, and loading it from SQLite on boot. Will use the new `SqliteBase` generic DB class.
+- **Scope**: Because `graph/` forbids database access, this sub-feature implements the actual SQLite `GraphRepository` adapter inside the `config/` module (e.g., `config/_db_graph_mixin.py`). Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Merges the `artifact_events` (Lineage Graph) from the global DB into the local project-specific `graph.db`. Handles asynchronous flush/load of the `NetworkX` graph.
 - **FRs**: [FR-3, FR-6]
-- **Inputs**: In-memory `NetworkX` graph, File system paths.
+- **Inputs**: In-memory `NetworkX` graph, Database session.
 - **Outputs**: `ProjectDatabase` SQLite connection object.
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
