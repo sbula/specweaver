@@ -480,6 +480,5 @@ These stories do not add new user-facing features, but are critical epics requir
 
 ### 🔴 TECH-01: Domain-Driven Design Unification
 **Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
-*   **Description:** The massive refactoring effort to align the legacy `config/`, `cli/`, and `loom/` layers with the pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad.
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-01:** [Domain-Driven Design Unification](features/topic_06_architecture/TECH-01/TECH-01_ddd_refactor.md)
+    *   `[ ]` **TECH-01:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-01/TECH-01_ddd_refactor.md)
