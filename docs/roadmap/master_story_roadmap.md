@@ -3,10 +3,10 @@
 This is the unified, single-numbering format (US-1 to US-18) covering the entire lifespan of the platform.
 
 ### Story Status Flags
-*   🟢 **Completed** (All Core MVS and Sub-Story Add-Ons are 100% delivered)
-*   🟡 **In Progress** (Active development, or Core is done but Add-Ons remain)
-*   🔴 **Pending** (Core MVS is not yet delivered)
-*   🔵 **On Hold** (Visionary, blocked by extreme complexity, or parked for re-evaluation)
+*   🟢 **Completed** (For Base: Core MVS is 100% delivered. For Sub-Story: Feature is 100% delivered)
+*   🟡 **In Progress** (Some requirements are checked, but not all)
+*   🔴 **Pending** (Zero requirements have been checked)
+*   🔵 **On Hold** (Visionary, blocked, or parked)
 
 Following the **"Good Enough" principle**, every User Story is strictly divided into:
 1. **Core Required (MVS):** The absolute minimum required to achieve the user benefit.
