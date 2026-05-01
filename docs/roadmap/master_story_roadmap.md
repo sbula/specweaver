@@ -57,7 +57,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟢 US-1: The Validation Engine
 *   **User Benefit:** I can write a spec in Markdown and mathematically prove its structural quality before writing any code.
-*   **Integration Contract:** The CLI (`E-UI-01`) must parse the file using Loom (`E-SENS-01`) and pass it to the Validation Engine (`E-VAL-01`), ensuring no unvalidated LLM generation occurs.
 *   **Verifiable Proof:** `tests/e2e/capabilities/assurance/test_standards_e2e.py`
 *   **Core Required (MVS):**
     *   `✅` **E-UI-01:** CLI Scaffold
@@ -83,7 +82,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-2: The Interactive Drafter
 *   **User Benefit:** I can have the LLM co-author a spec with me section-by-section.
-*   **Integration Contract:** The interactive loop (`E-INTL-02`) must seamlessly hand off the generated context to the Review Engine, ensuring no manual copy-pasting is required.
 *   **Verifiable Proof:** `[Pending e2e draft test]`
 *   **Core Required (MVS):**
     *   `✅` **E-UI-01:** CLI Scaffold
@@ -100,7 +98,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟢 US-3: Autonomous Implementation [Execution Blocker: Requires US-9]
 *   **User Benefit:** I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.
-*   **Integration Contract:** The Implementation Generator (`D-INTL-01`) must pipe natively into the QA Runner (`D-VAL-01`). The QA Runner MUST execute exclusively inside the Zero-Trust Podman Sandbox (`D-EXEC-01`).
 *   **Verifiable Proof:** `[Pending e2e sandbox loop test]`
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
@@ -115,7 +112,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-4: Context-Aware Flow Orchestration
 *   **User Benefit:** I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.
-*   **Integration Contract:** The SQLite Config DB (`E-FLOW-01`) must statefully persist outputs from the Validation Engine (`E-VAL-01`), allowing the Pipeline Runner (`D-FLOW-01`) to pass sanitized, verified context into subsequent prompt steps.
 *   **Verifiable Proof:** `tests/e2e/capabilities/assurance/test_mcp_flow_e2e.py`
 *   **Core Required (MVS):**
     *   `✅` **E-VAL-01:** Validation Engine
@@ -147,7 +143,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟢 US-5: Polyglot Code Understanding
 *   **User Benefit:** SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.
-*   **Integration Contract:** The AST Skeleton Extractor (`D-SENS-02`) must natively resolve edges against the Git Worktree Bouncer (`D-EXEC-02`) to ensure extracted context accurately reflects the current filesystem state without hallucinatory paths.
 *   **Verifiable Proof:** `tests/e2e/capabilities/core/test_lineage_e2e.py`
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config & Flow Engine)*
@@ -172,6 +167,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-6: The Remote Dashboard (Tablet on a Train)
 **Benefit:** *I can review specs and control SpecWeaver pipelines from my browser on a tablet, without needing to run the heavy AI engine locally.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-06_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `✅` **C-FLOW-02:** Router-based flow control
@@ -188,6 +184,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-7: The IDE Copilot (VS Code)
 **Benefit:** *I can interact with the engine and approve/reject generated code seamlessly inside VS Code without switching to the terminal.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-07_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `✅` **C-FLOW-02:** Router-based flow control
@@ -201,6 +198,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-8: The Greenfield Bootstrap Wizard
 **Benefit:** *When starting a new project, an interactive wizard bounds the LLM's architecture choices so it doesn't hallucinate invalid tech stacks.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-08_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-SENS-01:** Topology Graph
@@ -213,7 +211,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-9: The Zero-Trust Sandbox
 *   **User Benefit:** The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.
-*   **Integration Contract:** The QA Runner (`US-3 Core`) must be forcefully injected into the Podman/Docker Integration (`D-EXEC-01`), with host filesystem mounts set strictly to read-only for source files, and write-only for designated temporary test artifacts.
 *   **Verifiable Proof:** `[Pending e2e sandbox test]`
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
@@ -235,6 +232,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
 **Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-10_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
@@ -245,6 +243,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-11: GraphRAG for Brownfield Scale
 **Benefit:** *The agent can instantly recall exact context from 20 interacting microservices without blowing up the context window.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-11_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Context Prompts)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
@@ -267,6 +266,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-12: Legacy Spec Extraction (Reverse-Weaving)
 **Benefit:** *SpecWeaver automatically reverse-engineers and drafts Spec.md contracts by reading my old undocumented Java/C++ code.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-12_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Spec Drafting)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
@@ -280,6 +280,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-13: Financial-Grade Math Proofs
 **Benefit:** *The agent mathematically proves its algorithms are secure before I deploy them to production, discovering 0-days natively.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-13_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
@@ -293,6 +294,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-14: Adversarial Red-Teaming
 **Benefit:** *An adversarial AI attacks my spec to find logic holes and edge-cases before I waste money generating bad code.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-14_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Spec Review Engine)*
     *   `✅` **US-3 Core** *(provides QA Runner)*
@@ -308,6 +310,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-15: Enterprise Audit & Traceability
 **Benefit:** *I can hand a compliance auditor a ledger that proves exactly which LLM generated which line of code based on which business requirement.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-15_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Pipeline Runner)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
@@ -322,6 +325,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-16: AI Operations & Cost Routing
 **Benefit:** *I can see exactly how much money each agent is spending, detect LLM friction, and dynamically route tasks to cheaper models.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-16_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config DB)*
     *   `✅` **Step 9a:** Token Tracking
@@ -342,6 +346,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-17: The SWE-Bench Guarantee
 **Benefit:** *SpecWeaver proves it hasn't degraded by autonomously solving standardized SWE-Bench tickets before every release.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-17_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
@@ -352,6 +357,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-18: Productionizing External Targets
 **Benefit:** *We prove the entire platform works by using it to build and manage an external proprietary trading system.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-18_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
     *   `✅` **US-5 Core** *(provides Worktree Bouncer & AST extractors)*
@@ -368,6 +374,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-19: Microservice Fleet Orchestration
 **Benefit:** *I can design, generate, and orchestrate an entire fleet of 20+ microservices, automatically keeping their API contracts and topology synchronized across independent repositories.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-19_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core**
     *   `✅` **US-5 Core**
@@ -385,6 +392,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-20: Enterprise Architecture Enforcement
 **Benefit:** *SpecWeaver mathematically prevents my project from degrading by enforcing strict test intensities (e.g., DAL-A requires mutation tests) and blocking forbidden dependencies across the DAG.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-20_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **D-SENS-01:** Topology Graph (Dependency mapping)
@@ -403,6 +411,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟢 US-21: Autonomous Feature Decomposition
 **Benefit:** *I can give the agent a massive, epic-level Spec, and it will automatically break it down into a DAG of small, testable sub-components before writing any code.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-21_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-INTL-02:** Feature Decomposition
@@ -413,6 +422,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-22: Polyglot Contract Enforcement
 **Benefit:** *SpecWeaver mathematically proves that my Python microservice didn't break the REST/gRPC contract of my Rust worker.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-22_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **A-VAL-01:** Protocol/Schema Analyzers (.proto, openapi)
@@ -423,6 +433,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟢 US-23: Enterprise Tool Extension (MCP)
 **Benefit:** *I can instantly plug SpecWeaver into my company's internal tools (Jira, Confluence) using the Model Context Protocol without writing custom Python adapters.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-23_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **C-INTL-02:** MCP Client Architecture
 *   **Sub-Story Add-Ons:**
@@ -431,6 +442,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-24: Behavioral Scenario Verification
 **Benefit:** *SpecWeaver runs parallel behavioral verification pipelines to prove the generated code actually solves the business scenario, not just syntax tests.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-24_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **B-FLOW-01:** Scenario Testing Pipeline
@@ -441,6 +453,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟢 US-25: Compliance & Constitution Governance
 **Benefit:** *I can enforce project-wide rules (Constitutions) and domain-specific profiles (e.g., 'Web App' vs 'ML Model') that dynamically override agent behavior.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-25_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **C-VAL-01:** Constitution Artifact
     *   `✅` **C-VAL-02:** Domain Profiles
@@ -454,6 +467,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-26: Fleet-Wide CVE Remediation
 **Benefit:** *When a zero-day vulnerability drops, SpecWeaver instantly scans the polyglot AST across all repositories to find every usage of the vulnerable function, and safely refactors the implementation across the entire fleet.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-26_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder
@@ -464,6 +478,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 ### 🟡 US-27: Autonomous Production Self-Healing
 **Benefit:** *SpecWeaver hooks directly into Datadog/Sentry. When a production exception fires, it reads the stack trace, uses the Knowledge Graph to pinpoint the failing AST node, and autonomously drafts a Hotfix Spec and PR to resolve the crash.*
+*   **Integration Contracts:** [View Boundaries 🔗](integrations/US-27_integration.md)
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder
