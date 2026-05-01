@@ -28,8 +28,10 @@ clean_graph = engine.query_subgraph(
 To pass graph data to LLM agents or external tools, serialize the subgraph to GraphML format.
 
 ```python
-from specweaver.graph.export import export_to_graphml
+from specweaver.graph.builder.orchestrator import GraphBuilder
 
 # Serializes the entire graph to disk with strict Path Traversal bounds
-export_to_graphml(engine, target_path="out/graph.graphml", workspace_root="/workspace")
+# Assumes 'engine' is an InMemoryGraphEngine instance
+builder = GraphBuilder(engine)
+builder.export_graph_to_disk(workspace_root="/workspace", output_name="out")
 ```

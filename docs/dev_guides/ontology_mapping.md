@@ -13,6 +13,7 @@ To prevent contextual handoff failures between agents, all language-specific par
 - `GHOST`: Unresolved third-party dependencies.
 
 ### Edges
+- `CONTAINS`: Structural ownership (e.g. FILE contains DATA_STRUCTURE).
 - `IMPORTS`: File A depends on File B.
 - `CALLS`: Procedure A invokes Procedure B.
 - `IMPLEMENTS`: Data Structure A fulfills Data Structure B.

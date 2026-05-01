@@ -346,7 +346,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-15:** Base Integration Contract defined in [US-15_integration.md](integrations/US-15_integration.md)
     *   `✅` **US-4 Core** *(provides Pipeline Runner)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[ ]` **B-SENS-02:** Persistent Knowledge Graph Builder
+    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder
     *   `[ ]` **C-UI-02:** Traceability Matrix UX
 *   **Sub-Story Add-Ons:**
     *   🔴 **Enterprise Compliance Protocols:**
