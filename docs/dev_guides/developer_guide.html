@@ -82,6 +82,7 @@
     <li><a href="#state">State Model &amp; Persistence</a></li>
     <li><a href="#testing">Testing Strategy</a></li>
     <li><a href="#decisions">Key Design Decisions</a></li>
+    <li><a href="#graph-engine">Knowledge Graph Engine</a></li>
     <li><a href="#checklist">Review Checklist</a></li>
   </ol>
 </nav>
@@ -104,7 +105,7 @@ python -m pytest -m unit -q   # Run unit tests</code></pre>
   <tr><td><code>context/</code></td><td>Topology/dependency context for LLM prompts</td></tr>
   <tr><td><code>drafting/</code></td><td>Spec co-authoring with HITL interaction</td></tr>
   <tr><td><code>flow/</code></td><td>★ Pipeline engine (runner, gates, state, handlers)</td></tr>
-  <tr><td><code>graph/</code></td><td>Project dependency graph (import analysis)</td></tr>
+  <tr><td><code>graph/</code></td><td>In-Memory Knowledge Graph Engine, Builder, & Topology, and Persistent SQLite Adapter</td></tr>
   <tr><td><code>implementation/</code></td><td>Code generation from specs</td></tr>
   <tr><td><code>llm/</code></td><td>LLM adapter layer (auto-discovery registry, Gemini, OpenAI, etc.), token/cost telemetry, prompt builder, mention scanner, artifact lineage</td></tr>
   <tr><td><code>loom/</code></td><td>★ Interaction layer — atoms, tools, commons</td></tr>
@@ -1132,7 +1133,16 @@ uv run ruff check src/ tests/         # Lint</code></pre>
 </table>
 
 <!-- ================================================================== -->
-<h2 id="checklist">12. Review Checklist</h2>
+<h2 id="graph-engine">12. Knowledge Graph Engine (SF-1 & SF-2)</h2>
+
+<p>SpecWeaver utilizes a purely in-memory <code>NetworkX</code> Graph Engine coupled with a Persistent SQLite Storage Adapter. This is used for generating Context Topology, Dependency Trees, and LLM Analysis boundaries natively.</p>
+<ul>
+  <li><strong>SF-1 (In-Memory Engine):</strong> Lives in <code>graph/engine/</code>. Generates Ontology Mappings from polyglot AST Data.</li>
+  <li><strong>SF-2 (Persistent Adapter):</strong> Lives in <code>graph/store/</code>. Backs up the NetworkX state safely to SQLite using batch chunking and Idempotent Tombstoning (<code>is_active</code>) to prevent data loss across Git checkpoints.</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2 id="checklist">13. Review Checklist</h2>
 
 <p>When reviewing agent-generated changes, focus on these areas:</p>
 

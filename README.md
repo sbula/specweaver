@@ -33,6 +33,7 @@ sw init <name> → sw draft → sw check → sw review → sw implement → sw c
 - **Zero-Trust Tool Isolation** — Agent generation occurs strictly inside isolated Git Worktree Sandbox environments utilizing dictatorial grant checks avoiding hallucinatory system overwrites.
 - **Deep Semantic Pipeline Hashing** — Sub-second mathematical incremental crawler computes Merkle-tree state cache over physical structures to bypass unaffected workflows downstream natively.
 - **External DB Context Harness** — Connect externally to persistent databases (e.g. Postgres) via the Model Context Protocol (MCP) securely routing read-only structures through ephemeral Node environments with telemetry scrubbing.
+- **Knowledge Graph Engine** — In-Memory NetworkX code-topology graph with a Persistent SQLite Storage Adapter utilizing Idempotent Tombstoning and Integer-Mapped Reconstitution for math-safe agent execution across boundaries.
 
 > 🔎 *For an exhaustive, technical inventory of internal engine mechanics, capabilities, and upcoming architectural deployments, please view the active [SpecWeaver Master Story Roadmap](docs/roadmap/master_story_roadmap.md).*
 
@@ -70,7 +71,7 @@ If you are extending SpecWeaver's core Engine, custom tools, or LLM adapters, co
 │   ├── context/                # Context providers (HITL, inferrer, analyzers)
 │   ├── drafting/               # Interactive spec drafter
 │   ├── flow/                   # Pipeline engine: models, parser, runner, state, handlers, store
-│   ├── graph/                  # In-Memory Knowledge Graph Engine, Builder, & Topology
+│   ├── graph/                  # In-Memory Knowledge Graph Engine, Builder, Topology & Persistent SQLite Adapter
 │   ├── implementation/         # Code generator
 │   ├── llm/                    # Multi-provider auto-discovery registry, models, telemetry
 │   │   ├── adapters/           # Self-describing concrete adapters (Gemini, OpenAI, etc)
