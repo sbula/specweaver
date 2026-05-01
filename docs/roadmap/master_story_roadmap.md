@@ -346,7 +346,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-15:** Base Integration Contract defined in [US-15_integration.md](integrations/US-15_integration.md)
     *   `✅` **US-4 Core** *(provides Pipeline Runner)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder
+    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-UI-02:** Traceability Matrix UX
 *   **Sub-Story Add-Ons:**
     *   🔴 **Enterprise Compliance Protocols:**
@@ -440,7 +440,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-20:** Base Integration Contract defined in [US-20_integration.md](integrations/US-20_integration.md)
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **D-SENS-01:** Topology Graph (Dependency mapping)
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (Provides deep DAG traversal)
+    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-EXEC-01:** Internal Layer Enforcement (Validating dependency direction)
     *   `[ ]` **B-VAL-05:** DAL Architecture Gate (Dependency tier validation)
 *   **Sub-Story Add-Ons:**
@@ -522,7 +522,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-26:** Base Integration Contract defined in [US-26_integration.md](integrations/US-26_integration.md)
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder
+    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **B-SENS-04:** OSV Vulnerability Feed Ingestion
 *   **Sub-Story Add-Ons:**
     *   🔴 **Massive Scale Orchestration:**
@@ -534,7 +534,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-27:** Base Integration Contract defined in [US-27_integration.md](integrations/US-27_integration.md)
     *   `✅` **US-4 Core** *(provides Flow Engine)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder
+    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **A-SENS-04:** APM Telemetry Ingestion (Sentry/Datadog)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Infinite Loop Protection:**
