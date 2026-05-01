@@ -101,6 +101,10 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | RT-22 | **Serialization Infinite Loops** | Functions that serialize NetworkX subgraphs into Markdown strings for the LLM MUST maintain a `visited_nodes` set to break circular import cycles and prevent stringifier crashes. | SF-1 |
 | RT-23 | **AST Metadata Prompt Injection** | Data injected into `metadata JSON` from the AST MUST be sanitized to strip potential LLM hijack strings (e.g., `<|im_start|>`) hiding in developer comments. | SF-1 |
 | RT-24 | **OOM Memory Bombing** | Implementation of RT-19 (File size limits) MUST use `os.path.getsize(path)` to check the file size *before* opening the I/O stream, preventing massive 5GB files from triggering an Out-Of-Memory crash. | SF-1 |
+| RT-25 | **Metadata Black Hole Attack** | The `GraphNode` Pydantic model MUST enforce a strict 2KB limit on the dumped `metadata` JSON blob. Storing raw code or embeddings in metadata is strictly forbidden. | SF-1 |
+| RT-26 | **Namespace Prefix Spoofing** | ID prefixes MUST be deterministically prepended by the `GraphRepository` (reading `context.yaml`), NOT passed as a flexible argument by the AST parser, preventing agents from spoofing cross-service IDs. | SF-2 |
+| RT-27 | **Infinite Depth OOM Crash** | The `InMemoryGraphEngine` MUST enforce a hard-coded maximum depth (e.g., `max(requested, 5)`) on all subgraph extraction queries to prevent catastrophic enterprise-wide memory loads. | SF-1 |
+| RT-28 | **Standard Library Ghost Swarm** | The `OntologyMapper` MUST detect and silently drop `CALLS` edges pointing to native language standard libraries (e.g., `sys.stdlib_module_names`) to prevent millions of useless nodes. | SF-1 |
 
 ## Developer Guides Required
 
