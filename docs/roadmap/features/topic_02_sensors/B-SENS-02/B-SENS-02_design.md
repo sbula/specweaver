@@ -74,6 +74,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | AD-14 | Flattened Closures | Inner functions (e.g., Python nested `def`) must be serialized inside their parent's body, not extracted as standalone nodes, to prevent graph pollution. | No |
 | AD-15 | Overload Ambiguity Fallback | If an edge target is ambiguous in dynamic languages (e.g., overloaded `execute`), the `CALLS` edge must link to the parent `DATA_STRUCTURE` rather than guessing the wrong `PROCEDURE`. | No |
 | AD-16 | KISS Principle Enforcement | The engine must use direct Python functions and `NetworkX`. Building complex PubSub event brokers or Observer patterns inside SF-1 is explicitly forbidden. | No |
+| AD-17 | Federated GraphRAG | Graphs are bounded per-microservice. Cross-repo linkage is achieved dynamically at query-time via `API_CONTRACT` URI nodes (`service://...`), preventing global DB lock contention. | No |
 
 ## Security & Red Team Mitigations
 
@@ -125,6 +126,13 @@ To prevent contextual handoff failures between implementation agents, the Knowle
 *   `CALLS`: Procedure A invokes Procedure B.
 *   `IMPLEMENTS`: Data Structure A fulfills Data Structure B (resolves IoC).
 *   `CONSUMES` / `FULFILLS`: Service A consumes an `API_CONTRACT` that Service B fulfills.
+
+### Microservice Graph Federation (Future-Proofing)
+To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG for Brownfield Scale), the Universal Graph must natively support **Graph Federation**.
+Instead of building a single centralized monolithic `graph.db`, each microservice maintains its own local `.specweaver/graph.db` within its own repository.
+*   **API Linkage:** When the AST parses a network call to an external microservice, it creates an `API_CONTRACT` node using a Universal Resource Identifier (e.g., `id="service://auth/api/login"`).
+*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits a `service://` URI, it will dynamically mount the remote SQLite database and fuse the subgraphs in-memory.
+*   **Strict Verification:** This federated design allows SpecWeaver to mathematically prove if "Billing supports the Auth API" by cross-referencing the `API_CONTRACT` nodes across the two isolated `.specweaver/graph.db` files.
 
 ### SQLite Schema Contract (SF-2)
 The `GraphRepository` MUST implement at least this baseline schema to prevent B-Tree fragmentation:
