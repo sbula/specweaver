@@ -262,6 +262,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` A-SENS-01 Deep Semantic Hashing (Rocket Mode streaming)
         *   `[ ]` A-FLOW-02 Hash-based garbage collection
         *   `[ ]` A-INTL-04 Memory consolidation
+    *   **Microservice Federation:**
+        *   `[ ]` **A-SENS-04:** Federated Microservice Linkage (Cross-Repo API Graphing via strict ID prefixes)
 
 ### 🔴 US-12: Legacy Spec Extraction (Reverse-Weaving)
 **Benefit:** *SpecWeaver automatically reverse-engineers and drafts Spec.md contracts by reading my old undocumented Java/C++ code.*

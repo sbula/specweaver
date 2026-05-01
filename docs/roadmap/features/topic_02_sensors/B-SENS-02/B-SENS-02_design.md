@@ -130,8 +130,9 @@ To prevent contextual handoff failures between implementation agents, the Knowle
 ### Microservice Graph Federation (Future-Proofing)
 To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG for Brownfield Scale), the Universal Graph must natively support **Graph Federation**.
 Instead of building a single centralized monolithic `graph.db`, each microservice maintains its own local `.specweaver/graph.db` within its own repository.
-*   **API Linkage:** When the AST parses a network call to an external microservice, it creates an `API_CONTRACT` node using a Universal Resource Identifier (e.g., `id="service://auth/api/login"`).
-*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits a `service://` URI, it will dynamically mount the remote SQLite database and fuse the subgraphs in-memory.
+*   **Mandatory ID Prefixing:** To prevent global ID collisions when local graphs are fused in the future, every single Node ID MUST be prefixed with its microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`). This guarantees global uniqueness.
+*   **API Linkage:** When the AST parses a network call to an external microservice, it creates an `API_CONTRACT` node using a Universal Resource Identifier (e.g., `id="auth:api:/login"`).
+*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI, it will dynamically mount the remote SQLite database and fuse the subgraphs in-memory.
 *   **Strict Verification:** This federated design allows SpecWeaver to mathematically prove if "Billing supports the Auth API" by cross-referencing the `API_CONTRACT` nodes across the two isolated `.specweaver/graph.db` files.
 
 ### SQLite Schema Contract (SF-2)
