@@ -471,3 +471,15 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   **Infinite Loop Protection:**
         *   `[ ]` **A-FLOW-04:** Blast-Radius Circuit Breaker (Prevents bad hotfixes from cascading)
+
+---
+
+## Technical Debt & Architecture Stories (TECH)
+
+These stories do not add new user-facing features, but are critical epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels.
+
+### 🔴 TECH-01: Domain-Driven Design Unification
+**Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
+*   **Description:** The massive refactoring effort to align the legacy `config/`, `cli/`, and `loom/` layers with the pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad.
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-01:** [Domain-Driven Design Unification](features/topic_06_architecture/TECH-01/TECH-01_ddd_refactor.md)
