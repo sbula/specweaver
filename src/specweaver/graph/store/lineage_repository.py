@@ -1,16 +1,7 @@
-# Copyright (c) 2026 sbula. All rights reserved.
-# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
-
-"""Artifact event lineage mixin for Database."""
-
-from __future__ import annotations
-
 import logging
+import sqlite3
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    import sqlite3
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +10,42 @@ def _now_iso() -> str:
     return datetime.now(tz=UTC).isoformat()
 
 
-class LineageMixin:
-    """Provides methods for recording and querying artifact lineage events.
+class LineageRepository:
+    """Provides methods for recording and querying artifact lineage events."""
 
-    This mixin expects the parent class to provide a ``connect()`` method
-    that yields a connected ``sqlite3.Connection`` object.
-    """
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self._init_db()
 
-    def connect(self) -> sqlite3.Connection:
-        """Type hint stub; implementation provided by Database."""
-        raise NotImplementedError
+    def _get_connection(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        # WAL mode to prevent Lock Contention
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA foreign_keys=ON;")
+        return conn
+
+    def _init_db(self) -> None:
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS artifact_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    artifact_id TEXT NOT NULL,
+                    parent_id TEXT,
+                    run_id TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    model_id TEXT NOT NULL,
+                    timestamp TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_artifact_events_artifact_id ON artifact_events(artifact_id)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_artifact_events_parent_id ON artifact_events(parent_id)"
+            )
 
     def log_artifact_event(
         self,
@@ -48,7 +65,7 @@ class LineageMixin:
         if not model_id or not model_id.strip():
             raise ValueError("model_id cannot be empty")
 
-        with self.connect() as conn:
+        with self._get_connection() as conn:
             conn.execute(
                 """
                 INSERT INTO artifact_events (
@@ -68,7 +85,7 @@ class LineageMixin:
 
     def get_artifact_history(self, artifact_id: str) -> list[dict[str, Any]]:
         """Get the full event history for an artifact, sorted oldest first."""
-        with self.connect() as conn:
+        with self._get_connection() as conn:
             rows = conn.execute(
                 """
                 SELECT * FROM artifact_events
@@ -81,7 +98,7 @@ class LineageMixin:
 
     def get_children(self, parent_id: str) -> list[dict[str, Any]]:
         """Get all artifact events that list the given parent_id."""
-        with self.connect() as conn:
+        with self._get_connection() as conn:
             rows = conn.execute(
                 """
                 SELECT * FROM artifact_events

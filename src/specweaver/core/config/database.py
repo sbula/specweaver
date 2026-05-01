@@ -26,7 +26,6 @@ from pathlib import Path
 
 from specweaver.core.config._db_config_mixin import ConfigSettingsMixin
 from specweaver.core.config._db_extensions_mixin import DataExtensionsMixin
-from specweaver.core.config._db_lineage_mixin import LineageMixin
 from specweaver.core.config._db_llm_mixin import LlmProfilesMixin
 from specweaver.core.config._db_telemetry_mixin import TelemetryMixin
 from specweaver.core.config._schema import (
@@ -103,7 +102,6 @@ def _validate_project_name(name: str) -> None:
 class Database(
     ConfigSettingsMixin,
     DataExtensionsMixin,
-    LineageMixin,
     LlmProfilesMixin,
     TelemetryMixin,
 ):

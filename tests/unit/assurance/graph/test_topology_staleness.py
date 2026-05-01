@@ -12,18 +12,25 @@ class TestStaleNodes:
 
     def test_default_empty_stale_nodes(self, single_node: Path) -> None:
         """By default, no nodes are stale if not provided to constructor."""
+        from specweaver.graph.topology.engine import TopologyEngine
+
         node = TopologyNode(name="a", level="", purpose="", archetype="")
-        graph = TopologyGraph({"a": node})
+        engine = TopologyEngine()
+        graph = TopologyGraph({"a": node}, engine)
         assert graph.stale_nodes == set()
 
     def test_stale_nodes_injected(self) -> None:
         """Passing stale_nodes correctly exposes them via the property."""
-        graph = TopologyGraph({}, stale_nodes={"core", "api"})  # type: ignore[arg-type]
+        from specweaver.graph.topology.engine import TopologyEngine
+        engine = TopologyEngine()
+        graph = TopologyGraph({}, engine, stale_nodes={"core", "api"})  # type: ignore[arg-type]
         assert graph.stale_nodes == {"core", "api"}
 
     def test_stale_nodes_is_frozen(self) -> None:
         """The stale_nodes property should return a copy or be immutable."""
-        graph = TopologyGraph({}, stale_nodes={"a"})  # type: ignore[arg-type]
+        from specweaver.graph.topology.engine import TopologyEngine
+        engine = TopologyEngine()
+        graph = TopologyGraph({}, engine, stale_nodes={"a"})  # type: ignore[arg-type]
         stale = graph.stale_nodes
         stale.add("b")
         assert "b" not in graph.stale_nodes
@@ -33,7 +40,9 @@ class TestStaleNodes:
         # Using the real from_project which should initialize the hasher
         # Since linear_chain creates physically mapped contexts but no cache,
         # it should default to 100% stale correctly.
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        from specweaver.graph.topology.engine import TopologyEngine
+        engine = TopologyEngine()
+        graph = TopologyGraph.from_project(linear_chain, engine, auto_infer=False)
         assert graph.stale_nodes == {"a", "b", "c"}
 
     def test_mutated_node_cascades_upstream(self, linear_chain: Path) -> None:
@@ -47,7 +56,9 @@ class TestStaleNodes:
         hasher.save_cache(initial_state)
 
         # At this point, running from_project should return exactly 0 stale nodes!
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        from specweaver.graph.topology.engine import TopologyEngine
+        engine = TopologyEngine()
+        graph = TopologyGraph.from_project(linear_chain, engine, auto_infer=False)
         assert graph.stale_nodes == set()
 
         # Mutate 'c' (the leaf node) by altering its context file physically
@@ -58,7 +69,8 @@ class TestStaleNodes:
         # 'c' is consumed by 'b', and 'b' is consumed by 'a'
         # So evaluating from_project should mark 'c' as the seed,
         # and Tarjan reverse explosion marks 'b' and 'a'.
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        engine = TopologyEngine()
+        graph = TopologyGraph.from_project(linear_chain, engine, auto_infer=False)
         assert "c" in graph.stale_nodes
         assert "b" in graph.stale_nodes
         assert "a" in graph.stale_nodes
@@ -77,7 +89,9 @@ class TestStaleNodes:
         # Mutate C
         (diamond / "c" / "context.yaml").write_text("name: c\nconsumes: [d]\nlevel: mutated\n")
 
-        graph = TopologyGraph.from_project(diamond, auto_infer=False)
+        from specweaver.graph.topology.engine import TopologyEngine
+        engine = TopologyEngine()
+        graph = TopologyGraph.from_project(diamond, engine, auto_infer=False)
         # Should flag C (self) and A (consumer of C).
         # Should NOT flag B (sibling) or D (dependency of C).
         assert "c" in graph.stale_nodes
@@ -102,7 +116,9 @@ class TestStaleNodes:
 
         # The cache-flush dilemma: verify save_cache is NOT called!
         with patch.object(DependencyHasher, "save_cache") as mock_save:
-            graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+            from specweaver.graph.topology.engine import TopologyEngine
+            engine = TopologyEngine()
+            graph = TopologyGraph.from_project(linear_chain, engine, auto_infer=False)
             assert graph.stale_nodes == {"a", "b", "c"}
             mock_save.assert_not_called()
 
@@ -121,7 +137,9 @@ class TestStaleNodes:
         # Delete module 'c' entirely from the workspace
         shutil.rmtree(diamond / "c")
 
-        graph = TopologyGraph.from_project(diamond, auto_infer=False)
+        from specweaver.graph.topology.engine import TopologyEngine
+        engine = TopologyEngine()
+        graph = TopologyGraph.from_project(diamond, engine, auto_infer=False)
         # 'c' is gone, but 'a' still has `consumes: [b, c]`.
         # 'a' should be flagged as stale due to the dangling reference.
         assert "a" in graph.stale_nodes
@@ -141,7 +159,9 @@ class TestStaleNodes:
             )
 
         with patch.object(TopologyGraph, "_auto_infer_missing", side_effect=mock_auto_infer):
-            graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+            from specweaver.graph.topology.engine import TopologyEngine
+            engine = TopologyEngine()
+            graph = TopologyGraph.from_project(tmp_path, engine, auto_infer=True)
             # The crawler should complete safely without crashing on yaml_path.parent
             assert "virtual" in graph.nodes
             # Virtual node with no disk presence is not technically "stale" from cache diffing,

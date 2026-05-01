@@ -402,8 +402,10 @@ class ValidateTestsHandler:
 
         try:
             from specweaver.assurance.graph.topology import TopologyGraph
+            from specweaver.graph.topology.engine import TopologyEngine
 
-            graph = TopologyGraph.from_project(context.project_path, auto_infer=False)
+            engine = TopologyEngine()
+            graph = TopologyGraph.from_project(context.project_path, engine, auto_infer=False)
 
             resolved: set[str] = set()
             src_dir = context.project_path / "src"

@@ -9,6 +9,7 @@ from pathlib import Path  # noqa: TC003
 
 import pytest
 
+from specweaver.graph.topology.engine import TopologyEngine
 from specweaver.assurance.graph.topology import (
     TopologyContext,
     TopologyGraph,
@@ -24,20 +25,20 @@ class TestFromProject:
     """Test graph construction from project directory."""
 
     def test_empty_project(self, empty_project: Path) -> None:
-        graph = TopologyGraph.from_project(empty_project, auto_infer=False)
+        graph = TopologyGraph.from_project(empty_project, TopologyEngine(), auto_infer=False)
         assert len(graph.nodes) == 0
 
     def test_single_node(self, single_node: Path) -> None:
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
         assert len(graph.nodes) == 1
         assert "alpha" in graph.nodes
 
     def test_linear_chain_nodes(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
         assert set(graph.nodes.keys()) == {"a", "b", "c"}
 
     def test_node_purpose(self, single_node: Path) -> None:
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
         assert graph.nodes["alpha"].purpose == "The only module."
 
     def test_node_mcp_fields(self, tmp_path: Path) -> None:
@@ -48,7 +49,7 @@ class TestFromProject:
             mcp_servers={"localdb": {"command": "sqlite"}},
             consumes_resources=["mcp://localdb/users"],
         )
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         node = graph.nodes["gamma"]
         assert node.mcp_servers == {"localdb": {"command": "sqlite"}}
         assert node.consumes_resources == ["mcp://localdb/users"]
@@ -63,7 +64,7 @@ class TestQueryDelegation:
     """Test that queries are delegated properly to the engine."""
 
     def test_queries_terminate(self, diamond: Path) -> None:
-        graph = TopologyGraph.from_project(diamond, auto_infer=False)
+        graph = TopologyGraph.from_project(diamond, TopologyEngine(), auto_infer=False)
         assert graph.consumers_of("d") == {"b", "c"}
         assert graph.dependencies_of("a") == {"b", "c", "d"}
         assert graph.impact_of("d") == {"a", "b", "c"}
@@ -78,18 +79,18 @@ class TestConstraintsFor:
     """Test constraint collection from module + consumers."""
 
     def test_module_own_constraints(self, with_constraints: Path) -> None:
-        graph = TopologyGraph.from_project(with_constraints, auto_infer=False)
+        graph = TopologyGraph.from_project(with_constraints, TopologyEngine(), auto_infer=False)
         constraints = graph.constraints_for("engine")
         assert "All functions must be pure" in constraints
 
     def test_includes_consumer_constraints(self, with_constraints: Path) -> None:
-        graph = TopologyGraph.from_project(with_constraints, auto_infer=False)
+        graph = TopologyGraph.from_project(with_constraints, TopologyEngine(), auto_infer=False)
         constraints = graph.constraints_for("engine")
         # engine is consumed by api, so api's constraints propagate
         assert "No blocking calls" in constraints
 
     def test_leaf_with_no_constraints(self, single_node: Path) -> None:
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
         assert graph.constraints_for("alpha") == []
 
 
@@ -102,13 +103,13 @@ class TestOperationalWarnings:
     """Test SLA mismatch detection."""
 
     def test_latency_consuming_batch_warns(self, sla_mismatch: Path) -> None:
-        graph = TopologyGraph.from_project(sla_mismatch, auto_infer=False)
+        graph = TopologyGraph.from_project(sla_mismatch, TopologyEngine(), auto_infer=False)
         warnings = graph.operational_warnings("fast")
         assert len(warnings) > 0
         assert any("batch" in w.lower() or "latency" in w.lower() for w in warnings)
 
     def test_matching_sla_no_warnings(self, sla_ok: Path) -> None:
-        graph = TopologyGraph.from_project(sla_ok, auto_infer=False)
+        graph = TopologyGraph.from_project(sla_ok, TopologyEngine(), auto_infer=False)
         warnings = graph.operational_warnings("fast")
         assert len(warnings) == 0
 
@@ -122,12 +123,12 @@ class TestEdgeCases:
     """Test missing references and unknown modules."""
 
     def test_dangling_consumes_warning(self, dangling_consumes: Path) -> None:
-        graph = TopologyGraph.from_project(dangling_consumes, auto_infer=False)
+        graph = TopologyGraph.from_project(dangling_consumes, TopologyEngine(), auto_infer=False)
         assert len(graph.warnings) > 0
         assert any("ghost" in w for w in graph.warnings)
 
     def test_unknown_module_returns_empty(self, single_node: Path) -> None:
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
         assert graph.consumers_of("nonexistent") == set()
         assert graph.dependencies_of("nonexistent") == set()
         assert graph.impact_of("nonexistent") == set()
@@ -137,7 +138,7 @@ class TestEdgeCases:
         bad_dir = tmp_path / "bad"
         bad_dir.mkdir()
         (bad_dir / "context.yaml").write_text("name: [unbalanced\n")
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         assert len(graph.warnings) > 0
 
     def test_empty_yaml_file_warns(self, tmp_path: Path) -> None:
@@ -145,7 +146,7 @@ class TestEdgeCases:
         empty_dir = tmp_path / "empty"
         empty_dir.mkdir()
         (empty_dir / "context.yaml").write_text("")
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         assert len(graph.warnings) > 0
         assert any("Empty" in w or "empty" in w.lower() for w in graph.warnings)
 
@@ -154,7 +155,7 @@ class TestEdgeCases:
         no_name = tmp_path / "no_name"
         no_name.mkdir()
         (no_name / "context.yaml").write_text("level: module\npurpose: Has no name.\n")
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         assert len(graph.nodes) == 0
         assert any("name" in w.lower() for w in graph.warnings)
 
@@ -162,14 +163,14 @@ class TestEdgeCases:
         """Two directories with the same name — last one scanned wins."""
         _write_context(tmp_path / "dir_a", name="shared", purpose="First")
         _write_context(tmp_path / "dir_b", name="shared", purpose="Second")
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         assert "shared" in graph.nodes
         # One of them wins (deterministic since we sort)
 
     def test_self_referencing_consumes(self, tmp_path: Path) -> None:
         """A module that consumes itself should not cause infinite loop."""
         _write_context(tmp_path / "self_ref", name="self_ref", consumes=["self_ref"])
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         # dependencies_of should not infinitely recurse
         deps = graph.dependencies_of("self_ref")
         assert deps == {"self_ref"}
@@ -186,7 +187,7 @@ class TestEdgeCases:
             level="module",
             consumes=["root"],
         )
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         assert len(graph.nodes) == 2
         assert graph.consumers_of("root") == {"child"}
 
@@ -200,7 +201,7 @@ class TestEdgeCases:
         (py_dir / "__init__.py").write_text('"""Auto-discovered module."""\n')
         (py_dir / "code.py").write_text("x = 1\n")
 
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=True)
         assert "unknown" in graph.nodes
         assert len(graph.warnings) > 0  # should warn about auto-generation
 
@@ -217,19 +218,19 @@ class TestEdgeCases:
             name="loose",
             operational={"max_latency_ms": 500},
         )
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         warnings = graph.operational_warnings("tight")
         assert len(warnings) > 0
         assert any("50" in w and "500" in w for w in warnings)
 
     def test_no_operational_section_no_warnings(self, single_node: Path) -> None:
         """Module without operational section should produce no SLA warnings."""
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
         assert graph.operational_warnings("alpha") == []
 
     def test_queries_on_cyclic_graph_terminate(self, cycle_abc: Path) -> None:
         """dependencies_of and impact_of should terminate on cyclic graphs."""
-        graph = TopologyGraph.from_project(cycle_abc, auto_infer=False)
+        graph = TopologyGraph.from_project(cycle_abc, TopologyEngine(), auto_infer=False)
         # These should NOT hang — BFS with visited set should handle cycles
         deps = graph.dependencies_of("a")
         assert "b" in deps
@@ -264,20 +265,20 @@ class TestModulesSharingConstraints:
             name="c",
             constraints=["idempotent"],
         )
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         assert graph.modules_sharing_constraints("a") == {"b"}
 
     def test_no_shared_constraints(self, with_constraints: Path) -> None:
         """api and engine have different constraints."""
-        graph = TopologyGraph.from_project(with_constraints, auto_infer=False)
+        graph = TopologyGraph.from_project(with_constraints, TopologyEngine(), auto_infer=False)
         assert graph.modules_sharing_constraints("api") == set()
 
     def test_no_constraints_returns_empty(self, single_node: Path) -> None:
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
         assert graph.modules_sharing_constraints("alpha") == set()
 
     def test_unknown_module_returns_empty(self, single_node: Path) -> None:
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
         assert graph.modules_sharing_constraints("nonexistent") == set()
 
     def test_multiple_shared(self, tmp_path: Path) -> None:
@@ -285,7 +286,7 @@ class TestModulesSharingConstraints:
         _write_context(tmp_path / "x", name="x", constraints=["auth-required"])
         _write_context(tmp_path / "y", name="y", constraints=["auth-required"])
         _write_context(tmp_path / "z", name="z", constraints=["auth-required"])
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         assert graph.modules_sharing_constraints("x") == {"y", "z"}
 
 
@@ -299,7 +300,7 @@ class TestFormatContextSummary:
 
     def test_direct_dependency_label(self, linear_chain: Path) -> None:
         """A consumes B: relationship = 'direct dependency'."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
         contexts = graph.format_context_summary("a", {"b"})
         assert len(contexts) == 1
         assert contexts[0].name == "b"
@@ -307,21 +308,21 @@ class TestFormatContextSummary:
 
     def test_direct_consumer_label(self, linear_chain: Path) -> None:
         """B is consumed by A: from B's view, A is 'direct consumer'."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
         contexts = graph.format_context_summary("b", {"a"})
         assert len(contexts) == 1
         assert contexts[0].relationship == "direct consumer"
 
     def test_transitive_label(self, linear_chain: Path) -> None:
         """A->B->C: C is not direct from A, so 'transitive neighbour'."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
         contexts = graph.format_context_summary("a", {"c"})
         assert len(contexts) == 1
         assert contexts[0].relationship == "transitive neighbour"
 
     def test_mutual_dependency_label(self, cycle_ab: Path) -> None:
         """A->B and B->A: mutual dependency."""
-        graph = TopologyGraph.from_project(cycle_ab, auto_infer=False)
+        graph = TopologyGraph.from_project(cycle_ab, TopologyEngine(), auto_infer=False)
         contexts = graph.format_context_summary("a", {"b"})
         assert len(contexts) == 1
         assert contexts[0].relationship == "mutual dependency"
@@ -335,7 +336,7 @@ class TestFormatContextSummary:
             constraints=["no-direct-db"],
         )
         _write_context(tmp_path / "cli", name="cli", consumes=["svc"])
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         contexts = graph.format_context_summary("cli", {"svc"})
         assert len(contexts) == 1
         ctx = contexts[0]
@@ -352,7 +353,7 @@ class TestFormatContextSummary:
             consumes_resources=["mcp://db/users"],
         )
         _write_context(tmp_path / "cli", name="cli", consumes=["mcp_target"])
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         contexts = graph.format_context_summary("cli", {"mcp_target"})
         assert len(contexts) == 1
         ctx = contexts[0]
@@ -361,23 +362,23 @@ class TestFormatContextSummary:
 
     def test_unknown_module_skipped(self, single_node: Path) -> None:
         """Unknown modules in the related set are silently skipped."""
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
+        graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
         assert graph.format_context_summary("alpha", {"ghost"}) == []
 
     def test_empty_related_set(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
         assert graph.format_context_summary("a", set()) == []
 
     def test_sorted_output(self, diamond: Path) -> None:
         """Output is sorted alphabetically by module name."""
-        graph = TopologyGraph.from_project(diamond, auto_infer=False)
+        graph = TopologyGraph.from_project(diamond, TopologyEngine(), auto_infer=False)
         contexts = graph.format_context_summary("a", {"d", "c", "b"})
         names = [c.name for c in contexts]
         assert names == ["b", "c", "d"]
 
     def test_topology_context_is_frozen(self, linear_chain: Path) -> None:
         """TopologyContext should be immutable (frozen dataclass)."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
+        graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
         contexts = graph.format_context_summary("a", {"b"})
         with pytest.raises(AttributeError):
             contexts[0].name = "changed"  # type: ignore[misc]
@@ -416,7 +417,7 @@ class TestAutoInferEdgeCases:
         env_dir.mkdir()
         (env_dir / "__init__.py").write_text('"""Environment."""\n')
 
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=True)
         # Hidden dirs should NOT appear as inferred modules
         assert ".git" not in graph.nodes
         assert ".env" not in graph.nodes
@@ -425,7 +426,7 @@ class TestAutoInferEdgeCases:
         """When all directories have context.yaml, no inference needed."""
         _write_context(tmp_path / "a", name="a")
         _write_context(tmp_path / "b", name="b")
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=True)
         assert set(graph.nodes.keys()) == {"a", "b"}
         # No auto-infer warnings (only auto-infer produces inferred warnings)
         infer_warnings = [w for w in graph.warnings if "infer" in w.lower()]
@@ -440,7 +441,7 @@ class TestAutoInferEdgeCases:
         (inferred_dir / "__init__.py").write_text('"""Inferred module."""\n')
         (inferred_dir / "code.py").write_text("def helper(): pass\n")
 
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=True)
         assert "manual" in graph.nodes
         assert "inferred" in graph.nodes
         # The consumes edge should be resolved
@@ -454,7 +455,7 @@ class TestAutoInferEdgeCases:
         docs_dir.mkdir()
         (docs_dir / "readme.md").write_text("# Documentation\n")
 
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=True)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=True)
         assert "docs" not in graph.nodes
 
 
@@ -475,7 +476,7 @@ class TestOperationalWarningsBoundary:
             operational={"latency_critical": True, "max_latency_ms": 50},
         )
         _write_context(tmp_path / "provider", name="provider")  # no operational
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         # Should not crash; no warnings or at most non-latency warnings
         warnings = graph.operational_warnings("consumer")
         assert isinstance(warnings, list)
@@ -488,13 +489,13 @@ class TestOperationalWarningsBoundary:
             consumes=["b"],
         )
         _write_context(tmp_path / "b", name="b")
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         assert graph.operational_warnings("a") == []
 
     def test_unknown_module_operational_warnings(self, tmp_path: Path) -> None:
         """operational_warnings for a nonexistent module — empty or no crash."""
         _write_context(tmp_path / "a", name="a")
-        graph = TopologyGraph.from_project(tmp_path, auto_infer=False)
+        graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         result = graph.operational_warnings("nonexistent")
         assert isinstance(result, list)
 

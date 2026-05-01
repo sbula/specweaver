@@ -20,9 +20,17 @@ from typing import Any
 
 from ruamel.yaml import YAML
 
-from specweaver.graph.topology.engine import TopologyEngine
+from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
+
+class TopologyEngineProtocol(Protocol):
+    def add_node(self, name: str) -> None: ...
+    def add_edge(self, source: str, target: str) -> None: ...
+    def consumers_of(self, node: str) -> list[str]: ...
+    def dependencies_of(self, node: str) -> list[str]: ...
+    def impact_of(self, node: str) -> list[str]: ...
+    def find_cycles(self) -> list[list[str]]: ...
 
 
 @dataclass
@@ -88,6 +96,7 @@ class TopologyGraph:
     def __init__(
         self,
         nodes: dict[str, TopologyNode],
+        engine: TopologyEngineProtocol,
         warnings: list[str] | None = None,
         stale_nodes: set[str] | None = None,
     ) -> None:
@@ -96,7 +105,7 @@ class TopologyGraph:
         self._stale_nodes = set(stale_nodes) if stale_nodes else set()
 
         # Build adjacency lists
-        self._engine = TopologyEngine()
+        self._engine = engine
 
         for name in nodes:
             self._engine.add_node(name)
@@ -165,26 +174,22 @@ class TopologyGraph:
     def from_project(
         cls,
         project_root: Path,
+        engine: TopologyEngineProtocol,
         *,
         auto_infer: bool = True,
     ) -> TopologyGraph:
-        """Scan a project for context.yaml files and build the graph.
-
-        Args:
-            project_root: Root directory to scan.
-            auto_infer: If True, auto-generate context.yaml for source
-                directories missing one (using ContextInferrer).
-
-        Returns:
-            TopologyGraph with all discovered boundaries.
-        """
-        yaml = YAML()
+        """Build a graph from all context.yaml files in a project."""
+        project_root = Path(project_root).resolve()
         nodes: dict[str, TopologyNode] = {}
         warnings: list[str] = []
-        logger.debug(
-            "TopologyGraph.from_project: scanning '%s' (auto_infer=%s)", project_root, auto_infer
-        )
 
+        if auto_infer:
+            logger.debug(
+                "TopologyGraph.from_project: scanning '%s' (auto_infer=%s)", project_root, auto_infer
+            )
+            cls._auto_infer_missing(project_root, nodes, warnings)
+
+        yaml = YAML()
         for ctx_file in sorted(project_root.rglob("context.yaml")):
             try:
                 data = yaml.load(ctx_file)
@@ -237,7 +242,7 @@ class TopologyGraph:
         if auto_infer:
             cls._auto_infer_missing(project_root, nodes, warnings)
 
-        graph = cls(nodes, warnings)
+        graph = cls(nodes, engine=engine, warnings=warnings)
 
         stale_seeds = cls._calculate_stale_seeds(project_root, nodes)
 

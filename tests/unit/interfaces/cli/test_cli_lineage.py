@@ -124,10 +124,14 @@ def test_tag_command_adds_tag_and_logs_to_db(tmp_path):
     with (
         patch("specweaver.interfaces.cli.lineage.uuid.uuid4") as mock_uuid,
         patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
     ):
         mock_uuid.return_value = "mocked-uuid-123"
         mock_db = MagicMock()
+        mock_db._db_path = "mock.db"
         mock_get_db.return_value = mock_db
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
 
         result = runner.invoke(app, ["tag", str(target_file), "--author", "test-user"])
 
@@ -135,7 +139,7 @@ def test_tag_command_adds_tag_and_logs_to_db(tmp_path):
         content = target_file.read_text(encoding="utf-8")
         assert content.startswith("# sw-artifact: mocked-uuid-123\n")
 
-        mock_db.log_artifact_event.assert_called_once_with(
+        mock_repo.log_artifact_event.assert_called_once_with(
             artifact_id="mocked-uuid-123",
             parent_id=None,
             run_id="manual",
@@ -151,15 +155,21 @@ def test_tag_command_logs_edit_for_existing_tag(tmp_path):
         "# sw-artifact: existing-uuid-456\ndef foo():\n    pass\n", encoding="utf-8"
     )
 
-    with patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db:
+    with (
+        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+    ):
         mock_db = MagicMock()
+        mock_db._db_path = "mock.db"
         mock_get_db.return_value = mock_db
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
 
         result = runner.invoke(app, ["tag", str(target_file), "--author", "other-user"])
 
         assert result.exit_code == 0, f"Command failed: {result.output}"
 
-        mock_db.log_artifact_event.assert_called_once_with(
+        mock_repo.log_artifact_event.assert_called_once_with(
             artifact_id="existing-uuid-456",
             parent_id=None,
             run_id="manual",
@@ -170,67 +180,39 @@ def test_tag_command_logs_edit_for_existing_tag(tmp_path):
 
 def test_tree_command_displays_lineage():
     """sw lineage tree <uuid> should render a rich tree."""
-    with patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db:
+    with (
+        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
+        patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+    ):
         mock_db = MagicMock()
+        mock_db._db_path = "mock.db"
         mock_get_db.return_value = mock_db
-
-        # mock DB returns:
-        # parent chain
-        def mock_history(uid):
-            if uid == "child-uuid":
-                return [
-                    {
-                        "artifact_id": "child-uuid",
-                        "parent_id": "root-uuid",
-                        "event_type": "linted",
-                        "model_id": "human",
-                    }
-                ]
-            if uid == "root-uuid":
-                return [
-                    {
-                        "artifact_id": "root-uuid",
-                        "parent_id": None,
-                        "event_type": "generated_code",
-                        "model_id": "human",
-                    }
-                ]
-            if uid == "leaf-uuid":
-                return [
-                    {
-                        "artifact_id": "leaf-uuid",
-                        "parent_id": "child-uuid",
-                        "event_type": "manual_tag",
-                        "model_id": "human",
-                    }
-                ]
-            return []
-
-        mock_db.get_artifact_history.side_effect = mock_history
-
-        # mock get_children: returning child info only once to avoid infinite loops, returning empty else
-        def mock_children(uid):
-            if uid == "root-uuid":
-                return [
-                    {
-                        "artifact_id": "child-uuid",
-                        "parent_id": "root-uuid",
-                        "event_type": "linted",
-                        "model_id": "human",
-                    }
-                ]
-            if uid == "child-uuid":
-                return [
-                    {
-                        "artifact_id": "leaf-uuid",
-                        "parent_id": "child-uuid",
-                        "event_type": "manual_tag",
-                        "model_id": "human",
-                    }
-                ]
-            return []
-
-        mock_db.get_children.side_effect = mock_children
+        
+        mock_engine = MagicMock()
+        mock_engine_class.return_value = mock_engine
+        
+        mock_engine.find_root.return_value = "root-uuid"
+        mock_engine.build_tree.return_value = {
+            "id": "root-uuid",
+            "circular": False,
+            "history": [{"event_type": "generated_code", "model_id": "human"}],
+            "children": [
+                {
+                    "id": "child-uuid",
+                    "circular": False,
+                    "history": [{"event_type": "linted", "model_id": "human"}],
+                    "children": [
+                        {
+                            "id": "leaf-uuid",
+                            "circular": False,
+                            "history": [{"event_type": "manual_tag", "model_id": "human"}],
+                            "children": []
+                        }
+                    ]
+                }
+            ]
+        }
 
         result = runner.invoke(app, ["tree", "child-uuid"])
 
@@ -255,24 +237,54 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
     target_file = tmp_path / "test_file.py"
     target_file.write_text("# sw-artifact: filebase-uuid-999\n", encoding="utf-8")
 
-    with patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db:
+    with (
+        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
+        patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+    ):
         mock_db = MagicMock()
+        mock_db._db_path = "mock.db"
         mock_get_db.return_value = mock_db
-        mock_db.get_artifact_history.return_value = []
+        
+        mock_engine = MagicMock()
+        mock_engine_class.return_value = mock_engine
+        
+        mock_engine.find_root.return_value = "filebase-uuid-999"
+        mock_engine.build_tree.return_value = {
+            "id": "filebase-uuid-999",
+            "circular": False,
+            "history": [],
+            "children": []
+        }
 
         result = runner.invoke(app, ["tree", str(target_file)])
 
         assert result.exit_code == 0
         assert "filebase-uuid-999" in result.output
-        mock_db.get_artifact_history.assert_called_with("filebase-uuid-999")
+        mock_engine.find_root.assert_called_with("filebase-uuid-999")
 
 
 def test_tree_command_graceful_missing_history():
     """sw lineage tree should print the root UUID even if there is no db history."""
-    with patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db:
+    with (
+        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
+        patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+    ):
         mock_db = MagicMock()
+        mock_db._db_path = "mock.db"
         mock_get_db.return_value = mock_db
-        mock_db.get_artifact_history.return_value = []
+        
+        mock_engine = MagicMock()
+        mock_engine_class.return_value = mock_engine
+        
+        mock_engine.find_root.return_value = "unknown-uuid"
+        mock_engine.build_tree.return_value = {
+            "id": "unknown-uuid",
+            "circular": False,
+            "history": [],
+            "children": []
+        }
 
         result = runner.invoke(app, ["tree", "unknown-uuid"])
         assert result.exit_code == 0
@@ -282,43 +294,39 @@ def test_tree_command_graceful_missing_history():
 
 def test_tree_command_handles_circular_references():
     """sw lineage tree should abort recursive rendering on circular graph links to prevent stack overflow."""
-    with patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db:
+    with (
+        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
+        patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+    ):
         mock_db = MagicMock()
+        mock_db._db_path = "mock.db"
         mock_get_db.return_value = mock_db
-
-        # history always returns something so it's a valid node
-        mock_db.get_artifact_history.return_value = [
-            {
-                "artifact_id": "loop-uuid",
-                "parent_id": None,
-                "event_type": "manual",
-                "model_id": "human",
-            }
-        ]
-
-        # get_children returns a cycle referencing each other
-        def mock_children(uid):
-            if uid == "loop-a":
-                return [
-                    {
-                        "artifact_id": "loop-b",
-                        "parent_id": "loop-a",
-                        "event_type": "manual",
-                        "model_id": "human",
-                    }
-                ]
-            if uid == "loop-b":
-                return [
-                    {
-                        "artifact_id": "loop-a",
-                        "parent_id": "loop-b",
-                        "event_type": "manual",
-                        "model_id": "human",
-                    }
-                ]
-            return []
-
-        mock_db.get_children.side_effect = mock_children
+        
+        mock_engine = MagicMock()
+        mock_engine_class.return_value = mock_engine
+        
+        mock_engine.find_root.return_value = "loop-a"
+        mock_engine.build_tree.return_value = {
+            "id": "loop-a",
+            "circular": False,
+            "history": [{"event_type": "manual", "model_id": "human"}],
+            "children": [
+                {
+                    "id": "loop-b",
+                    "circular": False,
+                    "history": [{"event_type": "manual", "model_id": "human"}],
+                    "children": [
+                        {
+                            "id": "loop-a",
+                            "circular": True,
+                            "history": [],
+                            "children": []
+                        }
+                    ]
+                }
+            ]
+        }
 
         result = runner.invoke(app, ["tree", "loop-a"])
         assert result.exit_code == 0

@@ -133,8 +133,10 @@ def _load_topology(project_path: Path) -> TopologyGraph | None:
     are found -- this keeps all LLM commands usable without context.
     """
     from specweaver.assurance.graph.topology import TopologyGraph
+    from specweaver.graph.topology.engine import TopologyEngine
 
-    graph = TopologyGraph.from_project(project_path, auto_infer=False)
+    engine = TopologyEngine()
+    graph = TopologyGraph.from_project(project_path, engine, auto_infer=False)
     if not graph.nodes:
         _core.console.print(
             "[dim]No context.yaml files found -- topology context disabled.[/dim]",

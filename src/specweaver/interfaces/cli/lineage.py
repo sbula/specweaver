@@ -14,6 +14,8 @@ import typer
 from rich import print as rprint
 from rich.tree import Tree
 
+from specweaver.graph.lineage.engine import LineageEngine
+from specweaver.graph.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli._core import app as core_app
 from specweaver.interfaces.cli._core import console, get_db
 
@@ -62,7 +64,9 @@ def tag(
         rprint(f"[green]Added tag {target_uuid} to {target}[/green]")
 
     db = get_db()
-    db.log_artifact_event(
+    repo = LineageRepository(str(db._db_path))
+    
+    repo.log_artifact_event(
         artifact_id=target_uuid,
         parent_id=None,
         run_id="manual",
@@ -100,33 +104,22 @@ def tree_command(  # noqa: C901
             pass
 
     db = get_db()
-    current = target_uuid
-    root_uuid = current
+    repo = LineageRepository(str(db._db_path))
+    engine = LineageEngine(repo)
 
-    # Safe walk up to root
-    visited_ancestors = set()
-    while True:
-        if current in visited_ancestors:
-            break
-        visited_ancestors.add(current)
-        history = db.get_artifact_history(current)
-        if not history:
-            break
-        parent_id = history[0].get("parent_id")
-        if not parent_id:
-            break
-        current = parent_id
-        root_uuid = current
+    root_uuid = engine.find_root(target_uuid)
+    tree_data = engine.build_tree(root_uuid)
 
     tree = Tree(f"[bold blue]Lineage Graph (Root: {root_uuid})[/bold blue]")
 
-    def build_node(node_uid: str, parent_tree: Tree, visited: set[str]) -> None:
-        if node_uid in visited:
+    def build_node(node_data: dict, parent_tree: Tree) -> None:
+        node_uid = node_data["id"]
+        
+        if node_data["circular"]:
             parent_tree.add(f"[red]Circular reference: {node_uid}[/red]")
             return
-        visited.add(node_uid)
 
-        hist = db.get_artifact_history(node_uid)
+        hist = node_data["history"]
         events = [f"{h['event_type']}:{h['model_id']}" for h in hist]
 
         highlight = "[bold green]" if node_uid == target_uuid else ""
@@ -135,14 +128,10 @@ def tree_command(  # noqa: C901
 
         node = parent_tree.add(label)
 
-        children = db.get_children(node_uid)
-        child_uids = list(
-            dict.fromkeys(c["artifact_id"] for c in children if c["artifact_id"] != node_uid)
-        )
-        for c_uid in child_uids:
-            build_node(c_uid, node, visited.copy())
+        for child in node_data["children"]:
+            build_node(child, node)
 
-    build_node(root_uuid, tree, set())
+    build_node(tree_data, tree)
     console.print(tree)
 
 

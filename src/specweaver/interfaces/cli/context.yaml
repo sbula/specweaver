@@ -9,6 +9,27 @@ purpose: >
   code generation, pipeline execution, config management, constitution
   management, and standards discovery.
 
+## 1. Purpose
+# This module serves as the primary entry point for users interacting with SpecWeaver via the terminal.
+
+## 2. Contract
+# Provides the global Typer `app`, Rich `console`, and `get_db` initialization routines for downstream CLI commands.
+# ```python
+# from specweaver.interfaces.cli._core import app, console, get_db
+# ```
+
+## 4. Policy
+# The CLI acts as a thin router. It must never contain domain logic. All exceptions raised by underlying modules must be caught and gracefully formatted into Rich output, exiting with code 1.
+# error
+
+## Done Definition
+# - [x] All subcommands successfully route to their respective orchestrators.
+# - [x] Returns appropriate CLI output.
+# - [x] All Typer app entrypoints are registered.
+
+description: |
+  Typer-based CLI interface for SpecWeaver. Provides the `sw` command.
+
 archetype: orchestrator
 
 consumes:
