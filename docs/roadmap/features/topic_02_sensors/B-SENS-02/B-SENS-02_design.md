@@ -183,27 +183,27 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 ## Sub-Feature Breakdown
 
 ### SF-1: In-Memory Knowledge Graph Engine & Enterprise Ontology
-- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/core/graph/` (pure-logic). Because it forbids `loom/*`, it CANNOT import the AST parser directly; it must accept raw JSON dicts passed down from the `flow/` orchestrator. Expands the ontology to capture macro-architectural boundaries. Models hierarchies as Edges to prevent DB bloat. Exposes the read query API and handles `GraphML` exports safely. Enforces bi-directional edge wiping to prevent ghost edges.
+- **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/graph/` (pure-logic). It is blind to the filesystem, the database, and the AST parser. It only accepts raw JSON dicts passed down from the orchestrator. Expands the ontology to capture macro-architectural boundaries as Edges. Exposes the read query API.
 - **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
 - **Inputs**: Raw JSON dictionaries (AST data, topology data) passed via orchestration.
 - **Outputs**: Expanded `GraphNode` schema, new Edge types, in-memory `NetworkX` graph, and `.graphml` export.
 - **Depends on**: none
 - **Impl Plan**: ⬜
 
-### SF-2: Persistent Storage Adapter (SQLite Backup)
-- **Scope**: Because `graph/` forbids database access, this sub-feature implements the actual SQLite `GraphRepository` adapter inside the `config/` module (e.g., `config/_db_graph_mixin.py`). Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Merges the `artifact_events` (Lineage Graph) from the global DB into the local project-specific `graph.db`. Handles asynchronous flush/load of the `NetworkX` graph.
+### SF-2: Persistent Storage Adapter (SQLite)
+- **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely isolated from `config/` to keep structural graph data separate from application settings. Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the `NetworkX` graph.
 - **FRs**: [FR-3, FR-6]
-- **Inputs**: In-memory `NetworkX` graph, Database session.
-- **Outputs**: `ProjectDatabase` SQLite connection object.
+- **Inputs**: In-memory `NetworkX` graph.
+- **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/graph.db`.
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
 
-### SF-3: Universal Graph Harmonization
-- **Scope**: Refactor the project's existing independent trees (Topology Graph `D-SENS-01`, Lineage Graph, and raw AST Graph `D-SENS-02`) to natively populate and query from the unified `NetworkX` InMemoryGraphEngine. Standardize all their node schemas and data structures to use the new Enterprise Ontology, ensuring a single, harmonized data model across the entire SpecWeaver ecosystem.
+### SF-3: Graph Builder Orchestration & Harmonization
+- **Scope**: Creates the new `src/specweaver/graph_builder/` (orchestrator) module. This dedicated service extracts the AST via `loom/commons/language/ast_parser.py`, passes the data into `graph/` to build the engine, and triggers `graph_store/` to save it. Additionally, refactors the legacy Topology and Lineage graphs to natively populate into this new triad, ensuring a single harmonized data model across SpecWeaver.
 - **FRs**: [FR-1, FR-6]
-- **Inputs**: Existing standalone graph generators.
-- **Outputs**: Harmonized NetworkX routing across all graph-based domains.
-- **Depends on**: [SF-1]
+- **Inputs**: File system paths, legacy graph generators.
+- **Outputs**: Harmonized pipeline orchestrating AST/Topology extraction into the SQLite DB.
+- **Depends on**: [SF-1, SF-2]
 - **Impl Plan**: ⬜
 
 ## Execution Order
