@@ -55,91 +55,18 @@ class TestFromProject:
 
 
 # ---------------------------------------------------------------------------
-# Query tests
+# Query tests - Delegation Integration
 # ---------------------------------------------------------------------------
 
 
-class TestConsumersOf:
-    """Test direct reverse lookup."""
+class TestQueryDelegation:
+    """Test that queries are delegated properly to the engine."""
 
-    def test_leaf_has_consumers(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.consumers_of("c") == {"b"}
-
-    def test_middle_has_consumers(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.consumers_of("b") == {"a"}
-
-    def test_root_has_no_consumers(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.consumers_of("a") == set()
-
-    def test_diamond_consumers(self, diamond: Path) -> None:
+    def test_queries_terminate(self, diamond: Path) -> None:
         graph = TopologyGraph.from_project(diamond, auto_infer=False)
         assert graph.consumers_of("d") == {"b", "c"}
-
-
-class TestDependenciesOf:
-    """Test transitive forward traversal."""
-
-    def test_root_depends_on_all(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.dependencies_of("a") == {"b", "c"}
-
-    def test_middle_depends_on_leaf(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.dependencies_of("b") == {"c"}
-
-    def test_leaf_has_no_deps(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.dependencies_of("c") == set()
-
-    def test_diamond_deps(self, diamond: Path) -> None:
-        graph = TopologyGraph.from_project(diamond, auto_infer=False)
         assert graph.dependencies_of("a") == {"b", "c", "d"}
-
-
-class TestImpactOf:
-    """Test transitive reverse traversal."""
-
-    def test_leaf_impacts_all_upstream(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.impact_of("c") == {"a", "b"}
-
-    def test_root_impacts_nothing(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.impact_of("a") == set()
-
-    def test_diamond_impact(self, diamond: Path) -> None:
-        graph = TopologyGraph.from_project(diamond, auto_infer=False)
         assert graph.impact_of("d") == {"a", "b", "c"}
-
-
-# ---------------------------------------------------------------------------
-# Cycle detection
-# ---------------------------------------------------------------------------
-
-
-class TestCycles:
-    """Test circular dependency detection."""
-
-    def test_no_cycles_in_chain(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.cycles() == []
-
-    def test_two_node_cycle(self, cycle_ab: Path) -> None:
-        graph = TopologyGraph.from_project(cycle_ab, auto_infer=False)
-        cycles = graph.cycles()
-        assert len(cycles) > 0
-        # At least one cycle should contain both a and b
-        cycle_members = {m for c in cycles for m in c}
-        assert "a" in cycle_members
-        assert "b" in cycle_members
-
-    def test_three_node_cycle(self, cycle_abc: Path) -> None:
-        graph = TopologyGraph.from_project(cycle_abc, auto_infer=False)
-        cycles = graph.cycles()
-        assert len(cycles) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -310,73 +237,6 @@ class TestEdgeCases:
         impact = graph.impact_of("a")
         assert "b" in impact
         assert "c" in impact
-
-
-# ---------------------------------------------------------------------------
-# neighbors_within tests
-# ---------------------------------------------------------------------------
-
-
-class TestNeighborsWithin:
-    """Test N-hop neighbourhood query."""
-
-    def test_depth_1_linear(self, linear_chain: Path) -> None:
-        """A->B->C: depth=1 from B gives {A, C}."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.neighbors_within("b", depth=1) == {"a", "c"}
-
-    def test_depth_1_root(self, linear_chain: Path) -> None:
-        """A->B->C: depth=1 from A gives {B} (no reverse for root)."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.neighbors_within("a", depth=1) == {"b"}
-
-    def test_depth_1_leaf(self, linear_chain: Path) -> None:
-        """A->B->C: depth=1 from C gives {B} (consumer only)."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.neighbors_within("c", depth=1) == {"b"}
-
-    def test_depth_2_linear(self, linear_chain: Path) -> None:
-        """A->B->C: depth=2 from A gives {B, C}."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.neighbors_within("a", depth=2) == {"b", "c"}
-
-    def test_depth_2_from_leaf(self, linear_chain: Path) -> None:
-        """A->B->C: depth=2 from C gives {A, B}."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.neighbors_within("c", depth=2) == {"a", "b"}
-
-    def test_diamond_depth_1(self, diamond: Path) -> None:
-        """Diamond A->B,C; B,C->D: depth=1 from A gives {B, C}."""
-        graph = TopologyGraph.from_project(diamond, auto_infer=False)
-        assert graph.neighbors_within("a", depth=1) == {"b", "c"}
-
-    def test_diamond_depth_2(self, diamond: Path) -> None:
-        """Diamond: depth=2 from A gives {B, C, D}."""
-        graph = TopologyGraph.from_project(diamond, auto_infer=False)
-        assert graph.neighbors_within("a", depth=2) == {"b", "c", "d"}
-
-    def test_depth_0_returns_empty(self, linear_chain: Path) -> None:
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.neighbors_within("a", depth=0) == set()
-
-    def test_unknown_module_returns_empty(self, single_node: Path) -> None:
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
-        assert graph.neighbors_within("nonexistent", depth=1) == set()
-
-    def test_isolated_node(self, single_node: Path) -> None:
-        """Single node with no edges returns empty."""
-        graph = TopologyGraph.from_project(single_node, auto_infer=False)
-        assert graph.neighbors_within("alpha", depth=1) == set()
-
-    def test_cycle_depth_1(self, cycle_ab: Path) -> None:
-        """A->B->A: depth=1 from A gives {B}."""
-        graph = TopologyGraph.from_project(cycle_ab, auto_infer=False)
-        assert graph.neighbors_within("a", depth=1) == {"b"}
-
-    def test_large_depth_saturates(self, linear_chain: Path) -> None:
-        """depth=100 on a 3-node chain returns all others."""
-        graph = TopologyGraph.from_project(linear_chain, auto_infer=False)
-        assert graph.neighbors_within("b", depth=100) == {"a", "c"}
 
 
 # ---------------------------------------------------------------------------

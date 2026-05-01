@@ -20,6 +20,8 @@ from typing import Any
 
 from ruamel.yaml import YAML
 
+from specweaver.graph.topology.engine import TopologyEngine
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,25 +73,6 @@ class TopologyContext:
     consumes_resources: list[str] = field(default_factory=list)
 
 
-def _pop_scc(root: str, stack: list[str], on_stack: set[str]) -> list[str]:
-    """Pop a strongly connected component off the Tarjan stack."""
-    scc: list[str] = []
-    while True:
-        w = stack.pop()
-        on_stack.discard(w)
-        scc.append(w)
-        if w == root:
-            break
-    return scc
-
-
-def _is_cycle(scc: list[str], forward: dict[str, set[str]]) -> bool:
-    """Return True if the SCC represents a real cycle (size>1 or self-loop)."""
-    if len(scc) > 1:
-        return True
-    return len(scc) == 1 and scc[0] in forward.get(scc[0], set())
-
-
 class TopologyGraph:
     """In-memory directed graph built from context.yaml files.
 
@@ -113,18 +96,15 @@ class TopologyGraph:
         self._stale_nodes = set(stale_nodes) if stale_nodes else set()
 
         # Build adjacency lists
-        self._forward: dict[str, set[str]] = {}  # module → modules it consumes
-        self._reverse: dict[str, set[str]] = {}  # module → modules that consume it
+        self._engine = TopologyEngine()
 
         for name in nodes:
-            self._forward.setdefault(name, set())
-            self._reverse.setdefault(name, set())
+            self._engine.add_node(name)
 
         for name, node in nodes.items():
             for dep in node.consumes:
-                self._forward[name].add(dep)
                 if dep in nodes:
-                    self._reverse.setdefault(dep, set()).add(name)
+                    self._engine.add_edge(name, dep)
                 else:
                     self._warnings.append(
                         f"Module '{name}' consumes '{dep}' but no context.yaml found for '{dep}'."
@@ -314,51 +294,19 @@ class TopologyGraph:
 
     def consumers_of(self, module: str) -> set[str]:
         """Direct consumers of a module (one hop reverse)."""
-        return set(self._reverse.get(module, set()))
+        return self._engine.get_reverse(module)
 
     def dependencies_of(self, module: str) -> set[str]:
         """All modules transitively depended on by `module`."""
-        return self._traverse(module, self._forward)
+        return self._engine.traverse(module, forward=True)
 
     def impact_of(self, module: str) -> set[str]:
         """All modules transitively affected by changes to `module`."""
-        return self._traverse(module, self._reverse)
+        return self._engine.traverse(module, forward=False)
 
     def cycles(self) -> list[list[str]]:
         """Detect circular dependency chains using Tarjan's algorithm."""
-        index_counter = [0]
-        stack: list[str] = []
-        on_stack: set[str] = set()
-        indices: dict[str, int] = {}
-        lowlinks: dict[str, int] = {}
-        result: list[list[str]] = []
-
-        def _strongconnect(v: str) -> None:
-            indices[v] = index_counter[0]
-            lowlinks[v] = index_counter[0]
-            index_counter[0] += 1
-            stack.append(v)
-            on_stack.add(v)
-
-            for w in self._forward.get(v, set()):
-                if w not in self._nodes:
-                    continue  # skip dangling references
-                if w not in indices:
-                    _strongconnect(w)
-                    lowlinks[v] = min(lowlinks[v], lowlinks[w])
-                elif w in on_stack:
-                    lowlinks[v] = min(lowlinks[v], indices[w])
-
-            if lowlinks[v] == indices[v]:
-                scc = _pop_scc(v, stack, on_stack)
-                if _is_cycle(scc, self._forward):
-                    result.append(sorted(scc))
-
-        for node_name in self._nodes:
-            if node_name not in indices:
-                _strongconnect(node_name)
-
-        return result
+        return self._engine.cycles()
 
     def constraints_for(self, module: str) -> list[str]:
         """Aggregate constraints from the module and all its consumers."""
@@ -369,7 +317,7 @@ class TopologyGraph:
             all_constraints.extend(self._nodes[module].constraints)
 
         # Constraints from all consumers (they impose requirements)
-        for consumer in self._traverse(module, self._reverse):
+        for consumer in self._engine.traverse(module, forward=False):
             if consumer in self._nodes:
                 all_constraints.extend(self._nodes[consumer].constraints)
 
@@ -420,24 +368,7 @@ class TopologyGraph:
         depth=1 gives direct dependencies + consumers.
         depth=2 adds their neighbours, etc.
         """
-        if depth < 1:
-            return set()
-
-        visited: set[str] = set()
-        frontier = {module}
-
-        for _ in range(depth):
-            next_frontier: set[str] = set()
-            for node in frontier:
-                fwd = self._forward.get(node, set())
-                rev = self._reverse.get(node, set())
-                next_frontier |= (fwd | rev) - visited - {module}
-            visited |= next_frontier
-            frontier = next_frontier
-            if not frontier:
-                break
-
-        return visited
+        return self._engine.neighbors_within(module, depth)
 
     def modules_sharing_constraints(self, module: str) -> set[str]:
         """Return modules that share at least one constraint with *module*."""
@@ -469,8 +400,8 @@ class TopologyGraph:
             List of TopologyContext, one per related module that exists
             in the graph. Unknown modules are silently skipped.
         """
-        direct_deps = self._forward.get(module, set())
-        direct_consumers = self._reverse.get(module, set())
+        direct_deps = self._engine.get_forward(module)
+        direct_consumers = self._engine.get_reverse(module)
         contexts: list[TopologyContext] = []
 
         for name in sorted(related):
@@ -503,16 +434,3 @@ class TopologyGraph:
         return contexts
 
     # -- Internal helpers ----------------------------------------------
-
-    @staticmethod
-    def _traverse(start: str, adj: dict[str, set[str]]) -> set[str]:
-        """BFS/DFS traversal from start node through adjacency map."""
-        visited: set[str] = set()
-        queue = list(adj.get(start, set()))
-        while queue:
-            current = queue.pop()
-            if current in visited:
-                continue
-            visited.add(current)
-            queue.extend(adj.get(current, set()) - visited)
-        return visited
