@@ -199,7 +199,10 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
 
 ### SF-3: Graph Builder Orchestration & Harmonization
-- **Scope**: Creates the new `src/specweaver/graph_builder/` (orchestrator) module. This dedicated service extracts the AST via `loom/commons/language/ast_parser.py`, passes the data into `graph/` to build the engine, and triggers `graph_store/` to save it. Additionally, refactors the legacy Topology and Lineage graphs to natively populate into this new triad, ensuring a single harmonized data model across SpecWeaver.
+- **Scope**: Creates the new `src/specweaver/graph_builder/` (orchestrator) module to coordinate the new sensor triad. First, it implements the pipeline to extract the AST via `loom/commons/language/ast_parser.py`, pass it to `graph/` to build, and `graph_store/` to save. 
+  Second, it aggressively refactors the project's existing legacy graphs to use this exact same triad:
+  1. **Topology Graph (`D-SENS-01`)**: Refactors `src/specweaver/graph/topology.py` to stop using custom logic and natively build upon the `InMemoryGraphEngine` using `TOPOLOGY_BOUNDARY` nodes.
+  2. **Lineage Graph (`B-SENS-01`)**: Refactors `cli/lineage.py` and `config/database.py` to stop storing artifact events in the global `specweaver.db`. It will now pump lineage data directly into the `.specweaver/graph.db` using the `graph_store/` adapter.
 - **FRs**: [FR-1, FR-6]
 - **Inputs**: File system paths, legacy graph generators.
 - **Outputs**: Harmonized pipeline orchestrating AST/Topology extraction into the SQLite DB.
