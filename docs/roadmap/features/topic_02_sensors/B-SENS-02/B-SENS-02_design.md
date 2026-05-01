@@ -128,12 +128,11 @@ To prevent contextual handoff failures between implementation agents, the Knowle
 *   `CONSUMES` / `FULFILLS`: Service A consumes an `API_CONTRACT` that Service B fulfills.
 
 ### Microservice Graph Federation (Future-Proofing)
-To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG for Brownfield Scale), the Universal Graph must natively support **Graph Federation**.
+To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG for Brownfield Scale), the Universal Graph must natively support **Graph Federation** (`A-SENS-04`).
 Instead of building a single centralized monolithic `graph.db`, each microservice maintains its own local `.specweaver/graph.db` within its own repository.
-*   **Mandatory ID Prefixing:** To prevent global ID collisions when local graphs are fused in the future, every single Node ID MUST be prefixed with its microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`). This guarantees global uniqueness.
-*   **API Linkage:** When the AST parses a network call to an external microservice, it creates an `API_CONTRACT` node using a Universal Resource Identifier (e.g., `id="auth:api:/login"`).
-*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI, it will dynamically mount the remote SQLite database and fuse the subgraphs in-memory.
-*   **Strict Verification:** This federated design allows SpecWeaver to mathematically prove if "Billing supports the Auth API" by cross-referencing the `API_CONTRACT` nodes across the two isolated `.specweaver/graph.db` files.
+*   **System Architecture Graph**: There must be one overarching graph layer that links all microservices together *exclusively* via their interfaces (REST APIs, Kafka/RabbitMQ queues, shared file systems) without including *any* of the microservices' internal logic. 
+*   **Mandatory ID Prefixing:** To ensure this high-level System Graph can dynamically fuse with local databases without global ID collisions, every single Node ID MUST be prefixed with its microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`).
+*   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI in the System Graph, it will dynamically mount the remote SQLite database and fuse the internal subgraphs only when explicit drill-down is requested.
 
 ### SQLite Schema Contract (SF-2)
 The `GraphRepository` MUST implement at least this baseline schema to prevent B-Tree fragmentation:
