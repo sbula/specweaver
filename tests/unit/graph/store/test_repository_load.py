@@ -66,7 +66,7 @@ def test_load_ignores_ghost_nodes(repo):
     g_in.add_edge("test_service:ast:123", "test_service:ast:GHOST", type="CALLS", metadata={})
     repo.flush_to_db(g_in)
 
-    g_out, hash_to_id = repo.load_from_db()
+    g_out, _hash_to_id = repo.load_from_db()
 
     # The GHOST node is inserted as is_active=0 by flush_to_db.
     # Therefore, it should NOT be in the loaded graph.

@@ -90,6 +90,6 @@ def test_full_graph_lifecycle(repo):
     repo.purge_file("file2")
 
     # 5. Read it back
-    g_out_3, id_map_3 = repo.load_from_db()
+    g_out_3, _id_map_3 = repo.load_from_db()
     assert len(g_out_3.nodes) == 1 # Only 1_new is left
     assert len(g_out_3.edges) == 0 # Edge should be gone since target is tombstoned!

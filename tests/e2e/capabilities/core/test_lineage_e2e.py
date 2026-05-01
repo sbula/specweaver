@@ -49,7 +49,7 @@ class TestLineageE2EFlow:
 
     def test_new_feature_outputs_lineage_tags(self, tmp_path: Path, _isolate_env) -> None:
         """Pipeline generation writes physical # sw-artifact tags and pushes lineage to DB."""
-        db_path = _isolate_env / "specweaver.db"
+        _isolate_env / "specweaver.db"
 
         project_dir = tmp_path / "proj_lineage"
         project_dir.mkdir()
@@ -112,7 +112,7 @@ class TestLineageE2EFlow:
 
     def test_draft_spec_injects_tag(self, tmp_path: Path, _isolate_env) -> None:
         """sw draft creates a tag physically and logs the drafted_spec event."""
-        db_path = _isolate_env / "specweaver.db"
+        _isolate_env / "specweaver.db"
 
         project_dir = tmp_path / "proj_lineage_draft"
         project_dir.mkdir()
@@ -297,7 +297,7 @@ class TestASTFixSurvivability:
 
     def test_lint_fix_retains_tag(self, tmp_path: Path, _isolate_env) -> None:
         """Run `sw run lint_fix-code`. Prove tag is retained in source code."""
-        db_path = _isolate_env / "specweaver.db"
+        _isolate_env / "specweaver.db"
 
         project_dir = tmp_path / "proj_lint"
         project_dir.mkdir()

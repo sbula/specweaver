@@ -29,24 +29,9 @@ class GraphBuilder:
         file_hash = self.hasher.hash_file(filepath)
         norm_path = self.hasher._normalize_path(filepath)
 
-        existing_hashes: set[str] = set()
-        existing_edge_keys: set[tuple[str, str]] = set()
-
-        with self.engine._lock:
-            # Gather nodes associated with this file
-            for int_id, data in self.engine._graph.nodes(data=True):
-                if data.get("file_id") == filepath or data.get("file_id") == norm_path:
-                    semantic_hash = self.engine._int_to_hash.get(int_id)
-                    if semantic_hash:
-                        existing_hashes.add(semantic_hash)
-
-            # Gather edges originating from this file
-            for u, v, _data in self.engine._graph.edges(data=True):
-                source_hash = self.engine._int_to_hash.get(u)
-                if source_hash in existing_hashes or source_hash == file_hash:
-                    target_hash = self.engine._int_to_hash.get(v)
-                    if target_hash:
-                        existing_edge_keys.add((source_hash, target_hash))
+        existing_hashes, existing_edge_keys = self._get_existing_elements(
+            filepath, norm_path, file_hash
+        )
 
         nodes_to_remove = existing_hashes - new_hashes
         edges_to_remove = existing_edge_keys - new_edge_keys
@@ -79,6 +64,21 @@ class GraphBuilder:
         if self.parser:
             ast_data = self.parser(str(path))
             self.ingest_ast(filepath, ast_data)
+
+    def _get_existing_elements(self, filepath: str, norm_path: str, file_hash: str) -> tuple[set[str], set[tuple[str, str]]]:
+        existing_hashes: set[str] = set()
+        existing_edge_keys: set[tuple[str, str]] = set()
+
+        with self.engine._lock:
+            for int_id, data in self.engine._graph.nodes(data=True):
+                if data.get("file_id") in (filepath, norm_path) and (semantic_hash := self.engine._int_to_hash.get(int_id)):
+                    existing_hashes.add(semantic_hash)
+
+            for u, v, _data in self.engine._graph.edges(data=True):
+                if ((source_hash := self.engine._int_to_hash.get(u)) in existing_hashes or source_hash == file_hash) and (target_hash := self.engine._int_to_hash.get(v)):
+                    existing_edge_keys.add((source_hash, target_hash))
+
+        return existing_hashes, existing_edge_keys
 
     def export_graph_to_disk(self, workspace_root: str, output_name: str) -> str:
         """

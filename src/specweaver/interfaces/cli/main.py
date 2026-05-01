@@ -65,6 +65,7 @@ from specweaver.interfaces.cli import (  # noqa: E402, F401
     constitution,
     cost_commands,
     drift,
+    graph,
     hooks,
     implement,
     lineage,

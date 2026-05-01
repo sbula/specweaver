@@ -31,7 +31,7 @@ def test_flush_happy_path(repo):
 
         # Verify edges
         cursor.execute("""
-            SELECT n1.semantic_hash, n2.semantic_hash, e.type, e.metadata 
+            SELECT n1.semantic_hash, n2.semantic_hash, e.type, e.metadata
             FROM edges e
             JOIN nodes n1 ON e.source_id = n1.id
             JOIN nodes n2 ON e.target_id = n2.id

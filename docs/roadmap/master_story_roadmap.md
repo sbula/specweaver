@@ -255,7 +255,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-10:** Base Integration Contract defined in [US-10_integration.md](integrations/US-10_integration.md)
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-UI-01:** Pipeline visualization (`sw graph` HTML export)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Code-to-Spec Drift Checking:**
@@ -268,7 +268,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-11:** Base Integration Contract defined in [US-11_integration.md](integrations/US-11_integration.md)
     *   `✅` **US-4 Core** *(provides Context Prompts)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
     *   `[ ]` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
@@ -295,7 +295,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-12:** Base Integration Contract defined in [US-12_integration.md](integrations/US-12_integration.md)
     *   `✅` **US-2 Core** *(provides Spec Drafting)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-INTL-03:** Reverse-Weaving (`sw capture`)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Massive Scale Context Retrieval:**
@@ -346,7 +346,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-15:** Base Integration Contract defined in [US-15_integration.md](integrations/US-15_integration.md)
     *   `✅` **US-4 Core** *(provides Pipeline Runner)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-UI-02:** Traceability Matrix UX
 *   **Sub-Story Add-Ons:**
     *   🔴 **Enterprise Compliance Protocols:**
@@ -420,7 +420,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-4 Core**
     *   `✅` **US-5 Core**
     *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-FLOW-04:** Work Packet Bundling (Coordinated multi-agent dispatch)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Cross-Service Contract Validation:**
@@ -440,7 +440,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-20:** Base Integration Contract defined in [US-20_integration.md](integrations/US-20_integration.md)
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **D-SENS-01:** Topology Graph (Dependency mapping)
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-EXEC-01:** Internal Layer Enforcement (Validating dependency direction)
     *   `[ ]` **B-VAL-05:** DAL Architecture Gate (Dependency tier validation)
 *   **Sub-Story Add-Ons:**
@@ -522,7 +522,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-26:** Base Integration Contract defined in [US-26_integration.md](integrations/US-26_integration.md)
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **B-SENS-04:** OSV Vulnerability Feed Ingestion
 *   **Sub-Story Add-Ons:**
     *   🔴 **Massive Scale Orchestration:**
@@ -534,7 +534,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-27:** Base Integration Contract defined in [US-27_integration.md](integrations/US-27_integration.md)
     *   `✅` **US-4 Core** *(provides Flow Engine)*
-    *   `[/]` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
+    *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **A-SENS-04:** APM Telemetry Ingestion (Sentry/Datadog)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Infinite Loop Protection:**

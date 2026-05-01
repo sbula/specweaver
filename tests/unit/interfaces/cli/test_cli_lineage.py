@@ -185,7 +185,7 @@ def test_tree_command_displays_lineage():
     with (
         patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
         patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository"),
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"
@@ -243,7 +243,7 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
     with (
         patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
         patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository"),
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"
@@ -273,7 +273,7 @@ def test_tree_command_graceful_missing_history():
     with (
         patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
         patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository"),
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"
@@ -302,7 +302,7 @@ def test_tree_command_handles_circular_references():
     with (
         patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
         patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+        patch("specweaver.interfaces.cli.lineage.LineageRepository"),
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"
