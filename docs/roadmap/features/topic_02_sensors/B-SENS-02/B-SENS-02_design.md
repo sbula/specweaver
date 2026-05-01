@@ -135,12 +135,13 @@ Instead of building a single centralized monolithic `graph.db`, each microservic
 *   **Mandatory ID Prefixing:** To ensure this high-level System Graph can dynamically fuse with local databases without global ID collisions, every single Node ID MUST be prefixed with its microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`).
 *   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI in the System Graph, it will dynamically mount the remote SQLite database and fuse the internal subgraphs only when explicit drill-down is requested.
 
-### Monolithic Application Support
-For monolithic repositories (or monoliths organized into internal packages/bounded contexts), the architecture gracefully handles internal boundaries without requiring complex federation:
-*   **Single Local DB**: The entire codebase is stored within a single `.specweaver/graph.db`.
-*   **Internal Boundaries**: Instead of external `API_CONTRACT` nodes, SpecWeaver uses `TOPOLOGY_BOUNDARY` nodes (derived from `context.yaml` rules or module boundaries) to define internal architectural borders.
-*   **Internal Routing**: Subgraphs are isolated at query-time using the `package_name` or `service_name` properties on the `GraphNode`.
-*   **ID Prefixing Still Applies**: Even in a monolith, the ID prefixing rule (e.g., `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the monolith is ever refactored or communicates with an external microservice.
+### Monorepo & Strongly Modularized Application Support
+For Monorepos (containing multiple microservices) or strongly modularized monoliths, the architecture offers two deployment patterns:
+1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain its own `.specweaver/graph.db`. This behaves identically to the polyrepo Federation model above, linking via `API_CONTRACT` nodes.
+2.  **The Monolith Pattern (Single DB):** For a heavily coupled monolith, the entire codebase is stored within a single `.specweaver/graph.db` at the repository root.
+    *   **Internal Boundaries**: Instead of external `API_CONTRACT` nodes, SpecWeaver uses `TOPOLOGY_BOUNDARY` nodes (derived from `context.yaml` rules or module boundaries) to define internal architectural borders.
+    *   **Internal Routing**: Subgraphs are isolated at query-time using the `package_name` or `service_name` properties on the `GraphNode`.
+    *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g., `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the monolith is ever refactored or communicates with an external microservice.
 
 ### SQLite Schema Contract (SF-2)
 The `GraphRepository` MUST implement at least this baseline schema to prevent B-Tree fragmentation:
