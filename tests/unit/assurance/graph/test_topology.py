@@ -9,11 +9,11 @@ from pathlib import Path  # noqa: TC003
 
 import pytest
 
-from specweaver.graph.topology.engine import TopologyEngine
 from specweaver.assurance.graph.topology import (
     TopologyContext,
     TopologyGraph,
 )
+from specweaver.graph.topology.engine import TopologyEngine
 from tests.unit.assurance.graph.conftest import _write_context
 
 # ---------------------------------------------------------------------------

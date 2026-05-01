@@ -157,14 +157,17 @@ class GenerateCodeHandler:
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
-            if getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
-                context.db.log_artifact_event(
-                    artifact_id=artifact_uuid,
-                    parent_id=parent_id,
-                    run_id=getattr(context, "run_id", "") or "",
-                    event_type="generated_code",
-                    model_id=config.model,
-                )
+            from specweaver.graph_store.lineage_repository import LineageRepository
+            local_db = context.project_path / ".specweaver" / "graph.db"
+            local_db.parent.mkdir(parents=True, exist_ok=True)
+            repo = LineageRepository(str(local_db))
+            repo.log_artifact_event(
+                artifact_id=artifact_uuid,
+                parent_id=parent_id,
+                run_id=getattr(context, "run_id", None) or "pipeline_run",
+                event_type="generated_code",
+                model_id=config.model,
+            )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -243,14 +246,17 @@ class GenerateTestsHandler:
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 
-            if getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
-                context.db.log_artifact_event(
-                    artifact_id=artifact_uuid,
-                    parent_id=parent_id,
-                    run_id=getattr(context, "run_id", "") or "",
-                    event_type="generated_tests",
-                    model_id=config.model,
-                )
+            from specweaver.graph_store.lineage_repository import LineageRepository
+            local_db = context.project_path / ".specweaver" / "graph.db"
+            local_db.parent.mkdir(parents=True, exist_ok=True)
+            repo = LineageRepository(str(local_db))
+            repo.log_artifact_event(
+                artifact_id=artifact_uuid,
+                parent_id=parent_id,
+                run_id=getattr(context, "run_id", None) or "pipeline_run",
+                event_type="generated_tests",
+                model_id=config.model,
+            )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -418,14 +424,17 @@ class PlanSpecHandler:
             if not parent_id:
                 parent_id = getattr(context, "run_id", "") or ""
 
-            if getattr(context, "db", None) and hasattr(context.db, "log_artifact_event"):
-                context.db.log_artifact_event(
-                    artifact_id=artifact_uuid,
-                    parent_id=parent_id,
-                    run_id=getattr(context, "run_id", "") or "",
-                    event_type="generated_plan",
-                    model_id=config.model,
-                )
+            from specweaver.graph_store.lineage_repository import LineageRepository
+            local_db = context.project_path / ".specweaver" / "graph.db"
+            local_db.parent.mkdir(parents=True, exist_ok=True)
+            repo = LineageRepository(str(local_db))
+            repo.log_artifact_event(
+                artifact_id=artifact_uuid,
+                parent_id=parent_id,
+                run_id=getattr(context, "run_id", None) or "pipeline_run",
+                event_type="generated_plan",
+                model_id=config.model,
+            )
 
             return StepResult(
                 status=StepStatus.PASSED,

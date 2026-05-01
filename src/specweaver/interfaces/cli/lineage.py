@@ -15,7 +15,7 @@ from rich import print as rprint
 from rich.tree import Tree
 
 from specweaver.graph.lineage.engine import LineageEngine
-from specweaver.graph.store.lineage_repository import LineageRepository
+from specweaver.graph_store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli._core import app as core_app
 from specweaver.interfaces.cli._core import console, get_db
 
@@ -64,8 +64,19 @@ def tag(
         rprint(f"[green]Added tag {target_uuid} to {target}[/green]")
 
     db = get_db()
-    repo = LineageRepository(str(db._db_path))
-    
+    active = db.get_active_project()
+    if not active:
+        typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+    proj = db.get_project(active)
+    if not proj:
+        typer.secho("Active project not found in global database.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    db_path = Path(str(proj["root_path"])) / ".specweaver" / "graph.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    repo = LineageRepository(str(db_path))
+
     repo.log_artifact_event(
         artifact_id=target_uuid,
         parent_id=None,
@@ -104,7 +115,18 @@ def tree_command(  # noqa: C901
             pass
 
     db = get_db()
-    repo = LineageRepository(str(db._db_path))
+    active = db.get_active_project()
+    if not active:
+        typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+    proj = db.get_project(active)
+    if not proj:
+        typer.secho("Active project not found in global database.", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    db_path = Path(str(proj["root_path"])) / ".specweaver" / "graph.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    repo = LineageRepository(str(db_path))
     engine = LineageEngine(repo)
 
     root_uuid = engine.find_root(target_uuid)
@@ -114,7 +136,7 @@ def tree_command(  # noqa: C901
 
     def build_node(node_data: dict, parent_tree: Tree) -> None:
         node_uid = node_data["id"]
-        
+
         if node_data["circular"]:
             parent_tree.add(f"[red]Circular reference: {node_uid}[/red]")
             return

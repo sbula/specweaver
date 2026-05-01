@@ -1,5 +1,6 @@
 import pytest
-from specweaver.graph.store.lineage_repository import LineageRepository
+
+from specweaver.graph_store.lineage_repository import LineageRepository
 
 
 @pytest.fixture()

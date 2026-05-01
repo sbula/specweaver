@@ -308,15 +308,15 @@ class LintFixHandler:
 
         code_path.write_text(fixed_code + "\n", encoding="utf-8")
 
-        if (
-            artifact_uuid
-            and getattr(context, "db", None)
-            and hasattr(context.db, "log_artifact_event")
-        ):
-            context.db.log_artifact_event(
+        if artifact_uuid:
+            from specweaver.graph_store.lineage_repository import LineageRepository
+            local_db = context.project_path / ".specweaver" / "graph.db"
+            local_db.parent.mkdir(parents=True, exist_ok=True)
+            repo = LineageRepository(str(local_db))
+            repo.log_artifact_event(
                 artifact_id=artifact_uuid,
                 parent_id=None,
-                run_id=getattr(context, "run_id", "") or "",
+                run_id=getattr(context, "run_id", None) or "pipeline_run",
                 event_type="lint_fixed",
                 model_id=config.model if config else "unknown",
             )

@@ -1,12 +1,6 @@
-from typing import Any, Protocol
+from typing import Any
 
-
-class LineageRepositoryProtocol(Protocol):
-    def get_artifact_history(self, artifact_id: str) -> list[dict[str, Any]]:
-        ...
-
-    def get_children(self, parent_id: str) -> list[dict[str, Any]]:
-        ...
+from specweaver.graph.lineage.repository import LineageRepositoryProtocol
 
 
 class LineageEngine:

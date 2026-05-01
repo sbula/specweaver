@@ -128,7 +128,8 @@ def test_tag_command_adds_tag_and_logs_to_db(tmp_path):
     ):
         mock_uuid.return_value = "mocked-uuid-123"
         mock_db = MagicMock()
-        mock_db._db_path = "mock.db"
+        mock_db.get_active_project.return_value = "test-proj"
+        mock_db.get_project.return_value = {"root_path": "/tmp/test-proj"}
         mock_get_db.return_value = mock_db
         mock_repo = MagicMock()
         mock_repo_class.return_value = mock_repo
@@ -160,7 +161,8 @@ def test_tag_command_logs_edit_for_existing_tag(tmp_path):
         patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
     ):
         mock_db = MagicMock()
-        mock_db._db_path = "mock.db"
+        mock_db.get_active_project.return_value = "test-proj"
+        mock_db.get_project.return_value = {"root_path": "/tmp/test-proj"}
         mock_get_db.return_value = mock_db
         mock_repo = MagicMock()
         mock_repo_class.return_value = mock_repo
@@ -186,12 +188,13 @@ def test_tree_command_displays_lineage():
         patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
     ):
         mock_db = MagicMock()
-        mock_db._db_path = "mock.db"
+        mock_db.get_active_project.return_value = "test-proj"
+        mock_db.get_project.return_value = {"root_path": "/tmp/test-proj"}
         mock_get_db.return_value = mock_db
-        
+
         mock_engine = MagicMock()
         mock_engine_class.return_value = mock_engine
-        
+
         mock_engine.find_root.return_value = "root-uuid"
         mock_engine.build_tree.return_value = {
             "id": "root-uuid",
@@ -243,12 +246,13 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
         patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
     ):
         mock_db = MagicMock()
-        mock_db._db_path = "mock.db"
+        mock_db.get_active_project.return_value = "test-proj"
+        mock_db.get_project.return_value = {"root_path": "/tmp/test-proj"}
         mock_get_db.return_value = mock_db
-        
+
         mock_engine = MagicMock()
         mock_engine_class.return_value = mock_engine
-        
+
         mock_engine.find_root.return_value = "filebase-uuid-999"
         mock_engine.build_tree.return_value = {
             "id": "filebase-uuid-999",
@@ -272,12 +276,13 @@ def test_tree_command_graceful_missing_history():
         patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
     ):
         mock_db = MagicMock()
-        mock_db._db_path = "mock.db"
+        mock_db.get_active_project.return_value = "test-proj"
+        mock_db.get_project.return_value = {"root_path": "/tmp/test-proj"}
         mock_get_db.return_value = mock_db
-        
+
         mock_engine = MagicMock()
         mock_engine_class.return_value = mock_engine
-        
+
         mock_engine.find_root.return_value = "unknown-uuid"
         mock_engine.build_tree.return_value = {
             "id": "unknown-uuid",
@@ -300,12 +305,13 @@ def test_tree_command_handles_circular_references():
         patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
     ):
         mock_db = MagicMock()
-        mock_db._db_path = "mock.db"
+        mock_db.get_active_project.return_value = "test-proj"
+        mock_db.get_project.return_value = {"root_path": "/tmp/test-proj"}
         mock_get_db.return_value = mock_db
-        
+
         mock_engine = MagicMock()
         mock_engine_class.return_value = mock_engine
-        
+
         mock_engine.find_root.return_value = "loop-a"
         mock_engine.build_tree.return_value = {
             "id": "loop-a",

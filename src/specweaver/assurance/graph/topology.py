@@ -15,12 +15,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from pathlib import Path  # noqa: TC003 — used at runtime in from_project() and dataclass fields
-from typing import Any
+from pathlib import Path
+from typing import Any, Protocol
 
 from ruamel.yaml import YAML
-
-from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 

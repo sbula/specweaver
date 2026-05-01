@@ -16,8 +16,8 @@ from specweaver.assurance.graph.selectors import (
     ImpactWeightedSelector,
     NHopConstraintSelector,
 )
-from specweaver.graph.topology.engine import TopologyEngine
 from specweaver.assurance.graph.topology import TopologyGraph
+from specweaver.graph.topology.engine import TopologyEngine
 
 # ---------------------------------------------------------------------------
 # Helpers

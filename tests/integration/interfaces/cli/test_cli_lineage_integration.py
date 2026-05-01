@@ -1,5 +1,7 @@
 from typer.testing import CliRunner
 
+import specweaver.interfaces.cli.lineage  # noqa: F401 - Register commands
+from specweaver.graph_store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli._core import app, get_db
 
 runner = CliRunner()
@@ -14,6 +16,12 @@ def test_lineage_tag_integration_real_db(tmp_path, monkeypatch):
 
     # Initialize DB (creates Schema V12)
     db = get_db()
+    db.register_project("test-proj", str(tmp_path))
+    db.set_active_project("test-proj")
+
+    local_db_dir = tmp_path / ".specweaver"
+    local_db_dir.mkdir(parents=True, exist_ok=True)
+    repo = LineageRepository(str(local_db_dir / "graph.db"))
 
     # Create target file
     test_file = tmp_path / "target.py"
@@ -37,7 +45,7 @@ def test_lineage_tag_integration_real_db(tmp_path, monkeypatch):
             break
 
     assert uuid_str is not None
-    history = db.get_artifact_history(uuid_str)
+    history = repo.get_artifact_history(uuid_str)
 
     # Assert
     assert len(history) == 1
@@ -52,11 +60,17 @@ def test_lineage_tree_integration_multigen(tmp_path, monkeypatch):
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
 
     db = get_db()
+    db.register_project("test-proj2", str(tmp_path))
+    db.set_active_project("test-proj2")
+
+    local_db_dir = tmp_path / ".specweaver"
+    local_db_dir.mkdir(parents=True, exist_ok=True)
+    repo = LineageRepository(str(local_db_dir / "graph.db"))
 
     # Insert events manually using DB interface
-    db.log_artifact_event("root-x", None, "run-1", "generated_code", "human")
-    db.log_artifact_event("child-y", "root-x", "run-2", "edit", "model_1")
-    db.log_artifact_event("grandchild-z", "child-y", "run-3", "lint", "model_2")
+    repo.log_artifact_event("root-x", None, "run-1", "generated_code", "human")
+    repo.log_artifact_event("child-y", "root-x", "run-2", "edit", "model_1")
+    repo.log_artifact_event("grandchild-z", "child-y", "run-3", "lint", "model_2")
 
     # Act
     result = runner.invoke(app, ["lineage", "tree", "child-y"])
@@ -75,6 +89,10 @@ def test_lineage_e2e_full_pipeline(tmp_path, monkeypatch):
     data_dir = tmp_path / ".specweaver_e2e"
     data_dir.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
+
+    db = get_db()
+    db.register_project("test-proj3", str(tmp_path))
+    db.set_active_project("test-proj3")
 
     # Create a dummy python file
     target_file = tmp_path / "hello.py"

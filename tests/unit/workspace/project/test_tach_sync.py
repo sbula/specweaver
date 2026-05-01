@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 import tomlkit
@@ -18,7 +19,7 @@ def test_sync_tach_toml_empty_creates_new(tmp_path: Path) -> None:
         consumes=["cli", "config"],
         exposes=[],
     )
-    graph = TopologyGraph(nodes={"api": node})
+    graph = TopologyGraph(nodes={"api": node}, engine=MagicMock())
 
     target_path = tmp_path
     tach_file = target_path / "tach.toml"
@@ -60,7 +61,7 @@ def test_sync_tach_toml_interface_mapping(tmp_path: Path) -> None:
         consumes=[],
         exposes=["runner", "core"],
     )
-    graph = TopologyGraph(nodes={"domain": node})
+    graph = TopologyGraph(nodes={"domain": node}, engine=MagicMock())
 
     result = sync_tach_toml(graph, tmp_path)
 
@@ -97,7 +98,7 @@ def test_sync_tach_toml_deep_merge(tmp_path: Path) -> None:
         consumes=["new_dep"],
         exposes=[],
     )
-    graph = TopologyGraph(nodes={"new_module": node})
+    graph = TopologyGraph(nodes={"new_module": node}, engine=MagicMock())
 
     result = sync_tach_toml(graph, tmp_path)
 
@@ -122,14 +123,14 @@ def test_sync_tach_toml_deep_merge(tmp_path: Path) -> None:
 def test_sync_tach_toml_malformed(tmp_path: Path) -> None:
     tach_file = tmp_path / "tach.toml"
     tach_file.write_text("[[modules]\nbad_syntax...", encoding="utf-8")
-    graph = TopologyGraph(nodes={})
+    graph = TopologyGraph(nodes={}, engine=MagicMock())
 
     with pytest.raises(ParseError):
         sync_tach_toml(graph, tmp_path)
 
 
 def test_sync_tach_toml_empty_graph(tmp_path: Path) -> None:
-    graph = TopologyGraph(nodes={})
+    graph = TopologyGraph(nodes={}, engine=MagicMock())
     result = sync_tach_toml(graph, tmp_path)
 
     assert result.modules_synced == 0

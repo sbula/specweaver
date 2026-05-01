@@ -89,7 +89,7 @@ If you are extending SpecWeaver's core Engine, custom tools, or LLM adapters, co
 │   ├── review/                 # AI reviewer (constitution-aware)
 │   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
 │   └── validation/             # Rules engine (S01-S11, C01-C09, C12, drift detection)
-├── tests/                      # 4644 tests (unit, integration, E2E)
+├── tests/                      # 4700+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
 ```

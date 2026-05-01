@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from specweaver.graph.lineage.engine import LineageEngine
 
@@ -32,7 +33,7 @@ class TestLineageEngine:
             if uid == "root":
                 return [{"parent_id": None}]
             return []
-        
+
         mock_repo.get_artifact_history.side_effect = mock_history
         assert engine.find_root("child") == "root"
 
@@ -75,10 +76,10 @@ class TestLineageEngine:
         tree = engine.build_tree("root")
         assert tree["id"] == "root"
         assert len(tree["children"]) == 2
-        
+
         c1 = next(c for c in tree["children"] if c["id"] == "child-1")
         c2 = next(c for c in tree["children"] if c["id"] == "child-2")
-        
+
         assert len(c1["children"]) == 1
         assert c1["children"][0]["id"] == "leaf"
         assert len(c2["children"]) == 0
@@ -101,11 +102,11 @@ class TestLineageEngine:
         tree = engine.build_tree("loop-a")
         assert tree["id"] == "loop-a"
         assert len(tree["children"]) == 1
-        
+
         b = tree["children"][0]
         assert b["id"] == "loop-b"
         assert len(b["children"]) == 1
-        
+
         a_again = b["children"][0]
         assert a_again["id"] == "loop-a"
         assert a_again["circular"] is True

@@ -225,8 +225,9 @@ class TestGenerateCodeHandler:
         assert "llm" in result.error_message.lower()
 
     @pytest.mark.asyncio
+    @patch("specweaver.graph_store.lineage_repository.LineageRepository")
     @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
-    async def test_generate_code_success_path(self, mock_git, tmp_path: Path) -> None:
+    async def test_generate_code_success_path(self, mock_git, mock_repo_class, tmp_path: Path) -> None:
         """Verifies successful LLM code generation does not crash and passes output."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -244,15 +245,15 @@ class TestGenerateCodeHandler:
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
 
-        # Ensure ctx.db is set up so log_artifact_event gets called
-        ctx.db = MagicMock()
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
 
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert "generated_path" in result.output
         assert result.artifact_uuid is not None
 
-        ctx.db.log_artifact_event.assert_called_with(
+        mock_repo.log_artifact_event.assert_called_with(
             artifact_id=result.artifact_uuid,
             parent_id="test-run",
             run_id="test-run",
@@ -303,8 +304,9 @@ class TestGenerateCodeHandler:
         assert "gen" not in ctx.feedback
 
     @pytest.mark.asyncio
+    @patch("specweaver.graph_store.lineage_repository.LineageRepository")
     @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
-    async def test_generate_code_extracts_existing_uuid(self, mock_git, tmp_path: Path) -> None:
+    async def test_generate_code_extracts_existing_uuid(self, mock_git, mock_repo_class, tmp_path: Path) -> None:
         """Verifies UUID extraction from an existing file before overwriting."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -327,13 +329,14 @@ class TestGenerateCodeHandler:
         handler = GenerateCodeHandler()
         mock_git.return_value = (0, "", "")
 
-        ctx.db = MagicMock()
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
 
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert result.artifact_uuid == "11111111-2222-3333-4444-555555555555"
 
-        ctx.db.log_artifact_event.assert_called_with(
+        mock_repo.log_artifact_event.assert_called_with(
             artifact_id="11111111-2222-3333-4444-555555555555",
             parent_id="test-run",
             run_id="test-run",
@@ -414,8 +417,9 @@ class TestGenerateTestsHandler:
         assert "llm" in result.error_message.lower()
 
     @pytest.mark.asyncio
+    @patch("specweaver.graph_store.lineage_repository.LineageRepository")
     @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
-    async def test_generate_tests_success_path(self, mock_git, tmp_path: Path) -> None:
+    async def test_generate_tests_success_path(self, mock_git, mock_repo_class, tmp_path: Path) -> None:
         """Verifies successful LLM test generation does not crash."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -435,14 +439,15 @@ class TestGenerateTestsHandler:
         handler = GenerateTestsHandler()
         mock_git.return_value = (0, "", "")
 
-        ctx.db = MagicMock()
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
 
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
         assert "generated_path" in result.output
         assert result.artifact_uuid is not None
 
-        ctx.db.log_artifact_event.assert_called_with(
+        mock_repo.log_artifact_event.assert_called_with(
             artifact_id=result.artifact_uuid,
             parent_id="test-run",
             run_id="test-run",
@@ -567,14 +572,18 @@ class TestPlanSpecHandler:
         assert "llm" in result.error_message.lower()
 
     @pytest.mark.asyncio
+    @patch("specweaver.graph_store.lineage_repository.LineageRepository")
     @patch("specweaver.workflows.planning.planner.Planner.generate_plan")
-    async def test_plan_spec_success_path_with_uuid(self, mock_create, tmp_path: Path) -> None:
+    async def test_plan_spec_success_path_with_uuid(self, mock_create, mock_repo_class, tmp_path: Path) -> None:
         """Verifies plan generation mints UUID and saves YAML."""
         spec = tmp_path / "test_spec.md"
         valid_uuid = "11111111-2222-3333-4444-888888888888"
         spec.write_text(f"# sw-artifact: {valid_uuid}\nTest\n")
         ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
-        ctx.db = MagicMock()
+
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
+
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
         handler = PlanSpecHandler()
 
@@ -602,25 +611,28 @@ class TestPlanSpecHandler:
         assert f"# sw-artifact: {result.artifact_uuid}" in content
 
         # Verify db was called with correct parent_id and model_id
-        ctx.db.log_artifact_event.assert_called_with(
+        mock_repo.log_artifact_event.assert_called_with(
             artifact_id=result.artifact_uuid,
             parent_id="11111111-2222-3333-4444-888888888888",
-            run_id="",
+            run_id="pipeline_run",
             event_type="generated_plan",
             model_id="gemini-3-flash-preview",
         )
 
     @pytest.mark.asyncio
+    @patch("specweaver.graph_store.lineage_repository.LineageRepository")
     @patch("specweaver.workflows.planning.planner.Planner.generate_plan")
-    async def test_plan_spec_derives_parent_from_run_id(self, mock_create, tmp_path: Path) -> None:
+    async def test_plan_spec_derives_parent_from_run_id(self, mock_create, mock_repo_class, tmp_path: Path) -> None:
         """If spec lacks a tag, parent_id falls back to run_id."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# No tag here\nTest\n")
         ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
-        ctx.db = MagicMock()
         ctx.run_id = "test-run-123"
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
         handler = PlanSpecHandler()
+
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
 
         from specweaver.workflows.planning.models import PlanArtifact
 
@@ -635,7 +647,7 @@ class TestPlanSpecHandler:
         result = await handler.execute(step, ctx)
         assert result.status == StepStatus.PASSED
 
-        ctx.db.log_artifact_event.assert_called_with(
+        mock_repo.log_artifact_event.assert_called_with(
             artifact_id=result.artifact_uuid,
             parent_id="test-run-123",
             run_id="test-run-123",
@@ -690,13 +702,17 @@ class TestDraftSpecHandler:
         assert "sw draft" in result.output["message"]
 
     @pytest.mark.asyncio
+    @patch("specweaver.graph_store.lineage_repository.LineageRepository")
     @patch("specweaver.workflows.drafting.drafter.Drafter.draft")
-    async def test_draft_spec_creates_uuid(self, mock_draft: AsyncMock, tmp_path: Path) -> None:
+    async def test_draft_spec_creates_uuid(self, mock_draft: AsyncMock, mock_repo_class, tmp_path: Path) -> None:
         """If drafting succeeds, StepResult contains a generated artifact_uuid."""
         spec = tmp_path / "test_spec.md"
         ctx = RunContext(project_path=tmp_path, spec_path=spec)
         ctx.llm = AsyncMock()
         ctx.context_provider = AsyncMock()
+
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
 
         # mock drafter output: it should write the file when called.
         async def mock_draft_side_effect(*args, **kwargs):
@@ -708,7 +724,6 @@ class TestDraftSpecHandler:
         step = PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC)
         handler = DraftSpecHandler()
 
-        ctx.db = MagicMock()
         ctx.run_id = "test-run"
 
         result = await handler.execute(step, ctx)
@@ -720,7 +735,7 @@ class TestDraftSpecHandler:
         content = spec.read_text(encoding="utf-8")
         assert "<!-- sw-artifact:" in content
 
-        ctx.db.log_artifact_event.assert_called_with(
+        mock_repo.log_artifact_event.assert_called_with(
             artifact_id=result.artifact_uuid,
             parent_id=None,
             run_id="test-run",

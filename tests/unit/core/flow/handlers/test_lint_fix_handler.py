@@ -13,7 +13,7 @@ Call sequence through the atom:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -354,8 +354,8 @@ class TestLintFixArtifactLineage:
         assert valid_uuid in prompt
         assert "physically at the very top" in prompt
 
-    @pytest.mark.asyncio
-    async def test_lint_fix_logs_events_to_db(self, tmp_path: Path) -> None:
+    @patch("specweaver.graph_store.lineage_repository.LineageRepository")
+    async def test_lint_fix_logs_events_to_db(self, mock_repo_class, tmp_path: Path) -> None:
         """Handler must log a lint_fixed event to context.db if an artifact_uuid is present."""
         mock_atom = MagicMock()
         mock_atom.run.side_effect = [_dirty(1), _dirty(1), _dirty(1), _clean()]
@@ -369,8 +369,10 @@ class TestLintFixArtifactLineage:
         mock_llm = MagicMock()
         mock_llm.generate = AsyncMock(return_value=MagicMock(text="fixed"))
 
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
+
         ctx = _make_context(tmp_path, llm=mock_llm)
-        ctx.db = MagicMock()
         ctx.run_id = "test-run-1"
 
         result = await _handler(mock_atom).execute(_make_step(), ctx)
@@ -378,8 +380,8 @@ class TestLintFixArtifactLineage:
         assert result.status == StepStatus.PASSED
 
         # Verify DB logging was called
-        assert ctx.db.log_artifact_event.call_count == 1
-        ctx.db.log_artifact_event.assert_called_with(
+        assert mock_repo.log_artifact_event.call_count == 1
+        mock_repo.log_artifact_event.assert_called_with(
             artifact_id=valid_uuid,
             parent_id=None,
             run_id="test-run-1",

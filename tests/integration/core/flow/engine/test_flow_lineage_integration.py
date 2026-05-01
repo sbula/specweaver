@@ -137,7 +137,9 @@ async def test_lineage_tracking_flow_database(
     assert run.status == RunStatus.COMPLETED
 
     # Verify DB contains the events
-    with lineage_db.connect() as conn:
+    import sqlite3
+    with sqlite3.connect(tmp_path / ".specweaver" / "graph.db") as conn:
+        conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT artifact_id, parent_id, event_type FROM artifact_events ORDER BY timestamp ASC"
         ).fetchall()
@@ -220,7 +222,9 @@ async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Data
 
     # Since it failed review once and looped back, we should have TWO code generations in DB.
     # But crucially, they should have the EXACT SAME artifact_uuid because the second run extracted it from the file!
-    with lineage_db.connect() as conn:
+    import sqlite3
+    with sqlite3.connect(tmp_path / ".specweaver" / "graph.db") as conn:
+        conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT artifact_id, parent_id, event_type FROM artifact_events WHERE event_type='generated_code' ORDER BY timestamp ASC"
         ).fetchall()
