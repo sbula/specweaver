@@ -213,19 +213,19 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
-3. SF-3 (depends on SF-1)
+3. SF-3 (depends on SF-1, SF-2)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | In-Memory Graph Engine & Enterprise Ontology | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-2 | Persistent Storage Adapter | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-3 | Universal Graph Harmonization | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | In-Memory Graph Engine & Enterprise Ontology | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Persistent Storage Adapter | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Graph Builder Orchestration & Harmonization | SF-1, SF-2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 code was reverted due to workflow violations. SF-3 Universal Graph Harmonization design has been injected.
+**Current status**: Design Phase is awaiting final HITL approval (Phase 6 Consistency Check). SF-1 code was previously reverted due to workflow violations.
 **Next step**: 
-1. Run the `/implementation-plan` workflow to architect SF-1 (In-Memory Graph Engine & Enterprise Ontology) from scratch.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
+1. Wait for HITL approval to mark Design as APPROVED.
+2. Run the `/implementation-plan` workflow to architect SF-1 from scratch.
