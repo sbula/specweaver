@@ -704,6 +704,7 @@ To insulate SpecWeaver from breaking changes in standard compilation/debugging s
 | Naming modules by what the agent *does* ("research") | Name by what the code *is* |
 | Domain modules importing from `loom/*` | 12 of 16 modules explicitly forbid this — use `flow/` as the bridge |
 | Hiding dependencies via inline imports inside methods | Bypasses `tach` and obscures the actual module coupling density |
+| Unchunked bulk graph ingestion into SQLite | Triggers `database is locked` deadlocks (RT-4); always batch `executemany` into 5,000-row chunks |
 
 ---
 

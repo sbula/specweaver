@@ -58,8 +58,9 @@ from = [
     "src.specweaver.graph",
 ]
 expose = [
-    "topology",
-    "selectors",
+    "engine.core",
+    "engine.models",
+    "store.repository",
 ]
 
 [[interfaces]]
