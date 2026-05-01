@@ -219,7 +219,7 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | In-Memory Graph Engine & Enterprise Ontology | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | In-Memory Graph Engine & Enterprise Ontology | — | ✅ | ✅ | ✅ | [/] | ⬜ |
 | SF-2 | Persistent Storage Adapter | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-3 | Graph Builder Orchestration & Harmonization | SF-1, SF-2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 

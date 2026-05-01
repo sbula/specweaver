@@ -34,7 +34,7 @@ specweaver/                       ← level: system, archetype: orchestrator
 ├── context/                      ← HITL context providers
 ├── drafting/                     ← LLM-assisted spec drafting
 ├── flow/                         ← Pipeline engine (models, runners, gates, handlers)
-├── graph/                        ← Topology graph + dependency analysis
+├── graph/                        ← In-Memory Knowledge Graph Engine, Builder, & Topology
 ├── implementation/               ← Code generation from specs
 ├── llm/                          ← LLM provider abstraction
 │   ├── adapters/                 ← Concrete adapters (Gemini)

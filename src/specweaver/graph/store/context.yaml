@@ -1,0 +1,9 @@
+module_name: "specweaver.graph.store"
+description: "Infrastructure layer. Handles SQLite database interactions for the Knowledge Graph."
+layer: "Infrastructure"
+allowed_imports:
+  - "specweaver.graph.engine"
+  - "specweaver.commons"
+  - "sqlite3"
+forbidden_imports:
+  - "specweaver.graph.builder"

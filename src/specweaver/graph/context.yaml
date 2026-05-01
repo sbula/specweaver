@@ -1,0 +1,10 @@
+module_name: "specweaver.graph"
+description: "Bounded context for the Universal Graph Triad (Engine, Store, Builder). This defines the Enterprise Architecture Knowledge Graph domain."
+layer: "Domain"
+allowed_imports:
+  - "specweaver.commons"
+  - "specweaver.core.loom"
+forbidden_imports:
+  - "specweaver.interfaces.cli"
+  - "specweaver.interfaces.api"
+  - "specweaver.config"

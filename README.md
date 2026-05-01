@@ -70,7 +70,7 @@ If you are extending SpecWeaver's core Engine, custom tools, or LLM adapters, co
 │   ├── context/                # Context providers (HITL, inferrer, analyzers)
 │   ├── drafting/               # Interactive spec drafter
 │   ├── flow/                   # Pipeline engine: models, parser, runner, state, handlers, store
-│   ├── graph/                  # TopologyGraph, dependency selectors
+│   ├── graph/                  # In-Memory Knowledge Graph Engine, Builder, & Topology
 │   ├── implementation/         # Code generator
 │   ├── llm/                    # Multi-provider auto-discovery registry, models, telemetry
 │   │   ├── adapters/           # Self-describing concrete adapters (Gemini, OpenAI, etc)
