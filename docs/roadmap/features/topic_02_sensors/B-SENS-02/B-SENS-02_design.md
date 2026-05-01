@@ -105,6 +105,10 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | RT-26 | **Namespace Prefix Spoofing** | ID prefixes MUST be deterministically prepended by the `GraphRepository` (reading `context.yaml`), NOT passed as a flexible argument by the AST parser, preventing agents from spoofing cross-service IDs. | SF-2 |
 | RT-27 | **Infinite Depth OOM Crash** | The `InMemoryGraphEngine` MUST enforce a hard-coded maximum depth (e.g., `max(requested, 5)`) on all subgraph extraction queries to prevent catastrophic enterprise-wide memory loads. | SF-1 |
 | RT-28 | **Standard Library Ghost Swarm** | The `OntologyMapper` MUST detect and silently drop `CALLS` edges pointing to native language standard libraries (e.g., `sys.stdlib_module_names`) to prevent millions of useless nodes. | SF-1 |
+| RT-29 | **Metadata Key Obfuscation** | The `metadata` JSON blob MUST be strictly validated via Pydantic Discriminated Unions per `NodeKind`. Unstructured `Dict[str, Any]` is forbidden. Unrecognized keys must be silently dropped to prevent data smuggling. | SF-1 |
+| RT-30 | **Local Context YAML Poisoning** | The `GraphRepository` MUST validate the local `context.yaml` `service_name` against the global `~/.specweaver/specweaver.db` registry on boot to prevent rogue agents from hijacking other microservice namespaces. | SF-2 |
+| RT-31 | **Parallel Query Exhaustion** | The `InMemoryGraphEngine` MUST use an async `Semaphore` to limit concurrent subgraph extractions (e.g., max 3) to prevent LLM loops from triggering an OOM crash via parallel `NetworkX` instances. | SF-1 |
+| RT-32 | **Polyglot Ghost Blindspot** | Language-specific AST parsers (`D-SENS-02`) MUST provide standard library exclusion Regexes (e.g., `^java\..*`) to the `OntologyMapper` because the Python `sys` module cannot identify Java/Go/Rust built-ins. | SF-1 |
 
 ## Developer Guides Required
 
