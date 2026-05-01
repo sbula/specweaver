@@ -72,20 +72,16 @@ description: "Phase 1: Architecture verification — verify layer placement, dep
      - **No violation may be silently skipped.** Every issue must be either
        fixed or documented — this is non-negotiable.
 
-1.9. **HITL GATE — If ANY violations were found (pre-existing or new):**
-     - **STOP and present findings to the user** via `notify_user`.
-     - Include: what was found, where, which rule is broken, and whether it
-       was fixed or documented.
-     - If violations were only documented (not fixed), explain why a fix
-       was deferred and what the proposed resolution is.
-     - **Do NOT proceed to Phase 2 until the user confirms.**
+1.9. **DEFERRED HITL GATE:**
+     - Do NOT stop immediately if architecture violations are found.
+     - Instead, document the architecture findings and PROCEED to Phase 2 (Test Gap Analysis).
+     - At the end of Phase 2, present a COMBINED analysis containing both the Architecture Violations and the Test Gap Analysis.
+     - > [!CAUTION]
+       > **FORMAT EXCEPTION:** You MUST NOT write this combined analysis into a file or system Artifact! You MUST print the full Background, Architecture Findings, Coverage Matrix, Options, Analysis, and Proposal DIRECTLY into your conversational chat response.
 
 > [!CAUTION]
-> **HARD GATE:** If Phase 1 found ANY architecture violations, you MUST
-> present them to the user AND YIELD YOUR TURN.
-> Yielding your turn means making ZERO further tool calls. You must literally stop your chain of thought, end the message, and wait for the user to type a reply in the chat. Do NOT proceed to Phase 2.
-> If NO violations were found, you may proceed directly to Phase 2 without yielding.
+> **HARD GATE RELOCATED:** The hard stop has been moved to the end of Phase 2. You may proceed directly to Phase 2.
 
 > [!IMPORTANT]
 > **CHECKPOINT:** Phase 1 is complete. Update `task.md`.
-> The NEXT phase is Phase 2 (Code Quality Checks) — NOT running pytest!
+> The NEXT phase is Phase 2 (Code Quality Checks / Test Gap). Proceed to it immediately to gather the test gap analysis.

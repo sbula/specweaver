@@ -80,11 +80,10 @@ description: "Phase 2: Test gap analysis — coverage matrix, proposed test stor
 2.7. Present the FULL list — do NOT limit to 10 items.
 2.8. **STOP and wait for the HITL response.** Present the gap analysis.
      > [!CAUTION]
-     > You MUST NOT write the test gap analysis into a file or system Artifact!
-     > You MUST print the full Background, Coverage Matrix, Options, Analysis, and Proposal DIRECTLY into your conversational chat response. 
-     > Write it exactly like a review straight to the user in the text window.
+     > You MUST write the test gap analysis into a system Artifact (using `write_to_file` with `IsArtifact: true`)!
+     > You MUST NOT print the Coverage Matrix or Test Stories directly into your conversational chat response. The user needs the Artifact to leave line-by-line comments.
 
 > [!CAUTION]
-> **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories directly in the chat to the user. 
-> You MUST YIELD YOUR TURN. A yield means making ZERO further tool calls. You must end your response and wait for the user to type a reply in the chat.
+> **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories as an Artifact. 
+> You MUST YIELD YOUR TURN. A yield means making ZERO further tool calls after generating the Artifact. You must end your response and wait for the user to type a reply.
 > You MUST NOT proceed to Phase 3 (implementing tests) synchronously in the same turn. Do not assume they look okay or skip this gate.
