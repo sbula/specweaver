@@ -1,4 +1,4 @@
-from typing import Protocol, TypedDict
+from typing import Any, Protocol, TypedDict
 
 
 class ArtifactEvent(TypedDict):
@@ -9,10 +9,10 @@ class ArtifactEvent(TypedDict):
     model_id: str
 
 class LineageRepositoryProtocol(Protocol):
-    def get_artifact_history(self, artifact_id: str) -> list[ArtifactEvent]:
+    def get_artifact_history(self, artifact_id: str) -> list[dict[str, Any]]:
         """Fetch all events for a given artifact, ordered by creation time."""
         ...
 
-    def get_children(self, artifact_id: str) -> list[ArtifactEvent]:
+    def get_children(self, parent_id: str) -> list[dict[str, Any]]:
         """Fetch immediate children of a given artifact."""
         ...

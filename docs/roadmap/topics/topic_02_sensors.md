@@ -37,7 +37,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 ## DAL-B: High-Assurance
 * **`B-SENS-01` ✅: Artifact Lineage Graph** (Legacy: 3.17)<br>
   > `future_capabilities_reference.md` §17 | Core database-backed lineage tracking and #sw-artifact tagging. Enables exact LLM provenance attribution and cost-per-feature analysis while remaining orthogonal to AST dependencies. **Complete**: 3591 tests.
-* **`B-SENS-02` 🟡: Knowledge Graph Builder** (Legacy: 3.32f)<br>
+* **`B-SENS-02` ✅: Knowledge Graph Builder** (Legacy: 3.32f)<br>
   > _(new)_ | Constructs a deep class/function-level semantic Knowledge Graph from the AST. Persists the nodes and edges directly to specweaver.db (SQLite) to ensure cross-session persistence (no rebuilding from scratch on boot). Wraps local query operations in NetworkX purely for fast in-memory execution over the persistent SQL data. **-> NOTE: Once implemented, use the graph to extract active workspace languages and dynamically inject them into CodeStructureAtom to perfectly prune unsupported tool schemas.**
 * **`B-SENS-03` 🔜: AST Semantic Chunking** (Legacy: 4.2)<br>
   > `future_capabilities_reference.md` §3 | AST-based semantic chunking (RAG foundation). _(See also: [CrewAI Knowledge](https://docs.crewai.com/concepts/knowledge) for RAG source patterns, embedder config, query rewriting — ORIGINS.md § CrewAI)_

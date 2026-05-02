@@ -571,36 +571,3 @@ class GenerateContractHandler:
                 docstrings[func_name] = docstring
         return docstrings
 
-    @staticmethod
-    def _render_protocol(
-        class_name: str,
-        signatures: list[str],
-        docstrings: dict[str, str] | None = None,
-    ) -> str:
-        """Render a Python Protocol class from extracted signatures and docstrings."""
-        import re
-
-        docstrings = docstrings or {}
-        lines = [
-            '"""Auto-generated API contract from spec Contract section."""',
-            "",
-            "from __future__ import annotations",
-            "",
-            "from typing import Protocol, runtime_checkable",
-            "",
-            "",
-            "@runtime_checkable",
-            f"class {class_name}Protocol(Protocol):",
-            f'    """API contract for {class_name}."""',
-            "",
-        ]
-        for sig in signatures:
-            lines.append(f"    {sig}:")
-            func_match = re.search(r"def\s+(\w+)\(", sig)
-            func_name = func_match.group(1) if func_match else None
-            if func_name and func_name in docstrings:
-                lines.append(f'        """{docstrings[func_name]}"""')
-            else:
-                lines.append("        ...")
-            lines.append("")
-        return "\n".join(lines) + "\n"

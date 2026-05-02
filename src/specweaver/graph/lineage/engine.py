@@ -17,7 +17,11 @@ class LineageEngine:
             if current in visited:
                 break
             visited.add(current)
-            history = self.repo.get_artifact_history(current)
+            try:
+                history = self.repo.get_artifact_history(current)
+            except Exception:
+                # If repository is disconnected or corrupted, fail gracefully
+                history = []
             if not history:
                 break
             parent_id = history[0].get("parent_id")
@@ -39,8 +43,12 @@ class LineageEngine:
                 }
 
             visited.add(node_uid)
-            hist = self.repo.get_artifact_history(node_uid)
-            children_rows = self.repo.get_children(node_uid)
+            try:
+                hist = self.repo.get_artifact_history(node_uid)
+                children_rows = self.repo.get_children(node_uid)
+            except Exception:
+                hist = []
+                children_rows = []
 
             child_uids = list(
                 dict.fromkeys(

@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import uuid
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich import print as rprint
@@ -134,7 +134,7 @@ def tree_command(  # noqa: C901
 
     tree = Tree(f"[bold blue]Lineage Graph (Root: {root_uuid})[/bold blue]")
 
-    def build_node(node_data: dict, parent_tree: Tree) -> None:
+    def build_node(node_data: dict[str, Any], parent_tree: Tree) -> None:
         node_uid = node_data["id"]
 
         if node_data["circular"]:

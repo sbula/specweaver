@@ -63,3 +63,22 @@ def test_engine_handles_missing_uuid_gracefully(engine, repo):
     assert tree["id"] == "unknown-uuid"
     assert tree["children"] == []
     assert not tree["circular"]
+
+
+def test_engine_handles_broken_repository(engine, repo, monkeypatch):
+    # Hostile/Wrong Input: repository connection fails
+    def mock_broken(*args, **kwargs):
+        import sqlite3
+        raise sqlite3.OperationalError("disk I/O error")
+
+    monkeypatch.setattr(repo, "get_artifact_history", mock_broken)
+    monkeypatch.setattr(repo, "get_children", mock_broken)
+
+    # Engine should not crash, it should return gracefully
+    root = engine.find_root("some-node")
+    assert root == "some-node"
+
+    tree = engine.build_tree("some-node")
+    assert tree["id"] == "some-node"
+    assert tree["children"] == []
+    assert not tree["circular"]
