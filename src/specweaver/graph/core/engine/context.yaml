@@ -1,12 +1,12 @@
-module_name: "specweaver.graph.engine"
+module_name: "specweaver.graph.core.engine"
 description: "Pure logic layer of the Knowledge Graph. Contains the NetworkX wrapper and Ontology models."
 layer: "Domain.Core"
 allowed_imports:
-  - "specweaver.graph.engine.*"
+  - "specweaver.graph.core.engine.*"
   - "specweaver.commons"
 forbidden_imports:
-  - "specweaver.graph.store"
-  - "specweaver.graph.builder"
+  - "specweaver.graph.core.store"
+  - "specweaver.graph.core.builder"
   - "sqlite3"
   - "os"
   - "pathlib"

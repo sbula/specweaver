@@ -15,7 +15,7 @@ from rich import print as rprint
 from rich.tree import Tree
 
 from specweaver.graph.lineage.engine import LineageEngine
-from specweaver.graph.store.lineage_repository import LineageRepository
+from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli._core import app as core_app
 from specweaver.interfaces.cli._core import console, get_db
 

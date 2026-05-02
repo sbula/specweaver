@@ -1,7 +1,7 @@
 import pytest
 
 from specweaver.graph.lineage.engine import LineageEngine
-from specweaver.graph_store.lineage_repository import LineageRepository
+from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 
 
 @pytest.fixture

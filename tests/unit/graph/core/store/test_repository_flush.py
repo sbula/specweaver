@@ -3,7 +3,7 @@ import sqlite3
 import networkx as nx
 import pytest
 
-from specweaver.graph.store.repository import SqliteGraphRepository
+from specweaver.graph.core.store.repository import SqliteGraphRepository
 
 
 @pytest.fixture

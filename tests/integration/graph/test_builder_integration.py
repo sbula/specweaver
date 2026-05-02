@@ -1,7 +1,7 @@
 from typing import Any
 
-from specweaver.graph.builder.orchestrator import GraphBuilder
-from specweaver.graph.engine.core import InMemoryGraphEngine
+from specweaver.graph.core.builder.orchestrator import GraphBuilder
+from specweaver.graph.core.engine.core import InMemoryGraphEngine
 
 
 def fake_java_parser(filepath: str) -> dict[str, Any]:

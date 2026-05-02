@@ -354,7 +354,7 @@ class TestLintFixArtifactLineage:
         assert valid_uuid in prompt
         assert "physically at the very top" in prompt
 
-    @patch("specweaver.graph_store.lineage_repository.LineageRepository")
+    @patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository")
     async def test_lint_fix_logs_events_to_db(self, mock_repo_class, tmp_path: Path) -> None:
         """Handler must log a lint_fixed event to context.db if an artifact_uuid is present."""
         mock_atom = MagicMock()

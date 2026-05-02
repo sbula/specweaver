@@ -1,5 +1,5 @@
-from specweaver.graph.builder.mapper import OntologyMapper
-from specweaver.graph.engine.ontology import NodeKind
+from specweaver.graph.core.builder.mapper import OntologyMapper
+from specweaver.graph.core.engine.ontology import NodeKind
 
 
 def test_mapper_happy_path_python_function():

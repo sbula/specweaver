@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from specweaver.graph.engine.ontology import EdgeKind, NodeKind
+from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
 
 class GraphNode(BaseModel):

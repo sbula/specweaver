@@ -5,7 +5,7 @@ from typing import Any
 
 import networkx as nx  # type: ignore
 
-from specweaver.graph.engine.models import GraphEdge, GraphNode
+from specweaver.graph.core.engine.models import GraphEdge, GraphNode
 
 
 class InMemoryGraphEngine:

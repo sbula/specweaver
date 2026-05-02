@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.graph.builder.orchestrator import GraphBuilder
-from specweaver.graph.engine.core import InMemoryGraphEngine
-from specweaver.graph.engine.models import GraphNode
-from specweaver.graph.engine.ontology import NodeKind
+from specweaver.graph.core.builder.orchestrator import GraphBuilder
+from specweaver.graph.core.engine.core import InMemoryGraphEngine
+from specweaver.graph.core.engine.models import GraphNode
+from specweaver.graph.core.engine.ontology import NodeKind
 
 
 def test_export_graph_to_disk_and_gitignore(tmp_path):

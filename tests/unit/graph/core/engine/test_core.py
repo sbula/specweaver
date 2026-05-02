@@ -2,9 +2,9 @@ import threading
 
 import pytest
 
-from specweaver.graph.engine.core import InMemoryGraphEngine
-from specweaver.graph.engine.models import GraphEdge, GraphNode
-from specweaver.graph.engine.ontology import EdgeKind, NodeKind
+from specweaver.graph.core.engine.core import InMemoryGraphEngine
+from specweaver.graph.core.engine.models import GraphEdge, GraphNode
+from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
 
 def test_engine_thread_safety():

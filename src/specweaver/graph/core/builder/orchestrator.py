@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Any
 
-from specweaver.graph.builder.mapper import OntologyMapper
-from specweaver.graph.engine.hashing import SemanticHasher
+from specweaver.graph.core.builder.mapper import OntologyMapper
+from specweaver.graph.core.engine.hashing import SemanticHasher
 
 
 class GraphBuilder:

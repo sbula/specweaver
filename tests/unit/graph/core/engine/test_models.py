@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from specweaver.graph.engine.models import GraphEdge, GraphNode
-from specweaver.graph.engine.ontology import EdgeKind, NodeKind
+from specweaver.graph.core.engine.models import GraphEdge, GraphNode
+from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
 
 def test_graph_node_normalize_file_id():

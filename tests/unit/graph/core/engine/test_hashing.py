@@ -1,6 +1,6 @@
 import pytest
 
-from specweaver.graph.engine.hashing import SemanticHasher
+from specweaver.graph.core.engine.hashing import SemanticHasher
 
 
 def test_hash_file_happy_path():
@@ -42,6 +42,6 @@ def test_hash_id_prefix():
     hasher = SemanticHasher(id_prefix="billing")
     hash_f = hasher.hash_file("src/main.py")
     hash_n = hasher.hash_node("src/main.py", "MyClass")
-    
+
     assert hash_f.startswith("billing:")
     assert hash_n.startswith("billing:")

@@ -1,5 +1,5 @@
 module_name: "specweaver.graph"
-description: "Bounded context for the Universal Graph Triad (Engine, Store, Builder). This defines the Enterprise Architecture Knowledge Graph domain."
+description: "Bounded context for the SpecWeaver graphs. Contains the universal 'core' mechanics (Engine, Store, Builder) as well as topic-specific extensions (Lineage, Topology)."
 layer: "Domain"
 allowed_imports:
   - "specweaver.commons"

@@ -1,6 +1,6 @@
 import sqlite3
 
-from specweaver.graph.store.repository import SqliteGraphRepository
+from specweaver.graph.core.store.repository import SqliteGraphRepository
 
 
 def test_sqlite_repository_initialization_creates_schema(tmp_path):

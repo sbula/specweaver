@@ -1,8 +1,8 @@
 from typing import Any
 
-from specweaver.graph.engine.hashing import SemanticHasher
-from specweaver.graph.engine.models import GraphEdge, GraphNode
-from specweaver.graph.engine.ontology import EdgeKind, NodeKind
+from specweaver.graph.core.engine.hashing import SemanticHasher
+from specweaver.graph.core.engine.models import GraphEdge, GraphNode
+from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
 
 class OntologyMapper:

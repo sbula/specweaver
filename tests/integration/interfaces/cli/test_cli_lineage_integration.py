@@ -1,7 +1,7 @@
 from typer.testing import CliRunner
 
 import specweaver.interfaces.cli.lineage  # noqa: F401 - Register commands
-from specweaver.graph_store.lineage_repository import LineageRepository
+from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli._core import app, get_db
 
 runner = CliRunner()

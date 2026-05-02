@@ -1,9 +1,9 @@
-module_name: "specweaver.graph.builder"
+module_name: "specweaver.graph.core.builder"
 description: "Application Orchestration layer. Builds graphs from files and syncs with the store."
 layer: "Application"
 allowed_imports:
-  - "specweaver.graph.engine"
-  - "specweaver.graph.store"
+  - "specweaver.graph.core.engine"
+  - "specweaver.graph.core.store"
   - "specweaver.commons"
   - "os"
   - "pathlib"

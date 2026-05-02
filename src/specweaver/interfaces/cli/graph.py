@@ -4,9 +4,9 @@ from typing import Annotated
 
 import typer
 
-from specweaver.graph.builder.orchestrator import GraphBuilder
-from specweaver.graph.engine.core import InMemoryGraphEngine
-from specweaver.graph.store.repository import SqliteGraphRepository
+from specweaver.graph.core.builder.orchestrator import GraphBuilder
+from specweaver.graph.core.engine.core import InMemoryGraphEngine
+from specweaver.graph.core.store.repository import SqliteGraphRepository
 from specweaver.interfaces.cli._core import app as core_app
 from specweaver.interfaces.cli._core import console
 from specweaver.interfaces.cli._helpers import _load_topology

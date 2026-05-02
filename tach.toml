@@ -22,7 +22,6 @@ modules = [
     { path = "src.specweaver.workspace.context", depends_on = [] },
     { path = "src.specweaver.workspace.analyzers", depends_on = [] },
     { path = "src.specweaver.workspace.project", depends_on = [] },
-    { path = "src.specweaver.graph_store", depends_on = [] },
 ]
 
 [[interfaces]]
@@ -59,19 +58,13 @@ from = [
     "src.specweaver.graph",
 ]
 expose = [
-    "engine.core",
-    "engine.models",
+    "core.engine.core",
+    "core.engine.models",
     "lineage.engine",
     "lineage.repository",
 ]
 
-[[interfaces]]
-from = [
-    "src.specweaver.graph_store",
-]
-expose = [
-    "lineage_repository",
-]
+
 
 [[interfaces]]
 from = [
