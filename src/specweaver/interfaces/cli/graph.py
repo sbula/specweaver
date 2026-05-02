@@ -9,7 +9,28 @@ from specweaver.graph.engine.core import InMemoryGraphEngine
 from specweaver.graph.store.repository import SqliteGraphRepository
 from specweaver.interfaces.cli._core import app as core_app
 from specweaver.interfaces.cli._core import console
+from specweaver.interfaces.cli._helpers import _load_topology
 from specweaver.workspace.adapters.graph_adapter import extract_ast_dict
+
+
+def _purge_stale_nodes(target_path: Path, repo: SqliteGraphRepository) -> None:
+    """RT-11: Stale Graph Boot Trap - Cross-reference DB against disk and purge deleted files."""
+    existing_files = repo.get_all_file_hashes()
+
+    found_on_disk = set()
+    if target_path.is_file():
+        found_on_disk.add(str(target_path))
+    elif target_path.is_dir():
+        for filepath in target_path.rglob("*"):
+            if filepath.is_file():
+                found_on_disk.add(str(filepath))
+    else:
+        found_on_disk.add(str(target_path))
+
+    for db_file in existing_files:
+        if db_file not in found_on_disk and not Path(db_file).exists():
+            console.print(f"[dim]Purging deleted file from Knowledge Graph: {db_file}[/dim]")
+            repo.purge_file(db_file)
 
 app = typer.Typer(
     name="graph",
@@ -38,18 +59,32 @@ def build(
         # Dependency Injection (CB4 Wiring)
         engine = InMemoryGraphEngine()
         db_path = str(project_path / ".specweaver" / "graph.db")
-        # In a real context, we'd read service_name from context.yaml
-        repo = SqliteGraphRepository(db_path, "default")
 
-        # Load any existing state
+        # RT-30: Validate local context.yaml against project
+        service_name = "default"
+        topology = _load_topology(project_path)
+        if topology and topology.nodes:
+            # Try to find a root node (level = system or similar)
+            # Or just take the first one if it's a microservice
+            for node in topology.nodes.values():
+                if node.yaml_path and str(node.yaml_path.parent) == str(project_path.resolve()):
+                    service_name = node.name
+                    break
+
+        repo = SqliteGraphRepository(db_path, service_name)
+
+        # RT-11: Stale Graph Boot Trap
+        target_path = Path(target)
+        _purge_stale_nodes(target_path, repo)
+
+        # Load any existing state AFTER purge
         graph, _ = repo.load_from_db()
         engine._graph = graph
 
-        # Inject the workspace parser adapter
-        builder = GraphBuilder(engine=engine, parser=extract_ast_dict)
+        # Inject the workspace parser adapter with ID Prefixing
+        builder = GraphBuilder(engine=engine, parser=extract_ast_dict, id_prefix=service_name)
 
         # Ingest the target
-        target_path = Path(target)
         if target_path.is_file():
             builder.ingest_file(str(target_path))
         elif target_path.is_dir():

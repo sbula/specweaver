@@ -90,10 +90,10 @@ If you are expanding the engine's functionality, here is the operational flow lo
 
 1. **Untrusted LLM Output**: The Agent emits a JSON intent (e.g., `replace_symbol_body("src/Backend.ts", "calculateHash", "...")`).
 2. **`CodeStructureTool` Validation**: The Tool bounds-checks the request against the Role `FolderGrant` and target `visibility`.
-4. **Tree-Sitter Orchestration (Dependency Injection)**: To maintain architectural purity, `CodeStructureAtom` does *not* directly instantiate polyglot C-binaries. Instead, standard `specweaver.workspace.parsers` interfaces are retrieved from `RunContext` (in tools like the CLI and Engine pipeline) and explicitly passed down the injection boundary.
-5. **Physical Mutation**: Using the byte offsets provided by the AST Nodes executed via the injected polyglot wrappers, the Atom surgically patches the original string and persists the mutation safely to the disk.
+3. **Tree-Sitter Orchestration (Dependency Injection)**: To maintain architectural purity, `CodeStructureAtom` does *not* directly instantiate polyglot C-binaries. Instead, standard `specweaver.workspace.ast.parsers` interfaces are retrieved from `RunContext` (in tools like the CLI and Engine pipeline) and explicitly passed down the injection boundary.
+4. **Physical Mutation**: Using the byte offsets provided by the AST Nodes executed via the injected polyglot wrappers, the Atom surgically patches the original string and persists the mutation safely to the disk.
 
-If you ever wish to add a new AST mutation intent, it must follow this 5-step validation hierarchy, with all C-based binary querying confined strictly to `workspace/parsers/` and explicit DI chaining mapped all the way down into the Atom orchestrator boundaries.
+If you ever wish to add a new AST mutation intent, it must follow this 5-step validation hierarchy, with all C-based binary querying confined strictly to `workspace/ast/parsers/` and explicit DI chaining mapped all the way down into the Atom orchestrator boundaries.
 
 ---
 

@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Any
 
 from specweaver.graph.builder.mapper import OntologyMapper
-from specweaver.graph.engine.core import InMemoryGraphEngine
 from specweaver.graph.engine.hashing import SemanticHasher
 
 
@@ -11,11 +10,20 @@ class GraphBuilder:
     Application layer orchestrator for the Knowledge Graph.
     Coordinates the pure-logic engine with file system events and boundaries.
     """
-    def __init__(self, engine: InMemoryGraphEngine, parser: Any = None):
+    def __init__(self, engine: Any, parser: Any = None, id_prefix: str = "") -> None:
+        """
+        Initializes the GraphBuilder.
+
+        Args:
+            engine: The GraphEngine implementation (e.g. InMemoryGraphEngine).
+            parser: Optional callable that returns an AST dict for a filepath.
+            id_prefix: The microservice prefix for globally unique IDs.
+        """
         self.engine = engine
-        self.mapper = OntologyMapper()
-        self.hasher = SemanticHasher()
         self.parser = parser
+        self.mapper = OntologyMapper(id_prefix=id_prefix)
+        self.id_prefix = id_prefix
+        self.hasher = SemanticHasher(id_prefix=id_prefix)
 
     def ingest_ast(self, filepath: str, ast_data: dict[str, Any]) -> None:
         """

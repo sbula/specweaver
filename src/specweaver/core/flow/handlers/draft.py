@@ -106,7 +106,7 @@ class DraftSpecHandler:
                     content = result_path.read_text(encoding="utf-8")
                     result_path.write_text(tag_str + "\n" + content, encoding="utf-8")
 
-            from specweaver.graph_store.lineage_repository import LineageRepository
+            from specweaver.graph.store.lineage_repository import LineageRepository
             local_db = context.project_path / ".specweaver" / "graph.db"
             local_db.parent.mkdir(parents=True, exist_ok=True)
             repo = LineageRepository(str(local_db))

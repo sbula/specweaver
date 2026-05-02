@@ -157,7 +157,7 @@ class GenerateCodeHandler:
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
-            from specweaver.graph_store.lineage_repository import LineageRepository
+            from specweaver.graph.store.lineage_repository import LineageRepository
             local_db = context.project_path / ".specweaver" / "graph.db"
             local_db.parent.mkdir(parents=True, exist_ok=True)
             repo = LineageRepository(str(local_db))
@@ -246,7 +246,7 @@ class GenerateTestsHandler:
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 
-            from specweaver.graph_store.lineage_repository import LineageRepository
+            from specweaver.graph.store.lineage_repository import LineageRepository
             local_db = context.project_path / ".specweaver" / "graph.db"
             local_db.parent.mkdir(parents=True, exist_ok=True)
             repo = LineageRepository(str(local_db))
@@ -424,7 +424,7 @@ class PlanSpecHandler:
             if not parent_id:
                 parent_id = getattr(context, "run_id", "") or ""
 
-            from specweaver.graph_store.lineage_repository import LineageRepository
+            from specweaver.graph.store.lineage_repository import LineageRepository
             local_db = context.project_path / ".specweaver" / "graph.db"
             local_db.parent.mkdir(parents=True, exist_ok=True)
             repo = LineageRepository(str(local_db))

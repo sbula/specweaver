@@ -403,6 +403,9 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Outputs**: Harmonized pipeline orchestrating AST/Topology extraction into the SQLite DB.
 - **Depends on**: [SF-1, SF-2]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf3_implementation_plan.md
+- **Technical Debt Spawns**:
+  - `TECH-02`: Structural Refactoring of Workspace AST Module (Extracting `workspace.parsers` to `workspace.ast.parsers`).
+  - `TECH-03`: Architectural Analysis & Refactoring of `sw graph build` CLI (Moving orchestration to `GraphBuildAtom`).
 
 ## Execution Order
 

@@ -551,3 +551,13 @@ These stories do not add new user-facing features, but are critical epics requir
 **Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-01:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-01/TECH-01_ddd_refactor.md)
+
+### 🔴 TECH-02: Structural Refactoring of Workspace AST Module
+**Benefit:** *Crystal clear boundary separation between mechanical Tree-Sitter extraction and semantic ontology mapping.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-02:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-02/TECH-02_ast_restructuring.md)
+
+### 🔴 TECH-03: Architectural Analysis & Refactoring of `sw graph build` CLI
+**Benefit:** *Strips hardcoded logic from the CLI, enabling pure headless execution of the Graph Builder from any background Atom.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-03:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-03/TECH-03_graph_cli_analysis.md)

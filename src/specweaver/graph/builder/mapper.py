@@ -9,8 +9,10 @@ class OntologyMapper:
     """
     Translates raw Tree-Sitter/Polyglot AST outputs into the Universal Graph Ontology.
     """
-    def __init__(self) -> None:
-        self.hasher = SemanticHasher()
+    MAX_AST_DEPTH = 500
+
+    def __init__(self, id_prefix: str = "") -> None:
+        self.hasher = SemanticHasher(id_prefix)
 
     def map_ast_to_nodes(self, filepath: str, ast_data: dict[str, Any] | None) -> tuple[list[GraphNode], list[GraphEdge]]:
         """
@@ -50,11 +52,28 @@ class OntologyMapper:
             if not isinstance(child, dict):
                 continue
 
-            self._map_child(filepath, child, file_hash, nodes, edges)
+            self._map_child(filepath, child, file_hash, nodes, edges, depth=1)
 
         return nodes, edges
 
-    def _map_child(self, filepath: str, child: dict[str, Any], file_hash: str, nodes: list[GraphNode], edges: list[GraphEdge]) -> None:
+    def _check_depth(self, filepath: str, file_hash: str, nodes: list[GraphNode], depth: int) -> bool:
+        if depth > self.MAX_AST_DEPTH:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"AST Bomb Protection: exceeded MAX_AST_DEPTH ({self.MAX_AST_DEPTH}) in {filepath}")
+            # Mark the root file node as partial
+            for node in nodes:
+                if node.kind == NodeKind.FILE and node.semantic_hash == file_hash:
+                    if not getattr(node, 'metadata', None):
+                        node.metadata = {}
+                    node.metadata['is_partial'] = True
+            return True
+        return False
+
+    def _map_child(self, filepath: str, child: dict[str, Any], file_hash: str, nodes: list[GraphNode], edges: list[GraphEdge], depth: int) -> None:
+        if self._check_depth(filepath, file_hash, nodes, depth):
+            return
+
         node_type = child.get("type", "")
         name = child.get("name", "")
 
@@ -83,3 +102,10 @@ class OntologyMapper:
                 target_hash=node_hash,
                 kind=EdgeKind.CONTAINS
             ))
+
+        # Recurse for nested children
+        nested_children = child.get("children", [])
+        if isinstance(nested_children, list):
+            for nested in nested_children:
+                if isinstance(nested, dict):
+                    self._map_child(filepath, nested, file_hash, nodes, edges, depth + 1)

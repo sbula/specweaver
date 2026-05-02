@@ -309,7 +309,7 @@ class LintFixHandler:
         code_path.write_text(fixed_code + "\n", encoding="utf-8")
 
         if artifact_uuid:
-            from specweaver.graph_store.lineage_repository import LineageRepository
+            from specweaver.graph.store.lineage_repository import LineageRepository
             local_db = context.project_path / ".specweaver" / "graph.db"
             local_db.parent.mkdir(parents=True, exist_ok=True)
             repo = LineageRepository(str(local_db))

@@ -11,13 +11,15 @@ def test_graph_build_success() -> None:
     with patch("specweaver.interfaces.cli.graph.InMemoryGraphEngine") as mock_engine_class, \
          patch("specweaver.interfaces.cli.graph.SqliteGraphRepository") as mock_repo_class, \
          patch("specweaver.interfaces.cli.graph.GraphBuilder") as mock_builder_class, \
-         patch("specweaver.interfaces.cli.graph.extract_ast_dict") as mock_parser:
+         patch("specweaver.interfaces.cli.graph.extract_ast_dict") as mock_parser, \
+         patch("specweaver.interfaces.cli.graph._load_topology"):
 
         mock_engine = MagicMock()
         mock_engine_class.return_value = mock_engine
 
         mock_repo = MagicMock()
         mock_repo.load_from_db.return_value = (MagicMock(), {})
+        mock_repo.get_all_file_hashes.return_value = {"src/foo.py": "123"}
         mock_repo_class.return_value = mock_repo
 
         mock_builder = MagicMock()
@@ -30,7 +32,7 @@ def test_graph_build_success() -> None:
         assert "Successfully built graph" in result.stdout
 
         # Verify Dependency Injection wiring
-        mock_builder_class.assert_called_once_with(engine=mock_engine, parser=mock_parser)
+        mock_builder_class.assert_called_once_with(engine=mock_engine, parser=mock_parser, id_prefix="default")
 
         # Verify execution
         mock_builder.ingest_file.assert_called_once_with(str(Path("src/foo.py")))
@@ -42,9 +44,11 @@ def test_graph_build_failure() -> None:
     with patch("specweaver.interfaces.cli.graph.InMemoryGraphEngine"), \
          patch("specweaver.interfaces.cli.graph.SqliteGraphRepository") as mock_repo_class, \
          patch("specweaver.interfaces.cli.graph.GraphBuilder") as mock_builder_class, \
-         patch("specweaver.interfaces.cli.graph.extract_ast_dict"):
+         patch("specweaver.interfaces.cli.graph.extract_ast_dict"), \
+         patch("specweaver.interfaces.cli.graph._load_topology"):
 
         mock_repo_class.return_value.load_from_db.return_value = (MagicMock(), {})
+        mock_repo_class.return_value.get_all_file_hashes.return_value = {}
 
         mock_builder = MagicMock()
         mock_builder.ingest_file.side_effect = Exception("Parse error")
@@ -61,11 +65,13 @@ def test_graph_build_directory() -> None:
          patch("specweaver.interfaces.cli.graph.SqliteGraphRepository") as mock_repo_class, \
          patch("specweaver.interfaces.cli.graph.GraphBuilder") as mock_builder_class, \
          patch("specweaver.interfaces.cli.graph.extract_ast_dict"), \
+         patch("specweaver.interfaces.cli.graph._load_topology"), \
          patch("specweaver.interfaces.cli.graph.Path.is_file") as mock_is_file, \
          patch("specweaver.interfaces.cli.graph.Path.is_dir") as mock_is_dir, \
          patch("specweaver.interfaces.cli.graph.Path.rglob") as mock_rglob:
 
         mock_repo_class.return_value.load_from_db.return_value = (MagicMock(), {})
+        mock_repo_class.return_value.get_all_file_hashes.return_value = {}
 
         mock_is_file.return_value = False
         mock_is_dir.return_value = True

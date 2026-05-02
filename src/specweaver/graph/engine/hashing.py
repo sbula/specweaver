@@ -7,6 +7,9 @@ class SemanticHasher:
     RT-21: File paths are case-insensitively normalized to prevent OS thrashing.
     """
 
+    def __init__(self, id_prefix: str = "") -> None:
+        self.id_prefix = f"{id_prefix}:" if id_prefix else ""
+
     @staticmethod
     def _normalize_path(filepath: str) -> str:
         if not filepath:
@@ -16,7 +19,8 @@ class SemanticHasher:
     def hash_file(self, filepath: str) -> str:
         """Hash a file based on its normalized path."""
         norm_path = self._normalize_path(filepath)
-        return hashlib.sha256(f"FILE:{norm_path}".encode()).hexdigest()
+        raw_hash = hashlib.sha256(f"FILE:{norm_path}".encode()).hexdigest()
+        return f"{self.id_prefix}{raw_hash}"
 
     def hash_node(self, filepath: str, fully_qualified_name: str) -> str:
         """Hash a specific class or function within a file."""
@@ -28,4 +32,5 @@ class SemanticHasher:
         # Hashing the content would cause the node ID to change on every keystroke,
         # which would orphan LLM feedback metadata attached to the node ID.
         key = f"NODE:{norm_path}:{fully_qualified_name}"
-        return hashlib.sha256(key.encode('utf-8')).hexdigest()
+        raw_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
+        return f"{self.id_prefix}{raw_hash}"

@@ -36,3 +36,12 @@ def test_hash_hostile_empty_inputs():
 
     with pytest.raises(ValueError, match="Cannot hash empty"):
         hasher.hash_node("src/main.py", "")
+
+def test_hash_id_prefix():
+    """[Happy Path] Generates hashes with microservice ID prefix (AD-17)."""
+    hasher = SemanticHasher(id_prefix="billing")
+    hash_f = hasher.hash_file("src/main.py")
+    hash_n = hasher.hash_node("src/main.py", "MyClass")
+    
+    assert hash_f.startswith("billing:")
+    assert hash_n.startswith("billing:")
