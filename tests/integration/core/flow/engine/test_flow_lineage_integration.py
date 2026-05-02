@@ -66,6 +66,9 @@ class _FakeFailingReviewHandler:
 def lineage_db(tmp_path: Path) -> Database:
     """Returns a real DB configured at tmp_path."""
     db_path = tmp_path / "specweaver.db"
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+    bootstrap_database(str(db_path))
     db = Database(db_path)
     return db
 
@@ -138,6 +141,7 @@ async def test_lineage_tracking_flow_database(
 
     # Verify DB contains the events
     import sqlite3
+
     with sqlite3.connect(tmp_path / ".specweaver" / "graph.db") as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
@@ -223,6 +227,7 @@ async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Data
     # Since it failed review once and looped back, we should have TWO code generations in DB.
     # But crucially, they should have the EXACT SAME artifact_uuid because the second run extracted it from the file!
     import sqlite3
+
     with sqlite3.connect(tmp_path / ".specweaver" / "graph.db") as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(

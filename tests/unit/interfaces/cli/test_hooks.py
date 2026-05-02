@@ -8,17 +8,15 @@ from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
 
+
 @pytest.fixture(autouse=True)
 def _mock_workspace(monkeypatch):
     """Patch _run_workspace_op so we don't hit the real DB and cause aiosqlite warnings."""
     monkeypatch.setattr(
-        "specweaver.interfaces.cli.main._run_workspace_op",
-        lambda *args, **kwargs: None
+        "specweaver.interfaces.cli.main._run_workspace_op", lambda *args, **kwargs: None
     )
-    monkeypatch.setattr(
-        "specweaver.logging.setup_logging",
-        lambda *args, **kwargs: None
-    )
+    monkeypatch.setattr("specweaver.logging.setup_logging", lambda *args, **kwargs: None)
+
 
 def test_hooks_install_pre_commit_success(tmp_path: Path):
     """Test successful installation of the pre-commit hook."""

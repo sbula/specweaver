@@ -14,6 +14,7 @@ class Base(DeclarativeBase):
     def __tablename__(cls) -> str:  # noqa: N805
         return cls.__name__.lower()
 
+
 class LlmProfile(Base):
     __tablename__ = "llm_profiles"
 
@@ -27,14 +28,14 @@ class LlmProfile(Base):
     context_limit: Mapped[int] = mapped_column(Integer, default=128000, nullable=False)
     provider: Mapped[str] = mapped_column(String, default="gemini", nullable=False)
 
+
 class ProjectLlmLink(Base):
     __tablename__ = "project_llm_links"
 
     project_name: Mapped[str] = mapped_column(String, primary_key=True)
     role: Mapped[str] = mapped_column(String, primary_key=True)
-    profile_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("llm_profiles.id"), nullable=False
-    )
+    profile_id: Mapped[int] = mapped_column(Integer, ForeignKey("llm_profiles.id"), nullable=False)
+
 
 class LlmUsageLog(Base):
     __tablename__ = "llm_usage_log"
@@ -52,6 +53,7 @@ class LlmUsageLog(Base):
     duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     run_id: Mapped[str | None] = mapped_column(String, default="")
 
+
 class LlmCostOverride(Base):
     __tablename__ = "llm_cost_overrides"
 
@@ -59,6 +61,7 @@ class LlmCostOverride(Base):
     input_cost_per_1k: Mapped[float] = mapped_column(Float, nullable=False)
     output_cost_per_1k: Mapped[float] = mapped_column(Float, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
+
 
 class LlmRepository:
     def __init__(self, session: AsyncSession):
@@ -93,7 +96,7 @@ class LlmRepository:
             temperature=temperature,
             max_output_tokens=max_output_tokens,
             response_format=response_format,
-            provider=provider
+            provider=provider,
         )
         self.session.add(profile)
         await self.session.flush()
@@ -118,7 +121,11 @@ class LlmRepository:
     # ------------------------------------------------------------------
 
     async def get_project_llm_links(self, project_name: str) -> Sequence[ProjectLlmLink]:
-        stmt = select(ProjectLlmLink).where(ProjectLlmLink.project_name == project_name).order_by(ProjectLlmLink.role)
+        stmt = (
+            select(ProjectLlmLink)
+            .where(ProjectLlmLink.project_name == project_name)
+            .order_by(ProjectLlmLink.role)
+        )
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -132,7 +139,9 @@ class LlmRepository:
         if link:
             link.profile_id = profile_id
         else:
-            self.session.add(ProjectLlmLink(project_name=project_name, role=role, profile_id=profile_id))
+            self.session.add(
+                ProjectLlmLink(project_name=project_name, role=role, profile_id=profile_id)
+            )
 
     async def get_project_profile(self, project_name: str, role: str) -> LlmProfile | None:
         stmt = (
@@ -153,7 +162,11 @@ class LlmRepository:
 
     async def get_project_routing_entries(self, project_name: str) -> list[dict[str, object]]:
         stmt = (
-            select(ProjectLlmLink.role, ProjectLlmLink.profile_id, LlmProfile.name.label("profile_name"))
+            select(
+                ProjectLlmLink.role,
+                ProjectLlmLink.profile_id,
+                LlmProfile.name.label("profile_name"),
+            )
             .outerjoin(LlmProfile, LlmProfile.id == ProjectLlmLink.profile_id)
             .where(ProjectLlmLink.project_name == project_name)
             .where(ProjectLlmLink.role.like("task:%"))

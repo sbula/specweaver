@@ -33,7 +33,7 @@ class TestBatch1LoggingRollout:
         """load_settings() should emit a DEBUG entry log."""
         from unittest.mock import MagicMock
 
-        from specweaver.core.config.settings import load_settings
+        from specweaver.interfaces.cli.settings_loader import load_settings
 
         with caplog.at_level(logging.DEBUG, logger="specweaver.core.config.settings"):
             try:

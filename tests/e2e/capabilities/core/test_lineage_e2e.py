@@ -90,7 +90,7 @@ class TestLineageE2EFlow:
         assert code_file.exists(), "Code file was not created"
 
         # Verify DB got the event with correct model_id
-        conn = sqlite3.connect(project_dir / ".specweaver" / "graph.db")
+        conn = sqlite3.connect(_isolate_env / "specweaver.db")
         rows = conn.execute(
             "SELECT artifact_id, parent_id, event_type, model_id FROM artifact_events WHERE event_type='generated_code'"
         ).fetchall()
@@ -152,7 +152,7 @@ class TestLineageE2EFlow:
         assert match is not None
         spec_uuid = match.group(1)
 
-        conn = sqlite3.connect(project_dir / ".specweaver" / "graph.db")
+        conn = sqlite3.connect(_isolate_env / "specweaver.db")
         rows = conn.execute(
             "SELECT artifact_id, event_type, model_id FROM artifact_events WHERE event_type='drafted_spec'"
         ).fetchall()
@@ -208,6 +208,10 @@ class TestLineageE2EFlow:
             action=StepAction.PLAN,
             target=StepTarget.SPEC,
         )
+        db_path = _isolate_env / "specweaver.db"
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(db_path))
         context = RunContext(
             project_path=project_dir,
             spec_path=spec,
@@ -219,7 +223,7 @@ class TestLineageE2EFlow:
         pipe_runner = PipelineRunner(pipeline, context)
         asyncio.run(pipe_runner.run())
 
-        conn = sqlite3.connect(project_dir / ".specweaver" / "graph.db")
+        conn = sqlite3.connect(db_path)
         rows = conn.execute(
             "SELECT artifact_id, parent_id, event_type, model_id FROM artifact_events WHERE event_type='generated_plan'"
         ).fetchall()
@@ -337,7 +341,7 @@ class TestASTFixSurvivability:
         assert "99999999-2222-3333-4444-555555555555" in code.read_text(encoding="utf-8")
 
         # Verify db logged lint_fixed with correct model_id
-        conn = sqlite3.connect(project_dir / ".specweaver" / "graph.db")
+        conn = sqlite3.connect(_isolate_env / "specweaver.db")
         rows = conn.execute(
             "SELECT artifact_id, event_type, model_id FROM artifact_events WHERE event_type='lint_fixed'"
         ).fetchall()

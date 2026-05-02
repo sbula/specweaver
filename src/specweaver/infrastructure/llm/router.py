@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Callable, NamedTuple
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.infrastructure.llm.adapters.registry import get_adapter_class
@@ -110,7 +111,11 @@ class ModelRouter:
                     from specweaver.infrastructure.llm.collector import TelemetryCollector
                     from specweaver.infrastructure.llm.telemetry import CostEntry
 
-                    overrides = {k: CostEntry(*v) for k, v in self._cost_overrides.items()} if self._cost_overrides else None
+                    overrides = (
+                        {k: CostEntry(*v) for k, v in self._cost_overrides.items()}
+                        if self._cost_overrides
+                        else None
+                    )
                     adapter = TelemetryCollector(adapter, self._telemetry_project, overrides)
                 self._cache[cache_key] = adapter
             except Exception:

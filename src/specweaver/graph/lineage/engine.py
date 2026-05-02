@@ -52,9 +52,7 @@ class LineageEngine:
 
             child_uids = list(
                 dict.fromkeys(
-                    c["artifact_id"]
-                    for c in children_rows
-                    if c["artifact_id"] != node_uid
+                    c["artifact_id"] for c in children_rows if c["artifact_id"] != node_uid
                 )
             )
 

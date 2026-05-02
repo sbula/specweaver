@@ -34,4 +34,3 @@ def get_default_parsers() -> dict[tuple[str, ...], CodeStructureInterface]:
         (".go",): GoCodeStructure(),
         (".sql",): SqlCodeStructure(),
     }
-

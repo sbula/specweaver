@@ -309,11 +309,9 @@ class LintFixHandler:
         code_path.write_text(fixed_code + "\n", encoding="utf-8")
 
         if artifact_uuid:
-            from specweaver.core.config.database import Database
             from specweaver.core.flow.store import FlowRepository
-            local_db = context.project_path / ".specweaver" / "specweaver.db"
-            db = Database(str(local_db))
-            async with db.async_session_scope() as session:
+
+            async with context.db.async_session_scope() as session:
                 repo = FlowRepository(session)
                 await repo.log_artifact_event(
                     artifact_id=artifact_uuid,

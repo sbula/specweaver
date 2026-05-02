@@ -1,4 +1,3 @@
-
 import json
 import logging
 import re
@@ -12,9 +11,11 @@ from specweaver.core.config.database import StrictISODateTime
 
 logger = logging.getLogger(__name__)
 
+
 def _now_iso() -> str:
     """Return current UTC time as ISO 8601 string."""
     return datetime.now(UTC).isoformat()
+
 
 def _validate_project_name(name: str) -> None:
     if not re.match(r"^[a-z0-9][a-z0-9_-]*$", name):
@@ -26,6 +27,7 @@ class Base(DeclarativeBase):
     def __tablename__(cls) -> str:  # noqa: N805
         return cls.__name__.lower()
 
+
 class Project(Base):
     __tablename__ = "projects"
 
@@ -36,15 +38,19 @@ class Project(Base):
     log_level: Mapped[str] = mapped_column(String, default="DEBUG", nullable=False)
     constitution_max_size: Mapped[int] = mapped_column(Integer, default=5120, nullable=False)
     domain_profile: Mapped[str | None] = mapped_column(String, default=None)
-    auto_bootstrap_constitution: Mapped[str] = mapped_column(String, default="prompt", nullable=False)
+    auto_bootstrap_constitution: Mapped[str] = mapped_column(
+        String, default="prompt", nullable=False
+    )
     stitch_mode: Mapped[str] = mapped_column(String, default="off", nullable=False)
     default_dal: Mapped[str] = mapped_column(String, default="DAL_A", nullable=False)
+
 
 class ActiveState(Base):
     __tablename__ = "active_state"
 
     key: Mapped[str] = mapped_column(String, primary_key=True)
     value: Mapped[str] = mapped_column(String, nullable=False)
+
 
 class ProjectStandard(Base):
     __tablename__ = "project_standards"
@@ -59,6 +65,7 @@ class ProjectStandard(Base):
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     confirmed_by: Mapped[str | None] = mapped_column(String, default=None)
     scanned_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
+
 
 class WorkspaceRepository:
     """Repository for managing workspace metadata, configuration, and standards."""
@@ -83,7 +90,9 @@ class WorkspaceRepository:
         stmt = select(Project).where(Project.root_path == root_path)
         existing_path = (await self.session.execute(stmt)).scalar_one_or_none()
         if existing_path:
-            raise ValueError(f"Path '{root_path}' is already registered to project '{existing_path.name}'")
+            raise ValueError(
+                f"Path '{root_path}' is already registered to project '{existing_path.name}'"
+            )
 
         project = Project(
             name=name,
@@ -100,8 +109,12 @@ class WorkspaceRepository:
             return {
                 "name": project.name,
                 "root_path": project.root_path,
-                "created_at": project.created_at.isoformat() if isinstance(project.created_at, datetime) else project.created_at,
-                "last_used_at": project.last_used_at.isoformat() if isinstance(project.last_used_at, datetime) else project.last_used_at,
+                "created_at": project.created_at.isoformat()
+                if isinstance(project.created_at, datetime)
+                else project.created_at,
+                "last_used_at": project.last_used_at.isoformat()
+                if isinstance(project.last_used_at, datetime)
+                else project.last_used_at,
                 "log_level": project.log_level,
                 "constitution_max_size": project.constitution_max_size,
                 "domain_profile": project.domain_profile,
@@ -118,8 +131,12 @@ class WorkspaceRepository:
             {
                 "name": project.name,
                 "root_path": project.root_path,
-                "created_at": project.created_at.isoformat() if isinstance(project.created_at, datetime) else project.created_at,
-                "last_used_at": project.last_used_at.isoformat() if isinstance(project.last_used_at, datetime) else project.last_used_at,
+                "created_at": project.created_at.isoformat()
+                if isinstance(project.created_at, datetime)
+                else project.created_at,
+                "last_used_at": project.last_used_at.isoformat()
+                if isinstance(project.last_used_at, datetime)
+                else project.last_used_at,
                 "log_level": project.log_level,
                 "constitution_max_size": project.constitution_max_size,
                 "domain_profile": project.domain_profile,
@@ -140,7 +157,9 @@ class WorkspaceRepository:
             await self.session.delete(active)
 
         # Explicitly delete dependent entities since aiosqlite PRAGMA cascades may be disabled
-        await self.session.execute(delete(ProjectStandard).where(ProjectStandard.project_name == name))
+        await self.session.execute(
+            delete(ProjectStandard).where(ProjectStandard.project_name == name)
+        )
 
         await self.session.delete(project)
         await self.session.flush()
@@ -153,7 +172,9 @@ class WorkspaceRepository:
         stmt = select(Project).where(Project.root_path == new_path, Project.name != name)
         path_owner = (await self.session.execute(stmt)).scalar_one_or_none()
         if path_owner:
-            raise ValueError(f"Path '{new_path}' is already registered to project '{path_owner.name}'")
+            raise ValueError(
+                f"Path '{new_path}' is already registered to project '{path_owner.name}'"
+            )
 
         project.root_path = new_path
         await self.session.flush()
@@ -197,7 +218,9 @@ class WorkspaceRepository:
     async def set_log_level(self, project_name: str, level: str) -> None:
         level_upper = level.upper()
         if level_upper not in self._VALID_LOG_LEVELS:
-            raise ValueError(f"Invalid log level '{level}'. Must be one of: {', '.join(sorted(self._VALID_LOG_LEVELS))}")
+            raise ValueError(
+                f"Invalid log level '{level}'. Must be one of: {', '.join(sorted(self._VALID_LOG_LEVELS))}"
+            )
 
         project = await self.session.get(Project, project_name)
         if not project:
@@ -232,7 +255,9 @@ class WorkspaceRepository:
     async def set_auto_bootstrap(self, project_name: str, mode: str) -> None:
         mode_lower = mode.lower()
         if mode_lower not in self._VALID_BOOTSTRAP_MODES:
-            raise ValueError(f"Invalid auto-bootstrap mode '{mode}'. Must be one of: {', '.join(sorted(self._VALID_BOOTSTRAP_MODES))}")
+            raise ValueError(
+                f"Invalid auto-bootstrap mode '{mode}'. Must be one of: {', '.join(sorted(self._VALID_BOOTSTRAP_MODES))}"
+            )
 
         project = await self.session.get(Project, project_name)
         if not project:
@@ -250,7 +275,9 @@ class WorkspaceRepository:
     async def set_stitch_mode(self, project_name: str, mode: str) -> None:
         mode_lower = mode.lower()
         if mode_lower not in self._VALID_STITCH_MODES:
-            raise ValueError(f"Invalid stitch mode '{mode}'. Must be one of: {', '.join(sorted(self._VALID_STITCH_MODES))}")
+            raise ValueError(
+                f"Invalid stitch mode '{mode}'. Must be one of: {', '.join(sorted(self._VALID_STITCH_MODES))}"
+            )
 
         project = await self.session.get(Project, project_name)
         if not project:
@@ -291,7 +318,9 @@ class WorkspaceRepository:
             raise ValueError(f"Project '{project_name}' not found")
 
         if get_profile(profile_name) is None:
-            raise ValueError(f"Unknown profile '{profile_name}'. Use 'sw config profiles' to see available profiles.")
+            raise ValueError(
+                f"Unknown profile '{profile_name}'. Use 'sw config profiles' to see available profiles."
+            )
 
         project.domain_profile = profile_name
         await self.session.flush()
@@ -371,7 +400,9 @@ class WorkspaceRepository:
                 "data": row.data,
                 "confidence": row.confidence,
                 "confirmed_by": row.confirmed_by,
-                "scanned_at": row.scanned_at.isoformat() if isinstance(row.scanned_at, datetime) else row.scanned_at,
+                "scanned_at": row.scanned_at.isoformat()
+                if isinstance(row.scanned_at, datetime)
+                else row.scanned_at,
             }
             for row in result.scalars()
         ]
@@ -401,7 +432,9 @@ class WorkspaceRepository:
             "data": row.data,
             "confidence": row.confidence,
             "confirmed_by": row.confirmed_by,
-            "scanned_at": row.scanned_at.isoformat() if isinstance(row.scanned_at, datetime) else row.scanned_at,
+            "scanned_at": row.scanned_at.isoformat()
+            if isinstance(row.scanned_at, datetime)
+            else row.scanned_at,
         }
 
     async def clear_standards(
@@ -416,6 +449,11 @@ class WorkspaceRepository:
         await self.session.execute(stmt)
 
     async def list_scopes(self, project_name: str) -> list[str]:
-        stmt = select(ProjectStandard.scope).where(ProjectStandard.project_name == project_name).distinct().order_by(ProjectStandard.scope)
+        stmt = (
+            select(ProjectStandard.scope)
+            .where(ProjectStandard.project_name == project_name)
+            .distinct()
+            .order_by(ProjectStandard.scope)
+        )
         result = await self.session.execute(stmt)
         return list(result.scalars())

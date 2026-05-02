@@ -23,13 +23,18 @@ class TestRequireLlmAdapterTelemetry:
         mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
-        with patch(
-            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="my-project"
-        ), patch(
-            "specweaver.interfaces.cli.settings_loader.load_settings", return_value=mock_settings
-        ), patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
-        ) as mock_create:
+        with (
+            patch(
+                "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="my-project"
+            ),
+            patch(
+                "specweaver.interfaces.cli.settings_loader.load_settings",
+                return_value=mock_settings,
+            ),
+            patch(
+                "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
+            ) as mock_create,
+        ):
             _require_llm_adapter(tmp_path)
 
         mock_create.assert_called_once_with(
@@ -44,13 +49,16 @@ class TestRequireLlmAdapterTelemetry:
         mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
-        with patch(
-            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value=None
-        ), patch(
-            "specweaver.interfaces.cli.settings_loader.load_settings", return_value=mock_settings
-        ), patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
-        ) as mock_create:
+        with (
+            patch("specweaver.interfaces.cli._helpers._run_workspace_op", return_value=None),
+            patch(
+                "specweaver.interfaces.cli.settings_loader.load_settings",
+                return_value=mock_settings,
+            ),
+            patch(
+                "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
+            ) as mock_create,
+        ):
             _require_llm_adapter(tmp_path)
 
         mock_create.assert_called_once_with(
@@ -65,17 +73,19 @@ class TestRequireLlmAdapterTelemetry:
         mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
-        with patch(
-            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="proj"
-        ), patch(
-            "specweaver.interfaces.cli.settings_loader.load_settings", return_value=mock_settings
-        ), patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
-        ) as mock_create:
+        with (
+            patch("specweaver.interfaces.cli._helpers._run_workspace_op", return_value="proj"),
+            patch(
+                "specweaver.interfaces.cli.settings_loader.load_settings",
+                return_value=mock_settings,
+            ),
+            patch(
+                "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
+            ) as mock_create,
+        ):
             _require_llm_adapter(tmp_path, llm_role="review")
 
         mock_create.assert_called_once_with(
             mock_settings,
             telemetry_project="proj",
         )
-

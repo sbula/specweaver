@@ -168,6 +168,7 @@ def test_list_and_extract_dot_notation(parser: RustCodeStructure) -> None:
     assert "pub fn connect(&self) {" in target
     assert "pub struct Database;" not in target
 
+
 def test_rust_impl_trait_scope(parser: RustCodeStructure) -> None:
     code = """
     pub struct MyStruct;
@@ -181,6 +182,7 @@ def test_rust_impl_trait_scope(parser: RustCodeStructure) -> None:
     assert "MyStruct.fmt" in symbols
     assert "Display.fmt" not in symbols
     assert "std::fmt::Display.fmt" not in symbols
+
 
 def test_extract_symbol_scope_collision(parser: RustCodeStructure) -> None:
     code = """

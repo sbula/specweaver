@@ -38,7 +38,7 @@ func (m *MyStruct) Method() {
 """
     skeleton = parser.extract_skeleton(code)
 
-    assert "import \"fmt\"" in skeleton
+    assert 'import "fmt"' in skeleton
     assert "func myFunc(a int) string {" in skeleton
     assert "type MyStruct struct {" in skeleton
     assert "func (m *MyStruct) Method() {" in skeleton
@@ -83,7 +83,7 @@ func TargetFunc() string {
 
     target_fn = parser.extract_symbol(code, "TargetFunc")
     assert "func TargetFunc() string {" in target_fn
-    assert "return \"success\"" in target_fn
+    assert 'return "success"' in target_fn
     assert "TargetStruct" not in target_fn
 
 
@@ -200,6 +200,7 @@ def test_add_symbol_success(parser: GoCodeStructure) -> None:
     assert "func existing() {}" in result
     assert "func new() {}" in result
 
+
 def test_extract_grouped_type_block(parser: GoCodeStructure) -> None:
     code = """
 package main
@@ -218,6 +219,7 @@ type (
     assert "B interface" not in target_a
     assert "type (" not in target_a
 
+
 def test_replace_grouped_type_block(parser: GoCodeStructure) -> None:
     code = """
 package main
@@ -232,11 +234,13 @@ type (
     assert "B struct {}" in result
     assert "type (" in result
 
+
 def test_extract_interface(parser: GoCodeStructure) -> None:
     code = "package main\n\ntype B interface {\n\tDo()\n}"
     target = parser.extract_symbol(code, "B")
     assert "type B interface" in target
     assert "Do()" in target
+
 
 def test_add_symbol_no_trailing_newline(parser: GoCodeStructure) -> None:
     code = "package main\nfunc existing() {}"
@@ -244,18 +248,22 @@ def test_add_symbol_no_trailing_newline(parser: GoCodeStructure) -> None:
     result = parser.add_symbol(code, None, new_code)
     assert result == code + "\n\n" + new_code
 
+
 def test_supported_intents(parser: GoCodeStructure) -> None:
     intents = parser.supported_intents()
     assert "traceability" in intents
     assert "imports" in intents
     assert "skeleton" in intents
 
+
 def test_supported_parameters(parser: GoCodeStructure) -> None:
     assert parser.supported_parameters() == ["visibility"]
+
 
 def test_binary_ignores(parser: GoCodeStructure) -> None:
     assert "*.o" in parser.get_binary_ignore_patterns()
     assert "*.exe" in parser.get_binary_ignore_patterns()
+
 
 def test_directory_ignores(parser: GoCodeStructure) -> None:
     assert "bin/" in parser.get_default_directory_ignores()

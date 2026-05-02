@@ -15,17 +15,11 @@ into the DB via migrate_legacy_config().
 from __future__ import annotations
 
 import logging
-import os
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
-import anyio
 from pydantic import BaseModel, ConfigDict
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.infrastructure.llm.store import LlmRepository
-
-if TYPE_CHECKING:
-    from specweaver.core.config.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -125,5 +119,3 @@ class SpecWeaverSettings(BaseModel):
     validation: ValidationSettings = ValidationSettings()
     dal_matrix: DALImpactMatrix = DALImpactMatrix()
     standards: StandardsSettings = StandardsSettings()
-
-

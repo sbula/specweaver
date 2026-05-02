@@ -4,7 +4,6 @@
 """CLI commands for pipeline execution: pipelines, run, resume."""
 
 from __future__ import annotations
-from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import asyncio
 import logging
@@ -20,6 +19,7 @@ from specweaver.interfaces.cli._helpers import (
     _load_constitution_content,
     _load_standards_content,
     _load_topology,
+    _run_workspace_op,
     _select_topology_contexts,
 )
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
@@ -252,11 +252,13 @@ def _execute_run(  # noqa: C901
         standards=_load_standards_content(project_path, target_path=spec_path),
         db=_core.get_db(),
     )
-    
+
     from specweaver.interfaces.cli.settings_loader import load_settings
 
     context.llm_router = ModelRouter(
-        settings_provider=lambda role: load_settings(_core.get_db(), project_path.name, llm_role=role),
+        settings_provider=lambda role: load_settings(
+            _core.get_db(), project_path.name, llm_role=role
+        ),
         telemetry_project=project_path.name,
     )
 
@@ -421,11 +423,13 @@ def resume(  # noqa: C901
         standards=_load_standards_content(project_path, target_path=spec_path),
         db=_core.get_db(),
     )
-    
+
     from specweaver.interfaces.cli.settings_loader import load_settings
 
     context.llm_router = ModelRouter(
-        settings_provider=lambda role: load_settings(_core.get_db(), project_path.name, llm_role=role),
+        settings_provider=lambda role: load_settings(
+            _core.get_db(), project_path.name, llm_role=role
+        ),
         telemetry_project=project_path.name,
     )
 

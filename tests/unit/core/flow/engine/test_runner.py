@@ -586,6 +586,7 @@ class TestPipelineRunnerCQRSIntegration:
         global_write_queue = get_global_write_queue()
 
         executed = False
+
         def cb() -> None:
             nonlocal executed
             executed = True
@@ -613,6 +614,7 @@ class TestPipelineRunnerCQRSIntegration:
         global_write_queue = get_global_write_queue()
 
         executed = False
+
         def cb() -> None:
             nonlocal executed
             executed = True
@@ -658,6 +660,7 @@ class TestPipelineRunnerCQRSIntegration:
 
         global_write_queue = get_global_write_queue()
         executed = False
+
         def cb() -> None:
             nonlocal executed
             executed = True
@@ -697,6 +700,7 @@ class TestPipelineRunnerCQRSIntegration:
 
         global_write_queue = get_global_write_queue()
         executed = False
+
         def cb() -> None:
             nonlocal executed
             executed = True

@@ -76,6 +76,19 @@ class TestMCPFlowE2E:
         src_dir = tmp_path / "src"
         src_dir.mkdir()
 
+        from unittest.mock import MagicMock
+
+        mock_db = MagicMock()
+        import contextlib
+
+        mock_db = MagicMock()
+
+        @contextlib.asynccontextmanager
+        async def mock_session_scope():
+            yield AsyncMock()
+
+        mock_db.async_session_scope = mock_session_scope
+
         ctx = RunContext(
             project_path=tmp_path,
             spec_path=spec,
@@ -83,9 +96,9 @@ class TestMCPFlowE2E:
             llm=AsyncMock(),
             output_dir=src_dir,
             config=SpecWeaverSettings(llm=LLMSettings(model="gemini-test")),
+            db=mock_db,
         )
         ctx.run_id = "test-run"
-        ctx.db = AsyncMock()
 
         mock_generate_code.return_value = tmp_path / "src" / "test.py"
         mock_git.return_value = (0, "", "")
@@ -134,7 +147,17 @@ class TestMCPFlowE2E:
             output_dir=tmp_path,
         )
         ctx.run_id = "test-run"
-        ctx.db = AsyncMock()
+        from unittest.mock import MagicMock
+
+        mock_db = MagicMock()
+        import contextlib
+
+        @contextlib.asynccontextmanager
+        async def mock_session_scope():
+            yield AsyncMock()
+
+        mock_db.async_session_scope = mock_session_scope
+        ctx.db = mock_db
         (tmp_path / "test.py").write_text("x = 1")
 
         from specweaver.core.flow.handlers.review import ReviewCodeHandler
@@ -194,7 +217,17 @@ class TestMCPFlowE2E:
             output_dir=tmp_path,
         )
         ctx.run_id = "test-run"
-        ctx.db = AsyncMock()
+        from unittest.mock import MagicMock
+
+        mock_db = MagicMock()
+        import contextlib
+
+        @contextlib.asynccontextmanager
+        async def mock_session_scope():
+            yield AsyncMock()
+
+        mock_db.async_session_scope = mock_session_scope
+        ctx.db = mock_db
         (tmp_path / "test.py").write_text("x = 1")
 
         mock_generate_code.return_value = tmp_path / "src" / "test.py"

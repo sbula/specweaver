@@ -23,7 +23,9 @@ if TYPE_CHECKING:
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB."""
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     return db
@@ -45,19 +47,26 @@ class TestRequireLlmAdapterFallback:
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
         # Mock _run_workspace_op to return a project that triggers a missing settings error
-        with patch("specweaver.interfaces.cli._helpers._run_workspace_op", return_value="fake-project"):
+        with patch(
+            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="fake-project"
+        ):
             # Mock load_settings to simulate project settings failing
             with patch("specweaver.interfaces.cli.settings_loader.load_settings") as mock_load:
                 from specweaver.core.config.settings import SpecWeaverSettings
-                
+
                 # First call fails (project profile), second call succeeds (system-default)
                 def side_effect(db, project, llm_role=None, fallback_to_default=True):
                     if project == "fake-project" and llm_role == "draft":
                         raise ValueError("No active project")
                     # Return system default on fallback
                     return SpecWeaverSettings(
-                        llm={"provider": "gemini", "model": "gemini-3-flash-preview", "api_key": "test"}
+                        llm={
+                            "provider": "gemini",
+                            "model": "gemini-3-flash-preview",
+                            "api_key": "test",
+                        }
                     )
+
                 mock_load.side_effect = side_effect
 
                 with patch(
@@ -84,7 +93,9 @@ class TestRequireLlmAdapterFallback:
         monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: mock_db)
 
         # Mock _run_workspace_op
-        with patch("specweaver.interfaces.cli._helpers._run_workspace_op", return_value="fake-project"):
+        with patch(
+            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="fake-project"
+        ):
             # Simulate both project profile AND system-default failing to load
             with patch("specweaver.interfaces.cli.settings_loader.load_settings") as mock_load:
                 mock_load.side_effect = ValueError("No active project")

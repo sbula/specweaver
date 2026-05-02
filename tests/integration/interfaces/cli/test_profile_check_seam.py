@@ -21,6 +21,7 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.fixtures.db_utils import set_test_active_project
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,7 +34,9 @@ runner = CliRunner()
 def _mock_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """Patch get_db() to use a temp DB for all tests."""
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     return db
@@ -47,7 +50,7 @@ def _project(tmp_path: Path, _mock_db: MagicMock) -> tuple[str, Path]:
     project_dir.mkdir()
     result = runner.invoke(app, ["init", name, "--path", str(project_dir)])
     assert result.exit_code == 0, f"init failed: {result.output}"
-    _mock_db.set_active_project(name)
+    set_test_active_project(_mock_db, name)
     return name, project_dir
 
 
@@ -68,6 +71,186 @@ def _spec_file(tmp_path: Path) -> Path:
 # ===========================================================================
 
 
+import anyio
+
+
+def _set_domain_profile_sync(db, project: str, profile: str) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_domain_profile(project, profile)
+
+    anyio.run(_do)
+
+
+def _get_domain_profile_sync(db, project: str) -> str | None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            return await repo.get_domain_profile(project)
+
+    return anyio.run(_do)
+
+
+def _create_llm_profile_sync(
+    db,
+    name: str,
+    provider: str,
+    model: str,
+    temperature: float = 0.2,
+    max_output_tokens: int = 4096,
+) -> int:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.create_llm_profile(
+                name,
+                provider=provider,
+                model=model,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                response_format="text",
+            )
+
+    return anyio.run(_do)
+
+
+def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.link_project_profile(project, task, profile_id)
+
+    anyio.run(_do)
+
+
+def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.set_cost_override(model, in_cost, out_cost)
+
+    anyio.run(_do)
+
+
+def _get_cost_overrides_sync(db) -> dict:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_cost_overrides()
+
+    return anyio.run(_do)
+
+
+import asyncio
+
+
+def _sync_run(coro):
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import nest_asyncio
+
+            nest_asyncio.apply(loop)
+            return loop.run_until_complete(coro)
+        else:
+            return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
+
+
+def _set_domain_profile_sync(db, project: str, profile: str) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_domain_profile(project, profile)
+
+    _sync_run(_do())
+
+
+def _get_domain_profile_sync(db, project: str) -> str | None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            return await repo.get_domain_profile(project)
+
+    return _sync_run(_do())
+
+
+def _create_llm_profile_sync(
+    db,
+    name: str,
+    provider: str,
+    model: str,
+    temperature: float = 0.2,
+    max_output_tokens: int = 4096,
+) -> int:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.create_llm_profile(
+                name,
+                provider=provider,
+                model=model,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                response_format="text",
+            )
+
+    return _sync_run(_do())
+
+
+def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.link_project_profile(project, task, profile_id)
+
+    _sync_run(_do())
+
+
+def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.set_cost_override(model, in_cost, out_cost)
+
+    _sync_run(_do())
+
+
+def _get_cost_overrides_sync(db) -> dict:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_cost_overrides()
+
+    return _sync_run(_do())
+
+
 class TestProfileAwareCheckSeam:
     """CLI check command uses profile YAML when a domain profile is active."""
 
@@ -83,7 +266,7 @@ class TestProfileAwareCheckSeam:
         (or doesn't crash), and that the DB correctly reports the profile.
         """
         name, _ = _project
-        _mock_db.set_domain_profile(name, "library")
+        _set_domain_profile_sync(_mock_db, name, "library")
 
         result = runner.invoke(
             app,
@@ -97,7 +280,7 @@ class TestProfileAwareCheckSeam:
         # Should succeed (maybe warnings, but not crash)
         assert result.exit_code in (0, 1), f"Crashed:\n{result.output}"
         # Profile is still stored
-        assert _mock_db.get_domain_profile(name) == "library"
+        assert _get_domain_profile_sync(_mock_db, name) == "library"
 
     def test_check_with_web_app_profile(
         self,
@@ -107,7 +290,7 @@ class TestProfileAwareCheckSeam:
     ) -> None:
         """Check with web-app profile completes without crashing."""
         name, _ = _project
-        _mock_db.set_domain_profile(name, "web-app")
+        _set_domain_profile_sync(_mock_db, name, "web-app")
 
         result = runner.invoke(
             app,
@@ -129,7 +312,7 @@ class TestProfileAwareCheckSeam:
         """Check without any profile uses the spec_default pipeline."""
         # No profile set
         name, _ = _project
-        assert _mock_db.get_domain_profile(name) is None
+        assert _get_domain_profile_sync(_mock_db, name) is None
 
         result = runner.invoke(
             app,
@@ -159,7 +342,7 @@ class TestExplicitPipelineOverridesProfile:
     ) -> None:
         """Explicit --pipeline uses the given YAML even when profile is active."""
         name, _ = _project
-        _mock_db.set_domain_profile(name, "web-app")
+        _set_domain_profile_sync(_mock_db, name, "web-app")
 
         result = runner.invoke(
             app,
@@ -183,7 +366,7 @@ class TestExplicitPipelineOverridesProfile:
     ) -> None:
         """--level feature ignores active profile."""
         name, _ = _project
-        _mock_db.set_domain_profile(name, "microservice")
+        _set_domain_profile_sync(_mock_db, name, "microservice")
 
         result = runner.invoke(
             app,

@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.fixtures.db_utils import set_test_active_project
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -34,6 +35,186 @@ def _unique_name(prefix: str = "test-route") -> str:
     return f"{prefix}-{_proj_counter}"
 
 
+import anyio
+
+
+def _set_domain_profile_sync(db, project: str, profile: str) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_domain_profile(project, profile)
+
+    anyio.run(_do)
+
+
+def _get_domain_profile_sync(db, project: str) -> str | None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            return await repo.get_domain_profile(project)
+
+    return anyio.run(_do)
+
+
+def _create_llm_profile_sync(
+    db,
+    name: str,
+    provider: str,
+    model: str,
+    temperature: float = 0.2,
+    max_output_tokens: int = 4096,
+) -> int:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.create_llm_profile(
+                name,
+                provider=provider,
+                model=model,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                response_format="text",
+            )
+
+    return anyio.run(_do)
+
+
+def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.link_project_profile(project, task, profile_id)
+
+    anyio.run(_do)
+
+
+def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.set_cost_override(model, in_cost, out_cost)
+
+    anyio.run(_do)
+
+
+def _get_cost_overrides_sync(db) -> dict:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_cost_overrides()
+
+    return anyio.run(_do)
+
+
+import asyncio
+
+
+def _sync_run(coro):
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import nest_asyncio
+
+            nest_asyncio.apply(loop)
+            return loop.run_until_complete(coro)
+        else:
+            return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
+
+
+def _set_domain_profile_sync(db, project: str, profile: str) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_domain_profile(project, profile)
+
+    _sync_run(_do())
+
+
+def _get_domain_profile_sync(db, project: str) -> str | None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            return await repo.get_domain_profile(project)
+
+    return _sync_run(_do())
+
+
+def _create_llm_profile_sync(
+    db,
+    name: str,
+    provider: str,
+    model: str,
+    temperature: float = 0.2,
+    max_output_tokens: int = 4096,
+) -> int:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.create_llm_profile(
+                name,
+                provider=provider,
+                model=model,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                response_format="text",
+            )
+
+    return _sync_run(_do())
+
+
+def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.link_project_profile(project, task, profile_id)
+
+    _sync_run(_do())
+
+
+def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.set_cost_override(model, in_cost, out_cost)
+
+    _sync_run(_do())
+
+
+def _get_cost_overrides_sync(db) -> dict:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_cost_overrides()
+
+    return _sync_run(_do())
+
+
 class TestConfigRoutingE2E:
     """E2E tests for sw config routing commands."""
 
@@ -41,11 +222,12 @@ class TestConfigRoutingE2E:
         """Full E2E lifecycle: set, show, and clear."""
         name = _unique_name("route-lifecycle")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        _mock_db.set_active_project(name)
+        set_test_active_project(_mock_db, name)
 
         # Create some profiles backing the routes
-        _mock_db.create_llm_profile("o1-mini-prof", provider="openai", model="o1-mini")
-        _mock_db.create_llm_profile(
+        _create_llm_profile_sync(_mock_db, "o1-mini-prof", provider="openai", model="o1-mini")
+        _create_llm_profile_sync(
+            _mock_db,
             "claude-prof",
             provider="anthropic",
             model="claude-3-5-sonnet",
@@ -93,9 +275,11 @@ class TestConfigRoutingE2E:
         """If a profile is deleted, 'show' renders it safely."""
         name = _unique_name("route-orphan")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        _mock_db.set_active_project(name)
+        set_test_active_project(_mock_db, name)
 
-        pid = _mock_db.create_llm_profile("doomed-prof", provider="gemini", model="gemini-1.5-pro")
+        pid = _create_llm_profile_sync(
+            _mock_db, "doomed-prof", provider="gemini", model="gemini-1.5-pro"
+        )
         runner.invoke(app, ["config", "routing", "set", "review", "doomed-prof"])
 
         # Orphan the profile by deleting the underlying profile ID
@@ -113,7 +297,7 @@ class TestConfigRoutingE2E:
         """Invalid commands exit gracefully with non-zero exit codes."""
         name = _unique_name("route-invalid")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        _mock_db.set_active_project(name)
+        set_test_active_project(_mock_db, name)
 
         # 1. Invalid task type
         res1 = runner.invoke(app, ["config", "routing", "set", "fly", "some-prof"])

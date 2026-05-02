@@ -18,6 +18,7 @@ from typer.testing import CliRunner
 
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
 from specweaver.interfaces.cli.main import app
+from tests.fixtures.db_utils import set_test_active_project
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,6 +34,18 @@ def _unique_name(prefix: str = "test") -> str:
     global _proj_counter
     _proj_counter += 1
     return f"{prefix}-{_proj_counter}"
+
+
+def _set_constitution_max_size_sync(db, project: str, size: int) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+    from tests.fixtures.db_utils import _sync_or_async
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_constitution_max_size(project, size)
+
+    _sync_or_async(_do())
 
 
 _SPEC_REVIEW_RESPONSE = (
@@ -71,6 +84,43 @@ _GENERATED_TESTS = '''\
 
 from greet_service import greet
 
+
+
+import asyncio
+
+def _sync_run(coro):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        import nest_asyncio
+        nest_asyncio.apply(loop)
+        return loop.run_until_complete(coro)
+    
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+def _set_constitution_max_size_sync(db, project: str, size: int) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_constitution_max_size(project, size)
+    _sync_run(_do())
+
+def _get_constitution_max_size_sync(db) -> int:
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            return await repo.get_constitution_max_size()
+    return _sync_run(_do())
 
 class TestGreetHappyPath:
     def test_greet_with_name(self) -> None:
@@ -376,8 +426,8 @@ class TestConstitutionCLI:
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
 
         # Set a tiny max size in the DB
-        _mock_db.set_active_project(name)
-        _mock_db.set_constitution_max_size(name, 10)
+        set_test_active_project(_mock_db, name)
+        _set_constitution_max_size_sync(_mock_db, name, 10)
 
         # Write a > 10-byte constitution
         (tmp_path / "CONSTITUTION.md").write_text(
@@ -455,7 +505,7 @@ class TestConstitutionCLI:
         """sw config set/get-constitution-max-size round-trip."""
         name = _unique_name("cmaxsz")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        _mock_db.set_active_project(name)
+        set_test_active_project(_mock_db, name)
 
         # Set
         result = runner.invoke(app, ["config", "set-constitution-max-size", "8192"])
@@ -475,7 +525,7 @@ class TestConstitutionCLI:
         """sw config set-constitution-max-size rejects negative values."""
         name = _unique_name("cmaxbad")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
-        _mock_db.set_active_project(name)
+        set_test_active_project(_mock_db, name)
 
         result = runner.invoke(app, ["config", "set-constitution-max-size", "-1"])
         assert result.exit_code != 0, f"Expected failure for negative size, got: {result.output}"

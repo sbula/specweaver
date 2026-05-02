@@ -13,16 +13,22 @@ from rich.table import Table
 
 from specweaver.interfaces.cli import _core
 
+
 def _run_workspace_op(method_name: str, *args: Any, **kwargs: Any) -> Any:
     import anyio
+
     from specweaver.workspace.store import WorkspaceRepository
+
     db = _core.get_db()
+
     async def _action() -> Any:
         async with db.async_session_scope() as session:
             repo = WorkspaceRepository(session)
             method = getattr(repo, method_name)
             return await method(*args, **kwargs)
+
     return anyio.run(_action)
+
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +130,7 @@ def _require_llm_adapter(
 
     db = _core.get_db()
     project = _run_workspace_op("get_active_project")
-    
+
     try:
         settings = load_settings(db, project, llm_role=llm_role)
         return create_llm_adapter(
@@ -137,6 +143,7 @@ def _require_llm_adapter(
     except ValueError as exc:
         logger.warning("DB profile failed, using hardcoded fallback: %s", exc)
         from specweaver.core.config.settings import SpecWeaverSettings
+
         settings = SpecWeaverSettings(
             llm={"provider": "gemini", "model": "gemini-3-flash-preview", "api_key": "test-key"}
         )

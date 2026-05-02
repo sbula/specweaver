@@ -29,13 +29,16 @@ def validate_relative_path(file_path: str) -> None:
         )
 
 
-def resolve_project_root(project_name: str, db: Database) -> Path:
+async def resolve_project_root(project_name: str, db: Database) -> Path:
     """Resolve a project name to its root directory.
 
     Raises:
         SpecWeaverAPIError: If project not found.
     """
-    proj = db.get_project(project_name)
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async with db.async_session_scope() as session:
+        proj = await WorkspaceRepository(session).get_project(project_name)
     if not proj:
         raise SpecWeaverAPIError(
             detail=f"Project '{project_name}' not found.",
@@ -45,7 +48,7 @@ def resolve_project_root(project_name: str, db: Database) -> Path:
     return Path(str(proj["root_path"]))
 
 
-def resolve_file_in_project(
+async def resolve_file_in_project(
     file_path: str,
     project_name: str,
     db: Database,
@@ -59,7 +62,7 @@ def resolve_file_in_project(
         SpecWeaverAPIError: If path invalid or file not found.
     """
     validate_relative_path(file_path)
-    project_root = resolve_project_root(project_name, db)
+    project_root = await resolve_project_root(project_name, db)
     abs_path = project_root / file_path
     if not abs_path.exists():
         raise SpecWeaverAPIError(

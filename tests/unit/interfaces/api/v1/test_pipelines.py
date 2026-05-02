@@ -13,11 +13,15 @@ from starlette.testclient import TestClient
 
 from specweaver.core.config.database import Database
 from specweaver.interfaces.api.app import create_app
+from tests.fixtures.db_utils import register_test_project
 
 
 @pytest.fixture()
 def _db(tmp_path):
     """Creates a temp database with a registered project."""
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
     return db
 
@@ -30,7 +34,7 @@ def _project_with_spec(tmp_path, _db):
     spec = proj / "specs" / "test_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("# Test Spec\n", encoding="utf-8")
-    _db.register_project("myproject", str(proj))
+    register_test_project(_db, "myproject", str(proj))
     return proj, spec
 
 
@@ -39,6 +43,186 @@ def client(_db):
     """TestClient for the API."""
     app = create_app(db=_db)
     return TestClient(app)
+
+
+import anyio
+
+
+def _set_domain_profile_sync(db, project: str, profile: str) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_domain_profile(project, profile)
+
+    anyio.run(_do)
+
+
+def _get_domain_profile_sync(db, project: str) -> str | None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            return await repo.get_domain_profile(project)
+
+    return anyio.run(_do)
+
+
+def _create_llm_profile_sync(
+    db,
+    name: str,
+    provider: str,
+    model: str,
+    temperature: float = 0.2,
+    max_output_tokens: int = 4096,
+) -> int:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.create_llm_profile(
+                name,
+                provider=provider,
+                model=model,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                response_format="text",
+            )
+
+    return anyio.run(_do)
+
+
+def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.link_project_profile(project, task, profile_id)
+
+    anyio.run(_do)
+
+
+def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.set_cost_override(model, in_cost, out_cost)
+
+    anyio.run(_do)
+
+
+def _get_cost_overrides_sync(db) -> dict:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_cost_overrides()
+
+    return anyio.run(_do)
+
+
+import asyncio
+
+
+def _sync_run(coro):
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import nest_asyncio
+
+            nest_asyncio.apply(loop)
+            return loop.run_until_complete(coro)
+        else:
+            return loop.run_until_complete(coro)
+    except RuntimeError:
+        return asyncio.run(coro)
+
+
+def _set_domain_profile_sync(db, project: str, profile: str) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_domain_profile(project, profile)
+
+    _sync_run(_do())
+
+
+def _get_domain_profile_sync(db, project: str) -> str | None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            return await repo.get_domain_profile(project)
+
+    return _sync_run(_do())
+
+
+def _create_llm_profile_sync(
+    db,
+    name: str,
+    provider: str,
+    model: str,
+    temperature: float = 0.2,
+    max_output_tokens: int = 4096,
+) -> int:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.create_llm_profile(
+                name,
+                provider=provider,
+                model=model,
+                temperature=temperature,
+                max_output_tokens=max_output_tokens,
+                response_format="text",
+            )
+
+    return _sync_run(_do())
+
+
+def _link_project_profile_sync(db, project: str, task: str, profile_id: int) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.link_project_profile(project, task, profile_id)
+
+    _sync_run(_do())
+
+
+def _set_cost_override_sync(db, model: str, in_cost: float, out_cost: float) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.set_cost_override(model, in_cost, out_cost)
+
+    _sync_run(_do())
+
+
+def _get_cost_overrides_sync(db) -> dict:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_cost_overrides()
+
+    return _sync_run(_do())
 
 
 class TestListPipelines:

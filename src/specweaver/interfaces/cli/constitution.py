@@ -4,13 +4,13 @@
 """CLI commands for constitution management: show, check, init."""
 
 from __future__ import annotations
-from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 
 import typer
 
 from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
@@ -89,10 +89,13 @@ def constitution_check(
         active = _run_workspace_op("get_active_project")
         if active:
             import anyio
+
             from specweaver.workspace.store import WorkspaceRepository
+
             async def _get_max_size() -> int:
                 async with db.async_session_scope() as session:
                     return await WorkspaceRepository(session).get_constitution_max_size(active)
+
             max_size_kwargs["max_size"] = anyio.run(_get_max_size)
     except Exception:
         pass  # Fall back to default if DB unavailable

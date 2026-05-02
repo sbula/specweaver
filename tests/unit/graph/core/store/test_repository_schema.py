@@ -29,6 +29,7 @@ def test_sqlite_repository_initialization_creates_schema(tmp_path):
         journal_mode = cursor.fetchone()[0]
         assert journal_mode.upper() == "WAL"
 
+
 def test_sqlite_repository_nodes_schema(tmp_path):
     """Test that the nodes table has the correct columns."""
     db_path = tmp_path / "graph.db"
@@ -47,12 +48,13 @@ def test_sqlite_repository_nodes_schema(tmp_path):
             "service_name": "TEXT",
             "package_name": "TEXT",
             "is_active": "INTEGER",
-            "metadata": "JSON"
+            "metadata": "JSON",
         }
 
         for col_name, col_type in expected_columns.items():
             assert col_name in columns
             assert columns[col_name] == col_type
+
 
 def test_sqlite_repository_edges_schema(tmp_path):
     """Test that the edges table has the correct columns and no strict FK on target_id."""
@@ -68,7 +70,7 @@ def test_sqlite_repository_edges_schema(tmp_path):
             "source_id": "INTEGER",
             "target_id": "INTEGER",
             "type": "TEXT",
-            "metadata": "JSON"
+            "metadata": "JSON",
         }
 
         for col_name, col_type in expected_columns.items():

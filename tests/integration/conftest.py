@@ -55,7 +55,9 @@ def sample_db(tmp_path: Path, sample_project: Path) -> Database:
     The sample project is pre-registered as ``"sample"``.
     """
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".specweaver" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver" / "specweaver.db")
     db.register_project("sample", str(sample_project))
     return db

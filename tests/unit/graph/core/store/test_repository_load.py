@@ -11,12 +11,27 @@ def repo(tmp_path):
     db_path = tmp_path / "graph.db"
     return SqliteGraphRepository(str(db_path), validated_service_name="test_service")
 
+
 def test_load_happy_path(repo):
     """Test loading a basic graph."""
     g_in = nx.DiGraph()
-    g_in.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={"key": "value"}, clone_hash="c1")
-    g_in.add_node("test_service:ast:456", file_id="file1", package_name="pkg1", metadata={"key": "value2"}, clone_hash="c2")
-    g_in.add_edge("test_service:ast:123", "test_service:ast:456", type="CALLS", metadata={"weight": 1})
+    g_in.add_node(
+        "test_service:ast:123",
+        file_id="file1",
+        package_name="pkg1",
+        metadata={"key": "value"},
+        clone_hash="c1",
+    )
+    g_in.add_node(
+        "test_service:ast:456",
+        file_id="file1",
+        package_name="pkg1",
+        metadata={"key": "value2"},
+        clone_hash="c2",
+    )
+    g_in.add_edge(
+        "test_service:ast:123", "test_service:ast:456", type="CALLS", metadata={"weight": 1}
+    )
 
     repo.flush_to_db(g_in)
 
@@ -44,6 +59,7 @@ def test_load_happy_path(repo):
     assert edge_data["type"] == "CALLS"
     assert edge_data["metadata"] == {"weight": 1}
 
+
 def test_load_ignores_tombstoned_nodes(repo):
     """Test that load_from_db skips nodes with is_active=0."""
     g_in = nx.DiGraph()
@@ -58,6 +74,7 @@ def test_load_ignores_tombstoned_nodes(repo):
 
     assert len(g_out.nodes) == 0
     assert "test_service:ast:123" not in hash_to_id
+
 
 def test_load_ignores_ghost_nodes(repo):
     """Test that load_from_db ignores lazy targets that were never resolved."""
@@ -74,14 +91,26 @@ def test_load_ignores_ghost_nodes(repo):
     # Because the edge target is missing, the edge should be dropped during load!
     assert len(g_out.edges) == 0
 
+
 def test_load_corrupted_node_metadata(repo):
     """[Hostile] Test load_from_db recovers from invalid node JSON metadata."""
     # Manually insert invalid JSON into DB
     with sqlite3.connect(repo.db_path) as conn:
-        conn.execute('''
+        conn.execute(
+            """
             INSERT INTO nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', ("test_service:ast:bad_node", "c1", "file1", "test_service", "pkg1", 1, "INVALID_JSON_STRING"))
+        """,
+            (
+                "test_service:ast:bad_node",
+                "c1",
+                "file1",
+                "test_service",
+                "pkg1",
+                1,
+                "INVALID_JSON_STRING",
+            ),
+        )
 
     g_out, hash_to_id = repo.load_from_db()
 
@@ -90,18 +119,25 @@ def test_load_corrupted_node_metadata(repo):
     node_id = hash_to_id["test_service:ast:bad_node"]
     assert g_out.nodes[node_id]["metadata"] == {}
 
+
 def test_load_corrupted_edge_metadata(repo):
     """[Hostile] Test load_from_db recovers from invalid edge JSON metadata."""
     # Insert two valid nodes, but a corrupted edge
     with sqlite3.connect(repo.db_path) as conn:
-        conn.execute('''
+        conn.execute(
+            """
             INSERT INTO nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', ("test_service:ast:1", "c1", "f1", "test_service", "p1", 1, "{}"))
-        conn.execute('''
+        """,
+            ("test_service:ast:1", "c1", "f1", "test_service", "p1", 1, "{}"),
+        )
+        conn.execute(
+            """
             INSERT INTO nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', ("test_service:ast:2", "c1", "f1", "test_service", "p1", 1, "{}"))
+        """,
+            ("test_service:ast:2", "c1", "f1", "test_service", "p1", 1, "{}"),
+        )
 
         # Get their IDs
         cursor = conn.cursor()
@@ -110,10 +146,13 @@ def test_load_corrupted_edge_metadata(repo):
         id1, id2 = rows[0][0], rows[1][0]
 
         # Insert corrupted edge
-        conn.execute('''
+        conn.execute(
+            """
             INSERT INTO edges (source_id, target_id, type, metadata)
             VALUES (?, ?, ?, ?)
-        ''', (id1, id2, "CALLS", "INVALID_JSON_EDGE"))
+        """,
+            (id1, id2, "CALLS", "INVALID_JSON_EDGE"),
+        )
 
     g_out, _hash_to_id = repo.load_from_db()
 

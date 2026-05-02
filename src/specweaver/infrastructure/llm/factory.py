@@ -10,15 +10,9 @@ can obtain a ready-to-use adapter without depending on Typer/Rich.
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Any
 
-import anyio
-
-from specweaver.infrastructure.llm.store import LlmRepository
-
 if TYPE_CHECKING:
-    from specweaver.core.config.database import Database
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.infrastructure.llm.models import GenerationConfig
 
@@ -91,7 +85,9 @@ def create_llm_adapter(
         from specweaver.infrastructure.llm.collector import TelemetryCollector
         from specweaver.infrastructure.llm.telemetry import CostEntry
 
-        overrides = {k: CostEntry(*v) for k, v in cost_overrides.items()} if cost_overrides else None
+        overrides = (
+            {k: CostEntry(*v) for k, v in cost_overrides.items()} if cost_overrides else None
+        )
         adapter = TelemetryCollector(adapter, telemetry_project, overrides)
 
     gen_config = GenerationConfig(

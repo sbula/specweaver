@@ -11,7 +11,6 @@ that commands self-register.
 """
 
 from __future__ import annotations
-from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 # App callback (uses shared objects)
 import typer
@@ -24,6 +23,7 @@ from specweaver.interfaces.cli._core import (  # noqa: F401
     get_db,
     logger,
 )
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 
 @app.callback()
@@ -46,10 +46,13 @@ def _app_callback(
     if active:
         try:
             import anyio
+
             from specweaver.workspace.store import WorkspaceRepository
+
             async def _get_level() -> str:
                 async with db.async_session_scope() as session:
                     return await WorkspaceRepository(session).get_log_level(active)
+
             level = anyio.run(_get_level)
         except (ValueError, Exception):
             level = "DEBUG"

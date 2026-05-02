@@ -27,8 +27,6 @@ class TestCycles:
         assert len(cycles) > 0
 
 
-
-
 class TestTraverse:
     def test_root_depends_on_all(self):
         engine = TopologyEngine()

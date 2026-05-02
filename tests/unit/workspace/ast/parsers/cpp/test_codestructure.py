@@ -48,6 +48,7 @@ namespace Math {
     symbols = parser.list_symbols(code)
     assert set(symbols) == {"Math", "Math.Vector", "Math.multiply"}
 
+
 def test_list_and_extract_dot_notation(parser: CppCodeStructure) -> None:
     code = """
     class Database {
@@ -64,6 +65,7 @@ def test_list_and_extract_dot_notation(parser: CppCodeStructure) -> None:
     target = parser.extract_symbol(code, "Database.connect")
     assert "void connect() {" in target
     assert "class Database" not in target
+
 
 def test_cpp_scope_name_edge_case(parser: CppCodeStructure) -> None:
     code = """

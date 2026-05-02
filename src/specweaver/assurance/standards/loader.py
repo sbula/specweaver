@@ -48,8 +48,9 @@ def load_standards_content(
         Formatted standards text for prompt injection, or ``None``
         if no standards exist.
     """
-    from specweaver.assurance.standards.scope_detector import _resolve_scope
     import anyio
+
+    from specweaver.assurance.standards.scope_detector import _resolve_scope
     from specweaver.workspace.store import WorkspaceRepository
 
     logger.debug(
@@ -58,7 +59,7 @@ def load_standards_content(
         target_path,
         max_chars,
     )
-    
+
     async def _fetch_standards() -> tuple[list[dict[str, object]], list[dict[str, object]]]:
         async with db.async_session_scope() as session:
             repo = WorkspaceRepository(session)
@@ -66,7 +67,9 @@ def load_standards_content(
                 known_scopes = await repo.list_scopes(project_name)
                 scope = _resolve_scope(target_path, project_path, known_scopes)
                 s_standards = await repo.get_standards(project_name, scope=scope)
-                r_standards = await repo.get_standards(project_name, scope=".") if scope != "." else []
+                r_standards = (
+                    await repo.get_standards(project_name, scope=".") if scope != "." else []
+                )
                 return s_standards, r_standards
             else:
                 s_standards = await repo.get_standards(project_name)

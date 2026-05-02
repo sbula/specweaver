@@ -21,6 +21,9 @@ def _mock_db(_isolate_env):
     Called '_mock_db' purely for compatibility with existing tests.
     """
     db_path = _isolate_env / "specweaver.db"
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+    bootstrap_database(str(db_path))
     return Database(db_path)
 
 

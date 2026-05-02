@@ -8,6 +8,7 @@ class ArtifactEvent(TypedDict):
     event_type: str
     model_id: str
 
+
 class LineageRepositoryProtocol(Protocol):
     def get_artifact_history(self, artifact_id: str) -> list[dict[str, Any]]:
         """Fetch all events for a given artifact, ordered by creation time."""

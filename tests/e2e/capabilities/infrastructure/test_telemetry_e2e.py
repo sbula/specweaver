@@ -37,8 +37,14 @@ def db(tmp_path: Path):
     from specweaver.core.config.database import Database
 
     database = Database(tmp_path / ".specweaver" / "specweaver.db")
-    database.register_project("e2e-proj", str(tmp_path / "project"))
-    database.set_active_project("e2e-proj")
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
+    from tests.fixtures.db_utils import register_test_project, set_test_active_project
+
+    db_path = str(tmp_path / ".specweaver" / "specweaver.db")
+    bootstrap_database(db_path)
+
+    register_test_project(database, "e2e-proj", str(tmp_path / "project"))
+    set_test_active_project(database, "e2e-proj")
     return database
 
 
@@ -86,6 +92,71 @@ class FakeGeminiAdapter:
 # ---------------------------------------------------------------------------
 
 
+def _get_usage_summary_sync(db, project: str):
+    from specweaver.infrastructure.llm.store import LlmRepository
+    from tests.fixtures.db_utils import _sync_or_async
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_usage_summary(project)
+
+    return _sync_or_async(_do())
+
+
+def _get_usage_by_task_type_sync(db, project: str):
+    from specweaver.infrastructure.llm.store import LlmRepository
+    from tests.fixtures.db_utils import _sync_or_async
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_usage_by_task_type(project)
+
+    return _sync_or_async(_do())
+
+
+def _get_estimated_cost_sync(db, project: str) -> float:
+    from tests.fixtures.db_utils import _sync_or_async
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            from sqlalchemy import text
+
+            result = await session.execute(
+                text("SELECT estimated_cost FROM llm_usage_log WHERE project_name = :p"),
+                {"p": project},
+            )
+            row = result.fetchone()
+            return row[0] if row else 0.0
+
+    return _sync_or_async(_do())
+
+
+def _set_cost_override_sync(db, model: str, prompt: float, completion: float):
+    from specweaver.infrastructure.llm.store import LlmRepository
+    from tests.fixtures.db_utils import _sync_or_async
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.set_cost_override(model, prompt, completion)
+
+    _sync_or_async(_do())
+
+
+def _get_cost_overrides_sync(db):
+    from specweaver.infrastructure.llm.store import LlmRepository
+    from tests.fixtures.db_utils import _sync_or_async
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            return await repo.get_cost_overrides()
+
+    return _sync_or_async(_do())
+
+
 class TestFullPipelineE2E:
     """Factory → wrapped adapter → generate → flush → query."""
 
@@ -95,14 +166,18 @@ class TestFullPipelineE2E:
         """Story 29: full vertical slice — factory, collector, generate, flush, query."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
         from specweaver.infrastructure.llm.factory import create_llm_adapter
+        from specweaver.interfaces.cli.settings_loader import load_settings
 
         with patch(
             "specweaver.infrastructure.llm.factory._get_adapter_class",
             return_value=FakeGeminiAdapter,
         ):
+            settings = load_settings(db, "e2e-proj", llm_role="default")
+            overrides = _get_cost_overrides_sync(db)
             _settings, adapter, gen_config = create_llm_adapter(
-                db,
+                settings,
                 telemetry_project="e2e-proj",
+                cost_overrides=overrides,
             )
 
         assert isinstance(adapter, TelemetryCollector)
@@ -124,12 +199,12 @@ class TestFullPipelineE2E:
         assert flushed == 2
 
         # Query and verify
-        summary = db.get_usage_summary(project="e2e-proj")
+        summary = _get_usage_summary_sync(db, "e2e-proj")
         assert len(summary) == 2  # 2 groups: draft + review
         total_calls = sum(s["call_count"] for s in summary)
         assert total_calls == 2
 
-        by_type = db.get_usage_by_task_type("e2e-proj")
+        by_type = _get_usage_by_task_type_sync(db, "e2e-proj")
         types = {r["task_type"] for r in by_type}
         assert types == {"draft", "review"}
 
@@ -150,20 +225,26 @@ class TestCostOverrideLifecycleE2E:
         from specweaver.infrastructure.llm.factory import create_llm_adapter
 
         # Set a very high cost override so we can verify it's used
-        db.set_cost_override("gemini-3-flash-preview", 100.0, 200.0)
+        _set_cost_override_sync(db, "gemini-2.5-pro", 100.0, 200.0)
+
+        from specweaver.interfaces.cli.settings_loader import load_settings
 
         with patch(
             "specweaver.infrastructure.llm.factory._get_adapter_class",
             return_value=FakeGeminiAdapter,
         ):
+            settings = load_settings(db, "e2e-proj", llm_role="default")
+            overrides = _get_cost_overrides_sync(db)
             _settings, adapter, gen_config = create_llm_adapter(
-                db,
+                settings,
                 telemetry_project="e2e-proj",
+                cost_overrides=overrides,
             )
 
         assert isinstance(adapter, TelemetryCollector)
 
         # Generate — adapter returns 500 prompt + 200 completion tokens
+        print(f"DEBUG MODEL: {gen_config.model}")
         config = GenerationConfig(
             model=gen_config.model,
             task_type=TaskType.IMPLEMENT,
@@ -174,8 +255,4 @@ class TestCostOverrideLifecycleE2E:
         adapter.flush(db)
 
         # Verify cost: (500/1000)*100 + (200/1000)*200 = 50 + 40 = 90
-        with db.connect() as conn:
-            row = conn.execute(
-                "SELECT estimated_cost FROM llm_usage_log WHERE project_name='e2e-proj'",
-            ).fetchone()
-        assert row["estimated_cost"] == pytest.approx(90.0)
+        assert _get_estimated_cost_sync(db, "e2e-proj") == pytest.approx(90.0)

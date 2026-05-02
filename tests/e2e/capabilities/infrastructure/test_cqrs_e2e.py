@@ -9,14 +9,15 @@ import pytest
 # but for now we verify the queue infrastructure using the legacy SQLite schema
 # or a simple assertion on process exit codes and telemetry DB files.
 
+
 @pytest.fixture
 def temp_workspace(tmp_path: Path) -> Path:
     """Sets up a minimal workspace for CLI tests."""
-    (tmp_path / "specweaver.toml").write_text("[project]\nname=\"test\"\n")
+    (tmp_path / "specweaver.toml").write_text('[project]\nname="test"\n')
     return tmp_path
 
-class TestCQRSE2E:
 
+class TestCQRSE2E:
     def test_story_8_full_pipeline_persistence(self, temp_workspace: Path) -> None:
         """E2E Story 8: Full Pipeline Persistence."""
         # Execute a real CLI command that writes telemetry
@@ -26,7 +27,7 @@ class TestCQRSE2E:
             [sys.executable, "-m", "specweaver.interfaces.cli.main", "check"],
             cwd=temp_workspace,
             capture_output=True,
-            text=True
+            text=True,
         )
         # Even if check fails due to no files, the system booted and flushed.
         # We assert the process exited cleanly and didn't hang waiting for the queue
@@ -47,11 +48,12 @@ class TestCQRSE2E:
             [sys.executable, "-m", "specweaver.interfaces.cli.main", "check"],
             cwd=temp_workspace,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
 
         # Give it a moment to boot and acquire the CQRS context
         import time
+
         time.sleep(0.5)
 
         # Send SIGINT to simulate user Ctrl+C
@@ -76,7 +78,7 @@ class TestCQRSE2E:
             [sys.executable, "-m", "specweaver.interfaces.cli.main", "run", "--non-existent-flag"],
             cwd=temp_workspace,
             capture_output=True,
-            text=True
+            text=True,
         )
         # The core CLI should catch it and print a Typer error, rather than hanging on CQRS
         assert result.returncode != 0
@@ -89,7 +91,7 @@ class TestCQRSE2E:
             [sys.executable, "-m", "specweaver.interfaces.cli.main", "--version"],
             cwd=temp_workspace,
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode == 0

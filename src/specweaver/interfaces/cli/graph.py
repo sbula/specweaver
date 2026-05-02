@@ -32,6 +32,7 @@ def _purge_stale_nodes(target_path: Path, repo: SqliteGraphRepository) -> None:
             console.print(f"[dim]Purging deleted file from Knowledge Graph: {db_file}[/dim]")
             repo.purge_file(db_file)
 
+
 app = typer.Typer(
     name="graph",
     help="Manage the Knowledge Graph.",
@@ -40,16 +41,23 @@ app = typer.Typer(
 
 core_app.add_typer(app, name="graph")
 
+
 @app.command()
 def build(
-    target: Annotated[str, typer.Argument(
-        help="Path to a file or directory to ingest into the Knowledge Graph.",
-    )],
-    project_path: Annotated[Path, typer.Option(
-        "--project-path",
-        "-p",
-        help="Path to the root of the project.",
-    )] = Path("."),
+    target: Annotated[
+        str,
+        typer.Argument(
+            help="Path to a file or directory to ingest into the Knowledge Graph.",
+        ),
+    ],
+    project_path: Annotated[
+        Path,
+        typer.Option(
+            "--project-path",
+            "-p",
+            help="Path to the root of the project.",
+        ),
+    ] = Path("."),
 ) -> None:
     """
     Builds the semantic Knowledge Graph for the specified target.

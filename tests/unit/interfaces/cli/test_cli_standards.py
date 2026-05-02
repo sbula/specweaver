@@ -29,7 +29,9 @@ runner = CliRunner()
 def _mock_db(tmp_path, monkeypatch):
     """Patch get_db() to use a temp DB for all standards tests."""
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     return db
@@ -43,7 +45,9 @@ def _init_project(db, name: str, root_path: str) -> None:
 
 def _seed_standards(db, name: str, count: int = 2) -> None:
     """Insert sample standards into the DB."""
-    _run_workspace_op(db, "save_standard", 
+    _run_workspace_op(
+        db,
+        "save_standard",
         project_name=name,
         scope=".",
         language="python",
@@ -52,7 +56,9 @@ def _seed_standards(db, name: str, count: int = 2) -> None:
         confidence=0.85,
     )
     if count >= 2:
-        _run_workspace_op(db, "save_standard", 
+        _run_workspace_op(
+            db,
+            "save_standard",
             project_name=name,
             scope=".",
             language="python",
@@ -133,7 +139,9 @@ class TestLoadStandardsContent:
         _init_project(_mock_db, "proj", str(tmp_path))
         # save_standard serialises data internally, but let's verify the
         # formatter handles both possibilities by roundtripping.
-        _run_workspace_op(_mock_db, "save_standard", 
+        _run_workspace_op(
+            _mock_db,
+            "save_standard",
             project_name="proj",
             scope=".",
             language="python",
@@ -170,7 +178,9 @@ class TestLoadStandardsContent:
         from specweaver.interfaces.cli._helpers import _load_standards_content
 
         _init_project(_mock_db, "proj", str(tmp_path))
-        _run_workspace_op(_mock_db, "save_standard", 
+        _run_workspace_op(
+            _mock_db,
+            "save_standard",
             project_name="proj",
             scope=".",
             language="python",
@@ -205,9 +215,11 @@ class TestStandardsScan:
     ) -> None:
         """Scan with non-existent root path → error."""
         _init_project(_mock_db, "ghost", str(tmp_path))
+
         # Monkeypatch get_project to return a non-existent path
         async def mock_get_project(self, name):
             return {"name": name, "root_path": "/nonexistent/path"}
+
         monkeypatch.setattr(
             "specweaver.workspace.store.WorkspaceRepository.get_project",
             mock_get_project,
@@ -348,7 +360,9 @@ class TestStandardsShow:
         _seed_standards(_mock_db, "proj")
         # Add a standard with a different scope (short category name
         # to avoid Rich table truncation in narrow terminal)
-        _run_workspace_op(_mock_db, "save_standard", 
+        _run_workspace_op(
+            _mock_db,
+            "save_standard",
             project_name="proj",
             scope="backend",
             language="python",
@@ -486,7 +500,9 @@ class TestStandardsEdgeCases:
     ) -> None:
         """show() handles data that's already a dict (not JSON string)."""
         _init_project(_mock_db, "dict_proj", str(tmp_path))
-        _run_workspace_op(_mock_db, "save_standard", 
+        _run_workspace_op(
+            _mock_db,
+            "save_standard",
             project_name="dict_proj",
             scope=".",
             language="python",
@@ -536,7 +552,9 @@ class TestStandardsClear:
         """Clear only standards matching --scope."""
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj")  # scope="."
-        _run_workspace_op(_mock_db, "save_standard", 
+        _run_workspace_op(
+            _mock_db,
+            "save_standard",
             project_name="proj",
             scope="backend",
             language="python",
@@ -714,7 +732,9 @@ class TestStandardsScopes:
         """scopes with multiple distinct scopes shows all."""
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj", count=1)
-        _run_workspace_op(_mock_db, "save_standard", 
+        _run_workspace_op(
+            _mock_db,
+            "save_standard",
             project_name="proj",
             scope="backend",
             language="python",
@@ -766,10 +786,13 @@ class TestScanScopeFlag:
 
 def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):
     import anyio
+
     from specweaver.workspace.store import WorkspaceRepository
+
     async def _action():
         async with db_instance.async_session_scope() as session:
             repo = WorkspaceRepository(session)
             method = getattr(repo, method_name)
             return await method(*args, **kwargs)
+
     return anyio.run(_action)

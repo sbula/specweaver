@@ -157,11 +157,9 @@ class GenerateCodeHandler:
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
-            from specweaver.core.config.database import Database
             from specweaver.core.flow.store import FlowRepository
-            local_db = context.project_path / ".specweaver" / "specweaver.db"
-            db = Database(str(local_db))
-            async with db.async_session_scope() as session:
+
+            async with context.db.async_session_scope() as session:
                 repo = FlowRepository(session)
                 await repo.log_artifact_event(
                     artifact_id=artifact_uuid,
@@ -248,11 +246,9 @@ class GenerateTestsHandler:
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 
-            from specweaver.core.config.database import Database
             from specweaver.core.flow.store import FlowRepository
-            local_db = context.project_path / ".specweaver" / "specweaver.db"
-            db = Database(str(local_db))
-            async with db.async_session_scope() as session:
+
+            async with context.db.async_session_scope() as session:
                 repo = FlowRepository(session)
                 await repo.log_artifact_event(
                     artifact_id=artifact_uuid,
@@ -428,11 +424,9 @@ class PlanSpecHandler:
             if not parent_id:
                 parent_id = getattr(context, "run_id", "") or ""
 
-            from specweaver.core.config.database import Database
             from specweaver.core.flow.store import FlowRepository
-            local_db = context.project_path / ".specweaver" / "specweaver.db"
-            db = Database(str(local_db))
-            async with db.async_session_scope() as session:
+
+            async with context.db.async_session_scope() as session:
                 repo = FlowRepository(session)
                 await repo.log_artifact_event(
                     artifact_id=artifact_uuid,
@@ -576,4 +570,3 @@ class GenerateContractHandler:
                 docstring = match.group(2).strip()
                 docstrings[func_name] = docstring
         return docstrings
-

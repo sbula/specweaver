@@ -9,12 +9,15 @@ class OntologyMapper:
     """
     Translates raw Tree-Sitter/Polyglot AST outputs into the Universal Graph Ontology.
     """
+
     MAX_AST_DEPTH = 500
 
     def __init__(self, id_prefix: str = "") -> None:
         self.hasher = SemanticHasher(id_prefix)
 
-    def map_ast_to_nodes(self, filepath: str, ast_data: dict[str, Any] | None) -> tuple[list[GraphNode], list[GraphEdge]]:
+    def map_ast_to_nodes(
+        self, filepath: str, ast_data: dict[str, Any] | None
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
         """
         Parses an AST dictionary and returns a list of mapped GraphNodes and GraphEdges.
         Always returns at least a FILE node.
@@ -33,10 +36,7 @@ class OntologyMapper:
             basename = filepath.split("\\")[-1]
 
         file_node = GraphNode(
-            semantic_hash=file_hash,
-            kind=NodeKind.FILE,
-            name=basename,
-            file_id=filepath
+            semantic_hash=file_hash, kind=NodeKind.FILE, name=basename, file_id=filepath
         )
         nodes.append(file_node)
 
@@ -56,21 +56,34 @@ class OntologyMapper:
 
         return nodes, edges
 
-    def _check_depth(self, filepath: str, file_hash: str, nodes: list[GraphNode], depth: int) -> bool:
+    def _check_depth(
+        self, filepath: str, file_hash: str, nodes: list[GraphNode], depth: int
+    ) -> bool:
         if depth > self.MAX_AST_DEPTH:
             import logging
+
             logger = logging.getLogger(__name__)
-            logger.warning(f"AST Bomb Protection: exceeded MAX_AST_DEPTH ({self.MAX_AST_DEPTH}) in {filepath}")
+            logger.warning(
+                f"AST Bomb Protection: exceeded MAX_AST_DEPTH ({self.MAX_AST_DEPTH}) in {filepath}"
+            )
             # Mark the root file node as partial
             for node in nodes:
                 if node.kind == NodeKind.FILE and node.semantic_hash == file_hash:
-                    if not getattr(node, 'metadata', None):
+                    if not getattr(node, "metadata", None):
                         node.metadata = {}
-                    node.metadata['is_partial'] = True
+                    node.metadata["is_partial"] = True
             return True
         return False
 
-    def _map_child(self, filepath: str, child: dict[str, Any], file_hash: str, nodes: list[GraphNode], edges: list[GraphEdge], depth: int) -> None:
+    def _map_child(
+        self,
+        filepath: str,
+        child: dict[str, Any],
+        file_hash: str,
+        nodes: list[GraphNode],
+        edges: list[GraphEdge],
+        depth: int,
+    ) -> None:
         if self._check_depth(filepath, file_hash, nodes, depth):
             return
 
@@ -90,18 +103,11 @@ class OntologyMapper:
 
         if kind:
             node_hash = self.hasher.hash_node(filepath, name)
-            nodes.append(GraphNode(
-                semantic_hash=node_hash,
-                kind=kind,
-                name=name,
-                file_id=filepath
-            ))
+            nodes.append(GraphNode(semantic_hash=node_hash, kind=kind, name=name, file_id=filepath))
             # Build CONTAINS edge from FILE to this structural node
-            edges.append(GraphEdge(
-                source_hash=file_hash,
-                target_hash=node_hash,
-                kind=EdgeKind.CONTAINS
-            ))
+            edges.append(
+                GraphEdge(source_hash=file_hash, target_hash=node_hash, kind=EdgeKind.CONTAINS)
+            )
 
         # Recurse for nested children
         nested_children = child.get("children", [])

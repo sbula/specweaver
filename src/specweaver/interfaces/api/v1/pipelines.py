@@ -39,7 +39,7 @@ def list_pipelines() -> list[dict[str, str]]:
 
 
 @router.post("/pipelines/{name}/run", response_model=PipelineRunResponse)
-def start_pipeline_run(
+async def start_pipeline_run(
     name: str,
     body: PipelineRunRequest,
     db: Database = _db_dep,
@@ -58,7 +58,7 @@ def start_pipeline_run(
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     # Resolve project
-    project_root = resolve_project_root(body.project, db)
+    project_root = await resolve_project_root(body.project, db)
 
     # Load pipeline definition
     try:
@@ -188,7 +188,7 @@ def get_run_log(run_id: str) -> list[dict[str, object]]:
 
 
 @router.post("/runs/{run_id}/resume")
-def resume_run(
+async def resume_run(
     run_id: str,
     db: Database = _db_dep,
 ) -> PipelineRunResponse:
@@ -217,7 +217,7 @@ def resume_run(
         )
 
     # Rebuild context
-    project_root = resolve_project_root(run.project_name, db)
+    project_root = await resolve_project_root(run.project_name, db)
     pipeline_def = load_pipeline(Path(run.pipeline_name))
     context = RunContext(
         project_path=project_root,
@@ -252,7 +252,7 @@ def resume_run(
 
 
 @router.post("/runs/{run_id}/gate")
-def submit_gate_decision(
+async def submit_gate_decision(
     run_id: str,
     body: GateDecisionRequest,
     db: Database = _db_dep,
@@ -304,7 +304,7 @@ def submit_gate_decision(
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
 
-    project_root = resolve_project_root(run.project_name, db)
+    project_root = await resolve_project_root(run.project_name, db)
     pipeline_def = load_pipeline(Path(run.pipeline_name))
     context = RunContext(
         project_path=project_root,

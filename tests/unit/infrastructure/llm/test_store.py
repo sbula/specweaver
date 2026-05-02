@@ -19,10 +19,11 @@ async def engine():
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
         poolclass=StaticPool,
-        connect_args={'check_same_thread': False}
+        connect_args={"check_same_thread": False},
     )
     yield engine
     await engine.dispose()
+
 
 @pytest.fixture(autouse=True)
 async def setup_test_db(engine):
@@ -36,6 +37,7 @@ async def setup_test_db(engine):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
+
 @pytest.mark.asyncio
 async def test_llm_store_happy_path_crud(engine):
     async with session_scope(engine) as session:
@@ -46,8 +48,9 @@ async def test_llm_store_happy_path_crud(engine):
         await session.refresh(profile)
 
         assert profile.id is not None
-        assert profile.model == 'gemini-3-flash-preview'
+        assert profile.model == "gemini-3-flash-preview"
         assert profile.context_limit == 128000
+
 
 @pytest.mark.asyncio
 async def test_llm_store_boundary_max_tokens(engine):
@@ -61,13 +64,14 @@ async def test_llm_store_boundary_max_tokens(engine):
             model="gemini",
             prompt_tokens=0,
             completion_tokens=max_sqlite_int,
-            total_tokens=max_sqlite_int
+            total_tokens=max_sqlite_int,
         )
         session.add(log)
         await session.commit()
         await session.refresh(log)
 
         assert log.completion_tokens == max_sqlite_int
+
 
 @pytest.mark.asyncio
 async def test_llm_store_degradation_fk_constraint(engine):
@@ -80,9 +84,10 @@ async def test_llm_store_degradation_fk_constraint(engine):
             link = ProjectLlmLink(
                 project_name="fake-project",
                 role="draft",
-                profile_id=9999  # Does not exist
+                profile_id=9999,  # Does not exist
             )
             session.add(link)
+
 
 @pytest.mark.asyncio
 async def test_llm_store_hostile_null_injection(engine):

@@ -9,7 +9,6 @@ from specweaver.core.config.database import StrictISODateTime
 
 
 class TestStrictISODateTime:
-
     def setup_method(self) -> None:
         # We instantiate a dummy dialect to test the process methods
         self.type_decorator = StrictISODateTime()
@@ -42,7 +41,7 @@ class TestStrictISODateTime:
 
     def test_boundary_naive_datetime_raises_error(self) -> None:
         """Boundary/Edge Case: Naive datetime objects are rejected."""
-        dt = datetime(2026, 5, 2, 12, 30, 45) # No tzinfo
+        dt = datetime(2026, 5, 2, 12, 30, 45)  # No tzinfo
 
         with pytest.raises(ValueError, match="must be timezone-aware"):
             self.type_decorator.process_bind_param(dt, self.dialect)
@@ -50,7 +49,7 @@ class TestStrictISODateTime:
     def test_hostile_input_wrong_type(self) -> None:
         """Hostile Input: Binding non-datetime objects raises TypeError."""
         with pytest.raises(TypeError, match="must be a datetime object"):
-            self.type_decorator.process_bind_param("2026-05-02T12:00:00", self.dialect) # type: ignore
+            self.type_decorator.process_bind_param("2026-05-02T12:00:00", self.dialect)  # type: ignore
 
     def test_hostile_input_corrupted_database_string(self) -> None:
         """Hostile Input: Reading invalid strings from the DB raises ValueError."""
@@ -63,10 +62,12 @@ class TestCQRSQueueManager:
     async def test_happy_path_worker_processes_item(self) -> None:
         """Happy Path: Queue processes a callback exactly once."""
         from specweaver.core.config.database import CQRSQueueManager
+
         manager = CQRSQueueManager(maxsize=10)
         await manager.start()
 
         executed = False
+
         async def dummy_callback() -> None:
             nonlocal executed
             executed = True
@@ -81,16 +82,19 @@ class TestCQRSQueueManager:
     async def test_boundary_maxsize_enforced(self) -> None:
         """Boundary: Queue enforces maxsize."""
         from specweaver.core.config.database import CQRSQueueManager
+
         manager = CQRSQueueManager(maxsize=1)
 
         # We don't start the worker, so the queue just fills up
-        async def dummy() -> None: pass
+        async def dummy() -> None:
+            pass
 
-        await manager.enqueue(dummy) # Fills the queue
+        await manager.enqueue(dummy)  # Fills the queue
 
         # The second enqueue should raise or return False immediately if we use put_nowait
         # Let's enforce that enqueue raises asyncio.QueueFull if we use a non-blocking put for fast failing
         import asyncio
+
         with pytest.raises(asyncio.QueueFull):
             manager.enqueue_nowait(dummy)
 
@@ -107,6 +111,7 @@ class TestCQRSQueueManager:
             raise sqlite3.OperationalError("Database is locked!")
 
         executed_next = False
+
         async def safe_callback() -> None:
             nonlocal executed_next
             executed_next = True
@@ -149,6 +154,7 @@ class TestSessionScope:
     async def test_graceful_degradation_rollback_on_exception(self) -> None:
         """Graceful Degradation: Exception inside scope rolls back transaction."""
         from specweaver.core.config.database import create_async_engine, session_scope
+
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 
         # We simulate a rollback by throwing an exception
@@ -169,6 +175,7 @@ class TestSessionScope:
 
         import specweaver.core.config.database as db_module
         from specweaver.core.config.database import create_async_engine, session_scope
+
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 
         # Reset the global semaphore to guarantee it initializes with max_connections=2
@@ -185,7 +192,7 @@ class TestSessionScope:
             async with session_scope(engine, max_connections=2):
                 active_sessions += 1
                 max_observed = max(max_observed, active_sessions)
-                await asyncio.sleep(0.01) # Hold the lock
+                await asyncio.sleep(0.01)  # Hold the lock
                 active_sessions -= 1
 
         # Spawn 10 concurrent workers
@@ -194,5 +201,3 @@ class TestSessionScope:
 
         # At most 2 sessions should have been active at the same time
         assert max_observed == 2
-
-

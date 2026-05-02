@@ -29,7 +29,9 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch):
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".sw-test" / "specweaver.db"))
     db = Database(tmp_path / ".sw-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     return db

@@ -4,7 +4,6 @@
 """CLI commands for project management: init, use, projects, remove, update, scan."""
 
 from __future__ import annotations
-from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 from pathlib import Path
@@ -15,6 +14,7 @@ from rich.table import Table
 
 from specweaver.assurance.graph.topology import TopologyGraph
 from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 from specweaver.workspace.project.discovery import resolve_project_path
 from specweaver.workspace.project.scaffold import scaffold_project
 from specweaver.workspace.project.tach_sync import sync_tach_toml
@@ -290,6 +290,7 @@ def scan() -> None:
     _core.console.print("\n[bold]Synchronizing Tach Architecture Matrix...[/bold]")
     try:
         from specweaver.graph.topology.engine import TopologyEngine
+
         engine = TopologyEngine()
         graph = TopologyGraph.from_project(project_path, engine)
         sync_result = sync_tach_toml(graph, project_path)

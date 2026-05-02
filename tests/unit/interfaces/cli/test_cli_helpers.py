@@ -17,13 +17,19 @@ import typer
 
 from specweaver.assurance.validation.models import RuleResult, Status
 
+
 @pytest.fixture(autouse=True)
 def _mock_db_fixture(tmp_path, monkeypatch):
     from specweaver.core.config.database import Database
+
     with patch("specweaver.core.config.database.Database._ensure_schema"):
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(tmp_path / ".sw-test" / "specweaver.db"))
         db = Database(tmp_path / ".sw-test" / "specweaver.db")
         monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
         return db
+
 
 from unittest.mock import AsyncMock
 
@@ -194,10 +200,14 @@ class TestLoadConstitutionContent:
 class TestLoadStandardsContent:
     """Test _load_standards_content."""
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_no_active_project_returns_none(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_no_active_project_returns_none(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """No active project → None."""
         from specweaver.interfaces.cli._helpers import _load_standards_content
 
@@ -206,10 +216,14 @@ class TestLoadStandardsContent:
         result = _load_standards_content(MagicMock())
         assert result is None
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_no_standards_returns_none(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_no_standards_returns_none(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """Active project but no standards → None."""
         from specweaver.interfaces.cli._helpers import _load_standards_content
 
@@ -219,10 +233,14 @@ class TestLoadStandardsContent:
         result = _load_standards_content(MagicMock())
         assert result is None
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_formats_standards_correctly(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_formats_standards_correctly(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """Standards present → formatted string with categories."""
         from specweaver.interfaces.cli._helpers import _load_standards_content
 
@@ -252,10 +270,14 @@ class TestLoadStandardsContent:
 class TestLoadStandardsContentScopeAware:
     """Scope-aware loading, token cap, and format tests."""
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_target_path_resolves_scope(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_target_path_resolves_scope(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """target_path → _resolve_scope identifies correct scope."""
         from pathlib import Path as _Path
 
@@ -280,10 +302,14 @@ class TestLoadStandardsContentScopeAware:
         assert result is not None
         assert "python/naming" in result
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_target_path_loads_scope_and_root(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_target_path_loads_scope_and_root(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """target_path with non-root scope → loads scope + root standards."""
         from pathlib import Path as _Path
 
@@ -324,10 +350,14 @@ class TestLoadStandardsContentScopeAware:
         assert "naming" in result
         assert "docstrings" in result
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_target_path_root_scope_no_root_duplicate(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_target_path_root_scope_no_root_duplicate(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """target_path resolving to '.' → root standards not loaded twice."""
         from pathlib import Path as _Path
 
@@ -353,10 +383,14 @@ class TestLoadStandardsContentScopeAware:
         # Should contain naming exactly once
         assert result.count("naming") == 1
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_token_cap_truncates_long_output(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_token_cap_truncates_long_output(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """Output exceeding max_chars is truncated."""
         from specweaver.interfaces.cli._helpers import _load_standards_content
 
@@ -380,10 +414,14 @@ class TestLoadStandardsContentScopeAware:
         assert len(result) < 250
         assert "[... truncated]" in result
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_token_cap_untouched_below_limit(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_token_cap_untouched_below_limit(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """Output below max_chars is NOT truncated."""
         from specweaver.interfaces.cli._helpers import _load_standards_content
 
@@ -402,10 +440,14 @@ class TestLoadStandardsContentScopeAware:
         assert result is not None
         assert "[... truncated]" not in result
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_token_cap_scope_specific_prioritized(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_token_cap_scope_specific_prioritized(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """Scope-specific standards appear before root in output."""
         from pathlib import Path as _Path
 
@@ -448,10 +490,14 @@ class TestLoadStandardsContentScopeAware:
         root_idx = result.index("root_standard")
         assert scope_idx < root_idx
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_target_path_none_backward_compatible(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_target_path_none_backward_compatible(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """target_path=None → all standards loaded (backward compat)."""
         from specweaver.interfaces.cli._helpers import _load_standards_content
 
@@ -471,10 +517,14 @@ class TestLoadStandardsContentScopeAware:
         assert result is not None
         assert "naming" in result
 
-    @patch("specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock)
+    @patch(
+        "specweaver.workspace.store.WorkspaceRepository.get_active_project", new_callable=AsyncMock
+    )
     @patch("specweaver.workspace.store.WorkspaceRepository.get_standards", new_callable=AsyncMock)
     @patch("specweaver.workspace.store.WorkspaceRepository.list_scopes", new_callable=AsyncMock)
-    def test_format_includes_scope_prefix(self, mock_list_scopes, mock_get_standards, mock_get_active_project) -> None:
+    def test_format_includes_scope_prefix(
+        self, mock_list_scopes, mock_get_standards, mock_get_active_project
+    ) -> None:
         """Output format includes [scope/language/category] prefix."""
         from specweaver.interfaces.cli._helpers import _load_standards_content
 

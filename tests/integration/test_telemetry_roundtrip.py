@@ -16,8 +16,25 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from tests.fixtures.db_utils import register_test_project, set_test_active_project
+
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+def _make_settings():
+    from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+
+    return SpecWeaverSettings(
+        llm=LLMSettings(
+            provider="gemini",
+            model="gemini-2.5-pro",
+            temperature=0.7,
+            max_output_tokens=8192,
+            response_format="text",
+            api_key="fake",
+        )
+    )
 
 
 class TestTelemetryRoundtrip:
@@ -29,10 +46,12 @@ class TestTelemetryRoundtrip:
         from specweaver.core.config.database import Database
         from specweaver.infrastructure.llm.collector import TelemetryCollector
         from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TokenUsage
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
 
         # Set up a real DB
+        bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
         db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-        db.register_project("testproj", ".")
+        register_test_project(db, "testproj", ".")
 
         # Create a collector wrapping a mock adapter
         mock_adapter = MagicMock()
@@ -65,7 +84,12 @@ class TestTelemetryRoundtrip:
         assert len(collector.records) == 0  # Records cleared after flush
 
         # Verify records are in the DB
-        rows = db.get_usage_summary(project="testproj")
+
+        from specweaver.infrastructure.llm.store import LlmRepository
+
+        async with db.async_session_scope() as session:
+            rows = await LlmRepository(session).get_usage_summary("testproj")
+
         assert len(rows) == 1
         assert rows[0]["total_tokens"] == 150
         assert rows[0]["call_count"] == 1
@@ -83,16 +107,18 @@ class TestTelemetryRoundtrip:
         """create_llm_adapter wraps in TelemetryCollector when telemetry_project is set."""
         from specweaver.core.config.database import Database
         from specweaver.infrastructure.llm.collector import TelemetryCollector
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+        bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
         db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-        db.register_project("testproj", ".")
-        db.set_active_project("testproj")
+        register_test_project(db, "testproj", ".")
+        set_test_active_project(db, "testproj")
 
         with patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
             from specweaver.infrastructure.llm.factory import create_llm_adapter
 
             _settings, adapter, _config = create_llm_adapter(
-                db,
+                _make_settings(),
                 telemetry_project="testproj",
             )
 
@@ -103,16 +129,18 @@ class TestTelemetryRoundtrip:
         """create_llm_adapter returns plain adapter when telemetry_project is None."""
         from specweaver.core.config.database import Database
         from specweaver.infrastructure.llm.collector import TelemetryCollector
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+        bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
         db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-        db.register_project("testproj", ".")
-        db.set_active_project("testproj")
+        register_test_project(db, "testproj", ".")
+        set_test_active_project(db, "testproj")
 
         with patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
             from specweaver.infrastructure.llm.factory import create_llm_adapter
 
             _settings, adapter, _config = create_llm_adapter(
-                db,
+                _make_settings(),
                 telemetry_project=None,
             )
 

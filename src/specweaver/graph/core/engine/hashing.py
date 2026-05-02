@@ -32,5 +32,5 @@ class SemanticHasher:
         # Hashing the content would cause the node ID to change on every keystroke,
         # which would orphan LLM feedback metadata attached to the node ID.
         key = f"NODE:{norm_path}:{fully_qualified_name}"
-        raw_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
+        raw_hash = hashlib.sha256(key.encode("utf-8")).hexdigest()
         return f"{self.id_prefix}{raw_hash}"

@@ -4,7 +4,6 @@
 """CLI commands for validation: check, list-rules."""
 
 from __future__ import annotations
-from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 from pathlib import Path
@@ -12,7 +11,7 @@ from pathlib import Path
 import typer
 
 from specweaver.interfaces.cli import _core
-from specweaver.interfaces.cli._helpers import _display_results, _print_summary
+from specweaver.interfaces.cli._helpers import _display_results, _print_summary, _run_workspace_op
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +27,10 @@ def _resolve_pipeline_name(
     :func:`specweaver.assurance.validation.pipeline_loader.resolve_pipeline_name`.
     Translates :class:`ValueError` into ``typer.Exit(1)``.
     """
+    import contextlib
+
     from specweaver.assurance.validation.pipeline_loader import resolve_pipeline_name
 
-    import contextlib
-    
     active_profile = None
     if active_project:
         with contextlib.suppress(ValueError, Exception):

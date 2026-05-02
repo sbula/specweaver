@@ -11,9 +11,10 @@ def test_graph_node_normalize_file_id():
         semantic_hash="hash123",
         kind=NodeKind.FILE,
         name="test",
-        file_id="C:\\Windows\\Path\\File.PY"
+        file_id="C:\\Windows\\Path\\File.PY",
     )
     assert node.file_id == "c:/windows/path/file.py"
+
 
 def test_graph_node_metadata_limit():
     """Test RT-25: Metadata 2KB limit enforcement."""
@@ -23,7 +24,7 @@ def test_graph_node_metadata_limit():
         kind=NodeKind.PROCEDURE,
         name="test_func",
         file_id="test.py",
-        metadata={"key": "small value"}
+        metadata={"key": "small value"},
     )
     assert node.metadata["key"] == "small value"
 
@@ -35,17 +36,14 @@ def test_graph_node_metadata_limit():
             kind=NodeKind.PROCEDURE,
             name="test_func",
             file_id="test.py",
-            metadata={"key": large_payload}
+            metadata={"key": large_payload},
         )
     assert "exceeds 2KB limit" in str(exc.value)
 
+
 def test_graph_edge_creation():
     """Test basic GraphEdge initialization."""
-    edge = GraphEdge(
-        source_hash="src123",
-        target_hash="tgt456",
-        kind=EdgeKind.CALLS
-    )
+    edge = GraphEdge(source_hash="src123", target_hash="tgt456", kind=EdgeKind.CALLS)
     assert edge.source_hash == "src123"
     assert edge.target_hash == "tgt456"
     assert edge.kind == EdgeKind.CALLS

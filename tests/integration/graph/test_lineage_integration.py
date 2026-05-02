@@ -9,9 +9,11 @@ def repo(tmp_path):
     db_path = tmp_path / "lineage_test.db"
     return LineageRepository(str(db_path))
 
+
 @pytest.fixture
 def engine(repo):
     return LineageEngine(repo)
+
 
 def test_engine_builds_nested_tree_with_real_sqlite(engine, repo):
     # Setup happy path nested tree
@@ -36,6 +38,7 @@ def test_engine_builds_nested_tree_with_real_sqlite(engine, repo):
     assert len(c1["children"]) == 1
     assert c1["children"][0]["id"] == "leaf-1"
 
+
 def test_engine_handles_circular_reference(engine, repo):
     # Setup boundary edge case: circular reference
     repo.log_artifact_event("node-a", "node-b", "run-1", "MODIFIED", "model")
@@ -54,6 +57,7 @@ def test_engine_handles_circular_reference(engine, repo):
     assert a_again["circular"] is True
     assert len(a_again["children"]) == 0
 
+
 def test_engine_handles_missing_uuid_gracefully(engine, repo):
     # Graceful degradation
     root = engine.find_root("unknown-uuid")
@@ -69,6 +73,7 @@ def test_engine_handles_broken_repository(engine, repo, monkeypatch):
     # Hostile/Wrong Input: repository connection fails
     def mock_broken(*args, **kwargs):
         import sqlite3
+
         raise sqlite3.OperationalError("disk I/O error")
 
     monkeypatch.setattr(repo, "get_artifact_history", mock_broken)

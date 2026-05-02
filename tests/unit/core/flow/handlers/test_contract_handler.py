@@ -83,8 +83,6 @@ class TestContractHandlerStaticMethods:
         assert "greeting" in docstrings["greet"].lower()
 
 
-
-
 # ── execute() integration tests ──────────────────────────────────────────
 
 

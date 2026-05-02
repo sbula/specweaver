@@ -7,24 +7,29 @@ constitution max size, and domain profiles."""
 from __future__ import annotations
 
 import logging
-
 from typing import Any
+
 import anyio
 import typer
 from rich.table import Table
 
 from specweaver.infrastructure.llm.store import LlmRepository
-from specweaver.workspace.store import WorkspaceRepository
 from specweaver.interfaces.cli import _core
+from specweaver.workspace.store import WorkspaceRepository
+
 
 def _run_workspace_op(method_name: str, *args: Any) -> Any:
     db = _core.get_db()
+
     async def _action() -> Any:
         async with db.async_session_scope() as session:
             repo = WorkspaceRepository(session)
             method = getattr(repo, method_name)
             return await method(*args)
+
     return anyio.run(_action)
+
+
 from specweaver.interfaces.cli.config_routing import routing_app
 
 logger = logging.getLogger(__name__)
@@ -44,7 +49,7 @@ _core.app.add_typer(config_app, name="config")
 def config_list() -> None:
     """List all validation rules currently applied via the active pipeline."""
     name = _core._require_active_project()
-    
+
     profile_name = _run_workspace_op("get_domain_profile", name)
     if profile_name:
         _core.console.print(

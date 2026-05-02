@@ -17,6 +17,9 @@ from specweaver.interfaces.api.event_bridge import EventBridge
 @pytest.fixture()
 def _db(tmp_path):
     """Creates a temp database."""
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "test.db"))
     return Database(db_path=tmp_path / "test.db")
 
 

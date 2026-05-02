@@ -6,86 +6,64 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
+from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
+from specweaver.infrastructure.llm.collector import TelemetryCollector
+from specweaver.infrastructure.llm.factory import create_llm_adapter
 from specweaver.infrastructure.llm.telemetry import CostEntry
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 @pytest.fixture()
-def db(tmp_path: Path) -> Any:
-    """Fresh database with schema v9."""
-    from specweaver.core.config.database import Database
-
-    return Database(tmp_path / ".specweaver" / "specweaver.db")
+def base_settings() -> SpecWeaverSettings:
+    return SpecWeaverSettings(
+        llm=LLMSettings(provider="gemini", model="gemini-3-flash-preview", temperature=0.7)
+    )
 
 
 class TestFactoryTelemetryWrapping:
     """Factory telemetry_project parameter behavior (stories 2-5)."""
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_no_telemetry_returns_raw_adapter(self, db: Any) -> None:
+    def test_no_telemetry_returns_raw_adapter(self, base_settings: SpecWeaverSettings) -> None:
         """telemetry_project=None → returns raw GeminiAdapter, not wrapped."""
-        from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-        db.register_project("test-proj", "/tmp/test")
-        db.set_active_project("test-proj")
-
-        _settings, adapter, _config = create_llm_adapter(db, telemetry_project=None)
-        from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+        _settings, adapter, _config = create_llm_adapter(base_settings, telemetry_project=None)
 
         assert isinstance(adapter, AsyncRateLimiterAdapter)
         assert isinstance(adapter._wrapped, GeminiAdapter)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_telemetry_project_wraps_in_collector(self, db: Any) -> None:
+    def test_telemetry_project_wraps_in_collector(self, base_settings: SpecWeaverSettings) -> None:
         """telemetry_project set → adapter is wrapped in TelemetryCollector."""
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-        db.register_project("test-proj", "/tmp/test")
-        db.set_active_project("test-proj")
-
         _settings, adapter, _config = create_llm_adapter(
-            db,
+            base_settings,
             telemetry_project="test-proj",
         )
         assert isinstance(adapter, TelemetryCollector)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_empty_string_telemetry_project_no_wrap(self, db: Any) -> None:
+    def test_empty_string_telemetry_project_no_wrap(
+        self, base_settings: SpecWeaverSettings
+    ) -> None:
         """telemetry_project="" (falsy) → no wrapping."""
-        from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-        db.register_project("test-proj", "/tmp/test")
-        db.set_active_project("test-proj")
-
-        _settings, adapter, _config = create_llm_adapter(db, telemetry_project="")
-        from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
+        _settings, adapter, _config = create_llm_adapter(base_settings, telemetry_project="")
 
         assert isinstance(adapter, AsyncRateLimiterAdapter)
         assert isinstance(adapter._wrapped, GeminiAdapter)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_cost_overrides_passed_to_collector(self, db: Any) -> None:
-        """DB cost overrides are loaded and passed to TelemetryCollector."""
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-        db.register_project("test-proj", "/tmp/test")
-        db.set_active_project("test-proj")
-        db.set_cost_override("gemini-3-flash-preview", 99.0, 199.0)
+    def test_cost_overrides_passed_to_collector(self, base_settings: SpecWeaverSettings) -> None:
+        """Cost overrides are passed to TelemetryCollector."""
+        overrides = {"gemini-3-flash-preview": (99.0, 199.0)}
 
         _settings, adapter, _config = create_llm_adapter(
-            db,
+            base_settings,
             telemetry_project="test-proj",
+            cost_overrides=overrides,
         )
         assert isinstance(adapter, TelemetryCollector)
         assert adapter._cost_overrides is not None
@@ -94,26 +72,13 @@ class TestFactoryTelemetryWrapping:
         assert entry == CostEntry(99.0, 199.0)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"})
-    def test_cost_override_load_failure_fallback(self, db: Any) -> None:
-        """DB error loading cost overrides → collector created with None."""
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-        db.register_project("test-proj", "/tmp/test")
-        db.set_active_project("test-proj")
-
-        # Simulate DB failure on get_cost_overrides
-        original = db.get_cost_overrides
-        db.get_cost_overrides = MagicMock(side_effect=Exception("DB locked"))
-
+    def test_cost_override_load_failure_fallback(self, base_settings: SpecWeaverSettings) -> None:
+        """No cost overrides → collector created with None."""
         _settings, adapter, _config = create_llm_adapter(
-            db,
-            telemetry_project="test-proj",
+            base_settings, telemetry_project="test-proj", cost_overrides=None
         )
         assert isinstance(adapter, TelemetryCollector)
         assert adapter._cost_overrides is None
-
-        db.get_cost_overrides = original
 
 
 class TestFactoryProviderCapabilities:
@@ -129,43 +94,20 @@ class TestFactoryProviderCapabilities:
         ],
     )
     def test_factory_loads_specific_provider(
-        self, db: Any, provider: str, adapter_cls_name: str, env_key: str
+        self, provider: str, adapter_cls_name: str, env_key: str
     ) -> None:
-        """Factory creates correct adapter based on DB provider setting."""
+        """Factory creates correct adapter based on provider setting."""
         from specweaver.infrastructure.llm.adapters.registry import get_adapter_class
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
 
-        db.register_project("test-proj", "/tmp/test")
-        db.set_active_project("test-proj")
-
-        # Override the active setting for the provider
-        profile_id = db.create_llm_profile("test-profile", provider=provider, model="some-model")
-        db.link_project_profile("test-proj", "draft", profile_id)
+        settings = SpecWeaverSettings(
+            llm=LLMSettings(provider=provider, model="some-model", temperature=0.7)
+        )
 
         with patch.dict(os.environ, {env_key: "dummy-key"}):
-            _settings, adapter, _config = create_llm_adapter(db, telemetry_project=None)
+            _settings, adapter, _config = create_llm_adapter(settings, telemetry_project=None)
 
         expected_cls = get_adapter_class(provider)
-        from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
 
         assert isinstance(adapter, AsyncRateLimiterAdapter)
         assert isinstance(adapter._wrapped, expected_cls)
         assert type(adapter._wrapped).__name__ == adapter_cls_name
-
-    def test_factory_fallback_on_missing_project(self, db: Any) -> None:
-        """Factory defaults cleanly to gemini if no active project exists."""
-        from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
-        from specweaver.infrastructure.llm.factory import create_llm_adapter
-
-        # Ensure no active project
-        assert db.get_active_project() is None
-
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "fallback-key"}):
-            settings, adapter, config = create_llm_adapter(db, telemetry_project=None)
-
-        from specweaver.infrastructure.llm.adapters._rate_limit import AsyncRateLimiterAdapter
-
-        assert isinstance(adapter, AsyncRateLimiterAdapter)
-        assert isinstance(adapter._wrapped, GeminiAdapter)
-        assert settings.llm.provider == "gemini"
-        assert config.model == "gemini-3-flash-preview"

@@ -10,6 +10,7 @@ class GraphBuilder:
     Application layer orchestrator for the Knowledge Graph.
     Coordinates the pure-logic engine with file system events and boundaries.
     """
+
     def __init__(self, engine: Any, parser: Any = None, id_prefix: str = "") -> None:
         """
         Initializes the GraphBuilder.
@@ -73,17 +74,24 @@ class GraphBuilder:
             ast_data = self.parser(str(path))
             self.ingest_ast(filepath, ast_data)
 
-    def _get_existing_elements(self, filepath: str, norm_path: str, file_hash: str) -> tuple[set[str], set[tuple[str, str]]]:
+    def _get_existing_elements(
+        self, filepath: str, norm_path: str, file_hash: str
+    ) -> tuple[set[str], set[tuple[str, str]]]:
         existing_hashes: set[str] = set()
         existing_edge_keys: set[tuple[str, str]] = set()
 
         with self.engine._lock:
             for int_id, data in self.engine._graph.nodes(data=True):
-                if data.get("file_id") in (filepath, norm_path) and (semantic_hash := self.engine._int_to_hash.get(int_id)):
+                if data.get("file_id") in (filepath, norm_path) and (
+                    semantic_hash := self.engine._int_to_hash.get(int_id)
+                ):
                     existing_hashes.add(semantic_hash)
 
             for u, v, _data in self.engine._graph.edges(data=True):
-                if ((source_hash := self.engine._int_to_hash.get(u)) in existing_hashes or source_hash == file_hash) and (target_hash := self.engine._int_to_hash.get(v)):
+                if (
+                    (source_hash := self.engine._int_to_hash.get(u)) in existing_hashes
+                    or source_hash == file_hash
+                ) and (target_hash := self.engine._int_to_hash.get(v)):
                     existing_edge_keys.add((source_hash, target_hash))
 
         return existing_hashes, existing_edge_keys

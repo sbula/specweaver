@@ -25,6 +25,7 @@ class TestLineageEngine:
 
     def test_find_root_walks_up(self, engine, mock_repo):
         """Walks up the parent chain."""
+
         def mock_history(uid):
             if uid == "child":
                 return [{"parent_id": "parent"}]
@@ -39,6 +40,7 @@ class TestLineageEngine:
 
     def test_find_root_circular_reference(self, engine, mock_repo):
         """Breaks out of circular references gracefully."""
+
         def mock_history(uid):
             if uid == "node-a":
                 return [{"parent_id": "node-b"}]
@@ -86,6 +88,7 @@ class TestLineageEngine:
 
     def test_build_tree_circular_reference(self, engine, mock_repo):
         """Aborts recursive rendering on circular graph links to prevent stack overflow."""
+
         def mock_history(uid):
             return [{"event": "manual"}]
 

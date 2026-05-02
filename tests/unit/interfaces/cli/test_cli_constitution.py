@@ -25,7 +25,9 @@ runner = CliRunner()
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     return db
@@ -166,7 +168,9 @@ class TestConstitutionBootstrap:
 
     def _seed_standards(self) -> None:
         """Insert sample standards into the DB."""
-        _run_workspace_op(self.db, "save_standard", 
+        _run_workspace_op(
+            self.db,
+            "save_standard",
             project_name="my-proj",
             scope=".",
             language="python",
@@ -175,7 +179,9 @@ class TestConstitutionBootstrap:
             confidence=0.95,
             confirmed_by="hitl",
         )
-        _run_workspace_op(self.db, "save_standard", 
+        _run_workspace_op(
+            self.db,
+            "save_standard",
             project_name="my-proj",
             scope=".",
             language="python",
@@ -270,10 +276,13 @@ class TestConstitutionBootstrap:
 
 def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):
     import anyio
+
     from specweaver.workspace.store import WorkspaceRepository
+
     async def _action():
         async with db_instance.async_session_scope() as session:
             repo = WorkspaceRepository(session)
             method = getattr(repo, method_name)
             return await method(*args, **kwargs)
+
     return anyio.run(_action)

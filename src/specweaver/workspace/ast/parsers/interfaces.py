@@ -128,8 +128,17 @@ class CodeStructureInterface(ABC):
         Default is all standard operations. Can be overridden by specific languages to prune capabilities.
         """
         return [
-            "skeleton", "symbol", "symbol_body", "list", "replace",
-            "replace_body", "add", "delete", "traceability", "imports", "framework_markers"
+            "skeleton",
+            "symbol",
+            "symbol_body",
+            "list",
+            "replace",
+            "replace_body",
+            "add",
+            "delete",
+            "traceability",
+            "imports",
+            "framework_markers",
         ]
 
     def supported_parameters(self) -> list[str]:

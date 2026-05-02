@@ -1,4 +1,3 @@
-
 from sqlalchemy import Integer, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
@@ -11,6 +10,7 @@ class Base(DeclarativeBase):
     def __tablename__(cls) -> str:  # noqa: N805
         return cls.__name__.lower()
 
+
 class ArtifactEvent(Base):
     __tablename__ = "artifact_events"
 
@@ -21,6 +21,7 @@ class ArtifactEvent(Base):
     event_type: Mapped[str] = mapped_column(String, nullable=False)
     timestamp: Mapped[str] = mapped_column(StrictISODateTime, nullable=False)
     model_id: Mapped[str] = mapped_column(String, default="unknown", nullable=False)
+
 
 class FlowRepository:
     """Repository for artifact events and flow tracking."""
@@ -62,7 +63,11 @@ class FlowRepository:
         """Get the full event history for an artifact, sorted oldest first."""
         from sqlalchemy import select
 
-        stmt = select(ArtifactEvent).where(ArtifactEvent.artifact_id == artifact_id).order_by(ArtifactEvent.id.asc())
+        stmt = (
+            select(ArtifactEvent)
+            .where(ArtifactEvent.artifact_id == artifact_id)
+            .order_by(ArtifactEvent.id.asc())
+        )
         result = await self.session.execute(stmt)
         events = result.scalars().all()
         return [
@@ -73,7 +78,9 @@ class FlowRepository:
                 "run_id": e.run_id,
                 "event_type": e.event_type,
                 "model_id": e.model_id,
-                "timestamp": e.timestamp.isoformat() if hasattr(e.timestamp, 'isoformat') else e.timestamp,
+                "timestamp": e.timestamp.isoformat()
+                if hasattr(e.timestamp, "isoformat")
+                else e.timestamp,
             }
             for e in events
         ]
@@ -82,7 +89,11 @@ class FlowRepository:
         """Get all artifact events that list the given parent_id."""
         from sqlalchemy import select
 
-        stmt = select(ArtifactEvent).where(ArtifactEvent.parent_id == parent_id).order_by(ArtifactEvent.id.asc())
+        stmt = (
+            select(ArtifactEvent)
+            .where(ArtifactEvent.parent_id == parent_id)
+            .order_by(ArtifactEvent.id.asc())
+        )
         result = await self.session.execute(stmt)
         events = result.scalars().all()
         return [
@@ -93,7 +104,9 @@ class FlowRepository:
                 "run_id": e.run_id,
                 "event_type": e.event_type,
                 "model_id": e.model_id,
-                "timestamp": e.timestamp.isoformat() if hasattr(e.timestamp, 'isoformat') else e.timestamp,
+                "timestamp": e.timestamp.isoformat()
+                if hasattr(e.timestamp, "isoformat")
+                else e.timestamp,
             }
             for e in events
         ]

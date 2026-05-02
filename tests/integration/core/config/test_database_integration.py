@@ -18,11 +18,13 @@ from specweaver.core.config.database import (
 class Base(DeclarativeBase):
     pass
 
+
 class DummyLog(Base):
     __tablename__ = "dummy_logs"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     message: Mapped[str] = mapped_column(sa.String)
     created_at: Mapped[datetime] = mapped_column(StrictISODateTime)
+
 
 @pytest.fixture
 async def engine(tmp_path: Path) -> sa.ext.asyncio.AsyncEngine:
@@ -35,9 +37,10 @@ async def engine(tmp_path: Path) -> sa.ext.asyncio.AsyncEngine:
 
 
 class TestDatabaseIntegration:
-
     @pytest.mark.asyncio
-    async def test_story_3_concurrent_reads_happy_path(self, engine: sa.ext.asyncio.AsyncEngine) -> None:
+    async def test_story_3_concurrent_reads_happy_path(
+        self, engine: sa.ext.asyncio.AsyncEngine
+    ) -> None:
         """Integration Story 3: 500 concurrent queries don't lock database due to WAL + Semaphore."""
         # Insert a dummy record
         async with session_scope(engine) as session:
@@ -57,9 +60,12 @@ class TestDatabaseIntegration:
         assert all(r == 1 for r in results)
 
     @pytest.mark.asyncio
-    async def test_story_4_file_descriptor_throttling(self, engine: sa.ext.asyncio.AsyncEngine) -> None:
+    async def test_story_4_file_descriptor_throttling(
+        self, engine: sa.ext.asyncio.AsyncEngine
+    ) -> None:
         """Integration Story 4: Semaphore throttles connections without OS failure."""
         import specweaver.core.config.database
+
         specweaver.core.config.database._db_semaphore = None  # Reset global semaphore
 
         active_connections = 0
@@ -82,7 +88,9 @@ class TestDatabaseIntegration:
         assert max_connections == 5
 
     @pytest.mark.asyncio
-    async def test_story_5_dlx_survival_integration(self, engine: sa.ext.asyncio.AsyncEngine, tmp_path: Path) -> None:
+    async def test_story_5_dlx_survival_integration(
+        self, engine: sa.ext.asyncio.AsyncEngine, tmp_path: Path
+    ) -> None:
         """Integration Story 5: DLX traps invalid SQL and continues processing queue."""
         dlx_file = tmp_path / ".dlx.log"
         queue = CQRSQueueManager(maxsize=10, dlx_path=dlx_file)
@@ -118,24 +126,33 @@ class TestDatabaseIntegration:
         assert "no such table: non_existent_table" in log_content
 
     @pytest.mark.asyncio
-    async def test_story_6_legacy_db_string_parsing(self, engine: sa.ext.asyncio.AsyncEngine) -> None:
+    async def test_story_6_legacy_db_string_parsing(
+        self, engine: sa.ext.asyncio.AsyncEngine
+    ) -> None:
         """Integration Story 6: legacy/corrupted SQLite dates throw clean errors via StrictISODateTime."""
         # Force a corrupt legacy string into the DB directly using raw SQL
         async with engine.begin() as conn:
-            await conn.execute(sa.text("INSERT INTO dummy_logs (message, created_at) VALUES ('legacy', 'not-a-date-format')"))
+            await conn.execute(
+                sa.text(
+                    "INSERT INTO dummy_logs (message, created_at) VALUES ('legacy', 'not-a-date-format')"
+                )
+            )
 
         async with session_scope(engine) as session:
             with pytest.raises(ValueError, match="Invalid isoformat string"):
                 # Attempt to map it back via the ORM
-                result = await session.execute(sa.select(DummyLog).where(DummyLog.message == "legacy"))
+                result = await session.execute(
+                    sa.select(DummyLog).where(DummyLog.message == "legacy")
+                )
                 result.scalars().first()
 
     @pytest.mark.asyncio
     async def test_story_7_max_queue_size_spikes(self, tmp_path: Path) -> None:
         """Integration Story 7: Spike of 1000 items is throttled and flushed cleanly."""
-        queue = CQRSQueueManager(maxsize=100) # Use 100 to speed up test and prove throttle
+        queue = CQRSQueueManager(maxsize=100)  # Use 100 to speed up test and prove throttle
 
         success_count = 0
+
         async def fast_write() -> None:
             nonlocal success_count
             success_count += 1

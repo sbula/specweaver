@@ -23,8 +23,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 def _load_toml_standards(root_path: str | None) -> StandardsSettings:
     import tomllib
+
     standards = StandardsSettings()
     if root_path:
         toml_file = Path(root_path) / "specweaver.toml"
@@ -39,7 +41,10 @@ def _load_toml_standards(root_path: str | None) -> StandardsSettings:
                 logger.exception("Failed to parse specweaver.toml at %s", toml_file)
     return standards
 
-def load_settings(db: Database, project_name: str, *, llm_role: str = "review") -> SpecWeaverSettings:
+
+def load_settings(
+    db: Database, project_name: str, *, llm_role: str = "review"
+) -> SpecWeaverSettings:
     logger.debug("load_settings called for project=%s, role=%s", project_name, llm_role)
 
     async def _get_data() -> tuple[dict[str, object] | None, dict[str, object] | None, str | None]:
@@ -53,7 +58,7 @@ def load_settings(db: Database, project_name: str, *, llm_role: str = "review") 
             p = await repo.get_project_profile(project_name, llm_role)
             if not p:
                 p = await repo.get_llm_profile_by_name("system-default")
-            
+
             if p:
                 profile_dict = {
                     "model": p.model,
@@ -64,18 +69,35 @@ def load_settings(db: Database, project_name: str, *, llm_role: str = "review") 
                 }
             else:
                 profile_dict = None
-                
+
             return proj, profile_dict, stitch_mode
 
-    proj, profile, stitch_mode = anyio.run(_get_data)
-    
+    def _sync_or_async(coro):
+        import asyncio
+
+        import nest_asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            nest_asyncio.apply(loop)
+            return loop.run_until_complete(coro)
+        return anyio.run(lambda: coro)
+
+    proj, profile, stitch_mode = _sync_or_async(_get_data())
+
     if not proj:
         logger.error("Project '%s' not found in database", project_name)
         msg = f"Project '{project_name}' not found"
         raise ValueError(msg)
 
     if not profile:
-        logger.error("System default profile not found; cannot load settings for '%s'", project_name)
+        logger.error(
+            "System default profile not found; cannot load settings for '%s'", project_name
+        )
         msg = f"System default profile not found in database. Cannot load settings for '{project_name}'."
         raise ValueError(msg)
 
@@ -105,6 +127,7 @@ def load_settings(db: Database, project_name: str, *, llm_role: str = "review") 
         dal_file = Path(str(root_path)) / ".specweaver" / "dal_definitions.yaml"
         if dal_file.exists():
             from ruamel.yaml import YAML
+
             yaml_parser = YAML(typ="safe")
             try:
                 dal_dict = yaml_parser.load(dal_file) or {}
@@ -116,14 +139,32 @@ def load_settings(db: Database, project_name: str, *, llm_role: str = "review") 
 
     return SpecWeaverSettings(llm=llm, stitch=stitch, dal_matrix=dal_matrix, standards=standards)
 
+
 def load_settings_for_active(db: Database, *, llm_role: str = "review") -> SpecWeaverSettings:
     logger.debug("load_settings_for_active called with role=%s", llm_role)
-    
+
     async def _get_active() -> str | None:
         async with db.async_session_scope() as session:
             return await WorkspaceRepository(session).get_active_project()
-            
-    active = anyio.run(_get_active)
+
+    def _sync_or_async(coro):
+        import asyncio
+
+        import nest_asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            nest_asyncio.apply(loop)
+            return loop.run_until_complete(coro)
+        import anyio
+
+        return anyio.run(lambda: coro)
+
+    active = _sync_or_async(_get_active())
     if not active:
         logger.error("No active project found")
         msg = "No active project. Run 'sw init <name> --path <path>' first."
@@ -131,9 +172,12 @@ def load_settings_for_active(db: Database, *, llm_role: str = "review") -> SpecW
     logger.debug("Active project resolved to '%s'", active)
     return load_settings(db, active, llm_role=llm_role)
 
+
 def migrate_legacy_config(db: Database, project_name: str, project_path: str) -> bool:
     from pathlib import Path
+
     from ruamel.yaml import YAML
+
     try:
         from ruamel.yaml import YAMLError
     except ImportError:
@@ -192,6 +236,23 @@ def migrate_legacy_config(db: Database, project_name: str, project_path: str) ->
             for role in ("review", "draft", "search"):
                 await repo.link_project_profile(project_name, role, profile_id)
 
-    anyio.run(_check_and_migrate)
+    def _sync_or_async(coro):
+        import asyncio
+
+        import nest_asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            nest_asyncio.apply(loop)
+            return loop.run_until_complete(coro)
+        import anyio
+
+        return anyio.run(lambda: coro)
+
+    _sync_or_async(_check_and_migrate())
     logger.info("Migrated legacy config for project '%s'", project_name)
     return True

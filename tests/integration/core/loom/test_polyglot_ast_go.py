@@ -49,7 +49,6 @@ func (e *Engine) Run() int {
     assert res.exports["markers"] == {}
 
 
-
 def test_polyglot_go_edge_cases(tmp_path: Path) -> None:
     go_file = tmp_path / "edge.go"
     go_file.write_text(
@@ -83,7 +82,9 @@ func (a A) RunValue() {}
     assert "B interface" not in res.exports["symbol"]
 
     new_a = "A struct { newval string }"
-    res = atom.run({"intent": "replace_symbol", "path": "edge.go", "symbol_name": "A", "new_code": new_a})
+    res = atom.run(
+        {"intent": "replace_symbol", "path": "edge.go", "symbol_name": "A", "new_code": new_a}
+    )
     assert res.status.value == "SUCCESS"
 
     # Reload file text, Atom replaced it directly

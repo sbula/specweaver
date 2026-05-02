@@ -99,8 +99,15 @@ class SqlCodeStructure(BaseTreeSitterParser):
 
     def supported_intents(self) -> list[str]:
         return [
-            "skeleton", "symbol", "symbol_body", "list", "replace",
-            "replace_body", "add", "delete", "traceability"
+            "skeleton",
+            "symbol",
+            "symbol_body",
+            "list",
+            "replace",
+            "replace_body",
+            "add",
+            "delete",
+            "traceability",
         ]
 
     def supported_parameters(self) -> list[str]:

@@ -36,6 +36,7 @@ def costs(ctx: typer.Context) -> None:
         return
 
     db = _core.get_db()
+
     async def _costs_view() -> None:
         async with db.async_session_scope() as session:
             repo = LlmRepository(session)
@@ -80,6 +81,7 @@ def costs_set(
     Example: sw costs set gpt-4o 0.0025 0.01
     """
     db = _core.get_db()
+
     async def _costs_set() -> None:
         async with db.async_session_scope() as session:
             repo = LlmRepository(session)
@@ -101,6 +103,7 @@ def costs_reset(
     Example: sw costs reset gpt-4o
     """
     db = _core.get_db()
+
     async def _costs_reset() -> None:
         async with db.async_session_scope() as session:
             repo = LlmRepository(session)

@@ -22,6 +22,7 @@ class TestStaleNodes:
     def test_stale_nodes_injected(self) -> None:
         """Passing stale_nodes correctly exposes them via the property."""
         from specweaver.graph.topology.engine import TopologyEngine
+
         engine = TopologyEngine()
         graph = TopologyGraph({}, engine, stale_nodes={"core", "api"})  # type: ignore[arg-type]
         assert graph.stale_nodes == {"core", "api"}
@@ -29,6 +30,7 @@ class TestStaleNodes:
     def test_stale_nodes_is_frozen(self) -> None:
         """The stale_nodes property should return a copy or be immutable."""
         from specweaver.graph.topology.engine import TopologyEngine
+
         engine = TopologyEngine()
         graph = TopologyGraph({}, engine, stale_nodes={"a"})  # type: ignore[arg-type]
         stale = graph.stale_nodes
@@ -41,6 +43,7 @@ class TestStaleNodes:
         # Since linear_chain creates physically mapped contexts but no cache,
         # it should default to 100% stale correctly.
         from specweaver.graph.topology.engine import TopologyEngine
+
         engine = TopologyEngine()
         graph = TopologyGraph.from_project(linear_chain, engine, auto_infer=False)
         assert graph.stale_nodes == {"a", "b", "c"}
@@ -57,6 +60,7 @@ class TestStaleNodes:
 
         # At this point, running from_project should return exactly 0 stale nodes!
         from specweaver.graph.topology.engine import TopologyEngine
+
         engine = TopologyEngine()
         graph = TopologyGraph.from_project(linear_chain, engine, auto_infer=False)
         assert graph.stale_nodes == set()
@@ -90,6 +94,7 @@ class TestStaleNodes:
         (diamond / "c" / "context.yaml").write_text("name: c\nconsumes: [d]\nlevel: mutated\n")
 
         from specweaver.graph.topology.engine import TopologyEngine
+
         engine = TopologyEngine()
         graph = TopologyGraph.from_project(diamond, engine, auto_infer=False)
         # Should flag C (self) and A (consumer of C).
@@ -117,6 +122,7 @@ class TestStaleNodes:
         # The cache-flush dilemma: verify save_cache is NOT called!
         with patch.object(DependencyHasher, "save_cache") as mock_save:
             from specweaver.graph.topology.engine import TopologyEngine
+
             engine = TopologyEngine()
             graph = TopologyGraph.from_project(linear_chain, engine, auto_infer=False)
             assert graph.stale_nodes == {"a", "b", "c"}
@@ -138,6 +144,7 @@ class TestStaleNodes:
         shutil.rmtree(diamond / "c")
 
         from specweaver.graph.topology.engine import TopologyEngine
+
         engine = TopologyEngine()
         graph = TopologyGraph.from_project(diamond, engine, auto_infer=False)
         # 'c' is gone, but 'a' still has `consumes: [b, c]`.
@@ -160,6 +167,7 @@ class TestStaleNodes:
 
         with patch.object(TopologyGraph, "_auto_infer_missing", side_effect=mock_auto_infer):
             from specweaver.graph.topology.engine import TopologyEngine
+
             engine = TopologyEngine()
             graph = TopologyGraph.from_project(tmp_path, engine, auto_infer=True)
             # The crawler should complete safely without crashing on yaml_path.parent

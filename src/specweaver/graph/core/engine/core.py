@@ -13,6 +13,7 @@ class InMemoryGraphEngine:
     Pure-logic graph engine wrapping NetworkX.
     Handles semantic hash mapping, concurrency limits, and GraphML serialization.
     """
+
     def __init__(self) -> None:
         self._graph = nx.DiGraph()
         self._lock = threading.Lock()
@@ -91,7 +92,9 @@ class InMemoryGraphEngine:
                     return nx.DiGraph()
 
                 # nx.ego_graph supports radius (depth). undirected=True searches incoming and outgoing.
-                subgraph_int = nx.ego_graph(self._graph, start_id, radius=max_depth, undirected=True)
+                subgraph_int = nx.ego_graph(
+                    self._graph, start_id, radius=max_depth, undirected=True
+                )
 
                 # Convert back to semantic hashes for the returned subgraph
                 subgraph_semantic = nx.DiGraph()

@@ -34,10 +34,15 @@ def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:
     if not dal_str and context.db:
         try:
             import anyio
+
             from specweaver.workspace.store import WorkspaceRepository
+
             async def _get_dal() -> str:
                 async with context.db.async_session_scope() as session:
-                    return await WorkspaceRepository(session).get_default_dal(context.project_path.name)
+                    return await WorkspaceRepository(session).get_default_dal(
+                        context.project_path.name
+                    )
+
             dal_str = anyio.run(_get_dal)
         except Exception:
             dal_str = None

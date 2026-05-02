@@ -47,7 +47,10 @@ def test_java_missing_closing_brackets() -> None:
     """
 
     res = _run_atom(
-        "read_symbol_body", "file.java", {"symbol_name": "MalformedClass.myTargetMethod"}, {"file.java": code}
+        "read_symbol_body",
+        "file.java",
+        {"symbol_name": "MalformedClass.myTargetMethod"},
+        {"file.java": code},
     )
 
     assert res.status.value == "SUCCESS"
@@ -117,7 +120,9 @@ def test_kotlin_symbol_not_found() -> None:
     }
     """
 
-    res = _run_atom("read_symbol_body", "file.kt", {"symbol_name": "ValidClass.GhostClass"}, {"file.kt": code})
+    res = _run_atom(
+        "read_symbol_body", "file.kt", {"symbol_name": "ValidClass.GhostClass"}, {"file.kt": code}
+    )
 
     assert res.status.value == "FAILED"
     assert "not found" in res.message
@@ -199,7 +204,10 @@ public class Target {
 }
 """
     res = _run_atom(
-        "read_symbol_body", "Target.java", {"symbol_name": "Target.transformData"}, {"Target.java": code}
+        "read_symbol_body",
+        "Target.java",
+        {"symbol_name": "Target.transformData"},
+        {"Target.java": code},
     )
     assert res.status.value == "SUCCESS"
     assert "return null;" in res.exports["body"]
@@ -230,7 +238,9 @@ export namespace GlobalAPI {
     }
 }
 """
-    res = _run_atom("read_symbol", "api.ts", {"symbol_name": "GlobalAPI.TargetInterface"}, {"api.ts": code})
+    res = _run_atom(
+        "read_symbol", "api.ts", {"symbol_name": "GlobalAPI.TargetInterface"}, {"api.ts": code}
+    )
     # Currently TS Tree-sitter might not recurse into module boundaries easily
     # We test that the failure is graceful
     if res.status.value == "FAILED":
@@ -265,7 +275,9 @@ impl Clone for Target {
     }
 }
 """
-    res = _run_atom("read_symbol_body", "target.rs", {"symbol_name": "Target.clone"}, {"target.rs": code})
+    res = _run_atom(
+        "read_symbol_body", "target.rs", {"symbol_name": "Target.clone"}, {"target.rs": code}
+    )
     assert res.status.value == "SUCCESS"
     assert "Target { val: self.val }" in res.exports["body"]
 
@@ -358,7 +370,10 @@ class TargetClass:
     res = _run_atom(
         "replace_symbol",
         "file.py",
-        {"symbol_name": "TargetClass.original_math", "new_code": "def brand_new_math(self):\n    return 100"},
+        {
+            "symbol_name": "TargetClass.original_math",
+            "new_code": "def brand_new_math(self):\n    return 100",
+        },
         fs,
     )
     assert res.status.value == "SUCCESS"
@@ -379,7 +394,10 @@ class OuterClass:
     # 1. Multi-line auto-indentation in nested scopes
     new_body = "for i in range(3):\n    print('nested ' + str(i))"
     res = _run_atom(
-        "replace_symbol_body", "file.py", {"symbol_name": "InnerClass.do_nested", "new_code": new_body}, fs
+        "replace_symbol_body",
+        "file.py",
+        {"symbol_name": "InnerClass.do_nested", "new_code": new_body},
+        fs,
     )
 
     assert res.status.value == "SUCCESS"
@@ -389,7 +407,10 @@ class OuterClass:
 
     # 2. Target not found
     res = _run_atom(
-        "replace_symbol", "file.py", {"symbol_name": "OuterClass.NonExistentMethod", "new_code": "pass"}, fs
+        "replace_symbol",
+        "file.py",
+        {"symbol_name": "OuterClass.NonExistentMethod", "new_code": "pass"},
+        fs,
     )
     assert res.status.value == "FAILED"
     assert "not found" in res.message
@@ -466,7 +487,9 @@ public class TargetClass {
     assert "}\n}" in fs["TargetClass.java"].replace(" ", "")
 
     # 3. Delete Symbol
-    res = _run_atom("delete_symbol", "TargetClass.java", {"symbol_name": "TargetClass.methodToDelete"}, fs)
+    res = _run_atom(
+        "delete_symbol", "TargetClass.java", {"symbol_name": "TargetClass.methodToDelete"}, fs
+    )
     assert res.status.value == "SUCCESS"
     assert "methodToDelete" not in fs["TargetClass.java"]
 
@@ -526,7 +549,10 @@ impl TargetClass {
     fs = {"target.rs": code}
 
     res = _run_atom(
-        "replace_symbol_body", "target.rs", {"symbol_name": "TargetClass.original_math", "new_code": "42"}, fs
+        "replace_symbol_body",
+        "target.rs",
+        {"symbol_name": "TargetClass.original_math", "new_code": "42"},
+        fs,
     )
     assert res.status.value == "SUCCESS", getattr(res, "message", "unknown error")
     assert "42" in fs["target.rs"]

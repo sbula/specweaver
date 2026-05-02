@@ -112,7 +112,10 @@ class PythonCodeStructure(BaseTreeSitterParser):
                         scope = self._get_symbol_scope(name_node)
                         if scope == target_scope:
                             parent = name_node.parent
-                            if parent and parent.type in ("function_definition", "class_definition"):
+                            if parent and parent.type in (
+                                "function_definition",
+                                "class_definition",
+                            ):
                                 if parent.parent and parent.parent.type == "decorated_definition":
                                     return parent.parent
                                 return parent

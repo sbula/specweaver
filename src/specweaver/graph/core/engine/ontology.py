@@ -6,6 +6,7 @@ class NodeKind(StrEnum):
     The Universal Ontology for Knowledge Graph Nodes.
     Represents the structural and semantic types of nodes across the enterprise graph.
     """
+
     # Macro Architecture
     SYSTEM = "SYSTEM"
     MICROSERVICE = "MICROSERVICE"
@@ -33,6 +34,7 @@ class EdgeKind(StrEnum):
     The Universal Ontology for Knowledge Graph Edges.
     Represents the semantic relationships between nodes.
     """
+
     # Structural
     CONTAINS = "CONTAINS"
 

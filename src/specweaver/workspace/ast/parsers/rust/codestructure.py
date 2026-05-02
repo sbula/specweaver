@@ -58,8 +58,16 @@ class RustCodeStructure(BaseTreeSitterParser):
 
     def supported_intents(self) -> list[str]:
         return [
-            "skeleton", "symbol", "symbol_body", "list", "replace",
-            "replace_body", "add", "delete", "traceability", "imports"
+            "skeleton",
+            "symbol",
+            "symbol_body",
+            "list",
+            "replace",
+            "replace_body",
+            "add",
+            "delete",
+            "traceability",
+            "imports",
         ]
 
     def supported_parameters(self) -> list[str]:
@@ -112,7 +120,9 @@ class RustCodeStructure(BaseTreeSitterParser):
             parent = parent.parent
         return None
 
-    def _process_symbol_match(self, name_node: typing.Any, target_name: str, target_scope: str | None) -> typing.Any | None:
+    def _process_symbol_match(
+        self, name_node: typing.Any, target_name: str, target_scope: str | None
+    ) -> typing.Any | None:
         node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
         if node_name_str != target_name:
             return None
@@ -201,9 +211,7 @@ class RustCodeStructure(BaseTreeSitterParser):
                 for name_node in match_dict["name"]:
                     parent = self._process_symbol_match(name_node, target_name, target_scope)
                     if parent:
-                        collected_blocks.append(
-                            typing.cast("bytes", parent.text).decode("utf-8")
-                        )
+                        collected_blocks.append(typing.cast("bytes", parent.text).decode("utf-8"))
 
         if collected_blocks:
             return "\n\n".join(collected_blocks)

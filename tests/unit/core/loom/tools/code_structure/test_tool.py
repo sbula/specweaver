@@ -71,6 +71,7 @@ def test_tool_definitions_filters_by_role() -> None:
     assert "read_file_structure" in names
     assert "read_symbol_body" not in names  # Planner doesn't get this
 
+
 def test_tool_definitions_dynamically_queries_atom() -> None:
     atom = MagicMock()
     # Provide a pruned set of capabilities

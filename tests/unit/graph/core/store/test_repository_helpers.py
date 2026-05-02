@@ -11,6 +11,7 @@ def repo(tmp_path):
     db_path = tmp_path / "graph.db"
     return SqliteGraphRepository(str(db_path), validated_service_name="test_service")
 
+
 def test_get_all_file_hashes(repo):
     """Test retrieving distinct file IDs and their clone hashes."""
     g = nx.DiGraph()
@@ -26,17 +27,16 @@ def test_get_all_file_hashes(repo):
 
     # Also add a node for a different service to ensure isolation
     with sqlite3.connect(repo.db_path) as conn:
-        conn.execute("INSERT INTO nodes (semantic_hash, file_id, clone_hash, service_name, is_active) VALUES (?, ?, ?, ?, ?)",
-                     ("other_service:ast:5", "file4", "c4", "other_service", 1))
+        conn.execute(
+            "INSERT INTO nodes (semantic_hash, file_id, clone_hash, service_name, is_active) VALUES (?, ?, ?, ?, ?)",
+            ("other_service:ast:5", "file4", "c4", "other_service", 1),
+        )
 
     file_hashes = repo.get_all_file_hashes()
 
-    assert file_hashes == {
-        "file1": "c1",
-        "file2": "c2",
-        "file3": ""
-    }
+    assert file_hashes == {"file1": "c1", "file2": "c2", "file3": ""}
     assert "file4" not in file_hashes
+
 
 def test_purge_file(repo):
     """Test tombstoning all nodes for a specific file."""
@@ -54,8 +54,9 @@ def test_purge_file(repo):
 
         assert rows == [
             ("test_service:ast:1", 0),  # Tombstoned
-            ("test_service:ast:2", 1)   # Active
+            ("test_service:ast:2", 1),  # Active
         ]
+
 
 def test_full_graph_lifecycle(repo):
     """Test the complete Happy Path lifecycle requested by the user: Store, Update, Delete, Read."""
@@ -82,14 +83,14 @@ def test_full_graph_lifecycle(repo):
 
     # 3. Read it back
     g_out_2, id_map = repo.load_from_db()
-    assert len(g_out_2.nodes) == 2 # 1_new and 2
+    assert len(g_out_2.nodes) == 2  # 1_new and 2
     assert "test_service:ast:1_new" in id_map
-    assert "test_service:ast:1" not in id_map # Tombstoned
+    assert "test_service:ast:1" not in id_map  # Tombstoned
 
     # 4. Delete nodes (simulate deleting file2)
     repo.purge_file("file2")
 
     # 5. Read it back
     g_out_3, _id_map_3 = repo.load_from_db()
-    assert len(g_out_3.nodes) == 1 # Only 1_new is left
-    assert len(g_out_3.edges) == 0 # Edge should be gone since target is tombstoned!
+    assert len(g_out_3.nodes) == 1  # Only 1_new is left
+    assert len(g_out_3.edges) == 0  # Edge should be gone since target is tombstoned!

@@ -4,7 +4,6 @@
 """CLI command for LLM usage reporting: ``sw usage``."""
 
 from __future__ import annotations
-from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 
@@ -14,6 +13,7 @@ from rich.table import Table
 
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,7 @@ def usage(
 
     async def _get_usage() -> None:
         from datetime import datetime
+
         parsed_since = datetime.fromisoformat(since) if since else None
 
         async with db.async_session_scope() as session:

@@ -11,8 +11,6 @@ def repo(tmp_path):
 class TestLineageRepository:
     """Artifact event logging and history."""
 
-
-
     def test_log_artifact_event_unparented(self, repo):
         repo.log_artifact_event("uuid-1", None, "run-1", "CREATED", "gemini-test")
         history = repo.get_artifact_history("uuid-1")

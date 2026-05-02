@@ -4,7 +4,6 @@
 """CLI commands for standards management: scan, show, clear, scopes."""
 
 from __future__ import annotations
-from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 from pathlib import Path
@@ -15,6 +14,7 @@ from rich.table import Table
 
 from specweaver.commons import json
 from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 logger = logging.getLogger(__name__)
@@ -61,8 +61,8 @@ def standards_scan(  # noqa: C901
     from specweaver.assurance.standards.discovery import discover_files
     from specweaver.assurance.standards.reviewer import StandardsReviewer
     from specweaver.assurance.standards.scope_detector import detect_scopes
-    from specweaver.interfaces.cli.settings_loader import load_settings
     from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
+    from specweaver.interfaces.cli.settings_loader import load_settings
 
     name = _core._require_active_project()
     db = _core.get_db()
@@ -196,7 +196,8 @@ def _save_accepted_standards(
     for s, results in accepted.items():
         for result in results:
             confirmed = "hitl" if not no_review else None
-            _run_workspace_op("save_standard", 
+            _run_workspace_op(
+                "save_standard",
                 project_name=project_name,
                 scope=s,
                 language=result.language or "unknown",
@@ -241,10 +242,13 @@ def _maybe_bootstrap_constitution(
         return
 
     import anyio
+
     from specweaver.workspace.store import WorkspaceRepository
+
     async def _get_mode() -> str:
         async with db.async_session_scope() as session:
             return await WorkspaceRepository(session).get_auto_bootstrap(project_name)
+
     bootstrap_mode = anyio.run(_get_mode)
     languages = sorted({r.language or "unknown" for results in accepted.values() for r in results})
 

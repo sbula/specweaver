@@ -183,6 +183,7 @@ REPLACE_SYMBOL_SCHEMA = ToolDefinition(
 
 def _filter_list_schema(list_schema: Any, supported_params: dict[str, set[str]] | None) -> Any:
     import copy
+
     if (
         supported_params is not None
         and "list_symbols" in supported_params

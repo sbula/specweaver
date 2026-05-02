@@ -14,11 +14,13 @@ typing.  Works because ``RunContext.llm`` is typed ``Any``.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import TYPE_CHECKING, Any
 
 import anyio
+import nest_asyncio
 
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.infrastructure.llm.store import LlmRepository
@@ -177,7 +179,16 @@ class TelemetryCollector:
                     await repo.log_usage(r.model_dump())
 
         try:
-            anyio.run(_flush)
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                nest_asyncio.apply(loop)
+                loop.run_until_complete(_flush())
+            else:
+                anyio.run(_flush)
             self._records.clear()
             logger.debug("Flushed %d telemetry records for project '%s'", count, self._project)
         except Exception:

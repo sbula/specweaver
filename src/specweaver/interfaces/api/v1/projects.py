@@ -76,12 +76,15 @@ def create_project(
 
 
 @router.delete("/projects/{name}", status_code=200)
-def delete_project(
+async def delete_project(
     name: str,
     db: Database = _db_dep,
 ) -> dict[str, str]:
     """Unregister a project."""
-    proj = db.get_project(name)
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async with db.async_session_scope() as session:
+        proj = await WorkspaceRepository(session).get_project(name)
     if not proj:
         raise SpecWeaverAPIError(
             detail=f"Project '{name}' not found.",
@@ -93,13 +96,16 @@ def delete_project(
 
 
 @router.put("/projects/{name}", response_model=ProjectResponse)
-def update_project(
+async def update_project(
     name: str,
     body: ProjectUpdate,
     db: Database = _db_dep,
 ) -> ProjectResponse:
     """Update a project setting (currently: path only)."""
-    proj = db.get_project(name)
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async with db.async_session_scope() as session:
+        proj = await WorkspaceRepository(session).get_project(name)
     if not proj:
         raise SpecWeaverAPIError(
             detail=f"Project '{name}' not found.",
@@ -119,12 +125,15 @@ def update_project(
 
 
 @router.post("/projects/{name}/use")
-def use_project(
+async def use_project(
     name: str,
     db: Database = _db_dep,
 ) -> dict[str, str]:
     """Set a project as the active project."""
-    proj = db.get_project(name)
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async with db.async_session_scope() as session:
+        proj = await WorkspaceRepository(session).get_project(name)
     if not proj:
         raise SpecWeaverAPIError(
             detail=f"Project '{name}' not found.",

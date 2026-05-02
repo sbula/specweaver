@@ -15,6 +15,9 @@ from specweaver.interfaces.api.app import create_app
 @pytest.fixture()
 def client(tmp_path):
     """TestClient for the API."""
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
     app = create_app(db=db)
     return TestClient(app)
@@ -222,6 +225,9 @@ def test_submit_hitl_gate(tmp_path) -> None:
     from specweaver.interfaces.api.event_bridge import EventBridge
 
     # Set up DB and project
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
     with db.connect() as conn:
         conn.execute(
@@ -296,7 +302,9 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.app import create_app
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
     app = create_app(db=db)
     client = TestClient(app)

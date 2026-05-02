@@ -11,13 +11,17 @@ from __future__ import annotations
 
 import contextlib
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+
 
 @pytest.fixture(autouse=True)
 def _patch_ensure_schema():
     with (
         patch("specweaver.core.config.database.Database._ensure_schema"),
-        patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock),
+        patch(
+            "specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock
+        ),
     ):
         yield
 

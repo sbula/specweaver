@@ -4,7 +4,6 @@
 """CLI commands for lineage tracking and orphan detection."""
 
 from __future__ import annotations
-from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 import uuid
@@ -19,6 +18,7 @@ from specweaver.graph.lineage.engine import LineageEngine
 from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli._core import app as core_app
 from specweaver.interfaces.cli._core import console, get_db
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +74,9 @@ def tag(
         typer.secho("Active project not found in global database.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
-    db_path = Path(str(proj["root_path"])) / ".specweaver" / "graph.db"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    from specweaver.core.config.paths import config_db_path
+
+    db_path = config_db_path()
     repo = LineageRepository(str(db_path))
 
     repo.log_artifact_event(
@@ -125,8 +126,9 @@ def tree_command(  # noqa: C901
         typer.secho("Active project not found in global database.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
-    db_path = Path(str(proj["root_path"])) / ".specweaver" / "graph.db"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    from specweaver.core.config.paths import config_db_path
+
+    db_path = config_db_path()
     repo = LineageRepository(str(db_path))
     engine = LineageEngine(repo)
 

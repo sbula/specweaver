@@ -3,6 +3,8 @@ from unittest.mock import patch
 
 import pytest
 
+from tests.fixtures.db_utils import register_test_project, set_test_active_project
+
 
 @pytest.fixture(autouse=True)
 def reset_global_semaphores():
@@ -18,7 +20,9 @@ def reset_global_semaphores():
 def db(tmp_path):
     """Fresh database with schema."""
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".specweaver" / "specweaver.db"))
     return Database(tmp_path / ".specweaver" / "specweaver.db")
 
 
@@ -31,12 +35,24 @@ async def test_factory_allocates_shared_semaphore_pool(db):
     from specweaver.infrastructure.llm.adapters._rate_limit import _PROVIDER_SEMAPHORES
     from specweaver.infrastructure.llm.factory import create_llm_adapter
 
-    db.register_project("test-proj", "/tmp/test")
-    db.set_active_project("test-proj")
+    register_test_project(db, "test-proj", "/tmp/test")
+    set_test_active_project(db, "test-proj")
 
     def spawn_adapter():
         with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key-1234"}):
-            _settings, adapter, _config = create_llm_adapter(db, telemetry_project=None)
+            from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+
+            mock_settings = SpecWeaverSettings(
+                llm=LLMSettings(
+                    provider="gemini",
+                    model="gemini-2.5-pro",
+                    temperature=0.7,
+                    max_output_tokens=8192,
+                    response_format="text",
+                    api_key="test-key-1234",
+                )
+            )
+            _settings, adapter, _config = create_llm_adapter(mock_settings, telemetry_project=None)
             return adapter
 
     # Spawn 5 completely independent adapters (like 5 parallel runners)

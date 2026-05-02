@@ -80,6 +80,7 @@ def routing_show() -> None:
     """Show the routing table for the active project."""
     name = _core._require_active_project()
     db = _core.get_db()
+
     async def _routing_show() -> None:
         async with db.async_session_scope() as session:
             repo = LlmRepository(session)

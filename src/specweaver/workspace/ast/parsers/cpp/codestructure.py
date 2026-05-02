@@ -67,8 +67,16 @@ class CppCodeStructure(BaseTreeSitterParser):
 
     def supported_intents(self) -> list[str]:
         return [
-            "skeleton", "symbol", "symbol_body", "list", "replace",
-            "replace_body", "add", "delete", "traceability", "imports"
+            "skeleton",
+            "symbol",
+            "symbol_body",
+            "list",
+            "replace",
+            "replace_body",
+            "add",
+            "delete",
+            "traceability",
+            "imports",
         ]
 
     def supported_parameters(self) -> list[str]:

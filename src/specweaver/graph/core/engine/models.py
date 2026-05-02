@@ -10,6 +10,7 @@ class GraphNode(BaseModel):
     """
     Represents a single node in the Universal Knowledge Graph.
     """
+
     semantic_hash: str = Field(..., description="Primary string ID (Semantic Hash)")
     kind: NodeKind
     name: str
@@ -41,6 +42,7 @@ class GraphEdge(BaseModel):
     """
     Represents a directional relationship between two GraphNodes.
     """
+
     source_hash: str
     target_hash: str
     kind: EdgeKind

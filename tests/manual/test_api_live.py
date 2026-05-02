@@ -21,6 +21,7 @@ from starlette.testclient import TestClient
 from specweaver.core.config.database import Database
 from specweaver.interfaces.api.app import create_app, set_event_bridge
 from specweaver.interfaces.api.event_bridge import EventBridge
+from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
 # ---------- Helpers ----------
 
@@ -47,6 +48,9 @@ def _live_env():
         tmp_path = Path(tmp)
 
         # --- DB ---
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(tmp_path / "test.db"))
         db = Database(db_path=tmp_path / "test.db")
 
         # --- Project dir with a minimal spec ---
@@ -57,8 +61,8 @@ def _live_env():
         spec.write_text(_MINIMAL_SPEC, encoding="utf-8")
 
         # Register project
-        db.register_project("livetest", str(proj))
-        db.set_active_project("livetest")
+        register_test_project(db, "livetest", str(proj))
+        set_test_active_project(db, "livetest")
 
         # --- Fresh EventBridge ---
         set_event_bridge(EventBridge())

@@ -24,10 +24,8 @@ def fake_java_parser(filepath: str) -> dict[str, Any]:
                 name = line.split("public void ")[1].split("(")[0]
                 children.append({"type": "method_declaration", "name": name})
 
-    return {
-        "type": "module",
-        "children": children
-    }
+    return {"type": "module", "children": children}
+
 
 def test_real_file_system_integration(tmp_path):
     """
@@ -42,10 +40,7 @@ def test_real_file_system_integration(tmp_path):
 
     # 1. CREATE UserService
     user_service.write_text(
-        "public class UserService {\n"
-        "    public void createUser() {}\n"
-        "}\n",
-        encoding="utf-8"
+        "public class UserService {\n    public void createUser() {}\n}\n", encoding="utf-8"
     )
     builder.ingest_file(str(user_service))
 
@@ -56,11 +51,8 @@ def test_real_file_system_integration(tmp_path):
 
     # 2. UPDATE UserService (Add comments / whitespace -> Should be IDEMPOTENT)
     user_service.write_text(
-        "// Some new comments\n"
-        "public class UserService {\n"
-        "    public void createUser() {}\n"
-        "}\n",
-        encoding="utf-8"
+        "// Some new comments\npublic class UserService {\n    public void createUser() {}\n}\n",
+        encoding="utf-8",
     )
     builder.ingest_file(str(user_service))
     # Still 3 nodes. Nothing duplicated, nothing lost.
@@ -68,10 +60,7 @@ def test_real_file_system_integration(tmp_path):
 
     # 3. UPDATE file (Add new method, remove old method)
     user_service.write_text(
-        "public class UserService {\n"
-        "    public void deleteUser() {}\n"
-        "}\n",
-        encoding="utf-8"
+        "public class UserService {\n    public void deleteUser() {}\n}\n", encoding="utf-8"
     )
     builder.ingest_file(str(user_service))
 
@@ -83,7 +72,7 @@ def test_real_file_system_integration(tmp_path):
 
     # Verify edges: The new PROCEDURE 'deleteUser' must have a CONTAINS edge from the FILE
     edges = list(engine._graph.edges(data=True))
-    assert len(edges) == 2 # FILE -> UserService, FILE -> deleteUser
+    assert len(edges) == 2  # FILE -> UserService, FILE -> deleteUser
 
     # 4. DELETE file
     user_service.unlink()

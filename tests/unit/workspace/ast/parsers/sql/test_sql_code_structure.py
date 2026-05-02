@@ -5,6 +5,7 @@ def test_sql_parser_initializes() -> None:
     parser = SqlCodeStructure()
     assert parser is not None
 
+
 def test_sql_list_symbols() -> None:
     parser = SqlCodeStructure()
     code = """
@@ -14,6 +15,7 @@ def test_sql_list_symbols() -> None:
     """
     symbols = parser.list_symbols(code)
     assert set(symbols) == {"users", "active_users", "get_user"}
+
 
 def test_sql_extract_skeleton() -> None:
     parser = SqlCodeStructure()
@@ -33,6 +35,7 @@ $$ LANGUAGE SQL;
     assert "RETURN 1" not in skeleton
     assert "CREATE TABLE users (" in skeleton
     assert "CREATE FUNCTION get_user" in skeleton
+
 
 def test_sql_extract_replace_symbol() -> None:
     parser = SqlCodeStructure()
@@ -54,6 +57,7 @@ CREATE VIEW active_users AS SELECT * FROM users;
     assert "SELECT * FROM users;" not in replaced
     assert "CREATE TABLE users" in replaced
 
+
 def test_sql_edge_cases() -> None:
     parser = SqlCodeStructure()
 
@@ -66,4 +70,3 @@ def test_sql_edge_cases() -> None:
     symbols = parser.list_symbols(code)
     # the parser might see nothing valid, but it shouldn't crash
     assert isinstance(symbols, list)
-

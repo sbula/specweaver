@@ -227,7 +227,9 @@ class TestGenerateCodeHandler:
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
     @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
-    async def test_generate_code_success_path(self, mock_git, mock_repo_class, tmp_path: Path) -> None:
+    async def test_generate_code_success_path(
+        self, mock_git, mock_repo_class, tmp_path: Path
+    ) -> None:
         """Verifies successful LLM code generation does not crash and passes output."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -307,7 +309,9 @@ class TestGenerateCodeHandler:
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
     @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
-    async def test_generate_code_extracts_existing_uuid(self, mock_git, mock_repo_class, tmp_path: Path) -> None:
+    async def test_generate_code_extracts_existing_uuid(
+        self, mock_git, mock_repo_class, tmp_path: Path
+    ) -> None:
         """Verifies UUID extraction from an existing file before overwriting."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -421,7 +425,9 @@ class TestGenerateTestsHandler:
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
     @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
-    async def test_generate_tests_success_path(self, mock_git, mock_repo_class, tmp_path: Path) -> None:
+    async def test_generate_tests_success_path(
+        self, mock_git, mock_repo_class, tmp_path: Path
+    ) -> None:
         """Verifies successful LLM test generation does not crash."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test\n")
@@ -577,7 +583,9 @@ class TestPlanSpecHandler:
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
     @patch("specweaver.workflows.planning.planner.Planner.generate_plan")
-    async def test_plan_spec_success_path_with_uuid(self, mock_create, mock_repo_class, tmp_path: Path) -> None:
+    async def test_plan_spec_success_path_with_uuid(
+        self, mock_create, mock_repo_class, tmp_path: Path
+    ) -> None:
         """Verifies plan generation mints UUID and saves YAML."""
         spec = tmp_path / "test_spec.md"
         valid_uuid = "11111111-2222-3333-4444-888888888888"
@@ -626,7 +634,9 @@ class TestPlanSpecHandler:
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
     @patch("specweaver.workflows.planning.planner.Planner.generate_plan")
-    async def test_plan_spec_derives_parent_from_run_id(self, mock_create, mock_repo_class, tmp_path: Path) -> None:
+    async def test_plan_spec_derives_parent_from_run_id(
+        self, mock_create, mock_repo_class, tmp_path: Path
+    ) -> None:
         """If spec lacks a tag, parent_id falls back to run_id."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# No tag here\nTest\n")
@@ -709,7 +719,9 @@ class TestDraftSpecHandler:
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
     @patch("specweaver.workflows.drafting.drafter.Drafter.draft")
-    async def test_draft_spec_creates_uuid(self, mock_draft: AsyncMock, mock_repo_class, tmp_path: Path) -> None:
+    async def test_draft_spec_creates_uuid(
+        self, mock_draft: AsyncMock, mock_repo_class, tmp_path: Path
+    ) -> None:
         """If drafting succeeds, StepResult contains a generated artifact_uuid."""
         spec = tmp_path / "test_spec.md"
         ctx = RunContext(project_path=tmp_path, spec_path=spec)

@@ -45,7 +45,14 @@ $$ LANGUAGE SQL;
 
     # Test replace_symbol
     new_view = "CREATE VIEW active_users AS SELECT id FROM users;"
-    res = atom.run({"intent": "replace_symbol", "path": "schema.sql", "symbol_name": "active_users", "new_code": new_view})
+    res = atom.run(
+        {
+            "intent": "replace_symbol",
+            "path": "schema.sql",
+            "symbol_name": "active_users",
+            "new_code": new_view,
+        }
+    )
     assert res.status.value == "SUCCESS"
     assert "SELECT id FROM users" in sql_file.read_text("utf-8")
 

@@ -210,11 +210,11 @@ def test_tree_command_displays_lineage():
                             "id": "leaf-uuid",
                             "circular": False,
                             "history": [{"event_type": "manual_tag", "model_id": "human"}],
-                            "children": []
+                            "children": [],
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
 
         result = runner.invoke(app, ["tree", "child-uuid"])
@@ -258,7 +258,7 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
             "id": "filebase-uuid-999",
             "circular": False,
             "history": [],
-            "children": []
+            "children": [],
         }
 
         result = runner.invoke(app, ["tree", str(target_file)])
@@ -288,7 +288,7 @@ def test_tree_command_graceful_missing_history():
             "id": "unknown-uuid",
             "circular": False,
             "history": [],
-            "children": []
+            "children": [],
         }
 
         result = runner.invoke(app, ["tree", "unknown-uuid"])
@@ -322,16 +322,9 @@ def test_tree_command_handles_circular_references():
                     "id": "loop-b",
                     "circular": False,
                     "history": [{"event_type": "manual", "model_id": "human"}],
-                    "children": [
-                        {
-                            "id": "loop-a",
-                            "circular": True,
-                            "history": [],
-                            "children": []
-                        }
-                    ]
+                    "children": [{"id": "loop-a", "circular": True, "history": [], "children": []}],
                 }
-            ]
+            ],
         }
 
         result = runner.invoke(app, ["tree", "loop-a"])

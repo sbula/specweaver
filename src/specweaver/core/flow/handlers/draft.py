@@ -106,11 +106,9 @@ class DraftSpecHandler:
                     content = result_path.read_text(encoding="utf-8")
                     result_path.write_text(tag_str + "\n" + content, encoding="utf-8")
 
-            from specweaver.core.config.database import Database
             from specweaver.core.flow.store import FlowRepository
-            local_db = context.project_path / ".specweaver" / "specweaver.db"
-            db = Database(str(local_db))
-            async with db.async_session_scope() as session:
+
+            async with context.db.async_session_scope() as session:
                 repo = FlowRepository(session)
                 await repo.log_artifact_event(
                     artifact_id=artifact_uuid,

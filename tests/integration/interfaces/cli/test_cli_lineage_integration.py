@@ -3,6 +3,7 @@ from typer.testing import CliRunner
 import specweaver.interfaces.cli.lineage  # noqa: F401 - Register commands
 from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli._core import app, get_db
+from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
 runner = CliRunner()
 
@@ -16,12 +17,11 @@ def test_lineage_tag_integration_real_db(tmp_path, monkeypatch):
 
     # Initialize DB (creates Schema V12)
     db = get_db()
-    db.register_project("test-proj", str(tmp_path))
-    db.set_active_project("test-proj")
+    register_test_project(db, "test-proj", str(tmp_path))
+    set_test_active_project(db, "test-proj")
 
     local_db_dir = tmp_path / ".specweaver"
-    local_db_dir.mkdir(parents=True, exist_ok=True)
-    repo = LineageRepository(str(local_db_dir / "graph.db"))
+    repo = LineageRepository(str(data_dir / "specweaver.db"))
 
     # Create target file
     test_file = tmp_path / "target.py"
@@ -60,12 +60,11 @@ def test_lineage_tree_integration_multigen(tmp_path, monkeypatch):
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
 
     db = get_db()
-    db.register_project("test-proj2", str(tmp_path))
-    db.set_active_project("test-proj2")
+    register_test_project(db, "test-proj2", str(tmp_path))
+    set_test_active_project(db, "test-proj2")
 
     local_db_dir = tmp_path / ".specweaver"
-    local_db_dir.mkdir(parents=True, exist_ok=True)
-    repo = LineageRepository(str(local_db_dir / "graph.db"))
+    repo = LineageRepository(str(data_dir / "specweaver.db"))
 
     # Insert events manually using DB interface
     repo.log_artifact_event("root-x", None, "run-1", "generated_code", "human")
@@ -91,8 +90,8 @@ def test_lineage_e2e_full_pipeline(tmp_path, monkeypatch):
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
 
     db = get_db()
-    db.register_project("test-proj3", str(tmp_path))
-    db.set_active_project("test-proj3")
+    register_test_project(db, "test-proj3", str(tmp_path))
+    set_test_active_project(db, "test-proj3")
 
     # Create a dummy python file
     target_file = tmp_path / "hello.py"

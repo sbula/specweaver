@@ -17,10 +17,7 @@ import importlib.resources
 import io
 import logging
 from pathlib import Path  # noqa: TC003  -- used at runtime
-from typing import TYPE_CHECKING, Any, cast
-
-if TYPE_CHECKING:
-    from specweaver.core.config.database import Database
+from typing import Any, cast
 
 from ruamel.yaml import YAML
 
@@ -151,6 +148,7 @@ def resolve_pipeline_name(
         # Check for an active domain profile
         if active_profile:
             from specweaver.core.config.profiles import profile_to_pipeline_name
+
             return profile_to_pipeline_name(active_profile)
         return "validation_spec_default"
     logger.warning("resolve_pipeline_name: unknown level '%s'", level)

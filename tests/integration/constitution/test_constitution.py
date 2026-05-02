@@ -30,6 +30,52 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest
+import asyncio
+
+from specweaver.interfaces.cli._db_utils import bootstrap_database
+from tests.fixtures.db_utils import register_test_project
+
+
+def _sync_run(coro):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        import nest_asyncio
+
+        nest_asyncio.apply(loop)
+        return loop.run_until_complete(coro)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+
+def _set_constitution_max_size_sync(db, project: str, size: int) -> None:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_constitution_max_size(project, size)
+
+    _sync_run(_do())
+
+
+def _get_constitution_max_size_sync(db, project: str) -> int:
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _do():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            return await repo.get_constitution_max_size(project)
+
+    return _sync_run(_do())
 
 
 class TestScaffoldConstitutionIntegration:
@@ -138,11 +184,12 @@ class TestConstitutionDBIntegration:
         """constitution_max_size from DB controls check_constitution limit."""
         from specweaver.core.config.database import Database
 
+        bootstrap_database(str(tmp_path / ".sw" / "specweaver.db"))
         db = Database(tmp_path / ".sw" / "specweaver.db")
-        db.register_project("myapp", str(tmp_path))
+        register_test_project(db, "myapp", str(tmp_path))
 
         # Default is 5120
-        max_size = db.get_constitution_max_size("myapp")
+        max_size = _get_constitution_max_size_sync(db, "myapp")
         assert max_size == DEFAULT_MAX_CONSTITUTION_SIZE
 
         # Write a constitution exactly at default limit
@@ -151,8 +198,8 @@ class TestConstitutionDBIntegration:
         assert check_constitution(path, max_size=max_size) == []
 
         # Reduce limit in DB → same file now fails check
-        db.set_constitution_max_size("myapp", 100)
-        new_max = db.get_constitution_max_size("myapp")
+        _set_constitution_max_size_sync(db, "myapp", 100)
+        new_max = _get_constitution_max_size_sync(db, "myapp")
         errors = check_constitution(path, max_size=new_max)
         assert len(errors) >= 1
 

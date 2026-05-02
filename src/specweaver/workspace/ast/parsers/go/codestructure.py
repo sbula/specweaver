@@ -118,7 +118,10 @@ class GoCodeStructure(BaseTreeSitterParser):
                 continue
             for name_node in match_dict["name"]:
                 node_name_str = typing.cast("bytes", name_node.text).decode("utf-8")
-                if node_name_str == target_name and self._get_symbol_scope(name_node) == target_scope:
+                if (
+                    node_name_str == target_name
+                    and self._get_symbol_scope(name_node) == target_scope
+                ):
                     resolved = self._resolve_symbol_parent(name_node)
                     if resolved:
                         return resolved
@@ -212,8 +215,16 @@ class GoCodeStructure(BaseTreeSitterParser):
 
     def supported_intents(self) -> list[str]:
         return [
-            "skeleton", "symbol", "symbol_body", "list", "replace",
-            "replace_body", "add", "delete", "traceability", "imports"
+            "skeleton",
+            "symbol",
+            "symbol_body",
+            "list",
+            "replace",
+            "replace_body",
+            "add",
+            "delete",
+            "traceability",
+            "imports",
         ]
 
     def supported_parameters(self) -> list[str]:

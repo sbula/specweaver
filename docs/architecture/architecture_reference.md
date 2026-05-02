@@ -131,7 +131,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **Config store** (`sw config`, `sw projects`)
 - `config/settings.py` — `SpecWeaverSettings`, `ValidationSettings`, `LLMSettings`: Pydantic models with env-var loading + TOML overrides. In `config/` because it's the root of the settings hierarchy.
-- `config/database.py` — `Database`: SQLite with migrations (v1→v5), stores projects, LLM profiles, validation overrides, pipeline state.
+- `config/database.py` — `Database`: Core SQLite connection provider and CQRS async engine. Stores active state and base project tables. (Lineage, Telemetry, and Flow State are decentralized to bounded context repositories).
 
 **Pipeline models + runner**
 - `flow/models.py` — `PipelineDefinition`, `PipelineStep`, `GateDefinition`, `StepAction`, `StepTarget`: pure data model (no execution). In `flow/` because it defines what a pipeline *is*.

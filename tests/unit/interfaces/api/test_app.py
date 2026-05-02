@@ -14,7 +14,9 @@ def client(tmp_path):
     """Create a test client backed by a temporary DB."""
     from specweaver.core.config.database import Database
     from specweaver.interfaces.api.app import create_app
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     app = create_app(db=db)
     return TestClient(app)
@@ -81,6 +83,9 @@ class TestCORSHeaders:
         from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "http://192.168.1.100:8000")
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(tmp_path / ".sw-cors" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors" / "specweaver.db")
         app = create_app(db=db)
         c = TestClient(app)
@@ -100,6 +105,9 @@ class TestCORSHeaders:
         from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "http://a.com, http://b.com")
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(tmp_path / ".sw-cors2" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors2" / "specweaver.db")
         app = create_app(db=db)
         c = TestClient(app)
@@ -119,6 +127,9 @@ class TestCORSHeaders:
         from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "")
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(tmp_path / ".sw-cors3" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors3" / "specweaver.db")
         app = create_app(db=db)
         c = TestClient(app)
@@ -139,6 +150,9 @@ class TestCORSHeaders:
         from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "  , http://clean.com ,  ")
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(tmp_path / ".sw-cors4" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors4" / "specweaver.db")
         app = create_app(db=db)
         c = TestClient(app)
@@ -158,6 +172,9 @@ class TestCORSHeaders:
         from specweaver.interfaces.api.app import create_app
 
         monkeypatch.setenv("CORS_ORIGINS", "http://env.example.com")
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(tmp_path / ".sw-cors5" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors5" / "specweaver.db")
         app = create_app(db=db, cors_origins=["http://prog.example.com"])
         c = TestClient(app)

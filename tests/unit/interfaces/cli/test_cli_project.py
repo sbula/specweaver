@@ -13,6 +13,7 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.fixtures.db_utils import get_test_active_project, get_test_project
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -24,7 +25,9 @@ runner = CliRunner()
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
     from specweaver.core.config.database import Database
+    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
+    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     return db
@@ -92,7 +95,7 @@ class TestCLIInitDB:
         project_dir = tmp_path / "my-project"
         project_dir.mkdir()
         runner.invoke(app, ["init", "my-app", "--path", str(project_dir)])
-        assert mock_db.get_active_project() == "my-app"
+        assert get_test_active_project(mock_db) == "my-app"
 
     def test_init_invalid_name_special_chars(self, tmp_path: Path):
         project_dir = tmp_path / "my-project"
@@ -148,7 +151,7 @@ class TestCLIInitDB:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["init", "myapp"])
         assert result.exit_code == 0
-        assert mock_db.get_project("myapp") is not None
+        assert get_test_project(mock_db, "myapp") is not None
 
     def test_init_name_starting_with_hyphen(self, tmp_path: Path):
         """Project name starting with hyphen should be rejected."""
@@ -208,7 +211,7 @@ class TestCLIUse:
         runner.invoke(app, ["init", "app2", "--path", str(dir2)])
         result = runner.invoke(app, ["use", "app1"])
         assert result.exit_code == 0
-        assert mock_db.get_active_project() == "app1"
+        assert get_test_active_project(mock_db) == "app1"
 
     def test_use_shows_confirmation(self, tmp_path: Path):
         project_dir = tmp_path / "proj"
@@ -251,11 +254,11 @@ class TestCLIUse:
             runner.invoke(app, ["init", name, "--path", str(d)])
 
         runner.invoke(app, ["use", "aaa"])
-        assert mock_db.get_active_project() == "aaa"
+        assert get_test_active_project(mock_db) == "aaa"
         runner.invoke(app, ["use", "ccc"])
-        assert mock_db.get_active_project() == "ccc"
+        assert get_test_active_project(mock_db) == "ccc"
         runner.invoke(app, ["use", "bbb"])
-        assert mock_db.get_active_project() == "bbb"
+        assert get_test_active_project(mock_db) == "bbb"
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +310,7 @@ class TestCLIRemove:
         runner.invoke(app, ["init", "myapp", "--path", str(project_dir)])
         result = runner.invoke(app, ["remove", "myapp"], input="y\n")
         assert result.exit_code == 0
-        assert mock_db.get_project("myapp") is None
+        assert get_test_project(mock_db, "myapp") is None
 
     def test_remove_asks_confirmation(self, mock_db, tmp_path: Path):
         project_dir = tmp_path / "proj"
@@ -315,7 +318,7 @@ class TestCLIRemove:
         runner.invoke(app, ["init", "myapp", "--path", str(project_dir)])
         result = runner.invoke(app, ["remove", "myapp"], input="n\n")
         assert result.exit_code == 0
-        assert mock_db.get_project("myapp") is not None  # not removed
+        assert get_test_project(mock_db, "myapp") is not None  # not removed
 
     def test_remove_nonexistent(self):
         result = runner.invoke(app, ["remove", "nonexistent"], input="y\n")
@@ -328,7 +331,7 @@ class TestCLIRemove:
         runner.invoke(app, ["init", "myapp", "--path", str(project_dir)])
         result = runner.invoke(app, ["remove", "myapp", "--force"])
         assert result.exit_code == 0
-        assert mock_db.get_project("myapp") is None
+        assert get_test_project(mock_db, "myapp") is None
 
     def test_remove_does_not_delete_files(self, tmp_path: Path):
         """sw remove only unregisters — project files stay on disk."""
@@ -358,7 +361,7 @@ class TestCLIUpdate:
         runner.invoke(app, ["init", "myapp", "--path", str(old)])
         result = runner.invoke(app, ["update", "myapp", "path", str(new)])
         assert result.exit_code == 0
-        proj = mock_db.get_project("myapp")
+        proj = get_test_project(mock_db, "myapp")
         assert proj["root_path"] == str(new)
 
     def test_update_nonexistent_project(self, tmp_path: Path):

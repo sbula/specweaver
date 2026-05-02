@@ -37,12 +37,20 @@ logger = logging.getLogger(__name__)
 
 def get_db() -> Database:
     """Get the global SpecWeaver database (creates if needed)."""
-    return Database(config_db_path())
+    db_path = config_db_path()
+    try:
+        from specweaver.interfaces.cli._db_utils import bootstrap_database
+
+        bootstrap_database(str(db_path))
+    except Exception as exc:
+        logger.warning("Failed to bootstrap database at %s: %s", db_path, exc)
+    return Database(db_path)
 
 
 def _require_active_project() -> str:
     """Get the active project name or exit with error."""
     from specweaver.interfaces.cli._helpers import _run_workspace_op
+
     db = get_db()
     name = _run_workspace_op("get_active_project")
     if not name:

@@ -22,6 +22,7 @@ from ruamel.yaml import YAML
 
 logger = logging.getLogger(__name__)
 
+
 class TopologyEngineProtocol(Protocol):
     def add_node(self, name: str) -> None: ...
     def add_edge(self, source: str, target: str) -> None: ...
@@ -184,7 +185,9 @@ class TopologyGraph:
 
         if auto_infer:
             logger.debug(
-                "TopologyGraph.from_project: scanning '%s' (auto_infer=%s)", project_root, auto_infer
+                "TopologyGraph.from_project: scanning '%s' (auto_infer=%s)",
+                project_root,
+                auto_infer,
             )
             cls._auto_infer_missing(project_root, nodes, warnings)
 
