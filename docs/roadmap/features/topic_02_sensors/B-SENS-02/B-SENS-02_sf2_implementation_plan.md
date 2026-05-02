@@ -27,7 +27,7 @@
 ### 1. The Graph Storage Adapter
 Create the actual persistent backup mechanism for the NetworkX graph. Strict DDD applies: no imports from `core/config`.
 
-#### [NEW] src/specweaver/graph/store/repository.py
+#### [NEW] src/specweaver/graph/core/store/repository.py
 - Define a generic `AbstractGraphRepository` interface (for future Postgres extensibility per AD-12).
 - Implement `SqliteGraphRepository(AbstractGraphRepository)`.
 - Handles `connect()` with WAL and Foreign Key pragmas natively.

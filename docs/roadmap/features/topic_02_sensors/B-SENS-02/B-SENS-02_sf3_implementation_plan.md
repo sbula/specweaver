@@ -15,7 +15,7 @@ Based on our discussion regarding KISS, Single Point of Responsibility, strict b
 The orchestrator (`GraphBuilder`) in SF-1 expects a raw AST Dictionary to feed its `OntologyMapper`. If `graph.builder` directly imports the parser from the `workspace` module to get this dictionary, it creates a boundary violation.
 
 **Options:**
-1. Update `specweaver.graph.builder.context.yaml` to explicitly allow importing `workspace.parsers` and hardcode the parser inside the builder.
+1. Update `specweaver.graph.core.builder.context.yaml` to explicitly allow importing `workspace.parsers` and hardcode the parser inside the builder.
 2. Utilize **Dependency Injection**. The top-level CLI command (`sw graph build`) imports the parser and passes it into `GraphBuilder(parser=...)`. `graph.builder` never imports the workspace layer.
 
 **Analysis:**

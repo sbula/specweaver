@@ -21,7 +21,7 @@ src/specweaver/graph/
     └── context.yaml           (Allows importing engine/ and store/)
 ```
 
-### Revised Ontology (`src/specweaver/graph/engine/ontology.py`)
+### Revised Ontology (`src/specweaver/graph/core/engine/ontology.py`)
 
 #### `NodeKind` Enum
 *   **Macro Architecture:** `SYSTEM`, `MICROSERVICE`
@@ -42,12 +42,12 @@ src/specweaver/graph/
 ### 1. `src/specweaver/graph/` (The Bounded Context)
 *   `[x]` `src/specweaver/graph/context.yaml`
 
-### 2. `src/specweaver/graph/engine/` (Pure Logic Layer)
-*   `[x]` `src/specweaver/graph/engine/context.yaml` 
-*   `[x]` `src/specweaver/graph/engine/ontology.py` 
-*   `[x]` `src/specweaver/graph/engine/models.py` (Defines `GraphNode` with `embedding_id` and `GraphEdge`).
-*   `[x]` `src/specweaver/graph/engine/core.py` (The `InMemoryGraphEngine` NetworkX wrapper).
+### 2. `src/specweaver/graph/core/engine/` (Pure Logic Layer)
+*   `[x]` `src/specweaver/graph/core/engine/context.yaml` 
+*   `[x]` `src/specweaver/graph/core/engine/ontology.py` 
+*   `[x]` `src/specweaver/graph/core/engine/models.py` (Defines `GraphNode` with `embedding_id` and `GraphEdge`).
+*   `[x]` `src/specweaver/graph/core/engine/core.py` (The `InMemoryGraphEngine` NetworkX wrapper).
 
-### 3. `src/specweaver/graph/builder/` (Orchestrator Layer)
-*   `[x]` `src/specweaver/graph/builder/context.yaml` 
-*   `[x]` `src/specweaver/graph/builder/orchestrator.py` (The `GraphBuilder` class).
+### 3. `src/specweaver/graph/core/builder/` (Orchestrator Layer)
+*   `[x]` `src/specweaver/graph/core/builder/context.yaml` 
+*   `[x]` `src/specweaver/graph/core/builder/orchestrator.py` (The `GraphBuilder` class).
