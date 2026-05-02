@@ -18,7 +18,7 @@ class TestDrafterProjectMetadata:
     """Drafter injects project_metadata into the PromptBuilder."""
 
     @pytest.mark.asyncio
-    async def test_draft_injects_metadata(self) -> None:
+    async def test_draft_injects_metadata(self, tmp_path: Path) -> None:
         mock_llm = AsyncMock()
         mock_llm.generate.return_value = LLMResponse(text="```markdown\n# Doc\n```", model="test")
 
@@ -37,7 +37,7 @@ class TestDrafterProjectMetadata:
         # We need to mock write_text so it doesn't actually write to disk!
         with patch.object(Path, "write_text"):
             await drafter.draft(
-                name="test_component", output_dir=Path("fake_dir"), project_metadata=metadata
+                name="test_component", output_dir=tmp_path, project_metadata=metadata
             )
 
         prompt = mock_llm.generate.call_args[0][0][0].content
