@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import logging
 
+import anyio
 import typer
 from rich.table import Table
 
+from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import get_default_cost_table
 from specweaver.interfaces.cli import _core
 
@@ -34,32 +36,37 @@ def costs(ctx: typer.Context) -> None:
         return
 
     db = _core.get_db()
-    overrides = db.get_cost_overrides()
+    async def _costs_view() -> None:
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            overrides = await repo.get_cost_overrides()
 
-    table = Table(title="LLM Cost Configuration")
-    table.add_column("Model", style="cyan")
-    table.add_column("Input $/1k tokens", justify="right")
-    table.add_column("Output $/1k tokens", justify="right")
-    table.add_column("Source", style="dim")
+            table = Table(title="LLM Cost Configuration")
+            table.add_column("Model", style="cyan")
+            table.add_column("Input $/1k tokens", justify="right")
+            table.add_column("Output $/1k tokens", justify="right")
+            table.add_column("Source", style="dim")
 
-    default_table = get_default_cost_table()
+            default_table = get_default_cost_table()
 
-    # Show defaults
-    for model, entry in sorted(default_table.items()):
-        if model in overrides:
-            inp, out = overrides[model]
-            source = "override"
-        else:
-            inp, out = entry.input_cost_per_1k, entry.output_cost_per_1k
-            source = "default"
-        table.add_row(model, f"${inp:.5f}", f"${out:.5f}", source)
+            # Show defaults
+            for model, entry in sorted(default_table.items()):
+                if model in overrides:
+                    inp, out = overrides[model]
+                    source = "override"
+                else:
+                    inp, out = entry.input_cost_per_1k, entry.output_cost_per_1k
+                    source = "default"
+                table.add_row(model, f"${inp:.5f}", f"${out:.5f}", source)
 
-    # Show overrides not in defaults
-    for model, (inp, out) in sorted(overrides.items()):
-        if model not in default_table:
-            table.add_row(model, f"${inp:.5f}", f"${out:.5f}", "override")
+            # Show overrides not in defaults
+            for model, (inp, out) in sorted(overrides.items()):
+                if model not in default_table:
+                    table.add_row(model, f"${inp:.5f}", f"${out:.5f}", "override")
 
-    _core.console.print(table)
+            _core.console.print(table)
+
+    anyio.run(_costs_view)
 
 
 @costs_app.command("set")
@@ -73,7 +80,12 @@ def costs_set(
     Example: sw costs set gpt-4o 0.0025 0.01
     """
     db = _core.get_db()
-    db.set_cost_override(model, input_cost, output_cost)
+    async def _costs_set() -> None:
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.set_cost_override(model, input_cost, output_cost)
+
+    anyio.run(_costs_set)
     _core.console.print(
         f"[green]\u2713[/green] Cost override set for [bold]{model}[/bold]: "
         f"input=${input_cost:.5f}/1k, output=${output_cost:.5f}/1k",
@@ -89,7 +101,12 @@ def costs_reset(
     Example: sw costs reset gpt-4o
     """
     db = _core.get_db()
-    db.delete_cost_override(model)
+    async def _costs_reset() -> None:
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.delete_cost_override(model)
+
+    anyio.run(_costs_reset)
     _core.console.print(
         f"[green]\u2713[/green] Cost override removed for [bold]{model}[/bold] "
         "(reverted to defaults).",

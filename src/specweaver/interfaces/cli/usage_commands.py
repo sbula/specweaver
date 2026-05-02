@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import logging
 
+import anyio
 import typer
 from rich.table import Table
 
+from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
 
 logger = logging.getLogger(__name__)
@@ -53,36 +55,44 @@ def usage(
             )
             raise typer.Exit(code=0)
 
-    rows = db.get_usage_summary(project=project, since=since)
+    async def _get_usage() -> None:
+        from datetime import datetime
+        parsed_since = datetime.fromisoformat(since) if since else None
 
-    if not rows:
-        label = f" for [bold]{project}[/bold]" if project else ""
-        _core.console.print(f"[dim]No usage data recorded{label}.[/dim]")
-        return
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            rows = await repo.get_usage_summary(project=project, since=parsed_since)
 
-    table = Table(
-        title=f"LLM Usage — {project or 'all projects'}",
-    )
-    table.add_column("Task Type", style="cyan")
-    table.add_column("Model")
-    table.add_column("Calls", justify="right")
-    table.add_column("Prompt Tokens", justify="right")
-    table.add_column("Completion Tokens", justify="right")
-    table.add_column("Total Tokens", justify="right")
-    table.add_column("Cost (USD)", justify="right", style="green")
-    table.add_column("Duration (s)", justify="right")
+            if not rows:
+                label = f" for [bold]{project}[/bold]" if project else ""
+                _core.console.print(f"[dim]No usage data recorded{label}.[/dim]")
+                return
 
-    for r in rows:
-        duration_s = (r["total_duration_ms"] or 0) / 1000
-        table.add_row(
-            str(r["task_type"]),
-            str(r["model"]),
-            str(r["call_count"]),
-            f"{r['total_prompt_tokens'] or 0:,}",
-            f"{r['total_completion_tokens'] or 0:,}",
-            f"{r['total_tokens'] or 0:,}",
-            f"${r['total_cost'] or 0:.6f}",
-            f"{duration_s:.1f}",
-        )
+            table = Table(
+                title=f"LLM Usage — {project or 'all projects'}",
+            )
+            table.add_column("Task Type", style="cyan")
+            table.add_column("Model")
+            table.add_column("Calls", justify="right")
+            table.add_column("Prompt Tokens", justify="right")
+            table.add_column("Completion Tokens", justify="right")
+            table.add_column("Total Tokens", justify="right")
+            table.add_column("Cost (USD)", justify="right", style="green")
+            table.add_column("Duration (s)", justify="right")
 
-    _core.console.print(table)
+            for r in rows:
+                duration_s = (r["total_duration_ms"] or 0) / 1000
+                table.add_row(
+                    str(r["task_type"]),
+                    str(r["model"]),
+                    str(r["call_count"]),
+                    f"{r['total_prompt_tokens'] or 0:,}",
+                    f"{r['total_completion_tokens'] or 0:,}",
+                    f"{r['total_tokens'] or 0:,}",
+                    f"${r['total_cost'] or 0:.6f}",
+                    f"{duration_s:.1f}",
+                )
+
+            _core.console.print(table)
+
+    anyio.run(_get_usage)

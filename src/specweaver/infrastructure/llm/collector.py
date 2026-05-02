@@ -18,7 +18,10 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any
 
+import anyio
+
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
+from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import CostEntry, UsageRecord, create_usage_record
 
 if TYPE_CHECKING:
@@ -166,9 +169,15 @@ class TelemetryCollector:
         count = len(self._records)
         if count == 0:
             return 0
+
+        async def _flush() -> None:
+            async with db.async_session_scope() as session:
+                repo = LlmRepository(session)
+                for r in self._records:
+                    await repo.log_usage(r.model_dump())
+
         try:
-            for r in self._records:
-                db.log_usage(r.model_dump())
+            anyio.run(_flush)
             self._records.clear()
             logger.debug("Flushed %d telemetry records for project '%s'", count, self._project)
         except Exception:

@@ -80,8 +80,15 @@ class ModelRouter:
         # First check: does a routing entry exist for this task type?
         # We must not fall through to load_settings' system-default fallback —
         # that would incorrectly treat the absence of a routing entry as a configured route.
+        import anyio
+        from specweaver.infrastructure.llm.store import LlmRepository
+        
+        async def _get_profile() -> Any:
+            async with self._db.async_session_scope() as session:
+                return await LlmRepository(session).get_project_profile(self._project_name, role_key)
+
         try:
-            profile = self._db.get_project_profile(self._project_name, role_key)
+            profile = anyio.run(_get_profile)
         except Exception:
             logger.warning(
                 "[routing] DB error checking task_type=%s",
@@ -131,7 +138,13 @@ class ModelRouter:
                     from specweaver.infrastructure.llm.telemetry import CostEntry
 
                     try:
-                        raw = self._db.get_cost_overrides()
+                        import anyio
+                        from specweaver.infrastructure.llm.store import LlmRepository
+                        async def _get_overrides() -> dict[str, tuple[float, float]]:
+                            async with self._db.async_session_scope() as session:
+                                return await LlmRepository(session).get_cost_overrides()
+                        
+                        raw = anyio.run(_get_overrides)
                         overrides = {k: CostEntry(*v) for k, v in raw.items()} if raw else None
                     except Exception:
                         overrides = None

@@ -13,6 +13,10 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any
 
+import anyio
+
+from specweaver.infrastructure.llm.store import LlmRepository
+
 if TYPE_CHECKING:
     from specweaver.core.config.database import Database
     from specweaver.core.config.settings import SpecWeaverSettings
@@ -78,7 +82,15 @@ def create_llm_adapter(
         # Fallback: try loading from env with defaults
         fallback_model = "gemini-3-flash-preview"
         try:
-            sys_profile = db.get_llm_profile_by_name("system-default")
+            async def _get_sys_profile() -> dict[str, object] | None:
+                async with db.async_session_scope() as session:
+                    repo = LlmRepository(session)
+                    p = await repo.get_llm_profile_by_name("system-default")
+                    if p:
+                        return {"model": p.model}
+                    return None
+
+            sys_profile = anyio.run(_get_sys_profile)
             if sys_profile:
                 fallback_model = str(sys_profile["model"])
         except Exception:
@@ -116,7 +128,12 @@ def create_llm_adapter(
         from specweaver.infrastructure.llm.telemetry import CostEntry
 
         try:
-            raw_overrides = db.get_cost_overrides()
+            async def _get_cost_overrides() -> dict[str, tuple[float, float]] | None:
+                async with db.async_session_scope() as session:
+                    repo = LlmRepository(session)
+                    return await repo.get_cost_overrides()
+
+            raw_overrides = anyio.run(_get_cost_overrides)
             cost_overrides = (
                 {k: CostEntry(*v) for k, v in raw_overrides.items()} if raw_overrides else None
             )

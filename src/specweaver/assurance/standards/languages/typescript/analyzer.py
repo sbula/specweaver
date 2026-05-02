@@ -51,7 +51,9 @@ class TSStandardsAnalyzer(JSStandardsAnalyzer):
         ]
 
     def get_code_structure(self) -> CodeStructureInterface:
-        from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
+        from specweaver.workspace.ast.parsers.typescript.codestructure import (
+            TypeScriptCodeStructure,
+        )
 
         return TypeScriptCodeStructure()
 

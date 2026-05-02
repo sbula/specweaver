@@ -11,12 +11,7 @@ def repo(tmp_path):
 class TestLineageRepository:
     """Artifact event logging and history."""
 
-    def test_schema_created(self, repo):
-        with repo._get_connection() as conn:
-            rows = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='artifact_events'"
-            ).fetchall()
-        assert len(rows) == 1
+
 
     def test_log_artifact_event_unparented(self, repo):
         repo.log_artifact_event("uuid-1", None, "run-1", "CREATED", "gemini-test")

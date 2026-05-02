@@ -157,17 +157,19 @@ class GenerateCodeHandler:
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
-            from specweaver.graph.lineage.store.lineage_repository import LineageRepository
-            local_db = context.project_path / ".specweaver" / "graph.db"
-            local_db.parent.mkdir(parents=True, exist_ok=True)
-            repo = LineageRepository(str(local_db))
-            repo.log_artifact_event(
-                artifact_id=artifact_uuid,
-                parent_id=parent_id,
-                run_id=getattr(context, "run_id", None) or "pipeline_run",
-                event_type="generated_code",
-                model_id=config.model,
-            )
+            from specweaver.core.config.database import Database
+            from specweaver.core.flow.store import FlowRepository
+            local_db = context.project_path / ".specweaver" / "specweaver.db"
+            db = Database(str(local_db))
+            async with db.async_session_scope() as session:
+                repo = FlowRepository(session)
+                await repo.log_artifact_event(
+                    artifact_id=artifact_uuid,
+                    parent_id=parent_id,
+                    run_id=getattr(context, "run_id", None) or "pipeline_run",
+                    event_type="generated_code",
+                    model_id=config.model,
+                )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -246,17 +248,19 @@ class GenerateTestsHandler:
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 
-            from specweaver.graph.lineage.store.lineage_repository import LineageRepository
-            local_db = context.project_path / ".specweaver" / "graph.db"
-            local_db.parent.mkdir(parents=True, exist_ok=True)
-            repo = LineageRepository(str(local_db))
-            repo.log_artifact_event(
-                artifact_id=artifact_uuid,
-                parent_id=parent_id,
-                run_id=getattr(context, "run_id", None) or "pipeline_run",
-                event_type="generated_tests",
-                model_id=config.model,
-            )
+            from specweaver.core.config.database import Database
+            from specweaver.core.flow.store import FlowRepository
+            local_db = context.project_path / ".specweaver" / "specweaver.db"
+            db = Database(str(local_db))
+            async with db.async_session_scope() as session:
+                repo = FlowRepository(session)
+                await repo.log_artifact_event(
+                    artifact_id=artifact_uuid,
+                    parent_id=parent_id,
+                    run_id=getattr(context, "run_id", None) or "pipeline_run",
+                    event_type="generated_tests",
+                    model_id=config.model,
+                )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -424,17 +428,19 @@ class PlanSpecHandler:
             if not parent_id:
                 parent_id = getattr(context, "run_id", "") or ""
 
-            from specweaver.graph.lineage.store.lineage_repository import LineageRepository
-            local_db = context.project_path / ".specweaver" / "graph.db"
-            local_db.parent.mkdir(parents=True, exist_ok=True)
-            repo = LineageRepository(str(local_db))
-            repo.log_artifact_event(
-                artifact_id=artifact_uuid,
-                parent_id=parent_id,
-                run_id=getattr(context, "run_id", None) or "pipeline_run",
-                event_type="generated_plan",
-                model_id=config.model,
-            )
+            from specweaver.core.config.database import Database
+            from specweaver.core.flow.store import FlowRepository
+            local_db = context.project_path / ".specweaver" / "specweaver.db"
+            db = Database(str(local_db))
+            async with db.async_session_scope() as session:
+                repo = FlowRepository(session)
+                await repo.log_artifact_event(
+                    artifact_id=artifact_uuid,
+                    parent_id=parent_id,
+                    run_id=getattr(context, "run_id", None) or "pipeline_run",
+                    event_type="generated_plan",
+                    model_id=config.model,
+                )
 
             return StepResult(
                 status=StepStatus.PASSED,

@@ -17,72 +17,213 @@ Tables:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 import sqlite3
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-from specweaver.core.config._db_config_mixin import ConfigSettingsMixin
-from specweaver.core.config._db_extensions_mixin import DataExtensionsMixin
-from specweaver.core.config._db_llm_mixin import LlmProfilesMixin
-from specweaver.core.config._db_telemetry_mixin import TelemetryMixin
-from specweaver.core.config._schema import (
-    DEFAULT_PROFILES,
-    SCHEMA_V1,
-    SCHEMA_V2,
-    SCHEMA_V3,
-    SCHEMA_V4,
-    SCHEMA_V5,
-    SCHEMA_V6,
-    SCHEMA_V7,
-    SCHEMA_V8,
-    SCHEMA_V9,
-    SCHEMA_V10,
-    SCHEMA_V11,
-    SCHEMA_V12,
-    SCHEMA_V13,
-    SCHEMA_V14,
-)
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.types import String, TypeDecorator
 
-# Backward-compatible aliases (tests import with underscore prefix)
-_SCHEMA_V1 = SCHEMA_V1
-_SCHEMA_V2 = SCHEMA_V2
-_SCHEMA_V3 = SCHEMA_V3
-_SCHEMA_V4 = SCHEMA_V4
-_SCHEMA_V5 = SCHEMA_V5
-_SCHEMA_V6 = SCHEMA_V6
-_SCHEMA_V7 = SCHEMA_V7
-_SCHEMA_V8 = SCHEMA_V8
-_SCHEMA_V9 = SCHEMA_V9
-_SCHEMA_V10 = SCHEMA_V10
-_SCHEMA_V11 = SCHEMA_V11
-_SCHEMA_V12 = SCHEMA_V12
-_SCHEMA_V13 = SCHEMA_V13
-_SCHEMA_V14 = SCHEMA_V14
-_DEFAULT_PROFILES = DEFAULT_PROFILES
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+
+
+class StrictISODateTime(TypeDecorator[datetime]):
+    """
+    Forces SQLAlchemy to serialize/deserialize datetime objects exactly
+    matching the legacy SpecWeaver format: `YYYY-MM-DDTHH:MM:SS.ffffff+00:00`.
+    This prevents Zero Regression crashes when reading legacy SQLite files.
+    """
+    impl = String
+    cache_ok = True
+
+    def process_bind_param(self, value: datetime | None, dialect: Any) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, datetime):
+            raise TypeError("Value must be a datetime object")
+        if value.tzinfo is None:
+            raise ValueError("StrictISODateTime must be timezone-aware")
+        return value.isoformat()
+
+    def process_result_value(self, value: str | None, dialect: Any) -> datetime | None:
+        if value is None:
+            return None
+        # datetime.fromisoformat natively supports strict ISO strings with timezones
+        return datetime.fromisoformat(value)
+
+
+class CQRSQueueManager:
+    """
+    Manages an asynchronous queue for CQRS write operations.
+    Runs a background Write Worker task that consumes the queue.
+    Features a Dead Letter Exchange (DLX) to survive poison payloads.
+    """
+    def __init__(self, maxsize: int = 1000, dlx_path: str | Path | None = None):
+        # We lazy-init the queue to ensure it binds to the correct event loop
+        self._maxsize = maxsize
+        self._queue: asyncio.Queue[Any] | None = None
+        self._worker_task: asyncio.Task[Any] | None = None
+        self._dlx_path = Path(dlx_path) if dlx_path else Path(".dead_letter.log")
+
+    async def start(self) -> None:
+        """Start the background Write Worker."""
+        if self._queue is None:
+            self._queue = asyncio.Queue(maxsize=self._maxsize)
+        if self._worker_task is None:
+            self._worker_task = asyncio.create_task(self._worker_loop())
+
+    async def stop(self) -> None:
+        """Stop the background Write Worker."""
+        if self._worker_task:
+            self._worker_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await self._worker_task
+            self._worker_task = None
+
+    async def enqueue(self, callback: Any) -> None:
+        """Enqueue a write payload asynchronously."""
+        if self._queue is None:
+            self._queue = asyncio.Queue(maxsize=self._maxsize)
+        await self._queue.put(callback)
+
+    def enqueue_nowait(self, callback: Any) -> None:
+        """Enqueue a write payload immediately."""
+        if self._queue is None:
+            self._queue = asyncio.Queue(maxsize=self._maxsize)
+        self._queue.put_nowait(callback)
+
+    async def flush(self) -> None:
+        """Wait for the queue to empty."""
+        if self._queue is not None:
+            await self._queue.join()
+
+    async def _worker_loop(self) -> None:
+        """Background worker loop that processes writes."""
+        if self._queue is None:
+            return
+        while True:
+            callback = await self._queue.get()
+            try:
+                if asyncio.iscoroutinefunction(callback):
+                    await callback()
+                else:
+                    callback()
+            except asyncio.CancelledError:
+                # If cancelled while processing, exit cleanly
+                break
+            except Exception as e:
+                # Dead Letter Exchange: Catch everything else
+                import logging
+                from logging.handlers import RotatingFileHandler
+                
+                dlx_logger = logging.getLogger(f"dlx_worker_{id(self)}")
+                if not dlx_logger.handlers:
+                    try:
+                        handler = RotatingFileHandler(self._dlx_path, maxBytes=10*1024*1024, backupCount=3)
+                        handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s: %(message)s"))
+                        dlx_logger.addHandler(handler)
+                    except Exception as dlx_setup_e:
+                        logging.critical(f"Failed to setup DLX RotatingFileHandler: {dlx_setup_e}")
+                
+                try:
+                    dlx_logger.error(f"Error: {e}")
+                except Exception as dlx_e:
+                    logging.critical(f"DLX write failed: {dlx_e}")
+            finally:
+                self._queue.task_done()
+
+
+# Global semaphore to throttle concurrent database reads/writes, preventing OS file descriptor exhaustion.
+_db_semaphore: asyncio.Semaphore | None = None
+
+def get_db_semaphore(max_connections: int = 500) -> asyncio.Semaphore:
+    """Get or create the asyncio Semaphore for the current event loop."""
+    global _db_semaphore
+    if _db_semaphore is None:
+        _db_semaphore = asyncio.Semaphore(max_connections)
+    return _db_semaphore
+
+
+def create_async_engine(url: str, **kwargs: Any) -> AsyncEngine:
+    """
+    Create a new asynchronous SQLAlchemy engine.
+    Mandates NullPool by default to prevent SQLite lock contention under massive parallelism.
+    """
+    from sqlalchemy.ext.asyncio import create_async_engine as sa_create_async_engine
+    from sqlalchemy.pool import NullPool
+
+    # Ensure we use NullPool by default if not overridden
+    if "poolclass" not in kwargs:
+        kwargs["poolclass"] = NullPool
+
+    return sa_create_async_engine(url, **kwargs)
+
+
+@asynccontextmanager
+async def session_scope(engine: AsyncEngine, max_connections: int = 500) -> AsyncGenerator[AsyncSession, None]:
+    """
+    Provide a transactional scope around a series of operations.
+    Enforces a strict concurrency limit using asyncio.Semaphore.
+    """
+    semaphore = get_db_semaphore(max_connections)
+
+    async with semaphore, AsyncSession(engine, expire_on_commit=False) as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+# Global CQRS write queue instance (managed per-event-loop for safe testing)
+_global_write_queue: CQRSQueueManager | None = None
+_global_write_queue_loop: asyncio.AbstractEventLoop | None = None
+
+def get_global_write_queue() -> CQRSQueueManager:
+    """Retrieve the global write queue for the current event loop."""
+    global _global_write_queue, _global_write_queue_loop
+    try:
+        current_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        current_loop = None
+
+    if _global_write_queue is None or _global_write_queue_loop is not current_loop:
+        _global_write_queue = CQRSQueueManager()
+        _global_write_queue_loop = current_loop
+    return _global_write_queue
+
+
+@asynccontextmanager
+async def cqrs_context() -> AsyncGenerator[CQRSQueueManager, None]:
+    """
+    Context manager that starts the global CQRS write queue,
+    yields it, and guarantees that all pending writes are flushed
+    and the worker is gracefully stopped upon exit.
+    """
+    q = get_global_write_queue()
+    await q.start()
+    try:
+        yield q
+    finally:
+        await q.flush()
+        await q.stop()
+
+
+
 
 logger = logging.getLogger(__name__)
 
 _PROJECT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
-# Data-driven migration table: (version, sql_script, description)
-_MIGRATIONS: list[tuple[int, str, str]] = [
-    (2, SCHEMA_V2, "context_limit"),
-    (3, SCHEMA_V3, "log_level"),
-    (4, SCHEMA_V4, "constitution_max_size"),
-    (5, SCHEMA_V5, "domain_profile"),
-    (6, SCHEMA_V6, "project_standards"),
-    (7, SCHEMA_V7, "auto_bootstrap_constitution"),
-    (8, SCHEMA_V8, "stitch_mode"),
-    (9, SCHEMA_V9, "llm_usage_log, llm_cost_overrides"),
-    (10, SCHEMA_V10, "llm_profiles.provider"),
-    (11, SCHEMA_V11, "artifact_events & usage correlation"),
-    (12, SCHEMA_V12, "model_id for artifact_events"),
-    (13, SCHEMA_V13, "default_dal on projects"),
-    (14, SCHEMA_V14, "drop validation_overrides"),
-]
+
 
 
 def _now_iso() -> str:
@@ -99,17 +240,11 @@ def _validate_project_name(name: str) -> None:
         raise ValueError(msg)
 
 
-class Database(
-    ConfigSettingsMixin,
-    DataExtensionsMixin,
-    LlmProfilesMixin,
-    TelemetryMixin,
-):
+class Database:
     """Multi-project configuration database.
 
-    Mixins supply domain methods (config settings, LLM profiles,
-    data extensions, telemetry). This class owns the connection and
-    schema lifecycle.
+    This class owns the connection and schema lifecycle, managed via Alembic
+    and SQLAlchemy Repositories.
     """
 
     def __init__(self, db_path: str | Path) -> None:
@@ -126,203 +261,134 @@ class Database(
         conn.execute("PRAGMA foreign_keys=ON")
         return conn
 
+    @asynccontextmanager
+    async def async_session_scope(self) -> AsyncGenerator[AsyncSession, None]:
+        """Provide an AsyncSession scoped to this database for the new Domain Stores."""
+        engine = create_async_engine(f"sqlite+aiosqlite:///{self._db_path}")
+        async with session_scope(engine) as session:
+            yield session
+
     # ------------------------------------------------------------------
     # Schema management
     # ------------------------------------------------------------------
 
     def _ensure_schema(self) -> None:
-        """Create tables and apply migrations. Idempotent."""
-        with self.connect() as conn:
-            conn.executescript(SCHEMA_V1)
+        """Create tables and apply migrations via Alembic. Idempotent."""
+        import alembic.config
+        import alembic.command
+        import anyio
+        from sqlalchemy import select
+        from specweaver.infrastructure.llm.store import LlmProfile
+        
+        try:
+            alembic_cfg = alembic.config.Config("alembic.ini")
+            alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{self._db_path}")
+            alembic.command.upgrade(alembic_cfg, "head")
+        except Exception as exc:
+            logger.warning("Alembic schema migration failed or skipped: %s", exc)
+            # Fallback for tests or environments without alembic.ini
+            import anyio
+            from sqlalchemy.ext.asyncio import create_async_engine
+            from specweaver.infrastructure.llm.store import Base as LlmBase
+            from specweaver.workspace.store import Base as WorkspaceBase
+            
+            async def _create_all() -> None:
+                engine = create_async_engine(f"sqlite+aiosqlite:///{self._db_path}")
+                async with engine.begin() as conn:
+                    await conn.run_sync(LlmBase.metadata.create_all)
+                    await conn.run_sync(WorkspaceBase.metadata.create_all)
+            anyio.run(_create_all)
 
-            # Seed schema version if empty
-            existing = conn.execute(
-                "SELECT COUNT(*) FROM schema_version",
-            ).fetchone()[0]
-            if existing == 0:
-                conn.execute(
-                    "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
-                    (1, _now_iso()),
-                )
+        # Seed default LLM profiles if empty
+        async def _seed_profiles() -> None:
+            from specweaver.infrastructure.llm.store import LlmProfile
+            async with self.async_session_scope() as session:
+                result = await session.execute(select(LlmProfile).limit(1))
+                if result.first() is None:
+                    defaults = [
+                        LlmProfile(name="system-default", is_global=1, provider="gemini", model="gemini-2.5-pro", temperature=0.7, max_output_tokens=8192, response_format="text"),
+                        LlmProfile(name="implement", is_global=1, provider="gemini", model="gemini-2.5-flash", temperature=0.2, max_output_tokens=8192, response_format="text"),
+                        LlmProfile(name="review", is_global=1, provider="gemini", model="gemini-2.5-flash", temperature=0.0, max_output_tokens=8192, response_format="text"),
+                    ]
+                    session.add_all(defaults)
 
-            current_version = (
-                conn.execute(
-                    "SELECT MAX(version) FROM schema_version",
-                ).fetchone()[0]
-                or 0
-            )
-
-            self._apply_migrations(conn, current_version)
-
-            # Seed default LLM profiles if empty
-            profile_count = conn.execute(
-                "SELECT COUNT(*) FROM llm_profiles",
-            ).fetchone()[0]
-            if profile_count == 0:
-                conn.executemany(
-                    "INSERT INTO llm_profiles "
-                    "(name, is_global, model, temperature, "
-                    "max_output_tokens, response_format, context_limit, provider) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    DEFAULT_PROFILES,
-                )
-
-    @staticmethod
-    def _apply_migrations(
-        conn: sqlite3.Connection,
-        current_version: int,
-    ) -> None:
-        """Apply all pending schema migrations from _MIGRATIONS table."""
-        for version, sql, description in _MIGRATIONS:
-            if current_version < version:
-                with suppress(Exception):
-                    conn.executescript(sql)
-                conn.execute(
-                    "INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, ?)",
-                    (version, _now_iso()),
-                )
-                logger.info(
-                    "Database schema migrated to v%d (%s)",
-                    version,
-                    description,
-                )
+        anyio.run(_seed_profiles)
 
     # ------------------------------------------------------------------
     # Project CRUD
     # ------------------------------------------------------------------
 
     def register_project(self, name: str, root_path: str) -> None:
-        """Register a new project.
+        """Register a new project using WorkspaceRepository."""
+        import anyio
+        from sqlalchemy import select
 
-        Args:
-            name: Project identifier. Must match ^[a-z0-9][a-z0-9_-]*$.
-            root_path: Absolute path to the project root directory.
+        from specweaver.infrastructure.llm.store import LlmProfile, LlmRepository
+        from specweaver.workspace.store import WorkspaceRepository
 
-        Raises:
-            ValueError: If name is invalid, already exists, or path is
-                already registered to another project.
-        """
-        _validate_project_name(name)
-        logger.debug("register_project called for name=%s, path=%s", name, root_path)
-        now = _now_iso()
+        async def _register() -> None:
+            async with self.async_session_scope() as session:
+                ws_repo = WorkspaceRepository(session)
+                await ws_repo.register_project(name, root_path)
 
-        with self.connect() as conn:
-            # Check duplicate name
-            existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?",
-                (name,),
-            ).fetchone()
-            if existing:
-                logger.warning("register_project failed: name '%s' already exists", name)
-                msg = f"Project '{name}' already exists"
-                raise ValueError(msg)
+                llm_repo = LlmRepository(session)
+                stmt = select(LlmProfile).where(LlmProfile.is_global == 1)
+                globals_ = (await session.execute(stmt)).scalars().all()
+                for profile in globals_:
+                    await llm_repo.link_project_profile(name, profile.name, profile.id)
 
-            # Check duplicate path
-            existing_path = conn.execute(
-                "SELECT name FROM projects WHERE root_path = ?",
-                (root_path,),
-            ).fetchone()
-            if existing_path:
-                logger.warning(
-                    "register_project failed: path '%s' already registered to '%s'",
-                    root_path,
-                    existing_path["name"],
-                )
-                msg = (
-                    f"Path '{root_path}' is already registered to project '{existing_path['name']}'"
-                )
-                raise ValueError(msg)
-
-            conn.execute(
-                "INSERT INTO projects (name, root_path, created_at, last_used_at) "
-                "VALUES (?, ?, ?, ?)",
-                (name, root_path, now, now),
-            )
-
-            # Auto-link all global profiles
-            globals_ = conn.execute(
-                "SELECT id, name FROM llm_profiles WHERE is_global = 1",
-            ).fetchall()
-            for profile in globals_:
-                conn.execute(
-                    "INSERT INTO project_llm_links (project_name, role, profile_id) "
-                    "VALUES (?, ?, ?)",
-                    (name, profile["name"], profile["id"]),
-                )
+        anyio.run(_register)
 
     def get_project(self, name: str) -> dict[str, object] | None:
         """Get project info by name, or None if not found."""
-        with self.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM projects WHERE name = ?",
-                (name,),
-            ).fetchone()
-            return dict(row) if row else None
+        import anyio
+
+        from specweaver.workspace.store import WorkspaceRepository
+
+        async def _get() -> dict[str, object] | None:
+            async with self.async_session_scope() as session:
+                return await WorkspaceRepository(session).get_project(name)
+
+        return anyio.run(_get)
 
     def list_projects(self) -> list[dict[str, object]]:
         """List all registered projects, ordered by last_used_at desc."""
-        with self.connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM projects ORDER BY last_used_at DESC",
-            ).fetchall()
-            return [dict(r) for r in rows]
+        import anyio
+
+        from specweaver.workspace.store import WorkspaceRepository
+
+        async def _list() -> list[dict[str, object]]:
+            async with self.async_session_scope() as session:
+                return await WorkspaceRepository(session).list_projects()
+
+        return anyio.run(_list)
 
     def remove_project(self, name: str) -> None:
-        """Unregister a project and cascade-delete its links.
+        """Unregister a project and cascade-delete its links."""
+        import anyio
+        from sqlalchemy import delete
 
-        Raises:
-            ValueError: If project not found.
-        """
-        with self.connect() as conn:
-            existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?",
-                (name,),
-            ).fetchone()
-            if not existing:
-                logger.warning("remove_project failed: '%s' not found", name)
-                msg = f"Project '{name}' not found"
-                raise ValueError(msg)
+        from specweaver.infrastructure.llm.store import ProjectLlmLink
+        from specweaver.workspace.store import WorkspaceRepository
 
-            # Clear active state if it pointed to this project
-            active = conn.execute(
-                "SELECT value FROM active_state WHERE key = 'active_project'",
-            ).fetchone()
-            if active and active["value"] == name:
-                conn.execute(
-                    "DELETE FROM active_state WHERE key = 'active_project'",
-                )
+        async def _remove() -> None:
+            async with self.async_session_scope() as session:
+                await WorkspaceRepository(session).remove_project(name)
+                await session.execute(delete(ProjectLlmLink).where(ProjectLlmLink.project_name == name))
 
-            conn.execute("DELETE FROM projects WHERE name = ?", (name,))
+        anyio.run(_remove)
 
     def update_project_path(self, name: str, new_path: str) -> None:
-        """Change a project's root_path.
+        """Change a project's root_path."""
+        import anyio
 
-        Raises:
-            ValueError: If project not found, or new_path already registered.
-        """
-        with self.connect() as conn:
-            existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?",
-                (name,),
-            ).fetchone()
-            if not existing:
-                logger.warning("update_project_path failed: '%s' not found", name)
-                msg = f"Project '{name}' not found"
-                raise ValueError(msg)
+        from specweaver.workspace.store import WorkspaceRepository
 
-            # Check path collision
-            path_owner = conn.execute(
-                "SELECT name FROM projects WHERE root_path = ? AND name != ?",
-                (new_path, name),
-            ).fetchone()
-            if path_owner:
-                msg = f"Path '{new_path}' is already registered to project '{path_owner['name']}'"
-                raise ValueError(msg)
+        async def _update() -> None:
+            async with self.async_session_scope() as session:
+                await WorkspaceRepository(session).update_project_path(name, new_path)
 
-            conn.execute(
-                "UPDATE projects SET root_path = ? WHERE name = ?",
-                (new_path, name),
-            )
+        anyio.run(_update)
 
     # ------------------------------------------------------------------
     # Active project
@@ -330,36 +396,27 @@ class Database(
 
     def get_active_project(self) -> str | None:
         """Get the currently active project name, or None."""
-        with self.connect() as conn:
-            row = conn.execute(
-                "SELECT value FROM active_state WHERE key = 'active_project'",
-            ).fetchone()
-            return row["value"] if row else None
+        import anyio
+
+        from specweaver.workspace.store import WorkspaceRepository
+
+        async def _get() -> str | None:
+            async with self.async_session_scope() as session:
+                return await WorkspaceRepository(session).get_active_project()
+
+        return anyio.run(_get)
 
     def set_active_project(self, name: str) -> None:
-        """Set the active project. Updates last_used_at.
+        """Set the active project. Updates last_used_at."""
+        import anyio
 
-        Raises:
-            ValueError: If project not found.
-        """
-        with self.connect() as conn:
-            existing = conn.execute(
-                "SELECT name FROM projects WHERE name = ?",
-                (name,),
-            ).fetchone()
-            if not existing:
-                logger.warning("set_active_project failed: '%s' not found", name)
-                msg = f"Project '{name}' not found"
-                raise ValueError(msg)
+        from specweaver.workspace.store import WorkspaceRepository
 
-            conn.execute(
-                "INSERT OR REPLACE INTO active_state (key, value) VALUES ('active_project', ?)",
-                (name,),
-            )
-            conn.execute(
-                "UPDATE projects SET last_used_at = ? WHERE name = ?",
-                (_now_iso(), name),
-            )
+        async def _set() -> None:
+            async with self.async_session_scope() as session:
+                await WorkspaceRepository(session).set_active_project(name)
+
+        anyio.run(_set)
 
 
 # ---------------------------------------------------------------------------

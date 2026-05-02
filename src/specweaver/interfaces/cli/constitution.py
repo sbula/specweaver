@@ -87,7 +87,12 @@ def constitution_check(
         db = _core.get_db()
         active = db.get_active_project()
         if active:
-            max_size_kwargs["max_size"] = db.get_constitution_max_size(active)
+            import anyio
+            from specweaver.workspace.store import WorkspaceRepository
+            async def _get_max_size() -> int:
+                async with db.async_session_scope() as session:
+                    return await WorkspaceRepository(session).get_constitution_max_size(active)
+            max_size_kwargs["max_size"] = anyio.run(_get_max_size)
     except Exception:
         pass  # Fall back to default if DB unavailable
 

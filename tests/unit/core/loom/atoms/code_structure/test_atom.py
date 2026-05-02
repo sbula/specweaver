@@ -113,7 +113,10 @@ def test_atom_bubble_up_code_structure_error() -> None:
 
     from typing import Any
 
-    from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, CodeStructureInterface
+    from specweaver.workspace.ast.parsers.interfaces import (
+        CodeStructureError,
+        CodeStructureInterface,
+    )
 
     mock_parser = MagicMock(spec=CodeStructureInterface)
     mock_parser.extract_symbol.side_effect = CodeStructureError("Symbol 'Ghost' not found")

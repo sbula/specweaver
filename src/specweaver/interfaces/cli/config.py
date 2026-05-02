@@ -8,10 +8,23 @@ from __future__ import annotations
 
 import logging
 
+from typing import Any
+import anyio
 import typer
 from rich.table import Table
 
+from specweaver.infrastructure.llm.store import LlmRepository
+from specweaver.workspace.store import WorkspaceRepository
 from specweaver.interfaces.cli import _core
+
+def _run_workspace_op(method_name: str, *args: Any) -> Any:
+    db = _core.get_db()
+    async def _action() -> Any:
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args)
+    return anyio.run(_action)
 from specweaver.interfaces.cli.config_routing import routing_app
 
 logger = logging.getLogger(__name__)
@@ -58,7 +71,7 @@ def config_set_log_level(
     name = _core._require_active_project()
     db = _core.get_db()
     try:
-        db.set_log_level(name, level)
+        _run_workspace_op("set_log_level", name, level)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -76,7 +89,7 @@ def config_get_log_level() -> None:
     name = _core._require_active_project()
     db = _core.get_db()
     try:
-        level = db.get_log_level(name)
+        level = _run_workspace_op("get_log_level", name)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -99,7 +112,7 @@ def config_set_constitution_max_size(
     name = _core._require_active_project()
     db = _core.get_db()
     try:
-        db.set_constitution_max_size(name, size)
+        _run_workspace_op("set_constitution_max_size", name, size)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -116,7 +129,7 @@ def config_get_constitution_max_size() -> None:
     name = _core._require_active_project()
     db = _core.get_db()
     try:
-        max_size = db.get_constitution_max_size(name)
+        max_size = _run_workspace_op("get_constitution_max_size", name)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -142,7 +155,7 @@ def config_set_auto_bootstrap(
     name = _core._require_active_project()
     db = _core.get_db()
     try:
-        db.set_auto_bootstrap(name, mode)
+        _run_workspace_op("set_auto_bootstrap", name, mode)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -159,7 +172,7 @@ def config_get_auto_bootstrap() -> None:
     name = _core._require_active_project()
     db = _core.get_db()
     try:
-        mode = db.get_auto_bootstrap(name)
+        mode = _run_workspace_op("get_auto_bootstrap", name)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -341,36 +354,39 @@ def config_set_provider(
         )
         raise typer.Exit(code=1)
 
-    profile = db.get_project_profile(name, role)
+    async def _update_provider() -> None:
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            profile = await repo.get_project_profile(name, role)
 
-    # If the profile exists and is project-specific, just update it
-    if profile and not profile["is_global"]:
-        update_args = {"provider": provider}
-        if model is not None:
-            update_args["model"] = model
-        db.update_llm_profile(int(str(profile["id"])), **update_args)
+            if profile and not profile.is_global:
+                update_args = {"provider": provider}
+                if model is not None:
+                    update_args["model"] = model
+                await repo.update_llm_profile(profile.id, **update_args)
 
-        _core.console.print(
-            f"[green]\u2713[/green] Updated existing custom profile for role [bold]{role}[/bold]. "
-            f"Provider set to [bold]{provider}[/bold].",
-        )
-    else:
-        # Clone or create a new local profile and link it
-        profile_name = f"{name}-{role}-profile"
-        _model = model or "default"
+                _core.console.print(
+                    f"[green]\u2713[/green] Updated existing custom profile for role [bold]{role}[/bold]. "
+                    f"Provider set to [bold]{provider}[/bold].",
+                )
+            else:
+                profile_name = f"{name}-{role}-profile"
+                _model = model or "default"
 
-        profile_id = db.create_llm_profile(
-            profile_name,
-            provider=provider,
-            model=_model,
-            is_global=False,
-        )
-        db.link_project_profile(name, role, profile_id)
+                profile_id = await repo.create_llm_profile(
+                    profile_name,
+                    provider=provider,
+                    model=_model,
+                    is_global=False,
+                )
+                await repo.link_project_profile(name, role, profile_id)
 
-        _core.console.print(
-            f"[green]\u2713[/green] Created new local profile for role [bold]{role}[/bold]. "
-            f"Provider set to [bold]{provider}[/bold].",
-        )
+                _core.console.print(
+                    f"[green]\u2713[/green] Created new local profile for role [bold]{role}[/bold]. "
+                    f"Provider set to [bold]{provider}[/bold].",
+                )
+
+    anyio.run(_update_provider)
 
 
 # -- Model routing commands -------------------------------------------------

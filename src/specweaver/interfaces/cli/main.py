@@ -44,7 +44,12 @@ def _app_callback(
     active = db.get_active_project()
     if active:
         try:
-            level = db.get_log_level(active)
+            import anyio
+            from specweaver.workspace.store import WorkspaceRepository
+            async def _get_level() -> str:
+                async with db.async_session_scope() as session:
+                    return await WorkspaceRepository(session).get_log_level(active)
+            level = anyio.run(_get_level)
         except (ValueError, Exception):
             level = "DEBUG"
     else:

@@ -106,17 +106,19 @@ class DraftSpecHandler:
                     content = result_path.read_text(encoding="utf-8")
                     result_path.write_text(tag_str + "\n" + content, encoding="utf-8")
 
-            from specweaver.graph.lineage.store.lineage_repository import LineageRepository
-            local_db = context.project_path / ".specweaver" / "graph.db"
-            local_db.parent.mkdir(parents=True, exist_ok=True)
-            repo = LineageRepository(str(local_db))
-            repo.log_artifact_event(
-                artifact_id=artifact_uuid,
-                parent_id=None,
-                run_id=getattr(context, "run_id", None) or "pipeline_run",
-                event_type="drafted_spec",
-                model_id=gen_config.model if gen_config else "unknown",
-            )
+            from specweaver.core.config.database import Database
+            from specweaver.core.flow.store import FlowRepository
+            local_db = context.project_path / ".specweaver" / "specweaver.db"
+            db = Database(str(local_db))
+            async with db.async_session_scope() as session:
+                repo = FlowRepository(session)
+                await repo.log_artifact_event(
+                    artifact_id=artifact_uuid,
+                    parent_id=None,
+                    run_id=getattr(context, "run_id", None) or "pipeline_run",
+                    event_type="drafted_spec",
+                    model_id=gen_config.model if gen_config else "unknown",
+                )
 
             return StepResult(
                 status=StepStatus.PASSED,

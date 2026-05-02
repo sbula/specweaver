@@ -18,9 +18,11 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, Literal
 
+import anyio
 from pydantic import BaseModel, ConfigDict
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.infrastructure.llm.store import LlmRepository
 
 if TYPE_CHECKING:
     from specweaver.core.config.database import Database
@@ -174,15 +176,34 @@ def load_settings(
         msg = f"Project '{project_name}' not found"
         raise ValueError(msg)
 
-    profile = db.get_project_profile(project_name, llm_role)
+    async def _get_profile_and_stitch() -> tuple[dict[str, object] | None, str]:
+        from specweaver.infrastructure.llm.store import LlmRepository
+        from specweaver.workspace.store import WorkspaceRepository
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            ws_repo = WorkspaceRepository(session)
+            
+            # 1. Fetch Stitch Mode
+            stitch_mode = await ws_repo.get_stitch_mode(project_name)
+            
+            # 2. Fetch LLM Profile
+            p = await repo.get_project_profile(project_name, llm_role)
+            if not p:
+                p = await repo.get_llm_profile_by_name("system-default")
 
-    if not profile:
-        logger.info(
-            "No profile for project=%s role=%s, falling back to system-default",
-            project_name,
-            llm_role,
-        )
-        profile = db.get_llm_profile_by_name("system-default")
+            if not p:
+                return None, stitch_mode
+
+            # Convert SQLAlchemy model to dict for backward compatibility
+            return {
+                "model": p.model,
+                "temperature": p.temperature,
+                "max_output_tokens": p.max_output_tokens,
+                "response_format": p.response_format,
+                "provider": p.provider,
+            }, stitch_mode
+
+    profile, stitch_mode = anyio.run(_get_profile_and_stitch)
 
     if not profile:
         logger.error(
@@ -204,7 +225,7 @@ def load_settings(
         api_key=os.environ.get(env_key, ""),
     )
 
-    stitch_mode = db.get_stitch_mode(project_name)
+    # stitch_mode is returned from our combined async run
     stitch = StitchSettings(
         mode=stitch_mode,  # type: ignore[arg-type]
         api_key=os.environ.get("STITCH_API_KEY", ""),
@@ -329,34 +350,34 @@ def migrate_legacy_config(
     # Register project
     db.register_project(project_name, project_path)
 
-    sys_profile = db.get_llm_profile_by_name("system-default")
-    if not sys_profile:
-        raise ValueError("Database missing system-default profile.")
+    async def _migrate_profile() -> None:
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            p = await repo.get_llm_profile_by_name("system-default")
+            if not p:
+                raise ValueError("Database missing system-default profile.")
 
-    model = llm_raw.get("model", str(sys_profile["model"]))
-    temperature = llm_raw.get("temperature", 0.7)
-    max_tokens = llm_raw.get("max_output_tokens", 4096)
-    resp_format = llm_raw.get("response_format", "text")
-    provider = llm_raw.get("provider", str(sys_profile.get("provider", "gemini")))
+            p_provider = p.provider or "gemini"
+            _model = llm_raw.get("model", p.model)
+            _provider = llm_raw.get("provider", p_provider)
 
-    profile_id = db.create_llm_profile(
-        name="legacy-import",
-        is_global=False,
-        model=model,
-        temperature=temperature,
-        max_output_tokens=max_tokens,
-        response_format=resp_format,
-        provider=provider,
-    )
+            profile_id = await repo.create_llm_profile(
+                name="legacy-import",
+                is_global=False,
+                model=_model,
+                temperature=llm_raw.get("temperature", 0.7),
+                max_output_tokens=llm_raw.get("max_output_tokens", 4096),
+                response_format=llm_raw.get("response_format", "text"),
+                provider=_provider,
+            )
 
-    # Link this profile for all standard roles
-    for role in ("review", "draft", "search"):
-        db.link_project_profile(project_name, role, profile_id)
+            for role in ("review", "draft", "search"):
+                await repo.link_project_profile(project_name, role, profile_id)
+
+    anyio.run(_migrate_profile)
 
     logger.info(
-        "Migrated legacy config for project '%s' (provider=%s, model=%s)",
+        "Migrated legacy config for project '%s'",
         project_name,
-        provider,
-        model,
     )
     return True

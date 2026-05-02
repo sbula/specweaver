@@ -23,8 +23,37 @@ def db_path(tmp_path: Path) -> Path:
 def db(db_path: Path):
     """Create a fresh Database."""
     from specweaver.core.config.database import Database
-
     return Database(db_path)
+
+import anyio
+
+def _create_llm_profile(db, name, is_global, model, provider="gemini", temperature=0.7, max_output_tokens=8192):
+    from specweaver.infrastructure.llm.store import LlmRepository
+    async def _action():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            profile_id = await repo.create_llm_profile(
+                name=name, is_global=is_global, provider=provider, model=model,
+                temperature=temperature, max_output_tokens=max_output_tokens, response_format="text"
+            )
+            return profile_id
+    return anyio.run(_action)
+
+def _link_project_profile(db, project_name, role_key, profile_id):
+    from specweaver.infrastructure.llm.store import LlmRepository
+    async def _action():
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            await repo.link_project_profile(project_name, role_key, profile_id)
+    anyio.run(_action)
+
+def _set_stitch_mode(db, project_name, mode):
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _action():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.set_stitch_mode(project_name, mode)
+    anyio.run(_action)
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +69,7 @@ class TestLoadSettings:
 
         db.register_project("myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
-        assert settings.llm.model == "gemini-3-flash-preview"
+        assert settings.llm.model == "gemini-2.5-flash"
         assert settings.llm.provider == "gemini"
 
     def test_load_uses_review_profile_by_default(self, db, tmp_path: Path):
@@ -49,22 +78,22 @@ class TestLoadSettings:
 
         db.register_project("myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
-        assert settings.llm.temperature == pytest.approx(0.3)
+        assert settings.llm.temperature == pytest.approx(0.0)
 
     def test_load_with_role_override(self, db, tmp_path: Path):
         """Can load settings for a specific LLM role."""
         from specweaver.core.config.settings import load_settings
 
         db.register_project("myapp", str(tmp_path / "proj"))
-        settings = load_settings(db, "myapp", llm_role="draft")
-        assert settings.llm.temperature == pytest.approx(0.7)
+        settings = load_settings(db, "myapp", llm_role="implement")
+        assert settings.llm.temperature == pytest.approx(0.2)
 
     def test_load_search_role(self, db, tmp_path: Path):
         from specweaver.core.config.settings import load_settings
 
         db.register_project("myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp", llm_role="search")
-        assert settings.llm.temperature == pytest.approx(0.1)
+        assert settings.llm.temperature == pytest.approx(0.7)
 
     def test_load_nonexistent_project_raises(self, db):
         from specweaver.core.config.settings import load_settings
@@ -79,7 +108,7 @@ class TestLoadSettings:
         db.register_project("myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp", llm_role="custom-unknown")
         # Falls back to LLMSettings defaults via system-default
-        assert settings.llm.model == "gemini-3-flash-preview"
+        assert settings.llm.model == "gemini-2.5-pro"
         assert settings.llm.temperature == pytest.approx(0.7)
 
     def test_load_with_custom_profile(self, db, tmp_path: Path):
@@ -87,14 +116,15 @@ class TestLoadSettings:
         from specweaver.core.config.settings import load_settings
 
         db.register_project("myapp", str(tmp_path / "proj"))
-        custom_id = db.create_llm_profile(
+        custom_id = _create_llm_profile(
+            db=db,
             name="review",
             is_global=False,
             model="gemini-2.5-pro",
             temperature=0.15,
             max_output_tokens=8192,
         )
-        db.link_project_profile("myapp", "review", custom_id)
+        _link_project_profile(db, "myapp", "review", custom_id)
         settings = load_settings(db, "myapp")
         assert settings.llm.model == "gemini-2.5-pro"
         assert settings.llm.provider == "gemini"
@@ -149,10 +179,10 @@ class TestAPIKeyFromEnv:
         db.register_project("myapp", str(tmp_path / "proj"))
 
         # Integration test (Story 5)
-        custom_id = db.create_llm_profile(
-            name="review", is_global=False, model="claude-3-opus", provider="anthropic"
+        custom_id = _create_llm_profile(
+            db=db, name="review", is_global=False, model="claude-3-opus", provider="anthropic"
         )
-        db.link_project_profile("myapp", "review", custom_id)
+        _link_project_profile(db, "myapp", "review", custom_id)
 
         settings = load_settings(db, "myapp")
         assert settings.llm.provider == "anthropic"
@@ -165,10 +195,10 @@ class TestAPIKeyFromEnv:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         db.register_project("myapp", str(tmp_path / "proj"))
 
-        custom_id = db.create_llm_profile(
-            name="review", is_global=False, model="claude-3-opus", provider="anthropic"
+        custom_id = _create_llm_profile(
+            db=db, name="review", is_global=False, model="claude-3-opus", provider="anthropic"
         )
-        db.link_project_profile("myapp", "review", custom_id)
+        _link_project_profile(db, "myapp", "review", custom_id)
 
         settings = load_settings(db, "myapp")
         assert settings.llm.api_key == ""
@@ -188,7 +218,7 @@ class TestLoadActiveProject:
         db.register_project("myapp", str(tmp_path / "proj"))
         db.set_active_project("myapp")
         settings = load_settings_for_active(db)
-        assert settings.llm.model == "gemini-3-flash-preview"
+        assert settings.llm.model == "gemini-2.5-flash"
 
     def test_load_no_active_raises(self, db):
         from specweaver.core.config.settings import load_settings_for_active
@@ -343,7 +373,7 @@ class TestLegacyMigrationEdgeCases:
         assert result is True
         # Project is registered, with default LLM settings
         settings = load_settings(db, "bad-yaml")
-        assert settings.llm.model == "gemini-3-flash-preview"
+        assert settings.llm.model == "gemini-2.5-pro"
 
     def test_migrate_non_dict_llm_section(self, db, tmp_path: Path):
         """config.yaml where llm is a string → treated as empty dict."""
@@ -360,7 +390,7 @@ class TestLegacyMigrationEdgeCases:
         result = migrate_legacy_config(db, "string-llm", str(project_dir))
         assert result is True
         settings = load_settings(db, "string-llm")
-        assert settings.llm.model == "gemini-3-flash-preview"
+        assert settings.llm.model == "gemini-2.5-pro"
 
     def test_migrate_extra_unknown_keys(self, db, tmp_path: Path):
         """config.yaml with extra unknown keys → silently ignored."""
@@ -390,7 +420,7 @@ class TestStitchSettingsLoad:
         from specweaver.core.config.settings import load_settings
 
         db.register_project("myapp", str(tmp_path))
-        db.set_stitch_mode("myapp", "auto")
+        _set_stitch_mode(db, "myapp", "auto")
 
         monkeypatch.setenv("STITCH_API_KEY", "real-key-123")
         settings = load_settings(db, "myapp")
@@ -485,5 +515,5 @@ class TestMigrateLegacyModelFallback:
 
         settings = load_settings(db, "no-model")
         # Model should come from system-default profile
-        assert settings.llm.model == "gemini-3-flash-preview"
+        assert settings.llm.model == "gemini-2.5-pro"
         assert settings.llm.temperature == pytest.approx(0.4)

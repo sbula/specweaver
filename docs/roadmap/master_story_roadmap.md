@@ -547,10 +547,15 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 These stories do not add new user-facing features, but are critical epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels.
 
-### 🔴 TECH-01: Domain-Driven Design Unification
+### 🟡 TECH-01: Domain-Driven Design Unification
 **Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-01:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-01/TECH-01_ddd_refactor.md)
+    *   `[ ]` **TECH-01:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-01/TECH-01_design.md)
+        *   `[x]` SF-1: Deconstruct Config Monolith
+        *   `[ ]` SF-2: Decentralize CLI Layer
+        *   `[ ]` SF-3: Consolidate Sandbox
+*   **Verifiable Proof:**
+    *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
 
 ### 🟢 TECH-02: Structural Refactoring of Workspace AST Module
 **Benefit:** *Crystal clear boundary separation between mechanical Tree-Sitter extraction and semantic ontology mapping.*

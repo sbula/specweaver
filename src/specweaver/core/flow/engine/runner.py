@@ -137,8 +137,12 @@ class PipelineRunner:
             self._context.project_path.name,
             self._context.spec_path.name,
         )
+
+        from specweaver.core.config.database import cqrs_context
+
         try:
-            return await self._execute_loop(run)
+            async with cqrs_context():
+                return await self._execute_loop(run)
         finally:
             self._flush_telemetry()
 
@@ -178,8 +182,12 @@ class PipelineRunner:
         )
         # Reset from terminal/parked state to running
         run.status = RunStatus.RUNNING
+
+        from specweaver.core.config.database import cqrs_context
+
         try:
-            return await self._execute_loop(run)
+            async with cqrs_context():
+                return await self._execute_loop(run)
         finally:
             self._flush_telemetry()
 

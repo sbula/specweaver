@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -171,7 +171,9 @@ class TestPipelineRunnerSuccess:
         assert result.status == RunStatus.COMPLETED
 
         # Verify handler got the injected state
+        assert result.step_records[0].result is not None
         output = result.step_records[0].result.output
+        assert output is not None
         assert output["run_id"] == result.run_id
         assert output["step_records_len"] == 1
 
@@ -413,6 +415,8 @@ class TestPipelineRunnerEdgeCases:
         runner = PipelineRunner(pipeline, ctx, registry=registry)
 
         result = await runner.run()
+        assert result.step_records[0].result is not None
+        assert result.step_records[0].result.error_message is not None
         assert "Something exploded" in result.step_records[0].result.error_message
 
 
@@ -440,6 +444,8 @@ class TestPipelineRunnerStalenessBypass:
         assert result.status == RunStatus.COMPLETED
         # The step should be SKIPPED immediately with NO output, bypassed
         assert result.step_records[0].status == StepStatus.SKIPPED
+        assert result.step_records[0].result is not None
+        assert result.step_records[0].result.output is not None
         assert result.step_records[0].result.output.get("mock") is None  # PassHandler not called
 
     @pytest.mark.asyncio
@@ -468,6 +474,7 @@ class TestPipelineRunnerStalenessBypass:
 
         # Bypassing didn't happen - the step PASSED and the ContextInjectionHandler executed
         assert result.step_records[0].status == StepStatus.PASSED
+        assert result.step_records[0].result is not None
         assert result.step_records[0].result.output is not None
         # In a real atom, it reads context.stale_nodes
 
@@ -565,3 +572,142 @@ class TestPipelineRunnerVaultSecurity:
 
         with pytest.raises(RuntimeError, match=r"FATAL: vault\.env is currently tracked by Git!"):
             await runner2.resume(parked.run_id)
+
+
+class TestPipelineRunnerCQRSIntegration:
+    """Tests for SF-1: cqrs_context integration."""
+
+    @pytest.mark.asyncio
+    async def test_cqrs_context_wraps_execution_happy_path(self, tmp_path: Path) -> None:
+        """Happy Path: Pipeline execution is wrapped in cqrs_context."""
+        from specweaver.core.config.database import get_global_write_queue
+
+        # Get the global queue bound to the current test's event loop
+        global_write_queue = get_global_write_queue()
+
+        executed = False
+        def cb() -> None:
+            nonlocal executed
+            executed = True
+
+        pipeline = _make_pipeline(step_count=1)
+        ctx = _make_context(tmp_path)
+        registry = _make_registry(PassHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry)
+
+        # Enqueue something before run
+        global_write_queue.enqueue_nowait(cb)
+
+        await runner.run()
+
+        # cqrs_context should have started the worker, flushed the queue, and stopped it.
+        assert executed is True
+        assert global_write_queue._worker_task is None
+
+    @pytest.mark.asyncio
+    async def test_cqrs_context_flushes_on_error(self, tmp_path: Path) -> None:
+        """Graceful Degradation: Unhandled exception in run() still flushes queue."""
+        from specweaver.core.config.database import get_global_write_queue
+
+        # Get the global queue bound to the current test's event loop
+        global_write_queue = get_global_write_queue()
+
+        executed = False
+        def cb() -> None:
+            nonlocal executed
+            executed = True
+
+        pipeline = _make_pipeline(step_count=1)
+        ctx = _make_context(tmp_path)
+
+        # Create an explosive handler that bypasses standard runner trapping
+        # SystemExit isn't caught by Exception
+        class ExplodingHandler:
+            async def execute(self, *args: Any, **kwargs: Any) -> StepResult:
+                raise SystemExit("Catastrophic system exit")
+
+        registry = _make_registry(ExplodingHandler())
+        runner = PipelineRunner(pipeline, ctx, registry=registry)
+
+        global_write_queue.enqueue_nowait(cb)
+
+        with pytest.raises(SystemExit):
+            await runner.run()
+
+        # Queue must have flushed regardless!
+        assert executed is True
+        assert global_write_queue._worker_task is None
+
+    @pytest.mark.asyncio
+    async def test_cqrs_context_wraps_resume_happy_path(self, tmp_path: Path) -> None:
+        """Happy Path: resume() execution properly starts, flushes, and stops cqrs_context."""
+        from specweaver.core.config.database import get_global_write_queue
+
+        # Setup parked run
+        pipeline = _make_pipeline(step_count=2)
+        ctx = _make_context(tmp_path)
+        store = StateStore(tmp_path / "state.db")
+
+        class ParkHandler:
+            async def execute(self, *args: Any, **kwargs: Any) -> StepResult:
+                return StepResult(output={"mock": True}, park_pipeline=True)
+
+        reg1 = _make_registry(ParkHandler())
+        runner1 = PipelineRunner(pipeline, ctx, registry=reg1, store=store)
+        run1 = await runner1.run()
+
+        global_write_queue = get_global_write_queue()
+        executed = False
+        def cb() -> None:
+            nonlocal executed
+            executed = True
+
+        global_write_queue.enqueue_nowait(cb)
+
+        # Resume
+        reg2 = _make_registry(PassHandler())
+        runner2 = PipelineRunner(pipeline, ctx, registry=reg2, store=store)
+        await runner2.resume(run1.run_id)
+
+        assert executed is True
+        assert global_write_queue._worker_task is None
+
+    @pytest.mark.asyncio
+    async def test_cqrs_context_wraps_resume_flushes_on_error(self, tmp_path: Path) -> None:
+        """Graceful Degradation: resume() flushes cqrs_context even on unhandled exception."""
+        from specweaver.core.config.database import get_global_write_queue
+
+        # Setup parked run
+        pipeline = _make_pipeline(step_count=2)
+        ctx = _make_context(tmp_path)
+        store = StateStore(tmp_path / "state.db")
+
+        class ParkHandler:
+            async def execute(self, *args: Any, **kwargs: Any) -> StepResult:
+                return StepResult(output={"mock": True}, park_pipeline=True)
+
+        reg1 = _make_registry(ParkHandler())
+        runner1 = PipelineRunner(pipeline, ctx, registry=reg1, store=store)
+        run1 = await runner1.run()
+
+        # Create an explosive handler for resume
+        class ExplodingHandler:
+            async def execute(self, *args: Any, **kwargs: Any) -> StepResult:
+                raise SystemExit("Catastrophic system exit on resume")
+
+        global_write_queue = get_global_write_queue()
+        executed = False
+        def cb() -> None:
+            nonlocal executed
+            executed = True
+
+        global_write_queue.enqueue_nowait(cb)
+
+        reg2 = _make_registry(ExplodingHandler())
+        runner2 = PipelineRunner(pipeline, ctx, registry=reg2, store=store)
+
+        with pytest.raises(SystemExit):
+            await runner2.resume(run1.run_id)
+
+        assert executed is True
+        assert global_write_queue._worker_task is None

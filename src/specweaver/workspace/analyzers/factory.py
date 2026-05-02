@@ -19,12 +19,12 @@ if TYPE_CHECKING:
 
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
-from specweaver.workspace.context.analyzer_protocols import LanguageAnalyzer
 from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
 from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure
 from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
 from specweaver.workspace.ast.parsers.rust.codestructure import RustCodeStructure
 from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
+from specweaver.workspace.context.analyzer_protocols import LanguageAnalyzer
 
 logger = logging.getLogger(__name__)
 

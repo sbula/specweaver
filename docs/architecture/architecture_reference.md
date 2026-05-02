@@ -675,6 +675,9 @@ To insulate SpecWeaver from breaking changes in standard compilation/debugging s
 | `loom/commons/*` consumed by `validation` | `src/specweaver/validation/rules/code/` (C03, C04, C05) | `validation` archetype `context.yaml` explicitly `forbids: specweaver/loom/*` | DEFERRED (Pending review on whether `commons/qa_runner` executor usage is appropriate inside pure-logic rules via contextual bypasses, or if it should be extracted strictly natively into `flow/` orchestrated tasks) |
 | `File I/O` inside `pure-logic` | `src/specweaver/assurance/graph/hasher.py` | `graph` archetype `pure-logic` explicitly forbids OS/File I/O | DEFERRED (Pending Feature 3.48 Sidecar Databases which will abstract this into network bound architecture natively) |
 | `File I/O` inside `pure-logic` | `src/specweaver/workspace/ast/parsers/exclusions.py` | `workspace/ast/parsers` archetype `pure-logic` forbids OS/File I/O | DEFERRED (Pending Feature 3.32b SF-4 which abstracts physical OS traversals securely via dependency injection bounds) |
+| Inline Imports (Monolith Purge) | `core/config/database.py`, `core/config/settings.py`, `core/flow/handlers/*`, `interfaces/cli/*` | Anti-Pattern: Hiding dependencies via inline imports to bypass `tach` or circular imports | DEFERRED (Pending dependency injection refactoring to pass domain stores dynamically) |
+| Stability Direction Violation | `core/config/database.py`, `core/config/settings.py` | `config` (stable leaf) consumes `workspace` and `llm` (volatile domains) | DEFERRED (Pending dependency injection refactoring for DB initialization) |
+| NFR-2 Boundary Evasion | `src/specweaver/workspace/store.py` | Missing `context.yaml` and not registered in `tach.toml`, causing `tach check` to ignore its boundary violations | DEFERRED (Pending proper module registration for workspace root) |
 
 
 > **Resolved in Feature 3.32 SF-4 (Pipeline Execution Optimization):**

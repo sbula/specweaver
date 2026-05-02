@@ -239,7 +239,12 @@ def _maybe_bootstrap_constitution(
     if not needs_bootstrap:
         return
 
-    bootstrap_mode = db.get_auto_bootstrap(project_name)
+    import anyio
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _get_mode() -> str:
+        async with db.async_session_scope() as session:
+            return await WorkspaceRepository(session).get_auto_bootstrap(project_name)
+    bootstrap_mode = anyio.run(_get_mode)
     languages = sorted({r.language or "unknown" for results in accepted.values() for r in results})
 
     if bootstrap_mode == "auto":

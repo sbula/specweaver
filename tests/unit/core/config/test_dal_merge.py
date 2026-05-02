@@ -49,8 +49,6 @@ def test_dal_impact_matrix(tmp_path):
 
     # Register dummy project pointing to our tmp_path
     db.register_project("dummy", str(tmp_path))
-    db.create_llm_profile("system-default", is_global=True, model="gemini", provider="gemini")
-    db.link_project_profile("dummy", "review", 1)
 
     # 1. Create a dummy base structure? Or just assume empty base merges overlay cleanly.
     # Write the project dal_definitions.yaml
@@ -93,8 +91,6 @@ def test_load_settings_missing_dal_file(tmp_path):
 
     db = Database(tmp_path / "test.db")
     db.register_project("dummy", str(tmp_path))
-    db.create_llm_profile("system-default", is_global=True, model="gemini", provider="gemini")
-    db.link_project_profile("dummy", "review", 1)
 
     settings = load_settings(db, "dummy")
 
@@ -110,8 +106,6 @@ def test_load_settings_invalid_yaml(tmp_path):
 
     db = Database(tmp_path / "test.db")
     db.register_project("dummy", str(tmp_path))
-    db.create_llm_profile("system-default", is_global=True, model="gemini", provider="gemini")
-    db.link_project_profile("dummy", "review", 1)
 
     sw_dir = tmp_path / ".specweaver"
     sw_dir.mkdir()
@@ -134,8 +128,6 @@ def test_load_settings_invalid_schema(tmp_path):
 
     db = Database(tmp_path / "test.db")
     db.register_project("dummy", str(tmp_path))
-    db.create_llm_profile("system-default", is_global=True, model="gemini", provider="gemini")
-    db.link_project_profile("dummy", "review", 1)
 
     sw_dir = tmp_path / ".specweaver"
     sw_dir.mkdir()
