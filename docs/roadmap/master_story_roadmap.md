@@ -303,7 +303,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
     *   🔴 **Automated Code Purging:**
         *   `[ ]` **INT-US-12-SUB:** Sub-Story Integration defined in [US-12_integration.md](integrations/US-12_integration.md)
-        *   `[ ]` A-FLOW-03 Repository Entropy & Garbage Collection (finding dead code)
+        *   `[ ]` A-FLOW-03 Dead Code Detection & Analysis (finding unreachable functions using the graph for human review)
 
 ### 🟡 US-13: Financial-Grade Math Proofs
 **Benefit:** *The agent mathematically proves its algorithms are secure before I deploy them to production, discovering 0-days natively.*

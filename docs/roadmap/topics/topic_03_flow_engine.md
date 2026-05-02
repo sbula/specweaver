@@ -51,5 +51,5 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > _(split from original 3.12)_ — Analyze telemetry + friction data to **suggest** (not auto-apply) model swaps. "Model X has 3× more friction on planning tasks than Model Y." See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`A-FLOW-02` 🔜: Hash GC** (Legacy: 5.3)<br>
   > Phase D | Hash-based garbage collection for graph nodes
-* **`A-FLOW-03` 🔜: Entropy GC** (Legacy: 5.9)<br>
-  > _(new)_ | An offline cron-agent utilizing the `PostgreSQL` persistent topology graph to mathematically detect and automatically delete completely unreferenced AST nodes/dead code modules across the monolithic repository.
+* **`A-FLOW-03` 🔜: Dead Code Detection & Analysis** (Legacy: 5.9)<br>
+  > _(new)_ | Utilize the `PostgreSQL` persistent topology graph to mathematically search and detect unreachable code (functions/methods) across the repository. Generates a report for human review to decide if the isolated code should be deleted or kept for future use.
