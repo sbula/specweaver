@@ -11,6 +11,7 @@ that commands self-register.
 """
 
 from __future__ import annotations
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 # App callback (uses shared objects)
 import typer
@@ -41,7 +42,7 @@ def _app_callback(
     from specweaver.logging import setup_logging
 
     db = get_db()
-    active = db.get_active_project()
+    active = _run_workspace_op("get_active_project")
     if active:
         try:
             import anyio

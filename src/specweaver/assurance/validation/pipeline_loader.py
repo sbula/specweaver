@@ -119,8 +119,7 @@ def resolve_pipeline_name(
     level: str,
     pipeline: str | None = None,
     *,
-    db: Database | None = None,
-    active_project: str | None = None,
+    active_profile: str | None = None,
 ) -> str:
     """Resolve the validation pipeline YAML name from level and context.
 
@@ -133,8 +132,7 @@ def resolve_pipeline_name(
     Args:
         level: One of 'feature', 'component', 'code'.
         pipeline: Explicit pipeline name override.
-        db: Database instance for profile lookups.
-        active_project: Active project name for profile resolution.
+        active_profile: The name of the active project's domain profile.
 
     Returns:
         Resolved pipeline name (e.g. 'validation_spec_default').
@@ -151,15 +149,9 @@ def resolve_pipeline_name(
         return "validation_code_default"
     if level == "component":
         # Check for an active domain profile
-        if active_project and db is not None:
-            import contextlib
-
+        if active_profile:
             from specweaver.core.config.profiles import profile_to_pipeline_name
-
-            with contextlib.suppress(ValueError):
-                profile_name = db.get_domain_profile(active_project)
-                if profile_name:
-                    return profile_to_pipeline_name(profile_name)
+            return profile_to_pipeline_name(active_profile)
         return "validation_spec_default"
     logger.warning("resolve_pipeline_name: unknown level '%s'", level)
     msg = f"Unknown validation level '{level}'. Use 'feature', 'component', or 'code'."

@@ -161,12 +161,12 @@ class TestConstitutionBootstrap:
         self.db = _mock_db
         self.project_dir = tmp_path / "my-proj"
         self.project_dir.mkdir()
-        _mock_db.register_project("my-proj", str(self.project_dir))
-        _mock_db.set_active_project("my-proj")
+        _run_workspace_op(_mock_db, "register_project", "my-proj", str(self.project_dir))
+        _run_workspace_op(_mock_db, "set_active_project", "my-proj")
 
     def _seed_standards(self) -> None:
         """Insert sample standards into the DB."""
-        self.db.save_standard(
+        _run_workspace_op(self.db, "save_standard", 
             project_name="my-proj",
             scope=".",
             language="python",
@@ -175,7 +175,7 @@ class TestConstitutionBootstrap:
             confidence=0.95,
             confirmed_by="hitl",
         )
-        self.db.save_standard(
+        _run_workspace_op(self.db, "save_standard", 
             project_name="my-proj",
             scope=".",
             language="python",
@@ -266,3 +266,14 @@ class TestConstitutionBootstrap:
         assert result.exit_code == 0
         assert "2" in result.output  # 2 standards
         assert "python" in result.output
+
+
+def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):
+    import anyio
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _action():
+        async with db_instance.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)

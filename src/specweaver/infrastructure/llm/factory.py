@@ -42,23 +42,22 @@ def _get_adapter_class(provider: str) -> Any:
 
 
 def create_llm_adapter(
-    db: Database,
+    settings: SpecWeaverSettings,
     *,
-    llm_role: str = "draft",
     telemetry_project: str | None = None,
+    cost_overrides: dict[str, tuple[float, float]] | None = None,
 ) -> tuple[SpecWeaverSettings, Any, GenerationConfig]:
     """Create and validate an LLM adapter from project settings.
 
-    Loads settings for the active project, creates a ``GeminiAdapter``,
-    and verifies it has valid credentials.  When *telemetry_project* is
-    provided, the adapter is wrapped in a ``TelemetryCollector`` so
-    every call records usage telemetry.
+    Creates a ``GeminiAdapter`` and verifies it has valid credentials.
+    When *telemetry_project* is provided, the adapter is wrapped in a
+    ``TelemetryCollector`` so every call records usage telemetry.
 
     Args:
-        db: Database instance for querying project settings.
-        llm_role: Which LLM profile role to use (e.g. "draft", "review").
+        settings: Pre-loaded SpecWeaverSettings.
         telemetry_project: If set, wraps the adapter in a
             ``TelemetryCollector`` for this project.
+        cost_overrides: Optional cost overrides for telemetry.
 
     Returns:
         Tuple of (settings, adapter_or_collector, generation_config).
@@ -66,43 +65,8 @@ def create_llm_adapter(
     Raises:
         LLMAdapterError: If no API key is configured or the adapter
             is not available.
-        ValueError: If no project is active (from ``load_settings_for_active``).
     """
-    from specweaver.core.config.settings import (
-        LLMSettings,
-        SpecWeaverSettings,
-        load_settings_for_active,
-    )
     from specweaver.infrastructure.llm.models import GenerationConfig
-
-    try:
-        logger.debug("create_llm_adapter: loading settings for role=%s", llm_role)
-        settings = load_settings_for_active(db, llm_role=llm_role)
-    except ValueError:
-        # Fallback: try loading from env with defaults
-        fallback_model = "gemini-3-flash-preview"
-        try:
-            async def _get_sys_profile() -> dict[str, object] | None:
-                async with db.async_session_scope() as session:
-                    repo = LlmRepository(session)
-                    p = await repo.get_llm_profile_by_name("system-default")
-                    if p:
-                        return {"model": p.model}
-                    return None
-
-            sys_profile = anyio.run(_get_sys_profile)
-            if sys_profile:
-                fallback_model = str(sys_profile["model"])
-        except Exception:
-            pass
-
-        settings = SpecWeaverSettings(
-            llm=LLMSettings(
-                model=fallback_model,
-                provider="gemini",
-                api_key=os.environ.get("GEMINI_API_KEY", ""),
-            ),
-        )
 
     adapter_cls = _get_adapter_class(settings.llm.provider)
     adapter: Any = adapter_cls(api_key=settings.llm.api_key or None)
@@ -127,19 +91,8 @@ def create_llm_adapter(
         from specweaver.infrastructure.llm.collector import TelemetryCollector
         from specweaver.infrastructure.llm.telemetry import CostEntry
 
-        try:
-            async def _get_cost_overrides() -> dict[str, tuple[float, float]] | None:
-                async with db.async_session_scope() as session:
-                    repo = LlmRepository(session)
-                    return await repo.get_cost_overrides()
-
-            raw_overrides = anyio.run(_get_cost_overrides)
-            cost_overrides = (
-                {k: CostEntry(*v) for k, v in raw_overrides.items()} if raw_overrides else None
-            )
-        except Exception:
-            cost_overrides = None
-        adapter = TelemetryCollector(adapter, telemetry_project, cost_overrides)
+        overrides = {k: CostEntry(*v) for k, v in cost_overrides.items()} if cost_overrides else None
+        adapter = TelemetryCollector(adapter, telemetry_project, overrides)
 
     gen_config = GenerationConfig(
         model=settings.llm.model,

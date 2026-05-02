@@ -28,6 +28,7 @@ def test_cli_pipelines_injects_model_router_in_run(
 
     with (
         patch("specweaver.interfaces.cli.pipelines._core.get_db", return_value=mock_active_db),
+        patch("specweaver.interfaces.cli.pipelines._load_standards_content", return_value=None),
         patch("specweaver.interfaces.cli.pipelines.resolve_project_path", return_value=project_dir),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
     ):
@@ -54,8 +55,7 @@ def test_cli_pipelines_injects_model_router_in_run(
 
         # Verify the ModelRouter was successfully instantiated and attached
         assert context.llm_router is not None
-        assert context.llm_router._db is mock_active_db
-        assert context.llm_router._project_name == "test-proj"
+        assert context.llm_router._telemetry_project == "test-proj"
 
         # Verify the AnalyzerFactory was successfully attached at the edge
         from specweaver.workspace.analyzers.factory import AnalyzerFactory
@@ -84,6 +84,7 @@ def test_cli_pipelines_injects_model_router_in_resume(
 
     with (
         patch("specweaver.interfaces.cli.pipelines._core.get_db", return_value=mock_active_db),
+        patch("specweaver.interfaces.cli.pipelines._load_standards_content", return_value=None),
         patch("specweaver.interfaces.cli.pipelines.resolve_project_path", return_value=project_dir),
         patch("specweaver.interfaces.cli.pipelines._get_state_store", return_value=mock_state_db),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
@@ -103,8 +104,7 @@ def test_cli_pipelines_injects_model_router_in_resume(
 
         # Verify ModelRouter was attached to the resurrected context
         assert context.llm_router is not None
-        assert context.llm_router._db is mock_active_db
-        assert context.llm_router._project_name == "test-proj"
+        assert context.llm_router._telemetry_project == "test-proj"
 
         # Verify the AnalyzerFactory was attached to resurrected context
         from specweaver.workspace.analyzers.factory import AnalyzerFactory
@@ -118,7 +118,10 @@ def test_empty_pipeline_spec_edgecase(mock_active_db: MagicMock, tmp_path: Path)
     spec_path = tmp_path / "empty.md"
     spec_path.touch()
 
-    with patch("specweaver.interfaces.cli.pipelines._core.get_db", return_value=mock_active_db):
+    with (
+        patch("specweaver.interfaces.cli.pipelines._core.get_db", return_value=mock_active_db),
+        patch("specweaver.interfaces.cli.pipelines._load_standards_content", return_value=None),
+    ):
         # We don't mock runner here; we let it execute up to the empty file exception
         with pytest.raises(typer.Exit) as exc_info:
             _execute_run(

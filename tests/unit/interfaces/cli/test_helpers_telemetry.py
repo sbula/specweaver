@@ -20,20 +20,20 @@ class TestRequireLlmAdapterTelemetry:
         """When an active project exists, telemetry_project is set."""
         from specweaver.interfaces.cli._helpers import _require_llm_adapter
 
-        mock_db = MagicMock()
-        mock_db.get_active_project.return_value = "my-project"
-        monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: mock_db)
+        mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter",
-            return_value=fake_result,
+            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="my-project"
+        ), patch(
+            "specweaver.interfaces.cli.settings_loader.load_settings", return_value=mock_settings
+        ), patch(
+            "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
         ) as mock_create:
             _require_llm_adapter(tmp_path)
 
         mock_create.assert_called_once_with(
-            mock_db,
-            llm_role="draft",
+            mock_settings,
             telemetry_project="my-project",
         )
 
@@ -41,20 +41,20 @@ class TestRequireLlmAdapterTelemetry:
         """When no active project, telemetry_project is None."""
         from specweaver.interfaces.cli._helpers import _require_llm_adapter
 
-        mock_db = MagicMock()
-        mock_db.get_active_project.return_value = None
-        monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: mock_db)
+        mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter",
-            return_value=fake_result,
+            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value=None
+        ), patch(
+            "specweaver.interfaces.cli.settings_loader.load_settings", return_value=mock_settings
+        ), patch(
+            "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
         ) as mock_create:
             _require_llm_adapter(tmp_path)
 
         mock_create.assert_called_once_with(
-            mock_db,
-            llm_role="draft",
+            mock_settings,
             telemetry_project=None,
         )
 
@@ -62,19 +62,20 @@ class TestRequireLlmAdapterTelemetry:
         """llm_role parameter is still forwarded correctly."""
         from specweaver.interfaces.cli._helpers import _require_llm_adapter
 
-        mock_db = MagicMock()
-        mock_db.get_active_project.return_value = "proj"
-        monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: mock_db)
+        mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with patch(
-            "specweaver.infrastructure.llm.factory.create_llm_adapter",
-            return_value=fake_result,
+            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="proj"
+        ), patch(
+            "specweaver.interfaces.cli.settings_loader.load_settings", return_value=mock_settings
+        ), patch(
+            "specweaver.infrastructure.llm.factory.create_llm_adapter", return_value=fake_result
         ) as mock_create:
             _require_llm_adapter(tmp_path, llm_role="review")
 
         mock_create.assert_called_once_with(
-            mock_db,
-            llm_role="review",
+            mock_settings,
             telemetry_project="proj",
         )
+

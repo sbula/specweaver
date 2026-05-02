@@ -29,15 +29,17 @@ def _mock_db(tmp_path: Path, monkeypatch):
 
 
 def _create_project(db, name: str = "testproj") -> str:
-    db.register_project(name, ".")
-    db.set_active_project(name)
+    _run_workspace_op(db, "register_project", name, ".")
+    _run_workspace_op(db, "set_active_project", name)
     return name
 
 
 def _seed_usage(db, project, *, n=3):
     """Insert n dummy usage records."""
     for i in range(n):
-        db.log_usage(
+        _run_llm_op(
+            db,
+            "log_usage",
             {
                 "timestamp": f"2026-03-27T{10 + i:02d}:00:00Z",
                 "project_name": project,
@@ -105,3 +107,24 @@ class TestUsageCommand:
 
         assert result.exit_code == 0
         assert "no active project" in result.output.lower()
+
+
+def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):
+    import anyio
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _action():
+        async with db_instance.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)
+
+def _run_llm_op(db_instance, method_name: str, *args, **kwargs):
+    import anyio
+    from specweaver.infrastructure.llm.store import LlmRepository
+    async def _action():
+        async with db_instance.async_session_scope() as session:
+            repo = LlmRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)

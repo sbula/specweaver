@@ -4,6 +4,7 @@
 """CLI commands for lineage tracking and orphan detection."""
 
 from __future__ import annotations
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 import uuid
@@ -64,11 +65,11 @@ def tag(
         rprint(f"[green]Added tag {target_uuid} to {target}[/green]")
 
     db = get_db()
-    active = db.get_active_project()
+    active = _run_workspace_op("get_active_project")
     if not active:
         typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
-    proj = db.get_project(active)
+    proj = _run_workspace_op("get_project", active)
     if not proj:
         typer.secho("Active project not found in global database.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
@@ -115,11 +116,11 @@ def tree_command(  # noqa: C901
             pass
 
     db = get_db()
-    active = db.get_active_project()
+    active = _run_workspace_op("get_active_project")
     if not active:
         typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
-    proj = db.get_project(active)
+    proj = _run_workspace_op("get_project", active)
     if not proj:
         typer.secho("Active project not found in global database.", fg=typer.colors.RED)
         raise typer.Exit(code=1)

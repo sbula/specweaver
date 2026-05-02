@@ -4,6 +4,7 @@
 """CLI commands for constitution management: show, check, init."""
 
 from __future__ import annotations
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 
@@ -85,7 +86,7 @@ def constitution_check(
     max_size_kwargs: dict[str, int] = {}
     try:
         db = _core.get_db()
-        active = db.get_active_project()
+        active = _run_workspace_op("get_active_project")
         if active:
             import anyio
             from specweaver.workspace.store import WorkspaceRepository
@@ -192,7 +193,7 @@ def constitution_bootstrap(
     # Load standards from DB
     db = _core.get_db()
     name = _core._require_active_project()
-    standards = db.get_standards(name)
+    standards = _run_workspace_op("get_standards", name)
 
     if not standards:
         _core.console.print(

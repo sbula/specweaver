@@ -17,13 +17,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, NamedTuple
 
-from specweaver.core.config.settings import load_settings
+from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.infrastructure.llm.adapters.registry import get_adapter_class
 
 if TYPE_CHECKING:
-    from specweaver.core.config.database import Database
     from specweaver.infrastructure.llm.models import TaskType
 
 logger = logging.getLogger(__name__)
@@ -60,13 +59,13 @@ class ModelRouter:
 
     def __init__(
         self,
-        db: Database,
-        project_name: str,
+        settings_provider: Callable[[str], SpecWeaverSettings | None],
         telemetry_project: str | None = None,
+        cost_overrides: dict[str, tuple[float, float]] | None = None,
     ) -> None:
-        self._db = db
-        self._project_name = project_name
+        self._settings_provider = settings_provider
         self._telemetry_project = telemetry_project
+        self._cost_overrides = cost_overrides
         self._cache: dict[str, Any] = {}  # key: f"{provider}:{hash(api_key)}"
 
     def get_for_task(self, task_type: TaskType) -> RouterResult | None:
@@ -77,46 +76,20 @@ class ModelRouter:
         """
         role_key = f"task:{task_type.value}"
 
-        # First check: does a routing entry exist for this task type?
-        # We must not fall through to load_settings' system-default fallback —
-        # that would incorrectly treat the absence of a routing entry as a configured route.
-        import anyio
-        from specweaver.infrastructure.llm.store import LlmRepository
-        
-        async def _get_profile() -> Any:
-            async with self._db.async_session_scope() as session:
-                return await LlmRepository(session).get_project_profile(self._project_name, role_key)
-
         try:
-            profile = anyio.run(_get_profile)
-        except Exception:
-            logger.warning(
-                "[routing] DB error checking task_type=%s",
-                task_type.value,
-                exc_info=True,
-            )
-            return None
-
-        if not profile:
-            logger.debug(
-                "[routing] no entry for task_type=%s, using default",
-                task_type.value,
-            )
-            return None
-
-        try:
-            settings = load_settings(self._db, self._project_name, llm_role=role_key)
-        except ValueError:
-            logger.debug(
-                "[routing] load_settings failed for task_type=%s",
-                task_type.value,
-            )
-            return None
+            settings = self._settings_provider(role_key)
         except Exception:
             logger.warning(
                 "[routing] lookup failed for task_type=%s",
                 task_type.value,
                 exc_info=True,
+            )
+            return None
+
+        if not settings:
+            logger.debug(
+                "[routing] no entry for task_type=%s, using default",
+                task_type.value,
             )
             return None
 
@@ -137,17 +110,7 @@ class ModelRouter:
                     from specweaver.infrastructure.llm.collector import TelemetryCollector
                     from specweaver.infrastructure.llm.telemetry import CostEntry
 
-                    try:
-                        import anyio
-                        from specweaver.infrastructure.llm.store import LlmRepository
-                        async def _get_overrides() -> dict[str, tuple[float, float]]:
-                            async with self._db.async_session_scope() as session:
-                                return await LlmRepository(session).get_cost_overrides()
-                        
-                        raw = anyio.run(_get_overrides)
-                        overrides = {k: CostEntry(*v) for k, v in raw.items()} if raw else None
-                    except Exception:
-                        overrides = None
+                    overrides = {k: CostEntry(*v) for k, v in self._cost_overrides.items()} if self._cost_overrides else None
                     adapter = TelemetryCollector(adapter, self._telemetry_project, overrides)
                 self._cache[cache_key] = adapter
             except Exception:

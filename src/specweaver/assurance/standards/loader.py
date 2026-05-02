@@ -49,6 +49,8 @@ def load_standards_content(
         if no standards exist.
     """
     from specweaver.assurance.standards.scope_detector import _resolve_scope
+    import anyio
+    from specweaver.workspace.store import WorkspaceRepository
 
     logger.debug(
         "load_standards_content: project=%s, target=%s, max_chars=%d",
@@ -56,16 +58,21 @@ def load_standards_content(
         target_path,
         max_chars,
     )
-    if target_path is not None:
-        known_scopes = db.list_scopes(project_name)
-        scope = _resolve_scope(target_path, project_path, known_scopes)
-        # Load scope-specific standards
-        scope_standards = db.get_standards(project_name, scope=scope)
-        # Load root cross-cutting standards (if scope != ".")
-        root_standards = db.get_standards(project_name, scope=".") if scope != "." else []
-    else:
-        scope_standards = db.get_standards(project_name)
-        root_standards = []
+    
+    async def _fetch_standards() -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            if target_path is not None:
+                known_scopes = await repo.list_scopes(project_name)
+                scope = _resolve_scope(target_path, project_path, known_scopes)
+                s_standards = await repo.get_standards(project_name, scope=scope)
+                r_standards = await repo.get_standards(project_name, scope=".") if scope != "." else []
+                return s_standards, r_standards
+            else:
+                s_standards = await repo.get_standards(project_name)
+                return s_standards, []
+
+    scope_standards, root_standards = anyio.run(_fetch_standards)
 
     all_standards = scope_standards + root_standards
     if not all_standards:

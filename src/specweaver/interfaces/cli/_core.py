@@ -42,8 +42,9 @@ def get_db() -> Database:
 
 def _require_active_project() -> str:
     """Get the active project name or exit with error."""
+    from specweaver.interfaces.cli._helpers import _run_workspace_op
     db = get_db()
-    name = db.get_active_project()
+    name = _run_workspace_op("get_active_project")
     if not name:
         console.print(
             "[red]Error:[/red] No active project. "

@@ -4,6 +4,7 @@
 """CLI commands for validation: check, list-rules."""
 
 from __future__ import annotations
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 from pathlib import Path
@@ -29,13 +30,18 @@ def _resolve_pipeline_name(
     """
     from specweaver.assurance.validation.pipeline_loader import resolve_pipeline_name
 
-    db = _core.get_db()
+    import contextlib
+    
+    active_profile = None
+    if active_project:
+        with contextlib.suppress(ValueError, Exception):
+            active_profile = _run_workspace_op("get_domain_profile", active_project)
+
     try:
         return resolve_pipeline_name(
             level,
             pipeline,
-            db=db,
-            active_project=active_project,
+            active_profile=active_profile,
         )
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
@@ -111,12 +117,12 @@ def check(
         from specweaver.interfaces.cli.lineage import check_lineage
 
         db = _core.get_db()
-        active = db.get_active_project()
+        active = _run_workspace_op("get_active_project")
 
         if project:
             proj_path = Path(project)
         elif active:
-            proj_data = db.get_project(active)
+            proj_data = _run_workspace_op("get_project", active)
             proj_path = Path(str(proj_data["root_path"])) if proj_data else Path.cwd()
         else:
             proj_path = Path.cwd()
@@ -157,7 +163,7 @@ def check(
         project_dir = Path(project) if project else None
 
     # Determine active project for profile-aware pipeline selection
-    active = db.get_active_project()
+    active = _run_workspace_op("get_active_project")
     pipeline_name = _resolve_pipeline_name(level, pipeline, active_project=active)
 
     try:

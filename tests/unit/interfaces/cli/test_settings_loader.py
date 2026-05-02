@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from specweaver.core.config.database import Database
-from specweaver.core.config.settings import load_settings
+from specweaver.interfaces.cli.settings_loader import load_settings
 
 
 def test_load_settings_toml_overrides_defaults(tmp_path: Path):

@@ -42,7 +42,7 @@ def _init_project(db, name: str, root_path: str) -> None:
 
 def _seed_standards(db, name: str, count: int = 2) -> None:
     """Insert sample standards into the DB."""
-    db.save_standard(
+    _run_workspace_op(db, "save_standard", 
         project_name=name,
         scope=".",
         language="python",
@@ -51,7 +51,7 @@ def _seed_standards(db, name: str, count: int = 2) -> None:
         confidence=0.85,
     )
     if count >= 2:
-        db.save_standard(
+        _run_workspace_op(db, "save_standard", 
             project_name=name,
             scope=".",
             language="python",
@@ -87,7 +87,7 @@ class TestConfirmedByAuditTrail:
 
         runner.invoke(app, ["standards", "scan", "--no-review"])
 
-        standards = _mock_db.get_standards("proj")
+        standards = _run_workspace_op(_mock_db, "get_standards", "proj")
         for s in standards:
             assert s.get("confirmed_by") is None
 
@@ -122,7 +122,7 @@ class TestSaveAcceptedStandards:
             ],
         }
         _save_accepted_standards(_mock_db, "proj", accepted, no_review=False)
-        standards = _mock_db.get_standards("proj")
+        standards = _run_workspace_op(_mock_db, "get_standards", "proj")
         assert len(standards) >= 1
         assert standards[0]["confirmed_by"] == "hitl"
 
@@ -148,7 +148,7 @@ class TestSaveAcceptedStandards:
             ],
         }
         _save_accepted_standards(_mock_db, "proj", accepted, no_review=True)
-        standards = _mock_db.get_standards("proj")
+        standards = _run_workspace_op(_mock_db, "get_standards", "proj")
         assert len(standards) >= 1
         assert standards[0]["confirmed_by"] is None
 
@@ -211,7 +211,7 @@ class TestMaybeBootstrapConstitution:
         from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
-        _mock_db.set_auto_bootstrap("proj", "auto")
+        _run_workspace_op(_mock_db, "set_auto_bootstrap", "proj", "auto")
         _seed_standards(_mock_db, "proj")
         accepted = self._make_accepted()
 
@@ -236,7 +236,7 @@ class TestMaybeBootstrapConstitution:
         from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
-        _mock_db.set_auto_bootstrap("proj", "off")
+        _run_workspace_op(_mock_db, "set_auto_bootstrap", "proj", "off")
         # _init_project scaffolds a starter CONSTITUTION.md; remove it
         (tmp_path / "CONSTITUTION.md").unlink(missing_ok=True)
         accepted = self._make_accepted()
@@ -260,7 +260,7 @@ class TestMaybeBootstrapConstitution:
         from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
-        _mock_db.set_auto_bootstrap("proj", "prompt")
+        _run_workspace_op(_mock_db, "set_auto_bootstrap", "proj", "prompt")
         # _init_project scaffolds a starter CONSTITUTION.md; remove it
         (tmp_path / "CONSTITUTION.md").unlink(missing_ok=True)
         accepted = self._make_accepted()
@@ -285,7 +285,7 @@ class TestMaybeBootstrapConstitution:
         from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
-        _mock_db.set_auto_bootstrap("proj", "prompt")
+        _run_workspace_op(_mock_db, "set_auto_bootstrap", "proj", "prompt")
         _seed_standards(_mock_db, "proj")
         accepted = self._make_accepted()
 
@@ -302,3 +302,14 @@ class TestMaybeBootstrapConstitution:
             no_review=False,
         )
         assert (tmp_path / "CONSTITUTION.md").exists()
+
+
+def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):
+    import anyio
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _action():
+        async with db_instance.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)

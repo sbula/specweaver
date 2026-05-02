@@ -30,8 +30,8 @@ def _mock_db(tmp_path: Path, monkeypatch):
 
 def _create_project(db, name: str = "testproj") -> str:
     """Register and activate a project in the DB."""
-    db.register_project(name, ".")
-    db.set_active_project(name)
+    _run_workspace_op(db, "register_project", name, ".")
+    _run_workspace_op(db, "set_active_project", name)
     return name
 
 
@@ -39,7 +39,7 @@ def _create_profile(db, name: str = "gemini-pro", **kwargs) -> int:
     """Create a named LLM profile and return its ID."""
     defaults = {"provider": "gemini", "model": "gemini-2.5-pro"}
     defaults.update(kwargs)
-    return db.create_llm_profile(name, **defaults)
+    return _run_llm_op(db, "create_llm_profile", name, **defaults)
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ class TestRoutingSet:
         assert "my-profile" in result.output
         assert "openai" in result.output
         # Verify DB entry was created
-        entries = _mock_db.get_project_routing_entries("testproj")
+        entries = _run_llm_op(_mock_db, "get_project_routing_entries", "testproj")
         assert len(entries) == 1
         assert entries[0]["task_type"] == "implement"
 
@@ -101,7 +101,7 @@ class TestRoutingSet:
         runner.invoke(app, ["config", "routing", "set", "implement", "profile-a"])
         runner.invoke(app, ["config", "routing", "set", "implement", "profile-b"])
 
-        entries = _mock_db.get_project_routing_entries("testproj")
+        entries = _run_llm_op(_mock_db, "get_project_routing_entries", "testproj")
         assert len(entries) == 1
         assert entries[0]["profile_name"] == "profile-b"
 
@@ -178,7 +178,7 @@ class TestRoutingClear:
         assert "Cleared routing for" in result.output
         assert "implement" in result.output
         # review should still exist
-        entries = _mock_db.get_project_routing_entries("testproj")
+        entries = _run_llm_op(_mock_db, "get_project_routing_entries", "testproj")
         assert len(entries) == 1
         assert entries[0]["task_type"] == "review"
 
@@ -203,7 +203,7 @@ class TestRoutingClear:
 
         assert result.exit_code == 0
         assert "Cleared all" in result.output
-        assert _mock_db.get_project_routing_entries("testproj") == []
+        assert _run_llm_op(_mock_db, "get_project_routing_entries", "testproj") == []
 
     def test_clear_all_empty(self, _mock_db) -> None:
         """routing clear (no arg) with no entries → info message."""
@@ -222,3 +222,24 @@ class TestRoutingClear:
 
         assert result.exit_code == 1
         assert "Invalid task type" in result.output
+
+
+def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):
+    import anyio
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _action():
+        async with db_instance.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)
+
+def _run_llm_op(db_instance, method_name: str, *args, **kwargs):
+    import anyio
+    from specweaver.infrastructure.llm.store import LlmRepository
+    async def _action():
+        async with db_instance.async_session_scope() as session:
+            repo = LlmRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)

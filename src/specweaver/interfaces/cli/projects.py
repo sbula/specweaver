@@ -4,6 +4,7 @@
 """CLI commands for project management: init, use, projects, remove, update, scan."""
 
 from __future__ import annotations
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 from pathlib import Path
@@ -55,12 +56,12 @@ def init(
     # Register in DB
     db = _core.get_db()
     try:
-        db.register_project(name, str(project_path))
+        _run_workspace_op("register_project", name, str(project_path))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    db.set_active_project(name)
+    _run_workspace_op("set_active_project", name)
 
     # Scaffold files
     try:
@@ -100,7 +101,7 @@ def use(
 ) -> None:
     """Switch the active project."""
     db = _core.get_db()
-    proj = db.get_project(name)
+    proj = _run_workspace_op("get_project", name)
     if not proj:
         _core.console.print(
             f"[red]Error:[/red] Project '{name}' not found. "
@@ -118,7 +119,7 @@ def use(
         )
         raise typer.Exit(code=1)
 
-    db.set_active_project(name)
+    _run_workspace_op("set_active_project", name)
     _core.console.print(f"[green]Switched[/green] to project [bold]{name}[/bold] ({root})")
 
 
@@ -126,8 +127,8 @@ def use(
 def projects() -> None:
     """List all registered projects."""
     db = _core.get_db()
-    all_projects = db.list_projects()
-    active = db.get_active_project()
+    all_projects = _run_workspace_op("list_projects")
+    active = _run_workspace_op("get_active_project")
 
     if not all_projects:
         _core.console.print(
@@ -167,7 +168,7 @@ def remove(
 ) -> None:
     """Unregister a project from SpecWeaver."""
     db = _core.get_db()
-    proj = db.get_project(name)
+    proj = _run_workspace_op("get_project", name)
     if not proj:
         _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
         raise typer.Exit(code=1)
@@ -180,7 +181,7 @@ def remove(
             _core.console.print("[dim]Cancelled.[/dim]")
             return
 
-    db.remove_project(name)
+    _run_workspace_op("remove_project", name)
     _core.console.print(f"[green]Removed[/green] project [bold]{name}[/bold]")
 
 
@@ -200,7 +201,7 @@ def update(
     db = _core.get_db()
     if field == "path":
         try:
-            db.update_project_path(name, value)
+            _run_workspace_op("update_project_path", name, value)
         except ValueError as exc:
             _core.console.print(f"[red]Error:[/red] {exc}")
             raise typer.Exit(code=1) from exc
@@ -254,7 +255,7 @@ def _infer_subdirs(project_path: Path, inferrer: ContextInferrer) -> tuple[int, 
 def scan() -> None:
     """Scan the active project and auto-generate missing context.yaml files."""
     db = _core.get_db()
-    active = db.get_active_project()
+    active = _run_workspace_op("get_active_project")
     if not active:
         _core.console.print(
             "[red]Error:[/red] No active project. "
@@ -262,7 +263,7 @@ def scan() -> None:
         )
         raise typer.Exit(code=1)
 
-    proj = db.get_project(active)
+    proj = _run_workspace_op("get_project", active)
     if proj is None:
         _core.console.print(f"[red]Error:[/red] Project '{active}' not found.")
         raise typer.Exit(code=1)

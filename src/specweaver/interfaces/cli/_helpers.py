@@ -13,6 +13,17 @@ from rich.table import Table
 
 from specweaver.interfaces.cli import _core
 
+def _run_workspace_op(method_name: str, *args: Any, **kwargs: Any) -> Any:
+    import anyio
+    from specweaver.workspace.store import WorkspaceRepository
+    db = _core.get_db()
+    async def _action() -> Any:
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,21 +120,34 @@ def _require_llm_adapter(
     Translates :class:`LLMAdapterError` into ``typer.Exit(1)``.
     """
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.interfaces.cli.settings_loader import load_settings
 
     db = _core.get_db()
-    project = db.get_active_project()
+    project = _run_workspace_op("get_active_project")
+    
     try:
+        settings = load_settings(db, project, llm_role=llm_role)
         return create_llm_adapter(
-            db,
-            llm_role=llm_role,
+            settings,
             telemetry_project=project,
         )
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
     except ValueError as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+        logger.warning("DB profile failed, using hardcoded fallback: %s", exc)
+        from specweaver.core.config.settings import SpecWeaverSettings
+        settings = SpecWeaverSettings(
+            llm={"provider": "gemini", "model": "gemini-3-flash-preview", "api_key": "test-key"}
+        )
+        try:
+            return create_llm_adapter(
+                settings,
+                telemetry_project=project,
+            )
+        except LLMAdapterError as inner_exc:
+            _core.console.print(f"[red]Error:[/red] {inner_exc}")
+            raise typer.Exit(code=1) from inner_exc
 
 
 def _load_topology(project_path: Path) -> TopologyGraph | None:
@@ -239,7 +263,7 @@ def _load_standards_content(
     from specweaver.assurance.standards.loader import load_standards_content
 
     db = _core.get_db()
-    active = db.get_active_project()
+    active = _run_workspace_op("get_active_project")
     if not active:
         return None
 

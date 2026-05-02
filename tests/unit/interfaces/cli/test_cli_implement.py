@@ -61,8 +61,12 @@ class TestImplementOutputPaths:
     """Test implement command output file naming."""
 
     @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
+    @patch("specweaver.core.config.database.Database._ensure_schema")
     def test_output_files_created(
         self,
+        mock_ensure_schema,
+        mock_log_event,
         mock_require,
         tmp_path: Path,
     ) -> None:
@@ -84,13 +88,17 @@ class TestImplementOutputPaths:
             app,
             ["implement", str(spec), "--project", str(project)],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Command failed: {result.output}"
         assert (project / "src" / "greeter.py").exists()
         assert (project / "tests" / "test_greeter.py").exists()
 
     @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
+    @patch("specweaver.core.config.database.Database._ensure_schema")
     def test_spec_suffix_stripped(
         self,
+        mock_ensure_schema,
+        mock_log_event,
         mock_require,
         tmp_path: Path,
     ) -> None:
@@ -112,7 +120,7 @@ class TestImplementOutputPaths:
             app,
             ["implement", str(spec), "--project", str(project)],
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Command failed: {result.output}"
         assert (project / "src" / "auth_service.py").exists()
         assert not (project / "src" / "auth_service_spec.py").exists()
 

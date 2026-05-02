@@ -28,6 +28,16 @@ def _mock_db(tmp_path: Path, monkeypatch):
     return db
 
 
+def _run_llm_op(db_instance, method_name: str, *args, **kwargs):
+    import anyio
+    from specweaver.infrastructure.llm.store import LlmRepository
+    async def _action():
+        async with db_instance.async_session_scope() as session:
+            repo = LlmRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)
+
 class TestCostsShow:
     """Tests for ``sw costs`` (show overrides)."""
 
@@ -41,7 +51,7 @@ class TestCostsShow:
 
     def test_costs_shows_overrides(self, _mock_db) -> None:
         """sw costs with an override → shows override."""
-        _mock_db.set_cost_override("my-model", 0.01, 0.02)
+        _run_llm_op(_mock_db, "set_cost_override", "my-model", 0.01, 0.02)
 
         result = runner.invoke(app, ["costs"])
 
@@ -60,7 +70,7 @@ class TestCostsSet:
         )
 
         assert result.exit_code == 0
-        overrides = _mock_db.get_cost_overrides()
+        overrides = _run_llm_op(_mock_db, "get_cost_overrides")
         assert "my-model" in overrides
         assert overrides["my-model"] == (0.005, 0.015)
 
@@ -70,7 +80,7 @@ class TestCostsReset:
 
     def test_reset_cost_override(self, _mock_db) -> None:
         """sw costs reset MODEL → removes override."""
-        _mock_db.set_cost_override("my-model", 0.01, 0.02)
+        _run_llm_op(_mock_db, "set_cost_override", "my-model", 0.01, 0.02)
 
         result = runner.invoke(
             app,
@@ -78,5 +88,5 @@ class TestCostsReset:
         )
 
         assert result.exit_code == 0
-        overrides = _mock_db.get_cost_overrides()
+        overrides = _run_llm_op(_mock_db, "get_cost_overrides")
         assert "my-model" not in overrides

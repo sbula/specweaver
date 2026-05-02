@@ -43,7 +43,7 @@ def _init_project(db, name: str, root_path: str) -> None:
 
 def _seed_standards(db, name: str, count: int = 2) -> None:
     """Insert sample standards into the DB."""
-    db.save_standard(
+    _run_workspace_op(db, "save_standard", 
         project_name=name,
         scope=".",
         language="python",
@@ -52,7 +52,7 @@ def _seed_standards(db, name: str, count: int = 2) -> None:
         confidence=0.85,
     )
     if count >= 2:
-        db.save_standard(
+        _run_workspace_op(db, "save_standard", 
             project_name=name,
             scope=".",
             language="python",
@@ -133,7 +133,7 @@ class TestLoadStandardsContent:
         _init_project(_mock_db, "proj", str(tmp_path))
         # save_standard serialises data internally, but let's verify the
         # formatter handles both possibilities by roundtripping.
-        _mock_db.save_standard(
+        _run_workspace_op(_mock_db, "save_standard", 
             project_name="proj",
             scope=".",
             language="python",
@@ -170,7 +170,7 @@ class TestLoadStandardsContent:
         from specweaver.interfaces.cli._helpers import _load_standards_content
 
         _init_project(_mock_db, "proj", str(tmp_path))
-        _mock_db.save_standard(
+        _run_workspace_op(_mock_db, "save_standard", 
             project_name="proj",
             scope=".",
             language="python",
@@ -206,10 +206,11 @@ class TestStandardsScan:
         """Scan with non-existent root path → error."""
         _init_project(_mock_db, "ghost", str(tmp_path))
         # Monkeypatch get_project to return a non-existent path
+        async def mock_get_project(self, name):
+            return {"name": name, "root_path": "/nonexistent/path"}
         monkeypatch.setattr(
-            _mock_db,
-            "get_project",
-            lambda name: {"name": name, "root_path": "/nonexistent/path"},
+            "specweaver.workspace.store.WorkspaceRepository.get_project",
+            mock_get_project,
         )
         result = runner.invoke(app, ["standards", "scan"])
         assert result.exit_code != 0
@@ -347,7 +348,7 @@ class TestStandardsShow:
         _seed_standards(_mock_db, "proj")
         # Add a standard with a different scope (short category name
         # to avoid Rich table truncation in narrow terminal)
-        _mock_db.save_standard(
+        _run_workspace_op(_mock_db, "save_standard", 
             project_name="proj",
             scope="backend",
             language="python",
@@ -442,7 +443,7 @@ class TestStandardsEdgeCases:
 
         result = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result.exit_code == 0
-        standards = _mock_db.get_standards("boundary")
+        standards = _run_workspace_op(_mock_db, "get_standards", "boundary")
         assert len(standards) >= 1
 
     def test_scan_rescan_overwrites_existing(
@@ -464,7 +465,7 @@ class TestStandardsEdgeCases:
         # First scan
         result1 = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result1.exit_code == 0
-        standards_before = _mock_db.get_standards("rescan")
+        standards_before = _run_workspace_op(_mock_db, "get_standards", "rescan")
 
         # Change style and re-scan
         py_file.write_text(
@@ -473,7 +474,7 @@ class TestStandardsEdgeCases:
         )
         result2 = runner.invoke(app, ["standards", "scan", "--no-review"])
         assert result2.exit_code == 0
-        standards_after = _mock_db.get_standards("rescan")
+        standards_after = _run_workspace_op(_mock_db, "get_standards", "rescan")
 
         # No duplicates — upsert on same PK
         assert len(standards_after) <= len(standards_before) + 1
@@ -485,7 +486,7 @@ class TestStandardsEdgeCases:
     ) -> None:
         """show() handles data that's already a dict (not JSON string)."""
         _init_project(_mock_db, "dict_proj", str(tmp_path))
-        _mock_db.save_standard(
+        _run_workspace_op(_mock_db, "save_standard", 
             project_name="dict_proj",
             scope=".",
             language="python",
@@ -520,12 +521,12 @@ class TestStandardsClear:
         """Clear all standards for the active project."""
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj")
-        assert len(_mock_db.get_standards("proj")) == 2
+        assert len(_run_workspace_op(_mock_db, "get_standards", "proj")) == 2
 
         result = runner.invoke(app, ["standards", "clear"])
         assert result.exit_code == 0
         assert "Standards cleared" in result.output
-        assert len(_mock_db.get_standards("proj")) == 0
+        assert len(_run_workspace_op(_mock_db, "get_standards", "proj")) == 0
 
     def test_clear_scoped(
         self,
@@ -535,7 +536,7 @@ class TestStandardsClear:
         """Clear only standards matching --scope."""
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj")  # scope="."
-        _mock_db.save_standard(
+        _run_workspace_op(_mock_db, "save_standard", 
             project_name="proj",
             scope="backend",
             language="python",
@@ -544,7 +545,7 @@ class TestStandardsClear:
             confidence=0.8,
         )
         # Should have 3 total
-        assert len(_mock_db.get_standards("proj")) == 3
+        assert len(_run_workspace_op(_mock_db, "get_standards", "proj")) == 3
 
         result = runner.invoke(
             app,
@@ -553,7 +554,7 @@ class TestStandardsClear:
         assert result.exit_code == 0
         assert "backend" in result.output
         # Only backend cleared
-        remaining = _mock_db.get_standards("proj")
+        remaining = _run_workspace_op(_mock_db, "get_standards", "proj")
         assert len(remaining) == 2
         assert all(s["scope"] == "." for s in remaining)
 
@@ -713,7 +714,7 @@ class TestStandardsScopes:
         """scopes with multiple distinct scopes shows all."""
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj", count=1)
-        _mock_db.save_standard(
+        _run_workspace_op(_mock_db, "save_standard", 
             project_name="proj",
             scope="backend",
             language="python",
@@ -761,3 +762,14 @@ class TestScanScopeFlag:
             ["standards", "scan", "--scope", "backend", "--no-review"],
         )
         assert result.exit_code == 0
+
+
+def _run_workspace_op(db_instance, method_name: str, *args, **kwargs):
+    import anyio
+    from specweaver.workspace.store import WorkspaceRepository
+    async def _action():
+        async with db_instance.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            method = getattr(repo, method_name)
+            return await method(*args, **kwargs)
+    return anyio.run(_action)

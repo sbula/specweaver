@@ -44,9 +44,8 @@ _core.app.add_typer(config_app, name="config")
 def config_list() -> None:
     """List all validation rules currently applied via the active pipeline."""
     name = _core._require_active_project()
-    db = _core.get_db()
-
-    profile_name = db.get_domain_profile(name)
+    
+    profile_name = _run_workspace_op("get_domain_profile", name)
     if profile_name:
         _core.console.print(
             f"Validation rules for project [bold]{name}[/bold] are fully declarative "
@@ -274,9 +273,8 @@ def config_set_profile(
     To deactivate, run 'sw config reset-profile'.
     """
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
-        db.set_domain_profile(name, profile_name)
+        _run_workspace_op("set_domain_profile", name, profile_name)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -292,9 +290,8 @@ def config_set_profile(
 def config_get_profile() -> None:
     """Show the active domain profile for the current project."""
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
-        profile_name = db.get_domain_profile(name)
+        profile_name = _run_workspace_op("get_domain_profile", name)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -318,9 +315,8 @@ def config_reset_profile() -> None:
     with 'sw config reset <RULE>' if no longer needed.
     """
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
-        db.clear_domain_profile(name)
+        _run_workspace_op("clear_domain_profile", name)
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc

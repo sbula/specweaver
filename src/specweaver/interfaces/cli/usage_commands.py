@@ -4,6 +4,7 @@
 """CLI command for LLM usage reporting: ``sw usage``."""
 
 from __future__ import annotations
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 
@@ -47,7 +48,7 @@ def usage(
 
     project: str | None = None
     if not all_projects:
-        project = db.get_active_project()
+        project = _run_workspace_op("get_active_project")
         if not project:
             _core.console.print(
                 "[yellow]No active project.[/yellow] "

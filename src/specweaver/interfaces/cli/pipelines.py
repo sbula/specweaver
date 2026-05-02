@@ -4,6 +4,7 @@
 """CLI commands for pipeline execution: pipelines, run, resume."""
 
 from __future__ import annotations
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import asyncio
 import logging
@@ -251,9 +252,11 @@ def _execute_run(  # noqa: C901
         standards=_load_standards_content(project_path, target_path=spec_path),
         db=_core.get_db(),
     )
+    
+    from specweaver.interfaces.cli.settings_loader import load_settings
+
     context.llm_router = ModelRouter(
-        db=_core.get_db(),
-        project_name=project_path.name,
+        settings_provider=lambda role: load_settings(_core.get_db(), project_path.name, llm_role=role),
         telemetry_project=project_path.name,
     )
 
@@ -319,6 +322,7 @@ def _execute_run(  # noqa: C901
             _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
         except Exception as e:
             logger.warning(f"Failed to save staleness cache: {e}")
+            _core.console.print(f"[yellow]Failed to save staleness cache: {e}[/yellow]")
 
     if final_run.status == RunStatus.FAILED:
         raise typer.Exit(code=1)
@@ -369,7 +373,7 @@ def resume(  # noqa: C901
         # Auto-detect: find latest resumable run for active project
         name = _core._require_active_project()
         db = _core.get_db()
-        proj = db.get_project(name)
+        proj = _run_workspace_op("get_project", name)
         if not proj:
             _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
             raise typer.Exit(code=1)
@@ -417,9 +421,11 @@ def resume(  # noqa: C901
         standards=_load_standards_content(project_path, target_path=spec_path),
         db=_core.get_db(),
     )
+    
+    from specweaver.interfaces.cli.settings_loader import load_settings
+
     context.llm_router = ModelRouter(
-        db=_core.get_db(),
-        project_name=project_path.name,
+        settings_provider=lambda role: load_settings(_core.get_db(), project_path.name, llm_role=role),
         telemetry_project=project_path.name,
     )
 

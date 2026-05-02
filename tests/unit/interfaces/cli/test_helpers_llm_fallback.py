@@ -44,15 +44,30 @@ class TestRequireLlmAdapterFallback:
         # Ensure GEMINI_API_KEY is set so adapter.available() returns True
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
-        # Patch at the source module (lazy imports inside the function)
-        with patch(
-            "specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter"
-        ) as mock_adapter_cls:
-            mock_adapter = MagicMock()
-            mock_adapter.available.return_value = True
-            mock_adapter_cls.return_value = mock_adapter
+        # Mock _run_workspace_op to return a project that triggers a missing settings error
+        with patch("specweaver.interfaces.cli._helpers._run_workspace_op", return_value="fake-project"):
+            # Mock load_settings to simulate project settings failing
+            with patch("specweaver.interfaces.cli.settings_loader.load_settings") as mock_load:
+                from specweaver.core.config.settings import SpecWeaverSettings
+                
+                # First call fails (project profile), second call succeeds (system-default)
+                def side_effect(db, project, llm_role=None, fallback_to_default=True):
+                    if project == "fake-project" and llm_role == "draft":
+                        raise ValueError("No active project")
+                    # Return system default on fallback
+                    return SpecWeaverSettings(
+                        llm={"provider": "gemini", "model": "gemini-3-flash-preview", "api_key": "test"}
+                    )
+                mock_load.side_effect = side_effect
 
-            _settings, adapter, gen_config = _require_llm_adapter(tmp_path)
+                with patch(
+                    "specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter"
+                ) as mock_adapter_cls:
+                    mock_adapter = MagicMock()
+                    mock_adapter.available.return_value = True
+                    mock_adapter_cls.return_value = mock_adapter
+
+                    _settings, adapter, gen_config = _require_llm_adapter(tmp_path)
 
         # Should have fallen back to system-default model
         assert gen_config.model == "gemini-3-flash-preview"
@@ -64,23 +79,24 @@ class TestRequireLlmAdapterFallback:
 
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
-        # Mock get_db to return a DB that raises on profile lookup
+        # Mock get_db to return a DB
         mock_db = MagicMock()
-        mock_db.get_llm_profile_by_name.side_effect = Exception("DB corrupt")
         monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: mock_db)
 
-        # Patch load_settings_for_active at the source module
-        with patch("specweaver.core.config.settings.load_settings_for_active") as mock_load:
-            mock_load.side_effect = ValueError("No active project")
+        # Mock _run_workspace_op
+        with patch("specweaver.interfaces.cli._helpers._run_workspace_op", return_value="fake-project"):
+            # Simulate both project profile AND system-default failing to load
+            with patch("specweaver.interfaces.cli.settings_loader.load_settings") as mock_load:
+                mock_load.side_effect = ValueError("No active project")
 
-            with patch(
-                "specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter"
-            ) as mock_adapter_cls:
-                mock_adapter = MagicMock()
-                mock_adapter.available.return_value = True
-                mock_adapter_cls.return_value = mock_adapter
+                with patch(
+                    "specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter"
+                ) as mock_adapter_cls:
+                    mock_adapter = MagicMock()
+                    mock_adapter.available.return_value = True
+                    mock_adapter_cls.return_value = mock_adapter
 
-                _settings, _adapter, gen_config = _require_llm_adapter(tmp_path)
+                    _settings, _adapter, gen_config = _require_llm_adapter(tmp_path)
 
         # Should use hardcoded fallback model
         assert gen_config.model == "gemini-3-flash-preview"

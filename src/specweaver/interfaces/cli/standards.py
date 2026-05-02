@@ -4,6 +4,7 @@
 """CLI commands for standards management: scan, show, clear, scopes."""
 
 from __future__ import annotations
+from specweaver.interfaces.cli._helpers import _run_workspace_op
 
 import logging
 from pathlib import Path
@@ -60,12 +61,12 @@ def standards_scan(  # noqa: C901
     from specweaver.assurance.standards.discovery import discover_files
     from specweaver.assurance.standards.reviewer import StandardsReviewer
     from specweaver.assurance.standards.scope_detector import detect_scopes
-    from specweaver.core.config.settings import load_settings
+    from specweaver.interfaces.cli.settings_loader import load_settings
     from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
 
     name = _core._require_active_project()
     db = _core.get_db()
-    proj = db.get_project(name)
+    proj = _run_workspace_op("get_project", name)
     if proj is None:
         _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
         raise typer.Exit(code=1)
@@ -156,7 +157,7 @@ def standards_scan(  # noqa: C901
     # Load existing for re-scan diff
     existing_by_scope: dict[str, list[dict[str, Any]]] = {}
     for s in scope_results:
-        existing_by_scope[s] = db.get_standards(name, scope=s)
+        existing_by_scope[s] = _run_workspace_op("get_standards", name, scope=s)
 
     # HITL review
     if no_review:
@@ -195,7 +196,7 @@ def _save_accepted_standards(
     for s, results in accepted.items():
         for result in results:
             confirmed = "hitl" if not no_review else None
-            db.save_standard(
+            _run_workspace_op("save_standard", 
                 project_name=project_name,
                 scope=s,
                 language=result.language or "unknown",
@@ -248,7 +249,7 @@ def _maybe_bootstrap_constitution(
     languages = sorted({r.language or "unknown" for results in accepted.values() for r in results})
 
     if bootstrap_mode == "auto":
-        all_standards = db.get_standards(project_name)
+        all_standards = _run_workspace_op("get_standards", project_name)
         project_slug = project_path.name.lower().replace(" ", "-")
         result = generate_constitution_from_standards(
             project_path,
@@ -267,7 +268,7 @@ def _maybe_bootstrap_constitution(
             default=True,
         )
         if do_bootstrap:
-            all_standards = db.get_standards(project_name)
+            all_standards = _run_workspace_op("get_standards", project_name)
             project_slug = project_path.name.lower().replace(" ", "-")
             result = generate_constitution_from_standards(
                 project_path,
@@ -339,7 +340,7 @@ def standards_show(
     name = _core._require_active_project()
     db = _core.get_db()
 
-    standards = db.get_standards(name, scope=scope, language=language)
+    standards = _run_workspace_op("get_standards", name, scope=scope, language=language)
 
     if not standards:
         _core.console.print(
@@ -390,7 +391,7 @@ def standards_clear(
     name = _core._require_active_project()
     db = _core.get_db()
 
-    db.clear_standards(name, scope=scope)
+    _run_workspace_op("clear_standards", name, scope=scope)
 
     scope_msg = f" (scope: {scope})" if scope else ""
     _core.console.print(
@@ -404,7 +405,7 @@ def standards_scopes() -> None:
     name = _core._require_active_project()
     db = _core.get_db()
 
-    stored_scopes = db.list_scopes(name)
+    stored_scopes = _run_workspace_op("list_scopes", name)
 
     if not stored_scopes:
         _core.console.print(
@@ -420,7 +421,7 @@ def standards_scopes() -> None:
     table.add_column("Last Scanned")
 
     for scope_name in stored_scopes:
-        standards = db.get_standards(name, scope=scope_name)
+        standards = _run_workspace_op("get_standards", name, scope=scope_name)
         if not standards:
             continue
         languages_str = sorted({str(s["language"]) for s in standards})
