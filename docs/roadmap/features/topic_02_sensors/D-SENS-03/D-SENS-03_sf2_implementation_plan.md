@@ -11,12 +11,12 @@ The objective of this sub-feature (SF-2) is to complete the existing `MarkdownCo
 
 ## 2. Context & Boundary Rules
 - **Archetype**: `pure-logic`.
-- **Location**: `src/specweaver/workspace/parsers/markdown/codestructure.py`.
+- **Location**: `src/specweaver/workspace/ast/parsers/markdown/codestructure.py`.
 - **Boundaries**: Strictly NO `loom/*` execution, no file I/O, no networking. Everything must be processed in memory using the `tree_sitter_markdown` dependency.
 
 ## 3. Proposed Changes
 
-### `src/specweaver/workspace/parsers/markdown/codestructure.py`
+### `src/specweaver/workspace/ast/parsers/markdown/codestructure.py`
 We will rewrite `MarkdownCodeStructure` to lean entirely on `BaseTreeSitterParser`.
 1. **Remove the manual overrides**: Delete the custom `extract_skeleton`, `extract_symbol`, `extract_symbol_body`, `replace_symbol`, `replace_symbol_body`, `add_symbol`, and `delete_symbol` functions. Let the `BaseTreeSitterParser` handle these automatically.
 2. **Define SCM Queries**:

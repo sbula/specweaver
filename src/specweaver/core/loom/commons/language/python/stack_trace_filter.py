@@ -10,7 +10,7 @@ which matches ``PythonScenarioConverter.output_path()`` convention.
 
 from __future__ import annotations
 
-from specweaver.workspace.parsers.interfaces import StackTraceFilterInterface
+from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterface
 
 _SCENARIO_MARKER = "scenarios/generated/"
 

@@ -1,0 +1,26 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: ast
+level: domain
+purpose: >
+  Unifying domain boundary for AST extraction and translation.
+
+description: |
+  Groups Tree-Sitter pure-logic parsers and their corresponding adapters.
+  This boundary ensures AST-related mechanisms are kept isolated from
+  project discovery or execution context.
+
+archetype: domain
+
+consumes: []
+
+forbids: []
+
+exposes:
+  - parsers
+  - adapters
+
+operational:
+  async_ready: true
+  concurrency_model: none

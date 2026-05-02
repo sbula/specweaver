@@ -13,18 +13,18 @@ Perform structural technical debt sweeps across the repository to seamlessly int
 
 ---
 
-### `specweaver.workspace.parsers`
+### `specweaver.workspace.ast.parsers`
 Extends the tree-sitter abstraction layer to support polyglot AST traversal for traceability tags (`# @trace(FR-XX)` and `// @trace(FR-XX)`).
 
-#### [MODIFY] `interfaces.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/parsers/interfaces.py)
+#### [MODIFY] `interfaces.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/interfaces.py)
 - **Modifications**: 
   - `[x]` Add `extract_traceability_tags(self, code: str) -> set[str]` to `CodeStructureInterface`.
 
-#### [MODIFY] `python/codestructure.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/parsers/python/codestructure.py)
+#### [MODIFY] `python/codestructure.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/python/codestructure.py)
 - **Modifications**:
   - `[x]` Implement `extract_traceability_tags` for Python by inspecting tree-sitter `comment` nodes for `@trace()` patterns.
 
-#### [MODIFY] `java/codestructure.py` / `kotlin/codestructure.py` / `rust/codestructure.py` / `typescript/codestructure.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/parsers/.../codestructure.py)
+#### [MODIFY] `java/codestructure.py` / `kotlin/codestructure.py` / `rust/codestructure.py` / `typescript/codestructure.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/.../codestructure.py)
 - **Modifications**:
   - `[x]` Implement `extract_traceability_tags` using respective tree-sitter semantics for each language's comment nodes.
 

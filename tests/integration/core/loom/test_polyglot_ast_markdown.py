@@ -53,7 +53,7 @@ This component bounded safely.
 
 
 def test_markdown_symbol_extraction() -> None:
-    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.ast.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
     code = "# h1\n\nsymbol content\n\n## sub\n"
@@ -63,7 +63,7 @@ def test_markdown_symbol_extraction() -> None:
 
 
 def test_markdown_mutators() -> None:
-    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.ast.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
     code = "# h1\n\nold text\n\n## sub\n"
@@ -82,7 +82,7 @@ def test_markdown_mutators() -> None:
 
 
 def test_markdown_list_symbols_and_markers() -> None:
-    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.ast.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
     assert atom.list_symbols("# content\n") == ["content"]
@@ -92,8 +92,8 @@ def test_markdown_list_symbols_and_markers() -> None:
 def test_markdown_add_symbol_edge_cases() -> None:
     import pytest
 
-    from specweaver.workspace.parsers.interfaces import CodeStructureError
-    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+    from specweaver.workspace.ast.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
 
@@ -115,8 +115,8 @@ def test_markdown_add_symbol_edge_cases() -> None:
 def test_markdown_missing_symbols() -> None:
     import pytest
 
-    from specweaver.workspace.parsers.interfaces import CodeStructureError
-    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+    from specweaver.workspace.ast.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
     code = "# content\n"
@@ -138,7 +138,7 @@ def test_markdown_missing_symbols() -> None:
 
 
 def test_markdown_stub_handlers() -> None:
-    from specweaver.workspace.parsers.markdown.codestructure import MarkdownCodeStructure
+    from specweaver.workspace.ast.parsers.markdown.codestructure import MarkdownCodeStructure
 
     atom = MarkdownCodeStructure()
     code = "# content\n"

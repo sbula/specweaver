@@ -13,7 +13,7 @@ from specweaver.core.loom.commons.qa_runner.interface import (
     ArchitectureRunResult,
     QARunnerInterface,
 )
-from specweaver.workspace.parsers.rust.parsers import parse_clippy_complexity
+from specweaver.workspace.ast.parsers.rust.parsers import parse_clippy_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path

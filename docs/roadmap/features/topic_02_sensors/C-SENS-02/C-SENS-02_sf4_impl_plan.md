@@ -47,14 +47,14 @@ Pure-logic protocols preventing circular imports and C-binding contamination.
 
 ---
 
-### `specweaver.workspace.parsers`
+### `specweaver.workspace.ast.parsers`
 Pure logic code structure and ignore parsing protocols.
 
-#### [MODIFY] `context.yaml` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/parsers/context.yaml)
+#### [MODIFY] `context.yaml` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/context.yaml)
 - **Modifications**:
   - Add `- exclusions` to the `exposes:` list since it is utilized externally by `scaffold.py`.
 
-#### [MODIFY] `exclusions.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/parsers/exclusions.py)
+#### [MODIFY] `exclusions.py` (file:///C:/development/pitbula/specweaver/src/specweaver/workspace/ast/parsers/exclusions.py)
 - **Modifications**:
   - **HITL Gate Resolution (Option A)**: To clear the I/O violation inside `pure-logic` without pulling in `loom`, define a minimalist `IgnoreIOHandler` Protocol exclusively inside `exclusions.py` with `read_text(path) -> str`, `append_lines(path, lines)`, and `exists(path) -> bool`.
   - Update `SpecWeaverIgnoreParser.__init__` to strictly require `io_handler: IgnoreIOHandler`.
@@ -104,7 +104,7 @@ The Orchestrator.
 ### Architecture Isolation Check
 - `workspace/context/context.yaml`: Exposed correctly (`analyzer_protocols`).
 - `workspace/analyzers/context.yaml`: Declared as `archetype: adapter`.
-- `workspace/parsers/exclusions.py`: Removed physical `open()` and successfully mapped via DI `IgnoreIOHandler`.
+- `workspace/ast/parsers/exclusions.py`: Removed physical `open()` and successfully mapped via DI `IgnoreIOHandler`.
 - Result: **Zero isolation warnings.**
 
 ### Automated Tests

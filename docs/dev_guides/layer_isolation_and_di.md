@@ -46,7 +46,7 @@ If you are adding a new language (e.g., Go, C++):
 Houses external, stateless sub-process executions since execution implies side-effects.
 * `runner.py`: Handles subprocess test I/O (e.g., `cargo test`, `pytest`).
 
-### B. The Workspace Parsers (`workspace/parsers/`)
+### B. The Workspace Parsers (`workspace/ast/parsers/`)
 Houses the physical polyglot syntactic parsers because AST interfaces are heavily consumed by Pure Logic rules and Context Engines, but cannot be parsed by them safely.
 * `codestructure.py`: Handles external framework syntax parsing (e.g., `.scm` queries fed into tree-sitter C-binaries).
 

@@ -43,7 +43,7 @@ class TestRunContext:
         assert ctx.topology is None
         assert ctx.settings is None
 
-    @patch("specweaver.workspace.parsers.factory.get_default_parsers")
+    @patch("specweaver.workspace.ast.parsers.factory.get_default_parsers")
     def test_run_context_swallows_parser_exception(
         self, mock_get_parsers: MagicMock, tmp_path: Path
     ) -> None:

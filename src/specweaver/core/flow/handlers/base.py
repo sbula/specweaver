@@ -73,7 +73,7 @@ class RunContext(BaseModel):
         """Inject ProjectMetadata into context execution strictly securely."""
         if self.parsers is None:
             try:
-                from specweaver.workspace.parsers.factory import get_default_parsers
+                from specweaver.workspace.ast.parsers.factory import get_default_parsers
 
                 self.parsers = get_default_parsers()
             except BaseException:

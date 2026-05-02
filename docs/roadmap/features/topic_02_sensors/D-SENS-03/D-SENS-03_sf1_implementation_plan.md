@@ -12,7 +12,7 @@ Extract a `BaseTreeSitterParser` from the existing polyglot AST implementations 
 
 ## 2. Proposed Changes
 
-### 2.1 New File: `src/specweaver/workspace/parsers/base.py`
+### 2.1 New File: `src/specweaver/workspace/ast/parsers/base.py`
 Create `BaseTreeSitterParser` which implements `CodeStructureInterface`.
 - **Properties**: `language` and `parser` must be initialized by subclasses.
 - **Class Attributes**: Subclasses must provide `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, `SCM_IMPORT_QUERY`, `SCM_COMMENT_QUERY`.
@@ -23,18 +23,18 @@ Create `BaseTreeSitterParser` which implements `CodeStructureInterface`.
 
 ### 2.2 Modify Parsers
 Modify the following to inherit from `BaseTreeSitterParser` instead of `CodeStructureInterface`:
-- `src/specweaver/workspace/parsers/python/codestructure.py`
-- `src/specweaver/workspace/parsers/java/codestructure.py`
-- `src/specweaver/workspace/parsers/typescript/codestructure.py`
-- `src/specweaver/workspace/parsers/rust/codestructure.py`
-- `src/specweaver/workspace/parsers/kotlin/codestructure.py`
-- `src/specweaver/workspace/parsers/markdown/codestructure.py`
+- `src/specweaver/workspace/ast/parsers/python/codestructure.py`
+- `src/specweaver/workspace/ast/parsers/java/codestructure.py`
+- `src/specweaver/workspace/ast/parsers/typescript/codestructure.py`
+- `src/specweaver/workspace/ast/parsers/rust/codestructure.py`
+- `src/specweaver/workspace/ast/parsers/kotlin/codestructure.py`
+- `src/specweaver/workspace/ast/parsers/markdown/codestructure.py`
 
 For each, delete the duplicated `extract_*` methods and define the required SCM query string constants and formatting hooks. Markdown's `extract_skeleton` must be rewritten to output strings, not JSON.
 
 ## 3. Testing Strategy
 No new tests are required. The definition of success for SF-1 is that the existing polyglot test suite passes with 100% parity.
-- Run: `pytest tests/unit/workspace/parsers/`
+- Run: `pytest tests/unit/workspace/ast/parsers/`
 - Run: `pytest tests/e2e/` (To ensure context condensation and macro evaluator integrations remain stable).
 
 ## Research Notes

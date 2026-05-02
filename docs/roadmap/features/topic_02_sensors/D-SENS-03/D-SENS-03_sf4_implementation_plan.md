@@ -20,7 +20,7 @@ Previously, AST parsers blindly returned method names, causing severe LLM contex
 ### [MODIFY] `pyproject.toml`
 - Add `"tree-sitter-go>=0.23.0"` to the core dependencies under the `tree-sitter` group.
 
-### [MODIFY] `src/specweaver/workspace/parsers/interfaces.py`
+### [MODIFY] `src/specweaver/workspace/ast/parsers/interfaces.py`
 - **`CodeStructureInterface`**: Add `@classmethod` `supported_intents() -> set[str]` and `supported_parameters(intent: str) -> set[str]`. Default them to return all intents and parameters for backward compatibility.
 - Ensure `extract_framework_markers` and `decorator_filter` are explicitly handled as optional capabilities.
 
@@ -31,10 +31,10 @@ Previously, AST parsers blindly returned method names, causing severe LLM contex
 ### [MODIFY] `src/specweaver/core/loom/tools/code_structure/tool.py`
 - Update `definitions()` to compute the intersection of supported capabilities across all active parsers loaded in `CodeStructureAtom._parsers`. If *no* parser supports an intent/parameter, it is pruned from the schema sent to the agent.
 
-### [MODIFY] `src/specweaver/workspace/parsers/factory.py`
+### [MODIFY] `src/specweaver/workspace/ast/parsers/factory.py`
 - Register the `(".go",)` extension mapping it to the new `GoCodeStructure`.
 
-### [MODIFY] `src/specweaver/workspace/parsers/context.yaml`
+### [MODIFY] `src/specweaver/workspace/ast/parsers/context.yaml`
 - Update the `exposes` list to formally include `factory`, `go/codestructure`, `c/codestructure`, `cpp/codestructure`, and `markdown/codestructure` to resolve current architectural documentation violations.
 
 ### [MODIFY] Existing Language Parsers (`python`, `cpp`, `java`, `kotlin`, `typescript`, `rust`, `markdown`)
@@ -45,7 +45,7 @@ Previously, AST parsers blindly returned method names, causing severe LLM contex
 ### [MODIFY] `docs/dev_guides/code_structure_and_ast_editing.md`
 - Document the new Option B Dot-Notation API across the polyglot ecosystem so developers understand that method symbols are resolved securely using dot-notation.
 
-### [NEW] `src/specweaver/workspace/parsers/go/codestructure.py`
+### [NEW] `src/specweaver/workspace/ast/parsers/go/codestructure.py`
 - Implements `GoCodeStructure(BaseTreeSitterParser)`.
 - Defines `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, and `SCM_COMMENT_QUERY` targeting `function_declaration`, `method_declaration`, and `type_declaration`. 
   - *Note: `method_declaration` captures both `@receiver` and `@name`.*
@@ -56,11 +56,11 @@ Previously, AST parsers blindly returned method names, causing severe LLM contex
 - Implements `extract_imports` targeting the `(import_declaration)` blocks.
 - Explicitly raises an error for `decorator_filter`, as decorators do not exist in Go syntax.
 
-### [NEW] `tests/unit/workspace/parsers/go/test_codestructure.py`
+### [NEW] `tests/unit/workspace/ast/parsers/go/test_codestructure.py`
 - 100% parity with existing language parser tests.
 - Covers symbol extraction, skeleton stripping, imports, `add_symbol`, and visibility filtering (capitalized vs lowercase).
 
-### [MODIFY] Existing Language Unit Tests (`tests/unit/workspace/parsers/*/test_codestructure.py`)
+### [MODIFY] Existing Language Unit Tests (`tests/unit/workspace/ast/parsers/*/test_codestructure.py`)
 - Add specific unit tests for dot-notation resolution (`test_extract_symbol_dot_notation`) to Python, C++, Java, Kotlin, TypeScript, Rust, and Markdown to ensure `Class.Method` correctly isolates identical method names across different classes.
 
 ### [NEW] `tests/integration/core/loom/test_polyglot_ast_go.py`
@@ -76,7 +76,7 @@ Previously, AST parsers blindly returned method names, causing severe LLM contex
 ## Verification Plan
 
 ### Automated Tests
-1. `pytest tests/unit/workspace/parsers/go/test_codestructure.py`
+1. `pytest tests/unit/workspace/ast/parsers/go/test_codestructure.py`
 2. `pytest tests/integration/core/loom/test_polyglot_ast_go.py`
 3. `tach check` to ensure boundaries remain clean.
-4. `ruff check src/specweaver/workspace/parsers/go`
+4. `ruff check src/specweaver/workspace/ast/parsers/go`

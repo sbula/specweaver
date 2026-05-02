@@ -12,7 +12,7 @@ from specweaver.core.loom.commons.language._detect import detect_language
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.workspace.parsers.interfaces import StackTraceFilterInterface
+    from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterface
 
 
 def create_stack_trace_filter(cwd: Path) -> StackTraceFilterInterface:

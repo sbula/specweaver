@@ -10,7 +10,7 @@ from specweaver.graph.core.store.repository import SqliteGraphRepository
 from specweaver.interfaces.cli._core import app as core_app
 from specweaver.interfaces.cli._core import console
 from specweaver.interfaces.cli._helpers import _load_topology
-from specweaver.workspace.adapters.graph_adapter import extract_ast_dict
+from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
 
 
 def _purge_stale_nodes(target_path: Path, repo: SqliteGraphRepository) -> None:

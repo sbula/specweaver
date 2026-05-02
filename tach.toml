@@ -22,6 +22,36 @@ modules = [
     { path = "src.specweaver.workspace.context", depends_on = [] },
     { path = "src.specweaver.workspace.analyzers", depends_on = [] },
     { path = "src.specweaver.workspace.project", depends_on = [] },
+    { path = "src.specweaver.workspace.ast.parsers", depends_on = [] },
+    { path = "src.specweaver.workspace.ast.adapters", depends_on = [] },
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.workspace.ast.parsers",
+]
+expose = [
+    "interfaces",
+    "factory",
+    "python.codestructure",
+    "java.codestructure",
+    "kotlin.codestructure",
+    "rust.codestructure",
+    "typescript.codestructure",
+    "c.codestructure",
+    "cpp.codestructure",
+    "go.codestructure",
+    "markdown.codestructure",
+    "sql.codestructure",
+    "exclusions",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.workspace.ast.adapters",
+]
+expose = [
+    "graph_adapter",
 ]
 
 [[interfaces]]

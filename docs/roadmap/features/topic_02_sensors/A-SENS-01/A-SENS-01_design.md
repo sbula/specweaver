@@ -48,15 +48,15 @@ None required. Uses native `hashlib` and `json`.
 | AD-2 | Automated `.gitignore` Injection | Because AD-1 drops an artifact into legacy projects, SpecWeaver must auto-inject `.specweaver/` into the Gitignore to prevent repository pollution. | No |
 | AD-3 | External Semantic Backends (Feature 3.48) | Hardcoded strictly to "Bicycle Mode" (flat-files). A newly postponed feature (3.48) has been explicitly added to the backlog to swap this layer out for 'Rocket Mode' Sidecar databases (Falkor/Neo4j). | No |
 | AD-4 | Leverage `LanguageAnalyzers` | Reuses AST parsing logic inside `workspace/context` to map semantic dependencies, preventing code duplication natively. | No |
-| AD-5 | Polyglot Tree-Sitter Decoupling | Decouple pure-logic Tree-Sitter models out of the restricted `loom/commons/language` sandbox and into `workspace/parsers/`. This cures massive parallel AST dependencies, enabling 5 languages natively without breaking the rigid L0/L3 architecture bounds. | Yes |
+| AD-5 | Polyglot Tree-Sitter Decoupling | Decouple pure-logic Tree-Sitter models out of the restricted `loom/commons/language` sandbox and into `workspace/ast/parsers/`. This cures massive parallel AST dependencies, enabling 5 languages natively without breaking the rigid L0/L3 architecture bounds. | Yes |
 
 ## Sub-Feature Breakdown
 
 ### SF-1: Polyglot Parser Decoupling
-- **Scope**: Resolves legacy AST technical debt. Extracts `CodeStructureInterface` and language `codestructure.py` out of `loom/commons/language` and moves them downward into `workspace/parsers/`. Upgrades `workspace/context/analyzers.py` to natively utilize these Tree-Sitter engines instead of raw Python `ast`. Updates all imports across `assurance`, `loom`, and `workspace`.
+- **Scope**: Resolves legacy AST technical debt. Extracts `CodeStructureInterface` and language `codestructure.py` out of `loom/commons/language` and moves them downward into `workspace/ast/parsers/`. Upgrades `workspace/context/analyzers.py` to natively utilize these Tree-Sitter engines instead of raw Python `ast`. Updates all imports across `assurance`, `loom`, and `workspace`.
 - **FRs**: [NFR-2]
 - **Inputs**: Existing tree-sitter bindings.
-- **Outputs**: Centralized `workspace/parsers/` domain.
+- **Outputs**: Centralized `workspace/ast/parsers/` domain.
 - **Depends on**: none
 
 ### SF-2: Semantic State caching (DependencyHasher)

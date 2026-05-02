@@ -14,26 +14,26 @@
 - Add `pytest-pathspec` to `dev` constraints if mocking paths are required.
 
 ### 2. Interface Definitions (Pure Logic)
-#### [x] [MODIFY] `src/specweaver/workspace/parsers/interfaces.py`
+#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/interfaces.py`
 - Update `CodeStructureInterface`:
   - Add abstract method: `def get_binary_ignore_patterns(self) -> list[str]: ...`
   - Add abstract method: `def get_default_directory_ignores(self) -> list[str]: ...`
 
 ### 3. Polyglot Target Implementations
-#### [x] [MODIFY] `src/specweaver/workspace/parsers/python/codestructure.py`
+#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/python/codestructure.py`
 - In `PythonCodeStructure`: Return `["*.pyc", "*.pyo", "*.pyd"]` and `["__pycache__/", ".pytest_cache/", ".tox/", ".venv/"]`.
-#### [x] [MODIFY] `src/specweaver/workspace/parsers/java/codestructure.py`
+#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/java/codestructure.py`
 - In `JavaCodeStructure`: Return `["*.class", "*.jar", "*.ear", "*.war"]` and `["target/", "build/"]`.
-#### [x] [MODIFY] `src/specweaver/workspace/parsers/kotlin/codestructure.py`
+#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/kotlin/codestructure.py`
 - In `KotlinCodeStructure`: Return `["*.class", "*.jar"]` and `["target/", "build/", ".gradle/"]`.
-#### [x] [MODIFY] `src/specweaver/workspace/parsers/rust/codestructure.py`
+#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/rust/codestructure.py`
 - In `RustCodeStructure`: Return `["*.rlib", "*.so", "*.dll", "*.pdb"]` and `["target/"]`.
-#### [x] [MODIFY] `src/specweaver/workspace/parsers/typescript/codestructure.py`
+#### [x] [MODIFY] `src/specweaver/workspace/ast/parsers/typescript/codestructure.py`
 - In `TypeScriptCodeStructure`: Return `[]` (Node runs source) and `["node_modules/", "dist/", "build/", "out/"]`.
 
 ### 4. Mathematical Pathspec Aggregator
-#### [x] [NEW] `src/specweaver/workspace/parsers/exclusions.py`
-*(Note: Because `workspace/parsers` is natively `pure-logic`, it legally hosts the mathematical Regex Tree generation for pathspec without violating the `contract` constraints of `workspace/context`. The actual OS traversal reading `.specweaverignore` from disk will be safely injected later during SF-4).*
+#### [x] [NEW] `src/specweaver/workspace/ast/parsers/exclusions.py`
+*(Note: Because `workspace/ast/parsers` is natively `pure-logic`, it legally hosts the mathematical Regex Tree generation for pathspec without violating the `contract` constraints of `workspace/context`. The actual OS traversal reading `.specweaverignore` from disk will be safely injected later during SF-4).*
 - Create `SpecWeaverIgnoreParser` class:
   - Takes `project_root: Path` solely for referencing the `.specweaverignore` physical read (Permitted lookup logic prior to cache locking).
   - Method `ensure_scaffolded(default_directories: list[str]) -> None`: Safe append logic.

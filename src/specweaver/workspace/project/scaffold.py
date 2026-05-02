@@ -280,7 +280,7 @@ def _scaffold_constitution(project_path: Path, created: list[str]) -> Path:
 
 def _scaffold_specweaverignore(project_path: Path, created: list[str]) -> None:
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
-    from specweaver.workspace.parsers.exclusions import SpecWeaverIgnoreParser
+    from specweaver.workspace.ast.parsers.exclusions import SpecWeaverIgnoreParser
 
     ignore_path = project_path / ".specweaverignore"
     ignore_existed = ignore_path.exists()

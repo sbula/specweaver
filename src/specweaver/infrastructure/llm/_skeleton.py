@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
+    from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
 logger = logging.getLogger(__name__)
 
@@ -25,25 +25,25 @@ def extract_ast_skeleton(path: Path, content: str) -> str:
         parser: CodeStructureInterface | None = None
 
         if ext == ".py":
-            from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
+            from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
 
             parser = PythonCodeStructure()
         elif ext in (".ts", ".tsx", ".js", ".jsx"):
-            from specweaver.workspace.parsers.typescript.codestructure import (
+            from specweaver.workspace.ast.parsers.typescript.codestructure import (
                 TypeScriptCodeStructure,
             )
 
             parser = TypeScriptCodeStructure()
         elif ext == ".java":
-            from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
+            from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
 
             parser = JavaCodeStructure()
         elif ext in (".kt", ".kts"):
-            from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
+            from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure
 
             parser = KotlinCodeStructure()
         elif ext == ".rs":
-            from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
+            from specweaver.workspace.ast.parsers.rust.codestructure import RustCodeStructure
 
             parser = RustCodeStructure()
 

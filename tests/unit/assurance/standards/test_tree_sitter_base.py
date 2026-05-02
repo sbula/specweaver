@@ -11,7 +11,7 @@ import pytest
 
 from specweaver.assurance.standards.analyzer import CategoryResult
 from specweaver.assurance.standards.tree_sitter_base import TreeSitterAnalyzer
-from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
+from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     import tree_sitter
 
-    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
+    from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
 
 class DummyJSAnalyzer(TreeSitterAnalyzer):

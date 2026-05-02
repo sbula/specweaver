@@ -9,11 +9,11 @@ import pytest
 from specweaver.core.loom.atoms.base import AtomStatus
 from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
 from specweaver.core.loom.commons.filesystem.executor import ExecutorResult
-from specweaver.workspace.parsers.interfaces import CodeStructureError
-from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
-from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
-from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
-from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
+from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure
+from specweaver.workspace.ast.parsers.rust.codestructure import RustCodeStructure
+from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 
 def _run_atom(

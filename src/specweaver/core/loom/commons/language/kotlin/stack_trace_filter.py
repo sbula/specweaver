@@ -11,7 +11,7 @@ because Kotlin compiles to JVM bytecode and produces identical frame format:
 
 from __future__ import annotations
 
-from specweaver.workspace.parsers.interfaces import StackTraceFilterInterface
+from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterface
 
 _SCENARIO_PACKAGE_PREFIX = "scenarios.generated."
 

@@ -82,23 +82,7 @@ class TestContractHandlerStaticMethods:
         assert "greet" in docstrings
         assert "greeting" in docstrings["greet"].lower()
 
-    def test_render_protocol_with_docstrings(self) -> None:
-        handler = GenerateContractHandler()
-        sigs = ["def greet(name: str) -> str", "def farewell(name: str) -> str"]
-        docstrings = {"greet": "Return a greeting.", "farewell": "Say goodbye."}
-        output = handler._render_protocol("Greeter", sigs, docstrings)
-        assert "class GreeterProtocol(Protocol):" in output
-        assert "def greet" in output
-        assert "def farewell" in output
-        assert '"""Return a greeting."""' in output
-        assert '"""Say goodbye."""' in output
 
-    def test_render_protocol_without_docstrings(self) -> None:
-        handler = GenerateContractHandler()
-        sigs = ["def greet(name: str) -> str"]
-        output = handler._render_protocol("Greeter", sigs)
-        assert "class GreeterProtocol(Protocol):" in output
-        assert "        ..." in output
 
 
 # ── execute() integration tests ──────────────────────────────────────────

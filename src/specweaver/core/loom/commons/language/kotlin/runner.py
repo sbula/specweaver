@@ -24,7 +24,7 @@ from specweaver.core.loom.commons.qa_runner.interface import (
     QARunnerInterface,
     TestRunResult,
 )
-from specweaver.workspace.parsers.kotlin.parsers import parse_detekt_complexity
+from specweaver.workspace.ast.parsers.kotlin.parsers import parse_detekt_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path

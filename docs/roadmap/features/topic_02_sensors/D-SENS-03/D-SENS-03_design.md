@@ -3,7 +3,7 @@
 ## 1. Feature Overview
 
 **Working Definition:**
-Feature 3.32e adds Tree-sitter based AST parsers for C/C++, Go, and Standard SQL to the `workspace/parsers` subsystem. It solves the lack of structural analysis for these high-value enterprise languages (Systems, Cloud-Native, and DB Context Harness) by implementing `CodeStructureInterface` for each using standard Tree-sitter grammars. It interacts with the `factory.py` registry and the `CodeStructureAtom` and explicitly avoids SQL dialect permutations by sticking to ANSI Standard SQL. Key constraints: Must use Tree-sitter, must adhere strictly to standard grammars, must avoid dialects.
+Feature 3.32e adds Tree-sitter based AST parsers for C/C++, Go, and Standard SQL to the `workspace/ast/parsers` subsystem. It solves the lack of structural analysis for these high-value enterprise languages (Systems, Cloud-Native, and DB Context Harness) by implementing `CodeStructureInterface` for each using standard Tree-sitter grammars. It interacts with the `factory.py` registry and the `CodeStructureAtom` and explicitly avoids SQL dialect permutations by sticking to ANSI Standard SQL. Key constraints: Must use Tree-sitter, must adhere strictly to standard grammars, must avoid dialects.
 
 ---
 
@@ -24,7 +24,7 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
     *   **Existing Features Profit:** Phase 3.30 (Macro Evaluator) and Phase 3.32a (Context Condensation) will inherit a much more robust and unified text-mutation engine.
 *   **Cons:**
     *   Requires touching all existing stable parsers, meaning we must run the full polyglot AST integration test suite to verify no regressions occur during the migration.
-*   **Recommendation:** This refactoring should be **SF-1**. It perfectly aligns with the `pure-logic` archetype of the `workspace/parsers` module and provides immense architectural leverage for this feature and all future language expansions.
+*   **Recommendation:** This refactoring should be **SF-1**. It perfectly aligns with the `pure-logic` archetype of the `workspace/ast/parsers` module and provides immense architectural leverage for this feature and all future language expansions.
 
 ---
 
@@ -35,7 +35,7 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
 *   **FR-3:** The system SHALL parse Go source files (`.go`) using `tree-sitter-go` to extract skeletons, symbols, imports, and traceability tags.
 *   **FR-4:** The system SHALL parse Standard SQL source files (`.sql`) using `tree-sitter-sql` to extract structural schemas (tables/views) and symbols (functions/procedures).
 *   **FR-5:** The system SHALL complete the existing `MarkdownCodeStructure` stub, ensuring it implements the full `CodeStructureInterface` (including traceability tag extraction and symbol mutation) using the new `BaseTreeSitterParser`.
-*   **FR-6:** The system SHALL register all new file extensions in `specweaver.workspace.parsers.factory.get_default_parsers()`.
+*   **FR-6:** The system SHALL register all new file extensions in `specweaver.workspace.ast.parsers.factory.get_default_parsers()`.
 *   **FR-7:** The system SHALL dynamically prune `ToolDefinition` schemas (e.g. hiding `decorator_filter` or `extract_framework_markers`) if no active language parser supports them, ensuring agents never see useless capabilities.
 
 ---
@@ -43,7 +43,7 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
 ## 4. Non-Functional Requirements (NFRs)
 
 *   **NFR-1 (Compatibility):** The new grammars must be fully compatible with `tree-sitter >= 0.25.2` as mandated by the current `pyproject.toml`.
-*   **NFR-2 (Architecture Boundaries):** The implementations MUST reside strictly within `specweaver.workspace.parsers` and implement the `CodeStructureInterface`. No sandbox I/O is permitted (`pure-logic`).
+*   **NFR-2 (Architecture Boundaries):** The implementations MUST reside strictly within `specweaver.workspace.ast.parsers` and implement the `CodeStructureInterface`. No sandbox I/O is permitted (`pure-logic`).
 *   **NFR-3 (Dialect Agnosticism):** The SQL parser MUST stick to ANSI Standard SQL. It SHALL NOT attempt to polyfill proprietary pgSQL or T-SQL syntax unless it is natively supported by the standard `tree-sitter-sql` grammar.
 
 ---

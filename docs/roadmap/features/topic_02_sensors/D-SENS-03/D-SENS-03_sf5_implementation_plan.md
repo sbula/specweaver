@@ -22,21 +22,21 @@ Implement the `CodeStructureInterface` for Standard SQL by leveraging the unifie
 #### [MODIFY] pyproject.toml
 - Append `"tree-sitter-sql>=0.3.11"` to the `dependencies` array.
 
-#### [MODIFY] src/specweaver/workspace/parsers/context.yaml
+#### [MODIFY] src/specweaver/workspace/ast/parsers/context.yaml
 - Add `- sql/codestructure` to the `exposes:` list to ensure architectural compliance with the `pure-logic` boundary.
 
-#### [MODIFY] src/specweaver/workspace/parsers/factory.py
-- Import `from specweaver.workspace.parsers.sql.codestructure import SqlCodeStructure`
+#### [MODIFY] src/specweaver/workspace/ast/parsers/factory.py
+- Import `from specweaver.workspace.ast.parsers.sql.codestructure import SqlCodeStructure`
 - Map the tuple `(".sql",)` to `SqlCodeStructure()` inside `get_default_parsers()`.
 
 ---
 
 ### SQL Parser Implementation
 
-#### [NEW] src/specweaver/workspace/parsers/sql/__init__.py
+#### [NEW] src/specweaver/workspace/ast/parsers/sql/__init__.py
 - Empty initialization file.
 
-#### [NEW] src/specweaver/workspace/parsers/sql/codestructure.py
+#### [NEW] src/specweaver/workspace/ast/parsers/sql/codestructure.py
 - Create `SqlCodeStructure(BaseTreeSitterParser)`.
 - Initialize `Language(tree_sitter_sql.language())` and `Parser`.
 - **`SCM_SKELETON_QUERY`**: Target `create_table`, `create_view`, `create_function`.
@@ -55,7 +55,7 @@ Implement the `CodeStructureInterface` for Standard SQL by leveraging the unifie
 ### Verification Plan
 
 #### Automated Tests
-#### [NEW] tests/unit/workspace/parsers/sql/test_sql_code_structure.py
+#### [NEW] tests/unit/workspace/ast/parsers/sql/test_sql_code_structure.py
 - Test `list_symbols` correctly identifies tables, views, and functions.
 - Test `extract_skeleton` blanks out function bodies and column definitions appropriately.
 - Test `extract_symbol` and `replace_symbol` for exact SQL schema extraction.
@@ -63,7 +63,7 @@ Implement the `CodeStructureInterface` for Standard SQL by leveraging the unifie
 - Verify robust handling of syntax errors per standard parser error mitigation.
 
 **Commands to run**:
-- `uv run pytest tests/unit/workspace/parsers/sql/test_sql_code_structure.py -v`
+- `uv run pytest tests/unit/workspace/ast/parsers/sql/test_sql_code_structure.py -v`
 - `uv run ruff check src tests`
 - `uv run mypy src tests`
 

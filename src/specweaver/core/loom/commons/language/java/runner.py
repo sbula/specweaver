@@ -21,7 +21,7 @@ from specweaver.core.loom.commons.qa_runner.interface import (
     QARunnerInterface,
     TestRunResult,
 )
-from specweaver.workspace.parsers.java.parsers import parse_pmd_complexity
+from specweaver.workspace.ast.parsers.java.parsers import parse_pmd_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path

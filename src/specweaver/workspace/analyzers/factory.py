@@ -17,14 +17,14 @@ from typing import TYPE_CHECKING, ClassVar
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.workspace.parsers.interfaces import CodeStructureInterface
+    from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
 from specweaver.workspace.context.analyzer_protocols import LanguageAnalyzer
-from specweaver.workspace.parsers.java.codestructure import JavaCodeStructure
-from specweaver.workspace.parsers.kotlin.codestructure import KotlinCodeStructure
-from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
-from specweaver.workspace.parsers.rust.codestructure import RustCodeStructure
-from specweaver.workspace.parsers.typescript.codestructure import TypeScriptCodeStructure
+from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
+from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure
+from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
+from specweaver.workspace.ast.parsers.rust.codestructure import RustCodeStructure
+from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 logger = logging.getLogger(__name__)
 

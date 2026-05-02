@@ -29,7 +29,7 @@
 - Within `scaffold_project(project_path: Path)`:
   - Dynamically iterate over `AnalyzerFactory.get_all_analyzers()`.
   - Compile the `default_directories` flat list.
-  - Instantiate `SpecWeaverIgnoreParser(project_path)` from `specweaver.workspace.parsers.exclusions`.
+  - Instantiate `SpecWeaverIgnoreParser(project_path)` from `specweaver.workspace.ast.parsers.exclusions`.
   - Fire `ensure_scaffolded(default_directories)`.
   - Inject `".specweaverignore"` natively into the tracking array if newly created.
 

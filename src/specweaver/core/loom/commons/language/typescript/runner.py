@@ -22,7 +22,7 @@ from specweaver.core.loom.commons.qa_runner.interface import (
     QARunnerInterface,
     TestRunResult,
 )
-from specweaver.workspace.parsers.typescript.parsers import extract_tsc_errors
+from specweaver.workspace.ast.parsers.typescript.parsers import extract_tsc_errors
 
 logger = logging.getLogger(__name__)
 

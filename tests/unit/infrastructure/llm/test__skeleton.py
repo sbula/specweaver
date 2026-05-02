@@ -20,7 +20,7 @@ class TestSkeletonExtractor:
         broken_content = "def invalid_syntax(@#*&):"
 
         # We manually monkeypatch parser mapping to ensure a fatal extraction error
-        from specweaver.workspace.parsers.python.codestructure import PythonCodeStructure
+        from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
 
         def mock_extract(*args, **kwargs):
             raise RuntimeError("Fatal parse error")

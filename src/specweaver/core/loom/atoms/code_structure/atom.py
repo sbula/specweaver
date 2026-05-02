@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
-from specweaver.workspace.parsers.interfaces import (
+from specweaver.workspace.ast.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
@@ -50,7 +50,7 @@ class CodeStructureAtom(Atom):
         if parsers is not None:
             self._parsers = parsers
         else:
-            from specweaver.workspace.parsers.factory import get_default_parsers
+            from specweaver.workspace.ast.parsers.factory import get_default_parsers
 
             self._parsers = get_default_parsers()
 
