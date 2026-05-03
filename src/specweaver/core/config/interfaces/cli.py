@@ -93,7 +93,7 @@ def config_get_log_level() -> None:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.logging import get_log_path
+    from specweaver.telemetry_logger import get_log_path
 
     log_path = get_log_path(name)
     _core.console.print(

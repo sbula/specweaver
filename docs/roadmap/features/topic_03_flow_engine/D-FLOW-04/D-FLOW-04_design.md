@@ -18,7 +18,7 @@ Feature 3.13a adds a unified execution flow to single-shot CLI commands (`sw rev
 > SF-1 and SF-2 are COMMITTED. The ONLY remaining work is SF-3 (Logging Rollout).
 > Do NOT re-implement or modify any PipelineRunner, CLI command routing, or logging infrastructure code.
 
-Existing CLI commands such as `sw review` manually instantiate their backing domain objects (e.g., `Reviewer`) and manually trigger telemetry flushing. The `PipelineRunner` successfully orchestrates multi-step pipelines and robustly manages telemetry, database contexts, and gates automatically. Reusing `PipelineRunner` for single-step programmatic definitions unifies these paths without creating new architectural patterns. The existing `logging.py` uses standard library Python logging but defaults the console to a plain `StreamHandler` rather than integrating with `Rich`. 
+Existing CLI commands such as `sw review` manually instantiate their backing domain objects (e.g., `Reviewer`) and manually trigger telemetry flushing. The `PipelineRunner` successfully orchestrates multi-step pipelines and robustly manages telemetry, database contexts, and gates automatically. Reusing `PipelineRunner` for single-step programmatic definitions unifies these paths without creating new architectural patterns. The existing `telemetry_logger.py` uses standard library Python logging but defaults the console to a plain `StreamHandler` rather than integrating with `Rich`. 
 
 ### External Tools
 | Tool | Version | Key API Surface | Source |
@@ -34,7 +34,7 @@ No external blueprint references are strictly required, though this follows the 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | Refactor CLI commands | System | Refactor single-shot CLI commands (`sw draft`, `sw review`, etc.) to execute via `PipelineRunner` | Commands use dynamic 1-step pipelines instead of manual domain instantiation. |
-| FR-2 | Introduce Rich Console Logging | System | Replace `StreamHandler` in `src/specweaver/logging.py` with `rich.logging.RichHandler` | The console outputs properly formatted, colorized WARNING+ level messages with rich tracebacks. |
+| FR-2 | Introduce Rich Console Logging | System | Replace `StreamHandler` in `src/specweaver/telemetry_logger.py` with `rich.logging.RichHandler` | The console outputs properly formatted, colorized WARNING+ level messages with rich tracebacks. |
 | FR-3 | Implement Persistent JSON Logs | System | Add a JSON formatter to the `RotatingFileHandler` writing to `~/.specweaver/logs/<project_name>/specweaver.log` | DEBUG and higher logs are persistently captured in a machine-parseable JSON format without spamming the terminal user. |
 | FR-4 | Preserve Existing CLI Contracts | User | Call existing `sw` CLI commands with their current flags | The UI arguments and flags remain functionally identical. |
 | FR-5 | Automatic Telemetry & Context | System | Delegate context resolution and telemetry flushing to `PipelineRunner` | The manual cleanup in CLI command modules is removed in favor of the unified runner hooks. |
@@ -65,7 +65,7 @@ No external blueprint references are strictly required, though this follows the 
 ## Sub-Feature Breakdown
 
 ### SF-1: Universal Logging Reform
-- **Scope**: Reform the `logging.py` infrastructure to unify terminal output via `Rich` and disk output via simple JSON representation.
+- **Scope**: Reform the `telemetry_logger.py` infrastructure to unify terminal output via `Rich` and disk output via simple JSON representation.
 - **FRs**: [FR-2, FR-3]
 - **Inputs**: Logger configuration requests from CLI/System.
 - **Outputs**: Formatted console strings, JSON file lines.
@@ -101,31 +101,11 @@ No external blueprint references are strictly required, though this follows the 
 | SF-2 | Unified CLI Runner | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Logging Rollout | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
-> [!WARNING]
-> **Path Staleness — SF-3 Plan Reconciliation Required**
-> The SF-3 implementation plan (`D-FLOW-04_sf3_implementation_plan.md`) was written on 2026-03-29.
-> Since then, the monolith decoupling migration (2026-05-01/02) moved all module paths:
-> - `specweaver/config` → `specweaver/core/config`
-> - `specweaver/flow` → `specweaver/core/flow`
-> - `specweaver/llm` → `specweaver/infrastructure/llm`
-> - `specweaver/project` → `specweaver/workspace/project`
-> - `specweaver/validation` → `specweaver/assurance/validation`
-> - `specweaver/cli` → `specweaver/interfaces/cli`
-> - `specweaver/context` → `specweaver/workspace/context`
-> - `specweaver/standards` → `specweaver/assurance/standards`
-> - `specweaver/graph` → `specweaver/graph` (partially moved)
-> - `specweaver/planning` → `specweaver/workflows/planning`
-> - `specweaver/review` → `specweaver/workflows/review`
-> - `specweaver/drafting` → `specweaver/workflows/drafting`
-> - `specweaver/implementation` → `specweaver/workflows/implementation`
-> - `specweaver/loom` → `specweaver/sandbox`
-> - `specweaver/api` → `specweaver/interfaces/api`
->
-> **Before starting `/dev` on SF-3**, run a path reconciliation pass to update all file references
-> in the implementation plan. The module *names* and *content* are still correct — only the paths changed.
+
+
 
 ## Session Handoff
 
 **Current status**: SF-1 ✅ Committed. SF-2 ✅ Committed (2026-03-29). SF-3 Impl Plan APPROVED — Dev pending.
-**Next step**: Path reconciliation on SF-3 plan, then run `/dev` for SF-3.
+**Next step**: Run `/dev` for SF-3.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

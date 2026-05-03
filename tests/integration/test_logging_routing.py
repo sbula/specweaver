@@ -10,7 +10,7 @@ import logging
 
 import pytest
 
-from specweaver.logging import setup_logging, teardown_logging
+from specweaver.telemetry_logger import setup_logging, teardown_logging
 
 
 @pytest.fixture(autouse=True)

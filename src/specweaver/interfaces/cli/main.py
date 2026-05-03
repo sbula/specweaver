@@ -39,7 +39,7 @@ def _app_callback(
 ) -> None:
     """SpecWeaver \u2014 Specification-driven development lifecycle tool."""
     from specweaver.interfaces.cli import _core
-    from specweaver.logging import setup_logging
+    from specweaver.telemetry_logger import setup_logging
 
     db = _core.get_db()
     active = _run_workspace_op("get_active_project")

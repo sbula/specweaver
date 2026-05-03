@@ -12,10 +12,10 @@ Instrument every module in `src/specweaver/` with structured logging calls. SF-1
 
 > [!NOTE]
 > **Research Notes Synthesis**
-> - ~47 modules already have `logger = logging.getLogger(__name__)` AND active log calls (e.g., `flow/runner.py`, `context/inferrer.py`, `config/database.py`). These need an **audit pass** — verify their logging is comprehensive (method entry, error paths, key decisions).
+> - ~47 modules already have `logger = logging.getLogger(__name__)` AND active log calls (e.g., `core/flow/runner.py`, `context/inferrer.py`, `config/database.py`). These need an **audit pass** — verify their logging is comprehensive (method entry, error paths, key decisions).
 > - ~10 modules have `logger = logging.getLogger(__name__)` declared but minimal/no actual log calls. These need log calls **added**.
 > - ~30+ modules have neither `import logging` nor a logger declaration. These need the full treatment (import, declaration, and calls).
-> - The logging infrastructure is in `src/specweaver/logging.py`. All modules under the `specweaver` namespace automatically route to this infrastructure via Python's logger hierarchy (`logging.getLogger(__name__)` → `specweaver.core.config.settings` → propagates to root `specweaver` logger).
+> - The logging infrastructure is in `src/specweaver/telemetry_logger.py`. All modules under the `specweaver` namespace automatically route to this infrastructure via Python's logger hierarchy (`logging.getLogger(__name__)` → `specweaver.core.config.settings` → propagates to root `specweaver` logger).
 
 ## Resolved Design Decisions
 
@@ -25,7 +25,7 @@ Instrument every module in `src/specweaver/` with structured logging calls. SF-1
 | # | Decision | Resolution |
 |---|----------|------------|
 | D1 | **Logging granularity** | Public methods + error paths + key decision points ONLY. Private helper methods are logged ONLY if they contain non-trivial branching logic (rule of thumb: if it has 3+ branches or a try/except, log it). Do NOT log trivial getters, property access, or simple delegation. |
-| D2 | **Batch size** | 4 commit boundaries, one per architectural layer (config/context/project → domain → llm/flow/loom → cli/api). |
+| D2 | **Batch size** | 4 commit boundaries, one per architectural layer (config/context/project → domain → infrastructure/llm/core/flow/sandbox → interfaces/cli/api). |
 | D3 | **Test strategy** | A single `tests/unit/test_logging_rollout.py` spot-checking 5-6 representative modules. No per-module logging tests. Existing behavioral tests validate that logging additions don't break functionality. |
 | D4 | **Exclusions** | Pure data models and `__init__.py` files are EXCLUDED. See explicit list below. |
 | D5 | **CLI logging** | Add operational DEBUG logging alongside existing `console.print()`. Do NOT replace Rich console output. Logging captures command entry, project resolution, error paths — for the log file, not for the terminal user. |
@@ -35,22 +35,20 @@ Instrument every module in `src/specweaver/` with structured logging calls. SF-1
 > [!WARNING]
 > **Do NOT add logging to these files.** They contain no behavior worth logging (pure data models, constants, type definitions, re-exports):
 
-- `src/specweaver/__init__.py` (and ALL `__init__.py` files except `llm/adapters/__init__.py` which has auto-discovery logic)
-- `src/specweaver/flow/models.py` — pure Pydantic data models
-- `src/specweaver/flow/state.py` — pure Pydantic data models
-- `src/specweaver/llm/models.py` — pure Pydantic data models
-- `src/specweaver/llm/errors.py` — pure exception definitions
-- `src/specweaver/llm/_prompt_constants.py` — pure string constants
-- `src/specweaver/validation/models.py` — pure Pydantic data models
-- `src/specweaver/planning/models.py` — pure Pydantic data models
-- `src/specweaver/project/_templates.py` — pure string templates
-- `src/specweaver/loom/tools/*/definitions.py` — pure tool definition constants
-- `src/specweaver/loom/tools/*/interfaces.py` — thin delegation facades (no logic)
-- `src/specweaver/loom/atoms/base.py` — abstract base class with no concrete behavior
-- `src/specweaver/context/provider.py` — pure Protocol/interface definition
-- `src/specweaver/flow/handlers.py` — registry class (already has handler-level logging in individual handlers)
-- `src/specweaver/validation/rules/spec/*.py` — pure validation functions (input→finding), too granular for logging
-- `src/specweaver/validation/rules/code/*.py` — pure validation functions (input→finding), too granular for logging
+- `src/specweaver/__init__.py` (and ALL `__init__.py` files except `infrastructure/llm/adapters/__init__.py` which has auto-discovery logic)
+- `src/specweaver/core/flow/engine/models.py` — pure Pydantic data models
+- `src/specweaver/core/flow/engine/state.py` — pure Pydantic data models
+- `src/specweaver/infrastructure/llm/models.py` — pure Pydantic data models
+- `src/specweaver/infrastructure/llm/errors.py` — pure exception definitions
+- `src/specweaver/infrastructure/llm/_prompt_constants.py` — pure string constants
+- `src/specweaver/assurance/validation/models.py` — pure Pydantic data models
+- `src/specweaver/workflows/planning/models.py` — pure Pydantic data models
+- `src/specweaver/workspace/project/_templates.py` — pure string templates
+- `src/specweaver/sandbox/*/interfaces/definitions.py` — pure tool definition constants
+- `src/specweaver/sandbox/*/interfaces/facades.py` — thin delegation facades (no logic)
+- `src/specweaver/workspace/context/provider.py` — pure Protocol/interface definition
+- `src/specweaver/assurance/validation/rules/spec/*.py` — pure validation functions (input→finding), too granular for logging
+- `src/specweaver/assurance/validation/rules/code/*.py` — pure validation functions (input→finding), too granular for logging
 
 > [!NOTE]
 > **How to determine if a file should be excluded**: Open the file. If it contains ONLY: Pydantic `BaseModel` classes, `TypedDict` definitions, `Enum` definitions, `Protocol` definitions, string constants, `ToolDefinition` lists, or `@abstractmethod` stubs — it is excluded. If it has ANY method with real control flow (if/else, try/except, loops, function calls), it is included.
@@ -84,7 +82,7 @@ If any check fails → add the missing log call(s).
 > **OUT of scope for SF-3** (absolutely do NOT do these):
 > - Changing any function signatures, return types, or behavioral logic
 > - Adding new dependencies (logging is stdlib)
-> - Modifying the logging infrastructure itself (`src/specweaver/logging.py`) — that was SF-1
+> - Modifying the logging infrastructure itself (`src/specweaver/telemetry_logger.py`) — that was SF-1
 > - Replacing `console.print()` calls with `logger.info()` — CLI output and logging are separate concerns
 > - Adding structured/typed log records or log event schemas — out of scope
 > - Changing exception handling patterns (e.g., adding try/except where none exists)
@@ -101,7 +99,7 @@ The rollout is divided into 4 batches by architectural layer. Each batch is a co
 
 Modules that are leaf-level or near-leaf in the dependency graph. Adding logging here first ensures the foundational layers are instrumented before their consumers.
 
-#### [MODIFY] [settings.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/settings.py)
+#### [MODIFY] [settings.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/config/settings.py)
 - **Currently missing**: `import logging` + logger declaration
 - Add `import logging` at top of imports block
 - Add `logger = logging.getLogger(__name__)` after imports
@@ -109,60 +107,58 @@ Modules that are leaf-level or near-leaf in the dependency graph. Adding logging
 - `load_settings_for_active()`: log entry at DEBUG, log active project name at DEBUG
 - `migrate_legacy_config()`: log entry at DEBUG, log result ("migrated" vs "no config.yaml found") at INFO
 
-#### [MODIFY] [paths.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/paths.py)
+#### [MODIFY] [paths.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/config/paths.py)
 - Add logger if missing. Log path resolution results at DEBUG level.
 
-#### [MODIFY] [_schema.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/_schema.py)
 - Add logger if missing. Log schema migration steps (version transitions) at INFO level.
 
-#### [MODIFY] [_db_llm_mixin.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/_db_llm_mixin.py)
 - Add logger if missing. Log profile CRUD operations at DEBUG level.
 
-#### [MODIFY] [profiles.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/profiles.py)
+#### [MODIFY] [profiles.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/config/profiles.py)
 - **Has logger**: Audit existing logging. Add log calls for profile resolution/lookup at DEBUG level if insufficient.
 
-#### [MODIFY] [database.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/database.py)
+#### [MODIFY] [database.py](file:///c:/development/pitbula/specweaver/src/specweaver/core/config/database.py)
 - **Has logger**: Audit existing logging. Ensure project registration, profile linking, and migration emit at least DEBUG-level logs. Add any missing entry/exit logs.
 
-#### [MODIFY] [_db_config_mixin.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/_db_config_mixin.py)
 - **Has logger**: Audit existing logging. Ensure config read/write ops log at DEBUG.
 
-#### [MODIFY] [_db_extensions_mixin.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/_db_extensions_mixin.py)
 - **Has logger**: Audit existing logging. Ensure extension discovery logs at DEBUG.
 
-#### [MODIFY] [_db_telemetry_mixin.py](file:///c:/development/pitbula/specweaver/src/specweaver/config/_db_telemetry_mixin.py)
 - **Has logger**: Audit existing logging. Ensure telemetry flush/read logs at DEBUG.
 
-#### [MODIFY] [inferrer.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/inferrer.py)
+#### [MODIFY] [inferrer.py](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/context/inferrer.py)
 - **Has logger + active calls**: Audit only — verify comprehensive coverage. Add only if missing.
 
-#### [MODIFY] [analyzers.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/analyzers.py)
 - Add logger if missing. Log analyzer factory dispatch and analysis results at DEBUG.
 
-#### [MODIFY] [hitl_provider.py](file:///c:/development/pitbula/specweaver/src/specweaver/context/hitl_provider.py)
+#### [MODIFY] [hitl_provider.py](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/context/hitl_provider.py)
 - Add logger if missing. Log question prompts and user response lengths at DEBUG (do NOT log response content — could be sensitive).
 
-#### [MODIFY] [scaffold.py](file:///c:/development/pitbula/specweaver/src/specweaver/project/scaffold.py)
+#### [MODIFY] [scaffold.py](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/project/scaffold.py)
 - **Has logger**: Audit existing logging. Ensure scaffold creation steps log at INFO.
 
-#### [MODIFY] [constitution.py](file:///c:/development/pitbula/specweaver/src/specweaver/project/constitution.py)
+#### [MODIFY] [constitution.py](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/project/constitution.py)
 - **Has logger**: Audit existing logging. Ensure discovery and validation log at DEBUG.
 
-#### [MODIFY] [discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/project/discovery.py)
+
+#### workspace/ast/ (multiple files)
+- All parsers and base modules — Add logger if missing. Log parser initialization and parsing steps at DEBUG.
+
+#### [MODIFY] [discovery.py](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/project/discovery.py)
 - Add logger if missing. Log project discovery at DEBUG level.
 
-#### [MODIFY] [_helpers.py](file:///c:/development/pitbula/specweaver/src/specweaver/project/_helpers.py)
+#### [MODIFY] [_helpers.py](file:///c:/development/pitbula/specweaver/src/specweaver/workspace/project/_helpers.py)
 - **Has logger**: Audit existing logging. Ensure helper functions log at DEBUG.
 
 ---
 
-### Batch 2: Domain Logic (validation/, standards/, graph/, planning/, review/, drafting/, implementation/)
+### Batch 2: Domain Logic (assurance/validation/, assurance/standards/, graph/, workflows/planning/, workflows/review/, workflows/drafting/, workflows/implementation/)
 
 **Commit Boundary 2 of 4** — After completing all files in this batch, run full test suite + `/pre-commit`.
 
 Core domain modules that perform business logic.
 
-#### validation/ (6 files — audit existing, add missing)
+#### assurance/validation/ (6 files — audit existing, add missing)
 - `executor.py` — **Has logger**. Audit: ensure rule execution start/result log at DEBUG.
 - `runner.py` — **Has logger**. Audit: ensure batch run entry/exit and per-rule results log at DEBUG.
 - `registry.py` — **Has logger**. Audit: ensure rule registration/discovery logs at DEBUG.
@@ -172,7 +168,7 @@ Core domain modules that perform business logic.
 - `pipeline.py` — Add logger. Log pipeline execution at DEBUG.
 - `spec_kind.py` — Add logger if it has control flow. Log spec kind detection at DEBUG.
 
-#### standards/ (12 files — audit existing, add missing)
+#### assurance/standards/ (12 files — audit existing, add missing)
 - `analyzer.py` — Add logger if missing. Log analysis entry/results at DEBUG.
 - `discovery.py` — **Has logger**. Audit for comprehensive coverage.
 - `enricher.py` — **Has logger**. Audit for comprehensive coverage.
@@ -190,30 +186,37 @@ Core domain modules that perform business logic.
 - `topology.py` — **Has logger**. Audit: ensure graph building, cycle detection, impact analysis log at DEBUG.
 - `selectors.py` — Add logger. Log selector queries at DEBUG.
 
-#### planning/ (4 files — audit + add)
+
+#### workflows/evaluators/ (multiple files)
+- All evaluators — Add logger if missing. Log evaluation steps at DEBUG.
+
+#### graph/lineage/ (multiple files)
+- All store and domain modules — Add logger if missing. Log lineage events at DEBUG.
+
+#### workflows/planning/ (4 files — audit + add)
 - `planner.py` — **Has logger**. Audit for comprehensive coverage.
 - `renderer.py` — Add logger. Log rendering steps at DEBUG.
 - `stitch.py` — **Has logger**. Audit for comprehensive coverage.
 - `ui_extractor.py` — Add logger. Log extraction steps at DEBUG.
 
-#### review/ (1 file)
+#### workflows/review/ (1 file)
 - `reviewer.py` — **Has logger**. Audit: ensure review invocation, LLM call, verdict parsing log at DEBUG/INFO.
 
-#### drafting/ (3 files)
+#### workflows/drafting/ (3 files)
 - `drafter.py` — **Missing logger entirely**. Add `import logging` + `logger = logging.getLogger(__name__)`. Add: `draft()` entry with component name at DEBUG, section iteration at DEBUG, file write at INFO. `_generate_section()` LLM call at DEBUG.
 - `decomposition.py` — Add logger. Log decomposition steps at DEBUG.
 - `feature_drafter.py` — Add logger. Log feature drafting steps at DEBUG.
 
-#### implementation/ (1 file)
+#### workflows/implementation/ (1 file)
 - `generator.py` — **Has logger**. Audit: ensure code generation and test generation steps log at DEBUG/INFO.
 
 ---
 
-### Batch 3: LLM & Flow Engine (llm/, flow/, loom/)
+### Batch 3: LLM & Flow Engine (infrastructure/llm/, core/flow/, sandbox/)
 
 **Commit Boundary 3 of 4** — After completing all files in this batch, run full test suite + `/pre-commit`.
 
-#### llm/ (8 files + adapters)
+#### infrastructure/llm/ (8 files + adapters)
 - `prompt_builder.py` — Add logger. Log block assembly at DEBUG (block name, priority).
 - `router.py` — **Has logger**. Audit for comprehensive coverage.
 - `factory.py` — **Has logger**. Audit for comprehensive coverage.
@@ -223,7 +226,7 @@ Core domain modules that perform business logic.
 - `mention_scanner/scanner.py` — Add logger. Log mention scanning at DEBUG.
 - `mention_scanner/models.py` — Skip (pure data models).
 
-#### llm/adapters/ (6 files)
+#### infrastructure/llm/adapters/ (6 files)
 - `__init__.py` — **Has logger**. Audit: ensure auto-discovery scanning logs at DEBUG.
 - `base.py` — Add logger for base class methods if they have concrete behavior.
 - `gemini.py` — **Has logger**. Audit: ensure API call entry/exit, error paths log at DEBUG/WARNING.
@@ -232,7 +235,7 @@ Core domain modules that perform business logic.
 - `mistral.py` — Add logger. Log API call entry/exit at DEBUG, errors at WARNING.
 - `qwen.py` — Add logger. Log API call entry/exit at DEBUG, errors at WARNING.
 
-#### flow/ (9 files)
+#### core/flow/ (9 files)
 - `runner.py` — **Already well-instrumented**. Audit pass only.
 - `gates.py` — **Has logger**. Audit for comprehensive coverage.
 - `store.py` — **Has logger**. Audit for comprehensive coverage.
@@ -246,50 +249,48 @@ Core domain modules that perform business logic.
 - `display.py` — Add logger. Log display events at DEBUG.
 - `parser.py` — Add logger. Log YAML parsing at DEBUG.
 
-#### loom/ (multiple files)
-- `dispatcher.py` — **Has logger**. Audit for comprehensive coverage.
-- `security.py` — **Has logger**. Audit for comprehensive coverage.
-- `atoms/rule_atom.py` — **Has logger**. Audit for comprehensive coverage.
-- `atoms/filesystem/atom.py` — Add logger if missing. Log atom execution at DEBUG.
-- `atoms/git/atom.py` — Add logger if missing. Log atom execution at DEBUG.
-- `atoms/qa_runner/atom.py` — Add logger if missing. Log atom execution at DEBUG.
-- `commons/filesystem/executor.py` — Add logger if missing. Log file ops at DEBUG.
-- `commons/filesystem/search.py` — **Has logger**. Audit for comprehensive coverage.
-- `commons/git/executor.py` — Add logger if missing. Log git command execution at DEBUG.
-- `commons/git/engine_executor.py` — Add logger if missing.
-- `commons/qa_runner/python.py` — **Has logger**. Audit for comprehensive coverage.
-- `commons/qa_runner/interface.py` — Add logger if missing.
-- `tools/filesystem/tool.py` — Add logger if missing. Log tool invocation at DEBUG.
-- `tools/git/tool.py` — Add logger if missing. Log tool invocation at DEBUG.
-- `tools/qa_runner/tool.py` — Add logger if missing. Log tool invocation at DEBUG.
-- `tools/web/tool.py` — **Has logger**. Audit for comprehensive coverage.
+#### sandbox/ (multiple files)
+#### sandbox/language/ (multiple files)
+- All language core and interfaces — Add logger if missing. Log execution boundaries at DEBUG.
+
+- mcp/core/executor.py — Add logger if missing.
+- mcp/interfaces/tool.py — Add logger if missing.
+- protocol/core/atom.py — Add logger if missing.
+- protocol/core/factory.py — Add logger if missing.
+- protocol/interfaces/tool.py — Add logger if missing.
+- qa_runner/core/atom.py — Add logger if missing.
+- qa_runner/interfaces/tool.py — Add logger if missing.
+- web/interfaces/tool.py — Add logger if missing.
 
 ---
 
-### Batch 4: Entry Points (cli/, api/)
+
+### Batch 4: Entry Points (interfaces/cli/, interfaces/api/)
 
 **Commit Boundary 4 of 4** — After completing all files in this batch, run full test suite + `/pre-commit`.
 
-#### cli/ (14 files)
-- `_core.py` — **Has logger**. Audit: ensure main app callbacks log at DEBUG.
-- `_helpers.py` — Add logger if missing. Log helper invocations at DEBUG.
-- `config.py` — **Has logger**. Audit for comprehensive coverage.
-- `config_routing.py` — Add logger if missing. Log routing command entry at DEBUG.
-- `constitution.py` — Add logger if missing. Log command entry at DEBUG.
-- `cost_commands.py` — Add logger if missing. Log command entry at DEBUG.
-- `implement.py` — Add logger if missing. Log command entry at DEBUG.
-- `pipelines.py` — Add logger if missing. Log command entry at DEBUG.
-- `projects.py` — Add logger if missing. Log command entry at DEBUG.
-- `review.py` — Add logger if missing. Log command entry at DEBUG.
-- `serve.py` — Add logger if missing. Log server startup at INFO.
-- `standards.py` — Add logger if missing. Log command entry at DEBUG.
-- `usage_commands.py` — Add logger if missing. Log command entry at DEBUG.
-- `validation.py` — Add logger if missing. Log command entry at DEBUG.
+#### Decentralized CLI Interfaces (16 files)
+- interfaces/cli/main.py — Add logger.
+- interfaces/cli/_core.py — **Has logger**. Audit: ensure main app callbacks log at DEBUG.
+- interfaces/cli/routers/serve_router.py — Add logger if missing.
+- core/config/interfaces/cli.py — Add logger if missing. Log command entry at DEBUG.
+- core/config/cli_db_utils.py — Add logger if missing.
+- graph/interfaces/cli.py — Add logger if missing.
+- assurance/validation/interfaces/cli.py — Add logger if missing.
+- assurance/validation/interfaces/cli_drift.py — Add logger if missing.
+- assurance/standards/interfaces/cli.py — Add logger if missing.
+- infrastructure/llm/interfaces/cli.py — Add logger if missing.
+- workflows/implementation/interfaces/cli.py — Add logger if missing.
+- workflows/review/interfaces/cli.py — Add logger if missing.
+- workspace/project/interfaces/cli.py — Add logger if missing.
+- workspace/project/interfaces/cli_constitution.py — Add logger if missing.
+- workspace/project/interfaces/cli_hooks.py — Add logger if missing.
+- core/flow/interfaces/cli.py — Add logger if missing.
 
 > [!NOTE]
-> **CLI logging pattern**: CLI modules use `console.print()` for user-facing output (Rich formatted tables, status messages, etc.). The `logger.debug()` calls added here are for the *log file* only — they capture operational state (which command ran, which project was resolved, what error occurred) for post-mortem debugging. They are NOT visible to the terminal user (console handler is WARNING+).
+> **CLI logging pattern**: CLI modules use console.print() for user-facing output. The logger.debug() calls added here capture operational state for post-mortem debugging. They are NOT visible to the terminal user.
 
-#### api/ (multiple files)
+#### interfaces/api/ (multiple files)
 - `app.py` — Add logger if missing. Log app startup/config at INFO.
 - `deps.py` — Add logger if missing. Log dependency injection at DEBUG.
 - `errors.py` — Add logger if missing. Log error handler invocations at WARNING.
@@ -322,7 +323,7 @@ logger = logging.getLogger(__name__)
 ```
 
 > [!CAUTION]
-> The `import logging` goes in the standard-library imports section (alphabetically). The `logger = logging.getLogger(__name__)` goes AFTER the last import, BEFORE any constants or class definitions. This is the existing project convention (see `flow/runner.py`, `config/database.py` for reference).
+> The `import logging` goes in the standard-library imports section (alphabetically). The `logger = logging.getLogger(__name__)` goes AFTER the last import, BEFORE any constants or class definitions. This is the existing project convention (see `core/flow/runner.py`, `config/database.py` for reference).
 
 ### Log level guidance
 
@@ -417,7 +418,7 @@ class TestBatch2LoggingRollout:
     """Verify Batch 2 modules have logger declarations."""
 
     def test_drafter_has_logger(self):
-        """drafting/drafter.py should declare a module-level logger."""
+        """workflows/drafting/drafter.py should declare a module-level logger."""
         from specweaver.workflows.drafting import drafter
 
         assert hasattr(drafter, "logger"), "drafter module must have a logger"
@@ -429,7 +430,7 @@ class TestBatch3LoggingRollout:
     """Verify Batch 3 modules have logger declarations."""
 
     def test_prompt_builder_has_logger(self):
-        """llm/prompt_builder.py should declare a module-level logger."""
+        """infrastructure/llm/prompt_builder.py should declare a module-level logger."""
         from specweaver.infrastructure.llm import prompt_builder
 
         assert hasattr(prompt_builder, "logger"), "prompt_builder module must have a logger"
@@ -440,11 +441,11 @@ class TestBatch4LoggingRollout:
     """Verify Batch 4 modules have logger declarations."""
 
     def test_cli_review_has_logger(self):
-        """cli/review.py should declare a module-level logger."""
-        from specweaver.interfaces.cli import review
+        """workflows/review/interfaces/cli.py should declare a module-level logger."""
+        from specweaver.workflows.review.interfaces import cli as review_cli
 
-        assert hasattr(review, "logger"), "cli/review module must have a logger"
-        assert isinstance(review.logger, logging.Logger)
+        assert hasattr(review_cli, "logger"), "workflows/review/interfaces/cli module must have a logger"
+        assert isinstance(review_cli.logger, logging.Logger)
 ```
 
 ### Green Phase (add logging)
@@ -471,28 +472,27 @@ Each task is one TDD cycle. Group closely related files (same package, same patt
 
 ```
 - [ ] Task 1.1: Instrument config/settings.py + config/paths.py
-      Source: src/specweaver/config/settings.py, src/specweaver/config/paths.py
+      Source: src/specweaver/core/config/settings.py, src/specweaver/core/config/paths.py
       Test: tests/unit/test_logging_rollout.py::TestBatch1LoggingRollout
 
-- [ ] Task 1.2: Instrument config/_schema.py + config/_db_llm_mixin.py
-      Source: src/specweaver/config/_schema.py, src/specweaver/config/_db_llm_mixin.py
       Test: tests/unit/test_logging_rollout.py (extend TestBatch1)
 
 - [ ] Task 1.3: Audit config/profiles.py + config/database.py + config/_db_*_mixin.py (3 files)
-      Source: src/specweaver/config/profiles.py, src/specweaver/config/database.py,
-              src/specweaver/config/_db_config_mixin.py, src/specweaver/config/_db_extensions_mixin.py,
-              src/specweaver/config/_db_telemetry_mixin.py
+      Source: src/specweaver/core/config/profiles.py, src/specweaver/core/config/database.py,
       Test: Existing tests pass (audit-only — add log calls where missing per checklist)
 
 - [ ] Task 1.4: Instrument + audit context/ modules
-      Source: src/specweaver/context/inferrer.py (audit), src/specweaver/context/analyzers.py,
-              src/specweaver/context/hitl_provider.py
+              src/specweaver/workspace/context/hitl_provider.py
       Test: tests/unit/test_logging_rollout.py (extend TestBatch1)
 
 - [ ] Task 1.5: Instrument + audit project/ modules
-      Source: src/specweaver/project/scaffold.py (audit), src/specweaver/project/constitution.py (audit),
-              src/specweaver/project/discovery.py, src/specweaver/project/_helpers.py (audit)
+      Source: src/specweaver/workspace/project/scaffold.py (audit), src/specweaver/workspace/project/constitution.py (audit),
+              src/specweaver/workspace/project/discovery.py, src/specweaver/workspace/project/_helpers.py (audit)
       Test: tests/unit/test_logging_rollout.py (extend TestBatch1)
+
+- [ ] Task 1.6: Instrument workspace/ast/ parsers
+      Source: All python files under workspace/ast/
+      Test: Existing tests pass
 
 --- COMMIT BOUNDARY 1 → run full test suite + /pre-commit ---
 ```
@@ -500,28 +500,32 @@ Each task is one TDD cycle. Group closely related files (same package, same patt
 ### Commit Boundary 2 of 4: Domain Logic
 
 ```
-- [ ] Task 2.1: Audit validation/ modules (6 files with existing loggers)
-      Source: validation/executor.py, validation/runner.py, validation/registry.py,
-              validation/inheritance.py, validation/loader.py, validation/pipeline_loader.py
+- [ ] Task 2.1: Audit assurance/validation/ modules (6 files with existing loggers)
+      Source: assurance/validation/executor.py, assurance/validation/runner.py, assurance/validation/registry.py,
+              assurance/validation/inheritance.py, assurance/validation/loader.py, assurance/validation/pipeline_loader.py
       Test: Existing tests pass
 
-- [ ] Task 2.2: Instrument validation/pipeline.py + validation/spec_kind.py
-      Source: src/specweaver/validation/pipeline.py, src/specweaver/validation/spec_kind.py
+- [ ] Task 2.2: Instrument assurance/validation/pipeline.py + assurance/validation/spec_kind.py
+      Source: src/specweaver/assurance/validation/pipeline.py, src/specweaver/assurance/validation/spec_kind.py
       Test: tests/unit/test_logging_rollout.py (extend TestBatch2)
 
-- [ ] Task 2.3: Audit + instrument standards/ modules (12 files)
-      Source: All files listed under standards/ in Batch 2
+- [ ] Task 2.3: Audit + instrument assurance/standards/ modules (12 files)
+      Source: All files listed under assurance/standards/ in Batch 2
       Test: Existing tests pass
 
-- [ ] Task 2.4: Audit + instrument graph/, planning/ modules
-      Source: graph/topology.py (audit), graph/selectors.py, planning/planner.py (audit),
-              planning/renderer.py, planning/stitch.py (audit), planning/ui_extractor.py
+- [ ] Task 2.4: Audit + instrument graph/, workflows/planning/ modules
+      Source: graph/topology.py (audit), graph/selectors.py, workflows/planning/planner.py (audit),
+              workflows/planning/renderer.py, workflows/planning/stitch.py (audit), workflows/planning/ui_extractor.py
       Test: tests/unit/test_logging_rollout.py (extend TestBatch2)
 
-- [ ] Task 2.5: Instrument drafting/ + audit review/ + implementation/
-      Source: drafting/drafter.py, drafting/decomposition.py, drafting/feature_drafter.py,
-              review/reviewer.py (audit), implementation/generator.py (audit)
+- [ ] Task 2.5: Instrument workflows/drafting/ + audit workflows/review/ + workflows/implementation/
+      Source: workflows/drafting/drafter.py, workflows/drafting/decomposition.py, workflows/drafting/feature_drafter.py,
+              workflows/review/reviewer.py (audit), workflows/implementation/generator.py (audit)
       Test: tests/unit/test_logging_rollout.py::TestBatch2LoggingRollout
+
+- [ ] Task 2.6: Instrument workflows/evaluators/ and graph/lineage/
+      Source: All python files under workflows/evaluators/ and graph/lineage/
+      Test: Existing tests pass
 
 --- COMMIT BOUNDARY 2 → run full test suite + /pre-commit ---
 ```
@@ -529,28 +533,32 @@ Each task is one TDD cycle. Group closely related files (same package, same patt
 ### Commit Boundary 3 of 4: LLM & Flow Engine
 
 ```
-- [ ] Task 3.1: Instrument llm/ core modules
-      Source: llm/prompt_builder.py, llm/telemetry.py, llm/_prompt_render.py,
-              llm/mention_scanner/scanner.py
+- [ ] Task 3.1: Instrument infrastructure/llm/ core modules
+      Source: infrastructure/llm/prompt_builder.py, infrastructure/llm/telemetry.py, infrastructure/llm/_prompt_render.py,
+              infrastructure/llm/mention_scanner/scanner.py
       Test: tests/unit/test_logging_rollout.py::TestBatch3LoggingRollout
 
-- [ ] Task 3.2: Audit llm/ existing + instrument adapters
-      Source: llm/router.py (audit), llm/factory.py (audit), llm/collector.py (audit),
-              llm/adapters/__init__.py (audit), llm/adapters/base.py,
-              llm/adapters/gemini.py (audit), llm/adapters/openai.py,
-              llm/adapters/anthropic.py, llm/adapters/mistral.py, llm/adapters/qwen.py
+- [ ] Task 3.2: Audit infrastructure/llm/ existing + instrument adapters
+      Source: infrastructure/llm/router.py (audit), infrastructure/llm/factory.py (audit), infrastructure/llm/collector.py (audit),
+              infrastructure/llm/adapters/__init__.py (audit), infrastructure/llm/adapters/base.py,
+              infrastructure/llm/adapters/gemini.py (audit), infrastructure/llm/adapters/openai.py,
+              infrastructure/llm/adapters/anthropic.py, infrastructure/llm/adapters/mistral.py, infrastructure/llm/adapters/qwen.py
       Test: Existing tests pass
 
-- [ ] Task 3.3: Audit + instrument flow/ modules
-      Source: flow/runner.py (audit), flow/gates.py (audit), flow/store.py (audit),
-              flow/_base.py (audit), flow/_draft.py (audit), flow/_review.py (audit),
-              flow/_generation.py (audit), flow/_validation.py (audit),
-              flow/_lint_fix.py (audit), flow/_standards.py (audit),
-              flow/display.py, flow/parser.py
+- [ ] Task 3.3: Audit + instrument core/flow/ modules
+      Source: core/flow/runner.py (audit), core/flow/gates.py (audit), core/flow/store.py (audit),
+              core/flow/_base.py (audit), core/flow/_draft.py (audit), core/flow/_review.py (audit),
+              core/flow/_generation.py (audit), core/flow/_validation.py (audit),
+              core/flow/_lint_fix.py (audit), core/flow/_standards.py (audit),
+              core/flow/display.py, core/flow/parser.py
       Test: Existing tests pass
 
-- [ ] Task 3.4: Audit + instrument loom/ modules
-      Source: All files listed under loom/ in Batch 3
+- [ ] Task 3.4: Audit + instrument sandbox/ modules
+      Source: All files listed under sandbox/ in Batch 3
+      Test: Existing tests pass
+
+- [ ] Task 3.5: Instrument sandbox/language/ modules
+      Source: All python files under sandbox/language/
       Test: Existing tests pass
 
 --- COMMIT BOUNDARY 3 → run full test suite + /pre-commit ---
@@ -559,12 +567,12 @@ Each task is one TDD cycle. Group closely related files (same package, same patt
 ### Commit Boundary 4 of 4: Entry Points
 
 ```
-- [ ] Task 4.1: Instrument + audit cli/ modules (14 files)
-      Source: All files listed under cli/ in Batch 4
+- [ ] Task 4.1: Instrument + audit decentralized CLI interfaces (16 files)
+      Source: All cli.py and interfaces/cli files listed in Batch 4
       Test: tests/unit/test_logging_rollout.py::TestBatch4LoggingRollout
 
-- [ ] Task 4.2: Instrument + audit api/ modules
-      Source: All files listed under api/ in Batch 4
+- [ ] Task 4.2: Instrument + audit interfaces/api/ modules
+      Source: All files listed under interfaces/api/ in Batch 4
       Test: Existing tests pass
 
 --- COMMIT BOUNDARY 4 → run full test suite + /pre-commit ---
@@ -589,9 +597,9 @@ python run_e2e_tests.py
 
 2. **Logging smoke test** — `tests/unit/test_logging_rollout.py` (created incrementally during TDD). Uses pytest `caplog` fixture. Skeleton provided in the "TDD Pattern" section above. Spot-checks from each batch:
    - Batch 1: `config/settings.py` → `load_settings()` emits DEBUG log (via `caplog`)
-   - Batch 2: `drafting/drafter.py` → module-level `logger` attribute exists and is a `logging.Logger`
-   - Batch 3: `llm/prompt_builder.py` → module-level `logger` attribute exists
-   - Batch 4: `cli/review.py` → module-level `logger` attribute exists
+   - Batch 2: `workflows/drafting/drafter.py` → module-level `logger` attribute exists and is a `logging.Logger`
+   - Batch 3: `infrastructure/llm/prompt_builder.py` → module-level `logger` attribute exists
+   - Batch 4: `workflows/review/interfaces/cli.py` → module-level `logger` attribute exists
 ```
 python -m pytest tests/unit/test_logging_rollout.py -v --tb=short
 ```

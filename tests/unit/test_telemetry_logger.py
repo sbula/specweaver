@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.logging module."""
+"""Tests for specweaver.telemetry_logger module."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from rich.logging import RichHandler
 
-from specweaver.logging import (
+from specweaver.telemetry_logger import (
     BACKUP_COUNT,
     LOG_LEVELS,
     MAX_BYTES,
@@ -40,7 +40,7 @@ class TestJSONFormatter:
     """Tests for JSONFormatter."""
 
     def test_format_valid_json(self):
-        from specweaver.logging import JSONFormatter
+        from specweaver.telemetry_logger import JSONFormatter
 
         formatter = JSONFormatter()
         record = logging.LogRecord(
@@ -64,7 +64,7 @@ class TestJSONFormatter:
     def test_format_includes_exc_info(self):
         import sys
 
-        from specweaver.logging import JSONFormatter
+        from specweaver.telemetry_logger import JSONFormatter
 
         formatter = JSONFormatter()
 
@@ -241,7 +241,7 @@ class TestSetupLogging:
         assert file_handler.level == logging.DEBUG
 
     def test_log_formatters_are_configured_correctly(self, tmp_path, monkeypatch):
-        from specweaver.logging import JSONFormatter
+        from specweaver.telemetry_logger import JSONFormatter
 
         _logs = tmp_path / "logs"
         monkeypatch.setattr(

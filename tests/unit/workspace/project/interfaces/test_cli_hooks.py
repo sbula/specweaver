@@ -17,7 +17,7 @@ def _mock_workspace(monkeypatch):
         "specweaver.workspace.project.interfaces.cli._run_workspace_op",
         lambda *args, **kwargs: None,
     )
-    monkeypatch.setattr("specweaver.logging.setup_logging", lambda *args, **kwargs: None)
+    monkeypatch.setattr("specweaver.telemetry_logger.setup_logging", lambda *args, **kwargs: None)
 
 
 def test_hooks_install_pre_commit_success(tmp_path: Path):

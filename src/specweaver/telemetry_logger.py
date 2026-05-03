@@ -9,7 +9,7 @@ full DEBUG-level detail for post-mortem debugging.
 
 Usage::
 
-    from specweaver.logging import setup_logging
+    from specweaver.telemetry_logger import setup_logging
 
     setup_logging("my-project")  # call once at CLI startup
 
