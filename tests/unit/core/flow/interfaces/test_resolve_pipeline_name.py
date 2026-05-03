@@ -105,7 +105,9 @@ class TestFeatureLevel:
 class TestActiveProfileRouting:
     """Profile sets the pipeline when --level component is used."""
 
-    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="web-app")
+    @patch(
+        "specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="web-app"
+    )
     def test_component_with_profile_uses_profile_pipeline(self, mock_run) -> None:
         """Active profile for a project auto-selects profile YAML."""
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
@@ -116,7 +118,9 @@ class TestActiveProfileRouting:
             )
         assert result == "validation_spec_web_app"
 
-    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="library")
+    @patch(
+        "specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="library"
+    )
     def test_component_with_library_profile(self, mock_run) -> None:
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
@@ -126,7 +130,10 @@ class TestActiveProfileRouting:
             )
         assert result == "validation_spec_library"
 
-    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="data-pipeline")
+    @patch(
+        "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+        return_value="data-pipeline",
+    )
     def test_component_with_data_pipeline_profile(self, mock_run) -> None:
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
@@ -169,7 +176,9 @@ class TestDefaultLevelFallback:
         result = _resolve_pipeline_name(level="code", pipeline=None)
         assert result == "validation_code_default"
 
-    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="web-app")
+    @patch(
+        "specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="web-app"
+    )
     def test_code_level_ignores_active_profile(self, mock_run) -> None:
         """code level routes to code pipeline regardless of profile."""
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):

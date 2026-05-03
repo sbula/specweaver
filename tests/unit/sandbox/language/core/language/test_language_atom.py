@@ -79,9 +79,7 @@ class TestLanguageAtom:
         assert result3.status == AtomStatus.FAILED
         assert "stem" in result3.message.lower()
 
-    @patch(
-        "specweaver.sandbox.language.core.scenario_converter_factory.create_scenario_converter"
-    )
+    @patch("specweaver.sandbox.language.core.scenario_converter_factory.create_scenario_converter")
     def test_handles_convert_scenario(self, mock_create: MagicMock, tmp_path: Path) -> None:
         """Should successfully convert scenario and return output details."""
         mock_converter = MagicMock()

@@ -21,9 +21,11 @@ def _patch_config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Bypass the global conftest mock that pre-initializes the DB
     def _native_get_db():
         from specweaver.core.config.database import Database
+
         db_path = tmp_path / "specweaver.db"
         try:
             from specweaver.core.config.cli_db_utils import bootstrap_database
+
             bootstrap_database(str(db_path))
         except Exception:
             pass
@@ -52,7 +54,9 @@ def test_costs_e2e_happy_path(tmp_path: Path) -> None:
     # 3. Verify in database natively
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
-    cursor.execute("SELECT input_cost_per_1k, output_cost_per_1k FROM llm_cost_overrides WHERE model_pattern = 'test-model-e2e'")
+    cursor.execute(
+        "SELECT input_cost_per_1k, output_cost_per_1k FROM llm_cost_overrides WHERE model_pattern = 'test-model-e2e'"
+    )
     row = cursor.fetchone()
     conn.close()
 
@@ -111,8 +115,10 @@ def test_standards_scan_locked_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
             class BrokenContext:
                 async def __aenter__(self):
                     raise OperationalError("database is locked", None, None)
+
                 async def __aexit__(self, exc_type, exc_val, exc_tb):
                     pass
+
             return BrokenContext()
 
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", BrokenDB)
@@ -127,7 +133,11 @@ def test_review_cli_hostile_input_overlapping_flags() -> None:
     """[Hostile/Wrong Input] CLI command invoked with invalid overlapping flags triggers Typer semantic abort."""
     result = runner.invoke(app, ["review", "--target", "src/", "--all"])
     assert result.exit_code != 0
-    assert "Cannot use --target and --all together" in result.output or "invalid" in result.output.lower() or "error" in result.output.lower()
+    assert (
+        "Cannot use --target and --all together" in result.output
+        or "invalid" in result.output.lower()
+        or "error" in result.output.lower()
+    )
 
 
 def test_pipeline_run_di_cascade_e2e(tmp_path: Path) -> None:

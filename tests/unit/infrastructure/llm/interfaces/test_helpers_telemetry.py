@@ -25,7 +25,8 @@ class TestRequireLlmAdapterTelemetry:
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with (
             patch(
-                "specweaver.infrastructure.llm.interfaces.cli._run_workspace_op", return_value="my-project"
+                "specweaver.infrastructure.llm.interfaces.cli._run_workspace_op",
+                return_value="my-project",
             ),
             patch(
                 "specweaver.core.config.settings_loader.load_settings",
@@ -50,7 +51,9 @@ class TestRequireLlmAdapterTelemetry:
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with (
-            patch("specweaver.infrastructure.llm.interfaces.cli._run_workspace_op", return_value=None),
+            patch(
+                "specweaver.infrastructure.llm.interfaces.cli._run_workspace_op", return_value=None
+            ),
             patch(
                 "specweaver.core.config.settings_loader.load_settings",
                 return_value=mock_settings,
@@ -74,7 +77,10 @@ class TestRequireLlmAdapterTelemetry:
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with (
-            patch("specweaver.infrastructure.llm.interfaces.cli._run_workspace_op", return_value="proj"),
+            patch(
+                "specweaver.infrastructure.llm.interfaces.cli._run_workspace_op",
+                return_value="proj",
+            ),
             patch(
                 "specweaver.core.config.settings_loader.load_settings",
                 return_value=mock_settings,

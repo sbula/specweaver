@@ -179,6 +179,7 @@ class GenerateCodeHandler:
             )
         except Exception as exc:
             import traceback
+
             logger.exception("GenerateCodeHandler: unhandled exception during code generation")
             return _error_result(str(exc) + "\n" + traceback.format_exc(), started)
 

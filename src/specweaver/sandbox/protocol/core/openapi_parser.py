@@ -6,11 +6,11 @@ from typing import Any
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
+from specweaver.sandbox.protocol.core.models import ProtocolEndpoint, ProtocolMessage
 from specweaver.sandbox.protocol.core.protocol_interfaces import (
     ProtocolSchemaError,
     ProtocolSchemaInterface,
 )
-from specweaver.sandbox.protocol.core.models import ProtocolEndpoint, ProtocolMessage
 
 
 class OpenAPIParser(ProtocolSchemaInterface):

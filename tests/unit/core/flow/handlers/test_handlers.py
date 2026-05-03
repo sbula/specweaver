@@ -240,7 +240,11 @@ class TestGenerateCodeHandler:
             return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None)
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter, db=MagicMock()
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=src_dir,
+            llm=mock_adapter,
+            db=MagicMock(),
         )
         ctx.run_id = "test-run"
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -327,7 +331,11 @@ class TestGenerateCodeHandler:
             )
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter, db=MagicMock()
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=src_dir,
+            llm=mock_adapter,
+            db=MagicMock(),
         )
         ctx.run_id = "test-run"
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -440,7 +448,11 @@ class TestGenerateTestsHandler:
             )
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter, db=MagicMock()
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=tests_dir,
+            llm=mock_adapter,
+            db=MagicMock(),
         )
         ctx.run_id = "test-run"
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
@@ -524,7 +536,11 @@ class TestGenerateTestsHandler:
             )
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter, db=MagicMock()
+            project_path=tmp_path,
+            spec_path=spec,
+            output_dir=tests_dir,
+            llm=mock_adapter,
+            db=MagicMock(),
         )
         ctx.run_id = "test-run"
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)

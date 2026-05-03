@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 implement_cli = typer.Typer(no_args_is_help=True)
 
+
 @implement_cli.command(name="implement")
 def implement(
     spec: str = typer.Argument(

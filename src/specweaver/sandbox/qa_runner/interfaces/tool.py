@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING, Any
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
     from specweaver.infrastructure.llm.models import ToolDefinition
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 
 # ---------------------------------------------------------------------------

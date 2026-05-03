@@ -31,9 +31,7 @@ def run_context():
 
 class TestArbiterIntegrationFlow:
     @pytest.mark.asyncio
-    @patch(
-        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
-    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_end_to_end_arbiter_verdict(self, mock_create_filter, run_context):
         # Setup mocks
         mock_filter = MagicMock()
@@ -64,9 +62,7 @@ class TestArbiterIntegrationFlow:
         assert "The implementation drifted" in findings["results"][0]["message"]
 
     @pytest.mark.asyncio
-    @patch(
-        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
-    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_nfr8_no_scenario_vocab_in_coding_feedback(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
         run_context.llm = AsyncMock()
@@ -85,9 +81,7 @@ class TestArbiterIntegrationFlow:
         assert "pytest" not in feedback.lower()
 
     @pytest.mark.asyncio
-    @patch(
-        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
-    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_scenario_error_feedback_reaches_generate_scenarios_handler(
         self, mock_create_filter, run_context
     ):
@@ -109,9 +103,7 @@ class TestArbiterIntegrationFlow:
         )
 
     @pytest.mark.asyncio
-    @patch(
-        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
-    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_gracefully_handles_malformed_json(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
         run_context.llm = AsyncMock()
@@ -126,9 +118,7 @@ class TestArbiterIntegrationFlow:
         assert result.status == StepStatus.ERROR
 
     @pytest.mark.asyncio
-    @patch(
-        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
-    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_spec_ambiguity_parks_run(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
         run_context.llm = AsyncMock()

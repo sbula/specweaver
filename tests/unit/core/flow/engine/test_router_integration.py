@@ -165,9 +165,7 @@ async def test_fallback_pipeline_execution(tmp_db: Database, tmp_path: Path) -> 
     context.llm = mock_adapter
 
     # Attach router but with an EMPTY database mapped for this project.
-    context.llm_router = ModelRouter(
-        lambda r: None, telemetry_project="test-proj"
-    )
+    context.llm_router = ModelRouter(lambda r: None, telemetry_project="test-proj")
 
     handler = GenerateCodeHandler()
     step = PipelineStep(name="test", action=StepAction.GENERATE, target=StepTarget.CODE)

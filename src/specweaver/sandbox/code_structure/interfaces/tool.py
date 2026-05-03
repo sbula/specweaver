@@ -262,7 +262,9 @@ class CodeStructureTool:
         )
 
     def definitions(self) -> list[Any]:
-        from specweaver.sandbox.code_structure.interfaces.definitions import get_code_structure_schema
+        from specweaver.sandbox.code_structure.interfaces.definitions import (
+            get_code_structure_schema,
+        )
 
         supported_intents, supported_params_flat = self._atom.get_supported_capabilities()
 

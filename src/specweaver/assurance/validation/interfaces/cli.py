@@ -98,7 +98,6 @@ def _print_summary(results: list[RuleResult], *, strict: bool = False) -> None:
         _core.console.print("\n[green]ALL PASSED[/green]")
 
 
-
 def _resolve_pipeline_name(
     level: str,
     pipeline: str | None,
@@ -142,6 +141,7 @@ def _build_result_label(level: str, pipeline: str | None, pipeline_name: str) ->
 
 
 validation_cli = typer.Typer(no_args_is_help=True)
+
 
 @validation_cli.command(name="check")
 def check(
@@ -391,6 +391,7 @@ def drift_check(
 
     if analyze:
         from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
+
         _, adapter, _ = _require_llm_adapter(project_path)
         context.llm = adapter
 

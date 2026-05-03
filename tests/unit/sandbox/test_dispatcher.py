@@ -12,11 +12,13 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-from specweaver.sandbox.dispatcher import ToolDispatcher
-from specweaver.sandbox.security import WorkspaceBoundary
-from specweaver.sandbox.filesystem.interfaces.definitions import INTENT_DEFINITIONS as FILE_DEFINITIONS
-from specweaver.sandbox.web.interfaces.definitions import INTENT_DEFINITIONS as WEB_DEFINITIONS
 from specweaver.infrastructure.llm.models import ToolDispatcherProtocol
+from specweaver.sandbox.dispatcher import ToolDispatcher
+from specweaver.sandbox.filesystem.interfaces.definitions import (
+    INTENT_DEFINITIONS as FILE_DEFINITIONS,
+)
+from specweaver.sandbox.security import WorkspaceBoundary
+from specweaver.sandbox.web.interfaces.definitions import INTENT_DEFINITIONS as WEB_DEFINITIONS
 
 FILE_TOOLS = list(FILE_DEFINITIONS.values())
 WEB_TOOLS = list(WEB_DEFINITIONS.values())

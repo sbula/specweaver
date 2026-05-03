@@ -72,7 +72,12 @@ class TestLineageE2EFlow:
             ]
         )
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req, patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None):
+        with (
+            patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
+            patch(
+                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None
+            ),
+        ):
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
             with patch("specweaver.workspace.context.hitl_provider.HITLProvider") as mock_hitl_cls:
                 mock_hitl = AsyncMock()
@@ -128,7 +133,12 @@ class TestLineageE2EFlow:
 
         mock_settings = SpecWeaverSettings(llm=LLMSettings(model="mock"))
 
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req, patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None):
+        with (
+            patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
+            patch(
+                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None
+            ),
+        ):
             mock_req.return_value = (mock_settings, mock_llm, GenerationConfig(model="mock"))
             with patch("specweaver.workspace.context.hitl_provider.HITLProvider") as mock_hitl_cls:
                 mock_hitl = AsyncMock()
@@ -324,9 +334,21 @@ class TestASTFixSurvivability:
         )
 
         from specweaver.infrastructure.llm.models import LLMResponse
-        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req, patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None), patch("specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter.generate") as mock_gemini:
+
+        with (
+            patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
+            patch(
+                "specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None
+            ),
+            patch(
+                "specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter.generate"
+            ) as mock_gemini,
+        ):
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
-            mock_gemini.return_value = LLMResponse(text="```python\n# sw-artifact: 99999999-2222-3333-4444-555555555555\n# clean code\n```", model="mock")
+            mock_gemini.return_value = LLMResponse(
+                text="```python\n# sw-artifact: 99999999-2222-3333-4444-555555555555\n# clean code\n```",
+                model="mock",
+            )
 
             pipe_def = project_dir / "my_lint.yaml"
             pipe_def.write_text(

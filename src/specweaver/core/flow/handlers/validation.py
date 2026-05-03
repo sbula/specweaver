@@ -33,7 +33,6 @@ async def _resolve_merged_settings(context: RunContext, target_path: Path) -> An
 
     if not dal_str and context.db:
         try:
-
             from specweaver.workspace.store import WorkspaceRepository
 
             async with context.db.async_session_scope() as session:

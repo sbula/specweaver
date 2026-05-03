@@ -72,9 +72,7 @@ async def test_handler_adapter_integration(tmp_path: Path) -> None:
     handler = GenerateCodeHandler()
 
     # Mute Git executor since it requires git repo to be valid
-    with patch(
-        "specweaver.sandbox.git.core.executor.GitExecutor.run", return_value=(0, "", "")
-    ):
+    with patch("specweaver.sandbox.git.core.executor.GitExecutor.run", return_value=(0, "", "")):
         result = await handler.execute(step, context)
 
     # Ensure handler drove adapter.generate effectively
@@ -151,9 +149,11 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
 
     mock_db = MagicMock()
     from contextlib import asynccontextmanager
+
     @asynccontextmanager
     async def _mock_session_scope():
         yield MagicMock()
+
     mock_db.async_session_scope = _mock_session_scope
 
     context = RunContext(
@@ -169,7 +169,9 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
 
     with (
         patch("specweaver.core.config.dal_resolver.DALResolver.resolve", return_value=None),
-        patch("specweaver.workspace.store.WorkspaceRepository.get_default_dal", return_value="DAL_B") as mock_get_dal
+        patch(
+            "specweaver.workspace.store.WorkspaceRepository.get_default_dal", return_value="DAL_B"
+        ) as mock_get_dal,
     ):
         result = await handler.execute(step, context)
 

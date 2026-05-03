@@ -25,15 +25,11 @@ def test_python_atom_integration(python_project: Path) -> None:
     assert res_compile.status == AtomStatus.SUCCESS, res_compile.message
 
     # 2. Test (use a very restricted target so it doesn't run the entire 12-story battery)
-    res_tests = atom.run(
-        {"intent": "run_tests", "target": "tests/unit/sandbox/qa_runner/python/"}
-    )
+    res_tests = atom.run({"intent": "run_tests", "target": "tests/unit/sandbox/qa_runner/python/"})
     assert res_tests.status == AtomStatus.SUCCESS, res_tests.message
 
     # 3. Linter
-    res_lint = atom.run(
-        {"intent": "run_linter", "target": "tests/unit/sandbox/qa_runner/python/"}
-    )
+    res_lint = atom.run({"intent": "run_linter", "target": "tests/unit/sandbox/qa_runner/python/"})
     assert res_lint.status in [AtomStatus.SUCCESS, AtomStatus.FAILED]
 
     # 4. Complexity

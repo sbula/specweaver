@@ -92,6 +92,7 @@ def _create_display(
 
 flow_cli = typer.Typer(no_args_is_help=True)
 
+
 @flow_cli.command(name="pipelines")
 def pipelines() -> None:
     """List available pipeline templates."""

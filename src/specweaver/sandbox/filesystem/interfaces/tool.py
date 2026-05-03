@@ -19,6 +19,11 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, Any
 
+from specweaver.sandbox.filesystem.interfaces.models import (
+    ROLE_INTENTS,
+    FileSystemToolError,
+    ToolResult,
+)
 from specweaver.sandbox.security import (
     MODE_ALLOWS_CREATE,
     MODE_ALLOWS_DELETE,
@@ -27,17 +32,12 @@ from specweaver.sandbox.security import (
     AccessMode,
     FolderGrant,
 )
-from specweaver.sandbox.filesystem.interfaces.models import (
-    ROLE_INTENTS,
-    FileSystemToolError,
-    ToolResult,
-)
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.sandbox.filesystem.core.executor import ExecutorResult, FileExecutor
     from specweaver.infrastructure.llm.models import ToolDefinition
+    from specweaver.sandbox.filesystem.core.executor import ExecutorResult, FileExecutor
 
 
 class FileSystemTool:

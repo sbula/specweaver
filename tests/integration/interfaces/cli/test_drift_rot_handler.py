@@ -70,9 +70,12 @@ tasks:
         stdout = str(code_file) + "\n"
 
     from specweaver.interfaces.cli.main import app
+
     with (
         patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
-        patch("specweaver.assurance.validation.interfaces.cli.resolve_project_path") as mock_resolve,
+        patch(
+            "specweaver.assurance.validation.interfaces.cli.resolve_project_path"
+        ) as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
         mock_resolve.return_value = proj_dir
@@ -130,9 +133,12 @@ tasks:
         stdout = str(code_file) + "\n"
 
     from specweaver.interfaces.cli.main import app
+
     with (
         patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
-        patch("specweaver.assurance.validation.interfaces.cli.resolve_project_path") as mock_resolve,
+        patch(
+            "specweaver.assurance.validation.interfaces.cli.resolve_project_path"
+        ) as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
         mock_resolve.return_value = proj_dir
@@ -172,9 +178,12 @@ def test_rot_check_polyglot_ts(tmp_path: Path) -> None:
         stdout = str(code_file) + "\n"
 
     from specweaver.interfaces.cli.main import app
+
     with (
         patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
-        patch("specweaver.assurance.validation.interfaces.cli.resolve_project_path") as mock_resolve,
+        patch(
+            "specweaver.assurance.validation.interfaces.cli.resolve_project_path"
+        ) as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
         mock_resolve.return_value = proj_dir
@@ -203,11 +212,14 @@ def test_rot_check_windows_newlines(tmp_path: Path) -> None:
 
     with (
         patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
-        patch("specweaver.assurance.validation.interfaces.cli.resolve_project_path") as mock_resolve,
+        patch(
+            "specweaver.assurance.validation.interfaces.cli.resolve_project_path"
+        ) as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
         mock_resolve.return_value = proj_dir
         from specweaver.interfaces.cli.main import app
+
         result = runner.invoke(app, ["drift", "check-rot", "--staged"])
 
     assert result.exit_code == 0

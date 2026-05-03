@@ -15,15 +15,15 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.sandbox.security import (
-    AccessMode,
-    FolderGrant,
-)
 from specweaver.sandbox.filesystem.interfaces.facades import (
     DrafterFileInterface,
     ImplementerFileInterface,
     ReviewerFileInterface,
     create_filesystem_interface,
+)
+from specweaver.sandbox.security import (
+    AccessMode,
+    FolderGrant,
 )
 
 if TYPE_CHECKING:

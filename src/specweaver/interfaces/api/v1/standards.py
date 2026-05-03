@@ -33,6 +33,7 @@ async def get_standards(
 ) -> list[dict[str, object]]:
     """List saved standards for a project."""
     from specweaver.workspace.store import WorkspaceRepository
+
     await resolve_project_root(project, db)
     async with db.async_session_scope() as session:
         repo = WorkspaceRepository(session)
@@ -47,6 +48,7 @@ async def clear_standards(
 ) -> dict[str, str]:
     """Clear saved standards for a project."""
     from specweaver.workspace.store import WorkspaceRepository
+
     await resolve_project_root(project, db)
     async with db.async_session_scope() as session:
         repo = WorkspaceRepository(session)
@@ -91,6 +93,7 @@ async def accept_standards(
 ) -> dict[str, str]:
     """Save scanned standards to the project database."""
     from specweaver.workspace.store import WorkspaceRepository
+
     await resolve_project_root(body.project, db)
 
     async with db.async_session_scope() as session:

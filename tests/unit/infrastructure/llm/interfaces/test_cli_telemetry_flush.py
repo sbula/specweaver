@@ -61,9 +61,13 @@ class TestReviewCommandFlush:
             ),
             patch("specweaver.graph.interfaces.cli._load_topology", return_value=None),
             patch(
-                "specweaver.workspace.project.interfaces.cli._load_constitution_content", return_value=None
+                "specweaver.workspace.project.interfaces.cli._load_constitution_content",
+                return_value=None,
             ),
-            patch("specweaver.assurance.standards.interfaces.cli._load_standards_content", return_value=None),
+            patch(
+                "specweaver.assurance.standards.interfaces.cli._load_standards_content",
+                return_value=None,
+            ),
         ):
             with contextlib.suppress(SystemExit):
                 review(target=str(spec), project=str(tmp_path), spec=None, selector="direct")
@@ -97,9 +101,13 @@ class TestImplementCommandFlush:
             ),
             patch("specweaver.graph.interfaces.cli._load_topology", return_value=None),
             patch(
-                "specweaver.workspace.project.interfaces.cli._load_constitution_content", return_value=None
+                "specweaver.workspace.project.interfaces.cli._load_constitution_content",
+                return_value=None,
             ),
-            patch("specweaver.assurance.standards.interfaces.cli._load_standards_content", return_value=None),
+            patch(
+                "specweaver.assurance.standards.interfaces.cli._load_standards_content",
+                return_value=None,
+            ),
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_code",
                 new_callable=AsyncMock,

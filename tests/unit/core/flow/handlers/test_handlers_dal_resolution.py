@@ -79,6 +79,7 @@ class TestValidationDALResolution:
         settings = SpecWeaverSettings(llm=llm, validation=base_val, dal_matrix=matrix)
 
         from contextlib import asynccontextmanager
+
         @asynccontextmanager
         async def mock_scope():
             yield MagicMock()

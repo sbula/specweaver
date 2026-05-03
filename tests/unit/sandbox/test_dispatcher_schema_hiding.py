@@ -4,9 +4,9 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
 from specweaver.sandbox.dispatcher import ToolDispatcher
 from specweaver.sandbox.security import WorkspaceBoundary
-from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
 
 
 def test_dispatcher_handles_null_intents(tmp_path: Path) -> None:

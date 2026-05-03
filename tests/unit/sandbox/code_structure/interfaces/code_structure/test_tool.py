@@ -5,7 +5,10 @@ import pytest
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 # Will fail to import because we haven't created it yet!
-from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool, CodeStructureToolError
+from specweaver.sandbox.code_structure.interfaces.tool import (
+    CodeStructureTool,
+    CodeStructureToolError,
+)
 from specweaver.sandbox.filesystem.interfaces.models import AccessMode, FolderGrant
 
 

@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 serve_cli = typer.Typer(no_args_is_help=True)
 
+
 @serve_cli.command(name="serve")
 def serve(
     port: int = typer.Option(

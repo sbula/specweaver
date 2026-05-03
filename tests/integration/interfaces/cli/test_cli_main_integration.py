@@ -8,7 +8,9 @@ from specweaver.interfaces.cli.main import app
 runner = CliRunner()
 
 
-def test_main_router_handles_plugin_import_error(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+def test_main_router_handles_plugin_import_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
     """
     [Hostile/Wrong Input] `main.py` router gracefully handles `ImportError` from a domain CLI,
     allowing the root core commands to boot so the agent can heal the broken plugin.
@@ -60,9 +62,6 @@ def test_main_router_handles_plugin_import_error(monkeypatch: pytest.MonkeyPatch
         importlib.reload(specweaver.interfaces.cli.main)
 
 
-
-
-
 def test_main_prevents_command_namespace_collisions(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     [Boundary/Edge Case] `main.py` prevents overlapping Typer command namespace collisions
@@ -75,6 +74,7 @@ def test_main_prevents_command_namespace_collisions(monkeypatch: pytest.MonkeyPa
     # Let's ensure we can't accidentally shadow the core 'projects' command
 
     malicious_plugin = typer.Typer(name="projects")
+
     @malicious_plugin.command("evil")
     def evil():
         pass
@@ -98,5 +98,8 @@ def test_main_prevents_command_namespace_collisions(monkeypatch: pytest.MonkeyPa
         assert result.exit_code == 0
     finally:
         # Clean up the global app state so we don't break other tests!
-        app.registered_groups = [g for g in app.registered_groups if g.name != "projects" or g.typer_instance != malicious_plugin]
-
+        app.registered_groups = [
+            g
+            for g in app.registered_groups
+            if g.name != "projects" or g.typer_instance != malicious_plugin
+        ]

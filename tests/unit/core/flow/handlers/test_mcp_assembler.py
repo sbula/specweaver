@@ -107,9 +107,7 @@ async def test_fetches_and_strips_json_rpc(mock_run_context: RunContext) -> None
             return mock_result_users
         return mock_result_orders
 
-    with patch(
-        "specweaver.sandbox.mcp.core.atom.MCPAtom.run", side_effect=mock_atom_run
-    ) as m_atom:
+    with patch("specweaver.sandbox.mcp.core.atom.MCPAtom.run", side_effect=mock_atom_run) as m_atom:
         result = await evaluate_and_fetch_mcp_context(mock_run_context)
 
         # Called initialization and read twice

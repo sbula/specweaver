@@ -119,8 +119,8 @@ class ToolDispatcher:
 
         if "fs" in allowed_tools or "filesystem" in allowed_tools:
             # Isolate imports so flow/ doesn't violate boundaries
-            from specweaver.sandbox.security import AccessMode, FolderGrant
             from specweaver.sandbox.filesystem.interfaces.facades import create_filesystem_interface
+            from specweaver.sandbox.security import AccessMode, FolderGrant
 
             exclude_dirs: set[str] = set()
             exclude_patterns: set[str] = set()
@@ -173,9 +173,9 @@ class ToolDispatcher:
         if "ast" in allowed_tools or "codestructure" in allowed_tools:
             # Isolate AST dependencies
             from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+            from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
             from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
             from specweaver.sandbox.security import AccessMode, FolderGrant
-            from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
             from specweaver.workflows.evaluators.loader import load_evaluator_schemas
 
             project_dir = boundary.roots[0] if boundary.roots else None

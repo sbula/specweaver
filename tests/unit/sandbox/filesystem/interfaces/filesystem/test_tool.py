@@ -18,12 +18,12 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.sandbox.filesystem.core.executor import FileExecutor
-from specweaver.sandbox.security import AccessMode, FolderGrant
 from specweaver.sandbox.filesystem.interfaces.models import (
     ROLE_INTENTS,
     FileSystemToolError,
 )
 from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
+from specweaver.sandbox.security import AccessMode, FolderGrant
 
 if TYPE_CHECKING:
     from pathlib import Path

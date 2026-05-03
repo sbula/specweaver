@@ -53,6 +53,7 @@ def _load_topology(project_path: Path) -> TopologyGraph | None:
 
 # -- Graph App --------------------------------------------------------------
 
+
 def _purge_stale_nodes(target_path: Path, repo: SqliteGraphRepository) -> None:
     """RT-11: Stale Graph Boot Trap - Cross-reference DB against disk and purge deleted files."""
     existing_files = repo.get_all_file_hashes()
@@ -323,6 +324,7 @@ def check_lineage(src_dir: Path) -> list[str]:
 
     return sorted(orphans)
 
+
 # Selector name -> class mapping (configurable via --selector)
 _SELECTOR_MAP: dict[str, type] = {}
 
@@ -362,6 +364,7 @@ def _select_topology_contexts(
     selector_cls = selector_map.get(selector_name)
     if selector_cls is None:
         from specweaver.interfaces.cli._core import console
+
         console.print(
             f"[yellow]Warning:[/yellow] Unknown selector '{selector_name}', "
             "falling back to 'direct'.",
@@ -377,6 +380,7 @@ def _select_topology_contexts(
 
     contexts = graph.format_context_summary(module_name, related)
     from specweaver.interfaces.cli._core import console
+
     console.print(
         f"[dim]Topology: {len(contexts)} related module(s) via {selector_name} selector.[/dim]",
     )

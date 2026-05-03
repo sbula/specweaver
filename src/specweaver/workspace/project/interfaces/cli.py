@@ -27,16 +27,21 @@ from specweaver.workspace.store import WorkspaceRepository
 
 logger = logging.getLogger(__name__)
 
+
 def _run_workspace_op(method_name: str, *args: Any, **kwargs: Any) -> Any:
     db = _core.get_db()
+
     async def _action() -> Any:
         async with db.async_session_scope() as session:
             repo = WorkspaceRepository(session)
             method = getattr(repo, method_name)
             return await method(*args, **kwargs)
+
     return anyio.run(_action)
 
+
 workspace_cli = typer.Typer(no_args_is_help=True)
+
 
 @workspace_cli.command()
 def init(
@@ -315,6 +320,7 @@ def scan() -> None:
     except Exception as exc:
         _core.console.print(f"  [red]\u2717[/red] Tach Sync Failed: {exc}")
 
+
 constitution_app = typer.Typer(
     name="constitution",
     help="Manage the project constitution (CONSTITUTION.md).",
@@ -338,7 +344,6 @@ def constitution_show(
     except (FileNotFoundError, NotADirectoryError) as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
-
 
     info = find_constitution(project_path)
     if info is None:
@@ -369,7 +374,6 @@ def constitution_check(
     except (FileNotFoundError, NotADirectoryError) as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
-
 
     info = find_constitution(project_path)
     if info is None:
@@ -530,6 +534,7 @@ def constitution_bootstrap(
         f"  [dim]Review and customize sections marked TODO.[/dim]",
     )
 
+
 hooks_app = typer.Typer(
     name="hooks",
     help="Git hook installation and management.",
@@ -622,6 +627,7 @@ def hooks_install(
         )
     else:
         logger.info("Skip pre-commit hook installation per options.")
+
 
 def _load_constitution_content(
     project_path: Path,

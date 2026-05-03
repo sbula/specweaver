@@ -14,7 +14,8 @@ from specweaver.interfaces.cli.main import app
 def _mock_workspace(monkeypatch):
     """Patch _run_workspace_op so we don't hit the real DB and cause aiosqlite warnings."""
     monkeypatch.setattr(
-        "specweaver.workspace.project.interfaces.cli._run_workspace_op", lambda *args, **kwargs: None
+        "specweaver.workspace.project.interfaces.cli._run_workspace_op",
+        lambda *args, **kwargs: None,
     )
     monkeypatch.setattr("specweaver.logging.setup_logging", lambda *args, **kwargs: None)
 
@@ -28,7 +29,9 @@ def test_hooks_install_pre_commit_success(tmp_path: Path):
     hooks_dir = git_dir / "hooks"
     hooks_dir.mkdir(parents=True)
 
-    with patch("specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path):
+    with patch(
+        "specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path
+    ):
         result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
 
     assert result.exit_code == 0
@@ -56,7 +59,9 @@ def test_hooks_install_no_git_dir(tmp_path: Path):
 
     # We deliberately do not create .git/ directory here
 
-    with patch("specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path):
+    with patch(
+        "specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path
+    ):
         result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
 
     assert result.exit_code == 1
@@ -84,7 +89,9 @@ def test_hooks_install_no_pre_commit(tmp_path: Path):
     git_dir = tmp_path / ".git"
     git_dir.mkdir(parents=True)
 
-    with patch("specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path):
+    with patch(
+        "specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path
+    ):
         result = runner.invoke(app, ["hooks", "install", "--no-pre-commit"])
 
     assert result.exit_code == 0

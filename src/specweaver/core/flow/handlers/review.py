@@ -17,9 +17,9 @@ from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_c
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.sandbox.dispatcher import ToolDispatcher
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
     from specweaver.infrastructure.llm.models import GenerationConfig, Message
+    from specweaver.sandbox.dispatcher import ToolDispatcher
 
 logger = logging.getLogger(__name__)
 

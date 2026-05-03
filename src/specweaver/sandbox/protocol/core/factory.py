@@ -7,11 +7,11 @@ from ruamel.yaml.scanner import ScannerError
 
 from specweaver.sandbox.protocol.core.asyncapi_parser import AsyncAPIParser
 from specweaver.sandbox.protocol.core.grpc_parser import GRPCParser
+from specweaver.sandbox.protocol.core.openapi_parser import OpenAPIParser
 from specweaver.sandbox.protocol.core.protocol_interfaces import (
     ProtocolSchemaError,
     ProtocolSchemaInterface,
 )
-from specweaver.sandbox.protocol.core.openapi_parser import OpenAPIParser
 
 
 class ProtocolParserFactory:

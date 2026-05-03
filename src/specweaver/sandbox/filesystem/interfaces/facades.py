@@ -24,9 +24,9 @@ from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.sandbox.security import FolderGrant
-    from specweaver.sandbox.filesystem.interfaces.models import ToolResult
     from specweaver.infrastructure.llm.models import ToolDefinition
+    from specweaver.sandbox.filesystem.interfaces.models import ToolResult
+    from specweaver.sandbox.security import FolderGrant
 
 
 # ---------------------------------------------------------------------------

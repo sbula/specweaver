@@ -4,9 +4,12 @@
 import pytest
 
 from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+from specweaver.sandbox.code_structure.interfaces.tool import (
+    CodeStructureTool,
+    CodeStructureToolError,
+)
 from specweaver.sandbox.filesystem.core.executor import FileExecutor
 from specweaver.sandbox.security import AccessMode, FolderGrant
-from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool, CodeStructureToolError
 
 
 @pytest.fixture

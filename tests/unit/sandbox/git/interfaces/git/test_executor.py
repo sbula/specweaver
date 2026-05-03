@@ -98,9 +98,7 @@ class TestGitExecutorExecution:
             },
         )()
 
-        with patch(
-            "specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result
-        ):
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
             result = executor.run("status")
 
         assert result.status == "success"
@@ -119,9 +117,7 @@ class TestGitExecutorExecution:
             },
         )()
 
-        with patch(
-            "specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result
-        ):
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
             result = executor.run("commit", "-m", "test")
 
         assert result.status == "error"
@@ -265,9 +261,7 @@ class TestGitExecutorEdgeCases:
                 "stderr": "fatal: not a git repository",
             },
         )()
-        with patch(
-            "specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result
-        ):
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
             result = executor.run("status")
         assert result.stderr == "fatal: not a git repository"
         assert result.exit_code == 128

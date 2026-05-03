@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Coroutine
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Coroutine
+from typing import TYPE_CHECKING, Any
 
 import anyio
 
@@ -62,7 +63,12 @@ def load_settings(
             return loop.run_until_complete(coro)
         return anyio.run(lambda: coro)
 
-    import typing; return typing.cast('SpecWeaverSettings', _sync_or_async(load_settings_async(db, project_name, llm_role=llm_role)))
+    import typing
+
+    return typing.cast(
+        "SpecWeaverSettings",
+        _sync_or_async(load_settings_async(db, project_name, llm_role=llm_role)),
+    )
 
 
 async def load_settings_async(

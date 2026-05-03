@@ -66,9 +66,7 @@ def run_context():
 
 class TestArbitrateVerdictHandler:
     @pytest.mark.asyncio
-    @patch(
-        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
-    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_code_bug_writes_to_generate_code_feedback(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
 
@@ -88,9 +86,7 @@ class TestArbitrateVerdictHandler:
         )
 
     @pytest.mark.asyncio
-    @patch(
-        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
-    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_scenario_error_writes_to_generate_scenarios_feedback(
         self, mock_create_filter, run_context
     ):
@@ -118,9 +114,7 @@ class TestArbitrateVerdictHandler:
         assert "LLM not configured" in result.error_message
 
     @pytest.mark.asyncio
-    @patch(
-        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
-    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_spec_ambiguity_returns_waiting_for_input(self, mock_create_filter, run_context):
         run_context.llm.generate.return_value = (
             '{"verdict": "spec_ambiguity", "spec_clause": "FR-2"}'

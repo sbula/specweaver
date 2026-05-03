@@ -1,7 +1,7 @@
 from typing import Any
 
-from specweaver.sandbox.protocol.core.atom import ProtocolAtom
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
+from specweaver.sandbox.protocol.core.atom import ProtocolAtom
 
 
 class ProtocolTool:

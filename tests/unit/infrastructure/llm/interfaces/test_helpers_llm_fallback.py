@@ -48,7 +48,8 @@ class TestRequireLlmAdapterFallback:
 
         # Mock _run_workspace_op to return a project that triggers a missing settings error
         with patch(
-            "specweaver.workspace.project.interfaces.cli._run_workspace_op", return_value="fake-project"
+            "specweaver.workspace.project.interfaces.cli._run_workspace_op",
+            return_value="fake-project",
         ):
             # Mock load_settings to simulate project settings failing
             with patch("specweaver.core.config.settings_loader.load_settings") as mock_load:
@@ -94,7 +95,8 @@ class TestRequireLlmAdapterFallback:
 
         # Mock _run_workspace_op
         with patch(
-            "specweaver.workspace.project.interfaces.cli._run_workspace_op", return_value="fake-project"
+            "specweaver.workspace.project.interfaces.cli._run_workspace_op",
+            return_value="fake-project",
         ):
             # Simulate both project profile AND system-default failing to load
             with patch("specweaver.core.config.settings_loader.load_settings") as mock_load:

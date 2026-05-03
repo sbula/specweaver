@@ -188,6 +188,7 @@ class TestCollectorFlush:
         mock_db.async_session_scope.return_value.__aenter__.return_value = mock_session
 
         from unittest.mock import AsyncMock, patch
+
         with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
             mock_repo = mock_repo_cls.return_value
             mock_repo.log_usage = AsyncMock()
@@ -203,6 +204,7 @@ class TestCollectorFlush:
         mock_db = MagicMock()
 
         from unittest.mock import AsyncMock, patch
+
         with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
             mock_repo_cls.return_value.log_usage = AsyncMock()
             count = collector.flush(mock_db)
@@ -220,6 +222,7 @@ class TestCollectorFlush:
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
         from unittest.mock import AsyncMock, patch
+
         with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
             mock_repo_cls.return_value.log_usage = AsyncMock(side_effect=Exception("DB locked"))
 
@@ -355,6 +358,7 @@ class TestCollectorFlushEdgeCases:
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
         from unittest.mock import AsyncMock, patch
+
         with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
             mock_repo_cls.return_value.log_usage = AsyncMock()
             first = collector.flush(mock_db)
@@ -376,9 +380,12 @@ class TestCollectorFlushEdgeCases:
         mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
         from unittest.mock import AsyncMock, patch
+
         with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
             # Fail on the second call
-            mock_repo_cls.return_value.log_usage = AsyncMock(side_effect=[None, Exception("DB error")])
+            mock_repo_cls.return_value.log_usage = AsyncMock(
+                side_effect=[None, Exception("DB error")]
+            )
 
             collector.flush(mock_db)
 

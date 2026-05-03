@@ -78,6 +78,7 @@ def load_standards_content(
     scope_standards, root_standards = anyio.run(_fetch_standards)
     return _format_standards_text(scope_standards, root_standards, max_chars)
 
+
 async def load_standards_content_async(
     db: Database,
     project_name: str,
@@ -96,9 +97,7 @@ async def load_standards_content_async(
             known_scopes = await repo.list_scopes(project_name)
             scope = _resolve_scope(target_path, project_path, known_scopes)
             s_standards = await repo.get_standards(project_name, scope=scope)
-            r_standards = (
-                await repo.get_standards(project_name, scope=".") if scope != "." else []
-            )
+            r_standards = await repo.get_standards(project_name, scope=".") if scope != "." else []
             scope_standards, root_standards = s_standards, r_standards
         else:
             s_standards = await repo.get_standards(project_name)

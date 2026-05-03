@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 review_cli = typer.Typer(no_args_is_help=True)
 
+
 @review_cli.command(name="draft")
 def draft(
     name: str = typer.Argument(

@@ -2,13 +2,13 @@ from typing import Any
 
 import ruamel.yaml
 
-from specweaver.sandbox.protocol.core.protocol_interfaces import (
-    ProtocolSchemaError,
-    ProtocolSchemaInterface,
-)
 from specweaver.sandbox.protocol.core.models import (
     ProtocolEndpoint,
     ProtocolMessage,
+)
+from specweaver.sandbox.protocol.core.protocol_interfaces import (
+    ProtocolSchemaError,
+    ProtocolSchemaInterface,
 )
 
 

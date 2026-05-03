@@ -47,17 +47,14 @@ def _require_llm_adapter(
         raise typer.Exit(code=1) from exc
     except ValueError as exc:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.warning("DB profile failed, using hardcoded fallback: %s", exc)
 
         from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
 
         settings = SpecWeaverSettings(
-            llm=LLMSettings(
-                provider="gemini",
-                model="gemini-3-flash-preview",
-                api_key="test-key"
-            )
+            llm=LLMSettings(provider="gemini", model="gemini-3-flash-preview", api_key="test-key")
         )
         try:
             return create_llm_adapter(
@@ -67,7 +64,6 @@ def _require_llm_adapter(
         except LLMAdapterError as inner_exc:
             console.print(f"[red]Error:[/red] {inner_exc}")
             raise typer.Exit(code=1) from inner_exc
-
 
 
 logger = logging.getLogger(__name__)
