@@ -486,6 +486,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *I can instantly plug SpecWeaver into my company's internal tools (Jira, Confluence) using the Model Context Protocol without writing custom Python adapters.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-23:** Base Integration Contract defined in [US-23_integration.md](integrations/US-23_integration.md)
+    *   `[ ]` **US-4 Core** *(provides Flow Engine for E2E execution)*
     *   `✅` **C-INTL-02:** MCP Client Architecture
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict Security Gating:**
