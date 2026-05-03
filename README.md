@@ -65,30 +65,34 @@ If you are extending SpecWeaver's core Engine, custom tools, or LLM adapters, co
     specweaver.db               # SQLite: projects, LLM profiles, active state
 
 ├── src/specweaver/
-│   ├── cli/                    # Typer CLI package (13 submodules)
+│   ├── assurance/              # Standards and validation (rules engine, auto-discovery)
+│   │   ├── standards/          # Standards auto-discovery and CLI interfaces
+│   │   └── validation/         # Rules engine and CLI interfaces
+│   ├── core/                   # Core engine components
+│   │   ├── config/             # Database, settings, and CLI interfaces
+│   │   └── flow/               # Pipeline engine, runner, handlers, store, and CLI interfaces
+│   ├── graph/                  # Knowledge Graph Engine, Builder, and CLI interfaces
+│   ├── infrastructure/         # External service adapters
+│   │   └── llm/                # LLM telemetry, adapters, and CLI interfaces
+│   ├── interfaces/             # Top-level interfaces
+│   │   ├── api/                # REST API (v1)
+│   │   └── cli/                # CLI core orchestrator (main.py, routers.py, _core.py)
 │   ├── logging.py              # Logging setup (JSON file output, Rich console UI)
-│   ├── config/                 # SQLite database, settings, migrations
-│   ├── context/                # Context providers (HITL, inferrer, analyzers)
-│   ├── drafting/               # Interactive spec drafter
-│   ├── flow/                   # Pipeline engine: models, parser, runner, state, handlers, store
-│   ├── graph/                  # In-Memory Knowledge Graph Engine, Builder, Topology & Persistent SQLite Adapter
-│   ├── implementation/         # Code generator
-│   ├── llm/                    # Multi-provider auto-discovery registry, models, telemetry
-│   │   ├── adapters/           # Self-describing concrete adapters (Gemini, OpenAI, etc)
+│   ├── loom/                   # Agent-facing tools and atoms
+│   │   ├── adapters/           # Concrete LLM adapters (Gemini, etc)
 │   │   ├── atoms/              # Engine-level building blocks
-│   │   │   ├── filesystem/     # Filesystem atom (engine-level)
-│   │   │   └── git/            # Git atom (checkpoint, integrate, publish)
-│   │   ├── commons/            # Shared infrastructure (executors)
-│   │   │   ├── filesystem/     # FileExecutor
-│   │   │   └── git/            # GitExecutor, EngineGitExecutor
+│   │   │   ├── filesystem/     # Filesystem atom
+│   │   │   └── git/            # Git atom
 │   │   └── tools/              # Agent-facing tools
-│   │       ├── filesystem/     # Filesystem tool (grants, roles, intents)
-│   │       └── git/            # Git tool (intents, interfaces, roles)
+│   │       ├── filesystem/     # Filesystem tool (grants)
+│   │       └── git/            # Git tool (intents)
 │   ├── pipelines/              # Bundled pipeline templates (YAML)
-│   ├── project/                # Scaffold, discovery, constitution loader
-│   ├── review/                 # AI reviewer (constitution-aware)
-│   ├── standards/              # Standards auto-discovery (analyzer, scope detector, HITL reviewer)
-│   └── validation/             # Rules engine (S01-S11, C01-C09, C12, drift detection)
+│   ├── workflows/              # High-level workflows
+│   │   ├── drafting/           # Interactive spec drafter
+│   │   ├── implementation/     # Code generator and CLI interfaces
+│   │   └── review/             # AI reviewer and CLI interfaces
+│   └── workspace/              # Project context and AST extraction
+│       └── project/            # Scaffold, discovery, store, and CLI interfaces
 ├── tests/                      # 4700+ tests (unit, integration, E2E)
 ├── docs/                       # Architecture & methodology docs
 └── pyproject.toml
