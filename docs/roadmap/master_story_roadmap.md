@@ -17,15 +17,26 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-1. **Candidate A: US-9 The Zero-Trust Sandbox (Security)**
-   * **Pros:** Unblocks safe, autonomous code execution (`US-3`). Prevents host-machine compromise.
-   * **Cons:** High infrastructure complexity (Podman/Docker orchestration).
-2. **Candidate B: US-5 Baseline Code Understanding (Capability)**
-   * **Pros:** Allows the agent to read existing repositories securely via AST, unblocking legacy refactoring.
-   * **Cons:** Deep dependency on Tree-Sitter C-bindings.
-3. **Candidate C: US-6 Pipeline Observability (Trust)**
-   * **Pros:** Developers can actually see what the autonomous fleet is doing, reducing anxiety.
-   * **Cons:** UI/UX heavy; does not expand core mathematical capabilities.
+1. **Candidate A: US-4 Completion — Unified Runner Architecture (Critical Path)**
+   * **Features:** `D-FLOW-04` Unified Runner Architecture + `E-FLOW-03` Multi-Provider Registry
+   * **Pros:** Closes the single biggest blocker in the entire roadmap. Unblocks `US-5`, `US-1`, `US-3`, `US-23`, `US-15`, `US-16`, `US-17`, `US-18`, `US-19`, `US-27` — 10+ stories become eligible the moment this ships.
+   * **Cons:** Architectural refactor touching the core pipeline runner; high regression risk.
+2. **Candidate B: US-9 Core Execution — Standard Local Execution**
+   * **Features:** `E-EXEC-01` Standard Local Execution + `C-EXEC-02` Native CLI Action Nodes
+   * **Pros:** Closes `US-9` Core (Zero-Trust Sandbox), directly unblocking `US-3` (Autonomous Implementation) and all safe code execution workflows.
+   * **Cons:** Requires Candidate A (`US-4`) to be stable first — cannot be merged before the Flow Engine is complete.
+3. **Candidate C: US-2 Completion — Project Metadata Injection**
+   * **Features:** `D-INTL-05` Project Metadata Injection
+   * **Pros:** Single remaining blocker for `US-2` Core. Closes the Interactive Drafter and unblocks `US-21` (Autonomous Decomposition).
+   * **Cons:** Moderate effort; fewer downstream unlocks than Candidate A.
+4. **Candidate D: US-28 Foundation — Agent Memory Bank**
+   * **Features:** `B-SENS-05` SQLite Agent Memory Schema + `C-EXEC-05` Issue Tracker Atoms + `D-INTL-06` Context Hydration
+   * **Pros:** Solves agent context degradation and handover failures. High quality-of-life for all autonomous workflows. Zero upstream dependency — can be built in parallel.
+   * **Cons:** Does not directly close any existing User Story Core MVS.
+5. **Candidate E: US-1 Security Hardening — AST Prompt Injection Sanitization**
+   * **Features:** `E-VAL-03` AST Prompt Injection Sanitization
+   * **Pros:** High security ROI. Protects the Validation Engine from prompt injection attacks embedded in source code. Fully independent — zero upstream dependency.
+   * **Cons:** Purely a hardening measure; does not unblock any downstream stories.
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
