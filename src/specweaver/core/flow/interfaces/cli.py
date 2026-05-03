@@ -14,14 +14,16 @@ import typer
 
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.base import RunContext
-from specweaver.interfaces.cli import _core, _helpers
-from specweaver.interfaces.cli._helpers import (
-    _load_constitution_content,
-    _load_standards_content,
+from specweaver.graph.interfaces.cli import (
     _load_topology,
-    _run_workspace_op,
     _select_topology_contexts,
 )
+from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
+from specweaver.workspace.project.interfaces.cli import (
+    _load_constitution_content,
+    _run_workspace_op,
+)
+from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.discovery import resolve_project_path
 
@@ -87,7 +89,9 @@ def _create_display(
     return RichPipelineDisplay(console=_core.console, verbose=verbose)
 
 
-@_core.app.command()
+flow_cli = typer.Typer(no_args_is_help=True)
+
+@flow_cli.command(name="pipelines")
 def pipelines() -> None:
     """List available pipeline templates."""
     from specweaver.core.flow.engine.parser import list_bundled_pipelines
@@ -112,7 +116,7 @@ def pipelines() -> None:
     )
 
 
-@_core.app.command(name="run")
+@flow_cli.command(name="run")
 def run_pipeline(
     pipeline: str = typer.Argument(
         help="Pipeline name or YAML path (e.g. 'new_feature', 'validate_only').",
@@ -253,7 +257,7 @@ def _execute_run(  # noqa: C901
         db=_core.get_db(),
     )
 
-    from specweaver.interfaces.cli.settings_loader import load_settings
+    from specweaver.core.config.settings_loader import load_settings
 
     context.llm_router = ModelRouter(
         settings_provider=lambda role: load_settings(
@@ -265,7 +269,7 @@ def _execute_run(  # noqa: C901
     # Wire up LLM if needed (non-validate-only pipelines)
     if pipeline_def.name != "validate_only":
         try:
-            _, adapter, _gen_config = _helpers._require_llm_adapter(project_path)
+            _, adapter, _gen_config = _require_llm_adapter(project_path)
             context.llm = adapter
         except (typer.Exit, SystemExit):
             if pipeline_def.name != "validate_only":
@@ -332,7 +336,7 @@ def _execute_run(  # noqa: C901
         raise typer.Exit(code=0)  # Not an error, just parked
 
 
-@_core.app.command()
+@flow_cli.command(name="resume")
 def resume(  # noqa: C901
     run_id: str | None = typer.Argument(
         None,
@@ -424,7 +428,7 @@ def resume(  # noqa: C901
         db=_core.get_db(),
     )
 
-    from specweaver.interfaces.cli.settings_loader import load_settings
+    from specweaver.core.config.settings_loader import load_settings
 
     context.llm_router = ModelRouter(
         settings_provider=lambda role: load_settings(

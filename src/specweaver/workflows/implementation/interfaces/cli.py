@@ -11,20 +11,22 @@ from pathlib import Path
 
 import typer
 
-from specweaver.interfaces.cli import _core, _helpers
-from specweaver.interfaces.cli._helpers import (
-    _load_constitution_content,
-    _load_standards_content,
+from specweaver.graph.interfaces.cli import (
     _load_topology,
     _select_topology_contexts,
 )
+from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
+from specweaver.workspace.project.interfaces.cli import _load_constitution_content
+from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
 
 
-@_core.app.command()
+implement_cli = typer.Typer(no_args_is_help=True)
+
+@implement_cli.command(name="implement")
 def implement(
     spec: str = typer.Argument(
         help="Path to the spec file to implement.",
@@ -68,7 +70,7 @@ def implement(
     from specweaver.core.flow.engine.state import StepStatus
     from specweaver.core.flow.handlers.base import RunContext
 
-    settings, adapter, _ = _helpers._require_llm_adapter(project_path)
+    settings, adapter, _ = _require_llm_adapter(project_path)
     if settings and getattr(settings, "llm", None):
         settings.llm.temperature = 0.2  # Low temperature for code
 

@@ -35,8 +35,8 @@ async def review_spec(
     project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
-    from specweaver.interfaces.cli._helpers import _load_constitution_content
-    from specweaver.interfaces.cli.settings_loader import load_settings_async
+    from specweaver.workspace.project.interfaces.cli import _load_constitution_content
+    from specweaver.core.config.settings_loader import load_settings_async
     from specweaver.workflows.review.reviewer import Reviewer
 
     settings = await load_settings_async(db, body.project)

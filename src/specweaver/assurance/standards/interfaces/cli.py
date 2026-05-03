@@ -14,7 +14,7 @@ from rich.table import Table
 
 from specweaver.commons import json
 from specweaver.interfaces.cli import _core
-from specweaver.interfaces.cli._helpers import _run_workspace_op
+from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ standards_app = typer.Typer(
     help="Auto-discover and manage coding standards for the active project.",
     no_args_is_help=True,
 )
-_core.app.add_typer(standards_app, name="standards")
+# standards_app will be mounted by main.py
 
 
 @standards_app.command("scan")
@@ -62,7 +62,7 @@ def standards_scan(  # noqa: C901
     from specweaver.assurance.standards.reviewer import StandardsReviewer
     from specweaver.assurance.standards.scope_detector import detect_scopes
     from specweaver.infrastructure.llm.adapters.gemini import GeminiAdapter
-    from specweaver.interfaces.cli.settings_loader import load_settings
+    from specweaver.core.config.settings_loader import load_settings
 
     name = _core._require_active_project()
     db = _core.get_db()
@@ -439,3 +439,26 @@ def standards_scopes() -> None:
         )
 
     _core.console.print(table)
+
+
+def _load_standards_content(
+    project_path: Path,
+    target_path: Path | None = None,
+    *,
+    max_chars: int = 2000,
+) -> str | None:
+    """Load formatted standards from DB for prompt injection, or None."""
+    from specweaver.assurance.standards.loader import load_standards_content
+
+    db = _core.get_db()
+    active = _run_workspace_op("get_active_project")
+    if not active:
+        return None
+
+    return load_standards_content(
+        db,
+        active,
+        project_path,
+        target_path=target_path,
+        max_chars=max_chars,
+    )

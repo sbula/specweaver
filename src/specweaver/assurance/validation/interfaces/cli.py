@@ -15,7 +15,7 @@ import typer
 from rich.table import Table
 
 from specweaver.interfaces.cli import _core
-from specweaver.interfaces.cli._helpers import _run_workspace_op
+from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.discovery import resolve_project_path
 
@@ -141,7 +141,9 @@ def _build_result_label(level: str, pipeline: str | None, pipeline_name: str) ->
     return "Spec"
 
 
-@_core.app.command()
+validation_cli = typer.Typer(no_args_is_help=True)
+
+@validation_cli.command(name="check")
 def check(
     target: str = typer.Argument(
         "",
@@ -269,7 +271,7 @@ def check(
     _print_summary(results, strict=effective_strict)
 
 
-@_core.app.command("list-rules")
+@validation_cli.command("list-rules")
 def list_rules(
     pipeline: str | None = typer.Option(
         None,
@@ -323,7 +325,7 @@ drift_app = typer.Typer(
     help="AST Drift detection engine operations.",
     no_args_is_help=True,
 )
-_core.app.add_typer(drift_app, name="drift")
+validation_cli.add_typer(drift_app, name="drift")
 
 
 @drift_app.command("check")
@@ -388,7 +390,8 @@ def drift_check(
     )
 
     if analyze:
-        _, adapter, _ = _helpers._require_llm_adapter(project_path)
+        from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
+        _, adapter, _ = _require_llm_adapter(project_path)
         context.llm = adapter
 
     runner = PipelineRunner(pipeline, context)

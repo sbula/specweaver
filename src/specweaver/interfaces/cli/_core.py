@@ -37,7 +37,7 @@ from specweaver.core.config.cli_db_utils import get_db
 
 def _require_active_project() -> str:
     """Get the active project name or exit with error."""
-    from specweaver.interfaces.cli._helpers import _run_workspace_op
+    from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
     db = get_db()
     name = _run_workspace_op("get_active_project")

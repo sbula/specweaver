@@ -14,7 +14,49 @@ from rich.table import Table
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import get_default_cost_table
 from specweaver.interfaces.cli import _core
-from specweaver.interfaces.cli._helpers import _run_workspace_op
+from specweaver.interfaces.cli._core import console
+from specweaver.workspace.project.interfaces.cli import _run_workspace_op
+
+def _require_llm_adapter(
+    project_path: "Path",
+    *,
+    llm_role: str = "draft",
+) -> tuple["SpecWeaverSettings", "GeminiAdapter", "GenerationConfig"]:
+    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.core.config.settings_loader import load_settings
+    from specweaver.interfaces.cli import _core
+
+    db = _core.get_db()
+    project = _run_workspace_op("get_active_project")
+
+    try:
+        settings = load_settings(db, project, llm_role=llm_role)
+        return create_llm_adapter(
+            settings,
+            telemetry_project=project,
+        )
+    except LLMAdapterError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    except ValueError as exc:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("DB profile failed, using hardcoded fallback: %s", exc)
+        from specweaver.core.config.settings import SpecWeaverSettings
+
+        settings = SpecWeaverSettings(
+            llm={"provider": "gemini", "model": "gemini-3-flash-preview", "api_key": "test-key"}
+        )
+        try:
+            return create_llm_adapter(
+                settings,
+                telemetry_project=project,
+            )
+        except LLMAdapterError as inner_exc:
+            console.print(f"[red]Error:[/red] {inner_exc}")
+            raise typer.Exit(code=1) from inner_exc
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +66,7 @@ costs_app = typer.Typer(
     help="View and manage LLM cost overrides.",
     invoke_without_command=True,
 )
-_core.app.add_typer(costs_app, name="costs")
+# costs_app will be mounted by main.py
 
 
 @costs_app.callback(invoke_without_command=True)
@@ -122,7 +164,7 @@ usage_app = typer.Typer(
     help="View LLM token usage statistics.",
     invoke_without_command=True,
 )
-_core.app.add_typer(usage_app, name="usage")
+# usage_app will be mounted by main.py
 
 
 @usage_app.callback(invoke_without_command=True)

@@ -12,13 +12,13 @@ from typing import TYPE_CHECKING
 
 import typer
 
-from specweaver.interfaces.cli import _core, _helpers
-from specweaver.interfaces.cli._helpers import (
-    _load_constitution_content,
-    _load_standards_content,
+from specweaver.graph.interfaces.cli import (
     _load_topology,
     _select_topology_contexts,
 )
+from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
+from specweaver.workspace.project.interfaces.cli import _load_constitution_content
+from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.discovery import resolve_project_path
 
@@ -29,7 +29,9 @@ if TYPE_CHECKING:
     from specweaver.workflows.review.reviewer import ReviewResult
 
 
-@_core.app.command()
+review_cli = typer.Typer(no_args_is_help=True)
+
+@review_cli.command(name="draft")
 def draft(
     name: str = typer.Argument(
         help="Name of the component to draft a spec for.",
@@ -67,7 +69,7 @@ def draft(
     from specweaver.core.flow.handlers.base import RunContext
     from specweaver.workspace.context.hitl_provider import HITLProvider
 
-    settings, adapter, _ = _helpers._require_llm_adapter(project_path)
+    settings, adapter, _ = _require_llm_adapter(project_path)
 
     # Load topology context for the new component (best-effort)
     topo_graph = _load_topology(project_path)
@@ -115,7 +117,7 @@ def draft(
     _core.console.print("[dim]Run 'sw check' to validate the drafted spec.[/dim]")
 
 
-@_core.app.command()
+@review_cli.command(name="review")
 def review(
     target: str = typer.Argument(
         help="Path to the spec or code file to review.",
@@ -158,7 +160,7 @@ def review(
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers.base import RunContext
 
-    settings, adapter, _ = _helpers._require_llm_adapter(project_path)
+    settings, adapter, _ = _require_llm_adapter(project_path)
     if settings and getattr(settings, "llm", None):
         settings.llm.temperature = 0.3  # Lower for reviews
 

@@ -1,6 +1,8 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+from __future__ import annotations
+
 import logging
 import sys
 import uuid
@@ -18,7 +20,7 @@ from specweaver.graph.lineage.engine import LineageEngine
 from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli import _core
 from specweaver.interfaces.cli._core import console, get_db
-from specweaver.interfaces.cli._helpers import _run_workspace_op
+from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
 
 if TYPE_CHECKING:
@@ -320,3 +322,62 @@ def check_lineage(src_dir: Path) -> list[str]:
             logger.warning("Could not read file %s: %s", py_file, e)
 
     return sorted(orphans)
+
+# Selector name -> class mapping (configurable via --selector)
+_SELECTOR_MAP: dict[str, type] = {}
+
+
+def _get_selector_map() -> dict[str, type]:
+    """Lazily populate and return the selector name->class mapping."""
+    if not _SELECTOR_MAP:
+        from specweaver.assurance.graph.selectors import (
+            ConstraintOnlySelector,
+            DirectNeighborSelector,
+            ImpactWeightedSelector,
+            NHopConstraintSelector,
+        )
+
+        _SELECTOR_MAP.update(
+            {
+                "direct": DirectNeighborSelector,
+                "nhop": NHopConstraintSelector,
+                "constraint": ConstraintOnlySelector,
+                "impact": ImpactWeightedSelector,
+            }
+        )
+    return _SELECTOR_MAP
+
+
+def _select_topology_contexts(
+    graph: "TopologyGraph" | None,
+    module_name: str,
+    *,
+    selector_name: str = "direct",
+) -> list["TopologyContext"] | None:
+    """Run a selector and return topology contexts, or None."""
+    if graph is None:
+        return None
+
+    selector_map = _get_selector_map()
+    selector_cls = selector_map.get(selector_name)
+    if selector_cls is None:
+        from specweaver.interfaces.cli._core import console
+        console.print(
+            f"[yellow]Warning:[/yellow] Unknown selector '{selector_name}', "
+            "falling back to 'direct'.",
+        )
+        from specweaver.assurance.graph.selectors import DirectNeighborSelector
+
+        selector_cls = DirectNeighborSelector
+
+    selector = selector_cls()
+    related = selector.select(graph, module_name)
+    if not related:
+        return None
+
+    contexts = graph.format_context_summary(module_name, related)
+    from specweaver.interfaces.cli._core import console
+    console.print(
+        f"[dim]Topology: {len(contexts)} related module(s) via {selector_name} selector.[/dim]",
+    )
+    return contexts

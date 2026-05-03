@@ -14,7 +14,9 @@ from specweaver.interfaces.cli import _core
 logger = logging.getLogger(__name__)
 
 
-@_core.app.command()
+serve_cli = typer.Typer(no_args_is_help=True)
+
+@serve_cli.command(name="serve")
 def serve(
     port: int = typer.Option(
         8000,
