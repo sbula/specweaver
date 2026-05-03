@@ -541,6 +541,23 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **INT-US-27-SUB:** Sub-Story Integration defined in [US-27_integration.md](integrations/US-27_integration.md)
         *   `[ ]` **A-FLOW-04:** Blast-Radius Circuit Breaker (Prevents bad hotfixes from cascading)
 
+### 🟡 US-28: Agent-Native Issue & State Tracker
+**Benefit:** *AI Agents can seamlessly hand over complex tasks to one another and prevent context degradation by storing session state, active tasks, and blockers in a structured, local SQLite Memory Bank.*
+*   **Core Required (MVS):**
+    *   `[ ]` **INT-US-28:** Base Integration Contract defined in [US-28_integration.md](integrations/US-28_integration.md)
+    *   `[ ]` **B-SENS-05:** SQLite Agent Memory Schema (Entities, States, Roles)
+    *   `[ ]` **C-EXEC-05:** Issue Tracker Atoms (CRUD operations for state)
+    *   `[ ]` **D-INTL-06:** Context Hydration (Injecting active task state into prompt)
+*   **Sub-Story Add-Ons:**
+    *   🔴 **Graceful Handover Protocols:**
+        *   `[ ]` **INT-US-28-SUB:** Sub-Story Integration
+        *   `[ ]` **B-INTL-08:** Structured Handover Tooling
+    *   🔴 **Multi-Agent Concurrency & Locking:**
+        *   `[ ]` **INT-US-28-SUB:** Sub-Story Integration
+        *   `[ ]` **A-EXEC-04:** SQLite Row-Level Task Locking
+    *   🔴 **Design Documentation:**
+        *   `[ ]` [Agent Workflow Tracker Brainstorm](../../analysis/agent_workflow_tracker_brainstorm.md)
+
 ---
 
 ## Technical Debt & Architecture Stories (TECH)
