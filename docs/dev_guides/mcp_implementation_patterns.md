@@ -14,11 +14,11 @@ SpecWeaver adheres to the **Pre-Fetched Context Envelope** pattern (AD-1). We st
 The engine bridges connection streams into standard JSON-RPC packets.
 
 ```yaml
-# src/specweaver/core/loom/atoms/mcp/context.yaml
-module: "specweaver.core.loom.atoms.mcp"
+# src/specweaver/sandbox/mcp/context.yaml
+module: "specweaver.sandbox.mcp"
 archetype: "orchestrator"
 forbids:
-  - "specweaver.core.loom.tools.*" # Agents cannot directly hit the raw Atom.
+  - "specweaver.sandbox.*" # Agents cannot directly hit the raw Atom.
 ```
 
 The underlying `MCPExecutor` binds the target string dynamically over standard I/O byte transmission channels to prevent asynchronous pipeline blocking.

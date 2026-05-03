@@ -7,7 +7,7 @@ Bridges Rule.check(text, path) -> Atom.run(context) so validation rules
 are composable like any other atom in the sub-pipeline.
 
 Architecture:
-    RuleAtom lives in loom/atoms/ because it IS an Atom. It consumes
+    RuleAtom lives in sandbox/ because it IS an Atom. It consumes
     from validation/ for the Rule ABC, which is allowed (atoms consume
     commons, and validation is pure-logic).
 """

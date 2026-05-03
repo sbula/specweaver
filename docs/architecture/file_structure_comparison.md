@@ -61,12 +61,12 @@ src/specweaver/
 │   └── cli.py                      ← CLI command (moved from interfaces/cli)
 │
 ├── sandbox_git/                    ← [NEW DOMAIN] Everything Git is here!
-│   ├── tools/                      ← Git tools (moved from loom/tools)
-│   └── atoms/                      ← Git atoms (moved from loom/atoms)
+│   ├── tools/                      ← Git tools (moved from sandbox)
+│   └── atoms/                      ← Git atoms (moved from sandbox)
 │
 └── sandbox_ast/                    ← [NEW DOMAIN] Everything AST is here!
-    ├── tools/                      ← AST tools (moved from loom/tools)
-    └── atoms/                      ← AST atoms (moved from loom/atoms)
+    ├── tools/                      ← AST tools (moved from sandbox)
+    └── atoms/                      ← AST atoms (moved from sandbox)
 ```
 
 ## Why this matters (The Impact):

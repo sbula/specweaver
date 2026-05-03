@@ -81,8 +81,8 @@ class TestRelativePaths:
         assert "src/models/user.py" in extract_mentions(text)
 
     def test_deep_relative_path(self) -> None:
-        text = "Check src/specweaver/loom/tools/filesystem/tool.py for details."
-        assert "src/specweaver/loom/tools/filesystem/tool.py" in extract_mentions(text)
+        text = "Check src/specweaver/sandbox/filesystem/tool.py for details."
+        assert "src/specweaver/sandbox/filesystem/tool.py" in extract_mentions(text)
 
 
 # ===========================================================================

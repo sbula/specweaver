@@ -66,7 +66,7 @@ purpose: Pure logic domain.
 archetype: pure-logic
 consumes: []
 forbids:
-  - specweaver/loom/*
+  - specweaver/sandbox/*
 """
 
 _DEFAULT_TESTS_CONTEXT_YAML = """\

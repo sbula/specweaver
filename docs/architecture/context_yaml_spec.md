@@ -460,8 +460,8 @@ This specification will be implemented through the following SpecWeaver componen
 
 | Component | Responsibility |
 |---|---|
-| **Filesystem Tool** (`loom/tools/filesystem/`) | `find_placement(description)` — scans `context.yaml` files and returns ranked placements |
-| **Filesystem Atom** (`loom/atoms/filesystem/`) | `scaffold()` — creates directories + `context.yaml` from boundary defs; `validate_boundaries()` — pre-code validation |
+| **Filesystem Tool** (`sandbox/filesystem/`) | `find_placement(description)` — scans `context.yaml` files and returns ranked placements |
+| **Filesystem Atom** (`sandbox/filesystem/`) | `scaffold()` — creates directories + `context.yaml` from boundary defs; `validate_boundaries()` — pre-code validation |
 | **Validation Rules** (`specweaver/validation/`) | `context_yaml_lint(path)` — structural validation of the YAML file itself |
 | **CLI** | `sw context validate` — check all `context.yaml` files in a project for consistency |
 

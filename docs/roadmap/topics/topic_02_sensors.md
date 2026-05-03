@@ -6,7 +6,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`E-SENS-01` ✅: Loom FS Tools** (Legacy: Step 1b)<br>
   > _(new)_ | Agents and Engine have secure, role-gated filesystem access. Agents see only whitelisted boundaries.
 * **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)<br>
-  > `_(new)_` | LLM function-calling via provider-agnostic abstraction. 6 tools (4 filesystem + 2 web) in `loom/commons/research/`. `WorkspaceBoundary` enforcement, `ToolExecutor`, `generate_with_tools()` on adapter. Wired into Reviewer + Planner. **Complete**: boundaries, executor, tool definitions, adapter integration, 3353 tests. See [implementation plan](features/topic_02_sensors/E-SENS-02/E-SENS-02_implementation_plan.md).
+  > `_(new)_` | LLM function-calling via provider-agnostic abstraction. 6 tools (4 filesystem + 2 web) in `sandbox/research/`. `WorkspaceBoundary` enforcement, `ToolExecutor`, `generate_with_tools()` on adapter. Wired into Reviewer + Planner. **Complete**: boundaries, executor, tool definitions, adapter integration, 3353 tests. See [implementation plan](features/topic_02_sensors/E-SENS-02/E-SENS-02_implementation_plan.md).
 
 ## DAL-D: Internal Tooling
 * **`D-SENS-01` ✅: Topology Graph** (Legacy: Step 7)<br>

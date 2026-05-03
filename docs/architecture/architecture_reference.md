@@ -42,7 +42,7 @@ specweaver/                       ← level: system, archetype: orchestrator
 │   ├── collector.py              ← TelemetryCollector decorator (3.12)
 │   ├── telemetry.py              ← Cost estimation + UsageRecord (3.12)
 │   └── factory.py                ← Adapter creation with optional telemetry wrapping
-├── loom/                         ← Execution engine (tools, atoms, commons)
+├── sandbox/                         ← Execution engine (tools, atoms, commons)
 │   ├── tools/                    ← Agent-facing capability providers
 │   │   ├── filesystem/           ← FileSystemTool + role interfaces
 │   │   ├── git/                  ← GitTool + role interfaces
@@ -86,10 +86,10 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `cli/project_commands.py` — `sw init/use/projects/remove`. Lives in `cli/` (entry-point) — thin delegation to `project/`.
 
 **Loom layer** (filesystem tools + atoms + interfaces)
-- `loom/commons/filesystem/executor.py` — `FileExecutor`: raw I/O with path validation, symlink blocking, `FolderGrant`. In `commons/` because it's shared infra consumed by both tools and atoms.
-- `loom/tools/filesystem/tool.py` — `FileSystemTool`: intent-based facade with `ROLE_INTENTS` gating. In `tools/` because it's the agent-facing layer.
-- `loom/tools/filesystem/interfaces.py` — `ReviewerFileInterface`, `ImplementerFileInterface`, etc. Each role sees only its allowed methods — physically absent, not just blocked.
-- `loom/atoms/filesystem/atom.py` — `FileSystemAtom`: engine-internal ops (unrestricted). In `atoms/` because the engine is trusted.
+- `sandbox/filesystem/executor.py` — `FileExecutor`: raw I/O with path validation, symlink blocking, `FolderGrant`. In `commons/` because it's shared infra consumed by both tools and atoms.
+- `sandbox/filesystem/tool.py` — `FileSystemTool`: intent-based facade with `ROLE_INTENTS` gating. In `tools/` because it's the agent-facing layer.
+- `sandbox/filesystem/interfaces.py` — `ReviewerFileInterface`, `ImplementerFileInterface`, etc. Each role sees only its allowed methods — physically absent, not just blocked.
+- `sandbox/filesystem/atom.py` — `FileSystemAtom`: engine-internal ops (unrestricted). In `atoms/` because the engine is trusted.
 
 **Validation engine** (19 rules)
 - `validation/runner.py` — `ValidationRunner`: applies rule list to a spec. In `validation/` (pure-logic) because it's stateless computation — no I/O, no LLM.
@@ -143,21 +143,21 @@ Each feature was built incrementally across 3 phases. For each feature:
 - `flow/store.py` — `StateStore`: SQLite persistence for run state + audit log.
 - `pipelines/*.yaml` — declarative pipeline definitions (data, not code).
 
-**Git tools** (loom) — same 4-layer pattern as filesystem:
-- `loom/commons/git/executor.py` — `GitExecutor`: whitelisted git commands, `_BLOCKED_ALWAYS` list.
-- `loom/tools/git/tool.py` — `GitTool`: conventional commit enforcement, role gating.
-- `loom/tools/git/interfaces.py` — `ReviewerGitInterface` (read-only), `ImplementerGitInterface` (commit allowed).
-- `loom/atoms/git/atom.py` — `EngineGitExecutor`: unrestricted for engine use.
+**Git tools** (sandbox) — same 4-layer pattern as filesystem:
+- `sandbox/git/executor.py` — `GitExecutor`: whitelisted git commands, `_BLOCKED_ALWAYS` list.
+- `sandbox/git/tool.py` — `GitTool`: conventional commit enforcement, role gating.
+- `sandbox/git/interfaces.py` — `ReviewerGitInterface` (read-only), `ImplementerGitInterface` (commit allowed).
+- `sandbox/git/atom.py` — `EngineGitExecutor`: unrestricted for engine use.
 
-**Test runner** (loom) — same pattern:
-- `loom/commons/qa_runner/executor.py` — `QARunnerExecutor`: subprocess pytest with output capture.
-- `loom/tools/qa_runner/tool.py` — `QARunnerTool`: role-gated test execution.
-- `loom/atoms/qa_runner/atom.py` — `QARunnerAtom`: engine-internal test runs + lint-fix reflection.
+**Test runner** (sandbox) — same pattern:
+- `sandbox/qa_runner/executor.py` — `QARunnerExecutor`: subprocess pytest with output capture.
+- `sandbox/qa_runner/tool.py` — `QARunnerTool`: role-gated test execution.
+- `sandbox/qa_runner/core/atom.py` — `QARunnerAtom`: engine-internal test runs + lint-fix reflection.
 
 ### Phase 3
 
 **Common MCP Client Architecture (3.32c)**
-- low/handlers/mcp_assembler.py and loom/atoms/mcp/ - establishes Pre-Fetched Context Envelope pattern to natively query and serialize Model Context Protocol (MCP) data for prompt environments safely.
+- low/handlers/mcp_assembler.py and sandbox/mcp/ - establishes Pre-Fetched Context Envelope pattern to natively query and serialize Model Context Protocol (MCP) data for prompt environments safely.
  — Feature Expansion (Incremental)
 
 **3.1 Kind-aware validation** — Added `--level feature` thresholds to `validation/`. Created `feature_decomposition.yaml` pipeline in `pipelines/`. Added `DecomposeHandler` to `flow/`. Each lives where its archetype dictates: rules in pure-logic, pipeline in data, handler in orchestrator.
@@ -172,7 +172,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.6 Plan phase** — `planning/planner.py` (`Planner`): generates structured Plan artifacts from specs. `flow/_generation.py` got `PlanSpecHandler`. Planning is a separate module from implementation because it produces *plans* (architecture decisions, file layout), not *code*.
 
-**3.7 REST API** — `api/` (adapter archetype): FastAPI server wrapping domain modules as HTTP endpoints. Forbidden from importing `cli/` or `loom/*` — it's a parallel entry point to CLI, not a wrapper around it.
+**3.7 REST API** — `api/` (adapter archetype): FastAPI server wrapping domain modules as HTTP endpoints. Forbidden from importing `cli/` or `sandbox/*` — it's a parallel entry point to CLI, not a wrapper around it.
 
 **3.8 Web dashboard** — Extends `api/` with HTMX+Jinja2 templates for browser UI. Same module because it's the same HTTP server, just with HTML rendering alongside JSON endpoints.
 
@@ -210,8 +210,8 @@ Each feature was built incrementally across 3 phases. For each feature:
 L1 (Business)        ← drafting, context
 L2 (Architecture)    ← graph, standards (3.5)
 L3 (Specification)   ← validation, review, constitution (3.2), profiles (3.3)
-L4 (Implementation)  ← implementation, planning (3.6), loom tools
-L5 (Review)          ← review, loom tools (git, filesystem, qa_runner)
+L4 (Implementation)  ← implementation, planning (3.6), sandbox tools
+L5 (Review)          ← review, sandbox tools (git, filesystem, qa_runner)
 L6 (Deploy)          ← api (3.7), dashboard (3.8), container (3.9)
 ```
 
@@ -243,8 +243,8 @@ graph TD
     API --> Project
     API --> Standards
 
-    Flow --> LoomAtoms[loom/atoms]
-    Flow --> LoomCommons[loom/commons]
+    Flow --> LoomAtoms[sandbox]
+    Flow --> LoomCommons[sandbox]
 
     Review --> LLM
     Review --> Config
@@ -264,7 +264,7 @@ graph TD
     Project --> Config
 
     LoomAtoms --> LoomCommons
-    LoomTools[loom/tools] --> LoomCommons
+    LoomTools[sandbox] --> LoomCommons
 
     style Flow fill:#f9e,stroke:#333
     style LoomAtoms fill:#bbf,stroke:#333
@@ -280,26 +280,26 @@ graph TD
 
 | Module | Archetype | Consumes | Forbids |
 |--------|-----------|----------|---------|
-| `cli` | orchestrator | config, validation, review, drafting, implementation, flow, graph, llm, project, standards, context | loom/* |
-| `api` | adapter | config, validation, review, implementation, flow, graph, llm, project, standards | cli, loom/* |
-| `config` | pure-logic | *(leaf)* | loom/* |
-| `context` | contract | *(leaf)* | loom/* |
-| `drafting` | orchestrator | llm, config, context | loom/* |
-| `flow` | orchestrator | config, llm, review, implementation, planning, validation, loom/atoms/qa_runner, loom/dispatcher, loom/security | loom/tools/*, loom/commons/*, drafting, context |
-| `graph` | pure-logic | context | loom/*, llm, drafting, implementation |
+| `cli` | orchestrator | config, validation, review, drafting, implementation, flow, graph, llm, project, standards, context | sandbox/* |
+| `api` | adapter | config, validation, review, implementation, flow, graph, llm, project, standards | cli, sandbox/* |
+| `config` | pure-logic | *(leaf)* | sandbox/* |
+| `context` | contract | *(leaf)* | sandbox/* |
+| `drafting` | orchestrator | llm, config, context | sandbox/* |
+| `flow` | orchestrator | config, llm, review, implementation, planning, validation, sandbox/qa_runner, sandbox/dispatcher, sandbox/security | sandbox/*, sandbox/*, drafting, context |
+| `graph` | pure-logic | context | sandbox/*, llm, drafting, implementation |
 | `implementation` | orchestrator | llm, config, validation | *(none)* |
-| `llm` | adapter | config | loom/* |
-| `llm/adapters` | adapter | llm | loom/*, validation, drafting |
+| `llm` | adapter | config | sandbox/* |
+| `llm/adapters` | adapter | llm | sandbox/*, validation, drafting |
 | `pipelines` | data | *(leaf)* | *(none)* |
-| `planning` | orchestrator | llm, config, context, loom/dispatcher (type-only) | loom/* (except dispatcher) |
-| `project` | adapter | config | loom/*, llm |
-| `review` | orchestrator | llm, config, loom/dispatcher (type-only) | loom/* (except dispatcher) |
-| `standards` | orchestrator | config | loom/* |
-| `validation` | pure-logic | config | loom/*, llm |
+| `planning` | orchestrator | llm, config, context, sandbox/dispatcher (type-only) | sandbox/* (except dispatcher) |
+| `project` | adapter | config | sandbox/*, llm |
+| `review` | orchestrator | llm, config, sandbox/dispatcher (type-only) | sandbox/* (except dispatcher) |
+| `standards` | orchestrator | config | sandbox/* |
+| `validation` | pure-logic | config | sandbox/*, llm |
 
 > [!CAUTION]
-> **12 of 16 modules explicitly `forbid: loom/*`.** Only `flow/` is allowed to
-> touch loom (via atoms only, NOT tools or commons). The loom layer is isolated.
+> **12 of 16 modules explicitly `forbid: sandbox/*`.** Only `flow/` is allowed to
+> touch sandbox (via atoms only, NOT tools or commons). The sandbox layer is isolated.
 
 ### Loom Sub-Layers
 
@@ -308,12 +308,12 @@ graph TD
 | `commons/` | *(leaf — nothing)* | `tools/*`, `atoms/*` |
 | `tools/` | `commons/*` | `atoms/*` |
 | `atoms/` | `commons/*` | `tools/*` |
-| `loom/` (root) | `tools/*`, `atoms/*`, `commons/*` | — |
+| `sandbox/` (root) | `tools/*`, `atoms/*`, `commons/*` | — |
 
 > [!CAUTION]
-> **Dependency flows UPWARD only within loom.** Commons NEVER imports from
+> **Dependency flows UPWARD only within sandbox.** Commons NEVER imports from
 > tools or atoms. Tools NEVER import from atoms (and vice versa).
-> Only `loom/` root level can import across sub-layers.
+> Only `sandbox/` root level can import across sub-layers.
 
 ---
 
@@ -345,10 +345,10 @@ Flow Engine ──▶ Atom ──▶ Interface ──▶ Tool ──▶ Executor
 
 | Layer | Location | Responsibility |
 |-------|----------|----------------|
-| **Executor** | `loom/commons/{domain}/` | Raw I/O with transport-level security (whitelists, path validation, symlink blocking) |
-| **Tool** | `loom/tools/{domain}/tool.py` | Intent-based operations with role gating (`ROLE_INTENTS`) + grant enforcement (`FolderGrant`) |
-| **Interface** | `loom/tools/{domain}/interfaces.py` | Role-specific facades — unauthorized methods physically absent |
-| **Atom** | `loom/atoms/{domain}/` | Engine-internal workflow operations (unrestricted, not agent-facing) |
+| **Executor** | `sandbox/{domain}/` | Raw I/O with transport-level security (whitelists, path validation, symlink blocking) |
+| **Tool** | `sandbox/{domain}/tool.py` | Intent-based operations with role gating (`ROLE_INTENTS`) + grant enforcement (`FolderGrant`) |
+| **Interface** | `sandbox/{domain}/interfaces.py` | Role-specific facades — unauthorized methods physically absent |
+| **Atom** | `sandbox/{domain}/` | Engine-internal workflow operations (unrestricted, not agent-facing) |
 
 ### Security Stack
 
@@ -384,8 +384,8 @@ GeminiAdapter.generate_with_tools(messages, config, dispatcher)
 ### Where the dispatcher lives
 
 The dispatcher consumes tools — so it CANNOT live in `commons/` (which forbids
-`tools/*`). It belongs at the **`loom/` root level** (e.g., `loom/dispatch.py`)
-because `loom/` is the only layer that can consume all three sub-layers.
+`tools/*`). It belongs at the **`sandbox/` root level** (e.g., `sandbox/dispatch.py`)
+because `sandbox/` is the only layer that can consume all three sub-layers.
 
 ### Who calls the dispatcher
 
@@ -393,15 +393,15 @@ The dispatcher is consumed by `review/`, `planning/`, and `flow/` through the
 `_build_tool_executor()` factory in `flow/_review.py`.
 
 > [!WARNING]
-> **Current violation:** `review/` and `planning/` both `forbid: loom/*` in
+> **Current violation:** `review/` and `planning/` both `forbid: sandbox/*` in
 > their `context.yaml`, yet they import `ToolExecutor` from
-> `loom/commons/research/executor.py`. This is a boundary violation that
+> `sandbox/research/executor.py`. This is a boundary violation that
 > needs to be resolved.
 
 ### Each tool owns its own definitions
 
 Tool definitions (`ToolDefinition` from `llm/models.py`) should live with their
-respective tools in `loom/tools/{domain}/`, NOT centralized in a separate module.
+respective tools in `sandbox/{domain}/`, NOT centralized in a separate module.
 
 ---
 
@@ -532,7 +532,7 @@ different consumers and have different trust models:
 | **Consumer** | AI agent (LLM) | Flow engine (SpecWeaver internal) |
 | **Access control** | Role-restricted interfaces — methods physically absent | Unrestricted — full access to executor |
 | **Trust model** | Agent is untrusted — security enforced at every layer | Engine is trusted — no role gating needed |
-| **Location** | `loom/tools/{domain}/` | `loom/atoms/{domain}/` |
+| **Location** | `sandbox/{domain}/` | `sandbox/{domain}/` |
 | **Forbids** | `atoms/*` | `tools/*` |
 | **Example** | `GitTool.commit()` checks conventional commits, role gating | `EngineGitExecutor.run()` — raw `git` with full whitelist |
 
@@ -662,7 +662,7 @@ Sandbox Diff ───▶ pre-merge: violently enforces physical constraints
 
 To insulate SpecWeaver from breaking changes in standard compilation/debugging schemas (like DAP and SARIF), we utilize an **Adapter Pattern** strategy. External schemas must NEVER be consumed directly by LLM Agents or the workflow flow engine.
 
-1. **Protocol Insulation**: All external protocol outputs are rigorously mapped into strictly typed, internal data models (`CompileError`, `CompileRunResult`, `OutputEvent`, etc.) within `loom/commons/qa_runner/interface.py`.
+1. **Protocol Insulation**: All external protocol outputs are rigorously mapped into strictly typed, internal data models (`CompileError`, `CompileRunResult`, `OutputEvent`, etc.) within `sandbox/qa_runner/interface.py`.
 2. **Deprecation Strategy**: Temporary fallback adaptors (e.g., the `PythonQARunner` stub implementing `run_compiler` as a no-op) must be documented and explicitly deleted once the target domain migration completes.
 
 ---
@@ -671,8 +671,8 @@ To insulate SpecWeaver from breaking changes in standard compilation/debugging s
 
 | Violation | Where | Rule Broken | Status |
 |-----------|-------|-------------|--------|
-| `loom/*` consumed by `llm` | `src/specweaver/llm/prompt_builder.py` | `llm` archetype `context.yaml` explicitly `forbids: specweaver/loom/*` | FIXED (CB-2 Gate Phase 1) |
-| `loom/commons/*` consumed by `validation` | `src/specweaver/validation/rules/code/` (C03, C04, C05) | `validation` archetype `context.yaml` explicitly `forbids: specweaver/loom/*` | DEFERRED (Pending review on whether `commons/qa_runner` executor usage is appropriate inside pure-logic rules via contextual bypasses, or if it should be extracted strictly natively into `flow/` orchestrated tasks) |
+| `sandbox/*` consumed by `llm` | `src/specweaver/llm/prompt_builder.py` | `llm` archetype `context.yaml` explicitly `forbids: specweaver/sandbox/*` | FIXED (CB-2 Gate Phase 1) |
+| `sandbox/*` consumed by `validation` | `src/specweaver/validation/rules/code/` (C03, C04, C05) | `validation` archetype `context.yaml` explicitly `forbids: specweaver/sandbox/*` | DEFERRED (Pending review on whether `commons/qa_runner` executor usage is appropriate inside pure-logic rules via contextual bypasses, or if it should be extracted strictly natively into `flow/` orchestrated tasks) |
 | `File I/O` inside `pure-logic` | `src/specweaver/assurance/graph/hasher.py` | `graph` archetype `pure-logic` explicitly forbids OS/File I/O | DEFERRED (Pending Feature 3.48 Sidecar Databases which will abstract this into network bound architecture natively) |
 | `File I/O` inside `pure-logic` | `src/specweaver/workspace/ast/parsers/exclusions.py` | `workspace/ast/parsers` archetype `pure-logic` forbids OS/File I/O | DEFERRED (Pending Feature 3.32b SF-4 which abstracts physical OS traversals securely via dependency injection bounds) |
 | Inline Imports (Monolith Purge) | `core/config/database.py`, `core/config/settings.py`, `core/flow/handlers/*`, `interfaces/cli/*` | Anti-Pattern: Hiding dependencies via inline imports to bypass `tach` or circular imports | DEFERRED (Pending dependency injection refactoring to pass domain stores dynamically) |
@@ -685,15 +685,15 @@ To insulate SpecWeaver from breaking changes in standard compilation/debugging s
 > - **Cache-Flush Dilemma**: We intentionally prevented `flow/engine` from consuming `assurance/graph/hasher.py` to trigger the actual metric flush post-pipeline. Instead, we shifted the operation purely to the `cli/pipelines.py` orchestrator which legally consumes both layer roots.
 
 > **Resolved in Feature 3.14 (Artifact Tagging Engine)**
-> The implementation plan for SF-2 explicitly instructed `prompt_builder.py` to import `wrap_artifact_tag` from `specweaver.core.loom.commons.lineage`. However, `llm/` strictly forbids all imports from `loom/`. I resolved this by immediately relocating `lineage.py` into the `llm` module natively (`specweaver/llm/lineage.py`) and exposing its utilities via `llm/context.yaml`.
+> The implementation plan for SF-2 explicitly instructed `prompt_builder.py` to import `wrap_artifact_tag` from `specweaver.sandbox.lineage`. However, `llm/` strictly forbids all imports from `sandbox/`. I resolved this by immediately relocating `lineage.py` into the `llm` module natively (`specweaver/llm/lineage.py`) and exposing its utilities via `llm/context.yaml`.
 
 > **Resolved in Feature 3.11a:**
-> - Deleted `loom/commons/research/` entirely
-> - Moved dispatcher to `loom/dispatcher.py` (loom root level)
-> - Consolidated `WorkspaceBoundary` into `loom/security.py`
+> - Deleted `sandbox/research/` entirely
+> - Moved dispatcher to `sandbox/dispatcher.py` (sandbox root level)
+> - Consolidated `WorkspaceBoundary` into `sandbox/security.py`
 > - Tool definitions moved into each tool's own `definitions.py`
-> - `review/` and `planning/` use `loom/dispatcher` via `TYPE_CHECKING` only
-> - `flow/` consumes `loom/dispatcher` and `loom/security` at runtime (declared in `context.yaml`)
+> - `review/` and `planning/` use `sandbox/dispatcher` via `TYPE_CHECKING` only
+> - `flow/` consumes `sandbox/dispatcher` and `sandbox/security` at runtime (declared in `context.yaml`)
 > - `qa_runner/interfaces.py` tools→atoms import fixed to lazy factory import
 
 ---
@@ -707,7 +707,7 @@ To insulate SpecWeaver from breaking changes in standard compilation/debugging s
 | Centralizing tool definitions in a separate module | Each tool should own its own `ToolDefinition` list |
 | God-object dispatcher reimplementing I/O | Delegate to actual tool methods instead |
 | Naming modules by what the agent *does* ("research") | Name by what the code *is* |
-| Domain modules importing from `loom/*` | 12 of 16 modules explicitly forbid this — use `flow/` as the bridge |
+| Domain modules importing from `sandbox/*` | 12 of 16 modules explicitly forbid this — use `flow/` as the bridge |
 | Hiding dependencies via inline imports inside methods | Bypasses `tach` and obscures the actual module coupling density |
 | Unchunked bulk graph ingestion into SQLite | Triggers `database is locked` deadlocks (RT-4); always batch `executemany` into 5,000-row chunks |
 

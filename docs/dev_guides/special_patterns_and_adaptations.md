@@ -13,18 +13,18 @@ In languages like Java or C#, you can enforce module visibility (e.g., `package-
 To prevent an LLM (or a junior developer) from accidentally wiring a core engine component directly into an external web router, we invented `context.yaml` boundary files.
 
 ### How it works:
-You will see `context.yaml` files dropped directly into source directories (e.g., `src/specweaver/loom/tools/context.yaml`).
+You will see `context.yaml` files dropped directly into source directories (e.g., `src/specweaver/sandbox/context.yaml`).
 
 ```yaml
-module: "loom.tools"
+module: "sandbox"
 description: "Agent-facing DMZ tool boundary"
 forbids:
-  - "loom.atoms.*"
+  - "sandbox.*"
   - "cli.*"
 ```
 
 ### Why we do it:
-During our pre-commit pipeline, an internal architecture scanner crawls these YAML files and cross-references them against the Python AST imports. If a developer accidentally writes `from specweaver.core.loom.atoms import EngineAtom` from within a `tools/` file, the `context.yaml` configuration triggers an immediate linting failure halting the commit.
+During our pre-commit pipeline, an internal architecture scanner crawls these YAML files and cross-references them against the Python AST imports. If a developer accidentally writes `from specweaver.sandbox import EngineAtom` from within a `tools/` file, the `context.yaml` configuration triggers an immediate linting failure halting the commit.
 
 ---
 
@@ -76,10 +76,10 @@ We physically separate "Code Rules" from "Spec Rules." While standard tools test
 SpecWeaver relies on `tach` to strictly enforce domain boundaries between L1, L2, L3, and L4 layers. However, there are explicit cases where we gracefully relax these boundaries for architectural efficiency.
 
 ### Example: The Validation Layer (L2) and QARunner (L4)
-The Validation Engine (`src/specweaver/validation/`) is designed as internal "pure logic", separated entirely from the raw file-system Executor limits within `Loom Commons` (`src/specweaver/loom/commons/`). However, the legacy AST module inside `c05_import_direction.py` has been explicitly replaced by a subprocess invocation utilizing `PythonQARunner.run_architecture_check()`.
+The Validation Engine (`src/specweaver/validation/`) is designed as internal "pure logic", separated entirely from the raw file-system Executor limits within `Loom Commons` (`src/specweaver/sandbox/`). However, the legacy AST module inside `c05_import_direction.py` has been explicitly replaced by a subprocess invocation utilizing `PythonQARunner.run_architecture_check()`.
 
 ### Why we do it:
-To prevent writing custom AST parsers across Go, Python, and TS, the Validation layer is permitted explicit boundary relaxation (`forbids: "!loom.commons.qa_runner"`) to natively reuse the same dynamic polyglot architecture parser the CLI tool consumes. This prevents massive code duplication despite technically bridging pure logic and executor boundaries.
+To prevent writing custom AST parsers across Go, Python, and TS, the Validation layer is permitted explicit boundary relaxation (`forbids: "!sandbox.qa_runner"`) to natively reuse the same dynamic polyglot architecture parser the CLI tool consumes. This prevents massive code duplication despite technically bridging pure logic and executor boundaries.
 
 ---
 

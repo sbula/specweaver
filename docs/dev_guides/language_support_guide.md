@@ -34,9 +34,9 @@ If you add a new language, you must simply register the structural trigger insid
 
 ## 3. Creating a New Language Submodule
 
-To add a language, say **Go**, you will create a highly isolated submodule inside `loom/commons`:
+To add a language, say **Go**, you will create a highly isolated submodule inside `sandbox`:
 
-**Location**: `src/specweaver/loom/commons/language/go/`
+**Location**: `src/specweaver/sandbox/language/go/`
 
 ### A. Submodule Files
 
@@ -78,15 +78,15 @@ Your `runner.py` must fully implement or securely stub the `QARunnerInterface`:
 We rigorously separate test boundaries. Do not mix Mock constraints into Live files.
 
 ### Unit Tests (Mocked Boundaries)
-**Location:** `tests/unit/loom/commons/language/go/`
+**Location:** `tests/unit/sandbox/language/go/`
 - Mock `subprocess.run` entirely.
 - Validate the logic inside `parsers.py` by passing it raw string output fixtures gathered from real Go executions.
 - *Goal:* Verify parser extraction limits.
 
 ### Integration Tests (True OS Integrity)
 **Location:** 
-1. `tests/integration/loom/atoms/qa_runner/go/test_atom.py`
-2. `tests/integration/loom/tools/qa_runner/go/test_tool.py`
+1. `tests/integration/sandbox/qa_runner/go/test_atom.py`
+2. `tests/integration/sandbox/qa_runner/go/test_tool.py`
 3. `tests/integration/loom/test_polyglot_ast_edge_cases.py` (Must append your target language Tree-Sitter boundaries!)
 
 - **Absolute Rule:** Do not mock `subprocess`.

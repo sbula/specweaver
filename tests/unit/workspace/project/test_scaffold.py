@@ -72,7 +72,7 @@ class TestScaffoldProject:
         data = yaml.load(context_path)
         assert data["level"] == "domain"
         assert data["archetype"] == "pure-logic"
-        assert "specweaver/loom/*" in data.get("forbids", [])
+        assert "specweaver/sandbox/*" in data.get("forbids", [])
 
     def test_creates_tests_context_yaml(self, tmp_path: Path) -> None:
         """scaffold_project creates tests/context.yaml with adapter archetype."""

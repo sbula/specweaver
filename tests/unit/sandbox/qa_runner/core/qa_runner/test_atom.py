@@ -612,7 +612,7 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
 def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Path) -> None:
     """
     Edge Case: Namespace routing stability under concurrent / rapid dynamic paths (Implicit Namespace).
-    Proves consecutive dynamic traversals over the proxy-less PEP 420 `loom.commons.qa_runner.*`
+    Proves consecutive dynamic traversals over the proxy-less PEP 420 `sandbox.qa_runner.*`
     paths do not fail from sys.path thrashing or incorrect __package__ resolution.
     """
     from specweaver.sandbox.qa_runner.core.factory import resolve_runner

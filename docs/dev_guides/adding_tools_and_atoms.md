@@ -21,13 +21,13 @@ Flow Engine ──▶ Atom ──▶ Executor (Raw I/O)
 
 ### Component: Executor (`commons/`)
 The **Executor** is the raw I/O controller (e.g., `FileSystemExecutor`, `GitExecutor`).
-- **Location:** `src/specweaver/loom/commons/<domain>/`
+- **Location:** `src/specweaver/sandbox/<domain>/`
 - **Role:** Handles subprocess execution, transport-level security (symlink blocking, binary parsing, path traversal protection).
 - **Rule:** Never imports from `tools/` or `atoms/`.
 
 ### Component: Tool (`tools/`)
 The **Tool** wraps the intent and strictly evaluates the Agent's credentials.
-- **Location:** `src/specweaver/loom/tools/<domain>/tool.py`
+- **Location:** `src/specweaver/sandbox/<domain>/tool.py`
 - **Role:** Defines operations based on Intent. Enforces `ROLE_INTENTS` mapping (e.g., stopping a Reviewer from running compilations). Handles contextual `FolderGrant` boundaries.
 
 ### Component: Interface (`tools/interfaces.py` & `dispatcher.py`)
@@ -38,7 +38,7 @@ The **Interface** strips unauthorized commands out entirely prior to exposure.
 
 ### Component: Atom (`atoms/`)
 The **Atom** provides unrestricted operations reserved solely for the SpecWeaver flow engine.
-- **Location:** `src/specweaver/loom/atoms/<domain>/`
+- **Location:** `src/specweaver/sandbox/<domain>/`
 - **Role:** The engine is trusted, so atoms bypass `ROLE_INTENTS` and `FolderGrant` checking to directly hit the `Executor`.
 
 ---
@@ -48,23 +48,23 @@ The **Atom** provides unrestricted operations reserved solely for the SpecWeaver
 To add a new capability string (like `SearchWeb`):
 
 ### A. Construct the Base Executor
-1. Build `src/specweaver/loom/commons/web/executor.py`.
+1. Build `src/specweaver/sandbox/web/executor.py`.
 2. Implement your native logic via API boundaries or strictly controlled subprocess wrappers. 
 
 ### B. Define the Tool & Its Interfaces
-1. Build `src/specweaver/loom/tools/web/tool.py`.
+1. Build `src/specweaver/sandbox/web/tool.py`.
 2. Encapsulate your capabilities behind Intents. 
 3. Inject the `ToolDefinition` payload that will be sent to the LLM (OpenAI/Anthropic compatible schema) within `definitions.py`.
 4. In `interfaces.py`, define Role facades (e.g., `ReviewerWebInterface` vs `ImplementerWebInterface`).
 
 ### C. Construct the Atom (For the Engine)
-1. Build `src/specweaver/loom/atoms/web/atom.py`.
+1. Build `src/specweaver/sandbox/web/atom.py`.
 2. Provide a clean `run(context)` method for the internal Flow Engine to use if it needs autonomous, non-LLM invocation of the capability.
 3. **The Atom calls the Executor directly; it NEVER imports the Tool.** (However, an Untrusted Tool *can* instantiate an Atom instance to reuse its operations, provided the Tool validates Role constraints first).
 
 ### D. Wire It Up
 1. Connect the newly defined `ToolDefinition` payload into the LLM context injector.
-2. Hook the Intent strings heavily into `flow/_review` or `flow/_generation` via the central `loom/dispatcher.py` to ensure routing natively triggers the tool functions.
+2. Hook the Intent strings heavily into `flow/_review` or `flow/_generation` via the central `sandbox/dispatcher.py` to ensure routing natively triggers the tool functions.
 
 ---
 

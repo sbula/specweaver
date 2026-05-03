@@ -26,14 +26,14 @@ def test_python_tool_integration(python_project: Path) -> None:
     res_compile = tool.run_compiler(target="tests/")
     assert res_compile.status == "success", res_compile.message
 
-    res_tests = tool.run_tests(target="tests/unit/loom/commons/qa_runner/python/")
+    res_tests = tool.run_tests(target="tests/unit/sandbox/qa_runner/python/")
     assert res_tests.status == "success", res_tests.message
 
-    res_lint = tool.run_linter(target="tests/unit/loom/commons/qa_runner/python/")
+    res_lint = tool.run_linter(target="tests/unit/sandbox/qa_runner/python/")
     assert res_lint.status in ["success", "error"]
 
     res_complex = tool.run_complexity(
-        target="tests/unit/loom/commons/qa_runner/python/", max_complexity=10
+        target="tests/unit/sandbox/qa_runner/python/", max_complexity=10
     )
     assert res_complex.status in ["success", "error"]
 

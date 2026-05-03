@@ -12,8 +12,8 @@ A common misunderstanding when building new features is assuming that if a Pure 
 
 But `Loom` has a second, equally important purpose: **It is the centralized Side-Effect Sandbox for the entire SpecWeaver Engine.**
 
-- **Pure Logic Layers** (`validation`, `graph`): Are explicitly classified as `archetype: pure-logic`. They are mathematically forbidden from importing anything that touches the disk, network, or external C-bindings. They `forbid: loom/*`.
-- **Loom Atoms** (`loom/atoms/`): Are unrestricted, trusted I/O executors. They are allowed to read files, run `pytest`, and execute `tree-sitter`.
+- **Pure Logic Layers** (`validation`, `graph`): Are explicitly classified as `archetype: pure-logic`. They are mathematically forbidden from importing anything that touches the disk, network, or external C-bindings. They `forbid: sandbox/*`.
+- **Loom Atoms** (`sandbox/`): Are unrestricted, trusted I/O executors. They are allowed to read files, run `pytest`, and execute `tree-sitter`.
 
 ## 2. Inversion of Control (Dependency Injection)
 
@@ -42,7 +42,7 @@ If you are adding a new language (e.g., Go, C++):
 - Do NOT put it in `standards/languages/` just because `standards` uses it later.
 - Do NOT create a top-level `src/specweaver/languages/` because it would mix Pure Logic with I/O.
 
-### A. The Language Commons (`loom/commons/language/`)
+### A. The Language Commons (`sandbox/language/`)
 Houses external, stateless sub-process executions since execution implies side-effects.
 * `runner.py`: Handles subprocess test I/O (e.g., `cargo test`, `pytest`).
 

@@ -7,7 +7,7 @@ SpecWeaver provides role-restricted tools for LLM agents, inspired by the `flowM
 Grant-based file access for agents. Each agent receives a set of `FolderGrant` objects that define which directories it can read, write, or execute — with path traversal prevention built in.
 
 ```python
-from specweaver.loom.tools.filesystem.tool import FileSystemTool, FolderGrant, AccessMode
+from specweaver.sandbox.filesystem.tool import FileSystemTool, FolderGrant, AccessMode
 
 grants = [FolderGrant("src/billing", AccessMode.WRITE, recursive=True)]
 tool = FileSystemTool(executor=executor, role="implementer", grants=grants)
@@ -35,7 +35,7 @@ tool.read_file("src/billing/../../etc/passwd")  # ❌ path traversal blocked
 High-level git operations that agents call by intent, not raw commands. Each intent maps to a safe sequence of git commands executed on the target project directory (never SpecWeaver's own repo).
 
 ```python
-from specweaver.loom.tools.git.interfaces import create_git_interface
+from specweaver.sandbox.git.interfaces import create_git_interface
 
 # Agent gets only the methods its role allows
 git = create_git_interface("implementer", project_path)
@@ -56,7 +56,7 @@ git.history()                              # ❌ AttributeError — not on this 
 Flow-level git operations for the Engine. Unlike GitTool (agent-facing, role-restricted), GitAtom handles orchestrator-driven tasks using `EngineGitExecutor` (no blocked commands).
 
 ```python
-from specweaver.loom.atoms.git import GitAtom
+from specweaver.sandbox.git import GitAtom
 
 atom = GitAtom(cwd=project_path)
 result = atom.run({"intent": "checkpoint", "message": "flow step complete"})
