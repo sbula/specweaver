@@ -92,11 +92,25 @@ No external blueprint references are strictly required, though this follows the 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Universal Logging Reform | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Unified CLI Runner | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Unified CLI Runner | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Logging Rollout | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+
+> [!WARNING]
+> **Path Staleness — SF-3 Plan Reconciliation Required**
+> The SF-3 implementation plan (`D-FLOW-04_sf3_implementation_plan.md`) was written on 2026-03-29.
+> Since then, the monolith decoupling migration (2026-05-01/02) moved all module paths:
+> - `specweaver/config` → `specweaver/core/config`
+> - `specweaver/flow` → `specweaver/core/flow`
+> - `specweaver/llm` → `specweaver/infrastructure/llm`
+> - `specweaver/project` → `specweaver/workspace/project`
+> - `specweaver/validation` → `specweaver/assurance/validation`
+> - `specweaver/cli` → `specweaver/interfaces/cli`
+>
+> **Before starting `/dev` on SF-3**, run a path reconciliation pass to update all file references
+> in the implementation plan. The module *names* and *content* are still correct — only the paths changed.
 
 ## Session Handoff
 
-**Current status**: SF-1 Committed. SF-2 Impl Plan approved, Dev pending. SF-3 Impl Plan APPROVED.
-**Next step**: Run `/dev docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf3_implementation_plan.md` to implement SF-3.
+**Current status**: SF-1 ✅ Committed. SF-2 ✅ Committed (2026-03-29). SF-3 Impl Plan APPROVED — Dev pending.
+**Next step**: Path reconciliation on SF-3 plan, then run `/dev` for SF-3.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
