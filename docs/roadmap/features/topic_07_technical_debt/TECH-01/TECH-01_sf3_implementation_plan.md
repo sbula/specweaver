@@ -5,7 +5,7 @@
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-3
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf3_implementation_plan.md
-- **Status**: DRAFT
+- **Status**: APPROVED
 
 ## Goal
 
@@ -23,6 +23,16 @@ Reorganize `core/loom/` from **Package-by-Layer** (`atoms/`, `tools/`, `commons/
 | AD-3 | NFR-6 (`BaseTool` metaclass) deferred | Out of scope — add to tech debt backlog as TECH-01b. |
 | AD-4 | Rename `tools/{domain}/interfaces.py` → `facades.py` | Avoids `interfaces.interfaces` double-name collision. |
 | AD-5 | Historical docs NOT updated | Completed plans for other features document decisions against the old layout. Only active reference docs are updated. |
+
+## Design Requirements Compliance Matrix
+
+| Requirement | Addressed By | Notes |
+|-------------|-------------|-------|
+| **FR-6** Group atoms/tools/commons into feature directories | Target Layout + hex structure | Each domain colocates all layers |
+| **NFR-1** Zero Regression | Verification Plan (full test suite) | Zero assertion changes |
+| **NFR-2** Boundary Enforcement (context.yaml + tach.toml) | Per-domain context.yaml + tach.toml rewrite | See exhaustive context.yaml rewrite section |
+| **NFR-6** Meta-Class Registry (BaseTool) | AD-3: Deferred to TECH-01b | Out of FR-6 scope |
+| **AD-2** Rename loom → sandbox/ | AD-1: Full rename | 546 references rewritten |
 
 ## Target Layout
 
@@ -266,13 +276,74 @@ Create the hex directory structure, then move every file:
 > [!CAUTION]
 > **45+ `@patch()` string literals** exist across test files. These are NOT Python imports — a simple import-based find-replace will miss them. Search for ALL occurrences of the string `specweaver.core.loom` in `.py` files.
 
-**YAML files** (`context.yaml`): Replace references using slash notation:
-- `specweaver/loom/tools/*` → `specweaver/sandbox/*/interfaces`
-- `specweaver/loom/atoms/*` → `specweaver/sandbox/*/core`
-- `specweaver/loom/commons/*` → `specweaver/sandbox/*/core`
-- `specweaver/loom` → `specweaver/sandbox`
+> [!WARNING]
+> **Files outside the loom test directories also import from `core.loom`** and need import rewrites (but NOT directory moves):
+> - `tests/e2e/capabilities/assurance/test_architecture_pipeline.py`
+> - `tests/e2e/capabilities/assurance/test_contract_drift_e2e.py`
+> - `tests/e2e/capabilities/assurance/test_mcp_flow_e2e.py`
+> - `tests/e2e/capabilities/infrastructure/test_ast_tool_injection.py`
+> - `tests/e2e/capabilities/infrastructure/test_testrunner_tools_e2e.py`
+> - `tests/e2e/flow/test_cpp_flow.py`
+> - `tests/unit/core/flow/handlers/test_handlers.py` (7 `@patch()` refs)
+> - `tests/unit/assurance/validation/rules/code/test_code_rules_execution.py` (11 `@patch()` refs)
+> - `tests/integration/core/flow/engine/test_flow_lineage_integration.py` (2 `@patch()` refs)
 
-Affected `context.yaml` files outside sandbox: `workspace/context.yaml`, `graph/context.yaml`, all `core/flow/` context files.
+**YAML files** (`context.yaml`): Exhaustive list of external context.yaml files requiring updates:
+
+> [!CAUTION]
+> `flow/context.yaml` uses SPECIFIC domain paths in `consumes` (e.g., `specweaver/loom/atoms/git`) — NOT just wildcard `loom/*`. These must be rewritten to the correct hex sub-package. Do NOT blindly replace `atoms` → `core` without checking the mapping table.
+
+**`core/flow/context.yaml`** — MOST COMPLEX:
+```yaml
+# Old:
+consumes:
+  - specweaver/loom/atoms/git
+  - specweaver/loom/atoms/qa_runner
+  - specweaver/loom/atoms/code_structure
+  - specweaver/loom/atoms/mcp
+  - specweaver/loom/dispatcher
+  - specweaver/loom/security
+forbids:
+  - specweaver/loom/tools/*
+  - specweaver/loom/commons/*
+
+# New:
+consumes:
+  - specweaver/sandbox/git/core
+  - specweaver/sandbox/qa_runner/core
+  - specweaver/sandbox/code_structure/core
+  - specweaver/sandbox/mcp/core
+  - specweaver/sandbox/dispatcher
+  - specweaver/sandbox/security
+forbids:
+  - specweaver/sandbox/*/interfaces  # Flow must not access agent-facing tools
+```
+
+**`src/specweaver/context.yaml`** (root):
+- `exposes: loom` → `exposes: sandbox`
+
+**`graph/context.yaml`** (uses dotted notation):
+- `allowed_imports: specweaver.core.loom` → `allowed_imports: specweaver.sandbox`
+
+**`workspace/context.yaml`** (uses dotted notation):
+- `allowed: src.specweaver.core.loom` → `allowed: src.specweaver.sandbox`
+
+**14 files with `forbids: specweaver/loom/*`** (bulk replace `specweaver/loom/*` → `specweaver/sandbox/*`):
+- `workspace/project/context.yaml`
+- `workspace/context/context.yaml`
+- `workspace/ast/parsers/context.yaml`
+- `workspace/ast/adapters/context.yaml`
+- `workflows/review/context.yaml`
+- `workflows/planning/context.yaml`
+- `workflows/drafting/context.yaml`
+- `interfaces/cli/context.yaml`
+- `interfaces/api/context.yaml`
+- `infrastructure/llm/context.yaml`
+- `infrastructure/llm/mention_scanner/context.yaml`
+- `infrastructure/llm/adapters/context.yaml`
+- `core/loom/atoms/context.yaml` (deleted with old tree)
+- `core/loom/tools/context.yaml` (deleted with old tree)
+- `core/loom/commons/context.yaml` (deleted with old tree)
 
 **tach.toml**: Replace module entry AND rewrite the `[[interfaces]]` expose list:
 
