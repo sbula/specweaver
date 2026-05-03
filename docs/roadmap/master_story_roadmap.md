@@ -132,10 +132,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-04-SUB:** Sub-Story Integration defined in [US-04_integration.md](integrations/US-04_integration.md)
         *   `[ ]` **B-FLOW-03:** Token-Burn Circuit Breakers (EDoS Prevention)
-    *   🟢 **Parallel Multi-Spec Execution:**
+    *   🟡 **Parallel Multi-Spec Execution:**
         *   `[ ]` **INT-US-04-SUB:** Sub-Story Integration defined in [US-04_integration.md](integrations/US-04_integration.md)
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
-    *   🟢 **Context Mention Highlighting:**
+    *   🟡 **Context Mention Highlighting:**
         *   `[ ]` **INT-US-04-SUB:** Sub-Story Integration defined in [US-04_integration.md](integrations/US-04_integration.md)
         *   `✅` **C-SENS-01:** Auto Spec-Mention Detection
     *   🟡 **Advanced Routing & Conditional Flows:**
@@ -166,10 +166,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **API Contract Understanding:**
         *   `[ ]` **INT-US-05-SUB:** Sub-Story Integration defined in [US-05_integration.md](integrations/US-05_integration.md)
         *   `[ ]` **C-SENS-07:** Polyglot Expansion (TypeSpec)
-    *   🟢 **Intelligent Code Exclusions:**
+    *   🟡 **Intelligent Code Exclusions:**
         *   `[ ]` **INT-US-05-SUB:** Sub-Story Integration defined in [US-05_integration.md](integrations/US-05_integration.md)
         *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
-    *   🟢 **Framework Native Understanding:**
+    *   🟡 **Framework Native Understanding:**
         *   `[ ]` **INT-US-05-SUB:** Sub-Story Integration defined in [US-05_integration.md](integrations/US-05_integration.md)
         *   `✅` **B-INTL-02:** Macro Evaluator (Rust/Kotlin plugin expansion)
     *   🔴 **Mathematical Speed & Security (Rust):**
@@ -238,7 +238,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **E-EXEC-01:** Standard Local Execution
     *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Containerized Isolation:**
+    *   🟡 **Containerized Isolation:**
         *   `[ ]` **INT-US-09-SUB:** Sub-Story Integration defined in [US-09_integration.md](integrations/US-09_integration.md)
         *   `✅` **D-EXEC-01:** Podman/Docker Integration
         *   `[ ]` **B-EXEC-01:** Containerized deployment (Podman/Docker)
@@ -466,7 +466,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-INTL-02:** Feature Decomposition
     *   `✅` **D-INTL-03:** Explicit Plan Phase
 *   **Sub-Story Add-Ons:**
-    *   🟢 **Recursive Planning:**
+    *   🟡 **Recursive Planning:**
         *   `[ ]` **INT-US-21-SUB:** Sub-Story Integration defined in [US-21_integration.md](integrations/US-21_integration.md)
         *   `✅` **C-INTL-01:** Iterative Decomposition
 
