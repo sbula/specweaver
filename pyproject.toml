@@ -48,6 +48,7 @@ sw = "specweaver.interfaces.cli.main:app"
 openai = ["openai>=1.5"]
 anthropic = ["anthropic>=0.25"]
 mistral = ["mistralai>=1.0"]
+qwen = ["openai>=1.5"]
 all-llm = ["openai>=1.5", "anthropic>=0.25", "mistralai>=1.0"]
 serve = [
     "fastapi>=0.115",
@@ -64,6 +65,7 @@ dev = [
     "mypy>=1.15",
     "httpx>=0.28",
     "tach",
+    "respx>=0.21.1",
 ]
 
 [build-system]
@@ -123,4 +125,5 @@ mypy_path = "src"
 dev = [
     "types-networkx>=3.6.1.20260408",
     "types-pyyaml>=6.0.12.20260408",
+    "respx>=0.21.1",
 ]

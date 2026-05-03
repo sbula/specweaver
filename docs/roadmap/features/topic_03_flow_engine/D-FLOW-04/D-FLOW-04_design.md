@@ -12,6 +12,12 @@ Feature 3.13a adds a unified execution flow to single-shot CLI commands (`sw rev
 ## Research Findings
 
 ### Codebase Patterns
+
+> [!WARNING]
+> **[HISTORICAL CONTEXT]** The research findings below describe the codebase state BEFORE SF-1 and SF-2 were implemented.
+> SF-1 and SF-2 are COMMITTED. The ONLY remaining work is SF-3 (Logging Rollout).
+> Do NOT re-implement or modify any PipelineRunner, CLI command routing, or logging infrastructure code.
+
 Existing CLI commands such as `sw review` manually instantiate their backing domain objects (e.g., `Reviewer`) and manually trigger telemetry flushing. The `PipelineRunner` successfully orchestrates multi-step pipelines and robustly manages telemetry, database contexts, and gates automatically. Reusing `PipelineRunner` for single-step programmatic definitions unifies these paths without creating new architectural patterns. The existing `logging.py` uses standard library Python logging but defaults the console to a plain `StreamHandler` rather than integrating with `Rich`. 
 
 ### External Tools
@@ -105,6 +111,15 @@ No external blueprint references are strictly required, though this follows the 
 > - `specweaver/project` → `specweaver/workspace/project`
 > - `specweaver/validation` → `specweaver/assurance/validation`
 > - `specweaver/cli` → `specweaver/interfaces/cli`
+> - `specweaver/context` → `specweaver/workspace/context`
+> - `specweaver/standards` → `specweaver/assurance/standards`
+> - `specweaver/graph` → `specweaver/graph` (partially moved)
+> - `specweaver/planning` → `specweaver/workflows/planning`
+> - `specweaver/review` → `specweaver/workflows/review`
+> - `specweaver/drafting` → `specweaver/workflows/drafting`
+> - `specweaver/implementation` → `specweaver/workflows/implementation`
+> - `specweaver/loom` → `specweaver/sandbox`
+> - `specweaver/api` → `specweaver/interfaces/api`
 >
 > **Before starting `/dev` on SF-3**, run a path reconciliation pass to update all file references
 > in the implementation plan. The module *names* and *content* are still correct — only the paths changed.

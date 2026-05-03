@@ -21,6 +21,13 @@ Get started in seconds. No complex setups required.
 # 1. Install SpecWeaver
 pip install specweaver
 
+# Want to use a different LLM provider? Install the optional SDKs:
+# pip install specweaver[openai]      # For OpenAI or Qwen
+# pip install specweaver[anthropic]   # For Anthropic Claude
+# pip install specweaver[mistral]     # For Mistral
+# pip install specweaver[all-llm]     # To install all provider SDKs
+
+
 # 2. Initialize your workspace
 sw init my-app --path .
 

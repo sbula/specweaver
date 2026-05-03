@@ -520,7 +520,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ### 🟢 US-25: Compliance & Constitution Governance
 **Benefit:** *I can enforce project-wide rules (Constitutions) and domain-specific profiles (e.g., 'Web App' vs 'ML Model') that dynamically override agent behavior.*
 *   **Core Required (MVS):**
-    *   `[x]` **INT-US-25:** Base Integration Contract defined in [US-25_integration.md](integrations/US-25_integration.md)
+    *   `✅` **INT-US-25:** Base Integration Contract defined in [US-25_integration.md](integrations/US-25_integration.md)
     *   `✅` **C-VAL-01:** Constitution Artifact
     *   `✅` **C-VAL-02:** Domain Profiles
 *   **Sub-Story Add-Ons:**

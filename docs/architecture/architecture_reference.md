@@ -368,6 +368,7 @@ The system employs a multi-provider auto-discovery registry for its underlying L
 - **Supported Providers**: Natively supports `gemini`, `openai`, `anthropic`, `mistral`, and `qwen`.
 - **Factory Encapsulation**: `src/specweaver/llm/factory.py` reads the project's linked database profile to instantiate the configured adapter dynamically. If no provider is explicitly set, the factory cleanly falls back to `gemini`.
 - **Telemetry Transparency**: The factory automatically wraps any instantiated adapter inside a `TelemetryCollector` proxy to provide unified token usage, cost tracking, and streaming telemetry, totally invisible to the underlying adapter logic.
+- **Cost Aggregation**: The registry dynamically aggregates `default_costs` mappings from all discovered adapters into a unified tier-sheet, ensuring new providers automatically inject their pricing rules without central hardcoding.
 
 ## LLM Function-Calling Dispatch
 

@@ -1,6 +1,6 @@
 # User Handbook 1: Installation & Setup
 
-SpecWeaver requires Python 3.11+ and the fast package manager `uv`. It interacts directly with LLMs (Gemini, OpenAI, Anthropic) via API keys provided in your environment.
+SpecWeaver requires Python 3.11+ and the fast package manager `uv`. It interacts directly with LLMs (Gemini, OpenAI, Anthropic, Mistral, Qwen) via API keys provided in your environment.
 
 ## 1. Prerequisites
 - [uv](https://docs.astral.sh/uv/) installed globally.
@@ -14,14 +14,25 @@ git clone https://github.com/sbula/specweaver.git
 cd specweaver
 uv sync --all-extras
 ```
+Or via pip:
+```bash
+pip install specweaver
+# Optional: install specific providers
+# pip install specweaver[openai,anthropic,mistral,qwen]
+```
 
 ## 3. Providing Credentials
 SpecWeaver seamlessly routes tasks out to external LLMs. Ensure your CLI has access to the appropriate credentials.
 ```powershell
 # Windows PowerShell
-$env:GEMINI_API_KEY = "your-api-key-here"
-$env:OPENAI_API_KEY = "optional-openai-key"
+$env:GEMINI_API_KEY = "your-gemini-key"
+$env:OPENAI_API_KEY = "your-openai-key"
+$env:ANTHROPIC_API_KEY = "your-anthropic-key"
+$env:MISTRAL_API_KEY = "your-mistral-key"
+$env:QWEN_API_KEY = "your-qwen-key"
 ```
+
+You can change the active provider dynamically by passing the `--provider` flag or setting `llm.provider` in your `specweaver.toml` configuration file.
 
 ## 4. Initializing your First Project
 SpecWeaver relies on an embedded SQLite database to mathematically track your artifact lineages, configurations, and contexts. When you start working on a project, you must register it.

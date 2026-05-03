@@ -2173,6 +2173,18 @@ wheels = [
 ]
 
 [[package]]
+name = "respx"
+version = "0.23.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/43/98/4e55c9c486404ec12373708d015ebce157966965a5ebe7f28ff2c784d41b/respx-0.23.1.tar.gz", hash = "sha256:242dcc6ce6b5b9bf621f5870c82a63997e8e82bc7c947f9ffe272b8f3dd5a780", size = 29243, upload-time = "2026-04-08T14:37:16.008Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1d/4a/221da6ca167db45693d8d26c7dc79ccfc978a440251bf6721c9aaf251ac0/respx-0.23.1-py2.py3-none-any.whl", hash = "sha256:b18004b029935384bccfa6d7d9d74b4ec9af73a081cc28600fffc0447f4b8c1a", size = 25557, upload-time = "2026-04-08T14:37:14.613Z" },
+]
+
+[[package]]
 name = "rich"
 version = "14.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2334,6 +2346,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "respx" },
     { name = "ruff" },
     { name = "tach" },
 ]
@@ -2341,6 +2354,9 @@ mistral = [
     { name = "mistralai" },
 ]
 openai = [
+    { name = "openai" },
+]
+qwen = [
     { name = "openai" },
 ]
 serve = [
@@ -2353,6 +2369,7 @@ serve = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "respx" },
     { name = "types-networkx" },
     { name = "types-pyyaml" },
 ]
@@ -2376,6 +2393,7 @@ requires-dist = [
     { name = "networkx", specifier = "==3.6.1" },
     { name = "openai", marker = "extra == 'all-llm'", specifier = ">=1.5" },
     { name = "openai", marker = "extra == 'openai'", specifier = ">=1.5" },
+    { name = "openai", marker = "extra == 'qwen'", specifier = ">=1.5" },
     { name = "orjson", specifier = ">=3.9.0" },
     { name = "pathspec", specifier = ">=0.12.0" },
     { name = "proto-schema-parser", specifier = ">=0.5.0" },
@@ -2386,6 +2404,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "python-multipart", marker = "extra == 'serve'", specifier = ">=0.0.9" },
+    { name = "respx", marker = "extra == 'dev'", specifier = ">=0.21.1" },
     { name = "ruamel-yaml", specifier = ">=0.18" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11" },
     { name = "sarif-tools", specifier = ">=1.0.0" },
@@ -2407,10 +2426,11 @@ requires-dist = [
     { name = "typer", extras = ["all"], specifier = ">=0.21" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'serve'", specifier = ">=0.34" },
 ]
-provides-extras = ["openai", "anthropic", "mistral", "all-llm", "serve", "dev"]
+provides-extras = ["openai", "anthropic", "mistral", "qwen", "all-llm", "serve", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "respx", specifier = ">=0.21.1" },
     { name = "types-networkx", specifier = ">=3.6.1.20260408" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
 ]
