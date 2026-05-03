@@ -26,10 +26,13 @@ if TYPE_CHECKING:
 try:
     from ruamel.yaml.error import YAMLError
 except ImportError:
+
     class YAMLError(Exception):  # type: ignore
         pass
 
+
 logger = logging.getLogger(__name__)
+
 
 def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
     import asyncio
@@ -46,6 +49,7 @@ def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
         return loop.run_until_complete(coro)
 
     return anyio.run(lambda: coro)
+
 
 def _load_toml_standards(root_path: str | None) -> StandardsSettings:
     import tomllib
@@ -69,8 +73,6 @@ def load_settings(
     db: Database, project_name: str, *, llm_role: str = "review"
 ) -> SpecWeaverSettings:
     logger.debug("load_settings called for project=%s, role=%s", project_name, llm_role)
-
-
 
     import typing
 
@@ -183,6 +185,7 @@ def migrate_legacy_config(db: Database, project_name: str, project_path: str) ->
     from pathlib import Path
 
     from ruamel.yaml import YAML
+
     logger.debug("migrate_legacy_config called for project=%s, path=%s", project_name, project_path)
     config_file = Path(project_path) / ".specweaver" / "config.yaml"
     if not config_file.is_file():
@@ -235,8 +238,6 @@ def migrate_legacy_config(db: Database, project_name: str, project_path: str) ->
 
             for role in ("review", "draft", "search"):
                 await repo.link_project_profile(project_name, role, profile_id)
-
-
 
     _sync_or_async(_check_and_migrate())
     logger.info("Migrated legacy config for project '%s'", project_name)

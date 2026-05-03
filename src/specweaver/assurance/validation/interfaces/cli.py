@@ -232,7 +232,6 @@ def check(
         )
         raise typer.Exit(code=1) from None
 
-
     _core.get_db()
     # Ensure project resolution handles implicit CWD and active project logic
     try:
@@ -314,9 +313,7 @@ def list_rules(
 
         _core.console.print(f"\n  [dim]{len(resolved.steps)} rules total[/dim]")
 
+
 from specweaver.assurance.validation.interfaces.cli_drift import drift_app  # noqa: E402
 
 validation_cli.add_typer(drift_app, name="drift")
-
-
-

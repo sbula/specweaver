@@ -7,6 +7,8 @@ This centralizes the physical instantiation of CodeStructureInterfaces so orches
 (like the Flow engine) can inject them without violating architectural boundaries.
 """
 
+import logging
+
 from specweaver.workspace.ast.parsers.c.codestructure import CCodeStructure
 from specweaver.workspace.ast.parsers.cpp.codestructure import CppCodeStructure
 from specweaver.workspace.ast.parsers.go.codestructure import GoCodeStructure
@@ -19,9 +21,12 @@ from specweaver.workspace.ast.parsers.rust.codestructure import RustCodeStructur
 from specweaver.workspace.ast.parsers.sql.codestructure import SqlCodeStructure
 from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
 
+logger = logging.getLogger(__name__)
+
 
 def get_default_parsers() -> dict[tuple[str, ...], CodeStructureInterface]:
     """Return the registry mapping of file extensions to their AST parsing implementations."""
+    logger.debug("get_default_parsers called: initializing parser registry")
     return {
         (".c", ".h"): CCodeStructure(),
         (".cpp", ".hpp", ".cc", ".cxx"): CppCodeStructure(),

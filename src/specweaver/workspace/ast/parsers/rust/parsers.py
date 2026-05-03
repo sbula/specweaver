@@ -3,13 +3,17 @@
 
 """Rust test runner parsers for structural SARIF mappings."""
 
+import logging
 from typing import Any
 
 from specweaver.sandbox.qa_runner.core.interface import ComplexityViolation
 
+logger = logging.getLogger(__name__)
+
 
 def parse_clippy_complexity(data: dict[str, Any], max_complexity: int) -> list[ComplexityViolation]:
     """Parse Clippy complexities strictly from structural SARIF properties without Regex."""
+    logger.debug("parse_clippy_complexity called with max_complexity=%d", max_complexity)
     violations = []
 
     for run in data.get("runs", []):
@@ -29,6 +33,9 @@ def parse_clippy_complexity(data: dict[str, Any], max_complexity: int) -> list[C
                 comp_val = int(props["CyclomaticComplexity"])
 
             if comp_val is None:
+                logger.error(
+                    "SARIF property 'complexity' or 'CyclomaticComplexity' missing in complexity violation node"
+                )
                 raise ValueError(
                     "HARD FAIL: SARIF property 'complexity' or 'CyclomaticComplexity' missing in complexity violation node. Missing clippy property mapping?"
                 )

@@ -135,12 +135,12 @@ class CQRSQueueManager:
                         )
                         dlx_logger.addHandler(handler)
                     except Exception as dlx_setup_e:
-                        logging.critical(f"Failed to setup DLX RotatingFileHandler: {dlx_setup_e}")
+                        logging.critical("Failed to setup DLX RotatingFileHandler: %s", dlx_setup_e)
 
                 try:
-                    dlx_logger.error(f"Error: {e}")
+                    dlx_logger.error("Error: %s", e)
                 except Exception as dlx_e:
-                    logging.critical(f"DLX write failed: {dlx_e}")
+                    logging.critical("DLX write failed: %s", dlx_e)
             finally:
                 self._queue.task_done()
 

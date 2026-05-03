@@ -38,7 +38,9 @@ def test_lineage_tag_and_tree_e2e_happy_path(tmp_path, isolated_db):
             mock_lineage_get_db.return_value = isolated_db
 
         # 1. Tag the file
-        result_tag = runner.invoke(app, ["lineage", "tag", str(target_file), "--author", "e2e-robot"])
+        result_tag = runner.invoke(
+            app, ["lineage", "tag", str(target_file), "--author", "e2e-robot"]
+        )
         print(f"OUTPUT: {result_tag.output}")
         print(f"EXCEPTION: {result_tag.exception}")
         assert result_tag.exit_code == 0

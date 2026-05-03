@@ -178,9 +178,7 @@ class TestFeatureCreationFullCycle:
             mock_hitl_cls.return_value = mock_hitl
 
             mock_llm = _make_llm([])
-            with patch(
-                "specweaver.infrastructure.llm.factory.create_llm_adapter"
-            ) as mock_req:
+            with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
                 mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
                 result = runner.invoke(
                     app,

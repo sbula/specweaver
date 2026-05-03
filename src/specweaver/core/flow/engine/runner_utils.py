@@ -132,7 +132,6 @@ def verify_vault_security(context: RunContext) -> None:
             )
 
 
-
 async def execute_in_sandbox(
     runner: Any, handler: Any, step_def: Any, run: Any, logger: logging.Logger
 ) -> StepResult:

@@ -3,12 +3,15 @@
 
 """Tree-sitter CodeStructureInterface implementation for C++."""
 
+import logging
 import typing
 
 import tree_sitter_cpp
 from tree_sitter import Language, Parser, Query, QueryCursor
 
 from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
+
+logger = logging.getLogger(__name__)
 
 
 class CppCodeStructure(BaseTreeSitterParser):
@@ -243,11 +246,13 @@ class CppCodeStructure(BaseTreeSitterParser):
         return code_bytes[:start_byte] + indented_code.encode("utf-8") + code_bytes[end_byte:]
 
     def extract_framework_markers(self, code: str) -> dict[str, dict[str, list[str]]]:
+        logger.debug("extract_framework_markers called for C++ parser (returning empty)")
         return {}
 
     def extract_imports(self, code: str) -> list[str]:
         if not code.strip():
             return []
+        logger.debug("extract_imports called for C++ parser")
         tree = self.parser.parse(code.encode("utf-8"))
         query = Query(self.language, "(preproc_include) @inc")
         cursor = QueryCursor(query)
@@ -272,6 +277,7 @@ class CppCodeStructure(BaseTreeSitterParser):
         return ["build/", "out/", "bin/", "obj/", "cmake-build-*/"]
 
     def add_symbol(self, code: str, target_parent: str | None, new_code: str) -> str:
+        logger.debug("add_symbol called for target_parent=%s", target_parent)
         if not target_parent:
             return code + "\n\n" + new_code
 
@@ -281,12 +287,14 @@ class CppCodeStructure(BaseTreeSitterParser):
         if not parent_node:
             from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 
+            logger.error("Target parent '%s' not found during add_symbol", target_parent)
             raise CodeStructureError(f"Target parent '{target_parent}' not found.")
 
         target_block = self._find_target_block(parent_node)
         if not target_block:
             from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 
+            logger.error("Body block for symbol '%s' not found during add_symbol", target_parent)
             raise CodeStructureError(f"Body block for symbol '{target_parent}' not found.")
 
         end_byte = typing.cast("int", target_block.end_byte) - 1

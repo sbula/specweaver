@@ -4,9 +4,9 @@
 """End-to-End user journey test for multi-provider CLI interaction."""
 
 import os
+import typing
 from pathlib import Path
 from typing import Any
-import typing
 from unittest.mock import patch
 
 import pytest
@@ -34,20 +34,18 @@ def mock_openai_response() -> typing.Generator[Any, None, None]:
                     "object": "chat.completion",
                     "created": 1677652288,
                     "model": "gpt-5.4",
-                    "choices": [{
-                        "index": 0,
-                        "message": {
-                            "role": "assistant",
-                            "content": "This is a drafted spec.",
-                        },
-                        "finish_reason": "stop"
-                    }],
-                    "usage": {
-                        "prompt_tokens": 50,
-                        "completion_tokens": 100,
-                        "total_tokens": 150
-                    }
-                }
+                    "choices": [
+                        {
+                            "index": 0,
+                            "message": {
+                                "role": "assistant",
+                                "content": "This is a drafted spec.",
+                            },
+                            "finish_reason": "stop",
+                        }
+                    ],
+                    "usage": {"prompt_tokens": 50, "completion_tokens": 100, "total_tokens": 150},
+                },
             )
         )
         yield route
@@ -69,7 +67,9 @@ def test_project(tmp_path: Path) -> typing.Generator[Path, None, None]:
     os.environ.pop("OPENAI_API_KEY", None)
 
 
-def test_openai_draft_telemetry_journey(test_project: Path, mock_openai_response: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_openai_draft_telemetry_journey(
+    test_project: Path, mock_openai_response: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     E2E User Journey: provider=openai -> sw draft -> telemetry shows openai.
     """
@@ -82,9 +82,10 @@ def test_openai_draft_telemetry_journey(test_project: Path, mock_openai_response
 
     # 3. Run the draft command
     # Mocking the interactive input
-    with patch("rich.prompt.Confirm.ask", return_value=True), \
-         patch("rich.prompt.Prompt.ask", return_value="Draft looks good"):
-
+    with (
+        patch("rich.prompt.Confirm.ask", return_value=True),
+        patch("rich.prompt.Prompt.ask", return_value="Draft looks good"),
+    ):
         # 'sw draft TestComponent' interacts with the flow engine.
         result = runner.invoke(app, ["draft", "TestComponent", "--project", str(test_project)])
         print(f"draft exit code: {result.exit_code}")
@@ -93,16 +94,21 @@ def test_openai_draft_telemetry_journey(test_project: Path, mock_openai_response
             print(f"draft exception: {result.exception}")
 
     # 4. Verify HTTP layer was called
-    assert mock_openai_response.called, f"The OpenAI API was never called. Exit: {result.exit_code}, Output: {result.stdout}"
+    assert mock_openai_response.called, (
+        f"The OpenAI API was never called. Exit: {result.exit_code}, Output: {result.stdout}"
+    )
 
     # 5. Verify Telemetry was recorded with provider="openai"
     import sqlite3
+
     db_path = test_project / ".specweaver-test" / "specweaver.db"
     assert db_path.exists(), f"Database not found at {db_path}"
 
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT provider, model, total_tokens FROM llm_usage_log ORDER BY id DESC LIMIT 1")
+        cursor.execute(
+            "SELECT provider, model, total_tokens FROM llm_usage_log ORDER BY id DESC LIMIT 1"
+        )
         record = cursor.fetchone()
 
     assert record is not None, "No telemetry record found."

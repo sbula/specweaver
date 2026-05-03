@@ -700,6 +700,7 @@ class TestPlanSpecHandler:
         assert result.status == StepStatus.ERROR
         assert "Planner crashed" in result.error_message
 
+
 # Registry edge cases
 # ---------------------------------------------------------------------------
 

@@ -45,8 +45,8 @@ fi
 """
 
 
-
 logger = logging.getLogger(__name__)
+
 
 @hooks_app.command("install")
 def hooks_install(
@@ -65,22 +65,22 @@ def hooks_install(
     """Install git hooks for the current repository."""
     try:
         project_path = resolve_project_path(project)
-        logger.debug(f"Resolved project path: {project_path}")
+        logger.debug("Resolved project path: %s", project_path)
     except (FileNotFoundError, NotADirectoryError) as exc:
-        logger.error(f"Project path resolution failed: {exc}")
+        logger.error("Project path resolution failed: %s", exc)
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
     git_dir = project_path / ".git"
     if not git_dir.exists() or not git_dir.is_dir():
-        logger.error(f"Target is not a git repository: {git_dir}")
+        logger.error("Target is not a git repository: %s", git_dir)
         _core.console.print(
             "[red]Error:[/red] Target project is not a git repository (missing .git directory)."
         )
         raise typer.Exit(code=1)
 
     hooks_dir = git_dir / "hooks"
-    logger.debug(f"Ensuring hooks directory exists: {hooks_dir}")
+    logger.debug("Ensuring hooks directory exists: %s", hooks_dir)
     hooks_dir.mkdir(exist_ok=True)
 
     if pre_commit:
@@ -90,14 +90,14 @@ def hooks_install(
         hook_content = HOOK_TEMPLATE.format(python_exec=python_exec)
 
         # Write the file
-        logger.debug(f"Writing hook to {hook_path}")
+        logger.debug("Writing hook to %s", hook_path)
         hook_path.write_text(hook_content, encoding="utf-8")
 
         # Apply execution permissions (chmod +x)
         st = hook_path.stat()
         hook_path.chmod(st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
-        logger.info(f"Successfully installed pre-commit hook at {hook_path}")
+        logger.info("Successfully installed pre-commit hook at %s", hook_path)
         _core.console.print(
             "[green]Success: SpecWeaver pre-commit hook installed successfully.[/green]"
         )

@@ -3,9 +3,13 @@
 
 """TypeScript parsing utilities for log extraction."""
 
+import logging
 import re
 
 from specweaver.sandbox.qa_runner.core.interface import CompileError
+
+logger = logging.getLogger(__name__)
+
 
 # Regex fallback for compiling TS errors from tsc stdout.
 # Format: <file>(<line>,<col>): error TS<code>: <msg>
@@ -16,6 +20,7 @@ TSC_ERROR_REGEX = re.compile(
 
 def extract_tsc_errors(stdout_text: str) -> list[CompileError]:
     """Parse raw standard output from tsc into structured errors."""
+    logger.debug("extract_tsc_errors called")
     errors: list[CompileError] = []
     for raw_line in stdout_text.splitlines():
         line = raw_line.strip()
@@ -35,4 +40,5 @@ def extract_tsc_errors(stdout_text: str) -> list[CompileError]:
                 )
             )
 
+    logger.debug("extract_tsc_errors found %d errors", len(errors))
     return errors

@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 runner = CliRunner()
 
 
-
 def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """[Happy Path] CLI natively bootstraps the database if it doesn't exist."""
     db_path = tmp_path / "specweaver.db"

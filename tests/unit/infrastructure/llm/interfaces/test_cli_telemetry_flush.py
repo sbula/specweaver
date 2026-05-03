@@ -67,7 +67,8 @@ class TestReviewCommandFlush:
             patch(
                 "specweaver.assurance.standards.interfaces.cli._load_standards_content",
                 return_value=None,
-            ),contextlib.suppress(SystemExit)
+            ),
+            contextlib.suppress(SystemExit),
         ):
             review(target=str(spec), project=str(tmp_path), spec=None, selector="direct")
 

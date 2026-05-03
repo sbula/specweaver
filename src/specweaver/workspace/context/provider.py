@@ -9,7 +9,10 @@ MVP: HITL (interactive user input). Future: file_search, RAG, web_search.
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
+
+logger = logging.getLogger(__name__)
 
 
 class ContextProvider(ABC):

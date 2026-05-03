@@ -5,9 +5,13 @@
 
 from __future__ import annotations
 
+import logging
 import typing
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from pathlib import Path

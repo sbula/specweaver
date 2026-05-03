@@ -25,9 +25,7 @@ def test_dispatcher_resolves_all_sandbox_domains(tmp_path) -> None:
     # We use create_standard_set which handles complex instantiations internally
     # and validates that the intent mapping logic still works.
     dispatcher = ToolDispatcher.create_standard_set(
-        boundary=boundary,
-        role="implementer",
-        allowed_tools=["fs", "ast", "web"]
+        boundary=boundary, role="implementer", allowed_tools=["fs", "ast", "web"]
     )
 
     loaded_intents = list(dispatcher._registry.keys())

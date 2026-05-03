@@ -92,8 +92,6 @@ class PipelineRunner:
         """Symlink heavy project caches into the worktree to save disk space (FR-2)."""
         setup_sandbox_caches(self._context, wt_dir, logger)
 
-
-
     async def run(self, parent_run_id: str | None = None) -> PipelineRun:
         """Execute the pipeline from the beginning.
 

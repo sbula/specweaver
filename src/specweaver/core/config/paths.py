@@ -43,14 +43,20 @@ def specweaver_root() -> Path:
 
 def config_db_path() -> Path:
     """Return the path to the configuration database (``specweaver.db``)."""
-    return specweaver_root() / "specweaver.db"
+    path = specweaver_root() / "specweaver.db"
+    logger.debug("Resolved config_db_path: %s", path)
+    return path
 
 
 def state_db_path() -> Path:
     """Return the path to the pipeline state database (``pipeline_state.db``)."""
-    return specweaver_root() / "pipeline_state.db"
+    path = specweaver_root() / "pipeline_state.db"
+    logger.debug("Resolved state_db_path: %s", path)
+    return path
 
 
 def logs_dir() -> Path:
     """Return the path to the logs directory."""
-    return specweaver_root() / "logs"
+    path = specweaver_root() / "logs"
+    logger.debug("Resolved logs_dir: %s", path)
+    return path

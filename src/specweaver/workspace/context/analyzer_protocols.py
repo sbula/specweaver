@@ -10,7 +10,11 @@ acquiring any C-bindings or I/O side-effects.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Protocol
+
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from pathlib import Path

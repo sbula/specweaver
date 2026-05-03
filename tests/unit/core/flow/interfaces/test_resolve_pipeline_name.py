@@ -107,10 +107,9 @@ class TestActiveProfileRouting:
 
     @patch(
         "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new_callable=MagicMock,
-        return_value="web-app"
+        new=lambda *args, **kwargs: "web-app",
     )
-    def test_component_with_profile_uses_profile_pipeline(self, mock_run: MagicMock) -> None:
+    def test_component_with_profile_uses_profile_pipeline(self) -> None:
         """Active profile for a project auto-selects profile YAML."""
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
@@ -122,10 +121,9 @@ class TestActiveProfileRouting:
 
     @patch(
         "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new_callable=MagicMock,
-        return_value="library"
+        new=lambda *args, **kwargs: "library",
     )
-    def test_component_with_library_profile(self, mock_run: MagicMock) -> None:
+    def test_component_with_library_profile(self) -> None:
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="component",
@@ -136,10 +134,9 @@ class TestActiveProfileRouting:
 
     @patch(
         "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new_callable=MagicMock,
-        return_value="data-pipeline",
+        new=lambda *args, **kwargs: "data-pipeline",
     )
-    def test_component_with_data_pipeline_profile(self, mock_run: MagicMock) -> None:
+    def test_component_with_data_pipeline_profile(self) -> None:
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="component",
@@ -168,10 +165,9 @@ class TestDefaultLevelFallback:
 
     @patch(
         "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new_callable=MagicMock,
-        return_value=None
+        new=lambda *args, **kwargs: None,
     )
-    def test_component_no_profile_returns_default(self, mock_run: MagicMock) -> None:
+    def test_component_no_profile_returns_default(self) -> None:
         """Project with no profile set falls back to spec_default."""
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
@@ -187,10 +183,9 @@ class TestDefaultLevelFallback:
 
     @patch(
         "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new_callable=MagicMock,
-        return_value="web-app"
+        new=lambda *args, **kwargs: "web-app",
     )
-    def test_code_level_ignores_active_profile(self, mock_run: MagicMock) -> None:
+    def test_code_level_ignores_active_profile(self) -> None:
         """code level routes to code pipeline regardless of profile."""
         with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(

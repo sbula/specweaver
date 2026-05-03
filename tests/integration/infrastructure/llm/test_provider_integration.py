@@ -25,6 +25,7 @@ def mock_telemetry() -> None:
         # Actually, let's patch the underlying _store.record_usage if we can.
         pass
 
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "provider, env_var",

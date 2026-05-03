@@ -55,6 +55,76 @@ class TestBatch1LoggingRollout:
         assert isinstance(paths.logger, logging.Logger)
         assert paths.logger.name == "specweaver.core.config.paths"
 
+    def test_profiles_module_has_logger(self):
+        """config/profiles.py should declare a module-level logger."""
+        from specweaver.core.config import profiles
+
+        assert hasattr(profiles, "logger"), "profiles module must have a logger"
+        assert isinstance(profiles.logger, logging.Logger)
+        assert profiles.logger.name == "specweaver.core.config.profiles"
+
+    def test_database_module_has_logger(self):
+        """config/database.py should declare a module-level logger."""
+        from specweaver.core.config import database
+
+        assert hasattr(database, "logger"), "database module must have a logger"
+        assert isinstance(database.logger, logging.Logger)
+        assert database.logger.name == "specweaver.core.config.database"
+
+    def test_context_modules_have_loggers(self):
+        """workspace/context modules should declare loggers."""
+        from specweaver.workspace.context import (
+            analyzer_protocols,
+            hitl_provider,
+            inferrer,
+            provider,
+        )
+
+        for mod in (analyzer_protocols, hitl_provider, inferrer, provider):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
+    def test_project_modules_have_loggers(self):
+        """workspace/project modules should declare loggers."""
+        from specweaver.workspace.project import (
+            _helpers,
+            constitution,
+            discovery,
+            scaffold,
+        )
+
+        for mod in (_helpers, constitution, discovery, scaffold):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
+    def test_ast_modules_have_loggers(self):
+        """workspace/ast modules should declare loggers."""
+        from specweaver.workspace.ast.adapters import graph_adapter
+        from specweaver.workspace.ast.parsers import factory, interfaces
+        from specweaver.workspace.ast.parsers.c import codestructure as c_cs
+        from specweaver.workspace.ast.parsers.cpp import codestructure as cpp_cs
+        from specweaver.workspace.ast.parsers.java import parsers as java_p
+        from specweaver.workspace.ast.parsers.kotlin import parsers as kotlin_p
+        from specweaver.workspace.ast.parsers.rust import parsers as rust_p
+        from specweaver.workspace.ast.parsers.typescript import parsers as ts_p
+
+        for mod in (
+            graph_adapter,
+            factory,
+            interfaces,
+            c_cs,
+            cpp_cs,
+            java_p,
+            kotlin_p,
+            rust_p,
+            ts_p,
+        ):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
 
 class TestBatch4LoggingRollout:
     """Verify Batch 4 modules (Entry Points) emit log records."""

@@ -47,10 +47,13 @@ class TestRequireLlmAdapterFallback:
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
         # Mock _run_workspace_op to return a project that triggers a missing settings error
-        with patch(
-            "specweaver.workspace.project.interfaces.cli._run_workspace_op",
-            return_value="fake-project",
-        ), patch("specweaver.core.config.settings_loader.load_settings") as mock_load:
+        with (
+            patch(
+                "specweaver.workspace.project.interfaces.cli._run_workspace_op",
+                return_value="fake-project",
+            ),
+            patch("specweaver.core.config.settings_loader.load_settings") as mock_load,
+        ):
             from specweaver.core.config.settings import SpecWeaverSettings
 
             # First call fails (project profile), second call succeeds (system-default)
@@ -92,10 +95,13 @@ class TestRequireLlmAdapterFallback:
         monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: mock_db)
 
         # Mock _run_workspace_op
-        with patch(
-            "specweaver.workspace.project.interfaces.cli._run_workspace_op",
-            return_value="fake-project",
-        ), patch("specweaver.core.config.settings_loader.load_settings") as mock_load:
+        with (
+            patch(
+                "specweaver.workspace.project.interfaces.cli._run_workspace_op",
+                return_value="fake-project",
+            ),
+            patch("specweaver.core.config.settings_loader.load_settings") as mock_load,
+        ):
             mock_load.side_effect = ValueError("No active project")
 
             with patch(

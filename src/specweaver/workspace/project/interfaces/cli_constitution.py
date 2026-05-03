@@ -14,7 +14,6 @@ constitution_app = typer.Typer(
 )
 
 
-
 @constitution_app.command("show")
 def constitution_show(
     project: str | None = typer.Option(
@@ -219,4 +218,3 @@ def constitution_bootstrap(
         f"  [dim]Languages: {', '.join(languages)}[/dim]\n"
         f"  [dim]Review and customize sections marked TODO.[/dim]",
     )
-
