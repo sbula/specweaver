@@ -133,7 +133,7 @@ E-FLOW-03 is complete when ALL of the following are true:
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Polish & Close | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Polish & Close | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
