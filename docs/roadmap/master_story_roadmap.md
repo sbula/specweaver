@@ -236,10 +236,12 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
     *   `[ ]` **E-EXEC-01:** Standard Local Execution
-    *   `✅` **D-EXEC-01:** Podman/Docker Integration
-    *   `[ ]` **B-EXEC-01:** Containerized deployment (Podman/Docker)
     *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
+    *   🔴 **Containerized Isolation:**
+        *   `[ ]` **INT-US-09-SUB:** Sub-Story Integration defined in [US-09_integration.md](integrations/US-09_integration.md)
+        *   `✅` **D-EXEC-01:** Podman/Docker Integration
+        *   `[ ]` **B-EXEC-01:** Containerized deployment (Podman/Docker)
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-09-SUB:** Sub-Story Integration defined in [US-09_integration.md](integrations/US-09_integration.md)
         *   `[ ]` **E-EXEC-02:** Air-Gapped Network Egress Control
