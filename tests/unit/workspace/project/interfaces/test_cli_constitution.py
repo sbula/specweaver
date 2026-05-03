@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 from typer.testing import CliRunner
 
+# Force import to test decentralized location (Red Phase)
 from specweaver.interfaces.cli.main import app
 
 if TYPE_CHECKING:
@@ -30,6 +31,7 @@ def _mock_db(tmp_path: Path, monkeypatch):
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     return db
 
 

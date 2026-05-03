@@ -11,23 +11,7 @@ from typing import TYPE_CHECKING
 import typer
 
 from specweaver.interfaces.cli import _core
-
-
-def _run_workspace_op(method_name: str, *args: Any, **kwargs: Any) -> Any:
-    import anyio
-
-    from specweaver.workspace.store import WorkspaceRepository
-
-    db = _core.get_db()
-
-    async def _action() -> Any:
-        async with db.async_session_scope() as session:
-            repo = WorkspaceRepository(session)
-            method = getattr(repo, method_name)
-            return await method(*args, **kwargs)
-
-    return anyio.run(_action)
-
+from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
 logger = logging.getLogger(__name__)
 

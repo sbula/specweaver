@@ -10,10 +10,11 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
+from tests.fixtures.db_utils import get_test_active_project, get_test_project
 from typer.testing import CliRunner
 
+# Force import to test decentralized location (Red Phase)
 from specweaver.interfaces.cli.main import app
-from tests.fixtures.db_utils import get_test_active_project, get_test_project
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -30,6 +31,7 @@ def _mock_db(tmp_path: Path, monkeypatch):
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
     monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     return db
 
 
@@ -179,7 +181,7 @@ class TestCLIInitDB:
         assert (project_dir / ".specweaver_mcp" / "postgres" / "context.yaml").is_file()
         assert (project_dir / ".specweaver" / "vault.env").is_file()
 
-    @patch("specweaver.interfaces.cli.projects.scaffold_project")
+    @patch("specweaver.workspace.project.interfaces.cli.scaffold_project")
     def test_init_with_mcp_flag_invalid(self, mock_scaffold, mock_db, tmp_path: Path):
         """sw init catches ValueError from scaffold_project and rejects invalid mcp boundaries."""
         project_dir = tmp_path / "mcp-fail-proj"

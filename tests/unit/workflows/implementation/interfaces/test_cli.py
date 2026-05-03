@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
+# Force import to test decentralized location (Red Phase)
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
 

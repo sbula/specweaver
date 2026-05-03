@@ -18,7 +18,7 @@ import typer
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
-from specweaver.interfaces.cli.pipelines import (
+from specweaver.core.flow.interfaces.cli import (
     _create_display,
     _resolve_spec_path,
 )
@@ -93,7 +93,7 @@ class TestRunPipelineMocked:
         spec.parent.mkdir(exist_ok=True)
         spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
 
-        with patch("specweaver.interfaces.cli.pipelines._execute_run") as mock_exec:
+        with patch("specweaver.core.flow.interfaces.cli._execute_run") as mock_exec:
             mock_exec.side_effect = typer.Exit(code=1)
             result = runner.invoke(
                 app,
@@ -117,7 +117,7 @@ class TestRunPipelineMocked:
         project_dir.mkdir()
         runner.invoke(app, ["init", "ve-proj", "--path", str(project_dir)])
 
-        with patch("specweaver.interfaces.cli.pipelines._execute_run") as mock_exec:
+        with patch("specweaver.core.flow.interfaces.cli._execute_run") as mock_exec:
             mock_exec.side_effect = ValueError("bad input!")
             result = runner.invoke(
                 app,
@@ -130,7 +130,7 @@ class TestRunPipelineMocked:
         project_dir.mkdir()
         runner.invoke(app, ["init", "ge-proj", "--path", str(project_dir)])
 
-        with patch("specweaver.interfaces.cli.pipelines._execute_run") as mock_exec:
+        with patch("specweaver.core.flow.interfaces.cli._execute_run") as mock_exec:
             mock_exec.side_effect = RuntimeError("unexpected")
             result = runner.invoke(
                 app,
@@ -285,7 +285,7 @@ class TestResumeMocked:
         )
 
         with (
-            patch("specweaver.interfaces.cli.pipelines._get_state_store") as mock_get_store,
+            patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch(
                 "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"

@@ -69,12 +69,6 @@ def _app_callback(
 
 from specweaver.interfaces.cli import (  # noqa: E402, F401
     _helpers,
-    constitution,
-    hooks,
-    implement,
-    pipelines,
-    projects,
-    review,
 )
 
 try:
@@ -104,6 +98,26 @@ try:
     from specweaver.infrastructure.llm.interfaces import cli as llm_cli  # noqa: F401
 except ImportError as e:
     console.print(f"[bold red]Failed to load llm plugin:[/bold red] {e}")
+
+try:
+    from specweaver.workflows.implementation.interfaces import cli as impl_cli  # noqa: F401
+except ImportError as e:
+    console.print(f"[bold red]Failed to load implementation workflow plugin:[/bold red] {e}")
+
+try:
+    from specweaver.workflows.review.interfaces import cli as review_cli  # noqa: F401
+except ImportError as e:
+    console.print(f"[bold red]Failed to load review workflow plugin:[/bold red] {e}")
+
+try:
+    from specweaver.workspace.project.interfaces import cli as workspace_project_cli  # noqa: F401
+except ImportError as e:
+    console.print(f"[bold red]Failed to load workspace project plugin:[/bold red] {e}")
+
+try:
+    from specweaver.core.flow.interfaces import cli as flow_cli  # noqa: F401
+except ImportError as e:
+    console.print(f"[bold red]Failed to load flow pipelines plugin:[/bold red] {e}")
 
 if __name__ == "__main__":
     app()

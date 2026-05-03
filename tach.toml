@@ -13,6 +13,7 @@ modules = [
     { path = "src.specweaver.core.config", depends_on = [] },
     { path = "src.specweaver.core.config.interfaces", depends_on = [] },
     { path = "src.specweaver.core.flow", depends_on = [] },
+    { path = "src.specweaver.core.flow.interfaces", depends_on = [] },
     { path = "src.specweaver.core.loom", depends_on = [] },
     { path = "src.specweaver.infrastructure.llm", depends_on = [] },
     { path = "src.specweaver.infrastructure.llm.interfaces", depends_on = [] },
@@ -21,12 +22,15 @@ modules = [
     { path = "src.specweaver.logging", depends_on = [] },
     { path = "src.specweaver.workflows.drafting", depends_on = [] },
     { path = "src.specweaver.workflows.implementation", depends_on = [] },
+    { path = "src.specweaver.workflows.implementation.interfaces", depends_on = [] },
     { path = "src.specweaver.workflows.pipelines", depends_on = [] },
     { path = "src.specweaver.workflows.planning", depends_on = [] },
     { path = "src.specweaver.workflows.review", depends_on = [] },
+    { path = "src.specweaver.workflows.review.interfaces", depends_on = [] },
     { path = "src.specweaver.workspace.context", depends_on = [] },
     { path = "src.specweaver.workspace.analyzers", depends_on = [] },
     { path = "src.specweaver.workspace.project", depends_on = [] },
+    { path = "src.specweaver.workspace.project.interfaces", depends_on = [] },
     { path = "src.specweaver.workspace.ast.parsers", depends_on = [] },
     { path = "src.specweaver.workspace.ast.adapters", depends_on = [] },
     { path = "src.specweaver.workspace", depends_on = [] },
@@ -184,6 +188,38 @@ expose = [
 [[interfaces]]
 from = [
     "src.specweaver.graph.interfaces",
+]
+expose = [
+    "cli",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.workflows.implementation.interfaces",
+]
+expose = [
+    "cli",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.workflows.review.interfaces",
+]
+expose = [
+    "cli",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.workspace.project.interfaces",
+]
+expose = [
+    "cli",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.core.flow.interfaces",
 ]
 expose = [
     "cli",

@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
+# Force import to test decentralized location (Red Phase)
 from specweaver.core.flow.engine.state import PipelineRun, StepRecord, StepResult, StepStatus
 from specweaver.interfaces.cli.main import app
 

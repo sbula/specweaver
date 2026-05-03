@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import typer
 
-from specweaver.interfaces.cli.pipelines import _execute_run, resume
+from specweaver.core.flow.interfaces.cli import _execute_run, resume
 
 
 @pytest.fixture

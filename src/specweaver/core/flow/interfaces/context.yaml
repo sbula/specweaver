@@ -1,0 +1,7 @@
+# src/specweaver/core/flow/interfaces/context.yaml
+archetype: interface
+purpose: CLI entrypoints for pipeline execution and state management
+consumes:
+  - src.specweaver.core.flow.engine
+  - src.specweaver.core.flow.store
+forbids: []

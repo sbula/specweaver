@@ -77,8 +77,7 @@ packages = ["src/specweaver"]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
 asyncio_mode = "auto"
-import_mode = "importlib"
-addopts = "-v --tb=short -m 'not live'"
+addopts = "--import-mode=importlib -v --tb=short -m 'not live'"
 markers = [
     "live: tests that require real external API keys and network access",
 ]

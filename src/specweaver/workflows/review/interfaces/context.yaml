@@ -1,0 +1,8 @@
+# src/specweaver/workflows/review/interfaces/context.yaml
+archetype: interface
+purpose: CLI entrypoints for review workflows
+consumes:
+  - src.specweaver.core.flow
+  - src.specweaver.infrastructure.llm
+  - src.specweaver.workspace.project
+forbids: []
