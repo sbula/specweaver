@@ -26,7 +26,7 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
 
         # Mute adapter creation and pipeline loading
         with (
-            patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_adapter,
+            patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_adapter,
             patch("specweaver.core.flow.engine.parser.load_pipeline") as mock_load_pipeline,
         ):
             # Fake the return

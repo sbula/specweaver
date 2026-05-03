@@ -87,7 +87,7 @@ class TestLoadSettings:
     """Settings loading from the database."""
 
     def test_load_for_registered_project(self, db, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
@@ -96,7 +96,7 @@ class TestLoadSettings:
 
     def test_load_uses_review_profile_by_default(self, db, tmp_path: Path):
         """load_settings uses the 'review' profile for the LLM settings."""
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
@@ -104,28 +104,28 @@ class TestLoadSettings:
 
     def test_load_with_role_override(self, db, tmp_path: Path):
         """Can load settings for a specific LLM role."""
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp", llm_role="implement")
         assert settings.llm.temperature == pytest.approx(0.2)
 
     def test_load_search_role(self, db, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp", llm_role="search")
         assert settings.llm.temperature == pytest.approx(0.7)
 
     def test_load_nonexistent_project_raises(self, db):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         with pytest.raises(ValueError, match="not found"):
             load_settings(db, "nonexistent")
 
     def test_load_nonexistent_role_uses_defaults(self, db, tmp_path: Path):
         """If a role is not linked, fall back to model defaults."""
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp", llm_role="custom-unknown")
@@ -135,7 +135,7 @@ class TestLoadSettings:
 
     def test_load_with_custom_profile(self, db, tmp_path: Path):
         """Custom project-specific profile overrides global."""
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         custom_id = _create_llm_profile(
@@ -163,7 +163,7 @@ class TestAPIKeyFromEnv:
     """API key always comes from environment, never from DB."""
 
     def test_api_key_from_env(self, db, tmp_path: Path, monkeypatch):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         monkeypatch.setenv("GEMINI_API_KEY", "test-key-123")
         register_test_project(db, "myapp", str(tmp_path / "proj"))
@@ -171,7 +171,7 @@ class TestAPIKeyFromEnv:
         assert settings.llm.api_key == "test-key-123"
 
     def test_api_key_empty_when_not_set(self, db, tmp_path: Path, monkeypatch):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         register_test_project(db, "myapp", str(tmp_path / "proj"))
@@ -179,14 +179,14 @@ class TestAPIKeyFromEnv:
         assert settings.llm.api_key == ""
 
     def test_default_stitch_mode_is_off(self, db, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
         assert settings.stitch.mode == "off"
 
     def test_stitch_api_key_from_env(self, db, tmp_path: Path, monkeypatch):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         monkeypatch.setenv("STITCH_API_KEY", "test-stitch-key-123")
         register_test_project(db, "myapp", str(tmp_path / "proj"))
@@ -195,7 +195,7 @@ class TestAPIKeyFromEnv:
 
     def test_api_key_from_custom_provider(self, db, tmp_path: Path, monkeypatch):
         """If provider is anthropic, the anthropic api key is loaded."""
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-anthropic-123")
         register_test_project(db, "myapp", str(tmp_path / "proj"))
@@ -212,7 +212,7 @@ class TestAPIKeyFromEnv:
 
     def test_api_key_empty_when_custom_provider_key_missing(self, db, tmp_path: Path, monkeypatch):
         """If provider is anthropic but ANTHROPIC_API_KEY is missing, api_key is empty string."""
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         register_test_project(db, "myapp", str(tmp_path / "proj"))
@@ -235,7 +235,7 @@ class TestLoadActiveProject:
     """Loading settings for the currently active project."""
 
     def test_load_active(self, db, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import load_settings_for_active
+        from specweaver.core.config.settings_loader import load_settings_for_active
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         set_test_active_project(db, "myapp")
@@ -243,7 +243,7 @@ class TestLoadActiveProject:
         assert settings.llm.model == "gemini-2.5-flash"
 
     def test_load_no_active_raises(self, db):
-        from specweaver.interfaces.cli.settings_loader import load_settings_for_active
+        from specweaver.core.config.settings_loader import load_settings_for_active
 
         with pytest.raises(ValueError, match=r"[Nn]o active project"):
             load_settings_for_active(db)
@@ -258,7 +258,7 @@ class TestLegacyMigration:
     """Migration from .specweaver/config.yaml to DB."""
 
     def test_migrate_legacy_config(self, db, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import migrate_legacy_config
+        from specweaver.core.config.settings_loader import migrate_legacy_config
 
         # Create a legacy config file
         project_dir = tmp_path / "my-project"
@@ -284,7 +284,7 @@ class TestLegacyMigration:
         assert proj["root_path"] == str(project_dir)
 
     def test_migrate_creates_custom_profile(self, db, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import load_settings, migrate_legacy_config
+        from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config
 
         project_dir = tmp_path / "my-project"
         project_dir.mkdir()
@@ -305,7 +305,7 @@ class TestLegacyMigration:
 
     def test_migrate_maps_custom_provider(self, db, tmp_path: Path):
         """(Story 4) Verify custom provider from yaml is mapped properly."""
-        from specweaver.interfaces.cli.settings_loader import load_settings, migrate_legacy_config
+        from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config
 
         project_dir = tmp_path / "my-project"
         project_dir.mkdir()
@@ -324,7 +324,7 @@ class TestLegacyMigration:
         assert settings.llm.model == "gpt-4o"
 
     def test_migrate_no_config_file_returns_false(self, db, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import migrate_legacy_config
+        from specweaver.core.config.settings_loader import migrate_legacy_config
 
         project_dir = tmp_path / "no-config"
         project_dir.mkdir()
@@ -332,7 +332,7 @@ class TestLegacyMigration:
         assert result is False
 
     def test_migrate_already_registered_raises(self, db, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import migrate_legacy_config
+        from specweaver.core.config.settings_loader import migrate_legacy_config
 
         project_dir = tmp_path / "my-project"
         project_dir.mkdir()
@@ -381,7 +381,7 @@ class TestLegacyMigrationEdgeCases:
 
     def test_migrate_invalid_yaml(self, db, tmp_path: Path):
         """config.yaml with invalid YAML → project still registered (data=defaults)."""
-        from specweaver.interfaces.cli.settings_loader import load_settings, migrate_legacy_config
+        from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config
 
         project_dir = tmp_path / "bad-yaml"
         project_dir.mkdir()
@@ -399,7 +399,7 @@ class TestLegacyMigrationEdgeCases:
 
     def test_migrate_non_dict_llm_section(self, db, tmp_path: Path):
         """config.yaml where llm is a string → treated as empty dict."""
-        from specweaver.interfaces.cli.settings_loader import load_settings, migrate_legacy_config
+        from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config
 
         project_dir = tmp_path / "string-llm"
         project_dir.mkdir()
@@ -416,7 +416,7 @@ class TestLegacyMigrationEdgeCases:
 
     def test_migrate_extra_unknown_keys(self, db, tmp_path: Path):
         """config.yaml with extra unknown keys → silently ignored."""
-        from specweaver.interfaces.cli.settings_loader import load_settings, migrate_legacy_config
+        from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config
 
         project_dir = tmp_path / "extra-keys"
         project_dir.mkdir()
@@ -439,7 +439,7 @@ class TestStitchSettingsLoad:
     """Verify stitch settings populate correctly."""
 
     def test_stitch_api_key_from_env(self, db, monkeypatch, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path))
         _set_stitch_mode(db, "myapp", "auto")
@@ -451,7 +451,7 @@ class TestStitchSettingsLoad:
         assert settings.stitch.api_key == "real-key-123"
 
     def test_stitch_api_key_whitespace_is_handled(self, db, monkeypatch, tmp_path: Path):
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "myapp", str(tmp_path))
 
@@ -471,7 +471,7 @@ class TestLoadSettingsNoSystemDefault:
 
     def test_load_raises_when_system_default_missing(self, db, tmp_path: Path):
         """If both role profile and system-default are absent → ValueError."""
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         register_test_project(db, "orphan", str(tmp_path / "orphan"))
 
@@ -494,7 +494,7 @@ class TestMigrateLegacyNoSystemDefault:
 
     def test_migrate_raises_when_system_default_missing(self, db, tmp_path: Path):
         """Migration needs system-default for fallback model → ValueError."""
-        from specweaver.interfaces.cli.settings_loader import migrate_legacy_config
+        from specweaver.core.config.settings_loader import migrate_legacy_config
 
         # Delete ALL profiles so system-default is gone
         with db.connect() as conn:
@@ -521,7 +521,7 @@ class TestMigrateLegacyModelFallback:
 
     def test_migrate_without_model_uses_system_default(self, db, tmp_path: Path):
         """YAML without 'model' key → falls back to system-default profile model."""
-        from specweaver.interfaces.cli.settings_loader import load_settings, migrate_legacy_config
+        from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config
 
         project_dir = tmp_path / "no-model"
         project_dir.mkdir()

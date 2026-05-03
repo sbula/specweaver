@@ -80,7 +80,7 @@ class TestReviewErrors:
         # Should fail at the LLM adapter step (no API key) or spec not found
         assert result.exit_code == 1
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
     def test_review_spec_accepted(
         self,
         mock_llm,
@@ -117,7 +117,7 @@ class TestReviewErrors:
         assert result.exit_code == 0
         assert "ACCEPTED" in result.output
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
     def test_review_spec_denied(
         self,
         mock_llm,

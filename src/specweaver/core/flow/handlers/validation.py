@@ -43,14 +43,19 @@ def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:
                         context.project_path.name
                     )
 
-            dal_str = anyio.run(_get_dal)
+            dal_raw = anyio.run(_get_dal)
+            if dal_raw:
+                try:
+                    dal_str = DALLevel(dal_raw)
+                except ValueError:
+                    dal_str = None
         except Exception:
             dal_str = None
 
     merged_settings = context.settings
     if dal_str and merged_settings and hasattr(merged_settings, "dal_matrix"):
         try:
-            dal = DALLevel(dal_str)
+            dal = dal_str
             matrix_dict = merged_settings.dal_matrix.matrix
             dal_constraints = matrix_dict.get(dal)
             if dal_constraints:

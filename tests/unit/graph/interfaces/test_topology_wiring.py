@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from specweaver.interfaces.cli._helpers import _get_selector_map, _select_topology_contexts
+from specweaver.graph.interfaces.cli import _get_selector_map, _select_topology_contexts
 
 
 class TestSelectorMap:

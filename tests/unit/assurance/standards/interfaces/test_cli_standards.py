@@ -31,9 +31,14 @@ def _mock_db(tmp_path, monkeypatch):
     from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
 
-    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
+    db_path = tmp_path / ".specweaver-test" / "specweaver.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    bootstrap_database(str(db_path))
+    db = Database(db_path)
+
     monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.paths.config_db_path", lambda: db_path)
     return db
 
 
@@ -80,7 +85,7 @@ class TestLoadStandardsContent:
         """No active project → returns None."""
         from pathlib import Path
 
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         assert _load_standards_content(Path(".")) is None
 
@@ -90,7 +95,7 @@ class TestLoadStandardsContent:
         _mock_db,
     ) -> None:
         """Active project but no standards → returns None."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         _init_project(_mock_db, "empty_proj", str(tmp_path))
         assert _load_standards_content(tmp_path) is None
@@ -101,7 +106,7 @@ class TestLoadStandardsContent:
         _mock_db,
     ) -> None:
         """With standards in DB, returns formatted multi-line string."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj", count=1)
@@ -118,7 +123,7 @@ class TestLoadStandardsContent:
         _mock_db,
     ) -> None:
         """Multiple standards are all included in output."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj", count=2)
@@ -134,7 +139,7 @@ class TestLoadStandardsContent:
         _mock_db,
     ) -> None:
         """Handles data stored as JSON string (not dict)."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         _init_project(_mock_db, "proj", str(tmp_path))
         # save_standard serialises data internally, but let's verify the
@@ -160,7 +165,7 @@ class TestLoadStandardsContent:
         _mock_db,
     ) -> None:
         """Confidence is formatted as percentage (e.g. 85%)."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         _init_project(_mock_db, "proj", str(tmp_path))
         _seed_standards(_mock_db, "proj", count=1)
@@ -175,7 +180,7 @@ class TestLoadStandardsContent:
         _mock_db,
     ) -> None:
         """Standard with empty data dict doesn't crash."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         _init_project(_mock_db, "proj", str(tmp_path))
         _run_workspace_op(

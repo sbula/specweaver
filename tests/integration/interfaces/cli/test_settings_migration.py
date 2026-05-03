@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from specweaver.core.config.database import Database
-from specweaver.interfaces.cli.settings_loader import load_settings, migrate_legacy_config
+from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config
 
 
 def test_migrate_legacy_config_happy_path(tmp_path: Path):

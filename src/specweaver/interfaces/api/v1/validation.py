@@ -60,7 +60,7 @@ async def run_check(
     pipeline_name = resolve_pipeline_name(
         body.level,
         body.pipeline,
-        active_profile=active_profile,
+        active_profile=str(active_profile) if active_profile else None,
     )
 
     resolved = load_pipeline_yaml(pipeline_name, project_dir=project_root)

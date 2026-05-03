@@ -41,17 +41,17 @@ class TestRequireLlmAdapterFallback:
 
     def test_fallback_uses_system_default_model(self, _mock_db, tmp_path: Path, monkeypatch):
         """When load_settings_for_active raises, fallback reads system-default profile."""
-        from specweaver.interfaces.cli._helpers import _require_llm_adapter
+        from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
 
         # Ensure GEMINI_API_KEY is set so adapter.available() returns True
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
         # Mock _run_workspace_op to return a project that triggers a missing settings error
         with patch(
-            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="fake-project"
+            "specweaver.workspace.project.interfaces.cli._run_workspace_op", return_value="fake-project"
         ):
             # Mock load_settings to simulate project settings failing
-            with patch("specweaver.interfaces.cli.settings_loader.load_settings") as mock_load:
+            with patch("specweaver.core.config.settings_loader.load_settings") as mock_load:
                 from specweaver.core.config.settings import SpecWeaverSettings
 
                 # First call fails (project profile), second call succeeds (system-default)
@@ -84,7 +84,7 @@ class TestRequireLlmAdapterFallback:
 
     def test_fallback_when_db_profile_also_fails(self, tmp_path: Path, monkeypatch):
         """When both load_settings_for_active AND DB profile lookup fail → hardcoded fallback."""
-        from specweaver.interfaces.cli._helpers import _require_llm_adapter
+        from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
 
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
@@ -94,10 +94,10 @@ class TestRequireLlmAdapterFallback:
 
         # Mock _run_workspace_op
         with patch(
-            "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="fake-project"
+            "specweaver.workspace.project.interfaces.cli._run_workspace_op", return_value="fake-project"
         ):
             # Simulate both project profile AND system-default failing to load
-            with patch("specweaver.interfaces.cli.settings_loader.load_settings") as mock_load:
+            with patch("specweaver.core.config.settings_loader.load_settings") as mock_load:
                 mock_load.side_effect = ValueError("No active project")
 
                 with patch(

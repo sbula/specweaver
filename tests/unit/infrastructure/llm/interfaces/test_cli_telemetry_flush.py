@@ -33,6 +33,7 @@ class TestReviewCommandFlush:
     def test_review_flushes_collector(self, mock_review, tmp_path):
         """After sw review, flush() is called on the adapter."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
+        from specweaver.workflows.review.interfaces.cli import review
         from specweaver.workflows.review.reviewer import ReviewResult
 
         mock_review.return_value = ReviewResult(
@@ -51,21 +52,19 @@ class TestReviewCommandFlush:
 
         with (
             patch(
-                "specweaver.interfaces.cli._helpers._require_llm_adapter",
+                "specweaver.workflows.review.interfaces.cli._require_llm_adapter",
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",
                 return_value=tmp_path,
             ),
-            patch("specweaver.interfaces.cli._helpers._load_topology", return_value=None),
+            patch("specweaver.graph.interfaces.cli._load_topology", return_value=None),
             patch(
-                "specweaver.interfaces.cli._helpers._load_constitution_content", return_value=None
+                "specweaver.workspace.project.interfaces.cli._load_constitution_content", return_value=None
             ),
-            patch("specweaver.interfaces.cli._helpers._load_standards_content", return_value=None),
+            patch("specweaver.assurance.standards.interfaces.cli._load_standards_content", return_value=None),
         ):
-            from specweaver.interfaces.cli.review import review
-
             with contextlib.suppress(SystemExit):
                 review(target=str(spec), project=str(tmp_path), spec=None, selector="direct")
 
@@ -78,6 +77,7 @@ class TestImplementCommandFlush:
     def test_implement_flushes_collector(self, tmp_path):
         """After sw implement, flush() is called on the adapter."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
+        from specweaver.workflows.implementation.interfaces.cli import implement
 
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test Spec\n", encoding="utf-8")
@@ -88,18 +88,18 @@ class TestImplementCommandFlush:
 
         with (
             patch(
-                "specweaver.interfaces.cli._helpers._require_llm_adapter",
+                "specweaver.workflows.implementation.interfaces.cli._require_llm_adapter",
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",
                 return_value=tmp_path,
             ),
-            patch("specweaver.interfaces.cli._helpers._load_topology", return_value=None),
+            patch("specweaver.graph.interfaces.cli._load_topology", return_value=None),
             patch(
-                "specweaver.interfaces.cli._helpers._load_constitution_content", return_value=None
+                "specweaver.workspace.project.interfaces.cli._load_constitution_content", return_value=None
             ),
-            patch("specweaver.interfaces.cli._helpers._load_standards_content", return_value=None),
+            patch("specweaver.assurance.standards.interfaces.cli._load_standards_content", return_value=None),
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_code",
                 new_callable=AsyncMock,
@@ -109,8 +109,6 @@ class TestImplementCommandFlush:
                 new_callable=AsyncMock,
             ),
         ):
-            from specweaver.interfaces.cli.implement import implement
-
             implement(spec=str(spec), project=str(tmp_path), selector="direct")
 
         mock_collector.flush.assert_called_once()
@@ -132,20 +130,20 @@ class TestDraftCommandFlush:
 
         with (
             patch(
-                "specweaver.interfaces.cli._helpers._require_llm_adapter",
+                "specweaver.workflows.review.interfaces.cli._require_llm_adapter",
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",
                 return_value=tmp_path,
             ),
-            patch("specweaver.interfaces.cli._helpers._load_topology", return_value=None),
+            patch("specweaver.graph.interfaces.cli._load_topology", return_value=None),
         ):
             # Ensure specs dir exists and target doesn't
             (tmp_path / "specs").mkdir(exist_ok=True)
             (tmp_path / "result.md").write_text("# content", encoding="utf-8")
 
-            from specweaver.interfaces.cli.review import draft
+            from specweaver.workflows.review.interfaces.cli import draft
 
             with contextlib.suppress(SystemExit):
                 draft(

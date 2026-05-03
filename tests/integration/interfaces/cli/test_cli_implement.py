@@ -71,7 +71,7 @@ def _scaffold_project(tmp_path: object) -> object:
 class TestImplementFlow:
     """Test sw implement command."""
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
     def test_implement_generates_files(
         self,
         mock_require,
@@ -110,7 +110,7 @@ class TestImplementFlow:
         assert code_path.exists()
         assert test_path.exists()
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
     def test_implement_spec_suffix_removal(
         self,
         mock_require,
@@ -163,7 +163,7 @@ class TestImplementFlow:
 class TestFullPipeline:
     """Test the full SpecWeaver pipeline end-to-end."""
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
     def test_full_pipeline(
         self,
         mock_require,

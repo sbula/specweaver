@@ -30,12 +30,12 @@ class TestBatch1LoggingRollout:
         assert settings.logger.name == "specweaver.core.config.settings"
 
     def test_load_settings_emits_debug_log(self, caplog, tmp_path, monkeypatch):
-        """load_settings() should emit a DEBUG entry log."""
+        """Loading settings emits a DEBUG log entry with the project path."""
         from unittest.mock import MagicMock
 
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
-        with caplog.at_level(logging.DEBUG, logger="specweaver.core.config.settings"):
+        with caplog.at_level(logging.DEBUG, logger="specweaver.core.config.settings_loader"):
             try:
                 mock_db = MagicMock()
                 mock_db.get_project.return_value = None
@@ -61,36 +61,24 @@ class TestBatch4LoggingRollout:
 
     def test_cli_modules_have_loggers(self):
         """CLI modules must have loggers."""
-        from specweaver.interfaces.cli import (
-            config,
-            config_routing,
-            constitution,
-            cost_commands,
-            implement,
-            pipelines,
-            projects,
-            review,
-            serve,
-            standards,
-            usage_commands,
-            validation,
-        )
+        from specweaver.assurance.standards.interfaces import cli as standards
+        from specweaver.core.config.interfaces import cli as config
+        from specweaver.core.flow.interfaces import cli as flow_cli
+        from specweaver.infrastructure.llm.interfaces import cli as llm_cli
+        from specweaver.interfaces.cli import main
+        from specweaver.interfaces.cli.routers import serve_router as serve
+        from specweaver.workspace.project.interfaces import cli as workspace
 
-        for mod in (
-            config,
-            config_routing,
-            constitution,
-            cost_commands,
-            implement,
-            pipelines,
-            projects,
-            review,
-            serve,
-            standards,
-            usage_commands,
-            validation,
-        ):
-            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+        # Ensure that every Typer command module defines a module-level logger
+        assert hasattr(main, "logger")
+        assert hasattr(config, "logger")
+        assert hasattr(workspace, "logger")
+        assert hasattr(llm_cli, "logger")
+        assert hasattr(flow_cli, "logger")
+        assert hasattr(serve, "logger")
+        assert hasattr(standards, "logger"), "standards must have a logger"
+
+        for mod in (config, workspace, llm_cli, flow_cli, serve, standards):
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__
 

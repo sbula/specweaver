@@ -158,7 +158,7 @@ class TestStandardsInjectionE2E:
         _mock_db,
     ) -> None:
         """After scan, _load_standards_content returns formatted text."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         name = _unique_name()
         project = _create_python_project(tmp_path, name)

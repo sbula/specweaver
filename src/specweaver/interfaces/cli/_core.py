@@ -34,20 +34,22 @@ logger = logging.getLogger(__name__)
 
 from specweaver.core.config.cli_db_utils import get_db
 
+__all__ = ["app", "console", "logger", "get_db", "_require_active_project"]
+
 
 def _require_active_project() -> str:
     """Get the active project name or exit with error."""
     from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
     db = get_db()
-    name = _run_workspace_op("get_active_project")
-    if not name:
+    name_raw = _run_workspace_op("get_active_project")
+    if not name_raw:
         console.print(
             "[red]Error:[/red] No active project. "
             "Run [bold]sw init <name>[/bold] or [bold]sw use <name>[/bold].",
         )
         raise typer.Exit(code=1)
-    return name
+    return str(name_raw)
 
 
 def _version_callback(value: bool) -> None:

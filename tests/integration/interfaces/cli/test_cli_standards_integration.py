@@ -265,7 +265,7 @@ class TestStandardsPromptInjection:
         _mock_db,
     ) -> None:
         """Scan, then _load_standards_content returns formatted text."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         project_dir = _init_project_with_python(tmp_path)
 

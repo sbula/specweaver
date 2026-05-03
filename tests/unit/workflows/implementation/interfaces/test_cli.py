@@ -63,7 +63,7 @@ def _make_mock_adapter(text: str = "pass\n") -> MagicMock:
 class TestImplementOutputPaths:
     """Test implement command output file naming."""
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
     @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
     def test_output_files_created(
@@ -95,7 +95,7 @@ class TestImplementOutputPaths:
         assert (project / "src" / "greeter.py").exists()
         assert (project / "tests" / "test_greeter.py").exists()
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
     @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
     def test_spec_suffix_stripped(

@@ -164,9 +164,9 @@ class TestFullPipelineE2E:
     @patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-key"})
     async def test_full_telemetry_pipeline(self, db):
         """Story 29: full vertical slice — factory, collector, generate, flush, query."""
+        from specweaver.core.config.settings_loader import load_settings
         from specweaver.infrastructure.llm.collector import TelemetryCollector
         from specweaver.infrastructure.llm.factory import create_llm_adapter
-        from specweaver.interfaces.cli.settings_loader import load_settings
 
         with patch(
             "specweaver.infrastructure.llm.factory._get_adapter_class",
@@ -227,7 +227,7 @@ class TestCostOverrideLifecycleE2E:
         # Set a very high cost override so we can verify it's used
         _set_cost_override_sync(db, "gemini-2.5-pro", 100.0, 200.0)
 
-        from specweaver.interfaces.cli.settings_loader import load_settings
+        from specweaver.core.config.settings_loader import load_settings
 
         with patch(
             "specweaver.infrastructure.llm.factory._get_adapter_class",

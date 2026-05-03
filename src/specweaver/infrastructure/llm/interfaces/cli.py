@@ -10,6 +10,11 @@ import logging
 import anyio
 import typer
 from rich.table import Table
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from specweaver.core.config.settings import SpecWeaverSettings
 
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import get_default_cost_table
@@ -17,13 +22,14 @@ from specweaver.interfaces.cli import _core
 from specweaver.interfaces.cli._core import console
 from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
+
 def _require_llm_adapter(
-    project_path: "Path",
+    project_path: Path,
     *,
     llm_role: str = "draft",
-) -> tuple["SpecWeaverSettings", "GeminiAdapter", "GenerationConfig"]:
-    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+) -> tuple[SpecWeaverSettings, Any, Any]:
     from specweaver.core.config.settings_loader import load_settings
+    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
     from specweaver.interfaces.cli import _core
 
     db = _core.get_db()
@@ -42,10 +48,15 @@ def _require_llm_adapter(
         import logging
         logger = logging.getLogger(__name__)
         logger.warning("DB profile failed, using hardcoded fallback: %s", exc)
-        from specweaver.core.config.settings import SpecWeaverSettings
+        from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
+        from pydantic import SecretStr
 
         settings = SpecWeaverSettings(
-            llm={"provider": "gemini", "model": "gemini-3-flash-preview", "api_key": "test-key"}
+            llm=LLMSettings(
+                provider="gemini", 
+                model="gemini-3-flash-preview", 
+                api_key="test-key"
+            )
         )
         try:
             return create_llm_adapter(

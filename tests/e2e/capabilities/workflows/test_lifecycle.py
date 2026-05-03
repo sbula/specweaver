@@ -235,7 +235,7 @@ class TestFullLifecycle:
             return next(_mock_hitl_answers, "")
 
         with (
-            patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req,
+            patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req,
             patch(
                 "specweaver.workspace.context.hitl_provider.HITLProvider",
             ) as mock_hitl_cls,
@@ -280,7 +280,7 @@ class TestFullLifecycle:
         # -- Step 4: Review spec (mocked LLM) ------------------------------
         review_llm = _make_sequenced_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 review_llm,
@@ -301,7 +301,7 @@ class TestFullLifecycle:
         # -- Step 5: Implement (mocked LLM) --------------------------------
         impl_llm = _make_sequenced_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
-        with patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 impl_llm,
@@ -344,7 +344,7 @@ class TestFullLifecycle:
         # -- Step 7: Review code (mocked LLM) ------------------------------
         code_review_llm = _make_sequenced_llm([_CODE_REVIEW_RESPONSE])
 
-        with patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 code_review_llm,
@@ -377,7 +377,7 @@ class TestLifecycleEdgeCases:
         specs_dir.mkdir(exist_ok=True)
         (specs_dir / "existing_spec.md").write_text("# Existing", encoding="utf-8")
 
-        with patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 _make_sequenced_llm([]),
@@ -413,7 +413,7 @@ class TestLifecycleEdgeCases:
             ]
         )
 
-        with patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 denied_llm,

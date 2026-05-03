@@ -184,19 +184,30 @@ class TestCollectorFlush:
         await collector.generate([], config)
 
         mock_db = MagicMock()
-        count = collector.flush(mock_db)
+        mock_session = MagicMock()
+        mock_db.async_session_scope.return_value.__aenter__.return_value = mock_session
 
-        assert count == 2
-        assert mock_db.log_usage.call_count == 2
-        assert len(collector.records) == 0  # Cleared
+        from unittest.mock import AsyncMock, patch
+        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
+            mock_repo = mock_repo_cls.return_value
+            mock_repo.log_usage = AsyncMock()
+            count = collector.flush(mock_db)
+
+            assert count == 2
+            assert mock_repo.log_usage.call_count == 2
+            assert len(collector.records) == 0  # Cleared
 
     @pytest.mark.asyncio
     async def test_flush_empty_returns_zero(self):
         collector = TelemetryCollector(FakeAdapter(), project="proj")
         mock_db = MagicMock()
-        count = collector.flush(mock_db)
-        assert count == 0
-        assert mock_db.log_usage.call_count == 0
+
+        from unittest.mock import AsyncMock, patch
+        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
+            mock_repo_cls.return_value.log_usage = AsyncMock()
+            count = collector.flush(mock_db)
+            assert count == 0
+            assert mock_repo_cls.return_value.log_usage.call_count == 0
 
     @pytest.mark.asyncio
     async def test_flush_error_does_not_raise(self):
@@ -206,11 +217,15 @@ class TestCollectorFlush:
         await collector.generate([], GenerationConfig(model="m"))
 
         mock_db = MagicMock()
-        mock_db.log_usage.side_effect = Exception("DB locked")
+        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
-        # Should NOT raise
-        count = collector.flush(mock_db)
-        assert count == 1
+        from unittest.mock import AsyncMock, patch
+        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
+            mock_repo_cls.return_value.log_usage = AsyncMock(side_effect=Exception("DB locked"))
+
+            # Should NOT raise
+            count = collector.flush(mock_db)
+            assert count == 1
 
 
 class TestCollectorDelegation:
@@ -337,12 +352,17 @@ class TestCollectorFlushEdgeCases:
         await collector.generate([], GenerationConfig(model="m"))
 
         mock_db = MagicMock()
-        first = collector.flush(mock_db)
-        second = collector.flush(mock_db)
+        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
-        assert first == 1
-        assert second == 0
-        assert mock_db.log_usage.call_count == 1
+        from unittest.mock import AsyncMock, patch
+        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
+            mock_repo_cls.return_value.log_usage = AsyncMock()
+            first = collector.flush(mock_db)
+            second = collector.flush(mock_db)
+
+            assert first == 1
+            assert second == 0
+            assert mock_repo_cls.return_value.log_usage.call_count == 1
 
     @pytest.mark.asyncio
     async def test_partial_failure_records_not_cleared(self):
@@ -353,13 +373,17 @@ class TestCollectorFlushEdgeCases:
         await collector.generate([], GenerationConfig(model="m"))
 
         mock_db = MagicMock()
-        # Fail on the second call
-        mock_db.log_usage.side_effect = [None, Exception("DB error")]
+        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
 
-        collector.flush(mock_db)
+        from unittest.mock import AsyncMock, patch
+        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
+            # Fail on the second call
+            mock_repo_cls.return_value.log_usage = AsyncMock(side_effect=[None, Exception("DB error")])
 
-        # Records NOT cleared because the loop raised before .clear()
-        assert len(collector.records) == 2
+            collector.flush(mock_db)
+
+            # Records NOT cleared because the loop raised before .clear()
+            assert len(collector.records) == 2
 
 
 # ---------------------------------------------------------------------------

@@ -17,11 +17,11 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli.main import app
 from specweaver.core.flow.interfaces.cli import (
     _create_display,
     _resolve_spec_path,
 )
+from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()
 

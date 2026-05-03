@@ -26,13 +26,18 @@ runner = CliRunner()
 
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path, monkeypatch):
-    """Patch get_db() to use a temp DB for all standards tests."""
+    """Patch config_db_path and get_db to use a temp DB for all standards tests."""
     from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
 
-    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
+    db_path = tmp_path / ".specweaver-test" / "specweaver.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    bootstrap_database(str(db_path))
+    db = Database(db_path)
+
     monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.paths.config_db_path", lambda: db_path)
     return db
 
 

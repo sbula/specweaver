@@ -20,16 +20,16 @@ from specweaver.graph.lineage.engine import LineageEngine
 from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli import _core
 from specweaver.interfaces.cli._core import console, get_db
-from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
+from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
 if TYPE_CHECKING:
-    from specweaver.assurance.graph.topology import TopologyGraph
+    from specweaver.assurance.graph.topology import TopologyGraph, TopologyContext
 
 logger = logging.getLogger(__name__)
 
 
-def _load_topology(project_path: Path) -> "TopologyGraph | None":
+def _load_topology(project_path: Path) -> TopologyGraph | None:
     """Try to load the project's topology graph from context.yaml files.
 
     Returns ``None`` (with a dim console note) if no context.yaml files
@@ -349,11 +349,11 @@ def _get_selector_map() -> dict[str, type]:
 
 
 def _select_topology_contexts(
-    graph: "TopologyGraph" | None,
+    graph: TopologyGraph | None,
     module_name: str,
     *,
     selector_name: str = "direct",
-) -> list["TopologyContext"] | None:
+) -> list[TopologyContext] | None:
     """Run a selector and return topology contexts, or None."""
     if graph is None:
         return None

@@ -36,11 +36,15 @@ def _make_context(tmp_path: Path, *, llm: MagicMock | None = None) -> RunContext
     """Build a RunContext for testing."""
     output_dir = tmp_path / "output"
     output_dir.mkdir(exist_ok=True)
+    mock_db = MagicMock()
+    mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
+
     return RunContext(
         project_path=tmp_path,
         spec_path=tmp_path / "spec.md",
         llm=llm,
         output_dir=output_dir,
+        db=mock_db,
     )
 
 

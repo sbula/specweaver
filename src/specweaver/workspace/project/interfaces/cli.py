@@ -302,8 +302,8 @@ def scan() -> None:
     # Sync tach.toml topology layer
     _core.console.print("\n[bold]Synchronizing Tach Architecture Matrix...[/bold]")
     try:
-        from specweaver.graph.topology.engine import TopologyEngine
         from specweaver.assurance.graph.topology import TopologyGraph
+        from specweaver.graph.topology.engine import TopologyEngine
 
         engine = TopologyEngine()
         graph = TopologyGraph.from_project(project_path, engine)
@@ -624,8 +624,8 @@ def hooks_install(
         logger.info("Skip pre-commit hook installation per options.")
 
 def _load_constitution_content(
-    project_path: "Path",
-    spec_path: "Path | None" = None,
+    project_path: Path,
+    spec_path: Path | None = None,
 ) -> str | None:
     """Load constitution content for the given project, or None."""
     from specweaver.workspace.project.constitution import find_constitution

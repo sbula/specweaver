@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import typer
 
+from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.base import RunContext
 from specweaver.graph.interfaces.cli import (
@@ -19,13 +20,13 @@ from specweaver.graph.interfaces.cli import (
     _select_topology_contexts,
 )
 from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
+from specweaver.interfaces.cli import _core
+from specweaver.workspace.analyzers.factory import AnalyzerFactory
+from specweaver.workspace.project.discovery import resolve_project_path
 from specweaver.workspace.project.interfaces.cli import (
     _load_constitution_content,
     _run_workspace_op,
 )
-from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-from specweaver.workspace.analyzers.factory import AnalyzerFactory
-from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
 

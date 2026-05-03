@@ -113,14 +113,14 @@ class TestSelectTopologyContexts:
 
     def test_none_graph_returns_none(self) -> None:
         """None graph → None result."""
-        from specweaver.interfaces.cli._helpers import _select_topology_contexts
+        from specweaver.graph.interfaces.cli import _select_topology_contexts
 
         result = _select_topology_contexts(None, "some_module")
         assert result is None
 
     def test_unknown_selector_falls_back(self) -> None:
         """Unknown selector name → fallback to 'direct', still works."""
-        from specweaver.interfaces.cli._helpers import _select_topology_contexts
+        from specweaver.graph.interfaces.cli import _select_topology_contexts
 
         mock_graph = MagicMock()
         mock_graph.nodes = {"mod_a": MagicMock()}
@@ -139,13 +139,13 @@ class TestSelectTopologyContexts:
 
     def test_empty_related_returns_none(self) -> None:
         """Selector returns no related modules → None."""
-        from specweaver.interfaces.cli._helpers import _select_topology_contexts
+        from specweaver.graph.interfaces.cli import _select_topology_contexts
 
         mock_graph = MagicMock()
         mock_graph.nodes = {"mod_a": MagicMock()}
         # Patch the selector to return empty
         with patch(
-            "specweaver.interfaces.cli._helpers._get_selector_map",
+            "specweaver.graph.interfaces.cli._get_selector_map",
             return_value={
                 "direct": MagicMock(return_value=MagicMock(select=MagicMock(return_value=[])))
             },
@@ -175,7 +175,7 @@ class TestLoadConstitutionContent:
 
     def test_returns_content_when_found(self, tmp_path) -> None:
         """Returns constitution content when file exists."""
-        from specweaver.interfaces.cli._helpers import _load_constitution_content
+        from specweaver.workspace.project.interfaces.cli import _load_constitution_content
 
         constitution = tmp_path / "CONSTITUTION.md"
         constitution.write_text("# Test Constitution\n", encoding="utf-8")
@@ -186,7 +186,7 @@ class TestLoadConstitutionContent:
 
     def test_returns_none_when_not_found(self, tmp_path) -> None:
         """Returns None when no constitution exists."""
-        from specweaver.interfaces.cli._helpers import _load_constitution_content
+        from specweaver.workspace.project.interfaces.cli import _load_constitution_content
 
         result = _load_constitution_content(tmp_path)
         assert result is None
@@ -209,7 +209,7 @@ class TestLoadStandardsContent:
         self, mock_list_scopes, mock_get_standards, mock_get_active_project
     ) -> None:
         """No active project → None."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = None
 
@@ -225,7 +225,7 @@ class TestLoadStandardsContent:
         self, mock_list_scopes, mock_get_standards, mock_get_active_project
     ) -> None:
         """Active project but no standards → None."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "myproject"
         mock_get_standards.return_value = []
@@ -242,7 +242,7 @@ class TestLoadStandardsContent:
         self, mock_list_scopes, mock_get_standards, mock_get_active_project
     ) -> None:
         """Standards present → formatted string with categories."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "myproject"
         mock_get_standards.return_value = [
@@ -281,7 +281,7 @@ class TestLoadStandardsContentScopeAware:
         """target_path → _resolve_scope identifies correct scope."""
         from pathlib import Path as _Path
 
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "proj"
         mock_list_scopes.return_value = [".", "backend/auth"]
@@ -313,7 +313,7 @@ class TestLoadStandardsContentScopeAware:
         """target_path with non-root scope → loads scope + root standards."""
         from pathlib import Path as _Path
 
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "proj"
         mock_list_scopes.return_value = [".", "backend"]
@@ -361,7 +361,7 @@ class TestLoadStandardsContentScopeAware:
         """target_path resolving to '.' → root standards not loaded twice."""
         from pathlib import Path as _Path
 
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "proj"
         mock_list_scopes.return_value = ["."]
@@ -392,7 +392,7 @@ class TestLoadStandardsContentScopeAware:
         self, mock_list_scopes, mock_get_standards, mock_get_active_project
     ) -> None:
         """Output exceeding max_chars is truncated."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "proj"
         # Generate many standards to exceed limit
@@ -423,7 +423,7 @@ class TestLoadStandardsContentScopeAware:
         self, mock_list_scopes, mock_get_standards, mock_get_active_project
     ) -> None:
         """Output below max_chars is NOT truncated."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "proj"
         mock_get_standards.return_value = [
@@ -451,7 +451,7 @@ class TestLoadStandardsContentScopeAware:
         """Scope-specific standards appear before root in output."""
         from pathlib import Path as _Path
 
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "proj"
         mock_list_scopes.return_value = [".", "backend"]
@@ -499,7 +499,7 @@ class TestLoadStandardsContentScopeAware:
         self, mock_list_scopes, mock_get_standards, mock_get_active_project
     ) -> None:
         """target_path=None → all standards loaded (backward compat)."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "proj"
         mock_get_standards.return_value = [
@@ -526,7 +526,7 @@ class TestLoadStandardsContentScopeAware:
         self, mock_list_scopes, mock_get_standards, mock_get_active_project
     ) -> None:
         """Output format includes [scope/language/category] prefix."""
-        from specweaver.interfaces.cli._helpers import _load_standards_content
+        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         mock_get_active_project.return_value = "proj"
         mock_get_standards.return_value = [

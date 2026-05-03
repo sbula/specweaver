@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from specweaver.core.config.database import Database
-from specweaver.interfaces.cli.settings_loader import load_settings
+from specweaver.core.config.settings_loader import load_settings
 from tests.fixtures.db_utils import register_test_project
 
 

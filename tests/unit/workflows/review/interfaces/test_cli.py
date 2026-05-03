@@ -37,7 +37,7 @@ def _scaffold(tmp_path: Path) -> Path:
 class TestReviewCommand:
     """Test the review command behavior using PipelineRunner."""
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.workflows.review.interfaces.cli._require_llm_adapter")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_success_no_exit(self, mock_run, mock_require, tmp_path: Path) -> None:
         """Pipeline returns completed and step PASSED -> exit 0."""
@@ -73,7 +73,7 @@ class TestReviewCommand:
         assert result.exit_code == 0
         assert "Looks good." in result.output
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.workflows.review.interfaces.cli._require_llm_adapter")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_denied_exit_1(self, mock_run, mock_require, tmp_path: Path) -> None:
         """Pipeline PASSED but review verdict DENIED -> exit 1."""
@@ -114,7 +114,7 @@ class TestReviewCommand:
         assert "Missing sections." in result.output
         assert "No Purpose" in result.output
 
-    @patch("specweaver.interfaces.cli._helpers._require_llm_adapter")
+    @patch("specweaver.workflows.review.interfaces.cli._require_llm_adapter")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_error_exit_1(self, mock_run, mock_require, tmp_path: Path) -> None:
         """Pipeline returns parked or step FAILED -> exit 1."""

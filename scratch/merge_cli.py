@@ -1,4 +1,5 @@
 import typer
+
 app = typer.Typer()
 sub = typer.Typer()
 

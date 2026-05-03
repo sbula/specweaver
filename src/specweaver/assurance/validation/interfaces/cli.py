@@ -15,9 +15,9 @@ import typer
 from rich.table import Table
 
 from specweaver.interfaces.cli import _core
-from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.discovery import resolve_project_path
+from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult

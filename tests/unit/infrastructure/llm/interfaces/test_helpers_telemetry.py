@@ -18,17 +18,17 @@ class TestRequireLlmAdapterTelemetry:
 
     def test_passes_active_project_as_telemetry_project(self, tmp_path, monkeypatch):
         """When an active project exists, telemetry_project is set."""
-        from specweaver.interfaces.cli._helpers import _require_llm_adapter
+        from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
 
         mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with (
             patch(
-                "specweaver.interfaces.cli._helpers._run_workspace_op", return_value="my-project"
+                "specweaver.infrastructure.llm.interfaces.cli._run_workspace_op", return_value="my-project"
             ),
             patch(
-                "specweaver.interfaces.cli.settings_loader.load_settings",
+                "specweaver.core.config.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
             patch(
@@ -44,15 +44,15 @@ class TestRequireLlmAdapterTelemetry:
 
     def test_passes_none_when_no_active_project(self, tmp_path, monkeypatch):
         """When no active project, telemetry_project is None."""
-        from specweaver.interfaces.cli._helpers import _require_llm_adapter
+        from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
 
         mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with (
-            patch("specweaver.interfaces.cli._helpers._run_workspace_op", return_value=None),
+            patch("specweaver.infrastructure.llm.interfaces.cli._run_workspace_op", return_value=None),
             patch(
-                "specweaver.interfaces.cli.settings_loader.load_settings",
+                "specweaver.core.config.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
             patch(
@@ -68,15 +68,15 @@ class TestRequireLlmAdapterTelemetry:
 
     def test_passes_llm_role_through(self, tmp_path, monkeypatch):
         """llm_role parameter is still forwarded correctly."""
-        from specweaver.interfaces.cli._helpers import _require_llm_adapter
+        from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
 
         mock_settings = MagicMock()
 
         fake_result = (MagicMock(), MagicMock(), MagicMock())
         with (
-            patch("specweaver.interfaces.cli._helpers._run_workspace_op", return_value="proj"),
+            patch("specweaver.infrastructure.llm.interfaces.cli._run_workspace_op", return_value="proj"),
             patch(
-                "specweaver.interfaces.cli.settings_loader.load_settings",
+                "specweaver.core.config.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
             patch(
