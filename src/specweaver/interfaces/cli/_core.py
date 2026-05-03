@@ -17,10 +17,9 @@ import typer
 from rich.console import Console
 
 from specweaver._version import __version__
+from specweaver.core.config.cli_db_utils import get_db
 
 logger = logging.getLogger(__name__)
-
-
 app = typer.Typer(
     name="sw",
     help="SpecWeaver \u2014 Specification-driven development lifecycle tool.",
@@ -30,9 +29,6 @@ app = typer.Typer(
 
 console = Console()
 
-logger = logging.getLogger(__name__)
-
-from specweaver.core.config.cli_db_utils import get_db
 
 __all__ = ["_require_active_project", "app", "console", "get_db", "logger"]
 

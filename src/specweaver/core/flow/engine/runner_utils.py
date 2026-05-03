@@ -117,6 +117,22 @@ def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logge
                 logger.warning(f"Could not symlink {cache} into worktree: {res.message}")
 
 
+def verify_vault_security(context: RunContext) -> None:
+    """Feature 3.32c SF-1: Safe Vault Binding Audit (Option D)."""
+    vault_path = context.project_path / ".specweaver" / "vault.env"
+    if vault_path.exists():
+        from specweaver.sandbox.git.core.atom import GitAtom
+
+        git_atom = GitAtom(cwd=context.project_path)
+        # Check if tracked
+        result = git_atom.run({"intent": "is_tracked", "path": ".specweaver/vault.env"})
+        if getattr(result, "exports", {}).get("is_tracked", False):
+            raise RuntimeError(
+                "FATAL: vault.env is currently tracked by Git! Aborting execution to prevent credential leakage."
+            )
+
+
+
 async def execute_in_sandbox(
     runner: Any, handler: Any, step_def: Any, run: Any, logger: logging.Logger
 ) -> StepResult:

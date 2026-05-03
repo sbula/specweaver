@@ -86,7 +86,7 @@ from greet_service import greet
 
 
 
-import asyncio
+import asyncio  # noqa: E402
 
 def _sync_run(coro):
     try:
@@ -219,7 +219,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 review_llm,
@@ -258,7 +258,7 @@ class TestConstitutionE2E:
 
         review_llm, captured = _make_capturing_llm([_CODE_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 review_llm,
@@ -294,7 +294,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         impl_llm, captured = _make_capturing_llm([_GENERATED_CODE, _GENERATED_TESTS])
 
-        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 impl_llm,
@@ -329,7 +329,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 review_llm,
@@ -356,7 +356,7 @@ class TestConstitutionE2E:
         spec_path = tmp_path / "specs" / "widget_spec.md"
         review_llm, captured = _make_capturing_llm([_SPEC_REVIEW_RESPONSE])
 
-        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
             mock_req.return_value = (
                 None,
                 review_llm,

@@ -48,15 +48,16 @@ class TestValidationDALResolution:
 
         mock_resolve.return_value = "DAL_A"
 
-        merged = _resolve_merged_settings(ctx, spec)
+        merged = await _resolve_merged_settings(ctx, spec)
 
         assert merged is not ctx.settings
         assert merged.validation.get_override("S01").enabled is True
         assert merged.validation.get_override("S01").fail_threshold == 10.0
 
+    @pytest.mark.asyncio
     @patch("specweaver.workspace.store.WorkspaceRepository")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
-    def test_dal_resolution_fallback_to_db(
+    async def test_dal_resolution_fallback_to_db(
         self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
         from unittest.mock import MagicMock
@@ -96,14 +97,15 @@ class TestValidationDALResolution:
 
         mock_resolve.return_value = None  # No contextual DAL found
 
-        merged = _resolve_merged_settings(ctx, spec)
+        merged = await _resolve_merged_settings(ctx, spec)
 
         mock_repo.get_default_dal.assert_called_once_with(tmp_path.name)
         assert merged.validation.get_override("C02").enabled is False
 
+    @pytest.mark.asyncio
     @patch("specweaver.workspace.store.WorkspaceRepository")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
-    def test_dal_resolution_invalid_db_string_ignored(
+    async def test_dal_resolution_invalid_db_string_ignored(
         self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
         from unittest.mock import MagicMock
@@ -135,14 +137,15 @@ class TestValidationDALResolution:
         )
         mock_resolve.return_value = None
 
-        merged = _resolve_merged_settings(ctx, tmp_path / "test.md")
+        merged = await _resolve_merged_settings(ctx, tmp_path / "test.md")
 
         # Should gracefully catch ValueError during DALLevel mapping on Line 44, returning default settings
         assert merged is ctx.settings
 
+    @pytest.mark.asyncio
     @patch("specweaver.workspace.store.WorkspaceRepository")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
-    def test_dal_resolution_catches_db_exception(
+    async def test_dal_resolution_catches_db_exception(
         self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
         from unittest.mock import MagicMock
@@ -169,7 +172,7 @@ class TestValidationDALResolution:
         )
         mock_resolve.return_value = None
 
-        merged = _resolve_merged_settings(ctx, tmp_path / "test.md")
+        merged = await _resolve_merged_settings(ctx, tmp_path / "test.md")
 
         # Should catch DB Exception explicitly, leaving DAL as None, returning original settings
         assert merged is ctx.settings
@@ -219,7 +222,7 @@ class TestValidationDALResolution:
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings)
         mock_resolve.return_value = "DAL_A"
 
-        merged = _resolve_merged_settings(ctx, tmp_path / "test.md")
+        merged = await _resolve_merged_settings(ctx, tmp_path / "test.md")
 
         s01_override = merged.validation.get_override("S01")
         assert s01_override.fail_threshold == 5.0

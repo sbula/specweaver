@@ -5,7 +5,7 @@ from typer.testing import CliRunner
 
 import specweaver.graph.interfaces.cli  # noqa: F401 - Register commands
 from specweaver.core.config.database import Database
-from specweaver.interfaces.cli._core import app
+from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()
 
@@ -38,7 +38,7 @@ def test_lineage_tag_and_tree_e2e_happy_path(tmp_path, isolated_db):
             mock_lineage_get_db.return_value = isolated_db
 
         # 1. Tag the file
-        result_tag = runner.invoke(app, ["tag", str(target_file), "--author", "e2e-robot"])
+        result_tag = runner.invoke(app, ["lineage", "tag", str(target_file), "--author", "e2e-robot"])
         print(f"OUTPUT: {result_tag.output}")
         print(f"EXCEPTION: {result_tag.exception}")
         assert result_tag.exit_code == 0
@@ -52,13 +52,13 @@ def test_lineage_tag_and_tree_e2e_happy_path(tmp_path, isolated_db):
         artifact_uuid = uuid_line.split(": ")[1].strip()
 
         # 2. Run the tree command using the file path
-        result_tree_file = runner.invoke(app, ["tree", str(target_file)])
+        result_tree_file = runner.invoke(app, ["lineage", "tree", str(target_file)])
         assert result_tree_file.exit_code == 0
         assert artifact_uuid in result_tree_file.output
         assert "manual_tag:e2e-robot" in result_tree_file.output
 
         # 3. Run the tree command using the raw UUID
-        result_tree_uuid = runner.invoke(app, ["tree", artifact_uuid])
+        result_tree_uuid = runner.invoke(app, ["lineage", "tree", artifact_uuid])
         assert result_tree_uuid.exit_code == 0
         assert artifact_uuid in result_tree_uuid.output
         assert "manual_tag:e2e-robot" in result_tree_uuid.output

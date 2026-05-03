@@ -129,11 +129,24 @@ from = [
     "src.specweaver.sandbox",
 ]
 expose = [
-    "atoms",
-    "commons",
     "dispatcher",
     "security",
-    "tools",
+    "base",
+    "rule_atom",
+    "git.core",
+    "git.interfaces",
+    "filesystem.core",
+    "filesystem.interfaces",
+    "qa_runner.core",
+    "qa_runner.interfaces",
+    "mcp.core",
+    "mcp.interfaces",
+    "protocol.core",
+    "protocol.interfaces",
+    "web.interfaces",
+    "language.core",
+    "code_structure.core",
+    "code_structure.interfaces",
 ]
 
 [[interfaces]]

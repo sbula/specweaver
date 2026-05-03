@@ -45,7 +45,7 @@ def client(_db):
     return TestClient(app)
 
 
-import anyio
+import anyio  # noqa: E402
 
 
 def _set_domain_profile_sync(db, project: str, profile: str) -> None:
@@ -128,7 +128,7 @@ def _get_cost_overrides_sync(db) -> dict:
     return anyio.run(_do)
 
 
-import asyncio
+import asyncio  # noqa: E402
 
 
 def _sync_run(coro):

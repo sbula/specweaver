@@ -179,7 +179,7 @@ class TestFeatureCreationFullCycle:
 
             mock_llm = _make_llm([])
             with patch(
-                "specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter"
+                "specweaver.infrastructure.llm.factory.create_llm_adapter"
             ) as mock_req:
                 mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
                 result = runner.invoke(
@@ -280,7 +280,7 @@ class TestFeatureCreationLlmErrorMidPipeline:
         crash_llm.generate = _crash
         crash_llm.generate_with_tools = _crash
 
-        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
             mock_req.return_value = (None, crash_llm, GenerationConfig(model="mock"))
             result = runner.invoke(
                 app,
@@ -346,7 +346,7 @@ class TestFeatureCreationWithConstitution:
         mock_llm.generate = _capture_and_respond
         mock_llm.generate_with_tools = _capture_and_respond
 
-        with patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req:
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
             result = runner.invoke(
                 app,

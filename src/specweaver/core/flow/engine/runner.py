@@ -26,6 +26,7 @@ from specweaver.core.flow.engine.runner_utils import (
     RunnerEventCallback,
     _now_iso,
     setup_sandbox_caches,
+    verify_vault_security,
 )
 from specweaver.core.flow.engine.state import (
     PipelineRun,
@@ -91,19 +92,7 @@ class PipelineRunner:
         """Symlink heavy project caches into the worktree to save disk space (FR-2)."""
         setup_sandbox_caches(self._context, wt_dir, logger)
 
-    def _verify_vault_security(self) -> None:
-        """Feature 3.32c SF-1: Safe Vault Binding Audit (Option D)."""
-        vault_path = self._context.project_path / ".specweaver" / "vault.env"
-        if vault_path.exists():
-            from specweaver.sandbox.git.core.atom import GitAtom
 
-            git_atom = GitAtom(cwd=self._context.project_path)
-            # Check if tracked
-            result = git_atom.run({"intent": "is_tracked", "path": ".specweaver/vault.env"})
-            if getattr(result, "exports", {}).get("is_tracked", False):
-                raise RuntimeError(
-                    "FATAL: vault.env is currently tracked by Git! Aborting execution to prevent credential leakage."
-                )
 
     async def run(self, parent_run_id: str | None = None) -> PipelineRun:
         """Execute the pipeline from the beginning.
@@ -114,7 +103,7 @@ class PipelineRunner:
         Returns:
             The final PipelineRun state (COMPLETED, FAILED, or PARKED).
         """
-        self._verify_vault_security()
+        verify_vault_security(self._context)
         now = _now_iso()
 
         run = PipelineRun(
@@ -165,7 +154,7 @@ class PipelineRunner:
             logger.error(msg)
             raise ValueError(msg)
 
-        self._verify_vault_security()
+        verify_vault_security(self._context)
 
         run = self._store.load_run(run_id)
         if run is None:

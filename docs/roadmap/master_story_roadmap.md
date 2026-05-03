@@ -567,12 +567,17 @@ These stories do not add new user-facing features, but are critical epics requir
 ### 🟡 TECH-01: Domain-Driven Design Unification
 **Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-01:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-01/TECH-01_design.md)
+    *   `[x]` **TECH-01:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-01/TECH-01_design.md)
         *   `[x]` SF-1: Deconstruct Config Monolith
         *   `[x]` SF-2: Decentralize CLI Layer
-        *   `[ ]` SF-3: Consolidate Sandbox
+        *   `[x]` SF-3: Consolidate Sandbox
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
+
+### 🔴 TECH-01b: BaseTool Meta-Class Registry
+**Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-01b:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-01b_base_tool_registry.md)
 
 ### 🟢 TECH-02: Structural Refactoring of Workspace AST Module
 **Benefit:** *Crystal clear boundary separation between mechanical Tree-Sitter extraction and semantic ontology mapping.*

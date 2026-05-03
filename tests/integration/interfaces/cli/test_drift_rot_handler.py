@@ -72,9 +72,9 @@ tasks:
     from specweaver.interfaces.cli.main import app
 
     with (
-        patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
+        patch("specweaver.assurance.validation.interfaces.cli_drift.subprocess.run") as mock_run,
         patch(
-            "specweaver.assurance.validation.interfaces.cli.resolve_project_path"
+            "specweaver.assurance.validation.interfaces.cli_drift.resolve_project_path"
         ) as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
@@ -135,9 +135,9 @@ tasks:
     from specweaver.interfaces.cli.main import app
 
     with (
-        patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
+        patch("specweaver.assurance.validation.interfaces.cli_drift.subprocess.run") as mock_run,
         patch(
-            "specweaver.assurance.validation.interfaces.cli.resolve_project_path"
+            "specweaver.assurance.validation.interfaces.cli_drift.resolve_project_path"
         ) as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
@@ -180,9 +180,9 @@ def test_rot_check_polyglot_ts(tmp_path: Path) -> None:
     from specweaver.interfaces.cli.main import app
 
     with (
-        patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
+        patch("specweaver.assurance.validation.interfaces.cli_drift.subprocess.run") as mock_run,
         patch(
-            "specweaver.assurance.validation.interfaces.cli.resolve_project_path"
+            "specweaver.assurance.validation.interfaces.cli_drift.resolve_project_path"
         ) as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
@@ -211,9 +211,9 @@ def test_rot_check_windows_newlines(tmp_path: Path) -> None:
         stdout = f'"{code_file!s}"\r\n'
 
     with (
-        patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
+        patch("specweaver.assurance.validation.interfaces.cli_drift.subprocess.run") as mock_run,
         patch(
-            "specweaver.assurance.validation.interfaces.cli.resolve_project_path"
+            "specweaver.assurance.validation.interfaces.cli_drift.resolve_project_path"
         ) as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()

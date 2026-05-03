@@ -31,7 +31,7 @@ def _mock_db_fixture(tmp_path, monkeypatch):
         return db
 
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # _print_summary

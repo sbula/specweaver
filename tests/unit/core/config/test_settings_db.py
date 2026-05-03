@@ -31,7 +31,7 @@ def db(db_path: Path):
     return Database(db_path)
 
 
-import anyio
+import anyio  # noqa: E402
 
 
 def _create_llm_profile(

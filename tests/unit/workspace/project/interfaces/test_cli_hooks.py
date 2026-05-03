@@ -30,7 +30,7 @@ def test_hooks_install_pre_commit_success(tmp_path: Path):
     hooks_dir.mkdir(parents=True)
 
     with patch(
-        "specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path
+        "specweaver.workspace.project.interfaces.cli_hooks.resolve_project_path", return_value=tmp_path
     ):
         result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
 
@@ -60,7 +60,7 @@ def test_hooks_install_no_git_dir(tmp_path: Path):
     # We deliberately do not create .git/ directory here
 
     with patch(
-        "specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path
+        "specweaver.workspace.project.interfaces.cli_hooks.resolve_project_path", return_value=tmp_path
     ):
         result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
 
@@ -73,7 +73,7 @@ def test_hooks_install_resolve_error():
     runner = CliRunner()
 
     with patch(
-        "specweaver.workspace.project.interfaces.cli.resolve_project_path",
+        "specweaver.workspace.project.interfaces.cli_hooks.resolve_project_path",
         side_effect=FileNotFoundError("Invalid path"),
     ):
         result = runner.invoke(app, ["hooks", "install"])
@@ -90,7 +90,7 @@ def test_hooks_install_no_pre_commit(tmp_path: Path):
     git_dir.mkdir(parents=True)
 
     with patch(
-        "specweaver.workspace.project.interfaces.cli.resolve_project_path", return_value=tmp_path
+        "specweaver.workspace.project.interfaces.cli_hooks.resolve_project_path", return_value=tmp_path
     ):
         result = runner.invoke(app, ["hooks", "install", "--no-pre-commit"])
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Coroutine
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -20,10 +19,33 @@ from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.workspace.store import WorkspaceRepository
 
 if TYPE_CHECKING:
+    from collections.abc import Coroutine
+
     from specweaver.core.config.database import Database
+
+try:
+    from ruamel.yaml.error import YAMLError
+except ImportError:
+    class YAMLError(Exception):  # type: ignore
+        pass
 
 logger = logging.getLogger(__name__)
 
+def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
+    import asyncio
+
+    import nest_asyncio  # type: ignore
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        nest_asyncio.apply(loop)
+        return loop.run_until_complete(coro)
+
+    return anyio.run(lambda: coro)
 
 def _load_toml_standards(root_path: str | None) -> StandardsSettings:
     import tomllib
@@ -48,20 +70,7 @@ def load_settings(
 ) -> SpecWeaverSettings:
     logger.debug("load_settings called for project=%s, role=%s", project_name, llm_role)
 
-    def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
-        import asyncio
 
-        import nest_asyncio  # type: ignore
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            nest_asyncio.apply(loop)
-            return loop.run_until_complete(coro)
-        return anyio.run(lambda: coro)
 
     import typing
 
@@ -161,23 +170,6 @@ def load_settings_for_active(db: Database, *, llm_role: str = "review") -> SpecW
         async with db.async_session_scope() as session:
             return await WorkspaceRepository(session).get_active_project()
 
-    def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
-        import asyncio
-
-        import nest_asyncio
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            nest_asyncio.apply(loop)
-            return loop.run_until_complete(coro)
-        import anyio
-
-        return anyio.run(lambda: coro)
-
     active = _sync_or_async(_get_active())
     if not active:
         logger.error("No active project found")
@@ -191,12 +183,6 @@ def migrate_legacy_config(db: Database, project_name: str, project_path: str) ->
     from pathlib import Path
 
     from ruamel.yaml import YAML
-
-    try:
-        from ruamel.yaml import YAMLError  # type: ignore
-    except ImportError:
-        YAMLError = Exception
-
     logger.debug("migrate_legacy_config called for project=%s, path=%s", project_name, project_path)
     config_file = Path(project_path) / ".specweaver" / "config.yaml"
     if not config_file.is_file():
@@ -250,22 +236,7 @@ def migrate_legacy_config(db: Database, project_name: str, project_path: str) ->
             for role in ("review", "draft", "search"):
                 await repo.link_project_profile(project_name, role, profile_id)
 
-    def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
-        import asyncio
 
-        import nest_asyncio
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            nest_asyncio.apply(loop)
-            return loop.run_until_complete(coro)
-        import anyio
-
-        return anyio.run(lambda: coro)
 
     _sync_or_async(_check_and_migrate())
     logger.info("Migrated legacy config for project '%s'", project_name)

@@ -423,23 +423,23 @@ After all files moved and imports verified, delete the empty tree including all 
 ### Commit Boundary 2: Documentation + cleanup
 
 #### [MODIFY] Active reference docs (6 files):
-- `docs/architecture/architecture_reference.md` — ~30 replacements
-- `docs/dev_guides/adding_tools_and_atoms.md` — ~10 replacements
-- `docs/dev_guides/layer_isolation_and_di.md` — ~10 replacements
-- `docs/dev_guides/mcp_implementation_patterns.md`
-- `docs/dev_guides/protocol_analyzers.md`
-- `docs/dev_guides/special_patterns_and_adaptations.md`
+- `[x]` `docs/architecture/architecture_reference.md` — ~30 replacements
+- `[x]` `docs/dev_guides/adding_tools_and_atoms.md` — ~10 replacements
+- `[x]` `docs/dev_guides/layer_isolation_and_di.md` — ~10 replacements
+- `[x]` `docs/dev_guides/mcp_implementation_patterns.md`
+- `[x]` `docs/dev_guides/protocol_analyzers.md`
+- `[x]` `docs/dev_guides/special_patterns_and_adaptations.md`
 
 > [!IMPORTANT]
 > **Do NOT update historical implementation plans** for other features (38+ files in `docs/roadmap/features/`). Those documents record decisions made against the old layout and are historical records.
 
 #### [MODIFY] `docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_design.md`
-- Update the Progress Tracker: mark SF-3 `Impl Plan ✅`.
+- `[x]` Update the Progress Tracker: mark SF-3 `Impl Plan ✅`.
 
 ### Commit Boundary 3: NFR-6 tech debt issue
 
 #### [NEW] Tech debt issue for NFR-6 (`BaseTool` metaclass registry)
-- Add TECH-01b to the technical debt backlog for implementing `BaseTool.__init_subclass__` auto-registration.
+- `[x]` Add TECH-01b to the technical debt backlog for implementing `BaseTool.__init_subclass__` auto-registration.
 
 ## Boundary Violations Resolved by Structural Improvement
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 import sqlite3
 from typing import TYPE_CHECKING
 
-import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
@@ -11,29 +10,10 @@ from specweaver.interfaces.cli.main import app
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import pytest
+
 runner = CliRunner()
 
-
-@pytest.fixture(autouse=True)
-def _patch_config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Force config_db_path to return a path in our isolated tmp_path."""
-    monkeypatch.setattr(
-        "specweaver.interfaces.cli._core.config_db_path",
-        lambda: tmp_path / "specweaver.db",
-    )
-    # Also unpatch the db if it was patched by the global conftest!
-    # By default, conftest patches get_db to return a pre-bootstrapped db.
-    # We must undo that patch so `get_db` executes natively.
-    monkeypatch.undo()  # This undoes all monkeypatches, but wait, we just set one above!
-    # Better approach: explicitly override get_db to NOT be patched.
-    # Actually, we can just let `main.get_db` run. If conftest patches `_core.get_db`, we overwrite it back.
-    import specweaver.interfaces.cli._core
-
-    # Save the original get_db
-    original_get_db = getattr(specweaver.interfaces.cli._core, "_original_get_db", None)
-    if not original_get_db:
-        # If it wasn't saved, let's just re-bind the module level
-        pass
 
 
 def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -41,6 +21,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
     db_path = tmp_path / "specweaver.db"
 
     # We MUST bypass the conftest mock that pre-initializes the DB.
+    # We must also mock config_db_path inside cli_db_utils.
     # The E2E conftest does: `monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", ...)`
     # We will undo that specific patch by re-importing the original get_db logic directly.
     def _native_get_db():
@@ -55,6 +36,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
         return Database(db_path)
 
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", _native_get_db)
+    monkeypatch.setattr("specweaver.core.config.cli_db_utils.config_db_path", lambda: db_path)
 
     assert not db_path.exists()
 
@@ -94,6 +76,7 @@ def test_cli_bootstrap_e2e_idempotency(tmp_path: Path, monkeypatch: pytest.Monke
         return Database(db_path)
 
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", _native_get_db)
+    monkeypatch.setattr("specweaver.core.config.cli_db_utils.config_db_path", lambda: db_path)
 
     # Run once
     runner.invoke(app, ["projects"])
