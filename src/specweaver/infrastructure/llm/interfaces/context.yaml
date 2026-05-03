@@ -1,0 +1,12 @@
+# Bounded context for the L6 presentation layer of Infrastructure LLM
+description: "LLM cost and usage CLI commands"
+
+archetype: orchestrator
+
+exports:
+  - cli
+
+dependencies:
+  - specweaver.infrastructure.llm.store
+  - specweaver.infrastructure.llm.telemetry
+  - specweaver.interfaces.cli

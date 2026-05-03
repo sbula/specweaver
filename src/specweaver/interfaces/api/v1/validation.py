@@ -29,7 +29,7 @@ _db_dep = Depends(get_db)
 
 
 @router.post("/check", response_model=CheckResponse)
-def run_check(
+async def run_check(
     body: CheckRequest,
     db: Database = _db_dep,
 ) -> CheckResponse:
@@ -41,18 +41,26 @@ def run_check(
         load_pipeline_yaml,
         resolve_pipeline_name,
     )
+    from specweaver.workspace.store import WorkspaceRepository
 
     validate_relative_path(body.file)
-    project_root, abs_path = resolve_file_in_project(body.file, body.project, db)
+    project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
     content = abs_path.read_text(encoding="utf-8")
 
-    active = db.get_active_project()
+    async with db.async_session_scope() as session:
+        repo = WorkspaceRepository(session)
+        active_name = await repo.get_active_project()
+        active_profile = None
+        if active_name:
+            proj = await repo.get_project(active_name)
+            if proj:
+                active_profile = proj.get("domain_profile")
+
     pipeline_name = resolve_pipeline_name(
         body.level,
         body.pipeline,
-        db=db,
-        active_project=active,
+        active_profile=active_profile,
     )
 
     resolved = load_pipeline_yaml(pipeline_name, project_dir=project_root)

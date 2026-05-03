@@ -15,7 +15,7 @@ from specweaver.interfaces.api.app import create_app
 @pytest.fixture()
 def client(tmp_path):
     """TestClient for the API."""
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
+    from specweaver.core.config.cli_db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
@@ -217,6 +217,8 @@ def test_submit_hitl_gate(tmp_path) -> None:
 
     from starlette.testclient import TestClient
 
+    # Set up DB and project
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
@@ -224,20 +226,19 @@ def test_submit_hitl_gate(tmp_path) -> None:
     from specweaver.interfaces.api.app import create_app
     from specweaver.interfaces.api.event_bridge import EventBridge
 
-    # Set up DB and project
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
-
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
-    with db.connect() as conn:
-        conn.execute(
-            "INSERT INTO projects (name, root_path, created_at, last_used_at) VALUES (?, ?, ?, ?)",
-            ("myproject", str(tmp_path), "2026-01-01T00:00:00", "2026-01-01T00:00:00"),
-        )
-        conn.execute(
-            "INSERT INTO active_state (key, value) VALUES (?, ?)",
-            ("active_project", "myproject"),
-        )
+    import anyio
+
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async def _setup_db():
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.register_project("myproject", str(tmp_path))
+            await repo.set_active_project("myproject")
+
+    anyio.run(_setup_db)
 
     app = create_app(db=db)
     client = TestClient(app)
@@ -298,11 +299,11 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
 
     from starlette.testclient import TestClient
 
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.app import create_app
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")

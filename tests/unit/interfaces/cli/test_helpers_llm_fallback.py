@@ -22,12 +22,12 @@ if TYPE_CHECKING:
 @pytest.fixture()
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB."""
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
     return db
 
 
@@ -90,7 +90,7 @@ class TestRequireLlmAdapterFallback:
 
         # Mock get_db to return a DB
         mock_db = MagicMock()
-        monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: mock_db)
+        monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: mock_db)
 
         # Mock _run_workspace_op
         with patch(

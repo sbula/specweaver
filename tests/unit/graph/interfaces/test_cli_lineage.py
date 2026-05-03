@@ -9,7 +9,8 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli.lineage import app, check_lineage
+from specweaver.graph.interfaces.cli import check_lineage
+from specweaver.graph.interfaces.cli import lineage_app as app
 
 runner = CliRunner()
 
@@ -122,9 +123,9 @@ def test_tag_command_adds_tag_and_logs_to_db(tmp_path):
     target_file.write_text("def foo():\n    pass\n", encoding="utf-8")
 
     with (
-        patch("specweaver.interfaces.cli.lineage.uuid.uuid4") as mock_uuid,
-        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+        patch("specweaver.graph.interfaces.cli.uuid.uuid4") as mock_uuid,
+        patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
+        patch("specweaver.graph.interfaces.cli.LineageRepository") as mock_repo_class,
     ):
         mock_uuid.return_value = "mocked-uuid-123"
         mock_db = MagicMock()
@@ -157,8 +158,8 @@ def test_tag_command_logs_edit_for_existing_tag(tmp_path):
     )
 
     with (
-        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository") as mock_repo_class,
+        patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
+        patch("specweaver.graph.interfaces.cli.LineageRepository") as mock_repo_class,
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"
@@ -183,9 +184,9 @@ def test_tag_command_logs_edit_for_existing_tag(tmp_path):
 def test_tree_command_displays_lineage():
     """sw lineage tree <uuid> should render a rich tree."""
     with (
-        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
-        patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository"),
+        patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
+        patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
+        patch("specweaver.graph.interfaces.cli.LineageRepository"),
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"
@@ -241,9 +242,9 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
     target_file.write_text("# sw-artifact: filebase-uuid-999\n", encoding="utf-8")
 
     with (
-        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
-        patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository"),
+        patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
+        patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
+        patch("specweaver.graph.interfaces.cli.LineageRepository"),
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"
@@ -271,9 +272,9 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
 def test_tree_command_graceful_missing_history():
     """sw lineage tree should print the root UUID even if there is no db history."""
     with (
-        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
-        patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository"),
+        patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
+        patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
+        patch("specweaver.graph.interfaces.cli.LineageRepository"),
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"
@@ -300,9 +301,9 @@ def test_tree_command_graceful_missing_history():
 def test_tree_command_handles_circular_references():
     """sw lineage tree should abort recursive rendering on circular graph links to prevent stack overflow."""
     with (
-        patch("specweaver.interfaces.cli.lineage.get_db") as mock_get_db,
-        patch("specweaver.interfaces.cli.lineage.LineageEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.lineage.LineageRepository"),
+        patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
+        patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
+        patch("specweaver.graph.interfaces.cli.LineageRepository"),
     ):
         mock_db = MagicMock()
         mock_db.get_active_project.return_value = "test-proj"

@@ -20,7 +20,7 @@ from tests.fixtures.db_utils import register_test_project, set_test_active_proje
 @pytest.fixture
 def tmp_db(tmp_path: Path) -> Database:
     """Provides a fresh database with a registered project."""
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
+    from specweaver.core.config.cli_db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(tmp_path / "test.db")
@@ -166,7 +166,7 @@ async def test_fallback_pipeline_execution(tmp_db: Database, tmp_path: Path) -> 
 
     # Attach router but with an EMPTY database mapped for this project.
     context.llm_router = ModelRouter(
-        lambda r: load_settings(tmp_db, "test-proj", llm_role=r), telemetry_project="test-proj"
+        lambda r: None, telemetry_project="test-proj"
     )
 
     handler = GenerateCodeHandler()
@@ -174,7 +174,7 @@ async def test_fallback_pipeline_execution(tmp_db: Database, tmp_path: Path) -> 
 
     res = await handler.execute(step, context)
 
-    assert res.status.value == "passed"
+    assert res.status.value == "passed", getattr(res, "message", "No message")
     mock_adapter.generate.assert_called_once()
 
     _, kwargs = mock_adapter.generate.call_args

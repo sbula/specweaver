@@ -157,21 +157,17 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 1. SF-1, SF-2, and SF-3 can run in parallel (no shared dependencies).
 
-## Session Handoff
-SF-1 design and implementation planning are strictly approved and finalized. The next developer/agent MUST begin implementation by running the `/dev` workflow targeting `docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf1_implementation_plan.md`.
-
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
-| SF-2 | Decentralize CLI Layer | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Decentralize CLI Layer | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-3 | Consolidate Sandbox | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design DRAFT — awaiting HITL approval.
-**Next step**: After approval, run:
-`/implementation-plan docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_design.md SF-1`
+**Current status**: SF-2 Impl Plan Approved.
+**Next step**: Run `/dev docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf2_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

@@ -200,6 +200,32 @@ class TelemetryCollector:
             )
         return count
 
+    async def flush_async(self, db: Any) -> int:
+        """Persist all accumulated records to DB asynchronously.
+
+        Never raises — telemetry failures are logged, not propagated.
+        Returns the number of records that were flushed.
+        """
+        count = len(self._records)
+        if count == 0:
+            return 0
+
+        try:
+            async with db.async_session_scope() as session:
+                repo = LlmRepository(session)
+                for r in self._records:
+                    await repo.log_usage(r.model_dump())
+            self._records.clear()
+            logger.debug("Flushed %d telemetry records for project '%s'", count, self._project)
+        except Exception:
+            logger.warning(
+                "Failed to flush %d telemetry records for project '%s'",
+                count,
+                self._project,
+                exc_info=True,
+            )
+        return count
+
     # ------------------------------------------------------------------
     # Delegate remaining LLMAdapter interface
     # ------------------------------------------------------------------

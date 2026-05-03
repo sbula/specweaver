@@ -7,7 +7,7 @@ from tests.fixtures.db_utils import register_test_project
 
 def test_load_settings_toml_overrides_defaults(tmp_path: Path):
     # Setup mock db and project
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
+    from specweaver.core.config.cli_db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / "specweaver.db"))
     db = Database(tmp_path / "specweaver.db")
@@ -28,7 +28,7 @@ def test_load_settings_toml_overrides_defaults(tmp_path: Path):
 
 
 def test_load_settings_toml_absent_keeps_defaults(tmp_path: Path):
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
+    from specweaver.core.config.cli_db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / "specweaver.db"))
     db = Database(tmp_path / "specweaver.db")

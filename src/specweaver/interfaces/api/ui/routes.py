@@ -61,12 +61,12 @@ templates.env.filters["markdown"] = _render_markdown
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def get_dashboard_projects(
+async def get_dashboard_projects(
     request: Request,
     db: Database = Depends(get_db),  # noqa: B008
 ) -> HTMLResponse:
     """Render the main dashboard page (project list)."""
-    projects = list_projects(db)
+    projects = await list_projects(db)
     return templates.TemplateResponse(
         request=request,
         name="projects.html",

@@ -23,14 +23,14 @@ _db_dep = Depends(get_db)
 
 
 @router.get("/constitution", response_model=ConstitutionResponse)
-def get_constitution(
+async def get_constitution(
     project: str = Query(..., description="Project name."),
     db: Database = _db_dep,
 ) -> ConstitutionResponse:
     """Read the constitution file for a project."""
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
-    project_root = resolve_project_root(project, db)
+    project_root = await resolve_project_root(project, db)
     constitution_path = project_root / "CONSTITUTION.md"
 
     if not constitution_path.exists():
@@ -45,14 +45,14 @@ def get_constitution(
 
 
 @router.post("/constitution/init")
-def init_constitution(
+async def init_constitution(
     body: ConstitutionInitRequest,
     db: Database = _db_dep,
 ) -> dict[str, str]:
     """Initialize a constitution file for a project."""
     from specweaver.workspace.project.scaffold import scaffold_project
 
-    project_root = resolve_project_root(body.project, db)
+    project_root = await resolve_project_root(body.project, db)
     scaffold_project(project_root)
 
     constitution_path = project_root / "CONSTITUTION.md"

@@ -27,12 +27,12 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path, monkeypatch):
     """Patch get_db() to use a temp DB for all standards tests."""
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
     return db
 
 
@@ -113,7 +113,7 @@ class TestSaveAcceptedStandards:
     ) -> None:
         """no_review=False → confirmed_by='hitl'."""
         from specweaver.assurance.standards.analyzer import CategoryResult
-        from specweaver.interfaces.cli.standards import _save_accepted_standards
+        from specweaver.assurance.standards.interfaces.cli import _save_accepted_standards
 
         _init_project(_mock_db, "proj", str(tmp_path))
         accepted = {
@@ -139,7 +139,7 @@ class TestSaveAcceptedStandards:
     ) -> None:
         """no_review=True → confirmed_by=None."""
         from specweaver.assurance.standards.analyzer import CategoryResult
-        from specweaver.interfaces.cli.standards import _save_accepted_standards
+        from specweaver.assurance.standards.interfaces.cli import _save_accepted_standards
 
         _init_project(_mock_db, "proj", str(tmp_path))
         accepted = {
@@ -189,7 +189,7 @@ class TestMaybeBootstrapConstitution:
         _mock_db,
     ) -> None:
         """User-edited CONSTITUTION.md → returns without action."""
-        from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
+        from specweaver.assurance.standards.interfaces.cli import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
         # Create user-edited constitution
@@ -214,7 +214,7 @@ class TestMaybeBootstrapConstitution:
         _mock_db,
     ) -> None:
         """mode='auto' → auto-creates CONSTITUTION.md."""
-        from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
+        from specweaver.assurance.standards.interfaces.cli import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
         _run_workspace_op(_mock_db, "set_auto_bootstrap", "proj", "auto")
@@ -239,7 +239,7 @@ class TestMaybeBootstrapConstitution:
         capsys,
     ) -> None:
         """mode='off' → prints hint about sw constitution bootstrap."""
-        from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
+        from specweaver.assurance.standards.interfaces.cli import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
         _run_workspace_op(_mock_db, "set_auto_bootstrap", "proj", "off")
@@ -263,7 +263,7 @@ class TestMaybeBootstrapConstitution:
         _mock_db,
     ) -> None:
         """mode='prompt' + no_review → prints hint (no prompt)."""
-        from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
+        from specweaver.assurance.standards.interfaces.cli import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
         _run_workspace_op(_mock_db, "set_auto_bootstrap", "proj", "prompt")
@@ -288,7 +288,7 @@ class TestMaybeBootstrapConstitution:
         monkeypatch,
     ) -> None:
         """mode='prompt' + user says yes → creates constitution."""
-        from specweaver.interfaces.cli.standards import _maybe_bootstrap_constitution
+        from specweaver.assurance.standards.interfaces.cli import _maybe_bootstrap_constitution
 
         _init_project(_mock_db, "proj", str(tmp_path))
         _run_workspace_op(_mock_db, "set_auto_bootstrap", "proj", "prompt")
@@ -297,7 +297,7 @@ class TestMaybeBootstrapConstitution:
 
         # Mock typer.confirm to return True
         monkeypatch.setattr(
-            "specweaver.interfaces.cli.standards.typer.confirm", lambda *a, **kw: True
+            "specweaver.assurance.standards.interfaces.cli.typer.confirm", lambda *a, **kw: True
         )
 
         _maybe_bootstrap_constitution(

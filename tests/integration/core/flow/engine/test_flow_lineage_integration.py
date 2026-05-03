@@ -66,7 +66,7 @@ class _FakeFailingReviewHandler:
 def lineage_db(tmp_path: Path) -> Database:
     """Returns a real DB configured at tmp_path."""
     db_path = tmp_path / "specweaver.db"
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
+    from specweaver.core.config.cli_db_utils import bootstrap_database
 
     bootstrap_database(str(db_path))
     db = Database(db_path)

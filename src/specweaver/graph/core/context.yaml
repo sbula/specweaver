@@ -1,0 +1,14 @@
+# Bounded context for the Graph Core
+description: "Core logic for Knowledge Graph construction and traversal"
+
+archetype: core
+
+exports:
+  - builder
+  - engine
+  - store
+
+dependencies:
+  - specweaver.core.config.database
+  - specweaver.core.config.paths
+  - specweaver.assurance.graph.topology

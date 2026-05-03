@@ -3,8 +3,9 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
+import specweaver.graph.interfaces.cli  # noqa: F401 - Register commands
 from specweaver.core.config.database import Database
-from specweaver.interfaces.cli.lineage import app
+from specweaver.interfaces.cli._core import app
 
 runner = CliRunner()
 
@@ -13,7 +14,7 @@ runner = CliRunner()
 def isolated_db(tmp_path):
     # Set up a real database for the CLI to interact with during E2E
     db_path = tmp_path / "specweaver.db"
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
+    from specweaver.core.config.cli_db_utils import bootstrap_database
 
     bootstrap_database(str(db_path))
     db = Database(str(db_path))
@@ -33,7 +34,7 @@ def test_lineage_tag_and_tree_e2e_happy_path(tmp_path, isolated_db):
     with patch("specweaver.interfaces.cli._core.get_db") as mock_get_db:
         mock_get_db.return_value = isolated_db
 
-        with patch("specweaver.interfaces.cli.lineage.get_db") as mock_lineage_get_db:
+        with patch("specweaver.graph.interfaces.cli.get_db") as mock_lineage_get_db:
             mock_lineage_get_db.return_value = isolated_db
 
         # 1. Tag the file

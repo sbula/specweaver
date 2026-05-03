@@ -44,7 +44,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
         from specweaver.core.config.database import Database
 
         try:
-            from specweaver.interfaces.cli._db_utils import bootstrap_database
+            from specweaver.core.config.cli_db_utils import bootstrap_database
 
             bootstrap_database(str(db_path))
         except Exception:
@@ -83,7 +83,7 @@ def test_cli_bootstrap_e2e_idempotency(tmp_path: Path, monkeypatch: pytest.Monke
         from specweaver.core.config.database import Database
 
         try:
-            from specweaver.interfaces.cli._db_utils import bootstrap_database
+            from specweaver.core.config.cli_db_utils import bootstrap_database
 
             bootstrap_database(str(db_path))
         except Exception:

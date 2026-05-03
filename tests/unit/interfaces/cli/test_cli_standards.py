@@ -28,12 +28,12 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path, monkeypatch):
     """Patch get_db() to use a temp DB for all standards tests."""
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
     return db
 
 
@@ -603,7 +603,7 @@ class TestFileInScope:
 
     def test_file_in_named_scope(self, tmp_path: Path) -> None:
         """File under scope path → True."""
-        from specweaver.interfaces.cli.standards import _file_in_scope
+        from specweaver.assurance.standards.interfaces.cli import _file_in_scope
 
         file_path = tmp_path / "backend" / "auth" / "login.py"
         scope_path = tmp_path / "backend" / "auth"
@@ -620,7 +620,7 @@ class TestFileInScope:
 
     def test_file_not_in_scope(self, tmp_path: Path) -> None:
         """File NOT under scope path → False."""
-        from specweaver.interfaces.cli.standards import _file_in_scope
+        from specweaver.assurance.standards.interfaces.cli import _file_in_scope
 
         file_path = tmp_path / "frontend" / "app.ts"
         scope_path = tmp_path / "backend"
@@ -637,7 +637,7 @@ class TestFileInScope:
 
     def test_root_scope_excludes_named_scope_files(self, tmp_path: Path) -> None:
         """Root scope '.' excludes files belonging to named scopes."""
-        from specweaver.interfaces.cli.standards import _file_in_scope
+        from specweaver.assurance.standards.interfaces.cli import _file_in_scope
 
         # File in backend/auth — should NOT be in root scope
         file_path = tmp_path / "backend" / "auth" / "login.py"
@@ -655,7 +655,7 @@ class TestFileInScope:
 
     def test_root_scope_includes_non_scoped_files(self, tmp_path: Path) -> None:
         """Root scope '.' includes files not in any named scope."""
-        from specweaver.interfaces.cli.standards import _file_in_scope
+        from specweaver.assurance.standards.interfaces.cli import _file_in_scope
 
         file_path = tmp_path / "setup.py"
         scope_path = tmp_path
@@ -672,7 +672,7 @@ class TestFileInScope:
 
     def test_root_scope_with_no_other_scopes(self, tmp_path: Path) -> None:
         """Root scope '.' with only root → all files belong to root."""
-        from specweaver.interfaces.cli.standards import _file_in_scope
+        from specweaver.assurance.standards.interfaces.cli import _file_in_scope
 
         file_path = tmp_path / "main.py"
         scope_path = tmp_path

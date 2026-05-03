@@ -18,7 +18,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _patch_ensure_schema():
     with (
-        patch("specweaver.core.config.database.Database._ensure_schema"),
+        patch("specweaver.core.config.database.Database._ensure_schema", create=True),
         patch(
             "specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock
         ),

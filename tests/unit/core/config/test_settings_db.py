@@ -24,8 +24,8 @@ def db_path(tmp_path: Path) -> Path:
 @pytest.fixture()
 def db(db_path: Path):
     """Create a fresh Database."""
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(db_path))
     return Database(db_path)

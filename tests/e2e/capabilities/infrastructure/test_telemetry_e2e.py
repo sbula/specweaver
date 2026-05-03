@@ -37,7 +37,7 @@ def db(tmp_path: Path):
     from specweaver.core.config.database import Database
 
     database = Database(tmp_path / ".specweaver" / "specweaver.db")
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
     db_path = str(tmp_path / ".specweaver" / "specweaver.db")

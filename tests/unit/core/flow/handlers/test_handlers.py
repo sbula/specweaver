@@ -240,7 +240,7 @@ class TestGenerateCodeHandler:
             return_value=MagicMock(text="```python\nx = 2\n```", finish_reason=1, parsed=None)
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
+            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter, db=MagicMock()
         )
         ctx.run_id = "test-run"
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -252,7 +252,7 @@ class TestGenerateCodeHandler:
         mock_repo_class.return_value = mock_repo
 
         result = await handler.execute(step, ctx)
-        assert result.status == StepStatus.PASSED
+        assert result.status == StepStatus.PASSED, str(result.__dict__)
         assert "generated_path" in result.output
         assert result.artifact_uuid is not None
 
@@ -327,7 +327,7 @@ class TestGenerateCodeHandler:
             )
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter
+            project_path=tmp_path, spec_path=spec, output_dir=src_dir, llm=mock_adapter, db=MagicMock()
         )
         ctx.run_id = "test-run"
         step = PipelineStep(name="gen", action=StepAction.GENERATE, target=StepTarget.CODE)
@@ -440,7 +440,7 @@ class TestGenerateTestsHandler:
             )
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter
+            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter, db=MagicMock()
         )
         ctx.run_id = "test-run"
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
@@ -524,7 +524,7 @@ class TestGenerateTestsHandler:
             )
         )
         ctx = RunContext(
-            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter
+            project_path=tmp_path, spec_path=spec, output_dir=tests_dir, llm=mock_adapter, db=MagicMock()
         )
         ctx.run_id = "test-run"
         step = PipelineStep(name="gen_tests", action=StepAction.GENERATE, target=StepTarget.TESTS)
@@ -590,7 +590,7 @@ class TestPlanSpecHandler:
         spec = tmp_path / "test_spec.md"
         valid_uuid = "11111111-2222-3333-4444-888888888888"
         spec.write_text(f"# sw-artifact: {valid_uuid}\nTest\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock(), db=MagicMock())
 
         mock_repo = MagicMock()
         mock_repo.log_artifact_event = AsyncMock()
@@ -640,7 +640,7 @@ class TestPlanSpecHandler:
         """If spec lacks a tag, parent_id falls back to run_id."""
         spec = tmp_path / "test_spec.md"
         spec.write_text("# No tag here\nTest\n")
-        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock(), db=MagicMock())
         ctx.run_id = "test-run-123"
         step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
         handler = PlanSpecHandler()
@@ -724,7 +724,7 @@ class TestDraftSpecHandler:
     ) -> None:
         """If drafting succeeds, StepResult contains a generated artifact_uuid."""
         spec = tmp_path / "test_spec.md"
-        ctx = RunContext(project_path=tmp_path, spec_path=spec)
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
         ctx.llm = AsyncMock()
         ctx.context_provider = AsyncMock()
 

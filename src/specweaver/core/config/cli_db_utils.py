@@ -1,15 +1,19 @@
 import asyncio
+import logging
 
 import anyio
 import nest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from specweaver.core.config.database import session_scope
+from specweaver.core.config.database import Database, session_scope
+from specweaver.core.config.paths import config_db_path
 from specweaver.core.flow.store import Base as FlowBase
 from specweaver.infrastructure.llm.store import Base as LlmBase
 from specweaver.infrastructure.llm.store import LlmProfile
 from specweaver.workspace.store import Base as WorkspaceBase
+
+logger = logging.getLogger(__name__)
 
 
 def bootstrap_database(db_path: str) -> None:
@@ -25,8 +29,8 @@ def bootstrap_database(db_path: str) -> None:
             print("LlmBase tables:", LlmBase.metadata.tables.keys())
             print("WorkspaceBase tables:", WorkspaceBase.metadata.tables.keys())
             print("FlowBase tables:", FlowBase.metadata.tables.keys())
-            await conn.run_sync(LlmBase.metadata.create_all)
             await conn.run_sync(WorkspaceBase.metadata.create_all)
+            await conn.run_sync(LlmBase.metadata.create_all)
             await conn.run_sync(FlowBase.metadata.create_all)
 
         # Seed default LLM profiles if empty
@@ -64,6 +68,8 @@ def bootstrap_database(db_path: str) -> None:
                 ]
                 session.add_all(defaults)
 
+        await engine.dispose()
+
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -74,3 +80,13 @@ def bootstrap_database(db_path: str) -> None:
         loop.run_until_complete(_create_all())
     else:
         anyio.run(_create_all)
+
+
+def get_db() -> Database:
+    """Get the global SpecWeaver database (creates if needed)."""
+    db_path = config_db_path()
+    try:
+        bootstrap_database(str(db_path))
+    except Exception as exc:
+        logger.warning("Failed to bootstrap database at %s: %s", db_path, exc)
+    return Database(db_path)

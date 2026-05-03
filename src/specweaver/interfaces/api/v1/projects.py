@@ -24,10 +24,15 @@ _db_dep = Depends(get_db)
 
 
 @router.get("/projects", response_model=list[ProjectResponse])
-def list_projects(db: Database = _db_dep) -> list[ProjectResponse]:
+async def list_projects(db: Database = _db_dep) -> list[ProjectResponse]:
     """List all registered projects."""
-    all_projects = db.list_projects()
-    active = db.get_active_project()
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async with db.async_session_scope() as session:
+        repo = WorkspaceRepository(session)
+        all_projects = await repo.list_projects()
+        active = await repo.get_active_project()
+
     return [
         ProjectResponse(
             name=str(p["name"]),
@@ -39,11 +44,13 @@ def list_projects(db: Database = _db_dep) -> list[ProjectResponse]:
 
 
 @router.post("/projects", response_model=ProjectResponse, status_code=201)
-def create_project(
+async def create_project(
     body: ProjectCreate,
     db: Database = _db_dep,
 ) -> ProjectResponse:
     """Register a new project with optional scaffolding."""
+    from specweaver.workspace.store import WorkspaceRepository
+
     project_path = Path(body.path)
     if not project_path.exists():
         raise SpecWeaverAPIError(
@@ -53,15 +60,16 @@ def create_project(
         )
 
     try:
-        db.register_project(body.name, str(project_path))
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            await repo.register_project(body.name, str(project_path))
+            await repo.set_active_project(body.name)
     except ValueError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc),
             error_code="PROJECT_ALREADY_EXISTS",
             status_code=409,
         ) from exc
-
-    db.set_active_project(body.name)
 
     if body.scaffold:
         from specweaver.workspace.project.scaffold import scaffold_project
@@ -84,14 +92,15 @@ async def delete_project(
     from specweaver.workspace.store import WorkspaceRepository
 
     async with db.async_session_scope() as session:
-        proj = await WorkspaceRepository(session).get_project(name)
-    if not proj:
-        raise SpecWeaverAPIError(
-            detail=f"Project '{name}' not found.",
-            error_code="PROJECT_NOT_FOUND",
-            status_code=404,
-        )
-    db.remove_project(name)
+        repo = WorkspaceRepository(session)
+        proj = await repo.get_project(name)
+        if not proj:
+            raise SpecWeaverAPIError(
+                detail=f"Project '{name}' not found.",
+                error_code="PROJECT_NOT_FOUND",
+                status_code=404,
+            )
+        await repo.remove_project(name)
     return {"detail": f"Project '{name}' removed."}
 
 
@@ -104,23 +113,24 @@ async def update_project(
     """Update a project setting (currently: path only)."""
     from specweaver.workspace.store import WorkspaceRepository
 
-    async with db.async_session_scope() as session:
-        proj = await WorkspaceRepository(session).get_project(name)
-    if not proj:
-        raise SpecWeaverAPIError(
-            detail=f"Project '{name}' not found.",
-            error_code="PROJECT_NOT_FOUND",
-            status_code=404,
-        )
     try:
-        db.update_project_path(name, body.path)
+        async with db.async_session_scope() as session:
+            repo = WorkspaceRepository(session)
+            proj = await repo.get_project(name)
+            if not proj:
+                raise SpecWeaverAPIError(
+                    detail=f"Project '{name}' not found.",
+                    error_code="PROJECT_NOT_FOUND",
+                    status_code=404,
+                )
+            await repo.update_project_path(name, body.path)
+            active = await repo.get_active_project()
     except ValueError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc),
             error_code="INVALID_PATH",
             status_code=400,
         ) from exc
-    active = db.get_active_project()
     return ProjectResponse(name=name, path=body.path, active=(name == active))
 
 
@@ -133,12 +143,13 @@ async def use_project(
     from specweaver.workspace.store import WorkspaceRepository
 
     async with db.async_session_scope() as session:
-        proj = await WorkspaceRepository(session).get_project(name)
-    if not proj:
-        raise SpecWeaverAPIError(
-            detail=f"Project '{name}' not found.",
-            error_code="PROJECT_NOT_FOUND",
-            status_code=404,
-        )
-    db.set_active_project(name)
+        repo = WorkspaceRepository(session)
+        proj = await repo.get_project(name)
+        if not proj:
+            raise SpecWeaverAPIError(
+                detail=f"Project '{name}' not found.",
+                error_code="PROJECT_NOT_FOUND",
+                status_code=404,
+            )
+        await repo.set_active_project(name)
     return {"active": name}

@@ -17,8 +17,6 @@ import typer
 from rich.console import Console
 
 from specweaver._version import __version__
-from specweaver.core.config.database import Database
-from specweaver.core.config.paths import config_db_path
 
 logger = logging.getLogger(__name__)
 
@@ -34,17 +32,7 @@ console = Console()
 
 logger = logging.getLogger(__name__)
 
-
-def get_db() -> Database:
-    """Get the global SpecWeaver database (creates if needed)."""
-    db_path = config_db_path()
-    try:
-        from specweaver.interfaces.cli._db_utils import bootstrap_database
-
-        bootstrap_database(str(db_path))
-    except Exception as exc:
-        logger.warning("Failed to bootstrap database at %s: %s", db_path, exc)
-    return Database(db_path)
+from specweaver.core.config.cli_db_utils import get_db
 
 
 def _require_active_project() -> str:

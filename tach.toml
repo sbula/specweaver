@@ -5,12 +5,17 @@ source_roots = [
 exact = true
 modules = [
     { path = "src.specweaver.graph", depends_on = [] },
+    { path = "src.specweaver.graph.interfaces", depends_on = [] },
     { path = "src.specweaver.assurance.standards", depends_on = [] },
+    { path = "src.specweaver.assurance.standards.interfaces", depends_on = [] },
     { path = "src.specweaver.assurance.validation", depends_on = [] },
+    { path = "src.specweaver.assurance.validation.interfaces", depends_on = [] },
     { path = "src.specweaver.core.config", depends_on = [] },
+    { path = "src.specweaver.core.config.interfaces", depends_on = [] },
     { path = "src.specweaver.core.flow", depends_on = [] },
     { path = "src.specweaver.core.loom", depends_on = [] },
     { path = "src.specweaver.infrastructure.llm", depends_on = [] },
+    { path = "src.specweaver.infrastructure.llm.interfaces", depends_on = [] },
     { path = "src.specweaver.interfaces.api", depends_on = [] },
     { path = "src.specweaver.interfaces.cli", depends_on = [] },
     { path = "src.specweaver.logging", depends_on = [] },
@@ -142,4 +147,44 @@ expose = [
     "spec_kind",
     "drift_detector",
     "inheritance",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.assurance.validation.interfaces",
+]
+expose = [
+    "cli",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.assurance.standards.interfaces",
+]
+expose = [
+    "cli",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.infrastructure.llm.interfaces",
+]
+expose = [
+    "cli",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.core.config.interfaces",
+]
+expose = [
+    "cli",
+]
+
+[[interfaces]]
+from = [
+    "src.specweaver.graph.interfaces",
+]
+expose = [
+    "cli",
 ]

@@ -108,15 +108,16 @@ class DraftSpecHandler:
 
             from specweaver.core.flow.store import FlowRepository
 
-            async with context.db.async_session_scope() as session:
-                repo = FlowRepository(session)
-                await repo.log_artifact_event(
-                    artifact_id=artifact_uuid,
-                    parent_id=None,
-                    run_id=getattr(context, "run_id", None) or "pipeline_run",
-                    event_type="drafted_spec",
-                    model_id=gen_config.model if gen_config else "unknown",
-                )
+            if context.db:
+                async with context.db.async_session_scope() as session:
+                    repo = FlowRepository(session)
+                    await repo.log_artifact_event(
+                        artifact_id=artifact_uuid,
+                        parent_id=None,
+                        run_id=getattr(context, "run_id", None) or "pipeline_run",
+                        event_type="drafted_spec",
+                        model_id=gen_config.model if gen_config else "unknown",
+                    )
 
             return StepResult(
                 status=StepStatus.PASSED,

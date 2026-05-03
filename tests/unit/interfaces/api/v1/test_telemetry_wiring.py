@@ -9,7 +9,7 @@ the TelemetryCollector after operations.
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from starlette.testclient import TestClient
@@ -18,9 +18,9 @@ from starlette.testclient import TestClient
 @pytest.fixture()
 def client(tmp_path):
     """Create a test client backed by a temporary DB."""
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.interfaces.api.app import create_app
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
@@ -46,7 +46,7 @@ def _project_with_spec(client, tmp_path):
 class TestReviewEndpointTelemetry:
     """POST /review passes telemetry_project and flushes collector."""
 
-    @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec", new_callable=AsyncMock)
+    @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec")
     def test_review_passes_telemetry_project(
         self,
         mock_review,
@@ -82,7 +82,7 @@ class TestReviewEndpointTelemetry:
         _, kwargs = mock_create.call_args
         assert kwargs.get("telemetry_project") == "testproj"
 
-    @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec", new_callable=AsyncMock)
+    @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec")
     def test_review_flushes_telemetry_collector(
         self,
         mock_review,
@@ -114,7 +114,7 @@ class TestReviewEndpointTelemetry:
                 },
             )
 
-        mock_collector.flush.assert_called_once()
+        mock_collector.flush_async.assert_called_once()
 
 
 class TestImplementEndpointTelemetry:
@@ -134,11 +134,9 @@ class TestImplementEndpointTelemetry:
             ) as mock_create,
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_code",
-                new_callable=AsyncMock,
             ),
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_tests",
-                new_callable=AsyncMock,
             ),
         ):
             mock_create.return_value = (MagicMock(), MagicMock(), MagicMock())
@@ -172,11 +170,9 @@ class TestImplementEndpointTelemetry:
             ) as mock_create,
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_code",
-                new_callable=AsyncMock,
             ),
             patch(
                 "specweaver.workflows.implementation.generator.Generator.generate_tests",
-                new_callable=AsyncMock,
             ),
         ):
             mock_create.return_value = (MagicMock(), mock_collector, MagicMock())
@@ -189,4 +185,4 @@ class TestImplementEndpointTelemetry:
                 },
             )
 
-        mock_collector.flush.assert_called_once()
+        mock_collector.flush_async.assert_called_once()

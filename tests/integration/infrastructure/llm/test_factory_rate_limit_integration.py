@@ -19,8 +19,8 @@ def reset_global_semaphores():
 @pytest.fixture()
 def db(tmp_path):
     """Fresh database with schema."""
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver" / "specweaver.db"))
     return Database(tmp_path / ".specweaver" / "specweaver.db")

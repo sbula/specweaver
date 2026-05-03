@@ -48,7 +48,7 @@ def _live_env():
         tmp_path = Path(tmp)
 
         # --- DB ---
-        from specweaver.interfaces.cli._db_utils import bootstrap_database
+        from specweaver.core.config.cli_db_utils import bootstrap_database
 
         bootstrap_database(str(tmp_path / "test.db"))
         db = Database(db_path=tmp_path / "test.db")

@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     import pytest
 import asyncio
 
-from specweaver.interfaces.cli._db_utils import bootstrap_database
+from specweaver.core.config.cli_db_utils import bootstrap_database
 from tests.fixtures.db_utils import register_test_project
 
 

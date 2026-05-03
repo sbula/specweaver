@@ -4,7 +4,7 @@
 """Unit tests for DAL resolution within pipeline handlers."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -55,9 +55,10 @@ class TestValidationDALResolution:
         assert merged.validation.get_override("S01").fail_threshold == 10.0
 
     @pytest.mark.asyncio
+    @patch("specweaver.core.flow.handlers.validation.WorkspaceRepository")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_fallback_to_db(
-        self, mock_resolve: MagicMock, tmp_path: Path
+        self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
         from unittest.mock import MagicMock
 
@@ -79,7 +80,9 @@ class TestValidationDALResolution:
         settings = SpecWeaverSettings(llm=llm, validation=base_val, dal_matrix=matrix)
 
         mock_db = MagicMock()
-        mock_db.get_default_dal.return_value = "DAL_B"
+        mock_repo = AsyncMock()
+        mock_repo.get_default_dal.return_value = "DAL_B"
+        mock_repo_class.return_value = mock_repo
 
         spec = tmp_path / "test.md"
         spec.touch()
@@ -89,13 +92,14 @@ class TestValidationDALResolution:
 
         merged = _resolve_merged_settings(ctx, spec)
 
-        mock_db.get_default_dal.assert_called_once_with(tmp_path.name)
+        mock_repo.get_default_dal.assert_called_once_with(tmp_path.name)
         assert merged.validation.get_override("C02").enabled is False
 
     @pytest.mark.asyncio
+    @patch("specweaver.core.flow.handlers.validation.WorkspaceRepository")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_invalid_db_string_ignored(
-        self, mock_resolve: MagicMock, tmp_path: Path
+        self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
         from unittest.mock import MagicMock
 
@@ -117,7 +121,9 @@ class TestValidationDALResolution:
         )
 
         mock_db = MagicMock()
-        mock_db.get_default_dal.return_value = "INVALID_DAL_STRING"
+        mock_repo = AsyncMock()
+        mock_repo.get_default_dal.return_value = "INVALID_DAL_STRING"
+        mock_repo_class.return_value = mock_repo
 
         ctx = RunContext(
             project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings, db=mock_db
@@ -130,9 +136,10 @@ class TestValidationDALResolution:
         assert merged is ctx.settings
 
     @pytest.mark.asyncio
+    @patch("specweaver.core.flow.handlers.validation.WorkspaceRepository")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_catches_db_exception(
-        self, mock_resolve: MagicMock, tmp_path: Path
+        self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
         from unittest.mock import MagicMock
 
@@ -149,7 +156,9 @@ class TestValidationDALResolution:
         )
 
         mock_db = MagicMock()
-        mock_db.get_default_dal.side_effect = Exception("DB Connection Lost")
+        mock_repo = AsyncMock()
+        mock_repo.get_default_dal.side_effect = Exception("DB Connection Lost")
+        mock_repo_class.return_value = mock_repo
 
         ctx = RunContext(
             project_path=tmp_path, spec_path=tmp_path / "test.md", settings=settings, db=mock_db

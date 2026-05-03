@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """CLI commands for config management: set/get/list/reset, log level,
-constitution max size, and domain profiles."""
+constitution max size, and domain profiles, plus model routing."""
 
 from __future__ import annotations
 
@@ -13,9 +13,12 @@ import anyio
 import typer
 from rich.table import Table
 
+from specweaver.infrastructure.llm.models import TaskType
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.store import WorkspaceRepository
+
+logger = logging.getLogger(__name__)
 
 
 def _run_workspace_op(method_name: str, *args: Any) -> Any:
@@ -30,19 +33,13 @@ def _run_workspace_op(method_name: str, *args: Any) -> Any:
     return anyio.run(_action)
 
 
-from specweaver.interfaces.cli.config_routing import routing_app
-
-logger = logging.getLogger(__name__)
-
-
-logger = logging.getLogger(__name__)
+# -- Config App -------------------------------------------------------------
 
 config_app = typer.Typer(
     name="config",
-    help="Manage per-project validation rule overrides.",
+    help="Manage per-project configuration and routing.",
     no_args_is_help=True,
 )
-_core.app.add_typer(config_app, name="config")
 
 
 @config_app.command("list")
@@ -73,7 +70,6 @@ def config_set_log_level(
 ) -> None:
     """Set the log level for the active project."""
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
         _run_workspace_op("set_log_level", name, level)
     except ValueError as exc:
@@ -91,7 +87,6 @@ def config_set_log_level(
 def config_get_log_level() -> None:
     """Show the current log level for the active project."""
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
         level = _run_workspace_op("get_log_level", name)
     except ValueError as exc:
@@ -114,7 +109,6 @@ def config_set_constitution_max_size(
 ) -> None:
     """Set the maximum allowed CONSTITUTION.md size for the active project."""
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
         _run_workspace_op("set_constitution_max_size", name, size)
     except ValueError as exc:
@@ -131,7 +125,6 @@ def config_set_constitution_max_size(
 def config_get_constitution_max_size() -> None:
     """Show the current constitution max size for the active project."""
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
         max_size = _run_workspace_op("get_constitution_max_size", name)
     except ValueError as exc:
@@ -157,7 +150,6 @@ def config_set_auto_bootstrap(
     - auto:   Bootstrap silently without asking.
     """
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
         _run_workspace_op("set_auto_bootstrap", name, mode)
     except ValueError as exc:
@@ -174,7 +166,6 @@ def config_set_auto_bootstrap(
 def config_get_auto_bootstrap() -> None:
     """Show the current auto-bootstrap mode for the active project."""
     name = _core._require_active_project()
-    db = _core.get_db()
     try:
         mode = _run_workspace_op("get_auto_bootstrap", name)
     except ValueError as exc:
@@ -220,11 +211,7 @@ def config_profiles() -> None:
 def config_show_profile(
     profile_name: str = typer.Argument(help="Profile name to preview."),
 ) -> None:
-    """Show the pipeline overrides a domain profile applies.
-
-    Loads the profile's YAML pipeline and displays the rule parameters
-    that differ from the base (validation_spec_default) pipeline.
-    """
+    """Show the pipeline overrides a domain profile applies."""
     import specweaver.assurance.validation.rules.spec  # noqa: F401
     from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
     from specweaver.core.config.profiles import get_profile, profile_to_pipeline_name
@@ -268,15 +255,7 @@ def config_show_profile(
 def config_set_profile(
     profile_name: str = typer.Argument(help="Profile name to activate."),
 ) -> None:
-    """Activate a domain profile for the active project.
-
-    This records the profile name so that 'sw check' automatically
-    selects the matching YAML pipeline.  It does NOT write any
-    validation overrides to the database — those remain independent
-    and are managed via 'sw config set <RULE>'.
-
-    To deactivate, run 'sw config reset-profile'.
-    """
+    """Activate a domain profile for the active project."""
     name = _core._require_active_project()
     try:
         _run_workspace_op("set_domain_profile", name, profile_name)
@@ -313,12 +292,7 @@ def config_get_profile() -> None:
 
 @config_app.command("reset-profile")
 def config_reset_profile() -> None:
-    """Deactivate the domain profile for the active project.
-
-    Only the profile selection is cleared.  Any per-rule overrides set
-    via 'sw config set <RULE>' are preserved — remove them individually
-    with 'sw config reset <RULE>' if no longer needed.
-    """
+    """Deactivate the domain profile for the active project."""
     name = _core._require_active_project()
     try:
         _run_workspace_op("clear_domain_profile", name)
@@ -390,6 +364,152 @@ def config_set_provider(
     anyio.run(_update_provider)
 
 
-# -- Model routing commands -------------------------------------------------
+# -- Routing App ------------------------------------------------------------
+
+_ROUTABLE_TASK_TYPES: frozenset[str] = frozenset(t.value for t in TaskType if t != TaskType.UNKNOWN)
+
+routing_app = typer.Typer(
+    name="routing",
+    help="Manage per-task-type LLM model routing.",
+    no_args_is_help=True,
+)
+
+
+@routing_app.command("set")
+def routing_set(
+    task_type: str = typer.Argument(
+        help=f"Task type ({', '.join(sorted(_ROUTABLE_TASK_TYPES))}).",
+    ),
+    profile_name: str = typer.Argument(help="Name of an existing LLM profile."),
+) -> None:
+    """Link a task type to a specific LLM profile for routing."""
+    name = _core._require_active_project()
+    task_lower = task_type.lower()
+
+    if task_lower not in _ROUTABLE_TASK_TYPES:
+        _core.console.print(
+            f"[red]Error:[/red] Invalid task type '{task_type}'. "
+            f"Valid: {', '.join(sorted(_ROUTABLE_TASK_TYPES))}",
+        )
+        raise typer.Exit(code=1)
+
+    db = _core.get_db()
+
+    async def _routing_set() -> None:
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            profile = await repo.get_llm_profile_by_name(profile_name)
+            if profile is None:
+                _core.console.print(
+                    f"[red]Error:[/red] Profile '{profile_name}' not found. "
+                    "Use 'sw config set-provider' to create one first.",
+                )
+                raise typer.Exit(code=1)
+
+            try:
+                await repo.link_project_profile(name, f"task:{task_lower}", profile.id)
+            except ValueError as exc:
+                _core.console.print(f"[red]Error:[/red] {exc}")
+                raise typer.Exit(code=1) from exc
+
+            _core.console.print(
+                f"[green]\u2713[/green] Routing: [bold]{task_lower}[/bold] \u2192 "
+                f"profile [bold]{profile_name}[/bold] "
+                f"(provider={profile.provider}, model={profile.model}).",
+            )
+
+    anyio.run(_routing_set)
+
+
+@routing_app.command("show")
+def routing_show() -> None:
+    """Show the routing table for the active project."""
+    name = _core._require_active_project()
+    db = _core.get_db()
+
+    async def _routing_show() -> None:
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            entries = await repo.get_project_routing_entries(name)
+
+            if not entries:
+                _core.console.print(
+                    "[dim]No routing configured. All tasks use the default profile.[/dim]",
+                )
+                return
+
+            table = Table(title=f"Model Routing ({name})")
+            table.add_column("Task Type", style="cyan")
+            table.add_column("Profile")
+            table.add_column("Provider")
+            table.add_column("Model")
+            table.add_column("Temperature", justify="right")
+
+            for entry in entries:
+                profile = await repo.get_llm_profile(entry["profile_id"])  # type: ignore
+                if profile:
+                    table.add_row(
+                        str(entry["task_type"]),
+                        str(entry["profile_name"]),
+                        str(profile.provider),
+                        str(profile.model),
+                        str(profile.temperature),
+                    )
+                else:
+                    table.add_row(
+                        str(entry["task_type"]),
+                        str(entry["profile_name"]),
+                        "[red]\\[deleted][/red]",
+                        "[red]\\[deleted][/red]",
+                        "[dim]\u2014[/dim]",
+                    )
+            _core.console.print(table)
+
+    anyio.run(_routing_show)
+
+
+@routing_app.command("clear")
+def routing_clear(
+    task_type: str | None = typer.Argument(
+        None,
+        help="Task type to clear (omit to clear all).",
+    ),
+) -> None:
+    """Clear routing entries for the active project."""
+    name = _core._require_active_project()
+    db = _core.get_db()
+
+    async def _routing_clear() -> None:
+        async with db.async_session_scope() as session:
+            repo = LlmRepository(session)
+            if task_type is not None:
+                task_lower = task_type.lower()
+                if task_lower not in _ROUTABLE_TASK_TYPES:
+                    _core.console.print(
+                        f"[red]Error:[/red] Invalid task type '{task_type}'. "
+                        f"Valid: {', '.join(sorted(_ROUTABLE_TASK_TYPES))}",
+                    )
+                    raise typer.Exit(code=1)
+
+                removed = await repo.unlink_project_profile(name, f"task:{task_lower}")
+                if removed:
+                    _core.console.print(
+                        f"[green]\u2713[/green] Cleared routing for [bold]{task_lower}[/bold].",
+                    )
+                else:
+                    _core.console.print(
+                        f"[dim]No routing entry for '{task_lower}' to clear.[/dim]",
+                    )
+            else:
+                count = await repo.clear_all_project_routing(name)
+                if count:
+                    _core.console.print(
+                        f"[green]\u2713[/green] Cleared all {count} routing entries.",
+                    )
+                else:
+                    _core.console.print("[dim]No routing entries to clear.[/dim]")
+
+    anyio.run(_routing_clear)
+
 
 config_app.add_typer(routing_app, name="routing")

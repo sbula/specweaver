@@ -270,8 +270,11 @@ class Database:
         """Provide an AsyncSession scoped to this database for the new Domain Stores."""
         db_posix = self._db_path.absolute().as_posix()
         engine = create_async_engine(f"sqlite+aiosqlite:///{db_posix}")
-        async with session_scope(engine) as session:
-            yield session
+        try:
+            async with session_scope(engine) as session:
+                yield session
+        finally:
+            await engine.dispose()
 
     # ------------------------------------------------------------------
     # Telemetry and Legacy Methods (moved to Repositories)

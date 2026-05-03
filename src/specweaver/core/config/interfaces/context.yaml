@@ -1,0 +1,21 @@
+# Bounded context for the L6 presentation layer of Core Config
+description: "Core Configuration and LLM Routing CLI commands"
+
+archetype: orchestrator
+
+exports:
+  - cli
+
+dependencies:
+  - specweaver.core.config.database
+  - specweaver.core.config.paths
+  - specweaver.core.config.profiles
+  - specweaver.core.config.cli_db_utils
+  - specweaver.infrastructure.llm.models
+  - specweaver.infrastructure.llm.store
+  - specweaver.infrastructure.llm.adapters.registry
+  - specweaver.workspace.store
+  - specweaver.interfaces.cli
+  - specweaver.logging
+  - specweaver.assurance.validation.rules.spec
+  - specweaver.assurance.validation.pipeline_loader

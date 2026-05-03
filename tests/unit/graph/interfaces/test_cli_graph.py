@@ -3,18 +3,18 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli.graph import app
+from specweaver.graph.interfaces.cli import graph_app as app
 
 runner = CliRunner()
 
 
 def test_graph_build_success() -> None:
     with (
-        patch("specweaver.interfaces.cli.graph.InMemoryGraphEngine") as mock_engine_class,
-        patch("specweaver.interfaces.cli.graph.SqliteGraphRepository") as mock_repo_class,
-        patch("specweaver.interfaces.cli.graph.GraphBuilder") as mock_builder_class,
-        patch("specweaver.interfaces.cli.graph.extract_ast_dict") as mock_parser,
-        patch("specweaver.interfaces.cli.graph._load_topology"),
+        patch("specweaver.graph.interfaces.cli.InMemoryGraphEngine") as mock_engine_class,
+        patch("specweaver.graph.interfaces.cli.SqliteGraphRepository") as mock_repo_class,
+        patch("specweaver.graph.interfaces.cli.GraphBuilder") as mock_builder_class,
+        patch("specweaver.graph.interfaces.cli.extract_ast_dict") as mock_parser,
+        patch("specweaver.graph.interfaces.cli._load_topology"),
     ):
         mock_engine = MagicMock()
         mock_engine_class.return_value = mock_engine
@@ -47,11 +47,11 @@ def test_graph_build_success() -> None:
 
 def test_graph_build_failure() -> None:
     with (
-        patch("specweaver.interfaces.cli.graph.InMemoryGraphEngine"),
-        patch("specweaver.interfaces.cli.graph.SqliteGraphRepository") as mock_repo_class,
-        patch("specweaver.interfaces.cli.graph.GraphBuilder") as mock_builder_class,
-        patch("specweaver.interfaces.cli.graph.extract_ast_dict"),
-        patch("specweaver.interfaces.cli.graph._load_topology"),
+        patch("specweaver.graph.interfaces.cli.InMemoryGraphEngine"),
+        patch("specweaver.graph.interfaces.cli.SqliteGraphRepository") as mock_repo_class,
+        patch("specweaver.graph.interfaces.cli.GraphBuilder") as mock_builder_class,
+        patch("specweaver.graph.interfaces.cli.extract_ast_dict"),
+        patch("specweaver.graph.interfaces.cli._load_topology"),
     ):
         mock_repo_class.return_value.load_from_db.return_value = (MagicMock(), {})
         mock_repo_class.return_value.get_all_file_hashes.return_value = {}
@@ -69,14 +69,14 @@ def test_graph_build_failure() -> None:
 
 def test_graph_build_directory() -> None:
     with (
-        patch("specweaver.interfaces.cli.graph.InMemoryGraphEngine"),
-        patch("specweaver.interfaces.cli.graph.SqliteGraphRepository") as mock_repo_class,
-        patch("specweaver.interfaces.cli.graph.GraphBuilder") as mock_builder_class,
-        patch("specweaver.interfaces.cli.graph.extract_ast_dict"),
-        patch("specweaver.interfaces.cli.graph._load_topology"),
-        patch("specweaver.interfaces.cli.graph.Path.is_file") as mock_is_file,
-        patch("specweaver.interfaces.cli.graph.Path.is_dir") as mock_is_dir,
-        patch("specweaver.interfaces.cli.graph.Path.rglob") as mock_rglob,
+        patch("specweaver.graph.interfaces.cli.InMemoryGraphEngine"),
+        patch("specweaver.graph.interfaces.cli.SqliteGraphRepository") as mock_repo_class,
+        patch("specweaver.graph.interfaces.cli.GraphBuilder") as mock_builder_class,
+        patch("specweaver.graph.interfaces.cli.extract_ast_dict"),
+        patch("specweaver.graph.interfaces.cli._load_topology"),
+        patch("specweaver.graph.interfaces.cli.Path.is_file") as mock_is_file,
+        patch("specweaver.graph.interfaces.cli.Path.is_dir") as mock_is_dir,
+        patch("specweaver.graph.interfaces.cli.Path.rglob") as mock_rglob,
     ):
         mock_repo_class.return_value.load_from_db.return_value = (MagicMock(), {})
         mock_repo_class.return_value.get_all_file_hashes.return_value = {}

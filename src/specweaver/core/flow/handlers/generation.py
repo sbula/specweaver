@@ -159,15 +159,16 @@ class GenerateCodeHandler:
 
             from specweaver.core.flow.store import FlowRepository
 
-            async with context.db.async_session_scope() as session:
-                repo = FlowRepository(session)
-                await repo.log_artifact_event(
-                    artifact_id=artifact_uuid,
-                    parent_id=parent_id,
-                    run_id=getattr(context, "run_id", None) or "pipeline_run",
-                    event_type="generated_code",
-                    model_id=config.model,
-                )
+            if context.db:
+                async with context.db.async_session_scope() as session:
+                    repo = FlowRepository(session)
+                    await repo.log_artifact_event(
+                        artifact_id=artifact_uuid,
+                        parent_id=parent_id,
+                        run_id=getattr(context, "run_id", None) or "pipeline_run",
+                        event_type="generated_code",
+                        model_id=config.model,
+                    )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -177,8 +178,9 @@ class GenerateCodeHandler:
                 artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
+            import traceback
             logger.exception("GenerateCodeHandler: unhandled exception during code generation")
-            return _error_result(str(exc), started)
+            return _error_result(str(exc) + "\n" + traceback.format_exc(), started)
 
 
 class GenerateTestsHandler:
@@ -248,15 +250,16 @@ class GenerateTestsHandler:
 
             from specweaver.core.flow.store import FlowRepository
 
-            async with context.db.async_session_scope() as session:
-                repo = FlowRepository(session)
-                await repo.log_artifact_event(
-                    artifact_id=artifact_uuid,
-                    parent_id=parent_id,
-                    run_id=getattr(context, "run_id", None) or "pipeline_run",
-                    event_type="generated_tests",
-                    model_id=config.model,
-                )
+            if context.db:
+                async with context.db.async_session_scope() as session:
+                    repo = FlowRepository(session)
+                    await repo.log_artifact_event(
+                        artifact_id=artifact_uuid,
+                        parent_id=parent_id,
+                        run_id=getattr(context, "run_id", None) or "pipeline_run",
+                        event_type="generated_tests",
+                        model_id=config.model,
+                    )
 
             return StepResult(
                 status=StepStatus.PASSED,
@@ -426,15 +429,16 @@ class PlanSpecHandler:
 
             from specweaver.core.flow.store import FlowRepository
 
-            async with context.db.async_session_scope() as session:
-                repo = FlowRepository(session)
-                await repo.log_artifact_event(
-                    artifact_id=artifact_uuid,
-                    parent_id=parent_id,
-                    run_id=getattr(context, "run_id", None) or "pipeline_run",
-                    event_type="generated_plan",
-                    model_id=config.model,
-                )
+            if context.db:
+                async with context.db.async_session_scope() as session:
+                    repo = FlowRepository(session)
+                    await repo.log_artifact_event(
+                        artifact_id=artifact_uuid,
+                        parent_id=parent_id,
+                        run_id=getattr(context, "run_id", None) or "pipeline_run",
+                        event_type="generated_plan",
+                        model_id=config.model,
+                    )
 
             return StepResult(
                 status=StepStatus.PASSED,

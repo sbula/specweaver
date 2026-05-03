@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import typer
 
-from specweaver.interfaces.cli.validation import _resolve_pipeline_name
+from specweaver.assurance.validation.interfaces.cli import _resolve_pipeline_name
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -60,7 +60,7 @@ class TestExplicitPipelineFlag:
 
     def test_explicit_pipeline_beats_active_profile(self) -> None:
         """--pipeline overrides active domain profile."""
-        with patch("specweaver.interfaces.cli.validation._core.get_db"):
+        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="component",
                 pipeline="explicit_pipeline",
@@ -88,7 +88,7 @@ class TestFeatureLevel:
 
     def test_feature_level_ignores_active_profile(self) -> None:
         """Even if there is an active profile, feature level ignores it."""
-        with patch("specweaver.interfaces.cli.validation._core.get_db"):
+        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="feature",
                 pipeline=None,
@@ -105,10 +105,10 @@ class TestFeatureLevel:
 class TestActiveProfileRouting:
     """Profile sets the pipeline when --level component is used."""
 
-    @patch("specweaver.interfaces.cli.validation._run_workspace_op", return_value="web-app")
+    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="web-app")
     def test_component_with_profile_uses_profile_pipeline(self, mock_run) -> None:
         """Active profile for a project auto-selects profile YAML."""
-        with patch("specweaver.interfaces.cli.validation._core.get_db"):
+        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="component",
                 pipeline=None,
@@ -116,9 +116,9 @@ class TestActiveProfileRouting:
             )
         assert result == "validation_spec_web_app"
 
-    @patch("specweaver.interfaces.cli.validation._run_workspace_op", return_value="library")
+    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="library")
     def test_component_with_library_profile(self, mock_run) -> None:
-        with patch("specweaver.interfaces.cli.validation._core.get_db"):
+        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="component",
                 pipeline=None,
@@ -126,9 +126,9 @@ class TestActiveProfileRouting:
             )
         assert result == "validation_spec_library"
 
-    @patch("specweaver.interfaces.cli.validation._run_workspace_op", return_value="data-pipeline")
+    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="data-pipeline")
     def test_component_with_data_pipeline_profile(self, mock_run) -> None:
-        with patch("specweaver.interfaces.cli.validation._core.get_db"):
+        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="component",
                 pipeline=None,
@@ -154,10 +154,10 @@ class TestDefaultLevelFallback:
         )
         assert result == "validation_spec_default"
 
-    @patch("specweaver.interfaces.cli.validation._run_workspace_op", return_value=None)
+    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value=None)
     def test_component_no_profile_returns_default(self, mock_run) -> None:
         """Project with no profile set falls back to spec_default."""
-        with patch("specweaver.interfaces.cli.validation._core.get_db"):
+        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="component",
                 pipeline=None,
@@ -169,10 +169,10 @@ class TestDefaultLevelFallback:
         result = _resolve_pipeline_name(level="code", pipeline=None)
         assert result == "validation_code_default"
 
-    @patch("specweaver.interfaces.cli.validation._run_workspace_op", return_value="web-app")
+    @patch("specweaver.assurance.validation.interfaces.cli._run_workspace_op", return_value="web-app")
     def test_code_level_ignores_active_profile(self, mock_run) -> None:
         """code level routes to code pipeline regardless of profile."""
-        with patch("specweaver.interfaces.cli.validation._core.get_db"):
+        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
             result = _resolve_pipeline_name(
                 level="code",
                 pipeline=None,

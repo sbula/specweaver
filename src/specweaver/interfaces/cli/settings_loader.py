@@ -47,6 +47,29 @@ def load_settings(
 ) -> SpecWeaverSettings:
     logger.debug("load_settings called for project=%s, role=%s", project_name, llm_role)
 
+    def _sync_or_async(coro):
+        import asyncio
+
+        import nest_asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            nest_asyncio.apply(loop)
+            return loop.run_until_complete(coro)
+        return anyio.run(lambda: coro)
+
+    return _sync_or_async(load_settings_async(db, project_name, llm_role=llm_role))
+
+
+async def load_settings_async(
+    db: Database, project_name: str, *, llm_role: str = "review"
+) -> SpecWeaverSettings:
+    logger.debug("load_settings_async called for project=%s, role=%s", project_name, llm_role)
+
     async def _get_data() -> tuple[dict[str, object] | None, dict[str, object] | None, str | None]:
         async with db.async_session_scope() as session:
             ws_repo = WorkspaceRepository(session)
@@ -72,22 +95,7 @@ def load_settings(
 
             return proj, profile_dict, stitch_mode
 
-    def _sync_or_async(coro):
-        import asyncio
-
-        import nest_asyncio
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            nest_asyncio.apply(loop)
-            return loop.run_until_complete(coro)
-        return anyio.run(lambda: coro)
-
-    proj, profile, stitch_mode = _sync_or_async(_get_data())
+    proj, profile, stitch_mode = await _get_data()
 
     if not proj:
         logger.error("Project '%s' not found in database", project_name)

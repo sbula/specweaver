@@ -72,7 +72,7 @@ class TestLineageE2EFlow:
             ]
         )
 
-        with patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req, patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None):
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
             with patch("specweaver.workspace.context.hitl_provider.HITLProvider") as mock_hitl_cls:
                 mock_hitl = AsyncMock()
@@ -128,7 +128,7 @@ class TestLineageE2EFlow:
 
         mock_settings = SpecWeaverSettings(llm=LLMSettings(model="mock"))
 
-        with patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req:
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req, patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None):
             mock_req.return_value = (mock_settings, mock_llm, GenerationConfig(model="mock"))
             with patch("specweaver.workspace.context.hitl_provider.HITLProvider") as mock_hitl_cls:
                 mock_hitl = AsyncMock()
@@ -209,7 +209,7 @@ class TestLineageE2EFlow:
             target=StepTarget.SPEC,
         )
         db_path = _isolate_env / "specweaver.db"
-        from specweaver.interfaces.cli._db_utils import bootstrap_database
+        from specweaver.core.config.cli_db_utils import bootstrap_database
 
         bootstrap_database(str(db_path))
         context = RunContext(
@@ -323,8 +323,10 @@ class TestASTFixSurvivability:
             ["```python\n# sw-artifact: 99999999-2222-3333-4444-555555555555\n# clean code\n```"]
         )
 
-        with patch("specweaver.interfaces.cli._helpers._require_llm_adapter") as mock_req:
+        from specweaver.infrastructure.llm.models import LLMResponse
+        with patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req, patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None), patch("specweaver.infrastructure.llm.adapters.gemini.GeminiAdapter.generate") as mock_gemini:
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
+            mock_gemini.return_value = LLMResponse(text="```python\n# sw-artifact: 99999999-2222-3333-4444-555555555555\n# clean code\n```", model="mock")
 
             pipe_def = project_dir / "my_lint.yaml"
             pipe_def.write_text(

@@ -54,8 +54,8 @@ def sample_db(tmp_path: Path, sample_project: Path) -> Database:
     Returns a Database instance backed by SQLite in ``tmp_path``.
     The sample project is pre-registered as ``"sample"``.
     """
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver" / "specweaver.db")

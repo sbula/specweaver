@@ -58,7 +58,7 @@ templates.env.filters["markdown"] = _render_markdown
 
 
 @router.post("/dashboard/runs/{run_id}/gate", response_class=HTMLResponse)
-def submit_hitl_gate(
+async def submit_hitl_gate(
     request: Request,
     run_id: str,
     action: str = Form(...),
@@ -71,7 +71,7 @@ def submit_hitl_gate(
 
     try:
         body = GateDecisionRequest(action=action)
-        submit_gate_decision(run_id, body, db)
+        await submit_gate_decision(run_id, body, db)
     except SpecWeaverAPIError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 

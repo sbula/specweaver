@@ -76,7 +76,42 @@ def load_standards_content(
                 return s_standards, []
 
     scope_standards, root_standards = anyio.run(_fetch_standards)
+    return _format_standards_text(scope_standards, root_standards, max_chars)
 
+async def load_standards_content_async(
+    db: Database,
+    project_name: str,
+    project_path: Path,
+    target_path: Path | None = None,
+    *,
+    max_chars: int = 2000,
+) -> str | None:
+    """Async variant of load_standards_content."""
+    from specweaver.assurance.standards.scope_detector import _resolve_scope
+    from specweaver.workspace.store import WorkspaceRepository
+
+    async with db.async_session_scope() as session:
+        repo = WorkspaceRepository(session)
+        if target_path is not None:
+            known_scopes = await repo.list_scopes(project_name)
+            scope = _resolve_scope(target_path, project_path, known_scopes)
+            s_standards = await repo.get_standards(project_name, scope=scope)
+            r_standards = (
+                await repo.get_standards(project_name, scope=".") if scope != "." else []
+            )
+            scope_standards, root_standards = s_standards, r_standards
+        else:
+            s_standards = await repo.get_standards(project_name)
+            scope_standards, root_standards = s_standards, []
+
+    return _format_standards_text(scope_standards, root_standards, max_chars)
+
+
+def _format_standards_text(
+    scope_standards: list[dict[str, object]],
+    root_standards: list[dict[str, object]],
+    max_chars: int,
+) -> str | None:
     all_standards = scope_standards + root_standards
     if not all_standards:
         return None

@@ -1,0 +1,19 @@
+# Bounded context for the L6 presentation layer of Assurance Standards
+description: "Standards and capabilities scanning CLI commands"
+
+archetype: orchestrator
+
+exports:
+  - cli
+
+dependencies:
+  - specweaver.assurance.standards.analyzer
+  - specweaver.assurance.standards.factory
+  - specweaver.assurance.standards.interfaces
+  - specweaver.core.config.dal_resolver
+  - specweaver.infrastructure.llm.adapters.registry
+  - specweaver.infrastructure.llm.models
+  - specweaver.interfaces.cli
+  - specweaver.workspace.analyzers.factory
+  - specweaver.workspace.project.constitution
+  - specweaver.workspace.project.discovery

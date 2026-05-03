@@ -46,25 +46,25 @@ class TestPipelineLevelSelection:
 
     def test_component_level_loads_default_pipeline(self) -> None:
         """component level → validation_spec_default."""
-        from specweaver.interfaces.cli.validation import _resolve_pipeline_name
+        from specweaver.assurance.validation.interfaces.cli import _resolve_pipeline_name
 
         assert _resolve_pipeline_name("component", None) == "validation_spec_default"
 
     def test_feature_level_loads_feature_pipeline(self) -> None:
         """feature level → validation_spec_feature."""
-        from specweaver.interfaces.cli.validation import _resolve_pipeline_name
+        from specweaver.assurance.validation.interfaces.cli import _resolve_pipeline_name
 
         assert _resolve_pipeline_name("feature", None) == "validation_spec_feature"
 
     def test_code_level_loads_code_pipeline(self) -> None:
         """code level → validation_code_default."""
-        from specweaver.interfaces.cli.validation import _resolve_pipeline_name
+        from specweaver.assurance.validation.interfaces.cli import _resolve_pipeline_name
 
         assert _resolve_pipeline_name("code", None) == "validation_code_default"
 
     def test_explicit_pipeline_overrides_level(self) -> None:
         """--pipeline always wins over --level."""
-        from specweaver.interfaces.cli.validation import _resolve_pipeline_name
+        from specweaver.assurance.validation.interfaces.cli import _resolve_pipeline_name
 
         result = _resolve_pipeline_name("component", "validation_spec_library")
         assert result == "validation_spec_library"

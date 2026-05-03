@@ -22,12 +22,12 @@ from specweaver.assurance.validation.models import RuleResult, Status
 def _mock_db_fixture(tmp_path, monkeypatch):
     from specweaver.core.config.database import Database
 
-    with patch("specweaver.core.config.database.Database._ensure_schema"):
-        from specweaver.interfaces.cli._db_utils import bootstrap_database
+    with patch("specweaver.core.config.database.Database._ensure_schema", create=True):
+        from specweaver.core.config.cli_db_utils import bootstrap_database
 
         bootstrap_database(str(tmp_path / ".sw-test" / "specweaver.db"))
         db = Database(tmp_path / ".sw-test" / "specweaver.db")
-        monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+        monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
         return db
 
 
@@ -51,14 +51,14 @@ class TestPrintSummary:
 
     def test_all_pass_no_exit(self) -> None:
         """All PASS results → no exit raised."""
-        from specweaver.interfaces.cli._helpers import _print_summary
+        from specweaver.assurance.validation.interfaces.cli import _print_summary
 
         results = [self._make_result(Status.PASS)]
         _print_summary(results)  # should not raise
 
     def test_fail_raises_exit_1(self) -> None:
         """Any FAIL result → typer.Exit(code=1)."""
-        from specweaver.interfaces.cli._helpers import _print_summary
+        from specweaver.assurance.validation.interfaces.cli import _print_summary
 
         results = [
             self._make_result(Status.PASS),
@@ -70,14 +70,14 @@ class TestPrintSummary:
 
     def test_warn_no_exit_default(self) -> None:
         """WARN without strict → no exit raised."""
-        from specweaver.interfaces.cli._helpers import _print_summary
+        from specweaver.assurance.validation.interfaces.cli import _print_summary
 
         results = [self._make_result(Status.WARN)]
         _print_summary(results)  # should not raise
 
     def test_warn_strict_raises_exit_1(self) -> None:
         """WARN with strict=True → typer.Exit(code=1)."""
-        from specweaver.interfaces.cli._helpers import _print_summary
+        from specweaver.assurance.validation.interfaces.cli import _print_summary
 
         results = [self._make_result(Status.WARN)]
         with pytest.raises(typer.Exit) as exc_info:
@@ -86,7 +86,7 @@ class TestPrintSummary:
 
     def test_mixed_fail_and_warn(self) -> None:
         """FAIL takes priority over WARN → exit(1)."""
-        from specweaver.interfaces.cli._helpers import _print_summary
+        from specweaver.assurance.validation.interfaces.cli import _print_summary
 
         results = [
             self._make_result(Status.WARN),
@@ -98,7 +98,7 @@ class TestPrintSummary:
 
     def test_empty_results_no_exit(self) -> None:
         """Empty results list → no exit raised."""
-        from specweaver.interfaces.cli._helpers import _print_summary
+        from specweaver.assurance.validation.interfaces.cli import _print_summary
 
         _print_summary([])  # should not raise
 

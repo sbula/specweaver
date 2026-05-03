@@ -33,8 +33,8 @@ runner = CliRunner()
 @pytest.fixture()
 def _mock_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """Patch get_db() to use a temp DB for all tests."""
+    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.interfaces.cli._db_utils import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")

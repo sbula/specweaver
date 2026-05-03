@@ -20,7 +20,6 @@ from specweaver.interfaces.cli._core import (  # noqa: F401
     _version_callback,
     app,
     console,
-    get_db,
     logger,
 )
 from specweaver.interfaces.cli._helpers import _run_workspace_op
@@ -39,9 +38,9 @@ def _app_callback(
     ),
 ) -> None:
     """SpecWeaver \u2014 Specification-driven development lifecycle tool."""
+    from specweaver.interfaces.cli import _core
     from specweaver.logging import setup_logging
-
-    db = get_db()
+    db = _core.get_db()
     active = _run_workspace_op("get_active_project")
     if active:
         try:
@@ -70,21 +69,41 @@ def _app_callback(
 
 from specweaver.interfaces.cli import (  # noqa: E402, F401
     _helpers,
-    config,
     constitution,
-    cost_commands,
-    drift,
-    graph,
     hooks,
     implement,
-    lineage,
     pipelines,
     projects,
     review,
-    standards,
-    usage_commands,
-    validation,
 )
+
+try:
+    from specweaver.core.config.interfaces.cli import config_app
+    app.add_typer(config_app, name="config")
+except ImportError as e:
+    console.print(f"[bold red]Failed to load config plugin:[/bold red] {e}")
+
+try:
+    from specweaver.graph.interfaces.cli import graph_app, lineage_app
+    app.add_typer(graph_app, name="graph")
+    app.add_typer(lineage_app, name="lineage")
+except ImportError as e:
+    console.print(f"[bold red]Failed to load graph plugin:[/bold red] {e}")
+
+try:
+    from specweaver.assurance.validation.interfaces import cli as validation_cli  # noqa: F401
+except ImportError as e:
+    console.print(f"[bold red]Failed to load validation plugin:[/bold red] {e}")
+
+try:
+    from specweaver.assurance.standards.interfaces import cli as standards_cli  # noqa: F401
+except ImportError as e:
+    console.print(f"[bold red]Failed to load standards plugin:[/bold red] {e}")
+
+try:
+    from specweaver.infrastructure.llm.interfaces import cli as llm_cli  # noqa: F401
+except ImportError as e:
+    console.print(f"[bold red]Failed to load llm plugin:[/bold red] {e}")
 
 if __name__ == "__main__":
     app()
