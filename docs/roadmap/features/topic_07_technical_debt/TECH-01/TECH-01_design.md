@@ -163,7 +163,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Decentralize CLI Layer | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Consolidate Sandbox | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Consolidate Sandbox | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
