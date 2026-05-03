@@ -200,7 +200,7 @@ def check(
     if lineage:
         from specweaver.graph.interfaces.cli import check_lineage
 
-        db = _core.get_db()
+        _core.get_db()
         active = _run_workspace_op("get_active_project")
 
         if project:
@@ -238,7 +238,7 @@ def check(
 
     from specweaver.workspace.project.discovery import resolve_project_path
 
-    db = _core.get_db()
+    _core.get_db()
     # Ensure project resolution handles implicit CWD and active project logic
     try:
         project_dir: Path | None = resolve_project_path(project)

@@ -198,7 +198,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.26 Git Worktree Bouncer (Sandbox)** — Dictatorial validation executing pipeline generations logically into separated physical Git Sandboxes. Strips mathematical patch diffs to forcefully preserve `context.yaml` topological bounds, dropping LLM hallucinations prior to integration. Includes SF-3.26c Interactive Gate Variables for weighted dictator override injection.
 
-**B-SENS-02 Lineage Harmonization** — Extracted generic graph operations into `graph.topology.engine` and `graph.lineage.engine`. Migrated artifact event logging from the global `config.database.Database` interface directly to a dedicated `graph_store.lineage_repository.LineageRepository` which strictly targets the project-local `.specweaver/graph.db` storage. This decoupled the core orchestration handlers (`generation`, `draft`, `lint_fix`) from legacy state managers.
+**B-SENS-02 Lineage Harmonization** — Extracted generic graph operations into `graph.topology.engine` and `graph.lineage.engine`. Migrated artifact event logging from the global `config.database.Database` interface directly to a dedicated `graph_store.lineage_repository.LineageRepository` which strictly targets the project-local `.specweaver/specweaver.db` storage. This decoupled the core orchestration handlers (`generation`, `draft`, `lint_fix`) from legacy state managers.
 
 **3.27 Multi-Spec Pipeline Fan-Out** — Sub-pipeline spawning mapped to separate isolated sandboxes via `SW_PORT_OFFSET` hashes to prevent SQLite lock collision. Safely coordinates components fully in parallel mapped to Topological dependencies, blocking execution through standard `JOIN` gates.
 

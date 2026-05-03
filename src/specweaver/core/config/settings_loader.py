@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Coroutine
 
 import anyio
 
@@ -47,10 +47,10 @@ def load_settings(
 ) -> SpecWeaverSettings:
     logger.debug("load_settings called for project=%s, role=%s", project_name, llm_role)
 
-    def _sync_or_async(coro):
+    def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
         import asyncio
 
-        import nest_asyncio
+        import nest_asyncio  # type: ignore
 
         try:
             loop = asyncio.get_running_loop()
@@ -62,7 +62,7 @@ def load_settings(
             return loop.run_until_complete(coro)
         return anyio.run(lambda: coro)
 
-    return _sync_or_async(load_settings_async(db, project_name, llm_role=llm_role))
+    import typing; return typing.cast('SpecWeaverSettings', _sync_or_async(load_settings_async(db, project_name, llm_role=llm_role)))
 
 
 async def load_settings_async(
@@ -155,7 +155,7 @@ def load_settings_for_active(db: Database, *, llm_role: str = "review") -> SpecW
         async with db.async_session_scope() as session:
             return await WorkspaceRepository(session).get_active_project()
 
-    def _sync_or_async(coro):
+    def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
         import asyncio
 
         import nest_asyncio
@@ -187,7 +187,7 @@ def migrate_legacy_config(db: Database, project_name: str, project_path: str) ->
     from ruamel.yaml import YAML
 
     try:
-        from ruamel.yaml import YAMLError
+        from ruamel.yaml import YAMLError  # type: ignore
     except ImportError:
         YAMLError = Exception
 
@@ -244,7 +244,7 @@ def migrate_legacy_config(db: Database, project_name: str, project_path: str) ->
             for role in ("review", "draft", "search"):
                 await repo.link_project_profile(project_name, role, profile_id)
 
-    def _sync_or_async(coro):
+    def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
         import asyncio
 
         import nest_asyncio

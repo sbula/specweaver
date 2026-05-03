@@ -8,50 +8,56 @@ from specweaver.interfaces.cli.main import app
 runner = CliRunner()
 
 
-def test_main_router_handles_plugin_import_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_router_handles_plugin_import_error(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
     """
     [Hostile/Wrong Input] `main.py` router gracefully handles `ImportError` from a domain CLI,
     allowing the root core commands to boot so the agent can heal the broken plugin.
     (Enforces NFR-4)
     """
     # We need to simulate an ImportError when main.py tries to import the validation plugin.
-    # Since main.py already imported it when the test suite loads, we have to reload main.py
-    # or just test the isolated behavior. Actually, python modules are cached.
-    # Let's mock the built-in __import__ to raise ImportError for validation.interfaces.cli
+    original_import = __import__
 
-    original_import = builtins_import = __import__
+    if "specweaver.assurance.validation.interfaces.cli" in sys.modules:
+        del sys.modules["specweaver.assurance.validation.interfaces.cli"]
+    if "specweaver.assurance.validation.interfaces" in sys.modules:
+        del sys.modules["specweaver.assurance.validation.interfaces"]
 
     def mock_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if name == "specweaver.assurance.validation.interfaces":
+        if "specweaver.assurance.validation.interfaces" in name:
             raise ImportError("Simulated plugin crash")
         return original_import(name, globals, locals, fromlist, level)
 
     monkeypatch.setattr("builtins.__import__", mock_import)
 
-    # Force a reload of main.py so it hits the try/except block again
-    import importlib
+    try:
+        import importlib
 
-    # We must capture stderr to see the rich console output
-    from io import StringIO
+        import specweaver.interfaces.cli.main
 
-    import specweaver.interfaces.cli.main
-    stdout_buf = StringIO()
-    monkeypatch.setattr(sys, "stdout", stdout_buf)
+        prints = []
+        monkeypatch.setattr("specweaver.interfaces.cli.main.console.print", prints.append)
 
-    # Reload main.py which will execute the try/except blocks
-    importlib.reload(specweaver.interfaces.cli.main)
+        # Reload main.py which will execute the try/except blocks
+        importlib.reload(specweaver.interfaces.cli.main)
 
-    stdout_output = stdout_buf.getvalue()
+        stdout_output = "\n".join(str(p) for p in prints)
 
-    # Verify it failed loudly
-    assert "Failed to load validation plugin" in stdout_output
-    assert "Simulated plugin crash" in stdout_output
+        # Verify it failed loudly
+        assert "Failed to load validation plugin" in stdout_output
+        assert "Simulated plugin crash" in stdout_output
 
-    # Verify the core app is still viable and can invoke another command (like --help)
-    result = runner.invoke(specweaver.interfaces.cli.main.app, ["--help"])
-    assert result.exit_code == 0
-    # Core commands should still be present
-    assert "projects" in result.stdout
+        # Verify the core app is still viable and can invoke another command (like --help)
+        result = runner.invoke(specweaver.interfaces.cli.main.app, ["--help"])
+        assert result.exit_code == 0
+        # Core commands should still be present
+        assert "projects" in result.stdout
+    finally:
+        # Restore __import__ by undoing monkeypatch early if needed, though pytest handles it.
+        # But we MUST reload main so it loads the plugin correctly for subsequent tests!
+        monkeypatch.undo()
+        if "specweaver.assurance.validation.interfaces.cli" in sys.modules:
+            del sys.modules["specweaver.assurance.validation.interfaces.cli"]
+        importlib.reload(specweaver.interfaces.cli.main)
 
 
 
@@ -59,7 +65,7 @@ def test_main_router_handles_plugin_import_error(monkeypatch: pytest.MonkeyPatch
 
 def test_main_prevents_command_namespace_collisions(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    [Boundary/Edge Case] `main.py` prevents overlapping Typer command namespace collisions 
+    [Boundary/Edge Case] `main.py` prevents overlapping Typer command namespace collisions
     if two domains accidentally expose the same subcommand.
     """
     import typer

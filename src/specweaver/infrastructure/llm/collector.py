@@ -20,7 +20,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 import anyio
-import nest_asyncio
+import nest_asyncio  # type: ignore
 
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.infrastructure.llm.store import LlmRepository

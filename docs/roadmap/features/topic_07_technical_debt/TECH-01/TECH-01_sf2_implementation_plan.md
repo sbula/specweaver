@@ -4,7 +4,7 @@
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-2
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf2_implementation_plan.md
-- **Status**: APPROVED
+- **Status**: COMPLETED
 
 ## Goal Description
 Refactor the monolithic `interfaces/cli/` layer by decentralizing Typer CLI commands into their respective domain packages. To maintain strict archetype enforcement, domains will adopt a Hexagonal Architecture (Vertical Slicing), utilizing a neutral top-level folder containing `core/` (pure-logic) and `interfaces/` (orchestrators/adapters) sub-packages.

@@ -34,14 +34,14 @@ logger = logging.getLogger(__name__)
 
 from specweaver.core.config.cli_db_utils import get_db
 
-__all__ = ["app", "console", "logger", "get_db", "_require_active_project"]
+__all__ = ["_require_active_project", "app", "console", "get_db", "logger"]
 
 
 def _require_active_project() -> str:
     """Get the active project name or exit with error."""
     from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
-    db = get_db()
+    get_db()
     name_raw = _run_workspace_op("get_active_project")
     if not name_raw:
         console.print(

@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING
 
 import anyio
 import nest_asyncio
 from sqlalchemy import delete, select
 
-from specweaver.core.config.database import Database
 from specweaver.infrastructure.llm.store import LlmProfile, LlmRepository, ProjectLlmLink
 from specweaver.workspace.store import WorkspaceRepository
+
+if TYPE_CHECKING:
+    from specweaver.core.config.database import Database
 
 
 def _sync_or_async(coro):

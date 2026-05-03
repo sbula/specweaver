@@ -6,11 +6,26 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli.main import app
-
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _mock_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Patch get_db() to use a temp DB for all CLI tests."""
+    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.database import Database
+
+    data_dir = tmp_path / ".specweaver-test"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
+    db_path = str(data_dir / "specweaver.db")
+    bootstrap_database(db_path)
+    db = Database(db_path)
+    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    return db
 
 
 def test_rot_check_exits_42_on_drift(tmp_path: Path) -> None:
@@ -54,10 +69,10 @@ tasks:
     class MockGitResult:
         stdout = str(code_file) + "\n"
 
-    # 4. Mock subprocess to simulate `git diff --cached --name-only`
+    from specweaver.interfaces.cli.main import app
     with (
-        patch("specweaver.interfaces.cli.drift.subprocess.run") as mock_run,
-        patch("specweaver.interfaces.cli.drift.resolve_project_path") as mock_resolve,
+        patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
+        patch("specweaver.assurance.validation.interfaces.cli.resolve_project_path") as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
         mock_resolve.return_value = proj_dir
@@ -114,9 +129,10 @@ tasks:
     class MockGitResult:
         stdout = str(code_file) + "\n"
 
+    from specweaver.interfaces.cli.main import app
     with (
-        patch("specweaver.interfaces.cli.drift.subprocess.run") as mock_run,
-        patch("specweaver.interfaces.cli.drift.resolve_project_path") as mock_resolve,
+        patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
+        patch("specweaver.assurance.validation.interfaces.cli.resolve_project_path") as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
         mock_resolve.return_value = proj_dir
@@ -155,9 +171,10 @@ def test_rot_check_polyglot_ts(tmp_path: Path) -> None:
     class MockGitResult:
         stdout = str(code_file) + "\n"
 
+    from specweaver.interfaces.cli.main import app
     with (
-        patch("specweaver.interfaces.cli.drift.subprocess.run") as mock_run,
-        patch("specweaver.interfaces.cli.drift.resolve_project_path") as mock_resolve,
+        patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
+        patch("specweaver.assurance.validation.interfaces.cli.resolve_project_path") as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
         mock_resolve.return_value = proj_dir
@@ -185,11 +202,12 @@ def test_rot_check_windows_newlines(tmp_path: Path) -> None:
         stdout = f'"{code_file!s}"\r\n'
 
     with (
-        patch("specweaver.interfaces.cli.drift.subprocess.run") as mock_run,
-        patch("specweaver.interfaces.cli.drift.resolve_project_path") as mock_resolve,
+        patch("specweaver.assurance.validation.interfaces.cli.subprocess.run") as mock_run,
+        patch("specweaver.assurance.validation.interfaces.cli.resolve_project_path") as mock_resolve,
     ):
         mock_run.return_value = MockGitResult()
         mock_resolve.return_value = proj_dir
+        from specweaver.interfaces.cli.main import app
         result = runner.invoke(app, ["drift", "check-rot", "--staged"])
 
     assert result.exit_code == 0

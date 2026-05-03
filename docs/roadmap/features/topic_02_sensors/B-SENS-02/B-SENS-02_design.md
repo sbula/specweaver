@@ -8,7 +8,7 @@
 ## Feature Overview
 
 Feature B-SENS-02 adds a persistent, semantic Knowledge Graph to the Workspace Context system.
-It solves the problem of LLM hallucination and expensive graph recalculation by persistently storing AST nodes (files, classes, functions, variables) and their edges (imports, def-use chains, Control Flow) in a project-local SQLite database (`.specweaver/graph.db`), wrapped in `NetworkX` for fast traversal.
+It solves the problem of LLM hallucination and expensive graph recalculation by persistently storing AST nodes (files, classes, functions, variables) and their edges (imports, def-use chains, Control Flow) in a project-local SQLite database (`.specweaver/specweaver.db`), wrapped in `NetworkX` for fast traversal.
 It interacts with `D-SENS-02` (Tree-Sitter Parsers) to ingest the raw AST, and does NOT touch orchestration pipelines or remote cloud databases.
 Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Semantic Hashing (`A-SENS-01`), and must be extremely fast to query locally.
 
@@ -17,7 +17,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 ### Codebase Patterns
 - `D-SENS-02` already provides the raw Tree-Sitter AST dictionaries.
 - Currently, SQLite databases are global (`~/.specweaver/specweaver.db`) via `src/specweaver/core/config/database.py`.
-- We are introducing a *local* project database pattern (`.specweaver/graph.db`) to prevent lock contention during parallel agent execution across microservices.
+- We are introducing a *local* project database pattern (`.specweaver/specweaver.db`) to prevent lock contention during parallel agent execution across microservices.
 - The new logic belongs in a pure-logic module: `src/specweaver/workspace/graph/` consuming `parsers`.
 
 ### External Tools
@@ -34,7 +34,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 |---|-----|-------|--------|---------|
 | FR-1 | Parse AST | Graph Builder | Parses AST dictionaries from `D-SENS-02` | In-memory `NetworkX` nodes are created |
 | FR-2 | Deduplicate Nodes | Graph Builder | Applies `A-SENS-01` hashing | Exact structural duplicates are merged to a single Node ID |
-| FR-3 | Persist Graph | Graph Builder | Writes Nodes and Edges to local SQLite | Data is saved to `.specweaver/graph.db` |
+| FR-3 | Persist Graph | Graph Builder | Writes Nodes and Edges to local SQLite | Data is saved to `.specweaver/specweaver.db` |
 | FR-6 | Query Interface | System | Queries subgraph by symbol/file | Returns a `NetworkX` subgraph up to specified depth |
 | FR-7 | Visualization Export | Graph Builder | Exports graph to `NetworkX` GraphML | Generates `.specweaver/graph.graphml` for external 3D visualizers like Gephi |
 | [EXP-1] | Structural Hashing | Graph Builder | Computes a secondary hash ignoring variable names | Experimental: Detects and flags code clones mathematically |
@@ -58,7 +58,7 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 
 | # | Decision | Rationale | Architectural Switch? |
 |---|----------|-----------|----------------------|
-| AD-1 | Local `.specweaver/graph.db` | Prevents global lock contention on `~/.specweaver/specweaver.db` during multi-agent workflows. | Yes — approved by User on 2026-04-28 |
+| AD-1 | Local `.specweaver/specweaver.db` | Prevents global lock contention on `~/.specweaver/specweaver.db` during multi-agent workflows. | Yes — approved by User on 2026-04-28 |
 | AD-2 | NetworkX wrapper | Fastest pure-Python graph math library for extracting subgraphs before passing context to LLM. | No |
 | AD-3 | Interface Fallback Heuristic | Resolves IoC/Spring/Quarkus dependencies by drawing `IMPLEMENTS` edges and tracing back to concrete classes. | No |
 | AD-4 | `API_CONTRACT` Nodes | Separates cross-language RPCs. TS `CONSUMES` the contract; Go `FULFILLS` it. APIs can evolve independently. | No |
@@ -137,16 +137,16 @@ To prevent contextual handoff failures between implementation agents, the Knowle
 
 ### Microservice Graph Federation (Future-Proofing)
 To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG for Brownfield Scale), the Universal Graph must natively support **Graph Federation** (`A-SENS-04`).
-Instead of building a single centralized monolithic `graph.db`, each microservice maintains its own local `.specweaver/graph.db` within its own repository.
+Instead of building a single centralized monolithic `specweaver.db`, each microservice maintains its own local `.specweaver/specweaver.db` within its own repository.
 *   **The System Architecture Graph (The "Outside" Layer)**: There must be one overarching graph layer that links all microservices together *exclusively* via their interfaces (REST APIs, Kafka/RabbitMQ queues, shared file systems) without including *any* of the microservices' internal logic.
-    *   **Storage Location**: Because this graph exists "outside" any single microservice, it is NOT stored in a microservice's local DB. It is housed either in the company's central GitOps/Infrastructure repository's `.specweaver/graph.db`, or managed globally in `~/.specweaver/specweaver.db`.
+    *   **Storage Location**: Because this graph exists "outside" any single microservice, it is NOT stored in a microservice's local DB. It is housed either in the company's central GitOps/Infrastructure repository's `.specweaver/specweaver.db`, or managed globally in `~/.specweaver/specweaver.db`.
 *   **Mandatory ID Prefixing:** To ensure this high-level System Graph can dynamically fuse with local databases without global ID collisions, every single Node ID MUST be prefixed with its microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`).
 *   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI in the System Graph, it will dynamically mount the remote SQLite database and fuse the internal subgraphs only when explicit drill-down is requested.
 
 ### Monorepo & Strongly Modularized Application Support
 For Monorepos (containing multiple microservices) or strongly modularized monoliths, the architecture offers two deployment patterns:
-1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain its own `.specweaver/graph.db`. This behaves identically to the polyrepo Federation model above, linking via `API_CONTRACT` nodes.
-2.  **The Monolith Pattern (Single DB):** For a heavily coupled monolith, the entire codebase is stored within a single `.specweaver/graph.db` at the repository root.
+1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain its own `.specweaver/specweaver.db`. This behaves identically to the polyrepo Federation model above, linking via `API_CONTRACT` nodes.
+2.  **The Monolith Pattern (Single DB):** For a heavily coupled monolith, the entire codebase is stored within a single `.specweaver/specweaver.db` at the repository root.
     *   **Internal Boundaries**: Instead of external `API_CONTRACT` nodes, SpecWeaver uses `TOPOLOGY_BOUNDARY` nodes (derived from `context.yaml` rules or module boundaries) to define internal architectural borders.
     *   **Internal Routing**: Subgraphs are isolated at query-time using the `package_name` or `service_name` properties on the `GraphNode`.
     *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g., `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the monolith is ever refactored or communicates with an external microservice.
@@ -194,7 +194,7 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely isolated from `config/` to keep structural graph data separate from application settings. Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the `NetworkX` graph.
 - **FRs**: [FR-3, FR-6]
 - **Inputs**: In-memory `NetworkX` graph.
-- **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/graph.db`.
+- **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/specweaver.db`.
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
 
@@ -229,7 +229,7 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 |---|-----|-------|--------|---------|
 | FR-1 | Parse AST | Graph Builder | Parses AST dictionaries from `D-SENS-02` | In-memory `NetworkX` nodes are created |
 | FR-2 | Deduplicate Nodes | Graph Builder | Applies `A-SENS-01` hashing | Exact structural duplicates are merged to a single Node ID |
-| FR-3 | Persist Graph | Graph Builder | Writes Nodes and Edges to local SQLite | Data is saved to `.specweaver/graph.db` |
+| FR-3 | Persist Graph | Graph Builder | Writes Nodes and Edges to local SQLite | Data is saved to `.specweaver/specweaver.db` |
 | FR-6 | Query Interface | System | Queries subgraph by symbol/file | Returns a `NetworkX` subgraph up to specified depth |
 | FR-7 | Visualization Export | Graph Builder | Exports graph to `NetworkX` GraphML | Generates `.specweaver/graph.graphml` for external 3D visualizers like Gephi |
 | [EXP-1] | Structural Hashing | Graph Builder | Computes a secondary hash ignoring variable names | Experimental: Detects and flags code clones mathematically |
@@ -253,7 +253,7 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 
 | # | Decision | Rationale | Architectural Switch? |
 |---|----------|-----------|----------------------|
-| AD-1 | Local `.specweaver/graph.db` | Prevents global lock contention on `~/.specweaver/specweaver.db` during multi-agent workflows. | Yes — approved by User on 2026-04-28 |
+| AD-1 | Local `.specweaver/specweaver.db` | Prevents global lock contention on `~/.specweaver/specweaver.db` during multi-agent workflows. | Yes — approved by User on 2026-04-28 |
 | AD-2 | NetworkX wrapper | Fastest pure-Python graph math library for extracting subgraphs before passing context to LLM. | No |
 | AD-3 | Interface Fallback Heuristic | Resolves IoC/Spring/Quarkus dependencies by drawing `IMPLEMENTS` edges and tracing back to concrete classes. | No |
 | AD-4 | `API_CONTRACT` Nodes | Separates cross-language RPCs. TS `CONSUMES` the contract; Go `FULFILLS` it. APIs can evolve independently. | No |
@@ -332,16 +332,16 @@ To prevent contextual handoff failures between implementation agents, the Knowle
 
 ### Microservice Graph Federation (Future-Proofing)
 To support infinite enterprise scaling across massive multi-repo microservices (e.g., US-11 GraphRAG for Brownfield Scale), the Universal Graph must natively support **Graph Federation** (`A-SENS-04`).
-Instead of building a single centralized monolithic `graph.db`, each microservice maintains its own local `.specweaver/graph.db` within its own repository.
+Instead of building a single centralized monolithic `specweaver.db`, each microservice maintains its own local `.specweaver/specweaver.db` within its own repository.
 *   **The System Architecture Graph (The "Outside" Layer)**: There must be one overarching graph layer that links all microservices together *exclusively* via their interfaces (REST APIs, Kafka/RabbitMQ queues, shared file systems) without including *any* of the microservices' internal logic.
-    *   **Storage Location**: Because this graph exists "outside" any single microservice, it is NOT stored in a microservice's local DB. It is housed either in the company's central GitOps/Infrastructure repository's `.specweaver/graph.db`, or managed globally in `~/.specweaver/specweaver.db`.
+    *   **Storage Location**: Because this graph exists "outside" any single microservice, it is NOT stored in a microservice's local DB. It is housed either in the company's central GitOps/Infrastructure repository's `.specweaver/specweaver.db`, or managed globally in `~/.specweaver/specweaver.db`.
 *   **Mandatory ID Prefixing:** To ensure this high-level System Graph can dynamically fuse with local databases without global ID collisions, every single Node ID MUST be prefixed with its microservice identifier (e.g., `billing:ast:1a2b3c4d` instead of just `1a2b3c4d`).
 *   **Dynamic Fusing:** In future query pipelines, when the GraphRAG engine hits an external URI in the System Graph, it will dynamically mount the remote SQLite database and fuse the internal subgraphs only when explicit drill-down is requested.
 
 ### Monorepo & Strongly Modularized Application Support
 For Monorepos (containing multiple microservices) or strongly modularized monoliths, the architecture offers two deployment patterns:
-1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain its own `.specweaver/graph.db`. This behaves identically to the polyrepo Federation model above, linking via `API_CONTRACT` nodes.
-2.  **The Monolith Pattern (Single DB):** For a heavily coupled monolith, the entire codebase is stored within a single `.specweaver/graph.db` at the repository root.
+1.  **The Federation Pattern (Multiple DBs):** If the monorepo contains distinct, deployable microservices (e.g., an Nx workspace), best practice is for each microservice folder to maintain its own `.specweaver/specweaver.db`. This behaves identically to the polyrepo Federation model above, linking via `API_CONTRACT` nodes.
+2.  **The Monolith Pattern (Single DB):** For a heavily coupled monolith, the entire codebase is stored within a single `.specweaver/specweaver.db` at the repository root.
     *   **Internal Boundaries**: Instead of external `API_CONTRACT` nodes, SpecWeaver uses `TOPOLOGY_BOUNDARY` nodes (derived from `context.yaml` rules or module boundaries) to define internal architectural borders.
     *   **Internal Routing**: Subgraphs are isolated at query-time using the `package_name` or `service_name` properties on the `GraphNode`.
     *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g., `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the monolith is ever refactored or communicates with an external microservice.
@@ -389,7 +389,7 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely isolated from `config/` to keep structural graph data separate from application settings. Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the `NetworkX` graph.
 - **FRs**: [FR-3, FR-6]
 - **Inputs**: In-memory `NetworkX` graph.
-- **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/graph.db`.
+- **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/specweaver.db`.
 - **Depends on**: [SF-1]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
 

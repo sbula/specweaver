@@ -25,9 +25,14 @@ def _mock_db(tmp_path: Path, monkeypatch):
     from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
 
-    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+
+
+    data_dir = tmp_path / ".specweaver-test"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
+    db_path = str(data_dir / "specweaver.db")
+    bootstrap_database(db_path)
+    db = Database(db_path)
     return db
 
 
@@ -72,7 +77,7 @@ class TestResolveSpecPath:
 
     def test_existing_file_returned_directly(self, tmp_path: Path) -> None:
         """An existing file path is returned as-is."""
-        from specweaver.interfaces.cli.pipelines import _resolve_spec_path
+        from specweaver.core.flow.interfaces.cli import _resolve_spec_path
 
         spec = tmp_path / "myspec.md"
         spec.write_text("content", encoding="utf-8")
@@ -81,14 +86,14 @@ class TestResolveSpecPath:
 
     def test_new_feature_derives_spec_path(self, tmp_path: Path) -> None:
         """For new_feature pipeline, spec path is derived from module name."""
-        from specweaver.interfaces.cli.pipelines import _resolve_spec_path
+        from specweaver.core.flow.interfaces.cli import _resolve_spec_path
 
         result = _resolve_spec_path("new_feature", "greeter", tmp_path)
         assert result == tmp_path / "specs" / "greeter_spec.md"
 
     def test_relative_to_project(self, tmp_path: Path) -> None:
         """A relative path is resolved against the project directory."""
-        from specweaver.interfaces.cli.pipelines import _resolve_spec_path
+        from specweaver.core.flow.interfaces.cli import _resolve_spec_path
 
         spec = tmp_path / "specs" / "calculator.md"
         spec.parent.mkdir(exist_ok=True)
@@ -98,7 +103,7 @@ class TestResolveSpecPath:
 
     def test_nonexistent_falls_through(self, tmp_path: Path) -> None:
         """Non-existent path falls through as literal Path."""
-        from specweaver.interfaces.cli.pipelines import _resolve_spec_path
+        from specweaver.core.flow.interfaces.cli import _resolve_spec_path
 
         result = _resolve_spec_path("validate_only", "nonexistent.md", tmp_path)
         assert result == Path("nonexistent.md")
@@ -115,7 +120,7 @@ class TestCreateDisplay:
     def test_creates_rich_display_by_default(self) -> None:
         """Default display is RichPipelineDisplay."""
         from specweaver.core.flow.engine.display import RichPipelineDisplay
-        from specweaver.interfaces.cli.pipelines import _create_display
+        from specweaver.core.flow.interfaces.cli import _create_display
 
         display = _create_display()
         assert isinstance(display, RichPipelineDisplay)
@@ -123,7 +128,7 @@ class TestCreateDisplay:
     def test_creates_json_display(self) -> None:
         """use_json=True creates JsonPipelineDisplay."""
         from specweaver.core.flow.engine.display import JsonPipelineDisplay
-        from specweaver.interfaces.cli.pipelines import _create_display
+        from specweaver.core.flow.interfaces.cli import _create_display
 
         display = _create_display(use_json=True)
         assert isinstance(display, JsonPipelineDisplay)

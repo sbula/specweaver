@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import anyio
-import nest_asyncio
+import nest_asyncio  # type: ignore
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine
 

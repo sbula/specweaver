@@ -17,13 +17,14 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.infrastructure.llm.adapters.registry import get_adapter_class
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.infrastructure.llm.models import TaskType
 
 logger = logging.getLogger(__name__)

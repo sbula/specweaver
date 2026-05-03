@@ -342,7 +342,7 @@ def standards_show(
 ) -> None:
     """Show discovered coding standards for the active project."""
     name = _core._require_active_project()
-    db = _core.get_db()
+    _core.get_db()
 
     standards = _run_workspace_op("get_standards", name, scope=scope, language=language)
 
@@ -393,7 +393,7 @@ def standards_clear(
 ) -> None:
     """Clear discovered standards for the active project."""
     name = _core._require_active_project()
-    db = _core.get_db()
+    _core.get_db()
 
     _run_workspace_op("clear_standards", name, scope=scope)
 
@@ -407,7 +407,7 @@ def standards_clear(
 def standards_scopes() -> None:
     """Show a summary of detected and stored scopes."""
     name = _core._require_active_project()
-    db = _core.get_db()
+    _core.get_db()
 
     stored_scopes = _run_workspace_op("list_scopes", name)
 

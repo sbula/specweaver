@@ -7,6 +7,8 @@ from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 @pytest.fixture
 def repo(tmp_path):
     db_path = tmp_path / "lineage_test.db"
+    from specweaver.core.config.cli_db_utils import bootstrap_database
+    bootstrap_database(str(db_path))
     return LineageRepository(str(db_path))
 
 

@@ -379,7 +379,7 @@ def resume(  # noqa: C901
     else:
         # Auto-detect: find latest resumable run for active project
         name = _core._require_active_project()
-        db = _core.get_db()
+        _core.get_db()
         proj = _run_workspace_op("get_project", name)
         if not proj:
             _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")

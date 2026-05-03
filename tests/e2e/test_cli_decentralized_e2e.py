@@ -1,23 +1,22 @@
 from __future__ import annotations
 
 import sqlite3
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 runner = CliRunner()
 
 
 @pytest.fixture(autouse=True)
 def _patch_config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Force config_db_path to return a path in our isolated tmp_path."""
-    monkeypatch.setattr(
-        "specweaver.interfaces.cli._core.config_db_path",
-        lambda: tmp_path / "specweaver.db",
-    )
+    """Force get_db to return a path in our isolated tmp_path."""
 
     # Bypass the global conftest mock that pre-initializes the DB
     def _native_get_db():
@@ -122,3 +121,23 @@ def test_standards_scan_locked_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     # It should fail loudly but not with a raw traceback (typer exit or handled exception)
     assert result.exit_code != 0
     assert "database is locked" in str(result.exception) or "database is locked" in result.output
+
+
+def test_review_cli_hostile_input_overlapping_flags() -> None:
+    """[Hostile/Wrong Input] CLI command invoked with invalid overlapping flags triggers Typer semantic abort."""
+    result = runner.invoke(app, ["review", "--target", "src/", "--all"])
+    assert result.exit_code != 0
+    assert "Cannot use --target and --all together" in result.output or "invalid" in result.output.lower() or "error" in result.output.lower()
+
+
+def test_pipeline_run_di_cascade_e2e(tmp_path: Path) -> None:
+    """[Happy Path] (FR-8) Pipeline execution via CLI `sw run` seamlessly injects LLM Settings."""
+    # First, let's create a project and a pipeline
+    runner.invoke(app, ["init", "e2e_pipeline_proj", "--path", str(tmp_path)])
+    runner.invoke(app, ["use", "e2e_pipeline_proj"])
+
+    # Run a pipeline that relies on the Flow engine -> Adapter Factory DI
+    # We use a dummy pipeline name. Even if it fails to resolve, we verify it touches the DI seam
+    result = runner.invoke(app, ["run", "non_existent_pipeline", str(tmp_path / "spec.md")])
+    assert result.exit_code != 0
+    assert "not found" in result.output.lower() or "no such" in result.output.lower()

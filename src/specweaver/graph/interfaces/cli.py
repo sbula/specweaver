@@ -24,7 +24,7 @@ from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
 from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
 if TYPE_CHECKING:
-    from specweaver.assurance.graph.topology import TopologyGraph, TopologyContext
+    from specweaver.assurance.graph.topology import TopologyContext, TopologyGraph
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ def tag(
         target.write_text("\n".join(content_lines) + "\n", encoding="utf-8")
         rprint(f"[green]Added tag {target_uuid} to {target}[/green]")
 
-    db = get_db()
+    get_db()
     active = _run_workspace_op("get_active_project")
     if not active:
         typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
@@ -244,7 +244,7 @@ def tree_command(  # noqa: C901
         except Exception:
             pass
 
-    db = get_db()
+    get_db()
     active = _run_workspace_op("get_active_project")
     if not active:
         typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)

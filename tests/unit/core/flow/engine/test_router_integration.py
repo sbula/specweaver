@@ -188,7 +188,7 @@ async def test_initialization_failure_fallbacks_safely(tmp_db: Database, tmp_pat
     """T13: E2E Adapter initialization crash safely degrades to fallback."""
     # Create invalid constraint
     # Create invalid constraint and capture its ID (default global profiles occupy early IDs)
-    pid = await _async_create_and_link(
+    await _async_create_and_link(
         tmp_db, "qwen-fail", "qwen_uninstalled", "ghost", 0.1, "test-proj", ["task:implement"]
     )
 

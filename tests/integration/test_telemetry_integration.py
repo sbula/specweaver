@@ -22,6 +22,7 @@ from specweaver.infrastructure.llm.models import (
     TaskType,
     TokenUsage,
 )
+from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import CostEntry
 
 # ---------------------------------------------------------------------------
@@ -104,7 +105,7 @@ class TestCollectorToDatabase:
         config = GenerationConfig(model="fake-model", task_type=TaskType.DRAFT)
         await collector.generate([], config)
 
-        count = collector.flush(db)
+        count = await collector.flush_async(db)
         assert count == 1
 
         with db.connect() as conn:
@@ -120,9 +121,10 @@ class TestCollectorToDatabase:
         collector = TelemetryCollector(FakeAdapter(), project="proj")
         await collector.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
         await collector.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
-        collector.flush(db)
+        await collector.flush_async(db)
 
-        summary = db.get_usage_summary(project="proj")
+        async with db.async_session_scope() as session:
+            summary = await LlmRepository(session).get_usage_summary(project="proj")
         assert len(summary) == 1
         assert summary[0]["call_count"] == 2
         assert summary[0]["total_tokens"] == 300  # 150 * 2
@@ -134,9 +136,10 @@ class TestCollectorToDatabase:
         await collector.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
         await collector.generate([], GenerationConfig(model="m", task_type=TaskType.REVIEW))
         await collector.generate([], GenerationConfig(model="m", task_type=TaskType.IMPLEMENT))
-        collector.flush(db)
+        await collector.flush_async(db)
 
-        result = db.get_usage_by_task_type("proj")
+        async with db.async_session_scope() as session:
+            result = await LlmRepository(session).get_usage_by_task_type("proj")
         assert len(result) == 3
         types = {r["task_type"] for r in result}
         assert types == {"draft", "review", "implement"}
@@ -153,9 +156,10 @@ class TestCostOverrideFlow:
     @pytest.mark.asyncio
     async def test_db_overrides_affect_collector_cost(self, db):
         """Story 25: set_cost_override → get_cost_overrides → collector uses them."""
-        db.set_cost_override("fake-model", 50.0, 100.0)
+        async with db.async_session_scope() as session:
+            await LlmRepository(session).set_cost_override("fake-model", 50.0, 100.0)
+            raw = await LlmRepository(session).get_cost_overrides()
 
-        raw = db.get_cost_overrides()
         overrides = {k: CostEntry(*v) for k, v in raw.items()}
 
         collector = TelemetryCollector(
@@ -219,11 +223,12 @@ class TestMultiProjectIsolation:
         await c1.generate([], GenerationConfig(model="m", task_type=TaskType.DRAFT))
         await c2.generate([], GenerationConfig(model="m", task_type=TaskType.REVIEW))
 
-        c1.flush(db)
-        c2.flush(db)
+        await c1.flush_async(db)
+        await c2.flush_async(db)
 
-        alpha = db.get_usage_summary(project="alpha")
-        beta = db.get_usage_summary(project="beta")
+        async with db.async_session_scope() as session:
+            alpha = await LlmRepository(session).get_usage_summary(project="alpha")
+            beta = await LlmRepository(session).get_usage_summary(project="beta")
 
         assert alpha[0]["call_count"] == 2
         assert beta[0]["call_count"] == 1

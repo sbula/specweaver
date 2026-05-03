@@ -67,7 +67,7 @@ def init(
         raise typer.Exit(code=1) from exc
 
     # Register in DB
-    db = _core.get_db()
+    _core.get_db()
     try:
         _run_workspace_op("register_project", name, str(project_path))
     except ValueError as exc:
@@ -113,7 +113,7 @@ def use(
     ),
 ) -> None:
     """Switch the active project."""
-    db = _core.get_db()
+    _core.get_db()
     proj = _run_workspace_op("get_project", name)
     if not proj:
         _core.console.print(
@@ -139,7 +139,7 @@ def use(
 @workspace_cli.command()
 def projects() -> None:
     """List all registered projects."""
-    db = _core.get_db()
+    _core.get_db()
     all_projects = _run_workspace_op("list_projects")
     active = _run_workspace_op("get_active_project")
 
@@ -180,7 +180,7 @@ def remove(
     ),
 ) -> None:
     """Unregister a project from SpecWeaver."""
-    db = _core.get_db()
+    _core.get_db()
     proj = _run_workspace_op("get_project", name)
     if not proj:
         _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
@@ -211,7 +211,7 @@ def update(
     ),
 ) -> None:
     """Update a project setting (e.g., root path)."""
-    db = _core.get_db()
+    _core.get_db()
     if field == "path":
         try:
             _run_workspace_op("update_project_path", name, value)
@@ -267,7 +267,7 @@ def _infer_subdirs(project_path: Path, inferrer: ContextInferrer) -> tuple[int, 
 @workspace_cli.command()
 def scan() -> None:
     """Scan the active project and auto-generate missing context.yaml files."""
-    db = _core.get_db()
+    _core.get_db()
     active = _run_workspace_op("get_active_project")
     if not active:
         _core.console.print(
@@ -491,7 +491,7 @@ def constitution_bootstrap(
     from specweaver.workspace.project.constitution import generate_constitution_from_standards
 
     # Load standards from DB
-    db = _core.get_db()
+    _core.get_db()
     name = _core._require_active_project()
     standards = _run_workspace_op("get_standards", name)
 

@@ -20,7 +20,7 @@ def test_lineage_tag_integration_real_db(tmp_path, monkeypatch):
     register_test_project(db, "test-proj", str(tmp_path))
     set_test_active_project(db, "test-proj")
 
-    local_db_dir = tmp_path / ".specweaver"
+    tmp_path / ".specweaver"
     repo = LineageRepository(str(data_dir / "specweaver.db"))
 
     # Create target file
@@ -63,7 +63,7 @@ def test_lineage_tree_integration_multigen(tmp_path, monkeypatch):
     register_test_project(db, "test-proj2", str(tmp_path))
     set_test_active_project(db, "test-proj2")
 
-    local_db_dir = tmp_path / ".specweaver"
+    tmp_path / ".specweaver"
     repo = LineageRepository(str(data_dir / "specweaver.db"))
 
     # Insert events manually using DB interface

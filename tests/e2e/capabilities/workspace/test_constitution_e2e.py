@@ -98,7 +98,7 @@ def _sync_run(coro):
         import nest_asyncio
         nest_asyncio.apply(loop)
         return loop.run_until_complete(coro)
-    
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

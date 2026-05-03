@@ -1,4 +1,4 @@
-# Design: Domain-Driven Design Unification
+please# Design: Domain-Driven Design Unification
 
 - **Feature ID**: TECH-01
 - **Phase**: 6
@@ -125,7 +125,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Domain-Driven CLI Creation | How to add a new CLI command to a bounded context and register it. | ⬜ To be written during Pre-commit |
+| Domain-Driven CLI Creation | How to add a new CLI command to a bounded context and register it. | ✅ Done |
 
 ## Sub-Feature Breakdown
 
@@ -162,12 +162,12 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Decentralize CLI Layer | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Decentralize CLI Layer | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Consolidate Sandbox | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-2 Impl Plan Approved.
-**Next step**: Run `/dev docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf2_implementation_plan.md`
+**Current status**: SF-2 Pre-Commit Approved & Committed.
+**Next step**: Run `/dev docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf3_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

@@ -150,7 +150,11 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
     settings = SpecWeaverSettings(llm=LLMSettings(model="g", provider="mock"), dal_matrix=matrix)
 
     mock_db = MagicMock()
-    mock_db.get_default_dal.return_value = "DAL_B"
+    from contextlib import asynccontextmanager
+    @asynccontextmanager
+    async def _mock_session_scope():
+        yield MagicMock()
+    mock_db.async_session_scope = _mock_session_scope
 
     context = RunContext(
         project_path=tmp_path,
@@ -163,10 +167,13 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
     step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.CODE)
     handler = ValidateCodeHandler()
 
-    with patch("specweaver.core.config.dal_resolver.DALResolver.resolve", return_value=None):
+    with (
+        patch("specweaver.core.config.dal_resolver.DALResolver.resolve", return_value=None),
+        patch("specweaver.workspace.store.WorkspaceRepository.get_default_dal", return_value="DAL_B") as mock_get_dal
+    ):
         result = await handler.execute(step, context)
 
-    mock_db.get_default_dal.assert_called_once()
+    mock_get_dal.assert_called_once()
     assert result.status is not None
 
 

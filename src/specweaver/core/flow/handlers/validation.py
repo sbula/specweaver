@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:
+async def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:
     """Resolve DAL for the target and overlay validation constraints over settings."""
     from specweaver.commons.enums.dal import DALLevel
     from specweaver.core.config.dal_resolver import DALResolver
@@ -33,23 +33,20 @@ def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:
 
     if not dal_str and context.db:
         try:
-            import anyio
 
             from specweaver.workspace.store import WorkspaceRepository
 
-            async def _get_dal() -> str:
-                async with context.db.async_session_scope() as session:
-                    return await WorkspaceRepository(session).get_default_dal(
-                        context.project_path.name
-                    )
-
-            dal_raw = anyio.run(_get_dal)
+            async with context.db.async_session_scope() as session:
+                dal_raw = await WorkspaceRepository(session).get_default_dal(
+                    context.project_path.name
+                )
             if dal_raw:
                 try:
                     dal_str = DALLevel(dal_raw)
                 except ValueError:
                     dal_str = None
-        except Exception:
+        except Exception as e:
+            logger.error("Exception in _resolve_merged_settings: %s", e)
             dal_str = None
 
     merged_settings = context.settings
@@ -86,7 +83,7 @@ class ValidateSpecHandler:
         kind_str = step.params.get("kind")
 
         try:
-            merged_settings = _resolve_merged_settings(context, context.spec_path)
+            merged_settings = await _resolve_merged_settings(context, context.spec_path)
 
             results = await asyncio.to_thread(
                 self._run_validation,
@@ -217,7 +214,7 @@ class ValidateCodeHandler:
 
         logger.debug("ValidateCodeHandler: validating code file '%s'", code_path.name)
         try:
-            merged_settings = _resolve_merged_settings(context, code_path)
+            merged_settings = await _resolve_merged_settings(context, code_path)
             results = await asyncio.to_thread(
                 self._run_validation,
                 code_path,

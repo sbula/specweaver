@@ -28,9 +28,14 @@ def _mock_db(tmp_path, monkeypatch):
     from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
 
-    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+
+
+    data_dir = tmp_path / ".specweaver-test"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
+    db_path = str(data_dir / "specweaver.db")
+    bootstrap_database(db_path)
+    db = Database(db_path)
     return db
 
 

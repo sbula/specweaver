@@ -26,9 +26,14 @@ def _mock_db(tmp_path, monkeypatch):
     from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
 
-    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+
+
+    data_dir = tmp_path / ".specweaver-test"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
+    db_path = str(data_dir / "specweaver.db")
+    bootstrap_database(db_path)
+    db = Database(db_path)
     return db
 
 
@@ -71,7 +76,7 @@ def _scaffold_project(tmp_path: object) -> object:
 class TestImplementFlow:
     """Test sw implement command."""
 
-    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
     def test_implement_generates_files(
         self,
         mock_require,
@@ -110,7 +115,7 @@ class TestImplementFlow:
         assert code_path.exists()
         assert test_path.exists()
 
-    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
     def test_implement_spec_suffix_removal(
         self,
         mock_require,
@@ -163,7 +168,7 @@ class TestImplementFlow:
 class TestFullPipeline:
     """Test the full SpecWeaver pipeline end-to-end."""
 
-    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
     def test_full_pipeline(
         self,
         mock_require,

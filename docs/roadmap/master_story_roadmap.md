@@ -552,7 +552,7 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-01:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-01/TECH-01_design.md)
         *   `[x]` SF-1: Deconstruct Config Monolith
-        *   `[ ]` SF-2: Decentralize CLI Layer
+        *   `[x]` SF-2: Decentralize CLI Layer
         *   `[ ]` SF-3: Consolidate Sandbox
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`

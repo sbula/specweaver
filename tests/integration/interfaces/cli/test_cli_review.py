@@ -29,9 +29,14 @@ def _mock_db(tmp_path: Path, monkeypatch):
     from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
 
-    bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
-    db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+
+
+    data_dir = tmp_path / ".specweaver-test"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
+    db_path = str(data_dir / "specweaver.db")
+    bootstrap_database(db_path)
+    db = Database(db_path)
     return db
 
 
@@ -80,7 +85,7 @@ class TestReviewErrors:
         # Should fail at the LLM adapter step (no API key) or spec not found
         assert result.exit_code == 1
 
-    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.workflows.review.interfaces.cli._require_llm_adapter")
     def test_review_spec_accepted(
         self,
         mock_llm,
@@ -117,7 +122,7 @@ class TestReviewErrors:
         assert result.exit_code == 0
         assert "ACCEPTED" in result.output
 
-    @patch("specweaver.infrastructure.llm.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.workflows.review.interfaces.cli._require_llm_adapter")
     def test_review_spec_denied(
         self,
         mock_llm,
