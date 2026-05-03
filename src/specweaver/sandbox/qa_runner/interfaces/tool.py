@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
     from specweaver.infrastructure.llm.models import ToolDefinition
 
 
@@ -159,8 +159,8 @@ class QARunnerTool:
     # Internal: role gating
     # -------------------------------------------------------------------
     def definitions(self) -> list[ToolDefinition]:
-        from specweaver.core.loom.tools.qa_runner.definitions import INTENT_DEFINITIONS
-        from specweaver.core.loom.tools.qa_runner.tool import ROLE_INTENTS
+        from specweaver.sandbox.qa_runner.interfaces.definitions import INTENT_DEFINITIONS
+        from specweaver.sandbox.qa_runner.interfaces.tool import ROLE_INTENTS
 
         return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 

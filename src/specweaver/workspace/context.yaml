@@ -7,7 +7,7 @@ dependencies:
   allowed:
     - src.specweaver.commons
     - src.specweaver.core.config
-    - src.specweaver.core.loom
+    - src.specweaver.sandbox
   forbidden:
     - src.specweaver.interfaces
     - src.specweaver.workflows

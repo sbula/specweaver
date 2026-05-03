@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
-from specweaver.core.loom.tools.filesystem.models import AccessMode, FolderGrant
+from specweaver.sandbox.filesystem.interfaces.models import AccessMode, FolderGrant
 
 
 def test_dispatcher_ast_injection() -> None:
@@ -16,7 +16,7 @@ def test_dispatcher_ast_injection() -> None:
     context.llm.generate_with_tools = True
     context.workspace.uri = "file://C:/workspace"
 
-    with patch("specweaver.core.loom.security.WorkspaceBoundary.from_run_context") as mock_bounds:
+    with patch("specweaver.sandbox.security.WorkspaceBoundary.from_run_context") as mock_bounds:
         mock_boundary = MagicMock()
         mock_boundary.roots = [Path.cwd()]
         mock_boundary.to_folder_grants.return_value = grants

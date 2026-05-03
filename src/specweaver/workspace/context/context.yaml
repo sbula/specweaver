@@ -12,7 +12,7 @@ consumes:
   - specweaver/workspace/parsers
 
 forbids:
-  - specweaver/loom/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
+  - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
 
 exposes:
   - ContextProvider

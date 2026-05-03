@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from specweaver.core.loom.commons.qa_runner.interface import ComplexityViolation
+from specweaver.sandbox.qa_runner.core.interface import ComplexityViolation
 
 
 def parse_detekt_complexity(data: dict[str, Any], max_complexity: int) -> list[ComplexityViolation]:

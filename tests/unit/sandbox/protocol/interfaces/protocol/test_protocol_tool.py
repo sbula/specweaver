@@ -1,6 +1,6 @@
 import json
 
-from specweaver.core.loom.tools.protocol.tool import ProtocolTool
+from specweaver.sandbox.protocol.interfaces.tool import ProtocolTool
 
 
 def test_protocol_tool_extract_endpoints(tmp_path):

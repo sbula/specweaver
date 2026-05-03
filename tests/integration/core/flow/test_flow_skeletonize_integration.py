@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
-from specweaver.core.loom.commons.filesystem.executor import EngineFileExecutor
+from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
 
 
 @pytest.mark.asyncio

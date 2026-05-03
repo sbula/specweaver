@@ -16,7 +16,7 @@ import logging
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from specweaver.core.loom.commons.qa_runner.interface import QARunnerInterface
+    from specweaver.sandbox.qa_runner.core.interface import QARunnerInterface
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ def _resolve_runner(language: str, cwd: Any) -> QARunnerInterface:
 
     Forwards resolution to the auto-discovery factory, ignoring the legacy language string.
     """
-    from specweaver.core.loom.commons.qa_runner.factory import resolve_runner
+    from specweaver.sandbox.qa_runner.core.factory import resolve_runner
 
     return resolve_runner(cwd)
 

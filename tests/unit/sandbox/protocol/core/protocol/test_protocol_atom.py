@@ -1,4 +1,4 @@
-from specweaver.core.loom.atoms.protocol.atom import ProtocolAtom
+from specweaver.sandbox.protocol.core.atom import ProtocolAtom
 
 
 def test_atom_extract_endpoints_success(tmp_path):

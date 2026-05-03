@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
-from specweaver.core.loom.commons.filesystem.executor import EngineFileExecutor
-from specweaver.core.loom.security import AccessMode, FolderGrant
-from specweaver.core.loom.tools.code_structure.tool import CodeStructureTool
+from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
+from specweaver.sandbox.security import AccessMode, FolderGrant
+from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
 
 
 @pytest.fixture

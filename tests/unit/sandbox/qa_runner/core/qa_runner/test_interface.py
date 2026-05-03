@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.loom.commons.language.python.runner import PythonQARunner
-from specweaver.core.loom.commons.qa_runner.interface import (
+from specweaver.sandbox.language.core.python.runner import PythonQARunner
+from specweaver.sandbox.qa_runner.core.interface import (
     ComplexityRunResult,
     ComplexityViolation,
     LintError,

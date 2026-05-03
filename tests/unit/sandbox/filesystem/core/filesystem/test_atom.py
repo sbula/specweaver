@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.core.loom.atoms.filesystem.atom — TDD.
+"""Tests for specweaver.sandbox.filesystem.core.atom — TDD.
 
 FileSystemAtom is the engine-level counterpart. It has unrestricted access
 (uses EngineFileExecutor) for operations like:
@@ -18,8 +18,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.filesystem.atom import FileSystemAtom
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.filesystem.core.atom import FileSystemAtom
 
 if TYPE_CHECKING:
     from pathlib import Path

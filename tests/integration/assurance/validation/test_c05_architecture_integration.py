@@ -12,7 +12,7 @@ import pytest
 
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.rules.code.c05_import_direction import ImportDirectionRule
-from specweaver.core.loom.commons.language.python.runner import PythonQARunner
+from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
     from pathlib import Path

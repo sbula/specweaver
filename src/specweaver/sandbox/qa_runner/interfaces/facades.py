@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.tools.qa_runner.tool import QARunnerTool, ToolResult
+from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool, ToolResult
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -172,7 +172,7 @@ def create_qa_runner_interface(
         msg = f"Unknown role: {role!r}. Known roles: {sorted(_ROLE_INTERFACE_MAP)}"
         raise ValueError(msg)
 
-    from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
     atom = QARunnerAtom(cwd=cwd, language=language)
     tool = QARunnerTool(atom=atom, role=role)

@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.core.loom.tools.web.tool — WebTool + _strip_html."""
+"""Tests for specweaver.sandbox.web.interfaces.tool — WebTool + _strip_html."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.loom.tools.web.tool import (
+from specweaver.sandbox.web.interfaces.tool import (
     ROLE_INTENTS,
     TOOL_TIMEOUT_SECONDS,
     WebTool,

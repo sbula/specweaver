@@ -3,27 +3,27 @@ from __future__ import annotations
 import sys
 from unittest.mock import MagicMock, patch
 
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.mcp.atom import MCPAtom
-from specweaver.core.loom.commons.mcp.executor import MCPExecutorError
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.mcp.core.atom import MCPAtom
+from specweaver.sandbox.mcp.core.executor import MCPExecutorError
 
 
 class TestMCPAtomIntents:
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_unknown_intent(self, mock_executor_class: MagicMock) -> None:
         atom = MCPAtom([sys.executable])
         result = atom.run({"intent": "does_not_exist"})
         assert result.status == AtomStatus.FAILED
         assert "Unknown intent" in result.message
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_missing_intent(self, mock_executor_class: MagicMock) -> None:
         atom = MCPAtom([sys.executable])
         result = atom.run({})
         assert result.status == AtomStatus.FAILED
         assert "Missing 'intent'" in result.message
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_intent_initialize_success(self, mock_executor_class: MagicMock) -> None:
         mock_executor = MagicMock()
         # Mock the underlying MCPExecutor returned by the class
@@ -60,7 +60,7 @@ class TestMCPAtomIntents:
 
         assert calls[1].kwargs["method"] == "notifications/initialized"
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_intent_read_resource_success(self, mock_executor_class: MagicMock) -> None:
         mock_executor = MagicMock()
         mock_executor_class.return_value = mock_executor
@@ -88,7 +88,7 @@ class TestMCPAtomIntents:
         assert result.status == AtomStatus.SUCCESS
         assert result.exports["contents"][0]["text"] == "CREATE TABLE..."
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_intent_read_resource_missing_uri(self, mock_executor_class: MagicMock) -> None:
         atom = MCPAtom([sys.executable])
 
@@ -102,7 +102,7 @@ class TestMCPAtomIntents:
         assert result.status == AtomStatus.FAILED
         assert "Missing 'uri'" in result.message
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_executor_error_handling(self, mock_executor_class: MagicMock) -> None:
         mock_executor = MagicMock()
         mock_executor_class.return_value = mock_executor
@@ -115,7 +115,7 @@ class TestMCPAtomIntents:
         assert result.status == AtomStatus.FAILED
         assert "Connection refused" in result.message
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_close_teardown(self, mock_executor_class: MagicMock) -> None:
         mock_executor = MagicMock()
         mock_executor_class.return_value = mock_executor
@@ -165,7 +165,7 @@ class TestMCPAtomIntents:
         assert result.status == AtomStatus.FAILED
         assert "Executor not initialized" in result.message
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_telemetry_scrubbing_removes_vault_secrets(
         self, mock_executor_class: MagicMock
     ) -> None:
@@ -194,7 +194,7 @@ class TestMCPAtomIntents:
         assert "***RESTRICTED***" in result.exports["db_uri"]
         assert result.exports["nested"]["password"] == "***RESTRICTED***"
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_telemetry_scrubbing_ignores_short_strings(
         self, mock_executor_class: MagicMock
     ) -> None:
@@ -219,7 +219,7 @@ class TestMCPAtomIntents:
         assert result.exports["status"] == "ok"  # 'ok' isn't scrubbed because len < 8
         assert result.exports["empty"] == " "
 
-    @patch("specweaver.core.loom.atoms.mcp.atom.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.core.atom.MCPExecutor")
     def test_telemetry_scrubbing_removes_vault_secrets_from_lists(
         self, mock_executor_class: MagicMock
     ) -> None:

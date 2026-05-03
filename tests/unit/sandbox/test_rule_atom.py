@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.validation.models import Rule, RuleResult
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.rule_atom import RuleAtom
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.rule_atom import RuleAtom
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -135,7 +135,7 @@ class TestRuleAtom:
 
     def test_is_atom_subclass(self) -> None:
         """RuleAtom is a proper Atom subclass."""
-        from specweaver.core.loom.atoms.base import Atom
+        from specweaver.sandbox.base import Atom
 
         atom = RuleAtom(_PassingRule())
         assert isinstance(atom, Atom)

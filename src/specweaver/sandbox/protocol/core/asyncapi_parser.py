@@ -2,11 +2,11 @@ from typing import Any
 
 import ruamel.yaml
 
-from specweaver.core.loom.commons.protocol.interfaces import (
+from specweaver.sandbox.protocol.core.protocol_interfaces import (
     ProtocolSchemaError,
     ProtocolSchemaInterface,
 )
-from specweaver.core.loom.commons.protocol.models import (
+from specweaver.sandbox.protocol.core.models import (
     ProtocolEndpoint,
     ProtocolMessage,
 )

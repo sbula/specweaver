@@ -193,8 +193,8 @@ class WebTool:
 
     # Internal: role gating
     def definitions(self) -> list[ToolDefinition]:
-        from specweaver.core.loom.tools.web.definitions import INTENT_DEFINITIONS
-        from specweaver.core.loom.tools.web.tool import ROLE_INTENTS
+        from specweaver.sandbox.web.interfaces.definitions import INTENT_DEFINITIONS
+        from specweaver.sandbox.web.interfaces.tool import ROLE_INTENTS
 
         return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 

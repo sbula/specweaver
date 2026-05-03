@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom as _QARunnerAtom
-from specweaver.core.loom.tools.qa_runner.tool import QARunnerTool as _QARunnerTool
+from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom as _QARunnerAtom
+from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool as _QARunnerTool
 
 QARunnerAtom = _QARunnerAtom
 QARunnerAtom.__test__ = False  # type: ignore

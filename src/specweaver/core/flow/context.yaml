@@ -22,16 +22,16 @@ consumes:
   - specweaver/implementation
   - specweaver/planning
   - specweaver/validation
-  - specweaver/loom/atoms/git
-  - specweaver/loom/atoms/qa_runner
-  - specweaver/loom/atoms/code_structure
-  - specweaver/loom/atoms/mcp
-  - specweaver/loom/dispatcher
-  - specweaver/loom/security
+  - specweaver/sandbox/git/core
+  - specweaver/sandbox/qa_runner/core
+  - specweaver/sandbox/code_structure/core
+  - specweaver/sandbox/mcp/core
+  - specweaver/sandbox/dispatcher
+  - specweaver/sandbox/security
 
 forbids:
-  - specweaver/loom/tools/*  # Atoms and raw orchestrators must not execute intent-gated agent tools directly.
-  - specweaver/loom/commons/*  # commons is internal to loom — only atoms/tools may consume it
+  - specweaver/sandbox/*/interfaces  # Atoms and raw orchestrators must not execute intent-gated agent tools directly.
+    # commons is internal to loom — only atoms/tools may consume it
   - specweaver/drafting  # Rules and adapters must remain isolated from interactive drafts.
   - specweaver/context
 

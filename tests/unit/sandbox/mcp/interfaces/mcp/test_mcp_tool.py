@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.loom.tools.mcp.tool import MCPExplorerTool
+from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
 
 
 class TestMCPExplorerTool:
@@ -26,7 +26,7 @@ class TestMCPExplorerTool:
         parsed = json.loads(result.data)
         assert parsed == ["test-db"]
 
-    @patch("specweaver.core.loom.tools.mcp.tool.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.interfaces.tool.MCPExecutor")
     def test_list_resources(self, mock_executor_class: MagicMock, mock_context: MagicMock) -> None:
         mock_instance = MagicMock()
         mock_executor_class.return_value = mock_instance
@@ -50,7 +50,7 @@ class TestMCPExplorerTool:
         # Ensure cleanup happened
         mock_instance.close.assert_called_once()
 
-    @patch("specweaver.core.loom.tools.mcp.tool.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.interfaces.tool.MCPExecutor")
     def test_read_resource(self, mock_executor_class: MagicMock, mock_context: MagicMock) -> None:
         mock_instance = MagicMock()
         mock_executor_class.return_value = mock_instance
@@ -93,11 +93,11 @@ class TestMCPExplorerTool:
         assert result.status == "error"
         assert "Context Topology missing" in result.message
 
-    @patch("specweaver.core.loom.tools.mcp.tool.MCPExecutor")
+    @patch("specweaver.sandbox.mcp.interfaces.tool.MCPExecutor")
     def test_execute_mcp_query_executor_error(
         self, mock_executor_class: MagicMock, mock_context: MagicMock
     ) -> None:
-        from specweaver.core.loom.commons.mcp.executor import MCPExecutorError
+        from specweaver.sandbox.mcp.core.executor import MCPExecutorError
 
         mock_instance = MagicMock()
         mock_executor_class.return_value = mock_instance
@@ -120,8 +120,8 @@ class TestMCPExplorerTool:
 
 class TestArchitectMCPInterface:
     def test_requires_architect_role(self) -> None:
-        from specweaver.core.loom.tools.mcp.interfaces import ArchitectMCPInterface
-        from specweaver.core.loom.tools.mcp.models import MCPToolError
+        from specweaver.sandbox.mcp.interfaces.facades import ArchitectMCPInterface
+        from specweaver.sandbox.mcp.interfaces.models import MCPToolError
 
         tool = MagicMock()
         tool.ROLE_INTENTS = {"reviewer": frozenset()}
@@ -130,7 +130,7 @@ class TestArchitectMCPInterface:
             ArchitectMCPInterface(tool)
 
     def test_definitions(self) -> None:
-        from specweaver.core.loom.tools.mcp.interfaces import ArchitectMCPInterface
+        from specweaver.sandbox.mcp.interfaces.facades import ArchitectMCPInterface
 
         ctx = MagicMock()
         ctx.topology.mcp_servers = {"test-db": {}}

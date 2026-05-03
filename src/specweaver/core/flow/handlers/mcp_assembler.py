@@ -17,7 +17,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.atoms.mcp.atom import MCPAtom
+from specweaver.sandbox.mcp.core.atom import MCPAtom
 
 if TYPE_CHECKING:
     from specweaver.core.flow.handlers.base import RunContext

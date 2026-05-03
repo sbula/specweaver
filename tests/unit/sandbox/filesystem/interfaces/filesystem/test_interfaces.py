@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.core.loom.tools.filesystem.interfaces — TDD.
+"""Tests for specweaver.sandbox.filesystem.interfaces.facades — TDD.
 
 Same exhaustive invisibility pattern as git interfaces:
 - Each interface exposes ONLY the methods for its role
@@ -15,11 +15,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.loom.security import (
+from specweaver.sandbox.security import (
     AccessMode,
     FolderGrant,
 )
-from specweaver.core.loom.tools.filesystem.interfaces import (
+from specweaver.sandbox.filesystem.interfaces.facades import (
     DrafterFileInterface,
     ImplementerFileInterface,
     ReviewerFileInterface,

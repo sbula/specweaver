@@ -18,7 +18,7 @@ func (e *Engine) Run() int {
         encoding="utf-8",
     )
 
-    from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
+    from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
     atom = CodeStructureAtom(cwd=tmp_path)
 
@@ -72,7 +72,7 @@ func (a A) RunValue() {}
         encoding="utf-8",
     )
 
-    from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
+    from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
     atom = CodeStructureAtom(cwd=tmp_path)
 

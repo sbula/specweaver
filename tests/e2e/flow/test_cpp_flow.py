@@ -21,7 +21,7 @@ public:
     # To keep this simple and fast, we simulate a pipeline step that targets a C++ file
     # and replaces a symbol's body via the CodeStructureAtom.
 
-    from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
+    from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
     atom = CodeStructureAtom(cwd=project_dir)
 

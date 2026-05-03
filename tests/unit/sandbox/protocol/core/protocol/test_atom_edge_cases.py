@@ -1,5 +1,5 @@
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.protocol.atom import ProtocolAtom
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.protocol.core.atom import ProtocolAtom
 
 
 def test_atom_missing_context_keys():
@@ -21,7 +21,7 @@ def test_atom_generic_exception(monkeypatch):
         raise ValueError("Kaboom!")
 
     monkeypatch.setattr(
-        "specweaver.core.loom.atoms.protocol.atom.ProtocolAtom._read_file", mock_read_file
+        "specweaver.sandbox.protocol.core.atom.ProtocolAtom._read_file", mock_read_file
     )
     atom = ProtocolAtom()
     result = atom.run(context={"action": "extract_schema_endpoints", "file_path": "dummy.yaml"})

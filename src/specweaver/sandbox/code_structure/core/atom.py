@@ -10,14 +10,14 @@ import typing
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
 from specweaver.workspace.ast.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
 
 if TYPE_CHECKING:
-    from specweaver.core.loom.commons.filesystem.executor import FileExecutor
+    from specweaver.sandbox.filesystem.core.executor import FileExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class CodeStructureAtom(Atom):
         if file_executor:
             self._executor = file_executor
         elif cwd:
-            from specweaver.core.loom.commons.filesystem.executor import FileExecutor
+            from specweaver.sandbox.filesystem.core.executor import FileExecutor
 
             self._executor = FileExecutor(cwd=cwd)
         else:
@@ -255,7 +255,7 @@ class CodeStructureAtom(Atom):
             all_markers = parser.extract_framework_markers(code)
             symbol_markers = all_markers.get(symbol_name, {})
 
-            from specweaver.core.loom.commons.language.evaluator import SchemaEvaluator
+            from specweaver.sandbox.language.core.evaluator import SchemaEvaluator
 
             # Use the merged evaluator so plugins unroll appropriately alongside the base archetype
             evaluator = SchemaEvaluator({self._active_archetype: self.active_evaluator})

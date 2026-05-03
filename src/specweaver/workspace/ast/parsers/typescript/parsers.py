@@ -5,7 +5,7 @@
 
 import re
 
-from specweaver.core.loom.commons.qa_runner.interface import CompileError
+from specweaver.sandbox.qa_runner.core.interface import CompileError
 
 # Regex fallback for compiling TS errors from tsc stdout.
 # Format: <file>(<line>,<col>): error TS<code>: <msg>

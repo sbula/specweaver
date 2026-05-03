@@ -3,11 +3,11 @@ from typing import Any
 from proto_schema_parser.ast import Message, Service
 from proto_schema_parser.parser import Parser
 
-from specweaver.core.loom.commons.protocol.interfaces import (
+from specweaver.sandbox.protocol.core.protocol_interfaces import (
     ProtocolSchemaError,
     ProtocolSchemaInterface,
 )
-from specweaver.core.loom.commons.protocol.models import (
+from specweaver.sandbox.protocol.core.models import (
     ProtocolEndpoint,
     ProtocolMessage,
 )

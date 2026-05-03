@@ -8,9 +8,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
-from specweaver.core.loom.commons.qa_runner.interface import (
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+from specweaver.sandbox.qa_runner.core.interface import (
     ComplexityRunResult,
     ComplexityViolation,
     LintError,
@@ -448,7 +448,7 @@ class TestAtomRunCompiler:
 
     def test_run_compiler_clean(self, tmp_path: Path) -> None:
         atom = QARunnerAtom(cwd=tmp_path)
-        from specweaver.core.loom.commons.qa_runner.interface import CompileRunResult
+        from specweaver.sandbox.qa_runner.core.interface import CompileRunResult
 
         mock_result = CompileRunResult(error_count=0, warning_count=0, errors=[])
         with patch.object(atom._runner, "run_compiler", return_value=mock_result):
@@ -459,7 +459,7 @@ class TestAtomRunCompiler:
 
     def test_run_compiler_errors(self, tmp_path: Path) -> None:
         atom = QARunnerAtom(cwd=tmp_path)
-        from specweaver.core.loom.commons.qa_runner.interface import CompileError, CompileRunResult
+        from specweaver.sandbox.qa_runner.core.interface import CompileError, CompileRunResult
 
         mock_result = CompileRunResult(
             error_count=1,
@@ -493,7 +493,7 @@ class TestAtomRunDebugger:
 
     def test_run_debugger_success(self, tmp_path: Path) -> None:
         atom = QARunnerAtom(cwd=tmp_path)
-        from specweaver.core.loom.commons.qa_runner.interface import DebugRunResult
+        from specweaver.sandbox.qa_runner.core.interface import DebugRunResult
 
         mock_result = DebugRunResult(exit_code=0, duration_seconds=1.0, events=[])
         with patch.object(atom._runner, "run_debugger", return_value=mock_result):
@@ -504,7 +504,7 @@ class TestAtomRunDebugger:
 
     def test_run_debugger_failure(self, tmp_path: Path) -> None:
         atom = QARunnerAtom(cwd=tmp_path)
-        from specweaver.core.loom.commons.qa_runner.interface import DebugRunResult, OutputEvent
+        from specweaver.sandbox.qa_runner.core.interface import DebugRunResult, OutputEvent
 
         mock_result = DebugRunResult(
             exit_code=1,
@@ -538,7 +538,7 @@ class TestAtomRunArchitecture:
 
     def test_architecture_clean(self, tmp_path: Path) -> None:
         atom = QARunnerAtom(cwd=tmp_path)
-        from specweaver.core.loom.commons.qa_runner.interface import ArchitectureRunResult
+        from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
 
         mock_result = ArchitectureRunResult(violation_count=0, violations=[])
         with patch.object(atom._runner, "run_architecture_check", return_value=mock_result):
@@ -549,7 +549,7 @@ class TestAtomRunArchitecture:
 
     def test_architecture_violations(self, tmp_path: Path) -> None:
         atom = QARunnerAtom(cwd=tmp_path)
-        from specweaver.core.loom.commons.qa_runner.interface import (
+        from specweaver.sandbox.qa_runner.core.interface import (
             ArchitectureRunResult,
             ArchitectureViolation,
         )
@@ -573,12 +573,12 @@ class TestAtomRunArchitecture:
 
 
 def test_resolve_runner_languages(tmp_path: Path) -> None:
-    from specweaver.core.loom.commons.language.java.runner import JavaRunner
-    from specweaver.core.loom.commons.language.kotlin.runner import KotlinRunner
-    from specweaver.core.loom.commons.language.python.runner import PythonQARunner
-    from specweaver.core.loom.commons.language.rust.runner import RustRunner
-    from specweaver.core.loom.commons.language.typescript.runner import TypeScriptRunner
-    from specweaver.core.loom.commons.qa_runner.factory import resolve_runner
+    from specweaver.sandbox.language.core.java.runner import JavaRunner
+    from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
+    from specweaver.sandbox.language.core.python.runner import PythonQARunner
+    from specweaver.sandbox.language.core.rust.runner import RustRunner
+    from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
+    from specweaver.sandbox.qa_runner.core.factory import resolve_runner
 
     # Default is python
     runner = resolve_runner(tmp_path)
@@ -615,7 +615,7 @@ def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Pat
     Proves consecutive dynamic traversals over the proxy-less PEP 420 `loom.commons.qa_runner.*`
     paths do not fail from sys.path thrashing or incorrect __package__ resolution.
     """
-    from specweaver.core.loom.commons.qa_runner.factory import resolve_runner
+    from specweaver.sandbox.qa_runner.core.factory import resolve_runner
 
     markers = ["package.json", "pom.xml", "build.gradle", "Cargo.toml"]
     for marker in markers:

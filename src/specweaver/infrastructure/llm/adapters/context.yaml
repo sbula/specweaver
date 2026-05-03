@@ -17,7 +17,7 @@ consumes:
   - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
 
 forbids:
-  - specweaver/loom/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
+  - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
   - specweaver/validation
   - specweaver/drafting  # Rules and adapters must remain isolated from interactive drafts.
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -39,7 +39,7 @@ class LanguageAtom(Atom):
             )
 
         if intent == "detect_language":
-            from specweaver.core.loom.commons.language._detect import detect_language
+            from specweaver.sandbox.language.core._detect import detect_language
 
             lang = detect_language(self._cwd)
             return AtomResult(
@@ -56,7 +56,7 @@ class LanguageAtom(Atom):
                     status=AtomStatus.FAILED, message="Missing 'stem' or 'scenario_set' in context."
                 )
 
-            from specweaver.core.loom.commons.language.scenario_converter_factory import (
+            from specweaver.sandbox.language.core.scenario_converter_factory import (
                 create_scenario_converter,
             )
 

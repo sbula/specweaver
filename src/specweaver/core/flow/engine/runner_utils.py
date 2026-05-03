@@ -87,8 +87,8 @@ def flush_telemetry(context: RunContext, logger: logging.Logger) -> None:
 
 def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logger) -> None:
     """Symlink heavy project caches into the worktree to save disk space (FR-2)."""
-    from specweaver.core.loom.atoms.base import AtomStatus
-    from specweaver.core.loom.atoms.filesystem.atom import FileSystemAtom
+    from specweaver.sandbox.base import AtomStatus
+    from specweaver.sandbox.filesystem.core.atom import FileSystemAtom
 
     cache_dirs = [
         ".pytest_cache",
@@ -123,8 +123,8 @@ async def execute_in_sandbox(
     """Execute a handler step inside an isolated Git worktree."""
     import copy
 
-    from specweaver.core.loom.atoms.base import AtomStatus
-    from specweaver.core.loom.atoms.git.atom import GitAtom
+    from specweaver.sandbox.base import AtomStatus
+    from specweaver.sandbox.git.core.atom import GitAtom
 
     context = runner._context
 

@@ -16,7 +16,7 @@ archetype: pure-logic
 consumes: []
 
 forbids:
-  - specweaver/loom/*  # Pure logic modules must not depend on physical sandboxes.
+  - specweaver/sandbox/*  # Pure logic modules must not depend on physical sandboxes.
 
 exposes:
   - interfaces

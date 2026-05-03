@@ -3,10 +3,10 @@
 
 import pytest
 
-from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
-from specweaver.core.loom.commons.filesystem.executor import FileExecutor
-from specweaver.core.loom.security import AccessMode, FolderGrant
-from specweaver.core.loom.tools.code_structure.tool import CodeStructureTool, CodeStructureToolError
+from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+from specweaver.sandbox.filesystem.core.executor import FileExecutor
+from specweaver.sandbox.security import AccessMode, FolderGrant
+from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool, CodeStructureToolError
 
 
 @pytest.fixture
@@ -207,8 +207,8 @@ def test_tool_blocks_invalid_folder_grant(tmp_path, mock_schemas):
 
 def test_tool_dispatcher_intent_hide_with_plugins(tmp_path):
     """Integration Story 4: Dispatcher pipeline filters JSON schema properly."""
-    from specweaver.core.loom.dispatcher import ToolDispatcher
-    from specweaver.core.loom.security import WorkspaceBoundary
+    from specweaver.sandbox.dispatcher import ToolDispatcher
+    from specweaver.sandbox.security import WorkspaceBoundary
 
     context = tmp_path / "context.yaml"
     context.write_text("archetype: generic\nplugins: [security, broken, malformed]")

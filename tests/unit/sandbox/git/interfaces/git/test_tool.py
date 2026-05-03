@@ -9,8 +9,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.loom.commons.git.executor import ExecutorResult
-from specweaver.core.loom.tools.git.tool import (
+from specweaver.sandbox.git.core.executor import ExecutorResult
+from specweaver.sandbox.git.interfaces.tool import (
     ROLE_INTENTS,
     GitTool,
     GitToolError,

@@ -226,7 +226,7 @@ class TestGenerateCodeHandler:
 
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_generate_code_success_path(
         self, mock_git, mock_repo_class, tmp_path: Path
     ) -> None:
@@ -308,7 +308,7 @@ class TestGenerateCodeHandler:
 
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_generate_code_extracts_existing_uuid(
         self, mock_git, mock_repo_class, tmp_path: Path
     ) -> None:
@@ -351,7 +351,7 @@ class TestGenerateCodeHandler:
         )
 
     @pytest.mark.asyncio
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_generate_code_mints_new_uuid_if_missing(self, mock_git, tmp_path: Path) -> None:
         """Verifies handler mints tracking UUID when file exists but lacks sw-artifact tag."""
         spec = tmp_path / "test_spec.md"
@@ -376,7 +376,7 @@ class TestGenerateCodeHandler:
         assert result.artifact_uuid is not None
 
     @pytest.mark.asyncio
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_generate_code_without_db(self, mock_git, tmp_path: Path) -> None:
         """Verifies handler gracefully skips lineage linkage if context.db is absent."""
         spec = tmp_path / "test_spec.md"
@@ -424,7 +424,7 @@ class TestGenerateTestsHandler:
 
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_generate_tests_success_path(
         self, mock_git, mock_repo_class, tmp_path: Path
     ) -> None:
@@ -507,7 +507,7 @@ class TestGenerateTestsHandler:
         assert "gen_tests" not in ctx.feedback
 
     @pytest.mark.asyncio
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_generate_tests_extracts_existing_uuid(self, mock_git, tmp_path: Path) -> None:
         """Verifies UUID extraction from an existing test file before overwriting."""
         spec = tmp_path / "test_spec.md"
@@ -535,7 +535,7 @@ class TestGenerateTestsHandler:
         assert result.artifact_uuid == "11111111-2222-3333-4444-666666666666"
 
     @pytest.mark.asyncio
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_generate_tests_without_db(self, mock_git, tmp_path: Path) -> None:
         """Verifies test generator gracefully skips lineage linkage if context.db is absent."""
         spec = tmp_path / "test_spec.md"

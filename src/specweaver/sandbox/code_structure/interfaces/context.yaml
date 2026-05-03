@@ -1,0 +1,3 @@
+archetype: orchestrator
+consumes:
+  - specweaver/sandbox/code_structure/core

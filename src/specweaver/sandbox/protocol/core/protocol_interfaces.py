@@ -5,7 +5,7 @@
 
 from abc import ABC, abstractmethod
 
-from specweaver.core.loom.commons.protocol.models import ProtocolEndpoint, ProtocolMessage
+from specweaver.sandbox.protocol.core.models import ProtocolEndpoint, ProtocolMessage
 
 
 class ProtocolSchemaError(Exception):

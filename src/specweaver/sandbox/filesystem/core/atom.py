@@ -18,8 +18,8 @@ from typing import TYPE_CHECKING, Any
 
 from ruamel.yaml import YAML
 
-from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
-from specweaver.core.loom.commons.filesystem.executor import EngineFileExecutor
+from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
 
 logger = logging.getLogger(__name__)
 

@@ -13,7 +13,7 @@ import pytest
 from specweaver.assurance.graph.topology import TopologyContext
 from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
-from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
+from specweaver.sandbox.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -108,7 +108,7 @@ async def test_fetches_and_strips_json_rpc(mock_run_context: RunContext) -> None
         return mock_result_orders
 
     with patch(
-        "specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run
+        "specweaver.sandbox.mcp.core.atom.MCPAtom.run", side_effect=mock_atom_run
     ) as m_atom:
         result = await evaluate_and_fetch_mcp_context(mock_run_context)
 
@@ -129,7 +129,7 @@ async def test_handles_atom_failure_gracefully(mock_run_context: RunContext) -> 
     def mock_atom_run_fail(inputs: dict[str, Any]) -> AtomResult:
         raise ValueError("Docker socket closed")
 
-    with patch("specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run_fail):
+    with patch("specweaver.sandbox.mcp.core.atom.MCPAtom.run", side_effect=mock_atom_run_fail):
         result = await evaluate_and_fetch_mcp_context(mock_run_context)
 
         assert "mcp://localdb/users:" in result
@@ -175,7 +175,7 @@ async def test_init_intent_failure(mock_run_context: RunContext) -> None:
         return AtomResult(status=AtomStatus.FAILED, message="Timeout waiting for Stdio", exports={})
 
     with patch(
-        "specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run_init_fail
+        "specweaver.sandbox.mcp.core.atom.MCPAtom.run", side_effect=mock_atom_run_init_fail
     ) as m_atom:
         result = await evaluate_and_fetch_mcp_context(mock_run_context)
 
@@ -194,7 +194,7 @@ async def test_empty_contents_payload(mock_run_context: RunContext) -> None:
         # Empty exports
         return AtomResult(status=AtomStatus.SUCCESS, message="OK", exports={})
 
-    with patch("specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run_empty):
+    with patch("specweaver.sandbox.mcp.core.atom.MCPAtom.run", side_effect=mock_atom_run_empty):
         result = await evaluate_and_fetch_mcp_context(mock_run_context)
 
         assert "No resource data returned for mcp://localdb/users" in result
@@ -238,7 +238,7 @@ async def test_multiple_mcp_servers_integration(mock_run_context: RunContext) ->
         return AtomResult(status=AtomStatus.FAILED, message="Not found", exports={})
 
     with patch(
-        "specweaver.core.loom.atoms.mcp.atom.MCPAtom.run", side_effect=mock_atom_run_multi
+        "specweaver.sandbox.mcp.core.atom.MCPAtom.run", side_effect=mock_atom_run_multi
     ) as m_atom:
         result = await evaluate_and_fetch_mcp_context(mock_run_context)
 

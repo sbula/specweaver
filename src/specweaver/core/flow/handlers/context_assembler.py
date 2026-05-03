@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
+from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.core.loom.tools.web.interfaces — role-specific web interfaces."""
+"""Tests for specweaver.sandbox.web.interfaces.facades — role-specific web interfaces."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.loom.tools.web.interfaces import (
+from specweaver.sandbox.web.interfaces.facades import (
     PlannerWebInterface,
     ReviewerWebInterface,
     create_web_interface,
 )
-from specweaver.core.loom.tools.web.tool import WebTool
+from specweaver.sandbox.web.interfaces.tool import WebTool
 
 # ===========================================================================
 # Method Visibility

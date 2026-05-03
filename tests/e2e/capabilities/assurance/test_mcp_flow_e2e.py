@@ -54,7 +54,7 @@ if __name__ == "__main__":
 class TestMCPFlowE2E:
     @pytest.mark.asyncio
     @patch("specweaver.workflows.implementation.generator.Generator.generate_code")
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_mcp_flow_e2e_fetch(
         self, mock_git, mock_generate_code, dummy_mcp_script: str, tmp_path: Path
     ) -> None:
@@ -186,7 +186,7 @@ class TestMCPFlowE2E:
 
     @pytest.mark.asyncio
     @patch("specweaver.workflows.implementation.generator.Generator.generate_code")
-    @patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+    @patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
     async def test_mcp_flow_e2e_fault_tolerance(
         self, mock_git, mock_generate_code, tmp_path: Path
     ) -> None:
@@ -254,8 +254,8 @@ class TestMCPFlowE2E:
         """Story: E2E Tool Flow: Architect agent invokes ToolDispatcher which calls the proxy."""
         import sys
 
-        from specweaver.core.loom.dispatcher import ToolDispatcher
-        from specweaver.core.loom.security import WorkspaceBoundary
+        from specweaver.sandbox.dispatcher import ToolDispatcher
+        from specweaver.sandbox.security import WorkspaceBoundary
 
         topology = TopologyContext(
             name="demo_node",

@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.commons.mcp.executor import MCPExecutor
+from specweaver.sandbox.mcp.core.executor import MCPExecutor
 
 if TYPE_CHECKING:
     import pathlib

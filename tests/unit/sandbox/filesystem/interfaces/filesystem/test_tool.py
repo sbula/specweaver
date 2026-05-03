@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.core.loom.tools.filesystem.tool — TDD (tests first).
+"""Tests for specweaver.sandbox.filesystem.interfaces.tool — TDD (tests first).
 
 Test structure:
 - FolderGrant / AccessMode models
@@ -17,13 +17,13 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.loom.commons.filesystem.executor import FileExecutor
-from specweaver.core.loom.security import AccessMode, FolderGrant
-from specweaver.core.loom.tools.filesystem.models import (
+from specweaver.sandbox.filesystem.core.executor import FileExecutor
+from specweaver.sandbox.security import AccessMode, FolderGrant
+from specweaver.sandbox.filesystem.interfaces.models import (
     ROLE_INTENTS,
     FileSystemToolError,
 )
-from specweaver.core.loom.tools.filesystem.tool import FileSystemTool
+from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -694,7 +694,7 @@ class TestPathTraversalEdgeCases:
 
     def test_empty_path_normalization(self, executor: FileExecutor) -> None:
         """Empty path normalizes to '' — no grant should cover it."""
-        from specweaver.core.loom.tools.filesystem.tool import FileSystemTool as FSTool
+        from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool as FSTool
 
         _ = FSTool(executor=executor, role="implementer", grants=[])
         assert FSTool._normalize_path("") == ""
@@ -706,13 +706,13 @@ class TestPathTraversalEdgeCases:
 
     def test_dot_path_normalization(self) -> None:
         """Single dot normalizes to empty string."""
-        from specweaver.core.loom.tools.filesystem.tool import FileSystemTool as FSTool
+        from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool as FSTool
 
         assert FSTool._normalize_path(".") == ""
 
     def test_dotdot_beyond_root(self) -> None:
         """Path that goes above root via .. should normalize safely."""
-        from specweaver.core.loom.tools.filesystem.tool import FileSystemTool as FSTool
+        from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool as FSTool
 
         # posixpath.normpath("a/../../b") == "../b"
         result = FSTool._normalize_path("a/../../b")

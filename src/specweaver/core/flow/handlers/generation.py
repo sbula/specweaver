@@ -490,7 +490,7 @@ class GenerateContractHandler:
                 contract_extension,
                 render_contract,
             )
-            from specweaver.core.loom.atoms.language.atom import LanguageAtom
+            from specweaver.sandbox.language.core.atom import LanguageAtom
 
             atom = LanguageAtom(cwd=context.project_path)
             res = atom.run({"intent": "detect_language"})

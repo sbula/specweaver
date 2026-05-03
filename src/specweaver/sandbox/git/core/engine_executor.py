@@ -13,7 +13,7 @@ engine-controlled conflict_resolver interface.
 
 from __future__ import annotations
 
-from specweaver.core.loom.commons.git.executor import GitExecutor
+from specweaver.sandbox.git.core.executor import GitExecutor
 
 
 class EngineGitExecutor(GitExecutor):

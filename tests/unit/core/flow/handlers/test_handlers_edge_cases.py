@@ -112,7 +112,7 @@ async def test_validate_tests_handler_lazy_atom(
     """ValidateTestsHandler can instantiate its atom."""
     handler = ValidateTestsHandler()
     atom = handler._get_atom(run_context)
-    from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
     assert isinstance(atom, QARunnerAtom)
 

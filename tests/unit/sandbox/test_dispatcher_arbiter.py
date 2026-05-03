@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from specweaver.core.loom.dispatcher import ToolDispatcher
-from specweaver.core.loom.security import ReadOnlyWorkspaceBoundary
-from specweaver.core.loom.tools.filesystem.models import ROLE_INTENTS
+from specweaver.sandbox.dispatcher import ToolDispatcher
+from specweaver.sandbox.security import ReadOnlyWorkspaceBoundary
+from specweaver.sandbox.filesystem.interfaces.models import ROLE_INTENTS
 
 
 class TestDispatcherArbiterRole:

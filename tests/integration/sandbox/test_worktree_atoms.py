@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.filesystem.atom import FileSystemAtom
-from specweaver.core.loom.atoms.git.atom import GitAtom
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.filesystem.core.atom import FileSystemAtom
+from specweaver.sandbox.git.core.atom import GitAtom
 
 
 @pytest.fixture

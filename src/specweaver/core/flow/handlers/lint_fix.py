@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +209,7 @@ class LintFixHandler:
 
     def _get_atom(self, context: RunContext) -> QARunnerAtom:
         """Lazily create a QARunnerAtom for the project."""
-        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
         return QARunnerAtom(cwd=context.project_path)
 

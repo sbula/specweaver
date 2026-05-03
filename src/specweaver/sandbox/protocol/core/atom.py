@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import Any
 
-from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
-from specweaver.core.loom.commons.protocol.factory import ProtocolParserFactory
-from specweaver.core.loom.commons.protocol.interfaces import ProtocolSchemaError
+from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.protocol.core.factory import ProtocolParserFactory
+from specweaver.sandbox.protocol.core.protocol_interfaces import ProtocolSchemaError
 
 
 class ProtocolAtom(Atom):

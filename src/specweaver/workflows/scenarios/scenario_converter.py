@@ -149,4 +149,4 @@ class ScenarioConverter:
 # ``ScenarioConverter`` (above) retains its original @staticmethod API.
 # All existing callers continue to work unchanged.
 # New code should import ``PythonScenarioConverter`` from:
-#   specweaver.core.loom.commons.language.python.scenario_converter
+#   specweaver.sandbox.language.core.python.scenario_converter

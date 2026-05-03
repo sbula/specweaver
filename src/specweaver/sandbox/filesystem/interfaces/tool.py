@@ -19,7 +19,7 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.security import (
+from specweaver.sandbox.security import (
     MODE_ALLOWS_CREATE,
     MODE_ALLOWS_DELETE,
     MODE_ALLOWS_READ,
@@ -27,7 +27,7 @@ from specweaver.core.loom.security import (
     AccessMode,
     FolderGrant,
 )
-from specweaver.core.loom.tools.filesystem.models import (
+from specweaver.sandbox.filesystem.interfaces.models import (
     ROLE_INTENTS,
     FileSystemToolError,
     ToolResult,
@@ -36,7 +36,7 @@ from specweaver.core.loom.tools.filesystem.models import (
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.core.loom.commons.filesystem.executor import ExecutorResult, FileExecutor
+    from specweaver.sandbox.filesystem.core.executor import ExecutorResult, FileExecutor
     from specweaver.infrastructure.llm.models import ToolDefinition
 
 
@@ -77,7 +77,7 @@ class FileSystemTool:
         return ROLE_INTENTS[self._role]
 
     def definitions(self) -> list[ToolDefinition]:
-        from specweaver.core.loom.tools.filesystem.definitions import INTENT_DEFINITIONS
+        from specweaver.sandbox.filesystem.interfaces.definitions import INTENT_DEFINITIONS
 
         return [d for name, d in INTENT_DEFINITIONS.items() if name in self.allowed_intents]
 
@@ -190,7 +190,7 @@ class FileSystemTool:
         resolved = self._executor.cwd / path
         if not resolved.is_dir():
             return ToolResult(status="error", message=f"Not a directory: {path}")
-        from specweaver.core.loom.commons.filesystem.search import grep_content
+        from specweaver.sandbox.filesystem.core.search import grep_content
 
         results = grep_content(
             resolved.resolve(),
@@ -225,7 +225,7 @@ class FileSystemTool:
         resolved = self._executor.cwd / path
         if not resolved.is_dir():
             return ToolResult(status="error", message=f"Not a directory: {path}")
-        from specweaver.core.loom.commons.filesystem.search import find_by_glob
+        from specweaver.sandbox.filesystem.core.search import find_by_glob
 
         results = find_by_glob(
             resolved.resolve(),

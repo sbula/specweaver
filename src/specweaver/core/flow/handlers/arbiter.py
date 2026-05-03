@@ -123,7 +123,7 @@ class ArbitrateVerdictHandler(StepHandler):
                     raw_tracing += f"{res.get('message', '')}\n\n"
 
             # Dynamically filter framework trace lines using the unified Filter Interface
-            from specweaver.core.loom.commons.language.stack_trace_filter_factory import (
+            from specweaver.sandbox.language.core.stack_trace_filter_factory import (
                 create_stack_trace_filter,
             )
 

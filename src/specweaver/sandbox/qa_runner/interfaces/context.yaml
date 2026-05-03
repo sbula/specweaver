@@ -1,0 +1,3 @@
+archetype: orchestrator
+consumes:
+  - specweaver/sandbox/qa_runner/core

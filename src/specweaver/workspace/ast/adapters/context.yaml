@@ -17,7 +17,7 @@ consumes:
   - specweaver/workspace/ast/parsers
 
 forbids:
-  - specweaver/loom/*
+  - specweaver/sandbox/*
   - specweaver/interfaces/cli
 
 exposes:

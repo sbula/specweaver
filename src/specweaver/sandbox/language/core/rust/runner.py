@@ -9,7 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.core.loom.commons.qa_runner.interface import (
+from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     QARunnerInterface,
 )
@@ -18,7 +18,7 @@ from specweaver.workspace.ast.parsers.rust.parsers import parse_clippy_complexit
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.loom.commons.qa_runner.interface import (
+    from specweaver.sandbox.qa_runner.core.interface import (
         CompileRunResult,
         ComplexityRunResult,
         DebugRunResult,
@@ -54,7 +54,7 @@ class RustRunner(QARunnerInterface):
 
         import junitparser
 
-        from specweaver.core.loom.commons.qa_runner.interface import TestFailure, TestRunResult
+        from specweaver.sandbox.qa_runner.core.interface import TestFailure, TestRunResult
 
         try:
             start_time = time.time()
@@ -131,7 +131,7 @@ class RustRunner(QARunnerInterface):
         import subprocess
 
         from specweaver.commons import json
-        from specweaver.core.loom.commons.qa_runner.interface import LintError, LintRunResult
+        from specweaver.sandbox.qa_runner.core.interface import LintError, LintRunResult
 
         try:
             clippy_cmd = ["cargo", "clippy", "--message-format=json"]
@@ -185,7 +185,7 @@ class RustRunner(QARunnerInterface):
         import subprocess
 
         from specweaver.commons import json
-        from specweaver.core.loom.commons.qa_runner.interface import ComplexityRunResult
+        from specweaver.sandbox.qa_runner.core.interface import ComplexityRunResult
 
         try:
             clippy_cmd = [
@@ -232,7 +232,7 @@ class RustRunner(QARunnerInterface):
     def run_compiler(self, target: str) -> CompileRunResult:
         import subprocess
 
-        from specweaver.core.loom.commons.qa_runner.interface import CompileError, CompileRunResult
+        from specweaver.sandbox.qa_runner.core.interface import CompileError, CompileRunResult
 
         try:
             cmd = ["cargo", "build"]
@@ -261,7 +261,7 @@ class RustRunner(QARunnerInterface):
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         import subprocess
 
-        from specweaver.core.loom.commons.qa_runner.interface import DebugRunResult, OutputEvent
+        from specweaver.sandbox.qa_runner.core.interface import DebugRunResult, OutputEvent
 
         try:
             cmd = ["cargo", "run"]

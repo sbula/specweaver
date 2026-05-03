@@ -32,7 +32,7 @@ def run_context():
 class TestArbiterIntegrationFlow:
     @pytest.mark.asyncio
     @patch(
-        "specweaver.core.loom.commons.language.stack_trace_filter_factory.create_stack_trace_filter"
+        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
     )
     async def test_end_to_end_arbiter_verdict(self, mock_create_filter, run_context):
         # Setup mocks
@@ -65,7 +65,7 @@ class TestArbiterIntegrationFlow:
 
     @pytest.mark.asyncio
     @patch(
-        "specweaver.core.loom.commons.language.stack_trace_filter_factory.create_stack_trace_filter"
+        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
     )
     async def test_nfr8_no_scenario_vocab_in_coding_feedback(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
@@ -86,7 +86,7 @@ class TestArbiterIntegrationFlow:
 
     @pytest.mark.asyncio
     @patch(
-        "specweaver.core.loom.commons.language.stack_trace_filter_factory.create_stack_trace_filter"
+        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
     )
     async def test_scenario_error_feedback_reaches_generate_scenarios_handler(
         self, mock_create_filter, run_context
@@ -110,7 +110,7 @@ class TestArbiterIntegrationFlow:
 
     @pytest.mark.asyncio
     @patch(
-        "specweaver.core.loom.commons.language.stack_trace_filter_factory.create_stack_trace_filter"
+        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
     )
     async def test_gracefully_handles_malformed_json(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
@@ -127,7 +127,7 @@ class TestArbiterIntegrationFlow:
 
     @pytest.mark.asyncio
     @patch(
-        "specweaver.core.loom.commons.language.stack_trace_filter_factory.create_stack_trace_filter"
+        "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter"
     )
     async def test_spec_ambiguity_parks_run(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"

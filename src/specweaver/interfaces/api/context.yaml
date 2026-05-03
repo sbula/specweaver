@@ -22,7 +22,7 @@ consumes:
 
 forbids:
   - specweaver/cli
-  - specweaver/loom/*
+  - specweaver/sandbox/*
 
 exposes:
   - create_app

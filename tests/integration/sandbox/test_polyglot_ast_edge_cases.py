@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
-from specweaver.core.loom.commons.filesystem.executor import ExecutorResult
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+from specweaver.sandbox.filesystem.core.executor import ExecutorResult
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
 from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure

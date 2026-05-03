@@ -17,7 +17,7 @@ from specweaver.core.flow.handlers.base import RunContext, _error_result, _now_i
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class ValidateSpecHandler:
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.archetype_resolver import ArchetypeResolver
-        from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
+        from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
         archetype = None
         if project_path:
@@ -280,7 +280,7 @@ class ValidateCodeHandler:
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.archetype_resolver import ArchetypeResolver
-        from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
+        from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
         archetype = None
         if project_path:
@@ -346,7 +346,7 @@ class ValidateTestsHandler:
         started = _now_iso()
         target = step.params.get("target")
         if not target:
-            from specweaver.core.loom.commons.language.scenario_converter_factory import (
+            from specweaver.sandbox.language.core.scenario_converter_factory import (
                 create_scenario_converter,
             )
 
@@ -399,7 +399,7 @@ class ValidateTestsHandler:
 
     def _get_atom(self, context: RunContext) -> QARunnerAtom:
         """Lazily create a QARunnerAtom for the project."""
-        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
         return QARunnerAtom(cwd=context.project_path)
 

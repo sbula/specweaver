@@ -11,12 +11,12 @@ import posixpath
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.security import AccessMode, FolderGrant
+from specweaver.sandbox.security import AccessMode, FolderGrant
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
+    from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
 # ---------------------------------------------------------------------------
 # Role → allowed intents
@@ -262,7 +262,7 @@ class CodeStructureTool:
         )
 
     def definitions(self) -> list[Any]:
-        from specweaver.core.loom.tools.code_structure.definitions import get_code_structure_schema
+        from specweaver.sandbox.code_structure.interfaces.definitions import get_code_structure_schema
 
         supported_intents, supported_params_flat = self._atom.get_supported_capabilities()
 

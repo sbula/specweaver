@@ -3,7 +3,7 @@ description: "Bounded context for the SpecWeaver graphs. Contains the universal 
 layer: "Domain"
 allowed_imports:
   - "specweaver.commons"
-  - "specweaver.core.loom"
+  - "specweaver.sandbox"
 forbidden_imports:
   - "specweaver.interfaces.cli"
   - "specweaver.interfaces.api"

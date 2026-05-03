@@ -73,7 +73,7 @@ async def test_handler_adapter_integration(tmp_path: Path) -> None:
 
     # Mute Git executor since it requires git repo to be valid
     with patch(
-        "specweaver.core.loom.commons.git.executor.GitExecutor.run", return_value=(0, "", "")
+        "specweaver.sandbox.git.core.executor.GitExecutor.run", return_value=(0, "", "")
     ):
         result = await handler.execute(step, context)
 

@@ -9,10 +9,10 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
+from specweaver.sandbox.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:
-    from specweaver.core.loom.commons.git.engine_executor import EngineGitExecutor
+    from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 
 logger = logging.getLogger(__name__)
 

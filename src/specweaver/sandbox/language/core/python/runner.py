@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.core.loom.commons.qa_runner.interface import (
+from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
     CompileRunResult,

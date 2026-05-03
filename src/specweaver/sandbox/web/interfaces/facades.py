@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.tools.web.tool import WebTool, WebToolResult
+from specweaver.sandbox.web.interfaces.tool import WebTool, WebToolResult
 
 if TYPE_CHECKING:
     from specweaver.infrastructure.llm.models import ToolDefinition

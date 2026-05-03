@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.core.loom.commons.qa_runner.interface import (
+from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     CompileRunResult,
     ComplexityRunResult,
@@ -111,7 +111,7 @@ class JavaRunner(QARunnerInterface):
         )
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
-        from specweaver.core.loom.commons.qa_runner.interface import LintError
+        from specweaver.sandbox.qa_runner.core.interface import LintError
 
         tool = self._get_build_tool()
         errors: list[LintError] = []
@@ -224,7 +224,7 @@ class JavaRunner(QARunnerInterface):
 
         proc = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
 
-        from specweaver.core.loom.commons.qa_runner.interface import OutputEvent
+        from specweaver.sandbox.qa_runner.core.interface import OutputEvent
 
         return DebugRunResult(
             exit_code=proc.returncode,
@@ -242,7 +242,7 @@ class JavaRunner(QARunnerInterface):
 
         import yaml
 
-        from specweaver.core.loom.commons.qa_runner.interface import ArchitectureViolation
+        from specweaver.sandbox.qa_runner.core.interface import ArchitectureViolation
 
         logger.debug("JavaRunner.run_architecture_check: target=%s, dal=%s", target, dal_level)
 

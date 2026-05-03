@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom as _QARunnerAtom
+from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom as _QARunnerAtom
 
 # Prevent pytest collection warnings
 QARunnerAtom = _QARunnerAtom

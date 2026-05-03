@@ -1,11 +1,11 @@
 from typing import Any
 from unittest.mock import MagicMock
 
-from specweaver.core.loom.atoms.base import AtomStatus
+from specweaver.sandbox.base import AtomStatus
 
 # Will fail to import because we haven't created it yet!
-from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
-from specweaver.core.loom.commons.filesystem.executor import ExecutorResult
+from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+from specweaver.sandbox.filesystem.core.executor import ExecutorResult
 
 
 def _get_mock_parsers() -> Any:

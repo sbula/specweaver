@@ -80,7 +80,7 @@ def lineage_db(tmp_path: Path) -> Database:
 
 @pytest.mark.asyncio
 @patch("specweaver.workflows.drafting.drafter.Drafter.draft")
-@patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+@patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
 async def test_lineage_tracking_flow_database(
     mock_git, mock_draft, tmp_path: Path, lineage_db: Database
 ) -> None:
@@ -163,7 +163,7 @@ async def test_lineage_tracking_flow_database(
 
 
 @pytest.mark.asyncio
-@patch("specweaver.core.loom.commons.git.executor.GitExecutor.run")
+@patch("specweaver.sandbox.git.core.executor.GitExecutor.run")
 async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Database) -> None:
     """Verify Code UUID is preserved when pipeline loops back and regenerates code."""
     spec = tmp_path / "specs" / "feature.md"

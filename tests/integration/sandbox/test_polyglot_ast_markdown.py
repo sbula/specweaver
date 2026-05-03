@@ -4,7 +4,7 @@
 from typing import Any
 from unittest.mock import MagicMock
 
-from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
+from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
 
 def _run_atom(

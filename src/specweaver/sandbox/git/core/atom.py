@@ -15,8 +15,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
-from specweaver.core.loom.commons.git.engine_executor import EngineGitExecutor
+from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -420,7 +420,7 @@ class GitAtom(Atom):
         Context keys:
             path: str - relative path to the worktree to remove.
         """
-        from specweaver.core.loom.atoms.git.worktree_ops import handle_worktree_teardown
+        from specweaver.sandbox.git.core.worktree_ops import handle_worktree_teardown
 
         return handle_worktree_teardown(self._executor, self._cwd, context)
 
@@ -456,7 +456,7 @@ class GitAtom(Atom):
         # Wait, EngineGitExecutor sets its own cwd! So we can't just pass -C.
         # We must instantiate a temporary executor for the worktree?
         # Actually, EngineGitExecutor(cwd=worktree_path)
-        from specweaver.core.loom.commons.git.engine_executor import EngineGitExecutor
+        from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 
         wt_executor = EngineGitExecutor(cwd=worktree_path, whitelist=set(self._ENGINE_WHITELIST))
 
@@ -486,7 +486,7 @@ class GitAtom(Atom):
             branch: str - the branch name of the ephemeral worktree.
             allowed_paths: list[str] - relative paths allowed to be updated.
         """
-        from specweaver.core.loom.atoms.git.worktree_ops import handle_strip_merge
+        from specweaver.sandbox.git.core.worktree_ops import handle_strip_merge
 
         return handle_strip_merge(self._executor, context)
 

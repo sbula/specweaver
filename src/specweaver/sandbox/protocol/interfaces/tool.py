@@ -1,6 +1,6 @@
 from typing import Any
 
-from specweaver.core.loom.atoms.protocol.atom import ProtocolAtom
+from specweaver.sandbox.protocol.core.atom import ProtocolAtom
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
 
 

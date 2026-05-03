@@ -37,7 +37,7 @@ class ImportDirectionRule(Rule):
         import logging
 
         from specweaver.core.config.dal_resolver import DALResolver
-        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
         logger = logging.getLogger(__name__)
 

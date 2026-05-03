@@ -17,7 +17,7 @@ from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_c
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.loom.dispatcher import ToolDispatcher
+    from specweaver.sandbox.dispatcher import ToolDispatcher
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
     from specweaver.infrastructure.llm.models import GenerationConfig, Message
 
@@ -72,8 +72,8 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
     """
     import os
 
-    from specweaver.core.loom.dispatcher import ToolDispatcher
-    from specweaver.core.loom.security import WorkspaceBoundary
+    from specweaver.sandbox.dispatcher import ToolDispatcher
+    from specweaver.sandbox.security import WorkspaceBoundary
 
     # Only enable when the LLM actually supports tool use
     if not hasattr(context.llm, "generate_with_tools"):

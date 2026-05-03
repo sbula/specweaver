@@ -95,7 +95,7 @@ class PipelineRunner:
         """Feature 3.32c SF-1: Safe Vault Binding Audit (Option D)."""
         vault_path = self._context.project_path / ".specweaver" / "vault.env"
         if vault_path.exists():
-            from specweaver.core.loom.atoms.git.atom import GitAtom
+            from specweaver.sandbox.git.core.atom import GitAtom
 
             git_atom = GitAtom(cwd=self._context.project_path)
             # Check if tracked

@@ -10,7 +10,7 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler
-from specweaver.core.loom.dispatcher import ToolDispatcher
+from specweaver.sandbox.dispatcher import ToolDispatcher
 
 
 @pytest.mark.asyncio
@@ -149,7 +149,7 @@ decorators:
 
     (project_dir / "context.yaml").write_text("archetype: spring-boot", encoding="utf-8")
 
-    from specweaver.core.loom.security import WorkspaceBoundary
+    from specweaver.sandbox.security import WorkspaceBoundary
 
     boundary = WorkspaceBoundary(roots=[project_dir])
 

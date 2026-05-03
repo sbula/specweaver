@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.commons.language._detect import (
+from specweaver.sandbox.language.core._detect import (
     detect_language,
     detect_scenario_extension,
 )
@@ -38,35 +38,35 @@ def create_scenario_converter(cwd: Path) -> ScenarioConverterInterface:
     language = detect_language(cwd)
 
     if language == "java":
-        from specweaver.core.loom.commons.language.java.scenario_converter import (
+        from specweaver.sandbox.language.core.java.scenario_converter import (
             JavaScenarioConverter,
         )
 
         return JavaScenarioConverter()
 
     if language == "kotlin":
-        from specweaver.core.loom.commons.language.kotlin.scenario_converter import (
+        from specweaver.sandbox.language.core.kotlin.scenario_converter import (
             KotlinScenarioConverter,
         )
 
         return KotlinScenarioConverter()
 
     if language == "typescript":
-        from specweaver.core.loom.commons.language.typescript.scenario_converter import (
+        from specweaver.sandbox.language.core.typescript.scenario_converter import (
             TypeScriptScenarioConverter,
         )
 
         return TypeScriptScenarioConverter()
 
     if language == "rust":
-        from specweaver.core.loom.commons.language.rust.scenario_converter import (
+        from specweaver.sandbox.language.core.rust.scenario_converter import (
             RustScenarioConverter,
         )
 
         return RustScenarioConverter()
 
     # Default: Python
-    from specweaver.core.loom.commons.language.python.scenario_converter import (
+    from specweaver.sandbox.language.core.python.scenario_converter import (
         PythonScenarioConverter,
     )
 

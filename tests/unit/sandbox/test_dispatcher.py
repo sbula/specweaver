@@ -12,10 +12,10 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-from specweaver.core.loom.dispatcher import ToolDispatcher
-from specweaver.core.loom.security import WorkspaceBoundary
-from specweaver.core.loom.tools.filesystem.definitions import INTENT_DEFINITIONS as FILE_DEFINITIONS
-from specweaver.core.loom.tools.web.definitions import INTENT_DEFINITIONS as WEB_DEFINITIONS
+from specweaver.sandbox.dispatcher import ToolDispatcher
+from specweaver.sandbox.security import WorkspaceBoundary
+from specweaver.sandbox.filesystem.interfaces.definitions import INTENT_DEFINITIONS as FILE_DEFINITIONS
+from specweaver.sandbox.web.interfaces.definitions import INTENT_DEFINITIONS as WEB_DEFINITIONS
 from specweaver.infrastructure.llm.models import ToolDispatcherProtocol
 
 FILE_TOOLS = list(FILE_DEFINITIONS.values())
@@ -321,8 +321,8 @@ class TestDispatcherAnalyzerFactoryDI:
 
 class TestToolDispatcherMCPIntegration:
     def test_mcp_granted_to_architect(self, tmp_path) -> None:
-        from specweaver.core.loom.dispatcher import ToolDispatcher
-        from specweaver.core.loom.security import WorkspaceBoundary
+        from specweaver.sandbox.dispatcher import ToolDispatcher
+        from specweaver.sandbox.security import WorkspaceBoundary
 
         boundary = WorkspaceBoundary(roots=[tmp_path], api_paths=[tmp_path])
 
@@ -338,8 +338,8 @@ class TestToolDispatcherMCPIntegration:
         assert "list_resources" in names
 
     def test_mcp_ignored_for_reviewer(self, tmp_path) -> None:
-        from specweaver.core.loom.dispatcher import ToolDispatcher
-        from specweaver.core.loom.security import WorkspaceBoundary
+        from specweaver.sandbox.dispatcher import ToolDispatcher
+        from specweaver.sandbox.security import WorkspaceBoundary
 
         boundary = WorkspaceBoundary(roots=[tmp_path], api_paths=[tmp_path])
         dispatcher = ToolDispatcher.create_standard_set(

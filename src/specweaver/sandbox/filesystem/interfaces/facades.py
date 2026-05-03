@@ -18,14 +18,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.core.loom.commons.filesystem.executor import FileExecutor
-from specweaver.core.loom.tools.filesystem.tool import FileSystemTool
+from specweaver.sandbox.filesystem.core.executor import FileExecutor
+from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.loom.security import FolderGrant
-    from specweaver.core.loom.tools.filesystem.models import ToolResult
+    from specweaver.sandbox.security import FolderGrant
+    from specweaver.sandbox.filesystem.interfaces.models import ToolResult
     from specweaver.infrastructure.llm.models import ToolDefinition
 
 

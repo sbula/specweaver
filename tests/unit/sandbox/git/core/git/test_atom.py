@@ -8,9 +8,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.git.atom import GitAtom
-from specweaver.core.loom.commons.git.executor import ExecutorResult
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.git.core.atom import GitAtom
+from specweaver.sandbox.git.core.executor import ExecutorResult
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -81,7 +81,7 @@ class TestCheckpoint:
     """checkpoint stages all + commits with config message."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # add
                 type(
@@ -98,7 +98,7 @@ class TestCheckpoint:
         assert "commit_output" in result.exports
 
     def test_nothing_to_commit_is_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # add
                 type(
@@ -111,7 +111,7 @@ class TestCheckpoint:
         assert "idempotent" in result.message
 
     def test_add_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 1, "stdout": "", "stderr": "add err"}
             )()
@@ -121,7 +121,7 @@ class TestCheckpoint:
         assert "git add failed" in result.message
 
     def test_commit_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # add
                 type(
@@ -137,7 +137,7 @@ class TestCheckpoint:
         assert "git commit failed" in result.message
 
     def test_default_message(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
                 type("R", (), {"returncode": 1, "stdout": "", "stderr": ""})(),
@@ -158,7 +158,7 @@ class TestIsolate:
     """isolate creates and switches to a new branch."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "isolate", "branch": "flow/task-42"})
@@ -172,7 +172,7 @@ class TestIsolate:
         assert "Missing 'branch'" in result.message
 
     def test_branch_already_exists_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 128, "stdout": "", "stderr": "already exists"}
             )()
@@ -191,7 +191,7 @@ class TestRestore:
     """restore switches back to the original branch."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "restore", "branch": "main"})
@@ -204,7 +204,7 @@ class TestRestore:
         assert result.status == AtomStatus.FAILED
 
     def test_switch_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 1, "stdout": "", "stderr": "no such branch"}
             )()
@@ -222,14 +222,14 @@ class TestDiscardAll:
     """discard_all cleans the working tree."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "discard_all"})
         assert result.status == AtomStatus.SUCCESS
 
     def test_restore_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": "err"})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "discard_all"})
@@ -245,7 +245,7 @@ class TestRollback:
     """rollback undoes the last commit."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "rollback"})
@@ -253,7 +253,7 @@ class TestRollback:
         assert "staged" in result.message
 
     def test_no_commits_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 128, "stdout": "", "stderr": "unknown rev"}
             )()
@@ -271,7 +271,7 @@ class TestPublish:
     """publish pushes the current branch to remote."""
 
     def test_success_default_remote(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "publish"})
@@ -279,7 +279,7 @@ class TestPublish:
         assert "origin" in result.message
 
     def test_success_with_branch(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "publish", "remote": "upstream", "branch": "main"})
@@ -288,7 +288,7 @@ class TestPublish:
         assert "main" in result.message
 
     def test_push_rejected(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 1, "stdout": "", "stderr": "rejected"}
             )()
@@ -307,7 +307,7 @@ class TestIntegrate:
     """integrate merges source branch into target."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
                 type("R", (), {"returncode": 0, "stdout": "Merge made\n", "stderr": ""})(),  # merge
@@ -336,7 +336,7 @@ class TestIntegrate:
         assert result.status == AtomStatus.FAILED
 
     def test_checkout_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 1, "stdout": "", "stderr": "no such branch"}
             )()
@@ -352,7 +352,7 @@ class TestIntegrate:
         assert "git checkout" in result.message
 
     def test_conflict_default_fail(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
                 type(
@@ -376,7 +376,7 @@ class TestIntegrate:
         assert "app.py" in result.exports.get("conflict_files", [])
 
     def test_conflict_resolve_returns_retry(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # checkout
                 type(
@@ -413,7 +413,7 @@ class TestSync:
     """sync fetches and pulls from remote."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # fetch
                 type("R", (), {"returncode": 0, "stdout": "Up to date\n", "stderr": ""})(),  # pull
@@ -424,7 +424,7 @@ class TestSync:
         assert "origin" in result.message
 
     def test_fetch_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 1, "stdout": "", "stderr": "network err"}
             )()
@@ -434,7 +434,7 @@ class TestSync:
         assert "git fetch failed" in result.message
 
     def test_pull_conflict_aborts(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),  # fetch ok
                 type(
@@ -448,7 +448,7 @@ class TestSync:
         assert "git pull failed" in result.message
 
     def test_custom_remote_and_branch(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
@@ -474,7 +474,7 @@ class TestTag:
     """tag labels the current commit."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "tag", "name": "v1.0"})
@@ -488,7 +488,7 @@ class TestTag:
         assert "Missing 'name'" in result.message
 
     def test_tag_already_exists_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 128, "stdout": "", "stderr": "already exists"}
             )()
@@ -537,7 +537,7 @@ class TestEdgeCases:
 
     def test_empty_context_message_default(self, tmp_path: Path) -> None:
         """checkpoint without message uses default."""
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
                 type("R", (), {"returncode": 1, "stdout": "", "stderr": ""})(),
@@ -549,7 +549,7 @@ class TestEdgeCases:
 
     def test_integrate_on_conflict_unrecognized_defaults_to_fail(self, tmp_path: Path) -> None:
         """Unknown on_conflict value falls through to FAILED."""
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
                 type("R", (), {"returncode": 1, "stdout": "", "stderr": "CONFLICT"})(),
@@ -577,7 +577,7 @@ class TestWorktreeAdd:
     """worktree_add creates a new worktree tracking a branch."""
 
     def test_success_with_defaults(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
@@ -599,7 +599,7 @@ class TestWorktreeAdd:
         assert result2.status == AtomStatus.FAILED
 
     def test_git_failure(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 128, "stdout": "", "stderr": "fatal"}
             )()
@@ -630,7 +630,7 @@ class TestIsTracked:
         assert "Missing 'path'" in result.message
 
     def test_tracked_file_returns_true(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type(
                 "R", (), {"returncode": 0, "stdout": "path/file.txt\n", "stderr": ""}
             )()
@@ -640,7 +640,7 @@ class TestIsTracked:
         assert result.exports["is_tracked"] is True
 
     def test_untracked_file_returns_false(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "is_tracked", "path": "path/untracked.txt"})
@@ -657,7 +657,7 @@ class TestWorktreeTeardown:
     """worktree_teardown removes the worktree resiliently."""
 
     def test_success_clean_removal(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
@@ -680,7 +680,7 @@ class TestWorktreeTeardown:
         worktree_path = tmp_path / ".worktrees" / "stub"
         worktree_path.mkdir(parents=True)
 
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock_run:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock_run:
             # First subproc fails (git worktree remove --force ...), second succeeds (git worktree prune)
             mock_run.side_effect = [
                 type(
@@ -699,8 +699,8 @@ class TestWorktreeTeardown:
         assert "Fallback" in result.message
         assert not worktree_path.exists()
 
-    @patch("specweaver.core.loom.atoms.git.worktree_ops.time.sleep")
-    @patch("specweaver.core.loom.atoms.git.worktree_ops.shutil.rmtree")
+    @patch("specweaver.sandbox.git.core.worktree_ops.time.sleep")
+    @patch("specweaver.sandbox.git.core.worktree_ops.shutil.rmtree")
     def test_windows_fallback_exhausts_retries_and_fails(
         self, mock_rmtree, mock_sleep, tmp_path: Path
     ) -> None:
@@ -710,7 +710,7 @@ class TestWorktreeTeardown:
 
         mock_rmtree.side_effect = PermissionError("Locked")
 
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock_run:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock_run:
             mock_run.return_value = type("R", (), {"returncode": 1, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
@@ -737,7 +737,7 @@ class TestWorktreeSync:
     def test_success_sync(self, tmp_path: Path) -> None:
         wt_dir = tmp_path / ".worktrees" / "agent"
         wt_dir.mkdir(parents=True)
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.return_value = type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
@@ -763,7 +763,7 @@ class TestStripMerge:
     """strip_merge applies bounded allowed paths and merges using 'ours'."""
 
     def test_success_strip_allowed(self, tmp_path: Path) -> None:
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 # git merge
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
@@ -807,7 +807,7 @@ class TestStripMerge:
 
     def test_strip_merge_preserves_doc_updates(self, tmp_path: Path) -> None:
         """doc_updates.md is explicitly preserved (FR-8) regardless of allowed_paths."""
-        with patch("specweaver.core.loom.commons.git.executor.subprocess.run") as mock:
+        with patch("specweaver.sandbox.git.core.executor.subprocess.run") as mock:
             mock.side_effect = [
                 # git merge
                 type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})(),

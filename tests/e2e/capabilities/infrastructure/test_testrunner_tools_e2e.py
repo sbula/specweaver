@@ -26,8 +26,8 @@ def test_e2e_python_qarunner_tooling(tmp_path: Path) -> None:
     py_file = target_dir / "app.py"
     py_file.write_text('print("E2E_PYTHON_STDOUT")', encoding="utf-8")
 
-    from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
-    from specweaver.core.loom.tools.qa_runner.tool import QARunnerTool
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+    from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool
 
     atom = QARunnerAtom(cwd=project_dir)
     tool = QARunnerTool(atom=atom, role="implementer")
@@ -74,8 +74,8 @@ def test_e2e_typescript_qarunner_tooling(tmp_path: Path) -> None:
     ts_file_debug = target_dir / "app.ts"
     ts_file_debug.write_text('console.log("E2E_TS_STDOUT");', encoding="utf-8")
 
-    from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
-    from specweaver.core.loom.tools.qa_runner.tool import QARunnerTool
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+    from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool
 
     atom = QARunnerAtom(cwd=project_dir, language="typescript")
     tool = QARunnerTool(atom=atom, role="implementer")

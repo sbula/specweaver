@@ -9,8 +9,8 @@ import logging
 from typing import Any
 
 from specweaver.commons import json
-from specweaver.core.loom.commons.mcp.executor import MCPExecutor, MCPExecutorError
-from specweaver.core.loom.tools.mcp.models import ToolResult
+from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
+from specweaver.sandbox.mcp.interfaces.models import ToolResult
 
 logger = logging.getLogger(__name__)
 

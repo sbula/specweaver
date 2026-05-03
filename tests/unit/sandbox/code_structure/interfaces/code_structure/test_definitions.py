@@ -1,4 +1,4 @@
-from specweaver.core.loom.tools.code_structure.definitions import get_code_structure_schema
+from specweaver.sandbox.code_structure.interfaces.definitions import get_code_structure_schema
 
 
 def test_code_structure_schema_valid() -> None:

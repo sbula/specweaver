@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from specweaver.core.loom.commons.git.executor import ExecutorResult, GitExecutor, GitExecutorError
+from specweaver.sandbox.git.core.executor import ExecutorResult, GitExecutor, GitExecutorError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -99,7 +99,7 @@ class TestGitExecutorExecution:
         )()
 
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+            "specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result
         ):
             result = executor.run("status")
 
@@ -120,7 +120,7 @@ class TestGitExecutorExecution:
         )()
 
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+            "specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result
         ):
             result = executor.run("commit", "-m", "test")
 
@@ -133,7 +133,7 @@ class TestGitExecutorExecution:
         import subprocess as sp
 
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run",
+            "specweaver.sandbox.git.core.executor.subprocess.run",
             side_effect=sp.TimeoutExpired(cmd="git", timeout=30),
         ):
             result = executor.run("log", timeout=30)
@@ -145,7 +145,7 @@ class TestGitExecutorExecution:
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
 
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run",
+            "specweaver.sandbox.git.core.executor.subprocess.run",
             side_effect=OSError("git not found"),
         ):
             result = executor.run("status")
@@ -166,7 +166,7 @@ class TestGitExecutorExecution:
         )()
 
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+            "specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result
         ) as mock_run:
             executor.run("status")
 
@@ -221,7 +221,7 @@ class TestGitExecutorEdgeCases:
 
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run",
+            "specweaver.sandbox.git.core.executor.subprocess.run",
             side_effect=sp.TimeoutExpired(cmd="git", timeout=5),
         ):
             result = executor.run("status", timeout=5)
@@ -230,7 +230,7 @@ class TestGitExecutorEdgeCases:
     def test_exit_code_minus_one_on_os_error(self, tmp_path: Path) -> None:
         executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run",
+            "specweaver.sandbox.git.core.executor.subprocess.run",
             side_effect=OSError("No such file"),
         ):
             result = executor.run("status")
@@ -248,7 +248,7 @@ class TestGitExecutorEdgeCases:
             },
         )()
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+            "specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result
         ) as mock_run:
             executor.run("log", "--oneline", "-n5", "--", "file.py")
         cmd_args = mock_run.call_args[0][0]
@@ -266,7 +266,7 @@ class TestGitExecutorEdgeCases:
             },
         )()
         with patch(
-            "specweaver.core.loom.commons.git.executor.subprocess.run", return_value=mock_result
+            "specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result
         ):
             result = executor.run("status")
         assert result.stderr == "fatal: not a git repository"

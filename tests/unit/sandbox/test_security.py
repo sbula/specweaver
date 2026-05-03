@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.loom.security import WorkspaceBoundary, WorkspaceBoundaryError
+from specweaver.sandbox.security import WorkspaceBoundary, WorkspaceBoundaryError
 
 if TYPE_CHECKING:
     from pathlib import Path

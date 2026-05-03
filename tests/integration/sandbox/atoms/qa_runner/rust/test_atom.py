@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 QARunnerAtom.__test__ = False  # type: ignore[attr-defined]
 

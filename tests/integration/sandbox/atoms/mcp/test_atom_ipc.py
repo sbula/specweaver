@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.loom.atoms.base import AtomStatus
-from specweaver.core.loom.atoms.mcp.atom import MCPAtom
+from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.mcp.core.atom import MCPAtom
 
 if TYPE_CHECKING:
     import pathlib

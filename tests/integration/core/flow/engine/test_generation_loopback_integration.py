@@ -63,7 +63,7 @@ def test_generation_feedback_loopback_e2e(tmp_path: Path) -> None:
 
     # 2. Run the actual engine (using real GenerateCodeHandler internally)
     with patch(
-        "specweaver.core.loom.commons.git.executor.GitExecutor.run", return_value=(0, "", "")
+        "specweaver.sandbox.git.core.executor.GitExecutor.run", return_value=(0, "", "")
     ):
         runner = PipelineRunner(pipeline, context)
         run_state = asyncio.run(runner.run())

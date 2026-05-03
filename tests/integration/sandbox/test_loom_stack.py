@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.loom.commons.language.python.runner import PythonQARunner
-from specweaver.core.loom.commons.qa_runner.interface import (
+from specweaver.sandbox.language.core.python.runner import PythonQARunner
+from specweaver.sandbox.qa_runner.core.interface import (
     ComplexityRunResult,
     LintRunResult,
 )
@@ -184,7 +184,7 @@ class TestAtomToolStack:
             encoding="utf-8",
         )
 
-        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
         atom = QARunnerAtom(cwd=sample_project)
         result = atom.run(
@@ -201,7 +201,7 @@ class TestAtomToolStack:
         """QARunnerAtom handles run_complexity intent — clean code."""
         clean_dir = sample_project / "src" / "greeter"
 
-        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
         atom = QARunnerAtom(cwd=sample_project)
         result = atom.run(
@@ -215,8 +215,8 @@ class TestAtomToolStack:
 
     def test_tool_role_gating_blocks_reviewer_fix(self, sample_project: Path) -> None:
         """QARunnerTool blocks reviewer from using fix=True."""
-        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
-        from specweaver.core.loom.tools.qa_runner.tool import (
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+        from specweaver.sandbox.qa_runner.interfaces.tool import (
             QARunnerTool,
             QARunnerToolError,
         )
@@ -236,8 +236,8 @@ class TestAtomToolStack:
             encoding="utf-8",
         )
 
-        from specweaver.core.loom.atoms.qa_runner.atom import QARunnerAtom
-        from specweaver.core.loom.tools.qa_runner.tool import QARunnerTool
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+        from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool
 
         atom = QARunnerAtom(cwd=sample_project)
         tool = QARunnerTool(atom, role="implementer")
@@ -287,7 +287,7 @@ class TestTypeScriptRunnerRealTooling:
         import shutil
         import subprocess
 
-        from specweaver.core.loom.commons.language.typescript.runner import TypeScriptRunner
+        from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
         target_dir = sample_project / "src" / "ts_compile"
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -319,7 +319,7 @@ class TestTypeScriptRunnerRealTooling:
         import shutil
         import subprocess
 
-        from specweaver.core.loom.commons.language.typescript.runner import TypeScriptRunner
+        from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
         target_dir = sample_project / "src" / "ts_debug"
         target_dir.mkdir(parents=True, exist_ok=True)

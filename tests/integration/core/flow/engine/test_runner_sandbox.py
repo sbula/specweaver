@@ -17,7 +17,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext
-from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
+from specweaver.sandbox.base import AtomResult, AtomStatus
 
 
 @pytest.mark.asyncio
@@ -58,7 +58,7 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
 
     with (
         patch(
-            "specweaver.core.loom.atoms.git.atom.GitAtom.run",
+            "specweaver.sandbox.git.core.atom.GitAtom.run",
             autospec=True,
             side_effect=fake_atom_run,
         ),
@@ -110,7 +110,7 @@ async def test_bouncer_worktree_add_fail(tmp_path: Path):
         return AtomResult(status=AtomStatus.SUCCESS, message="")
 
     with patch(
-        "specweaver.core.loom.atoms.git.atom.GitAtom.run", autospec=True, side_effect=fake_atom_run
+        "specweaver.sandbox.git.core.atom.GitAtom.run", autospec=True, side_effect=fake_atom_run
     ):
         runner = PipelineRunner(pipeline, context)
         # It should catch the exception inside the runner and just mark the step/run as FAILED,
@@ -143,7 +143,7 @@ async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
 
     with (
         patch(
-            "specweaver.core.loom.atoms.git.atom.GitAtom.run",
+            "specweaver.sandbox.git.core.atom.GitAtom.run",
             autospec=True,
             side_effect=fake_atom_run,
         ),
@@ -180,8 +180,8 @@ async def test_symlink_cache_folders(tmp_path: Path):
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
 
     with (
-        patch("specweaver.core.loom.atoms.git.atom.GitAtom.run", autospec=True) as mock_atom,
-        patch("specweaver.core.loom.atoms.filesystem.atom.FileSystemAtom") as mock_fs_atom_cls,
+        patch("specweaver.sandbox.git.core.atom.GitAtom.run", autospec=True) as mock_atom,
+        patch("specweaver.sandbox.filesystem.core.atom.FileSystemAtom") as mock_fs_atom_cls,
     ):
         mock_atom.return_value = AtomResult(status=AtomStatus.SUCCESS, message="")
         mock_fs_atom = mock_fs_atom_cls.return_value

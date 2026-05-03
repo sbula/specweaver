@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.loom.commons.qa_runner.interface import QARunnerInterface
+    from specweaver.sandbox.qa_runner.core.interface import QARunnerInterface
 
 logger = logging.getLogger(__name__)
 
@@ -30,26 +30,26 @@ def resolve_runner(cwd: Path) -> QARunnerInterface:
         The matching QARunnerInterface adapter. Defaults to PythonQARunner.
     """
     if (cwd / "package.json").exists():
-        from specweaver.core.loom.commons.language.typescript.runner import TypeScriptRunner
+        from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
         return TypeScriptRunner(cwd=cwd)
 
     if (cwd / "Cargo.toml").exists():
-        from specweaver.core.loom.commons.language.rust.runner import RustRunner
+        from specweaver.sandbox.language.core.rust.runner import RustRunner
 
         return RustRunner(cwd=cwd)
 
     if (cwd / "build.gradle").exists() or (cwd / "build.gradle.kts").exists():
-        from specweaver.core.loom.commons.language.kotlin.runner import KotlinRunner
+        from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
 
         return KotlinRunner(cwd=cwd)
 
     if (cwd / "pom.xml").exists():
-        from specweaver.core.loom.commons.language.java.runner import JavaRunner
+        from specweaver.sandbox.language.core.java.runner import JavaRunner
 
         return JavaRunner(cwd=cwd)
 
     # By default, or if pyproject.toml is found
-    from specweaver.core.loom.commons.language.python.runner import PythonQARunner
+    from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
     return PythonQARunner(cwd=cwd)

@@ -119,8 +119,8 @@ class ToolDispatcher:
 
         if "fs" in allowed_tools or "filesystem" in allowed_tools:
             # Isolate imports so flow/ doesn't violate boundaries
-            from specweaver.core.loom.security import AccessMode, FolderGrant
-            from specweaver.core.loom.tools.filesystem.interfaces import create_filesystem_interface
+            from specweaver.sandbox.security import AccessMode, FolderGrant
+            from specweaver.sandbox.filesystem.interfaces.facades import create_filesystem_interface
 
             exclude_dirs: set[str] = set()
             exclude_patterns: set[str] = set()
@@ -142,7 +142,7 @@ class ToolDispatcher:
                         FolderGrant(str(root / "contracts"), AccessMode.READ, recursive=True)
                     )
             elif role == "arbiter_agent":
-                from specweaver.core.loom.security import ReadOnlyWorkspaceBoundary
+                from specweaver.sandbox.security import ReadOnlyWorkspaceBoundary
 
                 if isinstance(boundary, ReadOnlyWorkspaceBoundary):
                     for api_path in boundary.api_paths:
@@ -172,10 +172,10 @@ class ToolDispatcher:
 
         if "ast" in allowed_tools or "codestructure" in allowed_tools:
             # Isolate AST dependencies
-            from specweaver.core.loom.atoms.code_structure.atom import CodeStructureAtom
-            from specweaver.core.loom.commons.filesystem.executor import EngineFileExecutor
-            from specweaver.core.loom.security import AccessMode, FolderGrant
-            from specweaver.core.loom.tools.code_structure.tool import CodeStructureTool
+            from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+            from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
+            from specweaver.sandbox.security import AccessMode, FolderGrant
+            from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
             from specweaver.workflows.evaluators.loader import load_evaluator_schemas
 
             project_dir = boundary.roots[0] if boundary.roots else None
@@ -223,7 +223,7 @@ class ToolDispatcher:
 
         if "web" in allowed_tools:
             # Provide WebTool directly if web search is enabled
-            from specweaver.core.loom.tools.web.tool import WebTool
+            from specweaver.sandbox.web.interfaces.tool import WebTool
 
             # Note: The factory doesn't read env directly since it's a domain boundary.
             # but WebTool safely degrades if api_key isn't supplied (web_enabled=False).
@@ -231,8 +231,8 @@ class ToolDispatcher:
             interfaces.append(web_tool)
 
         if "mcp" in allowed_tools and role == "architect":
-            from specweaver.core.loom.tools.mcp.interfaces import ArchitectMCPInterface
-            from specweaver.core.loom.tools.mcp.tool import MCPExplorerTool
+            from specweaver.sandbox.mcp.interfaces.facades import ArchitectMCPInterface
+            from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
 
             # MCP requires the actual topology server mappings
             class DummyContext:  # Temporary bridge since MCPExplorerTool expects context object

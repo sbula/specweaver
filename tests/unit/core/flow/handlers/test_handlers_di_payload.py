@@ -45,7 +45,7 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
             "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
         ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
-        patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
+        patch("specweaver.sandbox.code_structure.core.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
         patch("specweaver.assurance.validation.executor.execute_validation_pipeline") as mock_exec,
     ):
@@ -173,7 +173,7 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
             "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
         ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
-        patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
+        patch("specweaver.sandbox.code_structure.core.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
         patch("specweaver.assurance.validation.executor.execute_validation_pipeline") as mock_exec,
     ):
@@ -276,7 +276,7 @@ async def test_validate_spec_handler_atom_fails_fallback(tmp_path: Path) -> None
             "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
         ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
-        patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
+        patch("specweaver.sandbox.code_structure.core.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
         patch("specweaver.assurance.validation.executor.execute_validation_pipeline") as mock_exec,
     ):
@@ -325,7 +325,7 @@ async def test_validate_code_handler_atom_fails_fallback(tmp_path: Path) -> None
             "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
         ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
-        patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
+        patch("specweaver.sandbox.code_structure.core.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
         patch("specweaver.assurance.validation.executor.execute_validation_pipeline") as mock_exec,
     ):
@@ -415,7 +415,7 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
             "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
         ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
-        patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
+        patch("specweaver.sandbox.code_structure.core.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
         patch("specweaver.assurance.validation.executor.execute_validation_pipeline") as mock_exec,
     ):
@@ -480,7 +480,7 @@ async def test_validate_spec_handler_e2e_integration(tmp_path: Path) -> None:
             "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
         ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
-        patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
+        patch("specweaver.sandbox.code_structure.core.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
     ):
         mock_resolver = MagicMock()
@@ -560,7 +560,7 @@ async def test_validate_spec_handler_e2e_integration_failed_bounds(tmp_path: Pat
             "specweaver.core.flow.handlers.validation._resolve_merged_settings", return_value=None
         ),
         patch("specweaver.core.config.archetype_resolver.ArchetypeResolver") as mock_resolver_cls,
-        patch("specweaver.core.loom.atoms.code_structure.atom.CodeStructureAtom") as mock_atom_cls,
+        patch("specweaver.sandbox.code_structure.core.atom.CodeStructureAtom") as mock_atom_cls,
         patch("specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml") as mock_load,
     ):
         mock_resolver = MagicMock()

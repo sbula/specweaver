@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.loom.tools.git.interfaces import (
+from specweaver.sandbox.git.interfaces.facades import (
     ConflictResolverGitInterface,
     DebuggerGitInterface,
     DrafterGitInterface,
@@ -18,7 +18,7 @@ from specweaver.core.loom.tools.git.interfaces import (
     ReviewerGitInterface,
     create_git_interface,
 )
-from specweaver.core.loom.tools.git.tool import ROLE_INTENTS
+from specweaver.sandbox.git.interfaces.tool import ROLE_INTENTS
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -182,7 +182,7 @@ class TestInterfaceMethodExposure:
 class TestFactory:
     """create_git_interface returns the correct interface per role."""
 
-    @patch("specweaver.core.loom.tools.git.interfaces.GitExecutor")
+    @patch("specweaver.sandbox.git.interfaces.facades.GitExecutor")
     def test_implementer_returns_correct_type(
         self,
         mock_executor_cls: MagicMock,
@@ -191,7 +191,7 @@ class TestFactory:
         iface = create_git_interface("implementer", tmp_path)
         assert isinstance(iface, ImplementerGitInterface)
 
-    @patch("specweaver.core.loom.tools.git.interfaces.GitExecutor")
+    @patch("specweaver.sandbox.git.interfaces.facades.GitExecutor")
     def test_reviewer_returns_correct_type(
         self,
         mock_executor_cls: MagicMock,
@@ -200,7 +200,7 @@ class TestFactory:
         iface = create_git_interface("reviewer", tmp_path)
         assert isinstance(iface, ReviewerGitInterface)
 
-    @patch("specweaver.core.loom.tools.git.interfaces.GitExecutor")
+    @patch("specweaver.sandbox.git.interfaces.facades.GitExecutor")
     def test_debugger_returns_correct_type(
         self,
         mock_executor_cls: MagicMock,
@@ -209,7 +209,7 @@ class TestFactory:
         iface = create_git_interface("debugger", tmp_path)
         assert isinstance(iface, DebuggerGitInterface)
 
-    @patch("specweaver.core.loom.tools.git.interfaces.GitExecutor")
+    @patch("specweaver.sandbox.git.interfaces.facades.GitExecutor")
     def test_drafter_returns_correct_type(
         self,
         mock_executor_cls: MagicMock,
@@ -222,7 +222,7 @@ class TestFactory:
         with pytest.raises(ValueError, match="Unknown role"):
             create_git_interface("admin", tmp_path)
 
-    @patch("specweaver.core.loom.tools.git.interfaces.GitExecutor")
+    @patch("specweaver.sandbox.git.interfaces.facades.GitExecutor")
     def test_cwd_passed_to_executor(
         self,
         mock_executor_cls: MagicMock,
@@ -299,7 +299,7 @@ class TestInterfaceDelegation:
 class TestFactoryEdgeCases:
     """Additional factory edge cases."""
 
-    @patch("specweaver.core.loom.tools.git.interfaces.GitExecutor")
+    @patch("specweaver.sandbox.git.interfaces.facades.GitExecutor")
     def test_factory_passes_correct_whitelist_for_implementer(
         self,
         mock_executor_cls: MagicMock,
@@ -311,7 +311,7 @@ class TestFactoryEdgeCases:
         assert "add" in whitelist
         assert "switch" in whitelist
 
-    @patch("specweaver.core.loom.tools.git.interfaces.GitExecutor")
+    @patch("specweaver.sandbox.git.interfaces.facades.GitExecutor")
     def test_factory_passes_correct_whitelist_for_reviewer(
         self,
         mock_executor_cls: MagicMock,

@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.loom.commons.git.executor import ExecutorResult
-from specweaver.core.loom.tools.git.tool import (
+from specweaver.sandbox.git.core.executor import ExecutorResult
+from specweaver.sandbox.git.interfaces.tool import (
     ROLE_INTENTS,
     GitTool,
     GitToolError,
@@ -360,14 +360,14 @@ class TestToolResult:
     """ToolResult is frozen and carries clear data."""
 
     def test_frozen(self) -> None:
-        from specweaver.core.loom.tools.git.tool import ToolResult
+        from specweaver.sandbox.git.interfaces.tool import ToolResult
 
         r = ToolResult(status="success", message="ok")
         with pytest.raises(AttributeError):
             r.status = "error"  # type: ignore[misc]
 
     def test_default_data_is_empty(self) -> None:
-        from specweaver.core.loom.tools.git.tool import ToolResult
+        from specweaver.sandbox.git.interfaces.tool import ToolResult
 
         r = ToolResult(status="success", message="ok")
         assert r.data == ""
@@ -408,7 +408,7 @@ class TestWhitelistForRoleCompleteness:
         conflict_resolver is excluded — it uses EngineGitExecutor,
         which lifts the blocked-commands restriction.
         """
-        from specweaver.core.loom.commons.git.executor import GitExecutor
+        from specweaver.sandbox.git.core.executor import GitExecutor
 
         blocked = GitExecutor._BLOCKED_ALWAYS
         agent_roles = {r for r in ROLE_INTENTS if r != "conflict_resolver"}
@@ -432,7 +432,7 @@ class TestConfigConsistency:
     """ROLE_INTENTS and INTENT_COMMANDS must be consistent."""
 
     def test_all_role_intents_have_commands(self) -> None:
-        from specweaver.core.loom.tools.git.tool import INTENT_COMMANDS
+        from specweaver.sandbox.git.interfaces.tool import INTENT_COMMANDS
 
         for role, intents in ROLE_INTENTS.items():
             for intent in intents:
@@ -441,7 +441,7 @@ class TestConfigConsistency:
                 )
 
     def test_all_intents_in_intent_commands_are_used_by_a_role(self) -> None:
-        from specweaver.core.loom.tools.git.tool import INTENT_COMMANDS
+        from specweaver.sandbox.git.interfaces.tool import INTENT_COMMANDS
 
         all_role_intents: set[str] = set()
         for intents in ROLE_INTENTS.values():
@@ -452,7 +452,7 @@ class TestConfigConsistency:
             )
 
     def test_all_intent_methods_exist_on_git_tool(self) -> None:
-        from specweaver.core.loom.tools.git.tool import INTENT_COMMANDS
+        from specweaver.sandbox.git.interfaces.tool import INTENT_COMMANDS
 
         for intent in INTENT_COMMANDS:
             assert hasattr(GitTool, intent), f"GitTool is missing method for intent {intent!r}"

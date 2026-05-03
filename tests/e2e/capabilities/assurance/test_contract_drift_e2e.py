@@ -6,7 +6,7 @@ import pytest
 from specweaver.assurance.validation.executor import execute_validation_pipeline
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
-from specweaver.core.loom.commons.protocol.models import ProtocolEndpoint
+from specweaver.sandbox.protocol.core.models import ProtocolEndpoint
 
 
 def test_c13_contract_drift_engine_pipeline_e2e() -> None:

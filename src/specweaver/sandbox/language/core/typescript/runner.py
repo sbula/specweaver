@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.loom.commons.qa_runner.interface import (
+from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     CompileError,
     CompileRunResult,
@@ -198,7 +198,7 @@ class TypeScriptRunner(QARunnerInterface):
         import yaml
 
         from specweaver.commons import json
-        from specweaver.core.loom.commons.qa_runner.interface import ArchitectureViolation
+        from specweaver.sandbox.qa_runner.core.interface import ArchitectureViolation
 
         logger.debug(
             "TypeScriptRunner.run_architecture_check: target=%s, dal=%s", target, dal_level

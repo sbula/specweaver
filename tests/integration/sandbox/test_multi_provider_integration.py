@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from specweaver.core.loom.dispatcher import ToolDispatcher
+from specweaver.sandbox.dispatcher import ToolDispatcher
 from specweaver.infrastructure.llm.adapters.anthropic import AnthropicAdapter
 from specweaver.infrastructure.llm.adapters.mistral import MistralAdapter
 from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter

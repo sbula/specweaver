@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from specweaver.core.loom.commons.git.executor import GitExecutor
+    from specweaver.sandbox.git.core.executor import GitExecutor
     from specweaver.infrastructure.llm.models import ToolDefinition
 
 
@@ -126,8 +126,8 @@ class GitTool:
         return self._allowed
 
     def definitions(self) -> list[ToolDefinition]:
-        from specweaver.core.loom.tools.git.definitions import INTENT_DEFINITIONS
-        from specweaver.core.loom.tools.git.tool import ROLE_INTENTS
+        from specweaver.sandbox.git.interfaces.definitions import INTENT_DEFINITIONS
+        from specweaver.sandbox.git.interfaces.tool import ROLE_INTENTS
 
         return [d for name, d in INTENT_DEFINITIONS.items() if name in ROLE_INTENTS[self._role]]
 

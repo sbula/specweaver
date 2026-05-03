@@ -3,13 +3,13 @@
 
 from typing import Any
 
-from specweaver.core.loom.tools.mcp.definitions import (
+from specweaver.sandbox.mcp.interfaces.definitions import (
     LIST_RESOURCES_DEF,
     LIST_SERVERS_DEF,
     READ_RESOURCE_DEF,
 )
-from specweaver.core.loom.tools.mcp.models import MCPToolError
-from specweaver.core.loom.tools.mcp.tool import MCPExplorerTool
+from specweaver.sandbox.mcp.interfaces.models import MCPToolError
+from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
 
 
 class ArchitectMCPInterface:

@@ -13,8 +13,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from specweaver.core.loom.atoms.base import Atom, AtomResult, AtomStatus
-from specweaver.core.loom.commons.mcp.executor import MCPExecutor, MCPExecutorError
+from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
 
 logger = logging.getLogger(__name__)
 

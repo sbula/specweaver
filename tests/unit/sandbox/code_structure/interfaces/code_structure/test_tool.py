@@ -2,11 +2,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.loom.atoms.base import AtomResult, AtomStatus
+from specweaver.sandbox.base import AtomResult, AtomStatus
 
 # Will fail to import because we haven't created it yet!
-from specweaver.core.loom.tools.code_structure.tool import CodeStructureTool, CodeStructureToolError
-from specweaver.core.loom.tools.filesystem.models import AccessMode, FolderGrant
+from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool, CodeStructureToolError
+from specweaver.sandbox.filesystem.interfaces.models import AccessMode, FolderGrant
 
 
 def test_tool_init_invalid_role() -> None:

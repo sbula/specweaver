@@ -3,7 +3,7 @@
 
 from unittest.mock import MagicMock
 
-from specweaver.core.loom.tools.code_structure.tool import CodeStructureTool
+from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
 
 
 def test_code_structure_tool_respects_hidden_intents() -> None:

@@ -1,4 +1,4 @@
-from specweaver.core.loom.tools.protocol.tool import ProtocolTool
+from specweaver.sandbox.protocol.interfaces.tool import ProtocolTool
 
 
 def test_tool_endpoints_generic_exception(monkeypatch):
@@ -7,7 +7,7 @@ def test_tool_endpoints_generic_exception(monkeypatch):
     def mock_run(*args, **kwargs):
         raise ValueError("OS Level Fault")
 
-    monkeypatch.setattr("specweaver.core.loom.atoms.protocol.atom.ProtocolAtom.run", mock_run)
+    monkeypatch.setattr("specweaver.sandbox.protocol.core.atom.ProtocolAtom.run", mock_run)
 
     tool = ProtocolTool()
     result = tool.extract_schema_endpoints("dummy.proto")
@@ -23,7 +23,7 @@ def test_tool_messages_generic_exception(monkeypatch):
     def mock_run(*args, **kwargs):
         raise RuntimeError("Runtime Crash")
 
-    monkeypatch.setattr("specweaver.core.loom.atoms.protocol.atom.ProtocolAtom.run", mock_run)
+    monkeypatch.setattr("specweaver.sandbox.protocol.core.atom.ProtocolAtom.run", mock_run)
 
     tool = ProtocolTool()
     result = tool.extract_schema_messages("dummy.yaml")

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.loom.security import (
+from specweaver.sandbox.security import (
     ReadOnlyWorkspaceBoundary,
     WorkspaceBoundary,
     WorkspaceBoundaryError,
