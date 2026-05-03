@@ -139,7 +139,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-FLOW-01:** SQLite Pipeline Runner & State Persistence
     *   `✅` **D-FLOW-02:** `sw run` CLI & Enterprise Logging
     *   `[ ]` **D-FLOW-04:** Unified Runner Architecture
-    *   `[x]` **E-FLOW-03:** Multi-Provider Registry
+    *   `✅` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-04-SUB:** Sub-Story Integration defined in [US-04_integration.md](integrations/US-04_integration.md)
