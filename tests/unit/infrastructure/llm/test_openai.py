@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+pytest.importorskip("openai")
+
 from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
 from specweaver.infrastructure.llm.errors import AuthenticationError
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role

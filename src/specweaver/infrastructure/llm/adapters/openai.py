@@ -7,6 +7,8 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
+import openai
+
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 from specweaver.infrastructure.llm.errors import (
     AuthenticationError,
@@ -49,8 +51,6 @@ class OpenAIAdapter(LLMAdapter):
 
     def _get_client(self) -> Any:
         if self._client is None:
-            import openai
-
             self._client = openai.AsyncOpenAI(api_key=self._api_key)
         return self._client
 

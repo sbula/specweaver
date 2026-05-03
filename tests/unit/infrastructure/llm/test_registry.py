@@ -116,7 +116,13 @@ def test_ensure_discovered_implicit_namespace_package():
 def test_get_merged_default_costs():
     """Returns a unified dictionary with costs from all adapters."""
     costs = get_merged_default_costs()
+
+    # Verify costs from all adapters are merged
     assert "gemini-3-flash-preview" in costs
+    assert "gpt-5.4" in costs
+    assert "claude-4-6-sonnet" in costs
+    assert "mistral-small-4" in costs
+    assert "qwen3-max" in costs
 
     # Check that a cost entry is structured right
     gemini_cost = costs["gemini-3-flash-preview"]

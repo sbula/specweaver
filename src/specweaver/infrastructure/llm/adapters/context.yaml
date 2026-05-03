@@ -34,5 +34,5 @@ exposes:
 
 # -- Operational Metadata --------------------------------------------------
 operational:
-  async_ready: false
+  async_ready: true
   concurrency_model: none

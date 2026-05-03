@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+pytest.importorskip("anthropic")
+
 from specweaver.infrastructure.llm.adapters.anthropic import AnthropicAdapter
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 

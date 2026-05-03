@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+pytest.importorskip("mistralai")
+
 from specweaver.infrastructure.llm.adapters.mistral import MistralAdapter
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 

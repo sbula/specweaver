@@ -6,6 +6,8 @@ from __future__ import annotations
 import os
 from typing import Any, ClassVar
 
+import openai
+
 from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
 from specweaver.infrastructure.llm.telemetry import CostEntry
 
@@ -28,8 +30,6 @@ class QwenAdapter(OpenAIAdapter):
 
     def _get_client(self) -> Any:
         if self._client is None:
-            import openai
-
             self._client = openai.AsyncOpenAI(
                 api_key=self._api_key,
                 base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
