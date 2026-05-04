@@ -88,3 +88,10 @@ To inject credentials without causing a pipeline abortion:
 2. Alternatively, create `.specweaver/vault.env` yourself and ensure you immediately add it to your global `.gitignore` scope. 
 
 **The Pipeline Orchestrator actively scans this protection boundary. If the Vault configuration file is mathematically tracked inside your Git commit scope, SpecWeaver will dictate an immediate interpreter crash to prevent accidental credentials leakage.**
+
+## 8. Telemetry & Logs
+
+SpecWeaver enforces zero-trust execution by automatically collecting comprehensive background telemetry and structured logs.
+All CLI operations automatically stream visual `WARNING` level alerts and formatted stack traces natively to your console using Rich.
+For post-mortem auditing or agent debugging, SpecWeaver persists verbose `DEBUG` logs in machine-parseable JSON lines format physically within your user's home directory.
+You can find these rotation logs at: `~/.specweaver/logs/<project_name>/specweaver.log`
