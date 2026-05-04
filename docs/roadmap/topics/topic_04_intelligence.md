@@ -17,9 +17,11 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | New `PLAN+SPEC` handler between validate and implement. Captures architecture decisions, tech stack choices, constraint reasoning in a structured Plan artifact before code generation. Includes [Google Stitch](https://stitch.withgoogle.com/) via its SDK to auto-generate interactive UI mockups from the spec's Contract section.
 * **`D-INTL-04` 🔜: Design Questionnaire** (Legacy: 3.52)<br>
   > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Eliminates "Blank Canvas" LLM hallucinations during greenfield bootstrap. Injects an interactive CLI wizard (persistence, authentication, archetype choices) bounding the LLM's solution space securely into a localized `context.yaml` before `sw plan` or `sw draft` engages.
-
 * **`D-INTL-05` ✅: Project Metadata Injection** (Legacy: 3.15)<br>
   > _(new)_ | Inject project name, archetype, language target, date, active config into system prompt; similar to Aider's `get_platform_info()`. **Complete**: 3587 tests.
+* **`D-INTL-06` 🔜: Context Hydration Engine**
+  > _(new)_ | Specialized retrieval layer that fetches the active Task state, blockers, and handover notes from the Memory Bank and injects them into the agent's prompt.
+
 ## DAL-C: Enterprise Standard
 * **`C-INTL-01` ✅: Iterative Decomposition** (Legacy: 3.24)<br>
   > `future_capabilities_reference.md` §18 | Builds on basic foundation: DMZ-style iterative loop, automated quality gates, recursive decomposition (feature → sub-features → components).
@@ -39,16 +41,20 @@ This document tracks all capabilities related to LLM integration, specification 
   > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Pre-emptive architectural de-duplication. Scans drafted subfeatures in `DecomposeHandler` for cross-cutting overlaps (e.g. shared schemas/utils) and extracts them into a synthetic "Tier 0" feature, forcing subfeatures to share logic rather than parallelizing duplicate implementations.
 * **`B-INTL-04` 🔮: Dynamic AI Arbiter** (Legacy: 5.8)<br>
   > _(split from original 3.12)_ — Automatic model selection using Attributed Lifecycle Score (ALS). AI-powered fault attribution across multi-model, cross-lifecycle pipelines. **Science fiction today** — depends on persistent knowledge graph (5.1-5.5), labeled training data (5.5a), and solving the credit assignment problem. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
-
 * **`B-INTL-05` 🔜: Dynamic Tool Gating via Archetypes** (Legacy: 3.30a)<br>
   > _(new)_ | Branch off from 3.30. Intercepts the `context.yaml` active archetype to mathematically remove or inject specific JSON Schema Tool Definitions (`list_symbols`) to the Agent at generation runtime, strictly enforcing framework-specific capabilities.
 * **`B-INTL-06` 🔜: Multi-Agent Isolation Patterns** (Legacy: 4.5)<br>
   > _(new)_ | Agent isolation patterns (multi-agent review). Ensures that multiple agents reviewing the same architecture operate in secure, independent sandboxes to prevent contextual contamination or collective hallucinations.
 * **`B-INTL-07` 🔜: Error Attribution Arbiter**<br>
   > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario, and mathematically determines whether the code failed the scenario, or if the scenario was written incorrectly.
-
 * **`B-INTL-08` 🔮: Semantic Code Review**<br>
   > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system.
+* **`B-INTL-09` 🔜: SQLite Agent Memory Schema**
+  > _(new)_ | The structural SQL foundation defining `Task`, `Epic`, `State`, and `Defect` entities. The core backend of the Agent Memory Bank (US-28).
+* **`B-INTL-10` 🔜: Agentic Workflow State Ledger**
+  > _(new)_ | The runtime orchestration logic for multi-step autonomous tasks, handling states, retries, and context decay.
+* **`B-INTL-11` 🔜: Structured Handover Tooling**
+  > _(new)_ | Protocols for one agent to safely pass a `Task` and its accumulated context block to another agent without hallucination.
 
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>
@@ -59,3 +65,5 @@ This document tracks all capabilities related to LLM integration, specification 
   > Phase A+B (seeds in Phase 2) | Socratic drafting flow — topology-aware questioning during `sw draft`
 * **`A-INTL-04` 🔜: Memory Consolidation** (Legacy: 5.7)<br>
   > _(new)_ When new knowledge overlaps with existing, LLM decides: keep, update, delete, or insert_new. Prevents infinite knowledge growth. _(Blueprint: CrewAI's `consolidation_threshold` and merge logic — ORIGINS.md § CrewAI)_
+* **`A-INTL-05` 🔜: Multi-Repo Refactoring Orchestration**
+  > _(new)_ | Extreme-scale capability allowing the orchestrator to compute, distribute, and track synchronized interface changes across 20+ isolated repositories concurrently.

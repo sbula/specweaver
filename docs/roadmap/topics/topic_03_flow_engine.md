@@ -29,13 +29,17 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > _(from 3.1 analysis)_ | Sub-pipeline spawning: decomposition outputs N component specs, each runs its own L3 pipeline. Parent pipeline waits for all children. **Critically:** Uses the Topology Graph to mathematically predict file blast radius. Safely runs disjoint components fully in parallel mapped to separate isolated sandboxes, injecting dynamic `SW_PORT_OFFSET` hashes to prevent test collision (port bounds, SQLite locks) without incurring git merge conflicts. **Complete**: 3986 tests.
 * **`C-FLOW-04` 🔜: Work Packet Bundling** (Legacy: 3.49)<br>
   > _(inspired by Cavekit)_ | Optimizes the Dynamic DAG Topology Dispatcher (3.27) by bundling tiny, independent components into aggregated "Work Packets" assigned to a single Git Worktree. Reduces Git I/O overhead and LLM context initialization tokens drastically.
-
 * **`C-FLOW-05` ✅: Interactive Gate Variables (HITL)** (Legacy: 3.26c)<br>
   > _(new)_ | Immediately actionable. Updates `PromptBuilder` to explicitly isolate human `GateType.HITL` rejections into a mathematically bound `<dictator-overrides>` XML section, granting them strict promotional weight above standard linter error findings in loop-back generation sequences. **Complete**: 3934 tests.
 * **`C-FLOW-06` ✅: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)<br>
   > _(new)_ | Execute High-ROI adaptations immediately: Context Condensation (AST Skeletons), Impact-Aware Test Limiting, DAL CI/CD Risk Evaluation, Standards Scaffolding, and Dynamic Context Routing. See [design doc](features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_design.md). **Complete:** All refactorings, Impact-Aware gates, and DI boundaries successfully validated.
 * **`C-FLOW-07` 🔜: HITL Root-Cause Tagging** (Legacy: 5.5a)<br>
   > _(new)_ | Direct integration with the Friction Analytics dashboard. When the Agent encounters friction, a human steps in (HITL) and actively tags *why* the pipeline failed (e.g., "Bad Spec", "Hallucination"), feeding the attribution engine.
+* **`C-FLOW-08` 🔜: Pluggable Webhook & CI Invocation**
+  > _(new)_ | Allows the runner to dispatch authenticated webhooks or trigger remote Jenkins/GitHub Actions upon successful validation.
+* **`C-FLOW-09` 🔜: DAL CI/CD Risk Evaluation**
+  > _(new)_ | Auto-rejects PRs if changes cause architectural degradation (e.g., DAL-C attempting to import DAL-A).
+
 ## DAL-B: High-Assurance
 * **`B-FLOW-01` ✅: Scenario Testing Pipeline** (Legacy: 3.28)<br>
   > _(inspired by agent-system)_ | Dual-pipeline architecture: coding + scenario pipelines run in parallel, meet at JOIN gate. Contract-first (Python Protocols), structured YAML scenarios, arbiter agent for error attribution. **Complete:** 4168 tests.
@@ -53,3 +57,5 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > Phase D | Hash-based garbage collection for graph nodes
 * **`A-FLOW-03` 🔜: Dead Code Detection & Analysis** (Legacy: 5.9)<br>
   > _(new)_ | Utilize the `PostgreSQL` persistent topology graph to mathematically search and detect unreachable code (functions/methods) across the repository. Generates a report for human review to decide if the isolated code should be deleted or kept for future use.
+* **`A-FLOW-04` 🔜: Blast-Radius Circuit Breaker**
+  > _(new)_ | Failsafe mechanism that calculates the topological impact of an autonomous hotfix and halts execution if the blast radius exceeds threshold tolerances.

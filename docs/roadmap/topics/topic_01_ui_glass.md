@@ -15,6 +15,10 @@ This document tracks all capabilities related to the User Interface, visual dash
 ## DAL-D: Internal Tooling
 * **`D-UI-01` 🔧: Core Orchestration API** (Legacy: 3.7 MVP)<br>
   > _(new)_ | FastAPI server (`sw serve`) exposing the minimum CLI commands needed for remote orchestration: `init`, `projects`, `use`, `pipelines`, `run`, `resume`, `review`, and `check`. Foundation for the tablet Web Dashboard. **In progress**: TDD phases 1–3 complete (57 API tests).
+* **`D-UI-02` 🔜: Structured Output Schemas** (Legacy: 3.34)<br>
+  > _(new)_ | Declarative JSON schemas for pipeline results (validation, review, generation). Same data renders as Rich console (CLI), cards (Web UI), or inline decorations (IDE). Prerequisite for dashboard and VS Code ext.
+* **`D-UI-03` 🔜: VS Code Extension** (Legacy: 3.35)<br>
+  > _(new)_ | Thin extension that calls `sw serve` REST endpoints. Tree view for registered projects, inline review verdicts, "Approve/Reject" buttons in status bar, pipeline progress panel.
 * **`D-UI-04` 🔜: REST API - Interactive Authoring**<br>
   > _(new)_ | Extends FastAPI with endpoints for `draft`, `implement`, and `scan`. Enables interactive co-authoring from the UI.
 * **`D-UI-05` 🔜: REST API - Enterprise Configuration**<br>
@@ -24,10 +28,6 @@ This document tracks all capabilities related to the User Interface, visual dash
 * **`D-UI-07` 🔜: REST API - Systems Integration**<br>
   > _(new)_ | Extends FastAPI with endpoints for `hooks`, `update`, and `remove`.
   > **Note on Future CLI Integrations:** Any new CLI commands added in the future must be accompanied by new specific UI endpoint sub-capabilities to ensure the REST API and frontend stay up to date.
-* **`D-UI-02` 🔜: Structured Output Schemas** (Legacy: 3.34)<br>
-  > _(new)_ | Declarative JSON schemas for pipeline results (validation, review, generation). Same data renders as Rich console (CLI), cards (Web UI), or inline decorations (IDE). Prerequisite for dashboard and VS Code ext.
-* **`D-UI-03` 🔜: VS Code Extension** (Legacy: 3.35)<br>
-  > _(new)_ | Thin extension that calls `sw serve` REST endpoints. Tree view for registered projects, inline review verdicts, "Approve/Reject" buttons in status bar, pipeline progress panel.
 
 ## DAL-C: Enterprise Standard
 * **`C-UI-01` 🔜: Pipeline Visualizer** (Legacy: 3.33a)<br>
