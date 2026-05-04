@@ -12,10 +12,13 @@ Future: TypeScript, Go, etc.
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Result types (language-agnostic)

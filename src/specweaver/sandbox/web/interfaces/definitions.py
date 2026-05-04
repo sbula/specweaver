@@ -5,7 +5,11 @@
 
 from __future__ import annotations
 
+import logging
+
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
+
+logger = logging.getLogger(__name__)
 
 WEB_SEARCH = ToolDefinition(
     name="web_search",

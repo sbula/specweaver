@@ -101,6 +101,7 @@ class ReviewSpecHandler:
     """Handler for review+spec — LLM-based spec review."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         if context.llm is None:
             logger.error("ReviewSpecHandler: LLM adapter required but not configured")
@@ -195,7 +196,8 @@ class ReviewSpecHandler:
 class ReviewCodeHandler:
     """Handler for review+code — LLM-based code review."""
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         if context.llm is None:
             logger.error("ReviewCodeHandler: LLM adapter required but not configured")

@@ -13,7 +13,11 @@ engine-controlled conflict_resolver interface.
 
 from __future__ import annotations
 
+import logging
+
 from specweaver.sandbox.git.core.executor import GitExecutor
+
+logger = logging.getLogger(__name__)
 
 
 class EngineGitExecutor(GitExecutor):

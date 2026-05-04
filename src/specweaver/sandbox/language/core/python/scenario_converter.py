@@ -15,9 +15,12 @@ and is imported lazily inside ``convert()`` to avoid a circular import
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterface
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path

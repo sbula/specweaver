@@ -5,9 +5,12 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
+
+logger = logging.getLogger(__name__)
 
 READ_FILE_STRUCTURE_SCHEMA = ToolDefinition(
     name="read_file_structure",

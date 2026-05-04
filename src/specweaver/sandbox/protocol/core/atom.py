@@ -1,9 +1,12 @@
+import logging
 from pathlib import Path
 from typing import Any
 
 from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
 from specweaver.sandbox.protocol.core.factory import ProtocolParserFactory
 from specweaver.sandbox.protocol.core.protocol_interfaces import ProtocolSchemaError
+
+logger = logging.getLogger(__name__)
 
 
 class ProtocolAtom(Atom):

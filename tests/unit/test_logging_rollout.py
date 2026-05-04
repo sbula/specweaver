@@ -126,6 +126,92 @@ class TestBatch1LoggingRollout:
             assert mod.logger.name == mod.__name__
 
 
+# ---------------------------------------------------------------------------
+# Batch 2: Domain Logic (assurance/, graph/, workflows/)
+# ---------------------------------------------------------------------------
+
+
+class TestBatch2LoggingRollout:
+    """Verify Batch 2 modules emit log records."""
+
+    def test_validation_modules_have_loggers(self):
+        """assurance/validation modules should declare loggers."""
+        from specweaver.assurance.validation import (
+            executor,
+            inheritance,
+            loader,
+            pipeline,
+            pipeline_loader,
+            registry,
+            runner,
+            spec_kind,
+        )
+
+        for mod in (
+            executor,
+            inheritance,
+            loader,
+            pipeline,
+            pipeline_loader,
+            registry,
+            runner,
+            spec_kind,
+        ):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
+    def test_standards_modules_have_loggers(self):
+        """assurance/standards modules should declare loggers."""
+        from specweaver.assurance.standards import (
+            analyzer,
+            discovery,
+            enricher,
+            loader,
+            recency,
+            reviewer,
+            scanner,
+            scope_detector,
+            tree_sitter_base,
+        )
+
+        for mod in (
+            analyzer,
+            discovery,
+            enricher,
+            loader,
+            recency,
+            reviewer,
+            scanner,
+            scope_detector,
+            tree_sitter_base,
+        ):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
+    def test_graph_and_planning_modules_have_loggers(self):
+        """graph/ and workflows/planning modules should declare loggers."""
+        from specweaver.assurance.graph import selectors, topology
+        from specweaver.workflows.planning import planner, renderer, stitch, ui_extractor
+
+        for mod in (selectors, topology, planner, renderer, stitch, ui_extractor):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
+    def test_workflow_modules_have_loggers(self):
+        """workflows/ drafting, review, implementation should declare loggers."""
+        from specweaver.workflows.drafting import drafter, feature_drafter
+        from specweaver.workflows.implementation import generator
+        from specweaver.workflows.review import reviewer
+
+        for mod in (drafter, feature_drafter, generator, reviewer):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
+
 class TestBatch4LoggingRollout:
     """Verify Batch 4 modules (Entry Points) emit log records."""
 
@@ -182,3 +268,94 @@ class TestBatch4LoggingRollout:
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__
+
+
+class TestBatch3LoggingRollout:
+    """Verifies that Batch 3 (LLM & Flow Engine) modules have standard loggers."""
+
+    def test_infrastructure_llm_loggers(self) -> None:
+        from specweaver.infrastructure.llm import (
+            _prompt_render,
+            prompt_builder,
+            telemetry,
+        )
+        from specweaver.infrastructure.llm.mention_scanner import scanner
+
+        for mod in (prompt_builder, telemetry, _prompt_render, scanner):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
+    def test_infrastructure_llm_adapters_loggers(self) -> None:
+        import logging
+
+        from specweaver.infrastructure.llm.adapters import (
+            _rate_limit,
+            anthropic,
+            base,
+            gemini,
+            mistral,
+            openai,
+            qwen,
+            registry,
+        )
+
+        for mod in (
+            anthropic,
+            base,
+            gemini,
+            mistral,
+            openai,
+            qwen,
+            registry,
+            _rate_limit,
+        ):
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+
+    def test_core_flow_loggers(self) -> None:
+        import logging
+
+        from specweaver.core.flow.engine import (
+            display,
+            gates,
+            parser,
+            reservation,
+            routers,
+            runner,
+            runner_utils,
+            store,
+        )
+        from specweaver.core.flow.handlers import (
+            arbiter,
+            base,
+            context_assembler,
+            contract_renderers,
+            decompose,
+            draft,
+            drift,
+            dual_pipeline,
+            generation,
+            lint_fix,
+            mcp_assembler,
+            registry,
+            review,
+            scenario,
+            standards,
+            validation,
+        )
+        from specweaver.core.flow.interfaces import cli
+
+        modules = [
+            display, gates, parser, reservation, routers, runner, runner_utils, store,
+            arbiter, base, context_assembler, contract_renderers, decompose, draft, drift, dual_pipeline,
+            generation, lint_fix, mcp_assembler, registry, review, scenario, standards, validation,
+            cli
+        ]
+
+        for mod in modules:
+            assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
+            assert isinstance(mod.logger, logging.Logger)
+            assert mod.logger.name == mod.__name__
+

@@ -11,7 +11,10 @@ Inspired by Aider's ``check_for_file_mentions()``.
 
 from __future__ import annotations
 
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Internal constants
@@ -61,6 +64,7 @@ def extract_mentions(text: str) -> list[str]:
         Deduplicated list of candidate path strings, in order of first
         appearance.
     """
+    logger.debug("Extracting mentions from text length: %d", len(text))
     # Pre-processing: strip URLs so sub-paths don't match as file refs
     cleaned = _URL_INLINE.sub("", text)
     # Strip large fenced code blocks before scanning
@@ -76,6 +80,7 @@ def extract_mentions(text: str) -> list[str]:
                 seen.add(candidate)
                 candidates.append(candidate)
 
+    logger.debug("Extracted %d mention candidates", len(candidates))
     return candidates
 
 

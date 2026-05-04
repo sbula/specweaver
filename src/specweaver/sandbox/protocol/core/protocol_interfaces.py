@@ -3,9 +3,12 @@
 
 """Abstract interface isolating format-specific parser logic."""
 
+import logging
 from abc import ABC, abstractmethod
 
 from specweaver.sandbox.protocol.core.models import ProtocolEndpoint, ProtocolMessage
+
+logger = logging.getLogger(__name__)
 
 
 class ProtocolSchemaError(Exception):

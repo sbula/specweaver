@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Any
 
@@ -13,6 +14,7 @@ from specweaver.sandbox.protocol.core.protocol_interfaces import (
     ProtocolSchemaInterface,
 )
 
+logger = logging.getLogger(__name__)
 
 class ProtocolParserFactory:
     """

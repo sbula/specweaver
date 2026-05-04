@@ -13,11 +13,14 @@ The ``package scenarios.generated`` declaration matches the directory structure.
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterface
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.workflows.scenarios.scenario_models import ScenarioSet

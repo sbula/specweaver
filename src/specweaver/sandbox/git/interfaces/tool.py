@@ -11,9 +11,12 @@ The role determines which intents are available.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.infrastructure.llm.models import ToolDefinition

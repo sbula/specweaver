@@ -16,6 +16,8 @@ backward compatibility. All existing imports continue to work.
 """
 
 # Re-export base types and helpers
+import logging
+
 from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.base import (  # noqa: F401
@@ -77,6 +79,9 @@ __all__ = [
     "ValidateTestsHandler",
 ]
 
+
+
+logger = logging.getLogger(__name__)
 
 class StepHandlerRegistry:
     """Maps (action, target) pairs to handler instances.

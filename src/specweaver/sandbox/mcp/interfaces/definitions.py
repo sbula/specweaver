@@ -1,7 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+import logging
+
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
+
+logger = logging.getLogger(__name__)
 
 LIST_SERVERS_DEF = ToolDefinition(
     name="list_servers",

@@ -10,6 +10,7 @@ template substitution.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.language.core._detect import (
@@ -25,6 +26,9 @@ if TYPE_CHECKING:
 # Re-export so SF-C can import from a single location
 __all__ = ["create_scenario_converter", "detect_scenario_extension"]
 
+
+
+logger = logging.getLogger(__name__)
 
 def create_scenario_converter(cwd: Path) -> ScenarioConverterInterface:
     """Create the appropriate ``ScenarioConverterInterface`` for the detected language.

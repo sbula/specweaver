@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from proto_schema_parser.ast import Message, Service
@@ -12,6 +13,7 @@ from specweaver.sandbox.protocol.core.protocol_interfaces import (
     ProtocolSchemaInterface,
 )
 
+logger = logging.getLogger(__name__)
 
 class GRPCParser(ProtocolSchemaInterface):
     """

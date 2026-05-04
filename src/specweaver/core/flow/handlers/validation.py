@@ -69,6 +69,7 @@ class ValidateSpecHandler:
     """Handler for validate+spec — runs spec validation rules."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         logger.debug("ValidateSpecHandler: validating spec '%s'", context.spec_path.name)
         if not context.spec_path.exists():
@@ -200,6 +201,7 @@ class ValidateCodeHandler:
     """Handler for validate+code — runs code validation rules."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         logger.debug("ValidateCodeHandler: looking for code to validate")
 
@@ -342,6 +344,7 @@ class ValidateTestsHandler:
     """
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         target = step.params.get("target")
         if not target:

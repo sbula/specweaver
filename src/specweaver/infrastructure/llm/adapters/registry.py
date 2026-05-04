@@ -69,6 +69,7 @@ def get_adapter_class(provider_name: str) -> type[LLMAdapter]:
     """
     _ensure_discovered()
     if provider_name not in _REGISTRY:
+        logger.error("Unknown LLM provider %r requested", provider_name)
         raise ValueError(f"Unknown LLM provider: {provider_name!r}")
     return _REGISTRY[provider_name]
 

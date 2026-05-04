@@ -1,6 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+import logging
 from typing import Any
 
 from specweaver.sandbox.mcp.interfaces.definitions import (
@@ -10,6 +11,8 @@ from specweaver.sandbox.mcp.interfaces.definitions import (
 )
 from specweaver.sandbox.mcp.interfaces.models import MCPToolError
 from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
+
+logger = logging.getLogger(__name__)
 
 
 class ArchitectMCPInterface:

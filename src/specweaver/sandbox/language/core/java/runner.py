@@ -27,8 +27,10 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-logger = logging.getLogger(__name__)
 
+
+
+logger = logging.getLogger(__name__)
 
 class JavaRunner(QARunnerInterface):
     """Java compilation, testing, and linting pipeline."""
@@ -284,6 +286,7 @@ class JavaRunner(QARunnerInterface):
 import org.junit.jupiter.api.Test;
 import java.nio.file.*;
 import java.util.stream.Stream;
+
 
 // Magic AST parsing stub simulating ArchUnit for Zero Boilerplate execution
 public class SpecweaverArchUnitTest {{

@@ -8,10 +8,12 @@ It strictly avoids `eval()` and complex AST execution by relying purely on
 declarative operators mapping to native Python comparative logic.
 """
 
+import logging
 from typing import Any
 
 from specweaver.core.flow.engine.models import RouterDefinition, RouterRule, RuleOperator
 
+logger = logging.getLogger(__name__)
 
 class RouterEvaluator:
     """Evaluates RouterDefinitions against runtime step results to decide next targets."""

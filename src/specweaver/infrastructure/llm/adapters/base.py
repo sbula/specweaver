@@ -10,8 +10,11 @@ provider_name, api_key_env_var, and default_costs as class attributes.
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable

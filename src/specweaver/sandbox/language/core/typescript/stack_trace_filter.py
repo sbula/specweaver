@@ -11,7 +11,11 @@ The marker ``scenarios/generated/`` matches ``TypeScriptScenarioConverter.output
 
 from __future__ import annotations
 
+import logging
+
 from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterface
+
+logger = logging.getLogger(__name__)
 
 _SCENARIO_MARKER = "scenarios/generated/"
 

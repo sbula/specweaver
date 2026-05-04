@@ -26,6 +26,7 @@ Public API
 
 from __future__ import annotations
 
+import logging
 import re
 
 # ---------------------------------------------------------------------------
@@ -40,6 +41,9 @@ _EXTENSIONS: dict[str, str] = {
     "rust": "rs",
 }
 
+
+
+logger = logging.getLogger(__name__)
 
 def contract_extension(language: str) -> str:
     """Return the file extension for a generated contract file."""

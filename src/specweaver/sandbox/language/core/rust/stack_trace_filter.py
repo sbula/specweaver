@@ -16,7 +16,11 @@ We match on ``_scenarios::`` (trailing underscore + module separator) because:
 
 from __future__ import annotations
 
+import logging
+
 from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterface
+
+logger = logging.getLogger(__name__)
 
 # Matches the module segment Cargo derives from tests/{stem}_scenarios.rs
 _SCENARIO_MARKER = "_scenarios::"

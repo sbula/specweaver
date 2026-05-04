@@ -21,6 +21,7 @@ class DraftSpecHandler:
     """Handler for draft+spec — parks if spec doesn't exist yet."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
 
         # If spec already exists, consider the draft step pre-completed

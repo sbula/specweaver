@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.infrastructure.llm.prompt_builder import _ContentBlock
@@ -63,6 +66,7 @@ def _render_mentioned(blocks: list[_ContentBlock]) -> str | None:
 
 def render_blocks(blocks: list[_ContentBlock]) -> str:
     """Render blocks into XML-tagged prompt text."""
+    logger.debug("Rendering %d prompt blocks", len(blocks))
     parts: list[str] = []
 
     # Render standard top-level tagged blocks in exact order

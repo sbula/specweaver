@@ -1,6 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+import logging
 from typing import Any
 
 from ruamel.yaml import YAML
@@ -12,6 +13,7 @@ from specweaver.sandbox.protocol.core.protocol_interfaces import (
     ProtocolSchemaInterface,
 )
 
+logger = logging.getLogger(__name__)
 
 class OpenAPIParser(ProtocolSchemaInterface):
     """Parses OpenAPI 3.x yaml into strictly typed protocol nodes."""

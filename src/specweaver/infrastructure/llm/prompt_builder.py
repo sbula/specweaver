@@ -35,13 +35,13 @@ if TYPE_CHECKING:
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
     from specweaver.infrastructure.llm.models import ProjectMetadata, TokenBudget
 
+
 from specweaver.infrastructure.llm._prompt_constants import (
     _CONSTITUTION_PREAMBLE,
     detect_language,
 )
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class _ContentBlock:

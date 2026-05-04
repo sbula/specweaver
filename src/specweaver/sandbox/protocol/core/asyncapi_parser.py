@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import ruamel.yaml
@@ -11,6 +12,7 @@ from specweaver.sandbox.protocol.core.protocol_interfaces import (
     ProtocolSchemaInterface,
 )
 
+logger = logging.getLogger(__name__)
 
 class AsyncAPIParser(ProtocolSchemaInterface):
     """

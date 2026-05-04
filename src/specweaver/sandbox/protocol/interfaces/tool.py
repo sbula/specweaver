@@ -1,7 +1,10 @@
+import logging
 from typing import Any
 
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
 from specweaver.sandbox.protocol.core.atom import ProtocolAtom
+
+logger = logging.getLogger(__name__)
 
 
 class ProtocolTool:

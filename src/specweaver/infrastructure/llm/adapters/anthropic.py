@@ -60,11 +60,15 @@ class AnthropicAdapter(LLMAdapter):
         import anthropic
 
         if isinstance(e, anthropic.AuthenticationError):
+            logger.error("AnthropicAdapter: authentication failed - check ANTHROPIC_API_KEY")
             raise AuthenticationError(str(e)) from e
         elif isinstance(e, anthropic.RateLimitError):
+            logger.warning("AnthropicAdapter: rate limit / quota exceeded")
             raise RateLimitError(str(e)) from e
         elif isinstance(e, anthropic.NotFoundError):
+            logger.error("AnthropicAdapter: model not found")
             raise ModelNotFoundError(str(e)) from e
+        logger.error("AnthropicAdapter: unclassified generation error - %s", e)
         raise GenerationError(str(e)) from e
 
     def _convert_messages(self, messages: list[Message]) -> list[dict[str, Any]]:
@@ -155,6 +159,7 @@ class AnthropicAdapter(LLMAdapter):
             try:
                 args = block.input
             except Exception:
+                logger.warning("AnthropicAdapter: failed to parse tool arguments for %s", block.name)
                 args = {}
 
             result = await tool_executor.execute(block.name, args)  # type: ignore

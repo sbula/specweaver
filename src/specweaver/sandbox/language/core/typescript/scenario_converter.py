@@ -12,11 +12,14 @@ as long as ``rootDir`` is the project root (the Jest default). No config changes
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterface
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.workflows.scenarios.scenario_models import ScenarioSet

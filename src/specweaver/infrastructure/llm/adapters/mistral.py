@@ -62,11 +62,15 @@ class MistralAdapter(LLMAdapter):
 
         if isinstance(e, SDKError):
             if e.status_code == 401:
+                logger.error("MistralAdapter: authentication failed - check MISTRAL_API_KEY")
                 raise AuthenticationError(str(e)) from e
             elif e.status_code == 429:
+                logger.warning("MistralAdapter: rate limit / quota exceeded")
                 raise RateLimitError(str(e)) from e
             elif e.status_code == 404:
+                logger.error("MistralAdapter: model not found")
                 raise ModelNotFoundError(str(e)) from e
+        logger.error("MistralAdapter: unclassified generation error - %s", e)
         raise GenerationError(str(e)) from e
 
     async def generate(self, messages: list[Message], config: GenerationConfig) -> LLMResponse:
@@ -154,6 +158,7 @@ class MistralAdapter(LLMAdapter):
             try:
                 args = json.loads(tc.function.arguments)
             except Exception:
+                logger.warning("MistralAdapter: failed to parse tool arguments for %s", tc.function.name)
                 args = {}
 
             result = await tool_executor.execute(tc.function.name, args)  # type: ignore

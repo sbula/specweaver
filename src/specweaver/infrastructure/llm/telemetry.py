@@ -12,12 +12,15 @@ Cost defaults last updated: 2026-03-27.
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import NamedTuple
 
 from pydantic import BaseModel
 
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TaskType, TokenUsage
+
+logger = logging.getLogger(__name__)
 
 
 class CostEntry(NamedTuple):
@@ -79,6 +82,7 @@ def estimate_cost(
     if entry is None:
         entry = get_default_cost_table().get(model)
     if entry is None:
+        logger.warning("Unknown model %r; estimating 0.0 cost", model)
         return 0.0
 
     input_cost = (usage.prompt_tokens / 1000) * entry.input_cost_per_1k
@@ -108,6 +112,12 @@ def create_usage_record(
         A fully populated ``UsageRecord``.
     """
     task_type = config.task_type if config.task_type else TaskType.UNKNOWN
+    logger.debug(
+        "Creating usage record for %r (model: %r, project: %r)",
+        task_type,
+        response.model,
+        project,
+    )
     cost = estimate_cost(response.model, response.usage, cost_overrides)
 
     return UsageRecord(

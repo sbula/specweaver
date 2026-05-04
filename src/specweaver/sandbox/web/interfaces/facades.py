@@ -10,9 +10,12 @@ methods that don't exist on its interface.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.web.interfaces.tool import WebTool, WebToolResult
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.infrastructure.llm.models import ToolDefinition

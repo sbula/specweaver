@@ -8,7 +8,11 @@ These describe the parameters for each intent using SpecWeaver's ToolParameter m
 
 from __future__ import annotations
 
+import logging
+
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
+
+logger = logging.getLogger(__name__)
 
 GREP = ToolDefinition(
     name="grep",

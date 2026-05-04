@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     import logging

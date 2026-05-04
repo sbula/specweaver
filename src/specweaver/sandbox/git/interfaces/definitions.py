@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import logging
+
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
+
+logger = logging.getLogger(__name__)
 
 INTENT_DEFINITIONS: dict[str, ToolDefinition] = {
     "role": ToolDefinition(

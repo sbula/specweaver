@@ -1,8 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+import logging
 import re
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 MAX_EVALUATOR_DEPTH = 5
 

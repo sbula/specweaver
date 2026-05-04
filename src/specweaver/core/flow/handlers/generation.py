@@ -96,6 +96,7 @@ class GenerateCodeHandler:
     """Handler for generate+code — LLM code generation."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         if context.llm is None:
             logger.error("GenerateCodeHandler: LLM adapter required but not configured")
@@ -188,6 +189,7 @@ class GenerateTestsHandler:
     """Handler for generate+tests — LLM test generation."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         if context.llm is None:
             logger.error("GenerateTestsHandler: LLM adapter required but not configured")
@@ -385,6 +387,7 @@ class PlanSpecHandler:
         return plan_path, artifact_uuid, plan_artifact
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         if context.llm is None:
             logger.error("PlanSpecHandler: LLM adapter required but not configured")
@@ -463,6 +466,7 @@ class GenerateContractHandler:
     """
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        logger.debug('Executing %s', self.__class__.__name__)
         """Execute contract generation from spec."""
 
         started = _now_iso()

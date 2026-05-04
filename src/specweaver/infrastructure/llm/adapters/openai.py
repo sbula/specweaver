@@ -61,13 +61,18 @@ class OpenAIAdapter(LLMAdapter):
         import openai
 
         if isinstance(e, openai.AuthenticationError):
+            logger.error("OpenAIAdapter: authentication failed - check OPENAI_API_KEY")
             raise AuthenticationError(str(e)) from e
         elif isinstance(e, openai.RateLimitError):
+            logger.warning("OpenAIAdapter: rate limit / quota exceeded")
             raise RateLimitError(str(e)) from e
         elif isinstance(e, openai.NotFoundError):
+            logger.error("OpenAIAdapter: model not found")
             raise ModelNotFoundError(str(e)) from e
         elif isinstance(e, openai.BadRequestError) and "safety" in str(e).lower():
+            logger.warning("OpenAIAdapter: content blocked by safety filter")
             raise ContentFilterError(str(e)) from e
+        logger.error("OpenAIAdapter: unclassified generation error - %s", e)
         raise GenerationError(str(e)) from e
 
     def _convert_messages(
@@ -149,6 +154,7 @@ class OpenAIAdapter(LLMAdapter):
             try:
                 args = json.loads(tc.function.arguments)
             except Exception:
+                logger.warning("OpenAIAdapter.generate_with_tools: failed to parse JSON arguments for tool %s", tc.function.name)
                 args = {}
 
             result = await tool_executor.execute(tc.function.name, args)  # type: ignore

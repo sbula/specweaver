@@ -16,10 +16,13 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.filesystem.core.executor import FileExecutor
 from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path

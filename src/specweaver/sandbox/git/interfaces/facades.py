@@ -16,6 +16,7 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
@@ -35,6 +36,9 @@ if TYPE_CHECKING:
 # Role-specific interfaces
 # ---------------------------------------------------------------------------
 
+
+
+logger = logging.getLogger(__name__)
 
 class ImplementerGitInterface:
     """Git interface for the Implementer role.

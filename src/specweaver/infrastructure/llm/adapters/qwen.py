@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any, ClassVar
 
@@ -10,6 +11,8 @@ import openai
 
 from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
 from specweaver.infrastructure.llm.telemetry import CostEntry
+
+logger = logging.getLogger(__name__)
 
 
 class QwenAdapter(OpenAIAdapter):

@@ -14,10 +14,13 @@ per scenario definition.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterface
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.workflows.scenarios.scenario_models import ScenarioSet

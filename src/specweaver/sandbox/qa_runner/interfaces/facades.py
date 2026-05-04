@@ -10,9 +10,12 @@ that don't exist on its interface.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool, ToolResult
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
