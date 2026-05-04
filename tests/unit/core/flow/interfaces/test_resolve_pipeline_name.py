@@ -105,44 +105,44 @@ class TestFeatureLevel:
 class TestActiveProfileRouting:
     """Profile sets the pipeline when --level component is used."""
 
-    @patch(
-        "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new=lambda *args, **kwargs: "web-app",
-    )
-    def test_component_with_profile_uses_profile_pipeline(self) -> None:
+    def test_component_with_profile_uses_profile_pipeline(self, monkeypatch) -> None:
         """Active profile for a project auto-selects profile YAML."""
-        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
-            result = _resolve_pipeline_name(
-                level="component",
-                pipeline=None,
-                active_project="myapp",
-            )
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+            lambda *args, **kwargs: "web-app",
+        )
+        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        result = _resolve_pipeline_name(
+            level="component",
+            pipeline=None,
+            active_project="myapp",
+        )
         assert result == "validation_spec_web_app"
 
-    @patch(
-        "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new=lambda *args, **kwargs: "library",
-    )
-    def test_component_with_library_profile(self) -> None:
-        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
-            result = _resolve_pipeline_name(
-                level="component",
-                pipeline=None,
-                active_project="myapp",
-            )
+    def test_component_with_library_profile(self, monkeypatch) -> None:
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+            lambda *args, **kwargs: "library",
+        )
+        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        result = _resolve_pipeline_name(
+            level="component",
+            pipeline=None,
+            active_project="myapp",
+        )
         assert result == "validation_spec_library"
 
-    @patch(
-        "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new=lambda *args, **kwargs: "data-pipeline",
-    )
-    def test_component_with_data_pipeline_profile(self) -> None:
-        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
-            result = _resolve_pipeline_name(
-                level="component",
-                pipeline=None,
-                active_project="myapp",
-            )
+    def test_component_with_data_pipeline_profile(self, monkeypatch) -> None:
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+            lambda *args, **kwargs: "data-pipeline",
+        )
+        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        result = _resolve_pipeline_name(
+            level="component",
+            pipeline=None,
+            active_project="myapp",
+        )
         assert result == "validation_spec_data_pipeline"
 
 
@@ -163,36 +163,36 @@ class TestDefaultLevelFallback:
         )
         assert result == "validation_spec_default"
 
-    @patch(
-        "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new=lambda *args, **kwargs: None,
-    )
-    def test_component_no_profile_returns_default(self) -> None:
+    def test_component_no_profile_returns_default(self, monkeypatch) -> None:
         """Project with no profile set falls back to spec_default."""
-        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
-            result = _resolve_pipeline_name(
-                level="component",
-                pipeline=None,
-                active_project="myapp",
-            )
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+            lambda *args, **kwargs: None,
+        )
+        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        result = _resolve_pipeline_name(
+            level="component",
+            pipeline=None,
+            active_project="myapp",
+        )
         assert result == "validation_spec_default"
 
     def test_code_level_returns_code_default(self) -> None:
         result = _resolve_pipeline_name(level="code", pipeline=None)
         assert result == "validation_code_default"
 
-    @patch(
-        "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
-        new=lambda *args, **kwargs: "web-app",
-    )
-    def test_code_level_ignores_active_profile(self) -> None:
+    def test_code_level_ignores_active_profile(self, monkeypatch) -> None:
         """code level routes to code pipeline regardless of profile."""
-        with patch("specweaver.assurance.validation.interfaces.cli._core.get_db"):
-            result = _resolve_pipeline_name(
-                level="code",
-                pipeline=None,
-                active_project="myapp",
-            )
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+            lambda *args, **kwargs: "web-app",
+        )
+        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        result = _resolve_pipeline_name(
+            level="code",
+            pipeline=None,
+            active_project="myapp",
+        )
         assert result == "validation_code_default"
 
 

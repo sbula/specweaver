@@ -34,7 +34,9 @@ class GRPCParser(ProtocolSchemaInterface):
             return ast
         except Exception as e:
             if isinstance(e, ProtocolSchemaError):
+                logger.error("ProtocolSchemaError: %s", e)
                 raise
+            logger.error("Failed to parse gRPC schema: %s", e)
             raise ProtocolSchemaError(f"Failed to parse gRPC schema: {e}") from e
 
     def extract_endpoints(self, payload: str) -> list[ProtocolEndpoint]:
