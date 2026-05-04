@@ -99,13 +99,13 @@ No external blueprint references are strictly required, though this follows the 
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Universal Logging Reform | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Unified CLI Runner | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Logging Rollout | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Logging Rollout | SF-1 | ✅ | ✅ | ⏳ | ⬜ | ⬜ |
 
 
 
 
 ## Session Handoff
 
-**Current status**: SF-1 ✅ Committed. SF-2 ✅ Committed (2026-03-29). SF-3 Impl Plan APPROVED — Dev pending.
+**Current status**: SF-1 ✅ Committed. SF-2 ✅ Committed. SF-3 ⏳ Dev in progress (Batch 1 committed, moving to Batch 2).
 **Next step**: Run `/dev` for SF-3.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

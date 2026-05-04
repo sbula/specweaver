@@ -308,3 +308,18 @@ Instead of importing the string hashes as primary keys, `load_from_db()` strictl
 
 ### Why we do it:
 NetworkX math operations natively optimize for `int` bindings via C-extensions or Numpy arrays under the hood. String manipulation permanently destroys this optimization. By passing back a synchronized `hash_to_id` map (`dict[str, int]`) to the Orchestrator, external string-based lookups remain `O(1)` without polluting the core graphing engine's math execution bounds.
+
+---
+
+## 20. Lazy Structured Logging (The `%` Format Override)
+
+When rolling out telemetry across SpecWeaver (Feature 3.33), we explicitly enforce the usage of the standard library `logging` module paired exclusively with legacy `%s` string interpolation formats. We fundamentally ban the usage of Python `f-strings` or `.format()` inside `logger.debug()` or `logger.info()` payload boundaries.
+
+### How it works:
+Every active module strictly initializes an isolated `logger = logging.getLogger(__name__)`. 
+Developers must write: `logger.debug("Parsing spec: %s", spec_path)` 
+Developers are explicitly forbidden from writing: `logger.debug(f"Parsing spec: {spec_path}")`
+
+### Why we do it:
+1. **The Performance Tax:** `logger.debug` lines are evaluated universally, even if the user is running the CLI at the `INFO` or `WARNING` level. If developers use `f-strings`, the Python interpreter is forced to immediately evaluate, stringify, and concatenate massive payload objects *before* calling the `logger` method, only for the logger to instantly discard the string because `DEBUG` is disabled. By passing `%s` and trailing arguments, the standard library defers payload evaluation strictly until *after* the level gate is passed, resulting in a 0ms execution cost for disabled telemetry.
+2. **Deterministic Aggregation:** External log aggregation tools (like Datadog or ELK) index standard library `logging` records by grouping identical static message strings. `f-strings` permanently mutate the message string on every run, destroying telemetry aggregation graphs. The `%s` pattern guarantees the message structure remains perfectly uniform natively.
