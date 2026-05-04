@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 
 class UIRequirements:
@@ -49,17 +52,21 @@ def extract_ui_requirements(spec_content: str) -> UIRequirements | None:
     """
     matches = list(_SECTION_RE.finditer(spec_content))
     if not matches:
+        logger.debug("No Protocol/Contract sections found for UI extraction")
         return None
 
     # Aggregate all matched sections in case there are multiple
     contents = [m.group(1).strip() for m in matches if m.group(1).strip()]
     if not contents:
+        logger.debug("Protocol/Contract sections were empty")
         return None
 
     combined_content = "\n\n".join(contents)
     content_lower = combined_content.lower()
 
     if any(kw in content_lower for kw in _UI_KEYWORDS):
+        logger.debug("Extracted UI requirements from spec")
         return UIRequirements(description=combined_content)
 
+    logger.debug("No UI keywords found in Protocol/Contract sections")
     return None

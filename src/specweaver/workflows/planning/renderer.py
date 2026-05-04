@@ -11,9 +11,12 @@ human-readable Markdown view. Reasoning is omitted by default
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from specweaver.workflows.planning.models import KNOWN_ARCHETYPES
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.workflows.planning.models import PlanArtifact
@@ -162,6 +165,9 @@ def render_plan_markdown(plan: PlanArtifact, *, verbose: bool = False) -> str:
         Markdown string.
     """
     parts: list[str] = []
+
+    logger.debug("Rendering Markdown for plan: %s", plan.spec_name)
+
     parts.extend(_render_header(plan))
     parts.extend(_render_architecture(plan))
     parts.extend(_render_tech_stack(plan))

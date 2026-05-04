@@ -159,6 +159,7 @@ def _resolve_scope(
     try:
         rel = target_path.relative_to(project_path)
     except ValueError:
+        logger.debug("Target path %s not relative to %s", target_path, project_path)
         return "."
 
     # Build all parent prefixes from longest to shortest

@@ -16,9 +16,13 @@ enabling threshold-based filtering and structured decision criteria.
 
 from __future__ import annotations
 
+import logging
+
 from pydantic import BaseModel, Field
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+
+logger = logging.getLogger(__name__)
 
 
 class ComponentChange(BaseModel):

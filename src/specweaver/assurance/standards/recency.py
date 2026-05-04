@@ -16,8 +16,11 @@ Usage::
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -72,6 +75,7 @@ def recency_weight(file_mtime: float, half_life_days: float) -> float:
     """
     if half_life_days <= 0:
         msg = f"half_life_days must be positive, got {half_life_days}"
+        logger.error(msg)
         raise ValueError(msg)
 
     age_days = (time.time() - file_mtime) / 86400
@@ -108,7 +112,9 @@ def compute_half_life(project_path: Path) -> float:
     project_age_years = project_age_days / 365
 
     raw_half_life = project_age_years * _HALF_LIFE_SCALE
-    return min(_MAX_HALF_LIFE, max(_MIN_HALF_LIFE, raw_half_life))
+    final_half_life = min(_MAX_HALF_LIFE, max(_MIN_HALF_LIFE, raw_half_life))
+    logger.debug("Computed decay half-life for %s: %s days (age: %.1f years)", project_path.name, final_half_life, project_age_years)
+    return final_half_life
 
 
 def _find_oldest_source_mtime(directory: Path) -> float | None:

@@ -82,6 +82,7 @@ class TreeSitterAnalyzer(StandardsAnalyzer):
         """Calculate the recency weight of a file."""
         try:
             mtime = path.stat().st_mtime
-        except OSError:
+        except OSError as exc:
+            logger.debug("Failed to stat %s: %s", path, exc)
             mtime = time.time()
         return recency_weight(mtime, half_life_days=half_life_days)

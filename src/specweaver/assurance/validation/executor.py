@@ -32,7 +32,8 @@ def _get_rule_id_from_cls(rule_cls: type) -> str | None:
     try:
         result = rule_cls().rule_id
         return str(result) if result is not None else None
-    except Exception:
+    except Exception as exc:
+        logger.warning("Failed to resolve rule_id from %s: %s", getattr(rule_cls, "__name__", str(rule_cls)), exc)
         return None
 
 
@@ -106,7 +107,8 @@ def _get_rule_cls_for_step(rule_id: str) -> type | None:
         from specweaver.assurance.validation.registry import get_registry
 
         return get_registry().get(rule_id)
-    except Exception:
+    except Exception as exc:
+        logger.warning("Failed to look up rule class for '%s': %s", rule_id, exc)
         return None
 
 

@@ -91,9 +91,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
             try:
                 results.append(ext(parsed_files))
             except Exception as e:
-                import logging
-
-                logging.getLogger(__name__).warning(f"Failed to extract with {ext.__name__}: {e}")
+                logger.warning("Failed to extract with %s: %s", ext.__name__, e)
 
         return results
 
@@ -317,7 +315,8 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         """Get recency weight for a file."""
         try:
             mtime = path.stat().st_mtime
-        except OSError:
+        except OSError as exc:
+            logger.debug("Failed to stat %s: %s", path, exc)
             mtime = time.time()
         return recency_weight(mtime, half_life_days=half_life_days)
 

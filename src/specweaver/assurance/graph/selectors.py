@@ -18,8 +18,11 @@ Usage::
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from specweaver.assurance.graph.topology import TopologyGraph
@@ -66,6 +69,7 @@ class DirectNeighborSelector(ContextSelector):
         graph: TopologyGraph,
         module: str,
     ) -> set[str]:
+        logger.debug("DirectNeighborSelector isolating context for: %s", module)
         return graph.neighbors_within(module, depth=1)
 
 
@@ -88,6 +92,7 @@ class NHopConstraintSelector(ContextSelector):
         graph: TopologyGraph,
         module: str,
     ) -> set[str]:
+        logger.debug("NHopConstraintSelector isolating context for: %s (depth=%s)", module, self._depth)
         neighbours = graph.neighbors_within(module, depth=self._depth)
         shared = graph.modules_sharing_constraints(module)
         return neighbours | shared
@@ -106,6 +111,7 @@ class ConstraintOnlySelector(ContextSelector):
         graph: TopologyGraph,
         module: str,
     ) -> set[str]:
+        logger.debug("ConstraintOnlySelector isolating context for: %s", module)
         return graph.modules_sharing_constraints(module)
 
 
@@ -124,6 +130,7 @@ class ImpactWeightedSelector(ContextSelector):
         graph: TopologyGraph,
         module: str,
     ) -> set[str]:
+        logger.debug("ImpactWeightedSelector isolating context for: %s", module)
         neighbours = graph.neighbors_within(module, depth=2)
         impact = graph.impact_of(module)
         return neighbours | impact

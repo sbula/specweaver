@@ -14,7 +14,10 @@ See: docs/roadmap/phase_3/feature_3_1_implementation_plan.md §4-5.
 from __future__ import annotations
 
 import enum
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 
 class SpecKind(enum.StrEnum):
@@ -93,5 +96,10 @@ def get_presets(rule_id: str, kind: SpecKind | None) -> dict[str, object]:
         Dict of constructor kwargs to apply, or empty dict if no overrides.
     """
     if kind is None:
+        logger.debug("No spec kind provided, using code defaults for rule %s", rule_id)
         return {}
-    return dict(_PRESETS.get((rule_id, kind), {}))
+
+    presets = dict(_PRESETS.get((rule_id, kind), {}))
+    if presets:
+        logger.debug("Applying SpecKind overrides for %s (%s): %s", rule_id, kind.value, list(presets.keys()))
+    return presets

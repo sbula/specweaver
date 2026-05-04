@@ -61,6 +61,7 @@ def resolve_pipeline(
     if pipeline.name in _seen:
         chain = " -> ".join(_seen) + f" -> {pipeline.name}"
         msg = f"Circular extends detected: {chain}"
+        logger.error(msg)
         raise ValueError(msg)
     _seen.add(pipeline.name)
 
@@ -111,6 +112,7 @@ def _apply_remove(
                 f"'{pipeline.name}': not found in base '{pipeline.extends}'. "
                 f"Available: {sorted(step_names)}"
             )
+            logger.error(msg)
             raise ValueError(msg)
 
     remove_set = set(pipeline.remove)
@@ -135,6 +137,7 @@ def _apply_overrides(
                 f"'{pipeline.name}': not found in base '{pipeline.extends}'. "
                 f"Available: {sorted(step_names)}"
             )
+            logger.error(msg)
             raise ValueError(msg)
         for step in steps:
             if step.name == name:
@@ -194,4 +197,5 @@ def _find_step_index(
         f"Cannot find step '{name}' for add placement in pipeline "
         f"'{pipeline_name}'. Available: {step_names}"
     )
+    logger.error(msg)
     raise ValueError(msg)

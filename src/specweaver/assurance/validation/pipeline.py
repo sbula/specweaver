@@ -19,9 +19,12 @@ Architecture:
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 class ValidationStep(BaseModel):
@@ -70,7 +73,9 @@ class ValidationPipeline(BaseModel):
 
     def get_step(self, name: str) -> ValidationStep | None:
         """Find a step by name, or None if not found."""
+        logger.debug("Looking up validation step: %s", name)
         for step in self.steps:
             if step.name == name:
                 return step
+        logger.debug("Validation step '%s' not found", name)
         return None

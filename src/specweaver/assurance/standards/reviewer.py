@@ -211,5 +211,6 @@ class StandardsReviewer:
                     self._console.print("[red]Must be a JSON object (dict).[/red]")
                     continue
                 return replace(result, dominant=new_data)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
+                logger.debug("Failed to decode user JSON override: %s", exc)
                 self._console.print("[red]Invalid JSON. Try again.[/red]")
