@@ -51,6 +51,7 @@ def implement(
     - Implementation source file in src/
     - Test file in tests/
     """
+    logger.debug("Executing implement command")
     spec_path = Path(spec)
     if not spec_path.exists():
         _core.console.print(f"[red]Error:[/red] Spec not found: {spec}")

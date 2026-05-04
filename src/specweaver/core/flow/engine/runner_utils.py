@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    import logging
 
     from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
     from specweaver.core.flow.engine.state import PipelineRun, StepResult

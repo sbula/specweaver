@@ -63,6 +63,7 @@ def init(
     Creates .specweaver/ marker, context.yaml, specs/, templates.
     Registers the project in the SpecWeaver database and sets it as active.
     """
+    logger.debug("Executing init command")
     try:
         project_path = resolve_project_path(path)
     except (FileNotFoundError, NotADirectoryError) as exc:
@@ -116,6 +117,7 @@ def use(
     ),
 ) -> None:
     """Switch the active project."""
+    logger.debug("Executing use command")
     _core.get_db()
     proj = _run_workspace_op("get_project", name)
     if not proj:
@@ -142,6 +144,7 @@ def use(
 @workspace_cli.command()
 def projects() -> None:
     """List all registered projects."""
+    logger.debug("Executing projects command")
     _core.get_db()
     all_projects = _run_workspace_op("list_projects")
     active = _run_workspace_op("get_active_project")
@@ -183,6 +186,7 @@ def remove(
     ),
 ) -> None:
     """Unregister a project from SpecWeaver."""
+    logger.debug("Executing remove command")
     _core.get_db()
     proj = _run_workspace_op("get_project", name)
     if not proj:
@@ -214,6 +218,7 @@ def update(
     ),
 ) -> None:
     """Update a project setting (e.g., root path)."""
+    logger.debug("Executing update command")
     _core.get_db()
     if field == "path":
         try:
@@ -270,6 +275,7 @@ def _infer_subdirs(project_path: Path, inferrer: ContextInferrer) -> tuple[int, 
 @workspace_cli.command()
 def scan() -> None:
     """Scan the active project and auto-generate missing context.yaml files."""
+    logger.debug("Executing scan command")
     _core.get_db()
     active = _run_workspace_op("get_active_project")
     if not active:

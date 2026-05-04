@@ -20,6 +20,7 @@ _db: Database | None = None
 
 def set_db(db: Database) -> None:
     """Set the module-level DB instance (called during app lifespan)."""
+    logger.debug("Executing set_db API endpoint")
     global _db
     _db = db
 
@@ -30,6 +31,7 @@ def get_db() -> Database:
     Raises:
         RuntimeError: If the DB has not been set (app not started).
     """
+    logger.debug("Executing get_db API endpoint")
     if _db is None:
         msg = "Database not initialized. Is the server running?"
         raise RuntimeError(msg)

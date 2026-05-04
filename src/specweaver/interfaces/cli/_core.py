@@ -35,6 +35,7 @@ __all__ = ["_require_active_project", "app", "console", "get_db", "logger"]
 
 def _require_active_project() -> str:
     """Get the active project name or exit with error."""
+    logger.debug("Executing _require_active_project")
     from specweaver.workspace.project.interfaces.cli import _run_workspace_op
 
     get_db()
@@ -49,6 +50,7 @@ def _require_active_project() -> str:
 
 
 def _version_callback(value: bool) -> None:
+    logger.debug("Executing _version_callback (value=%s)", value)
     if value:
         console.print(f"SpecWeaver v{__version__}")
         raise typer.Exit()

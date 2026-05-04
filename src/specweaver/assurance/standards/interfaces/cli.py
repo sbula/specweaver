@@ -56,6 +56,7 @@ def standards_scan(  # noqa: C901
     Detects scopes (up to 2 levels deep), analyses source files per scope,
     and presents a combined HITL review (unless --no-review is set).
     """
+    logger.debug("Executing standards_scan command")
     import asyncio
 
     from specweaver.assurance.standards.discovery import discover_files
@@ -341,6 +342,7 @@ def standards_show(
     ),
 ) -> None:
     """Show discovered coding standards for the active project."""
+    logger.debug("Executing standards_show command")
     name = _core._require_active_project()
     _core.get_db()
 
@@ -392,6 +394,7 @@ def standards_clear(
     ),
 ) -> None:
     """Clear discovered standards for the active project."""
+    logger.debug("Executing standards_clear command")
     name = _core._require_active_project()
     _core.get_db()
 
@@ -406,6 +409,7 @@ def standards_clear(
 @standards_app.command("scopes")
 def standards_scopes() -> None:
     """Show a summary of detected and stored scopes."""
+    logger.debug("Executing standards_scopes command")
     name = _core._require_active_project()
     _core.get_db()
 

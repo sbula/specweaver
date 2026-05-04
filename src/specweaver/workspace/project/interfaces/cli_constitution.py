@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 import typer
 
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.project.constitution import check_constitution, find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
 from specweaver.workspace.project.interfaces.cli import _run_workspace_op
+
+logger = logging.getLogger(__name__)
 
 constitution_app = typer.Typer(
     name="constitution",
@@ -24,6 +28,7 @@ def constitution_show(
     ),
 ) -> None:
     """Display the current CONSTITUTION.md content."""
+    logger.debug("Executing constitution_show command")
     try:
         project_path = resolve_project_path(project)
     except (FileNotFoundError, NotADirectoryError) as exc:
@@ -54,6 +59,7 @@ def constitution_check(
     ),
 ) -> None:
     """Validate the constitution against size limits."""
+    logger.debug("Executing constitution_check command")
     try:
         project_path = resolve_project_path(project)
     except (FileNotFoundError, NotADirectoryError) as exc:
@@ -118,6 +124,7 @@ def constitution_init(
     ),
 ) -> None:
     """Create or reset the CONSTITUTION.md template."""
+    logger.debug("Executing constitution_init command")
     try:
         project_path = resolve_project_path(project)
     except (FileNotFoundError, NotADirectoryError) as exc:
@@ -171,6 +178,7 @@ def constitution_bootstrap(
     template, it will be auto-replaced. User-edited constitutions
     require --force to overwrite.
     """
+    logger.debug("Executing constitution_bootstrap command")
     try:
         project_path = resolve_project_path(project)
     except (FileNotFoundError, NotADirectoryError) as exc:

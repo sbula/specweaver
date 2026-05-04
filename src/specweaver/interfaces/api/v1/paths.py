@@ -20,6 +20,7 @@ def validate_relative_path(file_path: str) -> None:
     Raises:
         SpecWeaverAPIError: If path is absolute or contains ``..``.
     """
+    logger.debug("Executing validate_relative_path API endpoint")
     p = PurePosixPath(file_path)
     if p.is_absolute() or ".." in p.parts:
         raise SpecWeaverAPIError(

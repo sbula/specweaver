@@ -51,6 +51,7 @@ def draft(
     ),
 ) -> None:
     """Interactively draft a new component spec with LLM assistance."""
+    logger.debug("Executing draft command")
     try:
         project_path = resolve_project_path(project)
     except (FileNotFoundError, NotADirectoryError) as exc:
@@ -147,6 +148,7 @@ def review(
     Returns ACCEPTED or DENIED with structured findings.
     For code review, also provide --spec to compare against.
     """
+    logger.debug("Executing review command")
     target_path = Path(target)
     if not target_path.exists():
         _core.console.print(f"[red]Error:[/red] File not found: {target}")

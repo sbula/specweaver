@@ -187,6 +187,7 @@ def check(
 
     Override cascade is strictly pipeline YAML defaults -> applied pipeline configurations.
     """
+    logger.debug("Executing check command")
     # Trigger auto-registration of built-in rules
     import specweaver.assurance.validation.rules.code
     import specweaver.assurance.validation.rules.spec  # noqa: F401
@@ -280,6 +281,7 @@ def list_rules(
     ),
 ) -> None:
     """List all validation rules, grouped by pipeline in execution order."""
+    logger.debug("Executing list_rules command")
     # Trigger auto-registration
     import specweaver.assurance.validation.rules.code
     import specweaver.assurance.validation.rules.spec  # noqa: F401

@@ -21,6 +21,7 @@ router = APIRouter()
 @router.get("/healthz", response_model=HealthResponse)
 def healthz() -> HealthResponse:
     """Return service status and version."""
+    logger.debug("Executing healthz API endpoint")
     try:
         ver = version("specweaver")
     except Exception:

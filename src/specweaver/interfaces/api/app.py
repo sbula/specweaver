@@ -33,6 +33,7 @@ _event_bridge: EventBridge | None = None
 
 def get_event_bridge() -> EventBridge:
     """Get the shared EventBridge instance (lazy init)."""
+    logger.info("Initializing get_event_bridge")
     global _event_bridge
     if _event_bridge is None:
         from specweaver.interfaces.api.event_bridge import EventBridge
@@ -43,6 +44,7 @@ def get_event_bridge() -> EventBridge:
 
 def set_event_bridge(bridge: EventBridge) -> None:
     """Override the EventBridge (for testing)."""
+    logger.info("Initializing set_event_bridge")
     global _event_bridge
     _event_bridge = bridge
 
@@ -61,6 +63,7 @@ def create_app(
     Returns:
         Configured FastAPI app instance.
     """
+    logger.info("Initializing create_app")
     try:
         ver = version("specweaver")
     except Exception:

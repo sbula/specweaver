@@ -45,6 +45,7 @@ def serve(
 
     Requires 'pip install specweaver[serve]' for FastAPI and Uvicorn.
     """
+    logger.debug("Executing serve command (host=%s, port=%s)", host, port)
     try:
         import uvicorn
         from fastapi import FastAPI  # noqa: F401

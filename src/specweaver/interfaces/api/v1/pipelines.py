@@ -32,6 +32,7 @@ _db_dep = Depends(get_db)
 @router.get("/pipelines")
 def list_pipelines() -> list[dict[str, str]]:
     """List available pipeline templates."""
+    logger.debug("Executing list_pipelines API endpoint")
     from specweaver.core.flow.engine.parser import list_bundled_pipelines
 
     names = list_bundled_pipelines()
@@ -127,6 +128,7 @@ def get_run_status(
     detail: str = Query(default="summary", description="'summary' or 'full'."),
 ) -> dict[str, object]:
     """Get run status and step results."""
+    logger.debug("Executing get_run_status API endpoint")
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
@@ -170,6 +172,7 @@ def get_run_status(
 @router.get("/runs/{run_id}/log")
 def get_run_log(run_id: str) -> list[dict[str, object]]:
     """Get audit log for a pipeline run."""
+    logger.debug("Executing get_run_log API endpoint")
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
