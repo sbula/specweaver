@@ -22,8 +22,7 @@ This document tracks all capabilities related to process isolation, execution bo
   > _(from 3.26 discussion)_ | Massive architectural refactoring of flat directories into strict DDD boundaries. Moves L1-L5 phases to `workflows/` (drafting, review, implementation, planning), pure-logic discovery to `assurance/` (standards, validation), physical state to `workspace/` (project, context), and external endpoints to `interfaces/` (api, cli). Fixes all absolute Python imports across 3800 tests.
 * **`C-EXEC-04` 🔜: Concurrent Git Merge Orchestration**<br>
   > _(new)_ | Advanced flow-engine capability for Multi-Spec Pipeline Fan-Out. Uses 3-way AST semantic merging (rather than text-line merging) to automatically resolve non-overlapping AST conflicts from parallel agent worktrees. Halts and flags AST collisions for HITL.
-* **`C-EXEC-05` 🔜: Issue Tracker Atoms**
-  > _(new)_ | Tool suite providing secure CRUD operations (Create/Update/Block) for `US-28` SQLite state entities, strictly governed by role-based limits.
+
 
 ## DAL-B: High-Assurance
 * **`B-EXEC-01` 🔜: Ephemeral Podman Sub-Containers** (Legacy: 3.45)<br>
@@ -40,5 +39,5 @@ This document tracks all capabilities related to process isolation, execution bo
   > _(new)_ | Replaces parameterised scenarios with dynamically written `libFuzzer` logic loops against the generated AST for deep memory safety checks on C++/Rust targets.
 * **`A-EXEC-03` 🔜: Rust PyO3 AST & Sandbox C-Bindings** (Legacy: Backlog)<br>
   > _(new)_ | Polyglot AST Skeleton Extractor & Macro Evaluator natively in Rust (using Rayon for C-level concurrency). Git Worktree Bouncer Sandbox: Replace the OS-level `subprocess.run(["git"])` Python diff-striping mechanics with native Rust `libgit2` C-bindings.
-* **`A-EXEC-04` 🔜: SQLite Row-Level Task Locking**
-  > _(new)_ | Transactional concurrency mechanism preventing multiple autonomous agents from checking out and modifying the same file or task simultaneously.
+* **`A-EXEC-04` 🔜: Advanced Row-Level Task Locking**
+  > _(new)_ | Advanced transactional concurrency beyond basic OCC. Pessimistic row-level locking (SELECT FOR UPDATE semantics), WAL2 mode evaluation, and multi-agent deadlock detection for fleets of 20+ simultaneous agents. Builds on `B-INTL-09`'s basic heartbeat/OCC foundation.

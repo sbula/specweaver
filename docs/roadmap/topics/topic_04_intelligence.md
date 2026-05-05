@@ -19,8 +19,8 @@ This document tracks all capabilities related to LLM integration, specification 
   > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Eliminates "Blank Canvas" LLM hallucinations during greenfield bootstrap. Injects an interactive CLI wizard (persistence, authentication, archetype choices) bounding the LLM's solution space securely into a localized `context.yaml` before `sw plan` or `sw draft` engages.
 * **`D-INTL-05` ✅: Project Metadata Injection** (Legacy: 3.15)<br>
   > _(new)_ | Inject project name, archetype, language target, date, active config into system prompt; similar to Aider's `get_platform_info()`. **Complete**: 3587 tests.
-* **`D-INTL-06` 🔜: Context Hydration Engine**
-  > _(new)_ | Specialized retrieval layer that fetches the active Task state, blockers, and handover notes from the Memory Bank and injects them into the agent's prompt.
+* **`D-INTL-06` 🔜: Context Hydration & Handover Engine**
+  > _(new)_ | Specialized retrieval layer that fetches the active Task state, blockers, and handover notes from the Memory Bank, validates them via Pydantic (8KB token limit), and injects structured context into the agent's prompt. Includes handover protocols for safely passing accumulated context between agents without hallucination transfer.
 
 ## DAL-C: Enterprise Standard
 * **`C-INTL-01` ✅: Iterative Decomposition** (Legacy: 3.24)<br>
@@ -49,12 +49,8 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario, and mathematically determines whether the code failed the scenario, or if the scenario was written incorrectly.
 * **`B-INTL-08` 🔮: Semantic Code Review**<br>
   > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system.
-* **`B-INTL-09` 🔜: SQLite Agent Memory Schema**
-  > _(new)_ | The structural SQL foundation defining `Task`, `Epic`, `State`, and `Defect` entities. The core backend of the Agent Memory Bank (US-28).
-* **`B-INTL-10` 🔜: Agentic Workflow State Ledger**
-  > _(new)_ | The runtime orchestration logic for multi-step autonomous tasks, handling states, retries, and context decay.
-* **`B-INTL-11` 🔜: Structured Handover Tooling**
-  > _(new)_ | Protocols for one agent to safely pass a `Task` and its accumulated context block to another agent without hallucination.
+* **`B-INTL-09` 🔜: Agent Memory Bank**
+  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_
 
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>

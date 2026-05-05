@@ -18,7 +18,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
 1. **Candidate A: US-28 Foundation — Agent Memory Bank**
-   * **Features:** `INT-US-28`, `B-INTL-09` SQLite Agent Memory Schema + `C-EXEC-05` Issue Tracker Atoms + `D-INTL-06` Context Hydration
+   * **Features:** `INT-US-28`, `B-INTL-09` Agent Memory Bank (Schema + CRUD + Resilience) + `D-INTL-06` Context Hydration & Handover
    * **Pros:** The single most critical architectural bottleneck. Unblocks `US-4` (Context-Aware Flow), `US-3` (Autonomous Implementation), and `US-19` (Fleet Orchestration). Solves agent context hallucination.
    * **Cons:** Foundational data-layer work; delays immediate user-facing UX features.
 2. **Candidate B: US-4 Completion — Base Integration Contract**
@@ -519,7 +519,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Intelligent Resolution:**
         *   `[ ]` **INT-US-24-SUB:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-INTL-10:** Error Attribution Arbiter
+        *   `[ ]` **B-INTL-07:** Error Attribution Arbiter
 
 ### 🟢 US-25: Compliance & Constitution Governance
 **Benefit:** *I can enforce project-wide rules (Constitutions) and domain-specific profiles (e.g., 'Web App' vs 'ML Model') that dynamically override agent behavior.*
@@ -564,18 +564,12 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *AI Agents can seamlessly hand over complex tasks to one another and prevent context degradation by storing session state, active tasks, and blockers in a structured, local SQLite Memory Bank.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-28:** Base Integration Contract defined in [US-28_integration.md](topics/topic_08_integration/US-28_integration.md)
-    *   `[ ]` **B-INTL-09:** SQLite Agent Memory Schema (Entities, States, Roles)
-    *   `[ ]` **C-EXEC-05:** Issue Tracker Atoms (CRUD operations for state)
-    *   `[ ]` **D-INTL-06:** Context Hydration (Injecting active task state into prompt)
+    *   `[ ]` **B-INTL-09:** Agent Memory Bank (Schema + CRUD + Resilience) — [Design](features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md)
+    *   `[ ]` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols)
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Graceful Handover Protocols:**
+    *   🔴 **Advanced Multi-Agent Concurrency:**
         *   `[ ]` **INT-US-28-SUB:** Sub-Story Integration
-        *   `[ ]` **B-INTL-11:** Structured Handover Tooling
-    *   🔴 **Multi-Agent Concurrency & Locking:**
-        *   `[ ]` **INT-US-28-SUB:** Sub-Story Integration
-        *   `[ ]` **A-EXEC-04:** SQLite Row-Level Task Locking
-    *   🔴 **Design Documentation:**
-        *   `[ ]` **B-INTL-10:** Agentic Workflow State Ledger (see [Analysis](../../analysis/agent_workflow_tracker_brainstorm.md))
+        *   `[ ]` **A-EXEC-04:** Advanced Row-Level Task Locking (Pessimistic Locks, WAL2, Deadlock Detection)
 
 ---
 
