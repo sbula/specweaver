@@ -171,13 +171,13 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | SQLAlchemy Schema & Alembic Definitions | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-1 | SQLAlchemy Schema & Alembic Definitions | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | SF-2 | Core CRUD & State Machine | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-3 | DAG & Context Validation | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-4 | Resilience & Recovery | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Implementation Plan APPROVED.
-**Next step**: Run `/dev docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf1_implementation_plan.md` to begin implementation.
+**Current status**: SF-1 Pre-commit completed. Ready for commit.
+**Next step**: Run `git commit` to mark SF-1 as Committed, then proceed to `/implementation-plan` for SF-2.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

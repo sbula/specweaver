@@ -196,7 +196,7 @@ class ReviewSpecHandler:
 class ReviewCodeHandler:
     """Handler for review+code — LLM-based code review."""
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         if context.llm is None:

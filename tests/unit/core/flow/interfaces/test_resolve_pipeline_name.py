@@ -107,8 +107,9 @@ class TestActiveProfileRouting:
 
     def test_component_with_profile_uses_profile_pipeline(self, monkeypatch) -> None:
         """Active profile for a project auto-selects profile YAML."""
-        monkeypatch.setattr(
-            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+        monkeypatch.setitem(
+            _resolve_pipeline_name.__globals__,
+            "_run_workspace_op",
             lambda *args, **kwargs: "web-app",
         )
         monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
@@ -120,8 +121,9 @@ class TestActiveProfileRouting:
         assert result == "validation_spec_web_app"
 
     def test_component_with_library_profile(self, monkeypatch) -> None:
-        monkeypatch.setattr(
-            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+        monkeypatch.setitem(
+            _resolve_pipeline_name.__globals__,
+            "_run_workspace_op",
             lambda *args, **kwargs: "library",
         )
         monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
@@ -133,8 +135,9 @@ class TestActiveProfileRouting:
         assert result == "validation_spec_library"
 
     def test_component_with_data_pipeline_profile(self, monkeypatch) -> None:
-        monkeypatch.setattr(
-            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+        monkeypatch.setitem(
+            _resolve_pipeline_name.__globals__,
+            "_run_workspace_op",
             lambda *args, **kwargs: "data-pipeline",
         )
         monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
@@ -165,8 +168,9 @@ class TestDefaultLevelFallback:
 
     def test_component_no_profile_returns_default(self, monkeypatch) -> None:
         """Project with no profile set falls back to spec_default."""
-        monkeypatch.setattr(
-            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+        monkeypatch.setitem(
+            _resolve_pipeline_name.__globals__,
+            "_run_workspace_op",
             lambda *args, **kwargs: None,
         )
         monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
@@ -183,8 +187,9 @@ class TestDefaultLevelFallback:
 
     def test_code_level_ignores_active_profile(self, monkeypatch) -> None:
         """code level routes to code pipeline regardless of profile."""
-        monkeypatch.setattr(
-            "specweaver.assurance.validation.interfaces.cli._run_workspace_op",
+        monkeypatch.setitem(
+            _resolve_pipeline_name.__globals__,
+            "_run_workspace_op",
             lambda *args, **kwargs: "web-app",
         )
         monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)

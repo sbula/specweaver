@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from specweaver.core.flow.store import Base as FlowBase  # noqa: E402
 from specweaver.infrastructure.llm.store import Base as LlmBase  # noqa: E402
 from specweaver.workspace.store import Base as WorkspaceBase  # noqa: E402
+import specweaver.workspace.memory.store  # noqa: E402, F401
 
 target_metadata = [LlmBase.metadata, WorkspaceBase.metadata, FlowBase.metadata]
 
@@ -50,6 +51,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_as_batch=True,
     )
 
     with context.begin_transaction():
@@ -60,6 +62,7 @@ def do_run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
+        render_as_batch=True,
     )
 
     with context.begin_transaction():

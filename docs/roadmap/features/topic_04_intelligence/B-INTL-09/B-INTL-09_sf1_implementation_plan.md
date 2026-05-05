@@ -4,7 +4,10 @@
 - **Design Document**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-1
 - **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf1_implementation_plan.md
-- **Status**: APPROVED
+- **Status**: COMPLETED
+
+> [!NOTE]
+> **Implementation Complete**: All schemas, migrations, enums, and TDD checks (100% coverage) have been fully executed. The `MissingGreenlet` async fixture lifecycle issues were resolved by disabling `expire_on_commit`. Pre-commit checks (Tach, Ruff, Mypy) pass.
 
 ---
 

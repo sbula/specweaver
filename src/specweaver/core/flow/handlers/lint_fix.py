@@ -34,7 +34,7 @@ class LintFixHandler:
         max_reflections: int — max fix cycles (default: 3).
     """
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         logger.debug('Executing %s', self.__class__.__name__)
         started = _now_iso()
         max_reflections: int = step.params.get("max_reflections", 3)

@@ -201,3 +201,41 @@ class TestSessionScope:
 
         # At most 2 sessions should have been active at the same time
         assert max_observed == 2
+
+class TestFKPragmaListener:
+    def test_happy_path_sync_engine(self) -> None:
+        """Happy Path: Listener enables PRAGMA foreign_keys=ON on connect."""
+        import sqlalchemy as sa
+
+        from specweaver.core.config.database import register_fk_pragma_listener
+
+        engine = sa.create_engine("sqlite:///:memory:")
+        register_fk_pragma_listener(engine)
+
+        with engine.connect() as conn:
+            result = conn.execute(sa.text("PRAGMA foreign_keys")).scalar()
+            assert result == 1
+
+    @pytest.mark.asyncio
+    async def test_happy_path_async_engine(self) -> None:
+        """Boundary/Edge Case: Listener works with AsyncEngine.sync_engine."""
+        import sqlalchemy as sa
+        from sqlalchemy.ext.asyncio import create_async_engine
+
+        from specweaver.core.config.database import register_fk_pragma_listener
+
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        register_fk_pragma_listener(engine.sync_engine)
+
+        async with engine.begin() as conn:
+            result = await conn.execute(sa.text("PRAGMA foreign_keys"))
+            assert result.scalar() == 1
+
+    def test_hostile_input_invalid_engine(self) -> None:
+        """Hostile Input: Passing a non-engine string fails fast."""
+        from sqlalchemy.exc import InvalidRequestError
+
+        from specweaver.core.config.database import register_fk_pragma_listener
+
+        with pytest.raises(InvalidRequestError):
+            register_fk_pragma_listener("not-an-engine")

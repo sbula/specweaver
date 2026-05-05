@@ -26,6 +26,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.types import String, TypeDecorator
 
@@ -284,3 +285,16 @@ class Database:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def register_fk_pragma_listener(engine_or_sync_engine) -> None:  # type: ignore[no-untyped-def]
+    """Register a 'connect' event listener that enables PRAGMA foreign_keys=ON.
+
+    For AsyncEngine, pass engine.sync_engine.
+    For sync Engine, pass the engine directly.
+    This ensures all CASCADE rules are enforced on every new connection.
+    """
+    @event.listens_for(engine_or_sync_engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):  # type: ignore[no-untyped-def]
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
