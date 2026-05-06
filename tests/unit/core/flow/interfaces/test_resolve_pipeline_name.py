@@ -112,7 +112,9 @@ class TestActiveProfileRouting:
             "_run_workspace_op",
             lambda *args, **kwargs: "web-app",
         )
-        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None
+        )
         result = _resolve_pipeline_name(
             level="component",
             pipeline=None,
@@ -126,7 +128,9 @@ class TestActiveProfileRouting:
             "_run_workspace_op",
             lambda *args, **kwargs: "library",
         )
-        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None
+        )
         result = _resolve_pipeline_name(
             level="component",
             pipeline=None,
@@ -140,7 +144,9 @@ class TestActiveProfileRouting:
             "_run_workspace_op",
             lambda *args, **kwargs: "data-pipeline",
         )
-        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None
+        )
         result = _resolve_pipeline_name(
             level="component",
             pipeline=None,
@@ -173,7 +179,9 @@ class TestDefaultLevelFallback:
             "_run_workspace_op",
             lambda *args, **kwargs: None,
         )
-        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None
+        )
         result = _resolve_pipeline_name(
             level="component",
             pipeline=None,
@@ -192,7 +200,9 @@ class TestDefaultLevelFallback:
             "_run_workspace_op",
             lambda *args, **kwargs: "web-app",
         )
-        monkeypatch.setattr("specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None)
+        monkeypatch.setattr(
+            "specweaver.assurance.validation.interfaces.cli._core.get_db", lambda: None
+        )
         result = _resolve_pipeline_name(
             level="code",
             pipeline=None,

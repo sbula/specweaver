@@ -15,6 +15,7 @@ from specweaver.sandbox.protocol.core.protocol_interfaces import (
 
 logger = logging.getLogger(__name__)
 
+
 class GRPCParser(ProtocolSchemaInterface):
     """
     Native Python extractor for gRPC (.proto) format documents.

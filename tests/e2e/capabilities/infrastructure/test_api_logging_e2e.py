@@ -14,14 +14,15 @@ from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_lo
 if TYPE_CHECKING:
     from pathlib import Path
 
+
 @pytest.mark.asyncio
 async def test_api_execution_writes_json_telemetry(tmp_path: Path) -> None:
     from unittest.mock import patch
 
-    with patch('specweaver.telemetry_logger._get_logs_dir', return_value=tmp_path):
+    with patch("specweaver.telemetry_logger._get_logs_dir", return_value=tmp_path):
         teardown_logging()
-        setup_logging('test_project')
-        log_file = get_log_path('test_project')
+        setup_logging("test_project")
+        log_file = get_log_path("test_project")
 
         db = Database(tmp_path / "test.db")
         app = create_app(db=db)
@@ -33,24 +34,27 @@ async def test_api_execution_writes_json_telemetry(tmp_path: Path) -> None:
             assert response.status_code == 200
 
             # Flush logging
-            for h in logging.getLogger('specweaver').handlers:
+            for h in logging.getLogger("specweaver").handlers:
                 h.flush()
 
             # JSON Telemetry Written
             assert log_file.exists()
-            content = log_file.read_text(encoding='utf-8')
+            content = log_file.read_text(encoding="utf-8")
 
             # Look for the log
             found_app_init = False
             found_health_exec = False
 
-            for line in content.strip().split('\n'):
+            for line in content.strip().split("\n"):
                 try:
                     record = json.loads(line)
-                    msg = record.get('message', '')
-                    if 'Initializing create_app' in msg:
+                    msg = record.get("message", "")
+                    if "Initializing create_app" in msg:
                         found_app_init = True
-                    if record.get('levelname') == 'DEBUG' and 'Executing healthz API endpoint' in msg:
+                    if (
+                        record.get("levelname") == "DEBUG"
+                        and "Executing healthz API endpoint" in msg
+                    ):
                         found_health_exec = True
                 except json.JSONDecodeError:
                     continue

@@ -15,6 +15,7 @@ from specweaver.sandbox.protocol.core.protocol_interfaces import (
 
 logger = logging.getLogger(__name__)
 
+
 class OpenAPIParser(ProtocolSchemaInterface):
     """Parses OpenAPI 3.x yaml into strictly typed protocol nodes."""
 

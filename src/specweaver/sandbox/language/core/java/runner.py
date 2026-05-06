@@ -27,10 +27,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-
-
-
 logger = logging.getLogger(__name__)
+
 
 class JavaRunner(QARunnerInterface):
     """Java compilation, testing, and linting pipeline."""

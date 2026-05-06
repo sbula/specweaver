@@ -113,7 +113,12 @@ def compute_half_life(project_path: Path) -> float:
 
     raw_half_life = project_age_years * _HALF_LIFE_SCALE
     final_half_life = min(_MAX_HALF_LIFE, max(_MIN_HALF_LIFE, raw_half_life))
-    logger.debug("Computed decay half-life for %s: %s days (age: %.1f years)", project_path.name, final_half_life, project_age_years)
+    logger.debug(
+        "Computed decay half-life for %s: %s days (age: %.1f years)",
+        project_path.name,
+        final_half_life,
+        project_age_years,
+    )
     return final_half_life
 
 

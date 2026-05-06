@@ -286,6 +286,7 @@ class Database:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def register_fk_pragma_listener(engine_or_sync_engine) -> None:  # type: ignore[no-untyped-def]
     """Register a 'connect' event listener that enables PRAGMA foreign_keys=ON.
 
@@ -293,6 +294,7 @@ def register_fk_pragma_listener(engine_or_sync_engine) -> None:  # type: ignore[
     For sync Engine, pass the engine directly.
     This ensures all CASCADE rules are enforced on every new connection.
     """
+
     @event.listens_for(engine_or_sync_engine, "connect")
     def _set_sqlite_pragma(dbapi_connection, connection_record):  # type: ignore[no-untyped-def]
         cursor = dbapi_connection.cursor()

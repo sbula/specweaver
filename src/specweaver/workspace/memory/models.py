@@ -20,11 +20,21 @@ class HandoverContext(BaseModel):
     Total serialized size must not exceed 8KB (NFR-6).
     """
 
-    files_touched: list[str] = Field(default_factory=list, description="Files modified during this task")
-    errors_encountered: list[str] = Field(default_factory=list, description="Error messages hit during execution")
-    stack_trace: str | None = Field(default=None, description="Last stack trace, truncated to 2000 chars")
-    summary: str | None = Field(default=None, max_length=2000, description="Free-form summary of progress")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional key-value telemetry")
+    files_touched: list[str] = Field(
+        default_factory=list, description="Files modified during this task"
+    )
+    errors_encountered: list[str] = Field(
+        default_factory=list, description="Error messages hit during execution"
+    )
+    stack_trace: str | None = Field(
+        default=None, description="Last stack trace, truncated to 2000 chars"
+    )
+    summary: str | None = Field(
+        default=None, max_length=2000, description="Free-form summary of progress"
+    )
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Additional key-value telemetry"
+    )
 
     @field_validator("stack_trace", mode="after")
     @classmethod

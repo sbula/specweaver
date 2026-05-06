@@ -1,4 +1,5 @@
 """Agent Memory Bank — custom exceptions."""
+
 import uuid
 
 from specweaver.workspace.memory.store import TaskStatus
@@ -18,8 +19,7 @@ class IllegalStateTransitionError(Exception):
         self.from_status = from_status
         self.to_status = to_status
         super().__init__(
-            f"Illegal state transition for task {task_id}: "
-            f"{from_status.value} → {to_status.value}"
+            f"Illegal state transition for task {task_id}: {from_status.value} → {to_status.value}"
         )
 
 
@@ -71,6 +71,5 @@ class StaleTaskVersionError(Exception):
         self.expected_version = expected_version
         self.actual_version = actual_version
         super().__init__(
-            f"Stale version for task {task_id}: "
-            f"expected {expected_version}, found {actual_version}"
+            f"Stale version for task {task_id}: expected {expected_version}, found {actual_version}"
         )

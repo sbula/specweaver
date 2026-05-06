@@ -21,7 +21,7 @@ class EnrichStandardsHandler:
     """Handler for enrich+standards."""
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
-        logger.debug('Executing %s', self.__class__.__name__)
+        logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
 
         scope_files = step.params.get("scope_files", [])

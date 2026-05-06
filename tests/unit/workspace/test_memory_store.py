@@ -57,7 +57,9 @@ async def base_project(session: AsyncSession) -> Project:
 
 @pytest.mark.asyncio
 class TestMemoryStore:
-    async def test_create_task_happy_path(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_create_task_happy_path(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Happy path: Create task with all defaults and verify state."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -76,7 +78,9 @@ class TestMemoryStore:
         assert task.version == 1
         assert task.attempt_count == 0
 
-    async def test_create_epic_happy_path(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_create_epic_happy_path(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Happy path: Create epic with defaults."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -131,7 +135,9 @@ class TestMemoryStore:
         await session.refresh(task)
         assert task.epic_id == epic.id
 
-    async def test_task_dependency_composite_pk(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_task_dependency_composite_pk(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Happy path: Can create a DAG edge between two tasks."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -146,7 +152,9 @@ class TestMemoryStore:
         await session.refresh(dep)
         assert dep.parent_task_id == t1.id
 
-    async def test_task_dependency_prevents_duplicate(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_task_dependency_prevents_duplicate(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Boundary: Duplicate dependency edges raise IntegrityError."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -161,7 +169,9 @@ class TestMemoryStore:
         with pytest.raises(IntegrityError, match="UNIQUE constraint failed"):
             await session.commit()
 
-    async def test_state_transition_audit_trail(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_state_transition_audit_trail(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Happy path: Create state transition audit record."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -200,7 +210,9 @@ class TestMemoryStore:
         await session.refresh(defect)
         assert defect.status == DefectStatus.OPEN
 
-    async def test_fk_cascade_on_project_delete(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_fk_cascade_on_project_delete(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Boundary: Deleting project wipes tasks."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -214,7 +226,9 @@ class TestMemoryStore:
         result = await session.execute(sa.select(Task).where(Task.project_name == project_name))
         assert result.scalar_one_or_none() is None
 
-    async def test_fk_cascade_on_task_delete(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_fk_cascade_on_task_delete(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Boundary: Deleting task wipes transitions, dependencies, and defects."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -242,18 +256,24 @@ class TestMemoryStore:
         assert (await session.execute(sa.select(StateTransition))).scalar_one_or_none() is None
         assert (await session.execute(sa.select(Defect))).scalar_one_or_none() is None
 
-    async def test_task_status_enum_values(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_task_status_enum_values(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Happy path: All TaskStatus enums save successfully."""
         now = datetime.now(UTC)
         project_name = base_project.name
         for status in TaskStatus:
-            task = Task(project_name=project_name, title="T", status=status, created_at=now, updated_at=now)
+            task = Task(
+                project_name=project_name, title="T", status=status, created_at=now, updated_at=now
+            )
             session.add(task)
         await session.commit()
         count = (await session.execute(sa.select(sa.func.count()).select_from(Task))).scalar()
         assert count == len(TaskStatus)
 
-    async def test_transition_reason_enum_values(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_transition_reason_enum_values(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Happy path: All TransitionReason enums save successfully."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -271,7 +291,9 @@ class TestMemoryStore:
             )
             session.add(st)
         await session.commit()
-        count = (await session.execute(sa.select(sa.func.count()).select_from(StateTransition))).scalar()
+        count = (
+            await session.execute(sa.select(sa.func.count()).select_from(StateTransition))
+        ).scalar()
         assert count == len(TransitionReason)
 
     async def test_indexes_exist(self) -> None:
@@ -286,7 +308,9 @@ class TestMemoryStore:
         assert "idx_dep_child" in dep_indexes
         assert "idx_dep_parent" in dep_indexes
 
-    async def test_self_dependency_rejected(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_self_dependency_rejected(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Hostile Input: Task depending on itself violates CHECK constraint."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -299,7 +323,9 @@ class TestMemoryStore:
         with pytest.raises(IntegrityError, match="CHECK constraint failed: chk_no_self_dependency"):
             await session.commit()
 
-    async def test_handover_context_length_limit(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_handover_context_length_limit(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Boundary: handover_context > 8192 bytes violates CHECK constraint."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -314,7 +340,9 @@ class TestMemoryStore:
         with pytest.raises(IntegrityError, match="CHECK constraint failed: chk_handover_length"):
             await session.commit()
 
-    async def test_defect_description_length_limit(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_defect_description_length_limit(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Boundary: Defect description > 8192 bytes violates CHECK constraint."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -332,7 +360,9 @@ class TestMemoryStore:
         with pytest.raises(IntegrityError, match="CHECK constraint failed: chk_defect_desc_length"):
             await session.commit()
 
-    async def test_defect_status_enum_values(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_defect_status_enum_values(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Happy path: All DefectStatus enums save successfully."""
         now = datetime.now(UTC)
         project_name = base_project.name
@@ -352,20 +382,28 @@ class TestMemoryStore:
         count = (await session.execute(sa.select(sa.func.count()).select_from(Defect))).scalar()
         assert count == len(DefectStatus)
 
-    async def test_version_and_attempt_constraints(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_version_and_attempt_constraints(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Boundary: version and attempt_count constraints."""
         now = datetime.now(UTC)
         project_name = base_project.name
 
         # version < 1
-        task1 = Task(project_name=project_name, title="T1", version=0, created_at=now, updated_at=now)
+        task1 = Task(
+            project_name=project_name, title="T1", version=0, created_at=now, updated_at=now
+        )
         session.add(task1)
         with pytest.raises(IntegrityError, match="CHECK constraint failed: chk_version_positive"):
             await session.commit()
         await session.rollback()
 
         # attempt_count < 0
-        task2 = Task(project_name=project_name, title="T2", attempt_count=-1, created_at=now, updated_at=now)
+        task2 = Task(
+            project_name=project_name, title="T2", attempt_count=-1, created_at=now, updated_at=now
+        )
         session.add(task2)
-        with pytest.raises(IntegrityError, match="CHECK constraint failed: chk_attempts_non_negative"):
+        with pytest.raises(
+            IntegrityError, match="CHECK constraint failed: chk_attempts_non_negative"
+        ):
             await session.commit()

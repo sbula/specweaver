@@ -33,7 +33,11 @@ def _get_rule_id_from_cls(rule_cls: type) -> str | None:
         result = rule_cls().rule_id
         return str(result) if result is not None else None
     except Exception as exc:
-        logger.warning("Failed to resolve rule_id from %s: %s", getattr(rule_cls, "__name__", str(rule_cls)), exc)
+        logger.warning(
+            "Failed to resolve rule_id from %s: %s",
+            getattr(rule_cls, "__name__", str(rule_cls)),
+            exc,
+        )
         return None
 
 

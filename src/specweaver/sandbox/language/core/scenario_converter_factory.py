@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 __all__ = ["create_scenario_converter", "detect_scenario_extension"]
 
 
-
 logger = logging.getLogger(__name__)
+
 
 def create_scenario_converter(cwd: Path) -> ScenarioConverterInterface:
     """Create the appropriate ``ScenarioConverterInterface`` for the detected language.

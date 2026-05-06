@@ -101,5 +101,7 @@ def get_presets(rule_id: str, kind: SpecKind | None) -> dict[str, object]:
 
     presets = dict(_PRESETS.get((rule_id, kind), {}))
     if presets:
-        logger.debug("Applying SpecKind overrides for %s (%s): %s", rule_id, kind.value, list(presets.keys()))
+        logger.debug(
+            "Applying SpecKind overrides for %s (%s): %s", rule_id, kind.value, list(presets.keys())
+        )
     return presets

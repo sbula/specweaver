@@ -21,7 +21,7 @@ def test_handover_context_model_full() -> None:
         errors_encountered=["ImportError"],
         stack_trace="Traceback...",
         summary="Working on it",
-        metadata={"attempts": 1, "retry": True, "worker": "agent-1", "score": 0.95}
+        metadata={"attempts": 1, "retry": True, "worker": "agent-1", "score": 0.95},
     )
     assert ctx.files_touched == ["foo.py"]
     assert ctx.errors_encountered == ["ImportError"]
@@ -116,4 +116,3 @@ def test_handover_context_truncate_empty_string() -> None:
     """[Boundary/Edge Case] truncate_stack_trace correctly handles empty strings without error."""
     ctx = HandoverContext(stack_trace="")
     assert ctx.stack_trace == ""
-

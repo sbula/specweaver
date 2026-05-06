@@ -80,8 +80,8 @@ __all__ = [
 ]
 
 
-
 logger = logging.getLogger(__name__)
+
 
 class StepHandlerRegistry:
     """Maps (action, target) pairs to handler instances.

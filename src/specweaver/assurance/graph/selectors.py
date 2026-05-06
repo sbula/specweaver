@@ -92,7 +92,9 @@ class NHopConstraintSelector(ContextSelector):
         graph: TopologyGraph,
         module: str,
     ) -> set[str]:
-        logger.debug("NHopConstraintSelector isolating context for: %s (depth=%s)", module, self._depth)
+        logger.debug(
+            "NHopConstraintSelector isolating context for: %s (depth=%s)", module, self._depth
+        )
         neighbours = graph.neighbors_within(module, depth=self._depth)
         shared = graph.modules_sharing_constraints(module)
         return neighbours | shared

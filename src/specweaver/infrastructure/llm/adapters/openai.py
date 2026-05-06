@@ -154,7 +154,10 @@ class OpenAIAdapter(LLMAdapter):
             try:
                 args = json.loads(tc.function.arguments)
             except Exception:
-                logger.warning("OpenAIAdapter.generate_with_tools: failed to parse JSON arguments for tool %s", tc.function.name)
+                logger.warning(
+                    "OpenAIAdapter.generate_with_tools: failed to parse JSON arguments for tool %s",
+                    tc.function.name,
+                )
                 args = {}
 
             result = await tool_executor.execute(tc.function.name, args)  # type: ignore

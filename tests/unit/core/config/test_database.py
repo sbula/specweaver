@@ -202,6 +202,7 @@ class TestSessionScope:
         # At most 2 sessions should have been active at the same time
         assert max_observed == 2
 
+
 class TestFKPragmaListener:
     def test_happy_path_sync_engine(self) -> None:
         """Happy Path: Listener enables PRAGMA foreign_keys=ON on connect."""

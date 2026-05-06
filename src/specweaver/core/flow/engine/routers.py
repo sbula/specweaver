@@ -15,6 +15,7 @@ from specweaver.core.flow.engine.models import RouterDefinition, RouterRule, Rul
 
 logger = logging.getLogger(__name__)
 
+
 class RouterEvaluator:
     """Evaluates RouterDefinitions against runtime step results to decide next targets."""
 

@@ -20,8 +20,10 @@ __all__ = ["register_fk_pragma_listener"]
 
 # ── Enums ──────────────────────────────────────────────────────────────
 
+
 class TaskStatus(enum.Enum):
     """Finite state machine states for Task entities."""
+
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"
@@ -32,18 +34,21 @@ class TaskStatus(enum.Enum):
 
 class EpicStatus(enum.Enum):
     """Simple open/closed status for Epic grouping containers."""
+
     OPEN = "OPEN"
     CLOSED = "CLOSED"
 
 
 class DefectStatus(enum.Enum):
     """Formalized status tracking for defects."""
+
     OPEN = "OPEN"
     RESOLVED = "RESOLVED"
 
 
 class TransitionReason(enum.Enum):
     """Bounded reason enum for StateTransition audit trail (AD-19)."""
+
     ACQUIRED = "ACQUIRED"
     RELEASED = "RELEASED"
     COMPLETED = "COMPLETED"
@@ -59,18 +64,20 @@ class TransitionReason(enum.Enum):
 
 
 ALLOWED_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
-    TaskStatus.PENDING:          {TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.UPSTREAM_BLOCKED},
-    TaskStatus.IN_PROGRESS:      {TaskStatus.PENDING, TaskStatus.DONE, TaskStatus.BLOCKED},
-    TaskStatus.DONE:             {TaskStatus.IN_PROGRESS, TaskStatus.ARCHIVED},
-    TaskStatus.BLOCKED:          {TaskStatus.PENDING, TaskStatus.ARCHIVED},
+    TaskStatus.PENDING: {TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.UPSTREAM_BLOCKED},
+    TaskStatus.IN_PROGRESS: {TaskStatus.PENDING, TaskStatus.DONE, TaskStatus.BLOCKED},
+    TaskStatus.DONE: {TaskStatus.IN_PROGRESS, TaskStatus.ARCHIVED},
+    TaskStatus.BLOCKED: {TaskStatus.PENDING, TaskStatus.ARCHIVED},
     TaskStatus.UPSTREAM_BLOCKED: {TaskStatus.PENDING, TaskStatus.ARCHIVED},
-    TaskStatus.ARCHIVED:         set(),
+    TaskStatus.ARCHIVED: set(),
 }
 
 # ── Models ─────────────────────────────────────────────────────────────
 
+
 class Epic(Base):
     """Grouping container for related tasks. No state machine (AD-18)."""
+
     __tablename__ = "memory_epics"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -88,6 +95,7 @@ class Epic(Base):
 
 class Task(Base):
     """Core task entity with OCC, heartbeat, and state machine support."""
+
     __tablename__ = "memory_tasks"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -126,6 +134,7 @@ class Task(Base):
 
 class TaskDependency(Base):
     """DAG junction table for task dependencies (AD-2)."""
+
     __tablename__ = "memory_task_dependencies"
 
     parent_task_id: Mapped[uuid.UUID] = mapped_column(
@@ -148,6 +157,7 @@ class TaskDependency(Base):
 
 class StateTransition(Base):
     """Immutable audit trail entry for task state changes (AD-16)."""
+
     __tablename__ = "memory_state_transitions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -166,6 +176,7 @@ class StateTransition(Base):
 
 class Defect(Base):
     """Defect entity linked to a task, blocking DONE transition (AD-8)."""
+
     __tablename__ = "memory_defects"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

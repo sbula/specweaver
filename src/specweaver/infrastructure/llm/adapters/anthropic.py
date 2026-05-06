@@ -159,7 +159,9 @@ class AnthropicAdapter(LLMAdapter):
             try:
                 args = block.input
             except Exception:
-                logger.warning("AnthropicAdapter: failed to parse tool arguments for %s", block.name)
+                logger.warning(
+                    "AnthropicAdapter: failed to parse tool arguments for %s", block.name
+                )
                 args = {}
 
             result = await tool_executor.execute(block.name, args)  # type: ignore

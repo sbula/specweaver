@@ -348,14 +348,34 @@ class TestBatch3LoggingRollout:
         from specweaver.core.flow.interfaces import cli
 
         modules = [
-            display, gates, parser, reservation, routers, runner, runner_utils, store,
-            arbiter, base, context_assembler, contract_renderers, decompose, draft, drift, dual_pipeline,
-            generation, lint_fix, mcp_assembler, registry, review, scenario, standards, validation,
-            cli
+            display,
+            gates,
+            parser,
+            reservation,
+            routers,
+            runner,
+            runner_utils,
+            store,
+            arbiter,
+            base,
+            context_assembler,
+            contract_renderers,
+            decompose,
+            draft,
+            drift,
+            dual_pipeline,
+            generation,
+            lint_fix,
+            mcp_assembler,
+            registry,
+            review,
+            scenario,
+            standards,
+            validation,
+            cli,
         ]
 
         for mod in modules:
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__
-

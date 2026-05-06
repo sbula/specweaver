@@ -42,8 +42,8 @@ _EXTENSIONS: dict[str, str] = {
 }
 
 
-
 logger = logging.getLogger(__name__)
+
 
 def contract_extension(language: str) -> str:
     """Return the file extension for a generated contract file."""

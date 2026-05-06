@@ -14,6 +14,7 @@ from specweaver.sandbox.protocol.core.protocol_interfaces import (
 
 logger = logging.getLogger(__name__)
 
+
 class AsyncAPIParser(ProtocolSchemaInterface):
     """
     Native Python extractor for AsyncAPI format documents.

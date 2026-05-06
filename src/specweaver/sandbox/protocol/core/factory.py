@@ -16,6 +16,7 @@ from specweaver.sandbox.protocol.core.protocol_interfaces import (
 
 logger = logging.getLogger(__name__)
 
+
 class ProtocolParserFactory:
     """
     Factory for instantiating the correct ProtocolSchemaInterface based on the payload.

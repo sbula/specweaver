@@ -7,8 +7,6 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
-import mistralai  # type: ignore
-
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 from specweaver.infrastructure.llm.errors import (
     AuthenticationError,
@@ -52,6 +50,7 @@ class MistralAdapter(LLMAdapter):
     def _get_client(self) -> Any:
         if self._client is None:
             from mistralai import Mistral
+
             self._client = Mistral(api_key=self._api_key)
         return self._client
 
@@ -159,7 +158,9 @@ class MistralAdapter(LLMAdapter):
             try:
                 args = json.loads(tc.function.arguments)
             except Exception:
-                logger.warning("MistralAdapter: failed to parse tool arguments for %s", tc.function.name)
+                logger.warning(
+                    "MistralAdapter: failed to parse tool arguments for %s", tc.function.name
+                )
                 args = {}
 
             result = await tool_executor.execute(tc.function.name, args)  # type: ignore

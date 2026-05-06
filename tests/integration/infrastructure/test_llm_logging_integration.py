@@ -23,6 +23,7 @@ async def test_llm_adapter_exception_emits_structured_error_log(caplog):
         mock_client = AsyncMock()
         # Create an error that looks like openai.AuthenticationError
         import openai
+
         mock_client.chat.completions.create.side_effect = openai.AuthenticationError(
             message="Invalid API Key",
             response=MagicMock(request=MagicMock()),
@@ -53,6 +54,7 @@ async def test_fallback_adapter_writes_warning_logs(caplog):
     with patch("openai.AsyncOpenAI") as mock_client_cls:
         mock_client = AsyncMock()
         import openai
+
         mock_client.chat.completions.create.side_effect = openai.RateLimitError(
             message="Rate limit exceeded",
             response=MagicMock(request=MagicMock()),
@@ -62,6 +64,7 @@ async def test_fallback_adapter_writes_warning_logs(caplog):
 
         with caplog.at_level(logging.WARNING):
             import contextlib
+
             with contextlib.suppress(Exception):
                 await adapter.generate([], config)
 
