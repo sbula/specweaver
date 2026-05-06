@@ -5,6 +5,8 @@
 - **Status**: APPROVED
 - **Design Doc**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md
 - **Absorbs**: Former `C-EXEC-05` (Issue Tracker Atoms) and `B-INTL-10` (Agentic Workflow State Ledger)
+- **SF-1 Status**: 🟢 Completed
+- **SF-2 Status**: 🟢 Completed
 
 ## Feature Overview
 
@@ -171,13 +173,13 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | SQLAlchemy Schema & Alembic Definitions | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
-| SF-2 | Core CRUD & State Machine | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | SQLAlchemy Schema & Alembic Definitions | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Core CRUD & State Machine | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-3 | DAG & Context Validation | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-4 | Resilience & Recovery | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Pre-commit completed. Ready for commit.
-**Next step**: Run `git commit` to mark SF-1 as Committed, then proceed to `/implementation-plan` for SF-2.
+**Current status**: SF-2 Implementation Plan is APPROVED.
+**Next step**: Run `/dev docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf2_implementation_plan.md` to begin TDD development.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

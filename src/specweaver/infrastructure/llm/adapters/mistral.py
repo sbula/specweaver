@@ -7,7 +7,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, ClassVar
 
-import mistralai
+import mistralai  # type: ignore
 
 from specweaver.infrastructure.llm.adapters.base import LLMAdapter
 from specweaver.infrastructure.llm.errors import (
@@ -51,7 +51,8 @@ class MistralAdapter(LLMAdapter):
 
     def _get_client(self) -> Any:
         if self._client is None:
-            self._client = mistralai.Mistral(api_key=self._api_key)
+            from mistralai import Mistral
+            self._client = Mistral(api_key=self._api_key)
         return self._client
 
     def available(self) -> bool:

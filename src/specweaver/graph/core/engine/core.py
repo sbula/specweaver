@@ -3,7 +3,7 @@ import threading
 from enum import Enum
 from typing import Any
 
-import networkx as nx  # type: ignore
+import networkx as nx  # type: ignore  # type: ignore
 
 from specweaver.graph.core.engine.models import GraphEdge, GraphNode
 

@@ -207,13 +207,14 @@ Furthermore, the mappings are isolated by **Archetype** rather than **Language**
 ## 14. Deep Serialization Facade (The Orjson Override)
 
 When scaling SpecWeaver's internal logging, payload serialization, and topology caching to meet extreme `< 50ms` NFR targets (Feature 3.32), we systematically replaced all native Python `import json` usage with the Rust-backed `orjson` library.
-
-### How it works:
 Instead of forcing developers to use `orjson.dumps().decode('utf-8')` perfectly every time across 29+ modules, we built a single unified facade module `specweaver.commons.json`. The entire codebase points to this one entrypoint (`from specweaver.commons import json`). 
 
 ### Why we do it:
 1. **The Pydantic Poison Pill**: Standard `json.dumps()` returns standard `str` UTF-8 primitives. Fast `orjson.dumps()` natively returns raw `bytes`. Passing raw bytes into downstream Pydantic instantiators, logging frameworks layer formatters, or LLM System Prompts notoriously crashes them with `TypeError: input must be a string, not bytes`. The facade explicitly wraps `orjson` and intercepts the `.decode('utf-8')` transformation strictly to preserve zero-friction string parity across the engine.
 2. **Deterministic Sort Consistency**: LLM caching thrives on exact token string-matching. The facade actively captures mapping flags (like `sort_keys=True`) and strictly routes them into `orjson.OPT_SORT_KEYS`, mathematically ensuring JSON structure guarantees natively at the lowest engine level.
+
+### 3. State Management & Storage
+- **Agent Memory Bank Explicit Timestamps:** `SQLAlchemy` `default=datetime.now` triggers inside the Python process rather than natively inside SQLite. When generating multiple rows rapidly inside async loops, this occasionally causes identical timestamp collisions or timezone drops. In the `specweaver.workspace.memory.repository`, we mandate that **all mutation methods explicitly instantiate `datetime.now(UTC)` and pass it directly to the model instances** to guarantee millisecond precision and UTC enforcement, bypassing SQLAlchemy's `default=` parameter entirely.
 
 ---
 
