@@ -49,8 +49,8 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario, and mathematically determines whether the code failed the scenario, or if the scenario was written incorrectly.
 * **`B-INTL-08` 🔮: Semantic Code Review**<br>
   > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system.
-* **`B-INTL-09` 🔜: Agent Memory Bank**
-  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_
+* **`B-INTL-09` 🟡: Agent Memory Bank**
+  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). **Complete:** SF-1 (Schema & DB Migration). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_
 
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>

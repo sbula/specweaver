@@ -323,3 +323,16 @@ Developers are explicitly forbidden from writing: `logger.debug(f"Parsing spec: 
 ### Why we do it:
 1. **The Performance Tax:** `logger.debug` lines are evaluated universally, even if the user is running the CLI at the `INFO` or `WARNING` level. If developers use `f-strings`, the Python interpreter is forced to immediately evaluate, stringify, and concatenate massive payload objects *before* calling the `logger` method, only for the logger to instantly discard the string because `DEBUG` is disabled. By passing `%s` and trailing arguments, the standard library defers payload evaluation strictly until *after* the level gate is passed, resulting in a 0ms execution cost for disabled telemetry.
 2. **Deterministic Aggregation:** External log aggregation tools (like Datadog or ELK) index standard library `logging` records by grouping identical static message strings. `f-strings` permanently mutate the message string on every run, destroying telemetry aggregation graphs. The `%s` pattern guarantees the message structure remains perfectly uniform natively.
+
+---
+
+## 21. Async SQLite PRAGMA Enforcement & Lifecycle Workarounds
+
+When integrating the Agent Memory Bank (Feature B-INTL-09) with SQLite and `sqlalchemy[asyncio]`, we encountered two catastrophic failures that standard synchronous applications never see: 1) `MissingGreenlet` errors during test suite lifecycle rollbacks, and 2) Foreign Key CASCADE rules silently failing to execute.
+
+### How it works:
+1. **The PRAGMA Bypass**: We explicitly register a `@event.listens_for(engine.sync_engine, "connect")` hook within `register_fk_pragma_listener(engine)` to physically execute `PRAGMA foreign_keys=ON`. Every time an async session is created or tests boot up, the connection must pass through this hook.
+2. **The `expire_on_commit` Hack**: When testing Async models with relationships or accessing properties after a `commit()`, SQLAlchemy attempts to lazily load expired attributes. Because the async context does not have a running greenlet during synchronous test teardowns or assertions, it crashes with `MissingGreenlet`. We explicitly configure test fixtures and our CQRS `AsyncSession` factories with `expire_on_commit=False` to force SQLAlchemy to retain data locally.
+
+### Why we do it:
+Unlike PostgreSQL or MySQL, SQLite explicitly defaults `foreign_keys=OFF` on every single new connection. `aiosqlite` creates new pooled connections asynchronously, completely bypassing any connection string parameters like `?foreign_keys=1`. If the PRAGMA is not hooked at the engine connection pool layer, deleting an `Epic` will leave thousands of orphaned `Task` records polluting the database forever instead of executing the `ON DELETE CASCADE`. The greenlet fix mathematically eliminates ORM synchronization race conditions without dropping to raw SQL.

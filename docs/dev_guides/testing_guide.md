@@ -157,6 +157,16 @@ pytest tests/unit/config/test_database.py
 pytest tests/unit/cli/test_constitution.py tests/unit/cli/test_config.py
 ```
 
+### Async SQLite Data Stores (e.g. Agent Memory Bank)
+When testing async SQLAlchemy stores that rely on SQLite Foreign Keys (e.g., cascading deletes), you MUST explicitly register the PRAGMA hook on the test engine fixture, and set `expire_on_commit=False` to avoid `MissingGreenlet` errors:
+
+```bash
+# Agent Memory Bank tests
+pytest tests/unit/workspace/test_memory_store.py
+```
+> [!IMPORTANT]
+> Async SQLite tests require explicitly calling `register_fk_pragma_listener(engine.sync_engine)` in the async fixture to ensure `ON DELETE CASCADE` fires during tests.
+
 ### Flow Engine
 ```bash
 pytest tests/unit/flow tests/integration/flow
