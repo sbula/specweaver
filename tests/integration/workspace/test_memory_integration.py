@@ -18,10 +18,16 @@ from specweaver.workspace.memory.store import (
 from specweaver.workspace.store import Base, Project
 
 
+from sqlalchemy.pool import StaticPool
+
 @pytest_asyncio.fixture
 async def engine():
     """Create an in-memory SQLite database with schema and FK constraints."""
-    eng = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+    eng = create_async_engine(
+        "sqlite+aiosqlite:///:memory:", 
+        echo=False,
+        poolclass=StaticPool
+    )
     register_fk_pragma_listener(eng.sync_engine)
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -329,3 +335,64 @@ class TestMemoryBankIntegrationSimulations:
         if not remaining:
             closed_epic = await repo.close_epic(epic_id)
             assert closed_epic["status"] == EpicStatus.CLOSED.value
+
+    async def test_int_9_occ_concurrent_race(self, engine, base_project: Project) -> None:
+        """Integration 9: True concurrent OCC race condition simulating two agents."""
+        import asyncio
+        from specweaver.workspace.memory.errors import StaleTaskVersionError
+        
+        # Setup task in a base session
+        async with AsyncSession(engine, expire_on_commit=False) as setup_session:
+            repo = MemoryRepository(setup_session)
+            task = await repo.create_task(project_name=base_project.name, title="Contested Task")
+            task_id = uuid.UUID(task["id"])
+            await setup_session.commit()
+
+        # Agent 1 and Agent 2 try to acquire at the exact same time using distinct sessions
+        async def agent_acquire(worker_id: str) -> dict[str, object]:
+            async with AsyncSession(engine, expire_on_commit=False) as session:
+                repo = MemoryRepository(session)
+                return await repo.acquire_task(task_id, worker_id)
+
+        results = await asyncio.gather(
+            agent_acquire("agent-1"),
+            agent_acquire("agent-2"),
+            return_exceptions=True
+        )
+
+        # One should succeed, one should fail with StaleTaskVersionError (or an OperationalError if DB locked, but memory sqlite is fast)
+        # Wait, if both try to UPDATE, SQLite might throw `database is locked` (OperationalError). 
+        # But SQLite handles simple updates if PRAGMA journal_mode=WAL or concurrency is low. In aiosqlite memory, it serializes.
+        # So we expect one success, one StaleTaskVersionError.
+        successes = [r for r in results if isinstance(r, dict)]
+        exceptions = [r for r in results if isinstance(r, Exception)]
+
+        assert len(successes) == 1, f"Expected 1 success, got {len(successes)}: {results}"
+        assert len(exceptions) == 1, f"Expected 1 exception, got {len(exceptions)}: {results}"
+        assert isinstance(exceptions[0], StaleTaskVersionError), f"Expected StaleTaskVersionError, got {type(exceptions[0])}"
+        assert successes[0]["assigned_worker_id"] in ["agent-1", "agent-2"]
+        assert successes[0]["version"] == 2
+
+    async def test_int_10_deep_dag_cycle_protection(self, session: AsyncSession, base_project: Project) -> None:
+        """Integration 10: Protection against deep transitive cycle injection in realistic topology."""
+        from specweaver.workspace.memory.errors import CyclicDependencyError
+        repo = MemoryRepository(session)
+        
+        # Build a 10-node complex graph: 0->1->2...->9
+        tasks = [await repo.create_task(project_name=base_project.name, title=f"Node {i}") for i in range(10)]
+        task_ids = [uuid.UUID(t["id"]) for t in tasks]
+
+        for i in range(9):
+            await repo.insert_dependency(task_ids[i], task_ids[i+1])
+
+        # Add some diamond patterns (0->3, 2->5)
+        await repo.insert_dependency(task_ids[0], task_ids[3])
+        await repo.insert_dependency(task_ids[2], task_ids[5])
+
+        # Now an agent hallucinates that node 9 depends on node 0
+        with pytest.raises(CyclicDependencyError):
+            await repo.insert_dependency(task_ids[9], task_ids[0])
+            
+        # Or that node 5 depends on node 2 (already have 2->5)
+        with pytest.raises(CyclicDependencyError):
+            await repo.insert_dependency(task_ids[5], task_ids[2])

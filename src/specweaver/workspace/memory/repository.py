@@ -339,12 +339,7 @@ class MemoryRepository:
             return self._task_to_dict(task)
 
         await self.session.refresh(task)
-        logger.error(
-            "OCC collision: task_id=%s, expected_version=%s, actual_version=%s",
-            task_id,
-            expected_version,
-            task.version,
-        )
+        logger.warning("OCC collision: task_id=%s, expected_version=%s, actual_version=%s", task_id, expected_version, task.version)
         raise StaleTaskVersionError(task_id, expected_version, task.version)
 
     async def update_handover_context(
