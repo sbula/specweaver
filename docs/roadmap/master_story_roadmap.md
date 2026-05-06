@@ -248,7 +248,6 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **User Benefit:** The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md)
-    *   `[ ]` **US-3 Core** *(provides QA Runner)*
     *   `[ ]` **US-5 Core** *(provides Git Worktree Bouncer)*
     *   `[ ]` **E-EXEC-01:** Standard Local Execution
     *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
