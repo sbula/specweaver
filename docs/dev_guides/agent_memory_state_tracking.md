@@ -1,0 +1,91 @@
+# Agent Memory State Tracking
+
+This guide details how to correctly interact with the `MemoryRepository` for task execution, handling state transitions, and managing Optimistic Concurrency Control (OCC) when building SpecWeaver agents.
+
+## Core Concepts
+
+The **Agent Memory Bank** (US-28) provides a resilient, local SQLite-backed ledger for agent tasks. Instead of relying on volatile RAM arrays or raw `networkx` graphs, agents coordinate work through a strictly controlled state machine.
+
+### 1. Task Acquisition (Optimistic Concurrency Control)
+
+Agents do not directly update the database with `session.execute("UPDATE...")`. Instead, they must call `acquire_task`. 
+
+Because multiple agents (or Orchestrator background scripts) might try to acquire the same pending task simultaneously, SpecWeaver uses **Optimistic Concurrency Control (OCC)** based on a `version` column.
+
+```python
+from specweaver.workspace.memory.store import MemoryRepository
+from specweaver.workspace.memory.errors import StaleTaskVersionError
+
+async def worker_loop(repo: MemoryRepository, worker_id: str, task_id: uuid.UUID):
+    try:
+        # Atomic lock: checks version, transitions to IN_PROGRESS, increments version
+        task = await repo.acquire_task(task_id, worker_id)
+        print(f"Task acquired successfully! Current version: {task['version']}")
+        
+    except StaleTaskVersionError as e:
+        # Another agent beat us to the lock!
+        # Do NOT panic. Implement exponential backoff and retry, or pick another task.
+        print(f"OCC Collision: {e}")
+```
+
+**Rule:** Always catch `StaleTaskVersionError`. Do not crash the agent pipeline on OCC collisions. The `MemoryRepository` will emit a `logger.warning()` automatically.
+
+### 2. State Transitions & The Matrix
+
+The memory bank enforces a strict State Transition Matrix. You cannot jump directly from `DONE` back to `PENDING` without a valid path. 
+
+To transition a task, use `repo.transition_state()` with the corresponding `TransitionReason` enum.
+
+```python
+from specweaver.workspace.memory.store import TaskStatus, TransitionReason
+
+# Successfully completing work
+await repo.transition_state(
+    task_id=task_id,
+    to_status=TaskStatus.DONE,
+    reason=TransitionReason.COMPLETED
+)
+
+# Giving up on work due to an error
+await repo.transition_state(
+    task_id=task_id,
+    to_status=TaskStatus.BLOCKED,
+    reason=TransitionReason.AGENT_FAILURE
+)
+```
+
+**Defect Invariants:** The system will physically block the transition to `DONE` if there are any `OPEN` defects associated with the task, throwing a `DefectBlocksCompletionError`.
+
+### 3. Context Handover Limits
+
+When an agent needs to hand over work or store intermediate context, they update the `handover_context`. This is strictly limited to prevent LLM prompt token overflow.
+
+```python
+from specweaver.workspace.memory.models import HandoverContext
+
+context = HandoverContext(
+    summary="I have implemented the database schema but need the API route.",
+    stack_trace="Exception: Route not found...",
+    metadata={"files_touched": ["store.py"]}
+)
+
+await repo.update_handover_context(task_id, context)
+```
+
+**Rules:**
+1. Pydantic enforces an absolute **8KB** physical size limit on the serialized JSON payload.
+2. The `stack_trace` string is automatically truncated to the last 2000 characters.
+3. The `metadata` dictionary only accepts primitive types (`str`, `int`, `float`, `bool`) or lists of primitives. No deeply nested, hallucinated JSON structures are allowed.
+
+### 4. DAG Cycle Protection
+
+When building topologies dynamically, use `insert_dependency`. The repository runs a `WITH RECURSIVE` SQLite CTE to protect the Flow Engine from infinite loop hallucinations.
+
+```python
+from specweaver.workspace.memory.errors import CyclicDependencyError
+
+try:
+    await repo.insert_dependency(parent_id, child_id)
+except CyclicDependencyError:
+    print("Agent attempted to create an infinite dependency loop!")
+```
