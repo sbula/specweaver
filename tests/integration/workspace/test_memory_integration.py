@@ -56,24 +56,32 @@ async def base_project(session: AsyncSession) -> Project:
 class TestMemoryBankIntegrationSimulations:
     """Simulates the SF-3/SF-4 Orchestrator logic driving the MemoryRepository."""
 
-    async def test_int_1_orchestrator_happy_path(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_int_1_orchestrator_happy_path(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Integration 1: Agent Orchestrator acquires, executes, and transitions to DONE."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Write tests")
 
         # Simulate Orchestrator Selection
-        acquired = await repo.transition_state(uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
+        acquired = await repo.transition_state(
+            uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+        )
         assert acquired["status"] == TaskStatus.IN_PROGRESS.value
 
         # Simulate Execution Success
-        completed = await repo.transition_state(uuid.UUID(task["id"]), TaskStatus.DONE, TransitionReason.COMPLETED)
+        completed = await repo.transition_state(
+            uuid.UUID(task["id"]), TaskStatus.DONE, TransitionReason.COMPLETED
+        )
         assert completed["status"] == TaskStatus.DONE.value
 
     async def test_int_2_zombie_reaper(self, session: AsyncSession, base_project: Project) -> None:
         """Integration 2: Zombie Reaper identifies stale task, transitions to BLOCKED, bumps attempt_count."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Zombie Task")
-        await repo.transition_state(uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
+        await repo.transition_state(
+            uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+        )
 
         # Artificial Backdate
         task_model = await session.get(Task, uuid.UUID(task["id"]))
@@ -85,7 +93,9 @@ class TestMemoryBankIntegrationSimulations:
         stale_tasks = (await session.execute(stmt)).scalars().all()
         assert len(stale_tasks) == 1
 
-        reaped = await repo.transition_state(stale_tasks[0].id, TaskStatus.BLOCKED, TransitionReason.ZOMBIE_TIMEOUT)
+        reaped = await repo.transition_state(
+            stale_tasks[0].id, TaskStatus.BLOCKED, TransitionReason.ZOMBIE_TIMEOUT
+        )
         assert reaped["status"] == TaskStatus.BLOCKED.value
         assert reaped["attempt_count"] == 1
         assert reaped["locked_at"] is None
@@ -95,37 +105,55 @@ class TestMemoryBankIntegrationSimulations:
         repo = MemoryRepository(session)
         parent = await repo.create_task(project_name=base_project.name, title="Parent")
         child = await repo.create_task(project_name=base_project.name, title="Child")
-        await repo.add_task_dependency(uuid.UUID(parent["id"]), uuid.UUID(child["id"]))
+        await repo.insert_dependency(uuid.UUID(parent["id"]), uuid.UUID(child["id"]))
 
         # Child is upstream blocked
-        await repo.transition_state(uuid.UUID(child["id"]), TaskStatus.UPSTREAM_BLOCKED, TransitionReason.UPSTREAM_BLOCKED)
+        await repo.transition_state(
+            uuid.UUID(child["id"]), TaskStatus.UPSTREAM_BLOCKED, TransitionReason.UPSTREAM_BLOCKED
+        )
 
         # Parent finishes
-        await repo.transition_state(uuid.UUID(parent["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
-        await repo.transition_state(uuid.UUID(parent["id"]), TaskStatus.DONE, TransitionReason.COMPLETED)
+        await repo.transition_state(
+            uuid.UUID(parent["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+        )
+        await repo.transition_state(
+            uuid.UUID(parent["id"]), TaskStatus.DONE, TransitionReason.COMPLETED
+        )
 
         # Simulate DAG Manager unblocking children
-        child_unblocked = await repo.transition_state(uuid.UUID(child["id"]), TaskStatus.PENDING, TransitionReason.UPSTREAM_CLEARED)
+        child_unblocked = await repo.transition_state(
+            uuid.UUID(child["id"]), TaskStatus.PENDING, TransitionReason.UPSTREAM_CLEARED
+        )
         assert child_unblocked["status"] == TaskStatus.PENDING.value
 
-    async def test_int_5_defect_interception(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_int_5_defect_interception(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Integration 5: DefectBlocksCompletionError intercepts DONE transition."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Buggy Task")
-        await repo.transition_state(uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
+        await repo.transition_state(
+            uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+        )
 
         # Agent logs defect
         await repo.create_defect(uuid.UUID(task["id"]), title="Tests fail")
 
         # Agent tries to complete
         with pytest.raises(DefectBlocksCompletionError):
-            await repo.transition_state(uuid.UUID(task["id"]), TaskStatus.DONE, TransitionReason.COMPLETED)
+            await repo.transition_state(
+                uuid.UUID(task["id"]), TaskStatus.DONE, TransitionReason.COMPLETED
+            )
 
         # Orchestrator catches it and forces BLOCKED for human intervention
-        blocked = await repo.transition_state(uuid.UUID(task["id"]), TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE)
+        blocked = await repo.transition_state(
+            uuid.UUID(task["id"]), TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE
+        )
         assert blocked["status"] == TaskStatus.BLOCKED.value
 
-    async def test_int_6_circuit_breaker(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_int_6_circuit_breaker(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Integration 6: Circuit Breaker suspends tasks with attempt_count >= 3."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Failing Task")
@@ -135,7 +163,9 @@ class TestMemoryBankIntegrationSimulations:
             await repo.transition_state(task_id, TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
             await repo.transition_state(task_id, TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE)
             # Re-queue the task for the next attempt
-            await repo.transition_state(task_id, TaskStatus.PENDING, TransitionReason.MANUAL_UNBLOCK)
+            await repo.transition_state(
+                task_id, TaskStatus.PENDING, TransitionReason.MANUAL_UNBLOCK
+            )
 
         task_info = await repo.get_task(task_id)
         assert task_info["attempt_count"] == 3
@@ -149,13 +179,17 @@ class TestMemoryBankIntegrationSimulations:
 
     async def test_int_7_agent_handoff(self, session: AsyncSession, base_project: Project) -> None:
         """Integration 7: Agent handoff via handover_context."""
+        from specweaver.workspace.memory.models import HandoverContext
+
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Handoff Task")
         task_id = uuid.UUID(task["id"])
 
         # Agent 1
         await repo.transition_state(task_id, TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
-        await repo.update_handover_context(task_id, "Wrote frontend, need backend API")
+        await repo.update_handover_context(
+            task_id, HandoverContext(summary="Wrote frontend, need backend API")
+        )
         await repo.transition_state(task_id, TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE)
 
         # Human/Orchestrator unblocks it for Agent 2
@@ -164,52 +198,85 @@ class TestMemoryBankIntegrationSimulations:
         # Agent 2
         await repo.transition_state(task_id, TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
         task_info = await repo.get_task(task_id)
-        assert task_info["handover_context"] == "Wrote frontend, need backend API"
+        assert (
+            task_info["handover_context"]
+            == HandoverContext(summary="Wrote frontend, need backend API").to_json_str()
+        )
         await repo.transition_state(task_id, TaskStatus.DONE, TransitionReason.COMPLETED)
 
-    async def test_int_8_upstream_cascading_failure(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_int_8_upstream_cascading_failure(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Integration 8: Parent failure halts children."""
         repo = MemoryRepository(session)
         parent = await repo.create_task(project_name=base_project.name, title="Parent")
         child = await repo.create_task(project_name=base_project.name, title="Child")
-        await repo.add_task_dependency(uuid.UUID(parent["id"]), uuid.UUID(child["id"]))
+        await repo.insert_dependency(uuid.UUID(parent["id"]), uuid.UUID(child["id"]))
 
         # Child waits
-        await repo.transition_state(uuid.UUID(child["id"]), TaskStatus.UPSTREAM_BLOCKED, TransitionReason.UPSTREAM_BLOCKED)
+        await repo.transition_state(
+            uuid.UUID(child["id"]), TaskStatus.UPSTREAM_BLOCKED, TransitionReason.UPSTREAM_BLOCKED
+        )
 
         # Parent permanently fails
-        await repo.transition_state(uuid.UUID(parent["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
-        await repo.transition_state(uuid.UUID(parent["id"]), TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE)
-        await repo.transition_state(uuid.UUID(parent["id"]), TaskStatus.ARCHIVED, TransitionReason.ABANDONED)
+        await repo.transition_state(
+            uuid.UUID(parent["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+        )
+        await repo.transition_state(
+            uuid.UUID(parent["id"]), TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE
+        )
+        await repo.transition_state(
+            uuid.UUID(parent["id"]), TaskStatus.ARCHIVED, TransitionReason.ABANDONED
+        )
 
         # Simulate Orchestrator deciding child destiny
         parent_status = (await repo.get_task(uuid.UUID(parent["id"])))["status"]
         if parent_status == TaskStatus.ARCHIVED.value:
-            child_archived = await repo.transition_state(uuid.UUID(child["id"]), TaskStatus.ARCHIVED, TransitionReason.ABANDONED)
+            child_archived = await repo.transition_state(
+                uuid.UUID(child["id"]), TaskStatus.ARCHIVED, TransitionReason.ABANDONED
+            )
             assert child_archived["status"] == TaskStatus.ARCHIVED.value
 
-    async def test_e2e_1_topological_execution_simulation(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_e2e_1_topological_execution_simulation(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """E2E 1: Epic + DAG topological execution simulation."""
         repo = MemoryRepository(session)
         epic = await repo.create_epic(project_name=base_project.name, title="New Feature")
 
-        t1 = await repo.create_task(project_name=base_project.name, title="DB Schema", epic_id=uuid.UUID(epic["id"]))
-        t2 = await repo.create_task(project_name=base_project.name, title="API Layer", epic_id=uuid.UUID(epic["id"]))
-        await repo.add_task_dependency(uuid.UUID(t1["id"]), uuid.UUID(t2["id"]))
+        t1 = await repo.create_task(
+            project_name=base_project.name, title="DB Schema", epic_id=uuid.UUID(epic["id"])
+        )
+        t2 = await repo.create_task(
+            project_name=base_project.name, title="API Layer", epic_id=uuid.UUID(epic["id"])
+        )
+        await repo.insert_dependency(uuid.UUID(t1["id"]), uuid.UUID(t2["id"]))
 
         # Initial states
-        await repo.transition_state(uuid.UUID(t2["id"]), TaskStatus.UPSTREAM_BLOCKED, TransitionReason.UPSTREAM_BLOCKED)
+        await repo.transition_state(
+            uuid.UUID(t2["id"]), TaskStatus.UPSTREAM_BLOCKED, TransitionReason.UPSTREAM_BLOCKED
+        )
 
         # Exec T1
-        await repo.transition_state(uuid.UUID(t1["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
-        await repo.transition_state(uuid.UUID(t1["id"]), TaskStatus.DONE, TransitionReason.COMPLETED)
+        await repo.transition_state(
+            uuid.UUID(t1["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+        )
+        await repo.transition_state(
+            uuid.UUID(t1["id"]), TaskStatus.DONE, TransitionReason.COMPLETED
+        )
 
         # Unblock T2
-        await repo.transition_state(uuid.UUID(t2["id"]), TaskStatus.PENDING, TransitionReason.UPSTREAM_CLEARED)
+        await repo.transition_state(
+            uuid.UUID(t2["id"]), TaskStatus.PENDING, TransitionReason.UPSTREAM_CLEARED
+        )
 
         # Exec T2
-        await repo.transition_state(uuid.UUID(t2["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
-        await repo.transition_state(uuid.UUID(t2["id"]), TaskStatus.DONE, TransitionReason.COMPLETED)
+        await repo.transition_state(
+            uuid.UUID(t2["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+        )
+        await repo.transition_state(
+            uuid.UUID(t2["id"]), TaskStatus.DONE, TransitionReason.COMPLETED
+        )
 
         # Complete Epic
         await repo.close_epic(uuid.UUID(epic["id"]))
@@ -217,7 +284,9 @@ class TestMemoryBankIntegrationSimulations:
         epic_final = await repo.get_epic(uuid.UUID(epic["id"]))
         assert epic_final["status"] == EpicStatus.CLOSED.value
 
-    async def test_e2e_3_sticky_bug_simulation(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_e2e_3_sticky_bug_simulation(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """E2E 3: Agent logs defect, human fixes, agent resumes."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
@@ -236,7 +305,9 @@ class TestMemoryBankIntegrationSimulations:
         await repo.transition_state(task_id, TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
         await repo.transition_state(task_id, TaskStatus.DONE, TransitionReason.COMPLETED)
 
-    async def test_e2e_5_automatic_epic_closure_simulation(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_e2e_5_automatic_epic_closure_simulation(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """E2E 5: Final task triggers Epic CLOSE."""
         repo = MemoryRepository(session)
         epic = await repo.create_epic(project_name=base_project.name, title="Epic")
@@ -244,8 +315,12 @@ class TestMemoryBankIntegrationSimulations:
 
         t1 = await repo.create_task(project_name=base_project.name, title="T1", epic_id=epic_id)
 
-        await repo.transition_state(uuid.UUID(t1["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
-        await repo.transition_state(uuid.UUID(t1["id"]), TaskStatus.DONE, TransitionReason.COMPLETED)
+        await repo.transition_state(
+            uuid.UUID(t1["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+        )
+        await repo.transition_state(
+            uuid.UUID(t1["id"]), TaskStatus.DONE, TransitionReason.COMPLETED
+        )
 
         # Simulate Orchestrator polling
         stmt = select(Task).where(Task.epic_id == epic_id, Task.status != TaskStatus.DONE)
