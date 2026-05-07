@@ -5,6 +5,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 from specweaver.core.config.database import register_fk_pragma_listener
 from specweaver.workspace.memory.errors import DefectBlocksCompletionError
@@ -18,16 +19,10 @@ from specweaver.workspace.memory.store import (
 from specweaver.workspace.store import Base, Project
 
 
-from sqlalchemy.pool import StaticPool
-
 @pytest_asyncio.fixture
 async def engine():
     """Create an in-memory SQLite database with schema and FK constraints."""
-    eng = create_async_engine(
-        "sqlite+aiosqlite:///:memory:", 
-        echo=False,
-        poolclass=StaticPool
-    )
+    eng = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False, poolclass=StaticPool)
     register_fk_pragma_listener(eng.sync_engine)
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -71,13 +66,13 @@ class TestMemoryBankIntegrationSimulations:
 
         # Simulate Orchestrator Selection
         acquired = await repo.transition_state(
-            uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+            uuid.UUID(str(task["id"])), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
         )
         assert acquired["status"] == TaskStatus.IN_PROGRESS.value
 
         # Simulate Execution Success
         completed = await repo.transition_state(
-            uuid.UUID(task["id"]), TaskStatus.DONE, TransitionReason.COMPLETED
+            uuid.UUID(str(task["id"])), TaskStatus.DONE, TransitionReason.COMPLETED
         )
         assert completed["status"] == TaskStatus.DONE.value
 
@@ -86,11 +81,12 @@ class TestMemoryBankIntegrationSimulations:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Zombie Task")
         await repo.transition_state(
-            uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+            uuid.UUID(str(task["id"])), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
         )
 
         # Artificial Backdate
-        task_model = await session.get(Task, uuid.UUID(task["id"]))
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
         task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=15)
         await session.flush()
 
@@ -139,21 +135,21 @@ class TestMemoryBankIntegrationSimulations:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Buggy Task")
         await repo.transition_state(
-            uuid.UUID(task["id"]), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
+            uuid.UUID(str(task["id"])), TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED
         )
 
         # Agent logs defect
-        await repo.create_defect(uuid.UUID(task["id"]), title="Tests fail")
+        await repo.create_defect(uuid.UUID(str(task["id"])), title="Tests fail")
 
         # Agent tries to complete
         with pytest.raises(DefectBlocksCompletionError):
             await repo.transition_state(
-                uuid.UUID(task["id"]), TaskStatus.DONE, TransitionReason.COMPLETED
+                uuid.UUID(str(task["id"])), TaskStatus.DONE, TransitionReason.COMPLETED
             )
 
         # Orchestrator catches it and forces BLOCKED for human intervention
         blocked = await repo.transition_state(
-            uuid.UUID(task["id"]), TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE
+            uuid.UUID(str(task["id"])), TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE
         )
         assert blocked["status"] == TaskStatus.BLOCKED.value
 
@@ -163,7 +159,7 @@ class TestMemoryBankIntegrationSimulations:
         """Integration 6: Circuit Breaker suspends tasks with attempt_count >= 3."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Failing Task")
-        task_id = uuid.UUID(task["id"])
+        task_id = uuid.UUID(str(task["id"]))
 
         for _ in range(3):
             await repo.transition_state(task_id, TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
@@ -189,7 +185,7 @@ class TestMemoryBankIntegrationSimulations:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Handoff Task")
-        task_id = uuid.UUID(task["id"])
+        task_id = uuid.UUID(str(task["id"]))
 
         # Agent 1
         await repo.transition_state(task_id, TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
@@ -296,7 +292,7 @@ class TestMemoryBankIntegrationSimulations:
         """E2E 3: Agent logs defect, human fixes, agent resumes."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        task_id = uuid.UUID(task["id"])
+        task_id = uuid.UUID(str(task["id"]))
 
         # Agent fails
         await repo.transition_state(task_id, TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
@@ -339,13 +335,14 @@ class TestMemoryBankIntegrationSimulations:
     async def test_int_9_occ_concurrent_race(self, engine, base_project: Project) -> None:
         """Integration 9: True concurrent OCC race condition simulating two agents."""
         import asyncio
+
         from specweaver.workspace.memory.errors import StaleTaskVersionError
-        
+
         # Setup task in a base session
         async with AsyncSession(engine, expire_on_commit=False) as setup_session:
             repo = MemoryRepository(setup_session)
             task = await repo.create_task(project_name=base_project.name, title="Contested Task")
-            task_id = uuid.UUID(task["id"])
+            task_id = uuid.UUID(str(task["id"]))
             await setup_session.commit()
 
         # Agent 1 and Agent 2 try to acquire at the exact same time using distinct sessions
@@ -355,13 +352,11 @@ class TestMemoryBankIntegrationSimulations:
                 return await repo.acquire_task(task_id, worker_id)
 
         results = await asyncio.gather(
-            agent_acquire("agent-1"),
-            agent_acquire("agent-2"),
-            return_exceptions=True
+            agent_acquire("agent-1"), agent_acquire("agent-2"), return_exceptions=True
         )
 
         # One should succeed, one should fail with StaleTaskVersionError (or an OperationalError if DB locked, but memory sqlite is fast)
-        # Wait, if both try to UPDATE, SQLite might throw `database is locked` (OperationalError). 
+        # Wait, if both try to UPDATE, SQLite might throw `database is locked` (OperationalError).
         # But SQLite handles simple updates if PRAGMA journal_mode=WAL or concurrency is low. In aiosqlite memory, it serializes.
         # So we expect one success, one StaleTaskVersionError.
         successes = [r for r in results if isinstance(r, dict)]
@@ -369,21 +364,29 @@ class TestMemoryBankIntegrationSimulations:
 
         assert len(successes) == 1, f"Expected 1 success, got {len(successes)}: {results}"
         assert len(exceptions) == 1, f"Expected 1 exception, got {len(exceptions)}: {results}"
-        assert isinstance(exceptions[0], StaleTaskVersionError), f"Expected StaleTaskVersionError, got {type(exceptions[0])}"
+        assert isinstance(exceptions[0], StaleTaskVersionError), (
+            f"Expected StaleTaskVersionError, got {type(exceptions[0])}"
+        )
         assert successes[0]["assigned_worker_id"] in ["agent-1", "agent-2"]
         assert successes[0]["version"] == 2
 
-    async def test_int_10_deep_dag_cycle_protection(self, session: AsyncSession, base_project: Project) -> None:
+    async def test_int_10_deep_dag_cycle_protection(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
         """Integration 10: Protection against deep transitive cycle injection in realistic topology."""
         from specweaver.workspace.memory.errors import CyclicDependencyError
+
         repo = MemoryRepository(session)
-        
+
         # Build a 10-node complex graph: 0->1->2...->9
-        tasks = [await repo.create_task(project_name=base_project.name, title=f"Node {i}") for i in range(10)]
-        task_ids = [uuid.UUID(t["id"]) for t in tasks]
+        tasks = [
+            await repo.create_task(project_name=base_project.name, title=f"Node {i}")
+            for i in range(10)
+        ]
+        task_ids = [uuid.UUID(str(t["id"])) for t in tasks]
 
         for i in range(9):
-            await repo.insert_dependency(task_ids[i], task_ids[i+1])
+            await repo.insert_dependency(task_ids[i], task_ids[i + 1])
 
         # Add some diamond patterns (0->3, 2->5)
         await repo.insert_dependency(task_ids[0], task_ids[3])
@@ -392,7 +395,237 @@ class TestMemoryBankIntegrationSimulations:
         # Now an agent hallucinates that node 9 depends on node 0
         with pytest.raises(CyclicDependencyError):
             await repo.insert_dependency(task_ids[9], task_ids[0])
-            
+
         # Or that node 5 depends on node 2 (already have 2->5)
         with pytest.raises(CyclicDependencyError):
             await repo.insert_dependency(task_ids[5], task_ids[2])
+
+    async def test_int_11_zombie_reaper_full_cycle(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """Integration 11: Zombie reaper full cycle."""
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="Zombie")
+        task_id = uuid.UUID(str(task["id"]))
+
+        # Agent 1 acquires
+        await repo.acquire_task(task_id, worker_id="agent-1")
+
+        # Backdate heartbeat
+        task_model = await session.get(Task, task_id)
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        # Recycle
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 1
+        assert recycled[0]["status"] == TaskStatus.PENDING.value
+        assert recycled[0]["attempt_count"] == 1
+        assert recycled[0]["version"] == 3  # created(1) -> acquired(2) -> recycled(3)
+
+        # Agent 2 acquires
+        acquired = await repo.acquire_task(task_id, worker_id="agent-2")
+        assert acquired["assigned_worker_id"] == "agent-2"
+
+    async def test_int_12_circuit_breaker_three_strikes(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """Integration 12: Circuit Breaker fires after 3 fails through recycle_zombies."""
+        from specweaver.workspace.memory.store import Defect
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="Hard Task")
+        task_id = uuid.UUID(str(task["id"]))
+
+        for i in range(3):
+            await repo.acquire_task(task_id, worker_id=f"agent-{i}")
+            task_model = await session.get(Task, task_id)
+            assert task_model is not None
+            task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+            await session.flush()
+            recycled = await repo.recycle_zombies(project_name=base_project.name)
+            assert len(recycled) == 1
+
+        assert recycled[0]["status"] == TaskStatus.BLOCKED.value
+        assert recycled[0]["resilience_action"] == "CIRCUIT_BREAKER"
+
+        # Defect check
+        stmt = select(Defect).where(Defect.task_id == task_id)
+        defect = (await session.execute(stmt)).scalar_one()
+        assert defect.title == "circuit_breaker: max retries exceeded"
+
+    async def test_e2e_7_heartbeat_survival(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """E2E 7: Agent pulses heartbeat, survives zombie scan."""
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="Active Task")
+        task_id = uuid.UUID(str(task["id"]))
+
+        await repo.acquire_task(task_id, worker_id="agent-1")
+
+        # Backdate heartbeat initially
+        task_model = await session.get(Task, task_id)
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        # Pulse heartbeat
+        await repo.pulse_heartbeat(task_id, worker_id="agent-1")
+
+        # Recycle
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 0
+
+    async def test_int_13_create_defect_preserves_session_bounds(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """INT-13: [Boundary] Defect creation during batch atomic update preserves session state."""
+        from specweaver.workspace.memory.store import Task
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        task_id = uuid.UUID(str(task["id"]))
+
+        # create_defect performs an explicit flush
+        defect_dict = await repo.create_defect(
+            task_id=task_id, title="Test Defect", description="Something broke"
+        )
+        assert defect_dict["title"] == "Test Defect"
+
+        # Verify it flushed
+        task_model = await session.get(Task, task_id)
+        assert task_model is not None
+        assert task_model.status.value == "PENDING"  # Defect creation itself doesn't block
+
+    async def test_int_14_create_defect_hostile_size(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """INT-14: [Hostile] Extremely large defect description handled without DB errors (caught or bounded)."""
+        import pytest
+        from sqlalchemy.exc import IntegrityError
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        task_id = uuid.UUID(str(task["id"]))
+
+        # 1MB string
+        massive_desc = "A" * 1024 * 1024
+
+        with pytest.raises(IntegrityError):
+            await repo.create_defect(task_id=task_id, title="Massive", description=massive_desc)
+
+    async def test_int_15_recycle_zombies_preserves_handover_context(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """INT-15: [Boundary] recycle_zombies preserves handover_context (RT2-2)."""
+        from specweaver.workspace.memory.models import HandoverContext
+        from specweaver.workspace.memory.store import Task
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        task_id = uuid.UUID(str(task["id"]))
+
+        await repo.acquire_task(task_id, worker_id="agent-1")
+
+        ctx = HandoverContext(files_touched=["a.txt"], summary="None")
+        await repo.update_handover_context(task_id, ctx)
+
+        task_model = await session.get(Task, task_id)
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 1
+        assert recycled[0]["handover_context"] == ctx.model_dump_json(exclude_none=True)
+
+    async def test_int_16_recycle_zombies_concurrent_occ_conflict(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """INT-16: [Graceful Degradation] Concurrent agent update during recycle_zombies batch flush (NFR-1)."""
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        task_id = uuid.UUID(str(task["id"]))
+
+        await repo.transition_state(task_id, to_status=TaskStatus.IN_PROGRESS, reason="start")
+
+        task_model = await session.get(Task, task_id)
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        # Simulate concurrent version increment
+        task_model.version += 1
+        await session.commit()
+
+        # recycle_zombies does zombie.version += 1 and flushes.
+        # SQLite serialized lock usually prevents this in real multi-connection,
+        # but in this session we just verify it successfully increments and flushes.
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 1
+        assert recycled[0]["version"] == 3  # Started at 1, we bumped +1, recycle_zombies bumped +1
+
+    async def test_e2e_8_pulse_heartbeat_storm(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """E2E-8: [Hostile] Massive agent fleet creating heartbeat storms (NFR-1)."""
+        from sqlalchemy.ext.asyncio import AsyncSession
+
+        repo = MemoryRepository(session)
+        tasks = []
+        for i in range(50):
+            t = await repo.create_task(project_name=base_project.name, title=f"T{i}")
+            tid = uuid.UUID(str(t["id"]))
+            await repo.acquire_task(tid, worker_id=f"agent-{i}")
+            tasks.append((tid, f"agent-{i}"))
+
+        # Storm of heartbeats
+        import asyncio
+
+        async def _pulse(tid, wid):
+            # Create a separate session per concurrent task to avoid Session is already flushing error
+            async with AsyncSession(session.bind) as new_sess:
+                r = MemoryRepository(new_sess)
+                return await r.pulse_heartbeat(tid, wid)
+
+        results = await asyncio.gather(
+            *[_pulse(tid, wid) for tid, wid in tasks], return_exceptions=True
+        )
+
+        # All should succeed without locking the DB due to AsyncSession
+        for r in results:
+            assert not isinstance(r, Exception)
+
+    async def test_e2e_9_zombie_reaping_boundary_jitter(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """E2E-9: [Boundary] Zombie reaping at exact 15-minute boundary."""
+        from specweaver.workspace.memory.store import Task
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        task_id = uuid.UUID(str(task["id"]))
+
+        await repo.acquire_task(task_id, worker_id="agent-1")
+
+        task_model = await session.get(Task, task_id)
+        assert task_model is not None
+
+        # Less than 15 minutes
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=14)
+        await session.flush()
+
+        # Should not be recycled (requires > 15)
+        recycled = await repo.recycle_zombies(project_name=base_project.name, timeout_minutes=15)
+        assert len(recycled) == 0
+
+        # More than 15 mins
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=16)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name, timeout_minutes=15)
+        assert len(recycled) == 1

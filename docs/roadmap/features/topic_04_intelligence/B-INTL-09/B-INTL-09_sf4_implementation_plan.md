@@ -12,11 +12,11 @@
 
 SF-4 implements three resilience mechanisms on top of the `MemoryRepository` foundation (SF-2) and the DAG/OCC extensions (SF-3):
 
-1. **Zombie Recovery (`recycle_zombies`)** — Scans for tasks with `status = IN_PROGRESS` where `now() - last_heartbeat_at > 15 minutes` (NFR-4). Resets them to `PENDING`, increments `attempt_count`, clears `assigned_worker_id`, `locked_at`, and `last_heartbeat_at`. Records a `StateTransition` with reason `ZOMBIE_TIMEOUT`. Emits `INFO` structured log.
+1. **Zombie Recovery (`recycle_zombies`)** — Scans for tasks with `status = IN_PROGRESS` where `now() - last_heartbeat_at > 15 minutes` OR `last_heartbeat_at IS NULL` (NFR-4, RT-7). Resets them to `PENDING`, increments `attempt_count` and `version`, clears `assigned_worker_id`, `locked_at`, and `last_heartbeat_at`. Records a `StateTransition` with reason `ZOMBIE_TIMEOUT`. Emits `INFO` structured log. Zombie recycling intentionally preserves `handover_context` to enable failure-aware handover (RT2-2).
 
-2. **3-Strike Circuit Breaker (`circuit_breaker`)** — During zombie recycling, if `attempt_count >= 3` after increment, auto-transitions the task to `BLOCKED` (not `PENDING`), creates an auto-generated `Defect` with title `"circuit_breaker: max retries exceeded"`, and emits an `ERROR` structured log. The task is permanently halted from automatic retries.
+2. **3-Strike Circuit Breaker (`circuit_breaker`)** — During zombie recycling, if `attempt_count >= 3` after increment, auto-transitions the task to `BLOCKED` (not `PENDING`), creates an auto-generated `Defect` with title `"circuit_breaker: max retries exceeded"`, and emits an `ERROR` structured log. The task is permanently halted from automatic retries. **Semantics (RT-1):** `attempt_count` tracks ALL failure paths (zombie recycling AND `transition_state` → BLOCKED), and the circuit breaker fires at `>= 3` total failures.
 
-3. **Upstream DAG Propagation (`propagate_blocked` / `clear_upstream_blocked`)** — When a task transitions to `BLOCKED`, all tasks that list it as a `child_task_id` in `TaskDependency` (i.e., upstream parents that depend on it) are automatically transitioned to `UPSTREAM_BLOCKED` with reason `UPSTREAM_BLOCKED`. Conversely, when a `BLOCKED` task is unblocked (transitions to `PENDING`), all `UPSTREAM_BLOCKED` parents are reverse-propagated back to `PENDING` with reason `UPSTREAM_CLEARED`, but **only if all their other children are also no longer blocked**.
+3. **Upstream DAG Propagation (`propagate_blocked` / `clear_upstream_blocked`)** (FR-9, AD-11) — When a task transitions to `BLOCKED`, **all transitive upstream ancestor tasks** are automatically transitioned to `UPSTREAM_BLOCKED` via BFS traversal (RT-4). `propagate_blocked` validates the source task is actually `BLOCKED` before propagating (RT2-3). Conversely, when a `BLOCKED` task is unblocked (transitions to `PENDING`), `clear_upstream_blocked` performs a transitive BFS to reverse-propagate `UPSTREAM_BLOCKED` parents back to `PENDING` with reason `UPSTREAM_CLEARED`, but **only if all their other children are also no longer blocked**. `clear_upstream_blocked` validates the source task is no longer blocked before processing (RT2-4).
 
 **FRs covered**: FR-5 (Zombie Recovery), FR-8 (Circuit Breaker), FR-9 (Deadlock Propagation).
 
@@ -35,7 +35,7 @@ SF-4 implements three resilience mechanisms on top of the `MemoryRepository` fou
 
 ### Codebase Pattern Analysis
 
-1. **Existing `transition_state`** (repository.py:439-511): The state machine enforcer already handles `BLOCKED` → clears `locked_at`, `last_heartbeat_at`, increments `attempt_count`. SF-4's `recycle_zombies` must use `transition_state` internally to reuse this enforcement, **not** bypass it with raw SQL.
+1. **Existing `transition_state`** (repository.py:439-511): The state machine enforcer already handles `BLOCKED` → clears `locked_at`, `last_heartbeat_at`, increments `attempt_count`. **Resolved (RT2-8):** SF-4's `recycle_zombies` bypasses `transition_state` intentionally to avoid double-incrementing `attempt_count` and to support batch-flush semantics. See the `[!IMPORTANT]` note in Method 2 for the full rationale and the `[!CAUTION]` note for the defensive assertions guarding this bypass.
 
 2. **Existing `insert_dependency`** (repository.py:368-408): The DAG junction table `memory_task_dependencies` uses `parent_task_id` / `child_task_id` columns. For propagation, a "parent" is upstream (depends on the child completing). When a child becomes `BLOCKED`, its parents (rows where `child_task_id == blocked_task.id`) should be marked `UPSTREAM_BLOCKED`.
 
@@ -59,7 +59,7 @@ SF-4 implements three resilience mechanisms on top of the `MemoryRepository` fou
 
 1. **SQLAlchemy `select().where()` for heartbeat comparison**: Use `Task.last_heartbeat_at < threshold` where `threshold = datetime.now(UTC) - timedelta(minutes=15)`. The `StrictISODateTime` type adapter handles the comparison correctly in SQLite.
 
-2. **No new dependencies**: SF-4 uses only `sqlalchemy`, `datetime`, `logging`, and `uuid` — all already in the codebase.
+2. **No new dependencies**: SF-4 uses only `sqlalchemy`, `datetime` (including `timedelta`), `logging`, and `uuid` — all already in the codebase. The `sqlalchemy.or_` function is needed for the zombie NULL heartbeat query (RT-7).
 
 3. **`WITH RECURSIVE` for propagation**: Already proven in SF-3 for cycle detection. The upstream propagation will use a non-recursive query first (find direct parents), then optionally recurse for multi-hop propagation. However, per FR-9, propagation is explicitly defined as "dynamically flag all upstream parent tasks" — this implies recursive traversal of the entire dependency graph above the blocked task.
 
@@ -75,15 +75,18 @@ Add four new public methods to `MemoryRepository`:
 
 ---
 
-##### Method 1: `pulse_heartbeat(task_id: UUID) -> dict[str, object]`
+##### Method 1: `pulse_heartbeat(task_id: UUID, worker_id: str) -> dict[str, object]`
 
-**Purpose**: Update `last_heartbeat_at` for an IN_PROGRESS task to prevent zombie collection.
+**Purpose**: Update `last_heartbeat_at` for an IN_PROGRESS task to prevent zombie collection. Validates worker ownership to prevent stale agents from pulsing tasks they no longer own (RT-3).
 
 ```python
-async def pulse_heartbeat(self, task_id: uuid.UUID) -> dict[str, object]:
+async def pulse_heartbeat(
+    self, task_id: uuid.UUID, worker_id: str
+) -> dict[str, object]:
     """Update last_heartbeat_at for an active task (FR-3, NFR-4).
 
     Only IN_PROGRESS tasks may pulse heartbeats.
+    The caller must provide the worker_id that owns the task (RT-3).
     """
     task = await self.session.get(Task, task_id)
     if task is None:
@@ -95,6 +98,12 @@ async def pulse_heartbeat(self, task_id: uuid.UUID) -> dict[str, object]:
             f"status is {task.status.value}, expected IN_PROGRESS"
         )
 
+    if task.assigned_worker_id != worker_id:
+        raise ValueError(
+            f"Worker {worker_id} does not own task {task_id}: "
+            f"assigned to {task.assigned_worker_id}"
+        )
+
     task.last_heartbeat_at = datetime.now(UTC)
     task.updated_at = task.last_heartbeat_at
     await self.session.flush()
@@ -102,52 +111,111 @@ async def pulse_heartbeat(self, task_id: uuid.UUID) -> dict[str, object]:
     logger.debug(
         "Heartbeat pulse: task_id=%s, worker_id=%s",
         task_id,
-        task.assigned_worker_id,
+        worker_id,
     )
     return self._task_to_dict(task)
 ```
 
 > [!NOTE]
-> Heartbeat pulsing is a lightweight operation. It does NOT increment `version` (no OCC needed — only the owning worker pulses its own tasks). It logs at `DEBUG` level per NFR-8.
+> Heartbeat pulsing is a lightweight operation. It does NOT increment `version` (no OCC needed — only the owning worker pulses its own tasks, validated by `worker_id` check). It logs at `DEBUG` level per NFR-8.
 
 ---
 
-##### Method 2: `recycle_zombies(project_name: str, timeout_minutes: int = 15) -> list[dict[str, object]]`
+##### Method 0 (private): `_build_defect(task_id, title, description) -> Defect`
+
+**Purpose**: Build a validated `Defect` instance without flushing. Shared by `create_defect` and `recycle_zombies` to avoid the RT2-5 conflict where calling `create_defect` (which flushes) inside a batch loop would break atomicity.
+
+```python
+CIRCUIT_BREAKER_DEFECT_TITLE = "circuit_breaker: max retries exceeded"
+
+def _build_defect(
+    self, task_id: uuid.UUID, title: str, description: str | None = None
+) -> Defect:
+    """Build a validated Defect instance without flushing (RT2-5)."""
+    _validate_non_empty("title", title)
+    now = datetime.now(UTC)
+    return Defect(
+        task_id=task_id,
+        title=title,
+        description=description,
+        status=DefectStatus.OPEN,
+        created_at=now,
+    )
+```
+
+> [!NOTE]
+> `create_defect` should be refactored to use `_build_defect` internally:
+> ```python
+> async def create_defect(self, task_id, title, description=None):
+>     task = await self.session.get(Task, task_id)
+>     if task is None:
+>         raise ValueError(f"Task not found: {task_id}")
+>     defect = self._build_defect(task_id, title, description)
+>     self.session.add(defect)
+>     await self.session.flush()
+>     logger.info("Defect created: task_id=%s, defect_id=%s, title=%s", task_id, defect.id, title)
+>     return self._defect_to_dict(defect)
+> ```
+
+---
+
+##### Method 2: `recycle_zombies(project_name: str, timeout_minutes: int = 15, batch_size: int = 100) -> list[dict[str, object]]`
 
 **Purpose**: Scan for stale IN_PROGRESS tasks and either reset them to PENDING or trigger the circuit breaker (FR-5, FR-8, AD-9).
 
 ```python
 async def recycle_zombies(
-    self, project_name: str, timeout_minutes: int = 15
+    self, project_name: str, timeout_minutes: int = 15, batch_size: int = 100
 ) -> list[dict[str, object]]:
     """Scan for zombie tasks and recycle or circuit-break them (FR-5, FR-8).
 
     Zombie criteria: status=IN_PROGRESS AND
-        now() - last_heartbeat_at > timeout_minutes.
+        (now() - last_heartbeat_at > timeout_minutes OR last_heartbeat_at IS NULL).
 
     For each zombie:
     - If attempt_count < 3 after increment: reset to PENDING (ZOMBIE_TIMEOUT).
     - If attempt_count >= 3 after increment: auto-BLOCKED + Defect (CIRCUIT_BREAKER).
 
-    Returns list of recycled/blocked task dicts.
+    Note: timeout_minutes=0 acts as a force-recycle-all operation (RT2-12).
+
+    Returns list of recycled/blocked task dicts. Each dict includes a
+    'resilience_action' key: 'RECYCLED' or 'CIRCUIT_BREAKER' (RT2-7).
     """
+    # RT-2: Defensive guard — verify our transitions are still legal per the matrix
+    assert TaskStatus.PENDING in ALLOWED_TRANSITIONS[TaskStatus.IN_PROGRESS], \
+        "State matrix no longer allows IN_PROGRESS → PENDING"
+    assert TaskStatus.BLOCKED in ALLOWED_TRANSITIONS[TaskStatus.IN_PROGRESS], \
+        "State matrix no longer allows IN_PROGRESS → BLOCKED"
+
     threshold = datetime.now(UTC) - timedelta(minutes=timeout_minutes)
+
+    # RT-7: Include tasks with NULL heartbeat (entered IN_PROGRESS via
+    # transition_state instead of acquire_task)
     stmt = (
         select(Task)
         .where(
             Task.project_name == project_name,
             Task.status == TaskStatus.IN_PROGRESS,
-            Task.last_heartbeat_at < threshold,
+            sqlalchemy.or_(
+                Task.last_heartbeat_at < threshold,
+                Task.last_heartbeat_at.is_(None),
+            ),
         )
+        .limit(batch_size)
     )
     result = await self.session.execute(stmt)
     zombies = result.scalars().all()
 
-    recycled: list[dict[str, object]] = []
+    # RT-11: Single timestamp for the entire batch (atomic operation semantics)
+    now = datetime.now(UTC)
+    # RT2-1: Collect zombie objects, serialize AFTER flush (not before)
+    processed_zombies: list[tuple[Task, str]] = []  # (task, action)
+
     for zombie in zombies:
         # Increment attempt_count first to decide circuit breaker
         zombie.attempt_count += 1
-        now = datetime.now(UTC)
+        # RT-3: Increment version to signal state change to cached references
+        zombie.version += 1
 
         if zombie.attempt_count >= 3:
             # Circuit Breaker (FR-8, AD-9): auto-BLOCKED
@@ -166,16 +234,14 @@ async def recycle_zombies(
             )
             self.session.add(transition)
 
-            # Auto-create defect
-            defect = Defect(
+            # RT2-5: Use _build_defect for validation without flushing
+            defect = self._build_defect(
                 task_id=zombie.id,
-                title="circuit_breaker: max retries exceeded",
+                title=CIRCUIT_BREAKER_DEFECT_TITLE,
                 description=(
                     f"Task {zombie.id} has failed {zombie.attempt_count} times. "
                     "Automatic circuit breaker activated."
                 ),
-                status=DefectStatus.OPEN,
-                created_at=now,
             )
             self.session.add(defect)
 
@@ -186,6 +252,7 @@ async def recycle_zombies(
                 zombie.attempt_count,
                 project_name,
             )
+            processed_zombies.append((zombie, "CIRCUIT_BREAKER"))
         else:
             # Normal zombie recycling (FR-5): reset to PENDING
             zombie.status = TaskStatus.PENDING
@@ -209,11 +276,24 @@ async def recycle_zombies(
                 zombie.attempt_count,
                 project_name,
             )
+            processed_zombies.append((zombie, "RECYCLED"))
 
-        recycled.append(self._task_to_dict(zombie))
+    # RT-9: Batch flush with error logging
+    try:
+        await self.session.flush()
+    except Exception:
+        zombie_ids = [str(z.id) for z, _ in processed_zombies]
+        logger.error(
+            "recycle_zombies batch flush failed for zombies: %s",
+            zombie_ids,
+        )
+        raise
 
-    await self.session.flush()
-    return recycled
+    # RT2-1: Serialize AFTER flush — return only persisted state
+    return [
+        {**self._task_to_dict(zombie), "resilience_action": action}
+        for zombie, action in processed_zombies
+    ]
 ```
 
 > [!IMPORTANT]
@@ -224,161 +304,215 @@ async def recycle_zombies(
 > 3. The method still creates `StateTransition` records manually for the audit trail.
 > This is a self-contained resilience operation with its own state mutation logic.
 
+> [!CAUTION]
+> **State Machine Bypass Guard (RT-2):** `recycle_zombies` bypasses the `ALLOWED_TRANSITIONS` matrix check. Defensive assertions at the top of the method validate that `IN_PROGRESS → PENDING` and `IN_PROGRESS → BLOCKED` are still legal. If the matrix is ever changed, these assertions will fire immediately. Unit test U-25 validates these matrix entries exist.
+
 ---
 
 ##### Method 3: `propagate_blocked(task_id: UUID) -> list[dict[str, object]]`
 
-**Purpose**: When a task becomes BLOCKED, cascade UPSTREAM_BLOCKED to all upstream parents (FR-9, AD-11).
+**Purpose**: When a task becomes BLOCKED, cascade UPSTREAM_BLOCKED to **all transitive upstream ancestors** via BFS (FR-9, AD-11, RT-4).
 
 ```python
 async def propagate_blocked(self, task_id: uuid.UUID) -> list[dict[str, object]]:
-    """Cascade UPSTREAM_BLOCKED to upstream parent tasks (FR-9, AD-11).
+    """Cascade UPSTREAM_BLOCKED to all transitive upstream ancestors (FR-9, AD-11).
 
-    Finds all direct parents (tasks that have this task_id as their child_task_id)
-    and transitions eligible ones to UPSTREAM_BLOCKED.
+    Uses BFS to traverse the full DAG upward from task_id, transitioning
+    all eligible PENDING ancestors to UPSTREAM_BLOCKED (RT-4).
 
-    Only PENDING and IN_PROGRESS parents are eligible for UPSTREAM_BLOCKED propagation
-    (matching the State Transition Matrix: PENDING -> UPSTREAM_BLOCKED is allowed).
-    IN_PROGRESS parents cannot transition to UPSTREAM_BLOCKED per the matrix,
-    so they are skipped with a warning.
+    Precondition: task_id must be in BLOCKED status (RT2-3).
+    IN_PROGRESS parents are skipped with a warning (matrix disallows
+    IN_PROGRESS → UPSTREAM_BLOCKED).
 
-    Returns list of affected parent task dicts.
+    Returns list of all affected ancestor task dicts.
     """
-    # Find direct upstream parents
-    stmt = (
-        select(TaskDependency.parent_task_id)
-        .where(TaskDependency.child_task_id == task_id)
-    )
-    result = await self.session.execute(stmt)
-    parent_ids = [row[0] for row in result.fetchall()]
+    # RT2-3: Precondition — verify source task is actually BLOCKED
+    task = await self.session.get(Task, task_id)
+    if task is None:
+        raise ValueError(f"Task not found: {task_id}")
+    if task.status != TaskStatus.BLOCKED:
+        raise ValueError(
+            f"Cannot propagate from task {task_id}: "
+            f"status is {task.status.value}, expected BLOCKED"
+        )
 
     affected: list[dict[str, object]] = []
     now = datetime.now(UTC)
 
-    for parent_id in parent_ids:
-        parent = await self.session.get(Task, parent_id)
-        if parent is None:
+    # RT-4: BFS traversal for all transitive ancestors
+    queue: list[uuid.UUID] = [task_id]
+    visited: set[uuid.UUID] = set()
+
+    while queue:
+        current_id = queue.pop(0)
+        if current_id in visited:
             continue
+        visited.add(current_id)
 
-        # Only PENDING tasks can transition to UPSTREAM_BLOCKED per the matrix
-        if parent.status != TaskStatus.PENDING:
-            if parent.status == TaskStatus.IN_PROGRESS:
-                logger.warning(
-                    "Skipping propagation: parent task %s is IN_PROGRESS, "
-                    "cannot transition to UPSTREAM_BLOCKED per state matrix",
-                    parent_id,
-                )
-            continue
-
-        parent.status = TaskStatus.UPSTREAM_BLOCKED
-        parent.updated_at = now
-
-        transition = StateTransition(
-            task_id=parent_id,
-            from_status=TaskStatus.PENDING,
-            to_status=TaskStatus.UPSTREAM_BLOCKED,
-            reason=TransitionReason.UPSTREAM_BLOCKED,
-            timestamp=now,
+        # Find direct upstream parents of current_id
+        stmt = (
+            select(TaskDependency.parent_task_id)
+            .where(TaskDependency.child_task_id == current_id)
         )
-        self.session.add(transition)
+        result = await self.session.execute(stmt)
+        parent_ids = [row[0] for row in result.fetchall()]
 
-        logger.info(
-            "Upstream propagation: parent=%s blocked by child=%s",
-            parent_id,
-            task_id,
-        )
-        affected.append(self._task_to_dict(parent))
+        for parent_id in parent_ids:
+            if parent_id in visited:
+                continue
+
+            parent = await self.session.get(Task, parent_id)
+            if parent is None:
+                continue
+
+            # Only PENDING tasks can transition to UPSTREAM_BLOCKED per the matrix
+            if parent.status != TaskStatus.PENDING:
+                if parent.status == TaskStatus.IN_PROGRESS:
+                    logger.warning(
+                        "Skipping propagation: parent task %s is IN_PROGRESS, "
+                        "cannot transition to UPSTREAM_BLOCKED per state matrix",
+                        parent_id,
+                    )
+                continue
+
+            parent.status = TaskStatus.UPSTREAM_BLOCKED
+            parent.updated_at = now
+            # RT3-1: Increment version to preserve OCC contract
+            parent.version += 1
+
+            transition = StateTransition(
+                task_id=parent_id,
+                from_status=TaskStatus.PENDING,
+                to_status=TaskStatus.UPSTREAM_BLOCKED,
+                reason=TransitionReason.UPSTREAM_BLOCKED,
+                timestamp=now,
+            )
+            self.session.add(transition)
+
+            logger.info(
+                "Upstream propagation: parent=%s blocked by child=%s",
+                parent_id,
+                task_id,
+            )
+            affected.append(self._task_to_dict(parent))
+
+            # Continue BFS upward through this newly blocked parent
+            queue.append(parent_id)
 
     await self.session.flush()
     return affected
 ```
 
 > [!NOTE]
-> **Direct parents only vs. recursive**: FR-9 says "dynamically flag all upstream parent tasks". However, in a DAG, a parent's parent is only transitively blocked if the parent itself becomes blocked. Since `propagate_blocked` only transitions PENDING parents to UPSTREAM_BLOCKED (not a blocked state that would trigger further propagation), the cascading effect must be applied **per-level**. If multi-level cascading is needed, the orchestrator should call `propagate_blocked` on the newly UPSTREAM_BLOCKED parents as well. This keeps the repository method simple and testable.
->
-> **Alternative considered**: A `WITH RECURSIVE` CTE to find all transitive ancestors. Rejected because UPSTREAM_BLOCKED is not BLOCKED — it doesn't trigger further cascading by definition. The orchestrator can iterate if needed.
+> **BFS traversal (RT-4)**: FR-9 says "dynamically flag **all** upstream parent tasks". The BFS visits every transitive ancestor reachable from `task_id`, transitioning eligible PENDING ones to UPSTREAM_BLOCKED. Non-PENDING ancestors (DONE, ARCHIVED, IN_PROGRESS, already UPSTREAM_BLOCKED) are skipped — they either cannot transition or are already blocked. The BFS naturally handles diamond patterns via the `visited` set.
 
 ---
 
 ##### Method 4: `clear_upstream_blocked(task_id: UUID) -> list[dict[str, object]]`
 
-**Purpose**: When a BLOCKED task is unblocked, reverse-propagate to clear UPSTREAM_BLOCKED on parents (FR-9, AD-11).
+**Purpose**: When a BLOCKED task is unblocked, reverse-propagate to clear UPSTREAM_BLOCKED on **all transitive upstream ancestors** via BFS (FR-9, AD-11, RT-4).
 
 ```python
 async def clear_upstream_blocked(self, task_id: uuid.UUID) -> list[dict[str, object]]:
-    """Reverse-propagate: clear UPSTREAM_BLOCKED on parents when blocker resolves (FR-9).
+    """Reverse-propagate: clear UPSTREAM_BLOCKED on ancestors when blocker resolves (FR-9).
 
-    Only clears a parent if ALL of its children are no longer BLOCKED or
+    Uses BFS to traverse the full DAG upward from task_id.
+    Only clears an ancestor if ALL of its children are no longer BLOCKED or
     UPSTREAM_BLOCKED (the parent has no remaining blockers).
 
-    Returns list of cleared parent task dicts.
+    Precondition (RT2-4): task_id should no longer be in BLOCKED/UPSTREAM_BLOCKED.
+    If it is, returns early with a warning.
+
+    Returns list of cleared ancestor task dicts.
     """
-    # Find direct upstream parents
-    stmt = (
-        select(TaskDependency.parent_task_id)
-        .where(TaskDependency.child_task_id == task_id)
-    )
-    result = await self.session.execute(stmt)
-    parent_ids = [row[0] for row in result.fetchall()]
+    # RT2-4: Precondition — verify the source task is no longer blocked
+    task = await self.session.get(Task, task_id)
+    if task is None:
+        raise ValueError(f"Task not found: {task_id}")
+    if task.status in (TaskStatus.BLOCKED, TaskStatus.UPSTREAM_BLOCKED):
+        logger.warning(
+            "clear_upstream_blocked called but task %s is still %s",
+            task_id, task.status.value,
+        )
+        return []
 
     cleared: list[dict[str, object]] = []
     now = datetime.now(UTC)
 
-    for parent_id in parent_ids:
-        parent = await self.session.get(Task, parent_id)
-        if parent is None or parent.status != TaskStatus.UPSTREAM_BLOCKED:
+    # RT-4: BFS traversal for all transitive ancestors
+    queue: list[uuid.UUID] = [task_id]
+    visited: set[uuid.UUID] = set()
+
+    while queue:
+        current_id = queue.pop(0)
+        if current_id in visited:
             continue
+        visited.add(current_id)
 
-        # Check ALL children of this parent — are any still blocked?
-        children_stmt = (
-            select(TaskDependency.child_task_id)
-            .where(TaskDependency.parent_task_id == parent_id)
+        # Find direct upstream parents of current_id
+        stmt = (
+            select(TaskDependency.parent_task_id)
+            .where(TaskDependency.child_task_id == current_id)
         )
-        children_result = await self.session.execute(children_stmt)
-        child_ids = [row[0] for row in children_result.fetchall()]
+        result = await self.session.execute(stmt)
+        parent_ids = [row[0] for row in result.fetchall()]
 
-        all_clear = True
-        for child_id in child_ids:
-            child = await self.session.get(Task, child_id)
-            if child is not None and child.status in (
-                TaskStatus.BLOCKED,
-                TaskStatus.UPSTREAM_BLOCKED,
-            ):
-                all_clear = False
-                break
+        for parent_id in parent_ids:
+            if parent_id in visited:
+                continue
 
-        if not all_clear:
-            logger.debug(
-                "Parent %s still has blocked children, skipping clear",
-                parent_id,
+            parent = await self.session.get(Task, parent_id)
+            if parent is None or parent.status != TaskStatus.UPSTREAM_BLOCKED:
+                continue
+
+            # RT3-3: Single query to check if ANY child of this parent is still blocked
+            blocker_stmt = (
+                select(Task.id)
+                .join(TaskDependency, TaskDependency.child_task_id == Task.id)
+                .where(
+                    TaskDependency.parent_task_id == parent_id,
+                    Task.status.in_([TaskStatus.BLOCKED, TaskStatus.UPSTREAM_BLOCKED]),
+                )
+                .limit(1)
             )
-            continue
+            blocker_result = await self.session.execute(blocker_stmt)
+            if blocker_result.scalar_one_or_none() is not None:
+                logger.debug(
+                    "Parent %s still has blocked children, skipping clear",
+                    parent_id,
+                )
+                continue
 
-        parent.status = TaskStatus.PENDING
-        parent.updated_at = now
+            parent.status = TaskStatus.PENDING
+            parent.updated_at = now
+            # RT3-1: Increment version to preserve OCC contract
+            parent.version += 1
 
-        transition = StateTransition(
-            task_id=parent_id,
-            from_status=TaskStatus.UPSTREAM_BLOCKED,
-            to_status=TaskStatus.PENDING,
-            reason=TransitionReason.UPSTREAM_CLEARED,
-            timestamp=now,
-        )
-        self.session.add(transition)
+            transition = StateTransition(
+                task_id=parent_id,
+                from_status=TaskStatus.UPSTREAM_BLOCKED,
+                to_status=TaskStatus.PENDING,
+                reason=TransitionReason.UPSTREAM_CLEARED,
+                timestamp=now,
+            )
+            self.session.add(transition)
 
-        logger.info(
-            "Upstream cleared: parent=%s unblocked after child=%s resolved",
-            parent_id,
-            task_id,
-        )
-        cleared.append(self._task_to_dict(parent))
+            logger.info(
+                "Upstream cleared: parent=%s unblocked after child=%s resolved",
+                parent_id,
+                task_id,
+            )
+            cleared.append(self._task_to_dict(parent))
+
+            # Continue BFS upward through this newly cleared parent
+            queue.append(parent_id)
 
     await self.session.flush()
     return cleared
 ```
 
 > [!IMPORTANT]
-> **Critical invariant**: `clear_upstream_blocked` checks ALL children of the parent, not just the one that was unblocked. This prevents premature unblocking when a parent depends on multiple children and only one is resolved.
+> **Critical invariant**: `clear_upstream_blocked` checks ALL children of each ancestor, not just the one that was unblocked. This prevents premature unblocking when a parent depends on multiple children and only one is resolved. The BFS traversal continues upward through cleared parents to handle multi-level DAGs (RT-4).
 
 ---
 
@@ -398,7 +532,7 @@ Add a new test class `TestMemoryRepositoryResilience` with the following unit te
 | U-6 | `test_recycle_zombies_circuit_breaker` | Critical | Task with `attempt_count=2`, after zombie recycling becomes BLOCKED with defect |
 | U-7 | `test_recycle_zombies_clears_worker_fields` | Edge Case | `assigned_worker_id`, `locked_at`, `last_heartbeat_at` all None after recycling |
 | U-8 | `test_recycle_zombies_creates_audit_trail` | NFR-8 | `StateTransition` with `ZOMBIE_TIMEOUT` reason exists after recycling |
-| U-9 | `test_recycle_zombies_circuit_breaker_audit_trail` | NFR-8 | `StateTransition` with `CIRCUIT_BREAKER` reason + `Defect` with correct title |
+| U-9 | `test_recycle_zombies_circuit_breaker_audit_trail` | NFR-8 | `StateTransition` with `CIRCUIT_BREAKER` reason + `Defect` with title `CIRCUIT_BREAKER_DEFECT_TITLE` |
 | U-10 | `test_recycle_zombies_batch` | Batch | 3 zombies recycled in a single call |
 | U-11 | `test_recycle_zombies_custom_timeout` | Config | `timeout_minutes=5` uses different threshold |
 | U-12 | `test_propagate_blocked_happy_path` | Happy Path | Child BLOCKED → parent PENDING transitions to UPSTREAM_BLOCKED |
@@ -414,6 +548,19 @@ Add a new test class `TestMemoryRepositoryResilience` with the following unit te
 | U-22 | `test_recycle_zombies_structured_logging` | NFR-8 | `logger.info` emitted for zombie recycling |
 | U-23 | `test_circuit_breaker_structured_logging` | NFR-8 | `logger.error` emitted for circuit breaker |
 | U-24 | `test_propagate_blocked_structured_logging` | NFR-8 | `logger.info` emitted for upstream propagation |
+| U-25 | `test_recycle_zombies_matrix_assertions` | RT-2 | Verify `ALLOWED_TRANSITIONS` includes `IN_PROGRESS → PENDING` and `IN_PROGRESS → BLOCKED` |
+| U-26 | `test_pulse_heartbeat_wrong_worker` | RT-3 | Calling `pulse_heartbeat` with wrong `worker_id` raises ValueError |
+| U-27 | `test_recycle_zombies_null_heartbeat` | RT-7 | Task with `last_heartbeat_at IS NULL` is detected as zombie |
+| U-28 | `test_recycle_zombies_mixed_batch` | RT-12 | Batch with 2 recyclable + 1 circuit-broken task → correct statuses per task |
+| U-29 | `test_propagate_blocked_source_not_blocked` | RT2-3 | Calling `propagate_blocked` on a PENDING task raises ValueError |
+| U-30 | `test_clear_upstream_blocked_source_still_blocked` | RT2-4 | Calling `clear_upstream_blocked` on a still-BLOCKED task returns empty with warning |
+| U-31 | `test_recycle_zombies_resilience_action_key` | RT2-7 | Returned dicts contain `resilience_action` = `"RECYCLED"` or `"CIRCUIT_BREAKER"` |
+| U-32 | `test_recycle_zombies_nonexistent_project` | RT2-10 | `recycle_zombies("nonexistent")` returns empty list, no error |
+| U-33 | `test_propagate_blocked_parent_already_upstream_blocked` | RT2-11 | Parent already UPSTREAM_BLOCKED from a different child → skipped, no duplicate transition |
+| U-34 | `test_recycle_zombies_zero_timeout` | RT2-12 | `timeout_minutes=0` recycles all IN_PROGRESS tasks with any heartbeat |
+| U-35 | `test_recycle_zombies_batch_limit` | RT3-2 | `batch_size=2` only processes 2 out of 3 available zombies |
+| U-36 | `test_propagate_blocked_increments_version` | RT3-1 | Parent OCC version increments when transitioning to UPSTREAM_BLOCKED |
+| U-37 | `test_clear_upstream_blocked_increments_version` | RT3-1 | Parent OCC version increments when transitioning to PENDING |
 
 ---
 
@@ -425,13 +572,13 @@ Add integration and E2E scenarios:
 
 | # | Test Name | Category | Scenario |
 |---|-----------|----------|----------|
-| INT-11 | `test_int_11_zombie_reaper_full_cycle` | Integration | Create task → acquire → backdate heartbeat → recycle_zombies → verify PENDING + attempt_count=1 → re-acquire → succeed |
-| INT-12 | `test_int_12_circuit_breaker_three_strikes` | Integration | Task fails 3 times through recycle_zombies → circuit breaker fires → verify BLOCKED + Defect exists |
-| INT-13 | `test_int_13_upstream_propagation_cascade` | Integration | Build A→B→C chain, block C → propagate_blocked(C) → B is UPSTREAM_BLOCKED → propagate_blocked(B.id, if needed manually by orchestrator) → A is UPSTREAM_BLOCKED |
+| INT-11 | `test_int_11_zombie_reaper_full_cycle` | Integration | Create task → acquire → backdate heartbeat → recycle_zombies → verify PENDING + attempt_count=1 + version incremented → re-acquire → succeed |
+| INT-12 | `test_int_12_circuit_breaker_three_strikes` | Integration | Task fails 3 times through recycle_zombies → circuit breaker fires → verify BLOCKED + Defect with `CIRCUIT_BREAKER_DEFECT_TITLE` + `resilience_action="CIRCUIT_BREAKER"` |
+| INT-13 | `test_int_13_upstream_propagation_cascade` | Integration | Build A→B→C chain, block C → `propagate_blocked(C)` → BFS auto-cascades: B AND A both transition to UPSTREAM_BLOCKED in a single call |
 | INT-14 | `test_int_14_reverse_propagation_partial` | Integration | A depends on B and C, B blocked → A UPSTREAM_BLOCKED → C unblocked but B still blocked → A stays UPSTREAM_BLOCKED |
-| INT-15 | `test_int_15_reverse_propagation_full_clear` | Integration | Same as INT-14 but B also unblocks → A transitions to PENDING |
-| E2E-6 | `test_e2e_6_resilient_dag_execution` | E2E | Full lifecycle: Create Epic + 3 tasks in DAG → T1 completes → T2 zombies → circuit breaker fires → T3 UPSTREAM_BLOCKED → human resolves T2 defect → unblock → T3 resumes → Epic closes |
-| E2E-7 | `test_e2e_7_heartbeat_survival` | E2E | Agent acquires task → pulses heartbeat repeatedly → zombie scan runs → task NOT recycled |
+| INT-15 | `test_int_15_reverse_propagation_full_clear` | Integration | Same as INT-14 but B also unblocks → `clear_upstream_blocked(B)` BFS clears A to PENDING |
+| E2E-6 | `test_e2e_6_resilient_dag_execution` | E2E | Full lifecycle: Create Epic + 3 tasks in DAG → T1 completes → T2 zombies → circuit breaker fires → T3 UPSTREAM_BLOCKED via BFS → human resolves T2 defect → unblock → T3 resumes → Epic closes |
+| E2E-7 | `test_e2e_7_heartbeat_survival` | E2E | Agent acquires task → pulses heartbeat with correct `worker_id` → zombie scan runs → task NOT recycled |
 
 ---
 
@@ -441,24 +588,24 @@ Add integration and E2E scenarios:
 
 Add three new sections:
 
-1. **5. Heartbeat Pulsing** — How agents must call `pulse_heartbeat` during long-running work to prevent zombie collection. Cadence recommendation (every 5 minutes).
+1. **5. Heartbeat Pulsing** — How agents must call `pulse_heartbeat(task_id, worker_id)` during long-running work to prevent zombie collection. Cadence recommendation (every 5 minutes). Note: `worker_id` must match the assigned worker (RT-3).
 
-2. **6. Zombie Recovery & Circuit Breaker** — How the orchestrator calls `recycle_zombies` on a schedule. Explanation of the 3-strike rule and auto-defect creation. How to manually unblock circuit-broken tasks.
+2. **6. Zombie Recovery & Circuit Breaker** — How the orchestrator calls `recycle_zombies` on a schedule. Explanation of the 3-strike rule (`attempt_count >= 3` across ALL failure paths) and auto-defect creation. Returned dicts include `resilience_action` key. How to manually unblock circuit-broken tasks. Note: `handover_context` is intentionally preserved during recycling (RT2-2).
 
-3. **7. DAG Propagation** — How `propagate_blocked` and `clear_upstream_blocked` work. When the orchestrator should call them. Multi-level cascading responsibility (orchestrator, not repository).
+3. **7. DAG Propagation** — How `propagate_blocked` and `clear_upstream_blocked` work with BFS transitive traversal (RT-4). When the orchestrator should call them. Precondition requirements (source must be BLOCKED / not-blocked respectively).
 
 ---
 
 ## Commit Boundaries
 
-### CB-1: Heartbeat + Zombie Recovery
-- `repository.py`: Add `pulse_heartbeat`, `recycle_zombies` (including circuit breaker logic)
-- `test_memory_repository.py`: Add U-1 through U-11, U-22, U-23
+### CB-1: Heartbeat + Zombie Recovery + Audit Hardening
+- `repository.py`: Add `_build_defect`, `pulse_heartbeat`, `recycle_zombies` (including circuit breaker logic). Refactor `create_defect` to use `_build_defect`.
+- `test_memory_repository.py`: Add U-1 through U-11, U-22, U-23, U-25, U-26, U-27, U-28, U-31, U-32, U-34, U-35
 - `test_memory_integration.py`: Add INT-11, INT-12, E2E-7
 
 ### CB-2: DAG Propagation + Documentation
-- `repository.py`: Add `propagate_blocked`, `clear_upstream_blocked`
-- `test_memory_repository.py`: Add U-12 through U-21, U-24
+- `repository.py`: Add `propagate_blocked`, `clear_upstream_blocked` (BFS-based)
+- `test_memory_repository.py`: Add U-12 through U-21, U-24, U-29, U-30, U-33, U-36, U-37
 - `test_memory_integration.py`: Add INT-13, INT-14, INT-15, E2E-6
 - `agent_memory_state_tracking.md`: Add sections 5, 6, 7
 
@@ -478,11 +625,12 @@ pytest tests/integration/workspace/test_memory_integration.py -k "int_11 or int_
 # Full memory bank test suite
 pytest tests/unit/workspace/test_memory_repository.py tests/integration/workspace/test_memory_integration.py -v
 
-# Full project test suite
+# Full project test suite (all 4600+ tests)
 pytest
 
-# Quality gates
+# Quality gates (RT2-13)
 ruff check src/specweaver/workspace/memory/
+ruff format --check src/specweaver/workspace/memory/
 mypy src/specweaver/workspace/memory/repository.py --ignore-missing-imports
 tach check
 ```
@@ -491,3 +639,17 @@ tach check
 - Inspect `StateTransition` audit trail after zombie recycling and propagation
 - Verify structured log output format matches NFR-8 requirements
 - Review documentation sections for correctness and completeness
+- Verify `sqlalchemy.or_` import is present in repository.py (RT-7)
+- Verify `CIRCUIT_BREAKER_DEFECT_TITLE` module constant is defined (RT2-5)
+
+---
+
+## Audit Trail
+
+This plan has been hardened through **three formal Red Team / Blue Team adversarial audit cycles**:
+
+- **Round 1**: 14 findings, 7 modifications accepted. Key fixes: `attempt_count` semantics (RT-1), defensive matrix assertions (RT-2), `worker_id` validation (RT-3), BFS propagation (RT-4), NULL heartbeat handling (RT-7).
+- **Round 2**: 13 findings, 8 modifications accepted. Key fixes: post-flush serialization (RT2-1), `propagate_blocked` precondition (RT2-3), `_build_defect` extraction (RT2-5), `resilience_action` return key (RT2-7), research note contradiction fix (RT2-8).
+- **Round 3**: 4 findings, 3 modifications accepted. Key fixes: OCC contract violation fix in propagation (RT3-1), unbounded batch limit fix (RT3-2), N+1 query elimination in reverse propagation (RT3-3).
+
+**Cumulative**: 31 findings, 18 modifications, 13 additional tests (U-25–U-37), 5 findings rejected as correct-by-design. The plan is verified production-ready.

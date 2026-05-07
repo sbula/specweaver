@@ -6,9 +6,9 @@ defect invariants, and context cleanup for task lifecycle management.
 
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select, text, update
+from sqlalchemy import or_, select, text, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +35,8 @@ from specweaver.workspace.memory.store import (
 from specweaver.workspace.store import Project
 
 logger = logging.getLogger(__name__)
+
+CIRCUIT_BREAKER_DEFECT_TITLE = "circuit_breaker: max retries exceeded"
 
 
 def _validate_non_empty(field_name: str, value: str) -> None:
@@ -241,23 +243,29 @@ class MemoryRepository:
             else defect.resolved_at,
         }
 
-    async def create_defect(
+    def _build_defect(
         self, task_id: uuid.UUID, title: str, description: str | None = None
-    ) -> dict[str, object]:
-        """Create OPEN defect linked to task."""
+    ) -> Defect:
+        """Build a validated Defect instance without flushing (RT2-5)."""
         _validate_non_empty("title", title)
-        task = await self.session.get(Task, task_id)
-        if task is None:
-            raise ValueError(f"Task not found: {task_id}")
-
         now = datetime.now(UTC)
-        defect = Defect(
+        return Defect(
             task_id=task_id,
             title=title,
             description=description,
             status=DefectStatus.OPEN,
             created_at=now,
         )
+
+    async def create_defect(
+        self, task_id: uuid.UUID, title: str, description: str | None = None
+    ) -> dict[str, object]:
+        """Create OPEN defect linked to task."""
+        task = await self.session.get(Task, task_id)
+        if task is None:
+            raise ValueError(f"Task not found: {task_id}")
+
+        defect = self._build_defect(task_id, title, description)
         self.session.add(defect)
         await self.session.flush()
 
@@ -339,7 +347,12 @@ class MemoryRepository:
             return self._task_to_dict(task)
 
         await self.session.refresh(task)
-        logger.warning("OCC collision: task_id=%s, expected_version=%s, actual_version=%s", task_id, expected_version, task.version)
+        logger.warning(
+            "OCC collision: task_id=%s, expected_version=%s, actual_version=%s",
+            task_id,
+            expected_version,
+            task.version,
+        )
         raise StaleTaskVersionError(task_id, expected_version, task.version)
 
     async def update_handover_context(
@@ -509,6 +522,171 @@ class MemoryRepository:
                 transition_reason.value,
             )
         return self._task_to_dict(task)
+
+    async def pulse_heartbeat(self, task_id: uuid.UUID, worker_id: str) -> dict[str, object]:
+        """Update last_heartbeat_at for an active task (FR-3, NFR-4).
+
+        Only IN_PROGRESS tasks may pulse heartbeats.
+        The caller must provide the worker_id that owns the task (RT-3).
+        """
+        task = await self.session.get(Task, task_id)
+        if task is None:
+            raise ValueError(f"Task not found: {task_id}")
+
+        if task.status != TaskStatus.IN_PROGRESS:
+            raise ValueError(
+                f"Cannot pulse heartbeat for task {task_id}: "
+                f"status is {task.status.value}, expected IN_PROGRESS"
+            )
+
+        if task.assigned_worker_id != worker_id:
+            raise ValueError(
+                f"Worker {worker_id} does not own task {task_id}: "
+                f"assigned to {task.assigned_worker_id}"
+            )
+
+        task.last_heartbeat_at = datetime.now(UTC)
+        task.updated_at = task.last_heartbeat_at
+        await self.session.flush()
+
+        logger.debug(
+            "Heartbeat pulse: task_id=%s, worker_id=%s",
+            task_id,
+            worker_id,
+        )
+        return self._task_to_dict(task)
+
+    async def recycle_zombies(
+        self, project_name: str, timeout_minutes: int = 15, batch_size: int = 100
+    ) -> list[dict[str, object]]:
+        """Scan for zombie tasks and recycle or circuit-break them (FR-5, FR-8).
+
+        Zombie criteria: status=IN_PROGRESS AND
+            (now() - last_heartbeat_at > timeout_minutes OR last_heartbeat_at IS NULL).
+
+        For each zombie:
+        - If attempt_count < 3 after increment: reset to PENDING (ZOMBIE_TIMEOUT).
+        - If attempt_count >= 3 after increment: auto-BLOCKED + Defect (CIRCUIT_BREAKER).
+
+        Note: timeout_minutes=0 acts as a force-recycle-all operation (RT2-12).
+
+        Returns list of recycled/blocked task dicts. Each dict includes a
+        'resilience_action' key: 'RECYCLED' or 'CIRCUIT_BREAKER' (RT2-7).
+        """
+        # RT-2: Defensive guard — verify our transitions are still legal per the matrix
+        assert TaskStatus.PENDING in ALLOWED_TRANSITIONS[TaskStatus.IN_PROGRESS], (
+            "State matrix no longer allows IN_PROGRESS → PENDING"
+        )
+        assert TaskStatus.BLOCKED in ALLOWED_TRANSITIONS[TaskStatus.IN_PROGRESS], (
+            "State matrix no longer allows IN_PROGRESS → BLOCKED"
+        )
+
+        threshold = datetime.now(UTC) - timedelta(minutes=timeout_minutes)
+
+        # RT-7: Include tasks with NULL heartbeat (entered IN_PROGRESS via
+        # transition_state instead of acquire_task)
+        stmt = (
+            select(Task)
+            .where(
+                Task.project_name == project_name,
+                Task.status == TaskStatus.IN_PROGRESS,
+                or_(
+                    Task.last_heartbeat_at < threshold,
+                    Task.last_heartbeat_at.is_(None),
+                ),
+            )
+            .limit(batch_size)
+        )
+        result = await self.session.execute(stmt)
+        zombies = result.scalars().all()
+
+        # RT-11: Single timestamp for the entire batch (atomic operation semantics)
+        now = datetime.now(UTC)
+        # RT2-1: Collect zombie objects, serialize AFTER flush (not before)
+        processed_zombies: list[tuple[Task, str]] = []  # (task, action)
+
+        for zombie in zombies:
+            # Increment attempt_count first to decide circuit breaker
+            zombie.attempt_count += 1
+            # RT-3: Increment version to signal state change to cached references
+            zombie.version += 1
+
+            if zombie.attempt_count >= 3:
+                # Circuit Breaker (FR-8, AD-9): auto-BLOCKED
+                zombie.status = TaskStatus.BLOCKED
+                zombie.assigned_worker_id = None
+                zombie.locked_at = None
+                zombie.last_heartbeat_at = None
+                zombie.updated_at = now
+
+                transition = StateTransition(
+                    task_id=zombie.id,
+                    from_status=TaskStatus.IN_PROGRESS,
+                    to_status=TaskStatus.BLOCKED,
+                    reason=TransitionReason.CIRCUIT_BREAKER,
+                    timestamp=now,
+                )
+                self.session.add(transition)
+
+                # RT2-5: Use _build_defect for validation without flushing
+                defect = self._build_defect(
+                    task_id=zombie.id,
+                    title=CIRCUIT_BREAKER_DEFECT_TITLE,
+                    description=(
+                        f"Task {zombie.id} has failed {zombie.attempt_count} times. "
+                        "Automatic circuit breaker activated."
+                    ),
+                )
+                self.session.add(defect)
+
+                logger.error(
+                    "Circuit breaker activated: task_id=%s, attempt_count=%s, project=%s",
+                    zombie.id,
+                    zombie.attempt_count,
+                    project_name,
+                )
+                processed_zombies.append((zombie, "CIRCUIT_BREAKER"))
+            else:
+                # Normal zombie recycling (FR-5): reset to PENDING
+                zombie.status = TaskStatus.PENDING
+                zombie.assigned_worker_id = None
+                zombie.locked_at = None
+                zombie.last_heartbeat_at = None
+                zombie.updated_at = now
+
+                transition = StateTransition(
+                    task_id=zombie.id,
+                    from_status=TaskStatus.IN_PROGRESS,
+                    to_status=TaskStatus.PENDING,
+                    reason=TransitionReason.ZOMBIE_TIMEOUT,
+                    timestamp=now,
+                )
+                self.session.add(transition)
+
+                logger.info(
+                    "Zombie recycled: task_id=%s, attempt_count=%s, project=%s",
+                    zombie.id,
+                    zombie.attempt_count,
+                    project_name,
+                )
+                processed_zombies.append((zombie, "RECYCLED"))
+
+        # RT-9: Batch flush with error logging
+        try:
+            await self.session.flush()
+        except Exception:
+            zombie_ids = [str(z.id) for z, _ in processed_zombies]
+            logger.error(
+                "recycle_zombies batch flush failed for zombies: %s",
+                zombie_ids,
+            )
+            raise
+
+        # RT2-1: Serialize AFTER flush — return only persisted state
+        return [
+            {**self._task_to_dict(zombie), "resilience_action": action}
+            for zombie, action in processed_zombies
+        ]
 
     async def get_task_transitions(self, task_id: uuid.UUID) -> list[dict[str, object]]:
         """Fetch audit trail for a task."""

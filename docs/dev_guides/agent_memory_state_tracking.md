@@ -89,3 +89,29 @@ try:
 except CyclicDependencyError:
     print("Agent attempted to create an infinite dependency loop!")
 ```
+
+### 5. Heartbeat Pulsing
+
+To prevent "zombie" tasks from permanently holding locks, the agent must periodically ping the repository. Only tasks in the `IN_PROGRESS` state can be pulsed, and only by the assigned worker.
+
+```python
+# The worker loop must periodically await this while executing long-running tasks
+updated_task = await repo.pulse_heartbeat(task_id, worker_id="agent-uuid")
+```
+
+### 6. Zombie Recovery & Circuit Breaker
+
+The system relies on an Orchestrator-level script to periodically clean up zombies. If a task fails repeatedly (e.g., due to an unrecoverable LLM hallucination or crash), a Circuit Breaker activates to prevent infinite loops.
+
+```python
+# Typically runs every 5 minutes in a background task
+recycled = await repo.recycle_zombies(project_name="my-project", timeout_minutes=15)
+
+for action in recycled:
+    if action["resilience_action"] == "CIRCUIT_BREAKER":
+        print(f"Task {action['id']} failed 3+ times. It is now BLOCKED and requires human intervention.")
+    else:
+        print(f"Task {action['id']} died. Reset to PENDING for re-acquisition.")
+```
+
+**Note on Circuit Breakers**: When a circuit breaker triggers, the system automatically creates a `Defect` on the task. The task cannot transition to `DONE` until this defect is manually marked as `RESOLVED` by a developer.

@@ -227,7 +227,7 @@ class TestMemoryRepositoryTasks:
         """Happy Path: Returns task dict by UUID."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="Task")
-        fetched = await repo.get_task(uuid.UUID(task["id"]))
+        fetched = await repo.get_task(uuid.UUID(str(task["id"])))
         assert fetched is not None
         assert fetched["id"] == task["id"]
 
@@ -259,6 +259,7 @@ class TestMemoryRepositoryTasks:
 
         # Manually change status of t1 for testing list_tasks filter
         task_model = await session.get(Task, uuid.UUID(t1["id"]))
+        assert task_model is not None
         task_model.status = TaskStatus.DONE
         await session.flush()
 
@@ -304,7 +305,7 @@ class TestMemoryRepositoryTasks:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         updated = await repo.update_task(
-            task_id=uuid.UUID(task["id"]), title="T1 Updated", description="New description"
+            task_id=uuid.UUID(str(task["id"])), title="T1 Updated", description="New description"
         )
         assert updated["title"] == "T1 Updated"
         assert updated["description"] == "New description"
@@ -318,7 +319,7 @@ class TestMemoryRepositoryTasks:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         with pytest.raises(ValueError, match="title cannot be empty or whitespace-only"):
-            await repo.update_task(task_id=uuid.UUID(task["id"]), title="   ")
+            await repo.update_task(task_id=uuid.UUID(str(task["id"])), title="   ")
 
     async def test_update_task_not_found(self, session: AsyncSession) -> None:
         """Boundary: Raises ValueError."""
@@ -338,7 +339,7 @@ class TestMemoryRepositoryDefects:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
-        defect = await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
+        defect = await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
         assert defect["title"] == "Bug 1"
         assert defect["status"] == DefectStatus.OPEN.value
         assert "id" in defect
@@ -356,7 +357,7 @@ class TestMemoryRepositoryDefects:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
         with pytest.raises(ValueError, match="title cannot be empty or whitespace-only"):
-            await repo.create_defect(task_id=uuid.UUID(task["id"]), title="   ")
+            await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="   ")
 
     async def test_resolve_defect(self, session: AsyncSession, base_project: Project) -> None:
         """Happy Path: OPEN -> RESOLVED, resolved_at set."""
@@ -364,7 +365,7 @@ class TestMemoryRepositoryDefects:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        defect = await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
+        defect = await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
 
         resolved = await repo.resolve_defect(defect_id=defect["id"])
         assert resolved["status"] == DefectStatus.RESOLVED.value
@@ -376,7 +377,7 @@ class TestMemoryRepositoryDefects:
         """Boundary: Raises ValueError if already resolved."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        defect = await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
+        defect = await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
 
         await repo.resolve_defect(defect_id=defect["id"])
         with pytest.raises(ValueError, match="already RESOLVED"):
@@ -392,10 +393,10 @@ class TestMemoryRepositoryDefects:
         """Happy Path: Lists defects for a task."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
-        await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 2")
+        await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
+        await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 2")
 
-        defects = await repo.list_defects(task_id=uuid.UUID(task["id"]))
+        defects = await repo.list_defects(task_id=uuid.UUID(str(task["id"])))
         assert len(defects) == 2
 
     async def test_list_defects_filtered(
@@ -406,19 +407,19 @@ class TestMemoryRepositoryDefects:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        d1 = await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
-        await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 2")
+        d1 = await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
+        await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 2")
 
         await repo.resolve_defect(defect_id=d1["id"])
 
         open_defects = await repo.list_defects(
-            task_id=uuid.UUID(task["id"]), status=DefectStatus.OPEN
+            task_id=uuid.UUID(str(task["id"])), status=DefectStatus.OPEN
         )
         assert len(open_defects) == 1
         assert open_defects[0]["title"] == "Bug 2"
 
         resolved_defects = await repo.list_defects(
-            task_id=uuid.UUID(task["id"]), status=DefectStatus.RESOLVED
+            task_id=uuid.UUID(str(task["id"])), status=DefectStatus.RESOLVED
         )
         assert len(resolved_defects) == 1
         assert resolved_defects[0]["title"] == "Bug 1"
@@ -433,7 +434,7 @@ class TestMemoryRepositoryDefects:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
-        defect = await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
+        defect = await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
 
         assert any(
             "Defect created" in record.message and str(defect["id"]) in record.message
@@ -448,7 +449,7 @@ class TestMemoryRepositoryDefects:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        defect = await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
+        defect = await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
 
         caplog.clear()
         caplog.set_level(logging.INFO)
@@ -472,7 +473,7 @@ class TestMemoryRepositoryDependencies:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         context = HandoverContext(summary="test summary")
-        updated = await repo.update_handover_context(task_id=uuid.UUID(task["id"]), context=context)
+        updated = await repo.update_handover_context(task_id=uuid.UUID(str(task["id"])), context=context)
         assert updated["handover_context"] == context.to_json_str()
 
     async def test_update_handover_context_none_clears(
@@ -483,9 +484,9 @@ class TestMemoryRepositoryDependencies:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        await repo.update_handover_context(task_id=uuid.UUID(task["id"]), context=HandoverContext())
+        await repo.update_handover_context(task_id=uuid.UUID(str(task["id"])), context=HandoverContext())
 
-        cleared = await repo.update_handover_context(task_id=uuid.UUID(task["id"]), context=None)
+        cleared = await repo.update_handover_context(task_id=uuid.UUID(str(task["id"])), context=None)
         assert cleared["handover_context"] is None
 
     async def test_update_handover_context_task_not_found(self, session: AsyncSession) -> None:
@@ -665,7 +666,7 @@ class TestMemoryRepositoryAcquisition:
         """U-9, U-12, U-14: OCC acquisition increments version, sets worker."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        task_id = uuid.UUID(task["id"])
+        task_id = uuid.UUID(str(task["id"]))
 
         updated = await repo.acquire_task(task_id=task_id, worker_id="agent-1")
         assert updated["status"] == "IN_PROGRESS"
@@ -682,7 +683,7 @@ class TestMemoryRepositoryAcquisition:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        task_id = uuid.UUID(task["id"])
+        task_id = uuid.UUID(str(task["id"]))
 
         await repo.acquire_task(task_id=task_id, worker_id="agent-1")
 
@@ -703,7 +704,7 @@ class TestMemoryRepositoryAcquisition:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        task_id = uuid.UUID(task["id"])
+        task_id = uuid.UUID(str(task["id"]))
 
         await repo.acquire_task(task_id=task_id, worker_id="agent-1")
 
@@ -721,7 +722,7 @@ class TestMemoryRepositoryAcquisition:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        task_id = uuid.UUID(task["id"])
+        task_id = uuid.UUID(str(task["id"]))
 
         # To simulate a race, we mock session.execute to return 0 rows for the UPDATE
         class MockResult:
@@ -762,7 +763,7 @@ class TestMemoryRepositoryStateMachine:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         updated = await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.IN_PROGRESS, reason="Started work"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="Started work"
         )
         assert updated["status"] == TaskStatus.IN_PROGRESS.value
 
@@ -779,7 +780,7 @@ class TestMemoryRepositoryStateMachine:
         # PENDING -> DONE is illegal
         with pytest.raises(IllegalStateTransitionError):
             await repo.transition_state(
-                task_id=uuid.UUID(task["id"]), to_status=TaskStatus.DONE, reason="Done"
+                task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.DONE, reason="Done"
             )
 
     async def test_transition_state_updates_timestamp(
@@ -792,7 +793,7 @@ class TestMemoryRepositoryStateMachine:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         updated = await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.IN_PROGRESS, reason="Started"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="Started"
         )
         assert updated["updated_at"] > task["updated_at"]
 
@@ -806,12 +807,12 @@ class TestMemoryRepositoryStateMachine:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]),
+            task_id=uuid.UUID(str(task["id"])),
             to_status=TaskStatus.IN_PROGRESS,
             reason=TransitionReason.ACQUIRED,
         )
 
-        transitions = await repo.get_task_transitions(task_id=uuid.UUID(task["id"]))
+        transitions = await repo.get_task_transitions(task_id=uuid.UUID(str(task["id"])))
         assert len(transitions) == 1
         assert transitions[0]["from_status"] == TaskStatus.PENDING.value
         assert transitions[0]["to_status"] == TaskStatus.IN_PROGRESS.value
@@ -836,11 +837,11 @@ class TestMemoryRepositoryStateMachine:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.IN_PROGRESS, reason="start"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
         )
 
         updated = await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.BLOCKED, reason="blocked"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.BLOCKED, reason="blocked"
         )
         assert updated["attempt_count"] == 1
 
@@ -853,17 +854,18 @@ class TestMemoryRepositoryStateMachine:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.IN_PROGRESS, reason="start"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
         )
 
         # manually set locked_at
-        task_model = await session.get(Task, uuid.UUID(task["id"]))
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
         task_model.locked_at = datetime.now(UTC)
         task_model.last_heartbeat_at = datetime.now(UTC)
         await session.flush()
 
         updated = await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.BLOCKED, reason="blocked"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.BLOCKED, reason="blocked"
         )
         assert updated["locked_at"] is None
         assert updated["last_heartbeat_at"] is None
@@ -878,14 +880,14 @@ class TestMemoryRepositoryStateMachine:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.IN_PROGRESS, reason="start"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
         )
 
-        await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
+        await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
 
         with pytest.raises(DefectBlocksCompletionError):
             await repo.transition_state(
-                task_id=uuid.UUID(task["id"]), to_status=TaskStatus.DONE, reason="done"
+                task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.DONE, reason="done"
             )
 
     async def test_transition_state_to_done_without_defects(
@@ -897,14 +899,14 @@ class TestMemoryRepositoryStateMachine:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.IN_PROGRESS, reason="start"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
         )
 
-        d = await repo.create_defect(task_id=uuid.UUID(task["id"]), title="Bug 1")
+        d = await repo.create_defect(task_id=uuid.UUID(str(task["id"])), title="Bug 1")
         await repo.resolve_defect(defect_id=d["id"])
 
         updated = await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.DONE, reason="done"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.DONE, reason="done"
         )
         assert updated["status"] == TaskStatus.DONE.value
 
@@ -915,17 +917,17 @@ class TestMemoryRepositoryStateMachine:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]),
+            task_id=uuid.UUID(str(task["id"])),
             to_status=TaskStatus.IN_PROGRESS,
             reason=TransitionReason.ACQUIRED,
         )
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]),
+            task_id=uuid.UUID(str(task["id"])),
             to_status=TaskStatus.BLOCKED,
             reason=TransitionReason.MANUAL_UNBLOCK,
         )
 
-        transitions = await repo.get_task_transitions(task_id=uuid.UUID(task["id"]))
+        transitions = await repo.get_task_transitions(task_id=uuid.UUID(str(task["id"])))
         assert len(transitions) == 2
         assert transitions[0]["reason"] == TransitionReason.ACQUIRED.value
         assert transitions[1]["reason"] == TransitionReason.MANUAL_UNBLOCK.value
@@ -936,7 +938,7 @@ class TestMemoryRepositoryStateMachine:
         """Boundary: Returns empty list if no transitions."""
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        transitions = await repo.get_task_transitions(task_id=uuid.UUID(task["id"]))
+        transitions = await repo.get_task_transitions(task_id=uuid.UUID(str(task["id"])))
         assert transitions == []
 
     async def test_structured_logging_on_transition(
@@ -952,7 +954,7 @@ class TestMemoryRepositoryStateMachine:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]), to_status=TaskStatus.IN_PROGRESS, reason="start"
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
         )
 
         assert any(
@@ -975,7 +977,7 @@ class TestMemoryRepositoryStateMachine:
         caplog.set_level(logging.ERROR)
         with pytest.raises(IllegalStateTransitionError):
             await repo.transition_state(
-                task_id=uuid.UUID(task["id"]), to_status=TaskStatus.DONE, reason="nope"
+                task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.DONE, reason="nope"
             )
 
         assert any("Illegal state transition" in record.message for record in caplog.records)
@@ -990,21 +992,21 @@ class TestMemoryRepositoryStateMachine:
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
         await repo.update_handover_context(
-            task_id=uuid.UUID(task["id"]), context=HandoverContext(summary="some context")
+            task_id=uuid.UUID(str(task["id"])), context=HandoverContext(summary="some context")
         )
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]),
+            task_id=uuid.UUID(str(task["id"])),
             to_status=TaskStatus.IN_PROGRESS,
             reason=TransitionReason.ACQUIRED,
         )
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]),
+            task_id=uuid.UUID(str(task["id"])),
             to_status=TaskStatus.DONE,
             reason=TransitionReason.COMPLETED,
         )
 
         updated = await repo.transition_state(
-            task_id=uuid.UUID(task["id"]),
+            task_id=uuid.UUID(str(task["id"])),
             to_status=TaskStatus.ARCHIVED,
             reason=TransitionReason.ARCHIVED,
         )
@@ -1023,7 +1025,7 @@ class TestMemoryRepositoryStateMachine:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         await repo.transition_state(
-            task_id=uuid.UUID(task["id"]),
+            task_id=uuid.UUID(str(task["id"])),
             to_status=TaskStatus.BLOCKED,
             reason=TransitionReason.MANUAL_UNBLOCK,
         )
@@ -1053,6 +1055,7 @@ class TestMemoryRepositoryStateMachine:
                 task_id = uuid.UUID(task_dict["id"])
 
                 task_model = await session.get(Task, task_id)
+                assert task_model is not None
                 task_model.status = from_status
                 await session.flush()
 
@@ -1088,6 +1091,7 @@ class TestMemoryRepositoryStateMachine:
                 task_id = uuid.UUID(task_dict["id"])
 
                 task_model = await session.get(Task, task_id)
+                assert task_model is not None
                 task_model.status = from_status
                 await session.flush()
 
@@ -1095,3 +1099,437 @@ class TestMemoryRepositoryStateMachine:
                     await repo.transition_state(
                         task_id=task_id, to_status=to_status, reason=TransitionReason.MANUAL_UNBLOCK
                     )
+
+
+@pytest.mark.asyncio
+class TestMemoryRepositoryResilience:
+    async def test_pulse_heartbeat_happy_path(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-1: Pulses IN_PROGRESS task; last_heartbeat_at updated"""
+        from specweaver.workspace.memory.store import TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        # Manually set assigned_worker_id and a past heartbeat
+        from specweaver.workspace.memory.store import Task
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.assigned_worker_id = "agent-1"
+        old_time = datetime(2020, 1, 1, tzinfo=UTC)
+        task_model.last_heartbeat_at = old_time
+        await session.flush()
+
+        updated = await repo.pulse_heartbeat(task_id=uuid.UUID(str(task["id"])), worker_id="agent-1")
+        assert updated["last_heartbeat_at"] > old_time.isoformat()
+
+    async def test_pulse_heartbeat_not_in_progress(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-2: Raises ValueError for PENDING task"""
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        with pytest.raises(ValueError, match="status is PENDING, expected IN_PROGRESS"):
+            await repo.pulse_heartbeat(task_id=uuid.UUID(str(task["id"])), worker_id="agent-1")
+
+    async def test_pulse_heartbeat_not_found(self, session: AsyncSession) -> None:
+        """U-3: Raises ValueError for unknown UUID"""
+        repo = MemoryRepository(session)
+        with pytest.raises(ValueError, match="Task not found"):
+            await repo.pulse_heartbeat(task_id=uuid.uuid4(), worker_id="agent-1")
+
+    async def test_pulse_heartbeat_wrong_worker(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-26 / RT-3: Calling with wrong worker_id raises ValueError"""
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.assigned_worker_id = "agent-1"
+        await session.flush()
+
+        with pytest.raises(ValueError, match="does not own task"):
+            await repo.pulse_heartbeat(task_id=uuid.UUID(str(task["id"])), worker_id="agent-2")
+
+    async def test_recycle_zombies_happy_path(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-4: 1 zombie task recycled to PENDING, attempt_count = 1"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 1
+        assert recycled[0]["status"] == "PENDING"
+        assert recycled[0]["attempt_count"] == 1
+        assert recycled[0]["resilience_action"] == "RECYCLED"
+
+    async def test_recycle_zombies_no_zombies(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-5: Fresh tasks are not recycled"""
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 0
+
+    async def test_recycle_zombies_circuit_breaker(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-6: Task with attempt_count=2 becomes BLOCKED with defect"""
+        from datetime import timedelta
+
+        from sqlalchemy import select
+
+        from specweaver.workspace.memory.store import Defect, Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        task_model.attempt_count = 2
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 1
+        assert recycled[0]["status"] == "BLOCKED"
+        assert recycled[0]["attempt_count"] == 3
+        assert recycled[0]["resilience_action"] == "CIRCUIT_BREAKER"
+
+        # Check defect
+        stmt = select(Defect).where(Defect.task_id == uuid.UUID(str(task["id"])))
+        res = await session.execute(stmt)
+        defect = res.scalar_one()
+        assert defect.title == "circuit_breaker: max retries exceeded"
+
+    async def test_recycle_zombies_clears_worker_fields(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-7: assigned_worker_id, locked_at, last_heartbeat_at cleared"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        task_model.assigned_worker_id = "agent-1"
+        task_model.locked_at = datetime.now(UTC)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert recycled[0]["assigned_worker_id"] is None
+        assert recycled[0]["locked_at"] is None
+        assert recycled[0]["last_heartbeat_at"] is None
+
+    async def test_recycle_zombies_creates_audit_trail(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-8: StateTransition with ZOMBIE_TIMEOUT"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus, TransitionReason
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        await repo.recycle_zombies(project_name=base_project.name)
+        transitions = await repo.get_task_transitions(uuid.UUID(str(task["id"])))
+        assert transitions[-1]["reason"] == TransitionReason.ZOMBIE_TIMEOUT.value
+
+    async def test_recycle_zombies_circuit_breaker_audit_trail(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-9: StateTransition with CIRCUIT_BREAKER"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus, TransitionReason
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        task_model.attempt_count = 2
+        await session.flush()
+
+        await repo.recycle_zombies(project_name=base_project.name)
+        transitions = await repo.get_task_transitions(uuid.UUID(str(task["id"])))
+        assert transitions[-1]["reason"] == TransitionReason.CIRCUIT_BREAKER.value
+
+    async def test_recycle_zombies_batch(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-10: 3 zombies recycled in a single call"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+
+        for i in range(3):
+            t = await repo.create_task(project_name=base_project.name, title=f"T{i}")
+            await repo.transition_state(
+                task_id=uuid.UUID(str(t["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+            )
+            task_model = await session.get(Task, uuid.UUID(str(t["id"])))
+            assert task_model is not None
+            task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 3
+
+    async def test_recycle_zombies_custom_timeout(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-11: timeout_minutes=5 uses different threshold"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=10)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name, timeout_minutes=5)
+        assert len(recycled) == 1
+
+    async def test_recycle_zombies_structured_logging(
+        self, session: AsyncSession, base_project: Project, caplog
+    ) -> None:
+        """U-22: logger.info emitted for zombie recycling"""
+        import logging
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        caplog.set_level(logging.INFO)
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        await repo.recycle_zombies(project_name=base_project.name)
+        assert any("Zombie recycled" in record.message for record in caplog.records)
+
+    async def test_circuit_breaker_structured_logging(
+        self, session: AsyncSession, base_project: Project, caplog
+    ) -> None:
+        """U-23: logger.error emitted for circuit breaker"""
+        import logging
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        caplog.set_level(logging.ERROR)
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        task_model.attempt_count = 2
+        await session.flush()
+
+        await repo.recycle_zombies(project_name=base_project.name)
+        assert any("Circuit breaker activated" in record.message for record in caplog.records)
+
+    async def test_recycle_zombies_matrix_assertions(self, session: AsyncSession) -> None:
+        """U-25 / RT-2: Verify ALLOWED_TRANSITIONS includes IN_PROGRESS to PENDING and BLOCKED"""
+        from specweaver.workspace.memory.store import ALLOWED_TRANSITIONS, TaskStatus
+
+        assert TaskStatus.PENDING in ALLOWED_TRANSITIONS[TaskStatus.IN_PROGRESS]
+        assert TaskStatus.BLOCKED in ALLOWED_TRANSITIONS[TaskStatus.IN_PROGRESS]
+
+    async def test_recycle_zombies_null_heartbeat(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-27 / RT-7: Task with NULL heartbeat is detected as zombie"""
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = None
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 1
+
+    async def test_recycle_zombies_mixed_batch(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-28 / RT-12: Batch with 2 recyclable + 1 circuit-broken task"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+
+        for i in range(3):
+            t = await repo.create_task(project_name=base_project.name, title=f"T{i}")
+            await repo.transition_state(
+                task_id=uuid.UUID(str(t["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+            )
+            task_model = await session.get(Task, uuid.UUID(str(t["id"])))
+            assert task_model is not None
+            task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+            if i == 2:
+                task_model.attempt_count = 2
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 3
+        actions = [r["resilience_action"] for r in recycled]
+        assert actions.count("RECYCLED") == 2
+        assert actions.count("CIRCUIT_BREAKER") == 1
+
+    async def test_recycle_zombies_resilience_action_key(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-31 / RT2-7: Returned dicts contain resilience_action"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert "resilience_action" in recycled[0]
+
+    async def test_recycle_zombies_nonexistent_project(self, session: AsyncSession) -> None:
+        """U-32 / RT2-10: returns empty list, no error"""
+        repo = MemoryRepository(session)
+        recycled = await repo.recycle_zombies(project_name="nonexistent")
+        assert len(recycled) == 0
+
+    async def test_recycle_zombies_zero_timeout(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-34 / RT2-12: timeout=0 recycles all IN_PROGRESS"""
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        task = await repo.create_task(project_name=base_project.name, title="T1")
+        await repo.transition_state(
+            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+        )
+
+        task_model = await session.get(Task, uuid.UUID(str(task["id"])))
+        assert task_model is not None
+        task_model.last_heartbeat_at = datetime.now(UTC)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name, timeout_minutes=0)
+        assert len(recycled) == 1
+
+    async def test_recycle_zombies_batch_limit(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """U-35 / RT3-2: batch_size=2 only processes 2 out of 3"""
+        from datetime import timedelta
+
+        from specweaver.workspace.memory.store import Task, TaskStatus
+
+        repo = MemoryRepository(session)
+        for i in range(3):
+            t = await repo.create_task(project_name=base_project.name, title=f"T{i}")
+            await repo.transition_state(
+                task_id=uuid.UUID(str(t["id"])), to_status=TaskStatus.IN_PROGRESS, reason="start"
+            )
+            task_model = await session.get(Task, uuid.UUID(str(t["id"])))
+            assert task_model is not None
+            task_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        recycled = await repo.recycle_zombies(project_name=base_project.name, batch_size=2)
+        assert len(recycled) == 2
