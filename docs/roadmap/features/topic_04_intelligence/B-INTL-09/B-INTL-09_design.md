@@ -7,6 +7,8 @@
 - **Absorbs**: Former `C-EXEC-05` (Issue Tracker Atoms) and `B-INTL-10` (Agentic Workflow State Ledger)
 - **SF-1 Status**: 🟢 Completed
 - **SF-2 Status**: 🟢 Completed
+- **SF-3 Status**: 🟢 Completed
+- **SF-4 Status**: 🟢 Completed
 
 ## Feature Overview
 
@@ -176,7 +178,7 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 | SF-1 | SQLAlchemy Schema & Alembic Definitions | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Core CRUD & State Machine | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | DAG & Context Validation | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Resilience & Recovery | SF-2 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-4 | Resilience & Recovery | SF-2 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ## Session Handoff
 

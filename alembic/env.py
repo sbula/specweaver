@@ -20,10 +20,10 @@ if config.config_file_name is not None:
 # Add src to pythonpath so alembic can import the models
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+import specweaver.workspace.memory.store  # noqa: E402, F401
 from specweaver.core.flow.store import Base as FlowBase  # noqa: E402
 from specweaver.infrastructure.llm.store import Base as LlmBase  # noqa: E402
 from specweaver.workspace.store import Base as WorkspaceBase  # noqa: E402
-import specweaver.workspace.memory.store  # noqa: E402, F401
 
 target_metadata = [LlmBase.metadata, WorkspaceBase.metadata, FlowBase.metadata]
 

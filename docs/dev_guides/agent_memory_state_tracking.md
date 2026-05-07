@@ -115,3 +115,18 @@ for action in recycled:
 ```
 
 **Note on Circuit Breakers**: When a circuit breaker triggers, the system automatically creates a `Defect` on the task. The task cannot transition to `DONE` until this defect is manually marked as `RESOLVED` by a developer.
+
+### 7. DAG Propagation
+
+When a task becomes `BLOCKED` (e.g. by a circuit breaker or manual agent failure), the orchestrator must flag all tasks that depend on it so they don't start executing. SpecWeaver does this automatically via Breadth-First Search (BFS) DAG traversal.
+
+```python
+# When a task blocks, cascade UPSTREAM_BLOCKED to all PENDING ancestors
+affected_ancestors = await repo.propagate_blocked(task_id=task.id)
+
+# When the task is unblocked (e.g., defect resolved), clear UPSTREAM_BLOCKED 
+# from all ancestors, resetting them to PENDING (if they have no other blockers)
+cleared_ancestors = await repo.clear_upstream_blocked(task_id=task.id)
+```
+
+**Precondition Requirements**: `propagate_blocked` expects the source task to be `BLOCKED`. `clear_upstream_blocked` expects the source task to be unblocked (e.g., `PENDING` or `IN_PROGRESS`). If called incorrectly, they will raise an error or log a warning and return an empty list.

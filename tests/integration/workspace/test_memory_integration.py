@@ -247,10 +247,10 @@ class TestMemoryBankIntegrationSimulations:
         epic = await repo.create_epic(project_name=base_project.name, title="New Feature")
 
         t1 = await repo.create_task(
-            project_name=base_project.name, title="DB Schema", epic_id=uuid.UUID(epic["id"])
+            project_name=base_project.name, title="DB Schema", epic_id=uuid.UUID(str(epic["id"]))
         )
         t2 = await repo.create_task(
-            project_name=base_project.name, title="API Layer", epic_id=uuid.UUID(epic["id"])
+            project_name=base_project.name, title="API Layer", epic_id=uuid.UUID(str(epic["id"]))
         )
         await repo.insert_dependency(uuid.UUID(t1["id"]), uuid.UUID(t2["id"]))
 
@@ -281,9 +281,9 @@ class TestMemoryBankIntegrationSimulations:
         )
 
         # Complete Epic
-        await repo.close_epic(uuid.UUID(epic["id"]))
+        await repo.close_epic(uuid.UUID(str(epic["id"])))
 
-        epic_final = await repo.get_epic(uuid.UUID(epic["id"]))
+        epic_final = await repo.get_epic(uuid.UUID(str(epic["id"])))
         assert epic_final["status"] == EpicStatus.CLOSED.value
 
     async def test_e2e_3_sticky_bug_simulation(
@@ -300,7 +300,7 @@ class TestMemoryBankIntegrationSimulations:
         await repo.transition_state(task_id, TaskStatus.BLOCKED, TransitionReason.AGENT_FAILURE)
 
         # Human fixes bug via CLI
-        await repo.resolve_defect(defect["id"])
+        await repo.resolve_defect(int(defect["id"]))
         await repo.transition_state(task_id, TaskStatus.PENDING, TransitionReason.MANUAL_UNBLOCK)
 
         # Agent resumes
@@ -313,7 +313,7 @@ class TestMemoryBankIntegrationSimulations:
         """E2E 5: Final task triggers Epic CLOSE."""
         repo = MemoryRepository(session)
         epic = await repo.create_epic(project_name=base_project.name, title="Epic")
-        epic_id = uuid.UUID(epic["id"])
+        epic_id = uuid.UUID(str(epic["id"]))
 
         t1 = await repo.create_task(project_name=base_project.name, title="T1", epic_id=epic_id)
 
@@ -629,3 +629,238 @@ class TestMemoryBankIntegrationSimulations:
 
         recycled = await repo.recycle_zombies(project_name=base_project.name, timeout_minutes=15)
         assert len(recycled) == 1
+
+    async def test_int_17_upstream_propagation_cascade(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """INT-13: Build A->B->C chain, block C -> propagate_blocked(C) -> BFS auto-cascades"""
+        from specweaver.workspace.memory.store import TaskStatus
+
+        repo = MemoryRepository(session)
+        task_a = await repo.create_task(project_name=base_project.name, title="A")
+        task_b = await repo.create_task(project_name=base_project.name, title="B")
+        task_c = await repo.create_task(project_name=base_project.name, title="C")
+
+        a_id, b_id, c_id = (
+            uuid.UUID(str(task_a["id"])),
+            uuid.UUID(str(task_b["id"])),
+            uuid.UUID(str(task_c["id"])),
+        )
+
+        await repo.insert_dependency(a_id, b_id)
+        await repo.insert_dependency(b_id, c_id)
+
+        await repo.transition_state(task_id=c_id, to_status=TaskStatus.BLOCKED, reason="error")
+        affected = await repo.propagate_blocked(task_id=c_id)
+
+        assert len(affected) == 2
+        affected_ids = {a["id"] for a in affected}
+        assert str(a_id) in affected_ids
+        assert str(b_id) in affected_ids
+
+        a_model = await session.get(Task, a_id)
+        b_model = await session.get(Task, b_id)
+        assert a_model is not None
+        assert b_model is not None
+        assert a_model.status == TaskStatus.UPSTREAM_BLOCKED
+        assert b_model.status == TaskStatus.UPSTREAM_BLOCKED
+
+    async def test_int_18_reverse_propagation_partial(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """INT-14: A depends on B and C, B blocked -> A UPSTREAM_BLOCKED -> C unblocked but B still blocked -> A stays"""
+        from specweaver.workspace.memory.store import TaskStatus
+
+        repo = MemoryRepository(session)
+        task_a = await repo.create_task(project_name=base_project.name, title="A")
+        task_b = await repo.create_task(project_name=base_project.name, title="B")
+        task_c = await repo.create_task(project_name=base_project.name, title="C")
+
+        a_id, b_id, c_id = (
+            uuid.UUID(str(task_a["id"])),
+            uuid.UUID(str(task_b["id"])),
+            uuid.UUID(str(task_c["id"])),
+        )
+
+        await repo.insert_dependency(a_id, b_id)
+        await repo.insert_dependency(a_id, c_id)
+
+        await repo.transition_state(task_id=b_id, to_status=TaskStatus.BLOCKED, reason="error")
+        await repo.transition_state(task_id=c_id, to_status=TaskStatus.BLOCKED, reason="error")
+
+        await repo.propagate_blocked(task_id=b_id)
+        await repo.propagate_blocked(task_id=c_id)
+
+        a_model = await session.get(Task, a_id)
+        assert a_model is not None
+        assert a_model.status == TaskStatus.UPSTREAM_BLOCKED
+
+        await repo.transition_state(task_id=c_id, to_status=TaskStatus.PENDING, reason="clear")
+        cleared = await repo.clear_upstream_blocked(task_id=c_id)
+
+        assert len(cleared) == 0
+        a_model = await session.get(Task, a_id)
+        assert a_model is not None
+        assert a_model.status == TaskStatus.UPSTREAM_BLOCKED
+
+    async def test_int_19_reverse_propagation_full_clear(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """INT-15: Same as INT-14 but B also unblocks -> clear_upstream_blocked(B) BFS clears A to PENDING"""
+        from specweaver.workspace.memory.store import TaskStatus
+
+        repo = MemoryRepository(session)
+        task_a = await repo.create_task(project_name=base_project.name, title="A")
+        task_b = await repo.create_task(project_name=base_project.name, title="B")
+        task_c = await repo.create_task(project_name=base_project.name, title="C")
+
+        a_id, b_id, c_id = (
+            uuid.UUID(str(task_a["id"])),
+            uuid.UUID(str(task_b["id"])),
+            uuid.UUID(str(task_c["id"])),
+        )
+
+        await repo.insert_dependency(a_id, b_id)
+        await repo.insert_dependency(a_id, c_id)
+
+        await repo.transition_state(task_id=b_id, to_status=TaskStatus.BLOCKED, reason="error")
+        await repo.transition_state(task_id=c_id, to_status=TaskStatus.BLOCKED, reason="error")
+        await repo.propagate_blocked(task_id=b_id)
+        await repo.propagate_blocked(task_id=c_id)
+
+        await repo.transition_state(task_id=c_id, to_status=TaskStatus.PENDING, reason="clear")
+        await repo.clear_upstream_blocked(task_id=c_id)
+
+        await repo.transition_state(task_id=b_id, to_status=TaskStatus.PENDING, reason="clear")
+        cleared = await repo.clear_upstream_blocked(task_id=b_id)
+
+        assert len(cleared) == 1
+        assert cleared[0]["id"] == str(a_id)
+
+        a_model = await session.get(Task, a_id)
+        assert a_model is not None
+        assert a_model.status == TaskStatus.PENDING
+
+    async def test_e2e_6_resilient_dag_execution(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """E2E-6: Full lifecycle: Create Epic + 3 tasks in DAG -> T1 completes -> T2 zombies -> circuit breaker fires -> T3 UPSTREAM_BLOCKED via BFS -> human resolves defect -> unblock -> T3 resumes -> Epic closes."""
+        from specweaver.workspace.memory.store import EpicStatus, TaskStatus
+
+        repo = MemoryRepository(session)
+
+        # 1. Create Epic + 3 tasks in DAG
+        epic = await repo.create_epic(project_name=base_project.name, title="Feature")
+        epic_id = uuid.UUID(str(epic["id"]))
+
+        t1 = await repo.create_task(project_name=base_project.name, title="T1", epic_id=epic_id)
+        t2 = await repo.create_task(project_name=base_project.name, title="T2", epic_id=epic_id)
+        t3 = await repo.create_task(project_name=base_project.name, title="T3", epic_id=epic_id)
+
+        t1_id, t2_id, t3_id = (
+            uuid.UUID(str(t1["id"])),
+            uuid.UUID(str(t2["id"])),
+            uuid.UUID(str(t3["id"])),
+        )
+
+        # DAG: T3 depends on T2, T2 depends on T1
+        await repo.insert_dependency(t3_id, t2_id)
+        await repo.insert_dependency(t2_id, t1_id)
+
+        # 2. T1 completes
+        await repo.transition_state(t1_id, to_status=TaskStatus.IN_PROGRESS, reason="start")
+        await repo.transition_state(t1_id, to_status=TaskStatus.DONE, reason="complete")
+
+        # 3. T2 acquired, then zombies and eventually circuit breaks (attempt_count = 3)
+        t2_model = await session.get(Task, t2_id)
+        assert t2_model is not None
+        t2_model.attempt_count = 2
+        await session.flush()
+
+        await repo.acquire_task(t2_id, worker_id="agent-1")
+
+        # Fake time passing so it's a zombie
+        t2_model = await session.get(Task, t2_id)
+        assert t2_model is not None
+        t2_model.last_heartbeat_at = datetime.now(UTC) - timedelta(minutes=20)
+        await session.flush()
+
+        # Recycle -> circuit breaker fires!
+        recycled = await repo.recycle_zombies(project_name=base_project.name)
+        assert len(recycled) == 1
+        assert recycled[0]["resilience_action"] == "CIRCUIT_BREAKER"
+
+        # 4. T3 UPSTREAM_BLOCKED via BFS
+        await repo.propagate_blocked(t2_id)
+
+        t3_model = await session.get(Task, t3_id)
+        assert t3_model is not None
+        assert t3_model.status == TaskStatus.UPSTREAM_BLOCKED
+
+        # 5. Human resolves T2 defect & unblocks
+        defects = await repo.list_defects(t2_id)
+        assert len(defects) == 1
+        await repo.resolve_defect(int(defects[0]["id"]))
+
+        await repo.transition_state(t2_id, to_status=TaskStatus.PENDING, reason="manual_unblock")
+        await repo.clear_upstream_blocked(t2_id)
+
+        # 6. T3 resumes (is PENDING)
+        t3_model = await session.get(Task, t3_id)
+        assert t3_model is not None
+        assert t3_model.status == TaskStatus.PENDING
+
+        # 7. Complete T2 and T3
+        await repo.transition_state(t2_id, to_status=TaskStatus.IN_PROGRESS, reason="start")
+        await repo.transition_state(t2_id, to_status=TaskStatus.DONE, reason="complete")
+
+        await repo.transition_state(t3_id, to_status=TaskStatus.IN_PROGRESS, reason="start")
+        await repo.transition_state(t3_id, to_status=TaskStatus.DONE, reason="complete")
+
+        # Close Epic
+        await repo.close_epic(epic_id)
+
+        epic_model = await repo.get_epic(epic_id)
+        assert epic_model is not None
+        assert epic_model["status"] == EpicStatus.CLOSED.name
+
+    async def test_int_20_diamond_dependency_propagation(
+        self, session: AsyncSession, base_project: Project
+    ) -> None:
+        """INT-20: Diamond DAG A->B, A->C, B->D, C->D. Block D -> cascades to A. Unblock D -> clears all."""
+        from specweaver.workspace.memory.store import TaskStatus
+        repo = MemoryRepository(session)
+        task_a = await repo.create_task(project_name=base_project.name, title="A")
+        task_b = await repo.create_task(project_name=base_project.name, title="B")
+        task_c = await repo.create_task(project_name=base_project.name, title="C")
+        task_d = await repo.create_task(project_name=base_project.name, title="D")
+
+        a_id = uuid.UUID(str(task_a["id"]))
+        b_id = uuid.UUID(str(task_b["id"]))
+        c_id = uuid.UUID(str(task_c["id"]))
+        d_id = uuid.UUID(str(task_d["id"]))
+
+        await repo.insert_dependency(a_id, b_id)
+        await repo.insert_dependency(a_id, c_id)
+        await repo.insert_dependency(b_id, d_id)
+        await repo.insert_dependency(c_id, d_id)
+
+        # 1. Block D
+        await repo.transition_state(task_id=d_id, to_status=TaskStatus.BLOCKED, reason="error")
+        await repo.propagate_blocked(task_id=d_id)
+
+        # A, B, C should all be UPSTREAM_BLOCKED
+        for tid in (a_id, b_id, c_id):
+            model = await session.get(Task, tid)
+            assert model is not None
+            assert model.status == TaskStatus.UPSTREAM_BLOCKED
+
+        # 2. Unblock D
+        await repo.transition_state(task_id=d_id, to_status=TaskStatus.PENDING, reason="clear")
+        await repo.clear_upstream_blocked(task_id=d_id)
+
+        # A, B, C should all be back to PENDING
+        for tid in (a_id, b_id, c_id):
+            model = await session.get(Task, tid)
+            assert model is not None
+            assert model.status == TaskStatus.PENDING

@@ -563,7 +563,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *AI Agents can seamlessly hand over complex tasks to one another and prevent context degradation by storing session state, active tasks, and blockers in a structured, local SQLite Memory Bank.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-28:** Base Integration Contract defined in [US-28_integration.md](topics/topic_08_integration/US-28_integration.md)
-    *   `[/]` **B-INTL-09:** Agent Memory Bank (Schema + CRUD + Resilience) — [Design](features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md) (SF-4 CB-1 Complete)
+    *   `✅` **B-INTL-09:** Agent Memory Bank (Schema + CRUD + Resilience) — [Design](features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md) (Complete)
     *   `[ ]` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Advanced Multi-Agent Concurrency:**
