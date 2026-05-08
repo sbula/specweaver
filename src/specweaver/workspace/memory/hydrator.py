@@ -8,6 +8,10 @@ import json
 import logging
 import re
 from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -139,7 +143,8 @@ class MemoryHydrator:
 
         active_tasks: list[HydratedTask] = []
         blockers: list[HydratedBlocker] = []
-        handover_notes: list[str] = []
+        # Store notes with their updated_at for sorting (oldest first)
+        notes_with_time: list[tuple[datetime, str]] = []
 
         # Process tasks
         for task in all_tasks:
@@ -153,7 +158,7 @@ class MemoryHydrator:
 
                     # If this is the active task (or retrying), include its notes directly
                     if task.status == TaskStatus.IN_PROGRESS and ctx.summary:
-                        handover_notes.append(_sanitize(ctx.summary, 500))
+                        notes_with_time.append((task.updated_at, _sanitize(ctx.summary, 500)))
                 except Exception as e:
                     logger.warning(f"Failed to parse handover context for task {task.id}: {e} Schema validation failed")
 
@@ -167,14 +172,13 @@ class MemoryHydrator:
                 ))
             elif task.status == TaskStatus.BLOCKED:
                 task_defects = defects_map.get(task.id, [])
-                if task_defects:
-                    d_titles = [_sanitize(d.title, 200) for d in task_defects]
-                    d_descs = [_sanitize(d.description, 500) for d in task_defects if d.description]
-                    blockers.append(HydratedBlocker(
-                        task_title=sanitized_title,
-                        defect_titles=d_titles,
-                        defect_descriptions=d_descs
-                    ))
+                d_titles = [_sanitize(d.title, 200) for d in task_defects] if task_defects else []
+                d_descs = [_sanitize(d.description, 500) for d in task_defects if d.description] if task_defects else []
+                blockers.append(HydratedBlocker(
+                    task_title=sanitized_title,
+                    defect_titles=d_titles,
+                    defect_descriptions=d_descs
+                ))
             else:
                 active_tasks.append(HydratedTask(
                     title=sanitized_title,
@@ -182,6 +186,10 @@ class MemoryHydrator:
                     worker_id=task.assigned_worker_id,
                     handover_summary=handover_summary,
                 ))
+
+        # Sort notes by time (oldest first, so we pop from index 0 during truncation)
+        notes_with_time.sort(key=lambda x: x[0])
+        handover_notes = [note for _, note in notes_with_time]
 
         result = HydrationResult(
             active_tasks=active_tasks,
@@ -192,7 +200,10 @@ class MemoryHydrator:
             truncated=False,
         )
 
-        return self._apply_truncation(result)
+        final_result = self._apply_truncation(result)
+
+        logger.info(f"Hydrated memory context with {final_result.task_count} tasks")
+        return final_result
 
     def _apply_truncation(self, result: HydrationResult) -> HydrationResult:
         """Apply 3-stage truncation if payload exceeds token limit."""
@@ -202,18 +213,25 @@ class MemoryHydrator:
         estimate = get_estimate()
         if estimate <= self._TOKEN_LIMIT:
             result.token_estimate = estimate
+            logger.debug(f"Token estimate {estimate} is within budget. No truncation needed.")
             return result
 
         result.truncated = True
+        logger.debug(f"Token estimate {estimate} exceeds budget {self._TOKEN_LIMIT}. Truncating.")
 
-        # Stage 1: Drop handover notes
-        result.handover_notes.clear()
+        # Stage 1: Drop handover notes iteratively from oldest to newest
+        while result.handover_notes and get_estimate() > self._TOKEN_LIMIT:
+            # Oldest notes are at the front (index 0) due to sorting in hydrate()
+            result.handover_notes.pop(0)
+            logger.debug("Dropped oldest handover note for token budget")
+
         estimate = get_estimate()
         if estimate <= self._TOKEN_LIMIT:
             result.token_estimate = estimate
             return result
 
         # Stage 2: Drop defect descriptions
+        logger.debug("Stage 1 insufficient. Stage 2: Dropping defect descriptions.")
         for blocker in result.blockers:
             blocker.defect_descriptions.clear()
         estimate = get_estimate()
@@ -222,8 +240,10 @@ class MemoryHydrator:
             return result
 
         # Stage 3: Drop task summaries
+        logger.debug("Stage 2 insufficient. Stage 3: Dropping task handover summaries.")
         for task in result.active_tasks:
             task.handover_summary = None
 
         result.token_estimate = get_estimate()
+        logger.debug(f"Final token estimate after all truncation stages: {result.token_estimate}")
         return result

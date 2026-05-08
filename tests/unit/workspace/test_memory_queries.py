@@ -6,9 +6,9 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from specweaver.core.config.database import register_fk_pragma_listener
-from specweaver.workspace.store import Base, Project
-from specweaver.workspace.memory.store import Defect, DefectStatus, Task, TaskStatus
 from specweaver.workspace.memory.queries import MemoryQueryService
+from specweaver.workspace.memory.store import Defect, DefectStatus, Task, TaskStatus
+from specweaver.workspace.store import Base, Project
 
 
 @pytest_asyncio.fixture
@@ -72,7 +72,7 @@ async def test_get_active_tasks_multi_status(session: AsyncSession, base_project
     # Create tasks
     t1 = await _create_task(session, base_project.name, "In progress", TaskStatus.IN_PROGRESS, 1)
     t2 = await _create_task(session, base_project.name, "Blocked", TaskStatus.BLOCKED, 3)
-    t3 = await _create_task(session, base_project.name, "Pending", TaskStatus.PENDING, 2)
+    await _create_task(session, base_project.name, "Pending", TaskStatus.PENDING, 2)
 
     service = MemoryQueryService(session)
     results = await service.get_active_tasks(
@@ -108,7 +108,7 @@ async def test_get_active_tasks_order_by_created_at(session: AsyncSession, base_
     """Ordering: Alternative ordering by created_at works."""
     t1 = await _create_task(session, base_project.name, "Task 1", TaskStatus.IN_PROGRESS)
     t2 = await _create_task(session, base_project.name, "Task 2", TaskStatus.IN_PROGRESS)
-    
+
     # Manually tweak created_at
     t1.created_at = datetime.now(UTC) + timedelta(hours=1)
     t2.created_at = datetime.now(UTC) + timedelta(hours=2)
@@ -157,7 +157,7 @@ async def test_get_active_tasks_empty_project(session: AsyncSession, base_projec
 async def test_get_active_tasks_invalid_order_by(session: AsyncSession, base_project: Project):
     """Guard: Raises ValueError for unknown order_by parameter to prevent injection."""
     service = MemoryQueryService(session)
-    
+
     with pytest.raises(ValueError, match="Invalid order_by field"):
         await service.get_active_tasks(
             base_project.name,
@@ -172,12 +172,12 @@ async def test_get_recent_done_tasks_within_24h(session: AsyncSession, base_proj
     # Recent done task WITH handover
     t1 = await _create_task(session, base_project.name, "Recent Done", TaskStatus.DONE, 0)
     t1.handover_context = '{"summary": "did things"}'
-    
+
     # Recent done task WITHOUT handover (should be excluded)
-    t2 = await _create_task(session, base_project.name, "No handover", TaskStatus.DONE, 0)
-    
+    await _create_task(session, base_project.name, "No handover", TaskStatus.DONE, 0)
+
     # Active task (should be excluded)
-    t3 = await _create_task(session, base_project.name, "Active", TaskStatus.IN_PROGRESS, 0)
+    await _create_task(session, base_project.name, "Active", TaskStatus.IN_PROGRESS, 0)
 
     service = MemoryQueryService(session)
     results = await service.get_recent_done_tasks(base_project.name)
@@ -191,7 +191,7 @@ async def test_get_recent_done_tasks_excludes_stale(session: AsyncSession, base_
     """Boundary: Excludes DONE tasks > 24h old."""
     t1 = await _create_task(session, base_project.name, "Stale", TaskStatus.DONE, -25)  # 25h ago
     t1.handover_context = '{"summary": "too old"}'
-    
+
     t2 = await _create_task(session, base_project.name, "Recent", TaskStatus.DONE, -10) # 10h ago
     t2.handover_context = '{"summary": "recent"}'
 
@@ -209,11 +209,11 @@ async def test_get_recent_done_tasks_custom_age(session: AsyncSession, base_proj
     t1.handover_context = '{"summary": "old"}'
 
     service = MemoryQueryService(session)
-    
+
     # Default 24h excludes it
     res1 = await service.get_recent_done_tasks(base_project.name)
     assert len(res1) == 0
-    
+
     # 48h includes it
     res2 = await service.get_recent_done_tasks(base_project.name, max_age_hours=48)
     assert len(res2) == 1
@@ -238,7 +238,7 @@ async def test_get_open_defects_batch(session: AsyncSession, base_project: Proje
     """Happy Path: Returns defects grouped by task_id."""
     t1 = await _create_task(session, base_project.name, "T1", TaskStatus.BLOCKED)
     t2 = await _create_task(session, base_project.name, "T2", TaskStatus.BLOCKED)
-    
+
     d1 = await _create_defect(session, t1.id, "D1", DefectStatus.OPEN)
     d2 = await _create_defect(session, t1.id, "D2", DefectStatus.OPEN)
     d3 = await _create_defect(session, t2.id, "D3", DefectStatus.OPEN)
@@ -257,7 +257,7 @@ async def test_get_open_defects_batch(session: AsyncSession, base_project: Proje
 async def test_get_open_defects_excludes_resolved(session: AsyncSession, base_project: Project):
     """Boundary: Only OPEN defects are returned."""
     t1 = await _create_task(session, base_project.name, "T1", TaskStatus.BLOCKED)
-    
+
     d1 = await _create_defect(session, t1.id, "Open", DefectStatus.OPEN)
     await _create_defect(session, t1.id, "Resolved", DefectStatus.RESOLVED)
 
