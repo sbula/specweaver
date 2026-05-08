@@ -130,3 +130,14 @@ cleared_ancestors = await repo.clear_upstream_blocked(task_id=task.id)
 ```
 
 **Precondition Requirements**: `propagate_blocked` expects the source task to be `BLOCKED`. `clear_upstream_blocked` expects the source task to be unblocked (e.g., `PENDING` or `IN_PROGRESS`). If called incorrectly, they will raise an error or log a warning and return an empty list.
+
+### 8. Context Hydration & Handover Formatting
+
+While `MemoryRepository` handles the write-side state machine, the read-side context injection is fully autonomous and managed by the `MemoryHydrator`.
+
+Agents do not need to manually query the memory bank when starting work. Instead:
+1. The `PromptFactory` automatically calls `MemoryHydrator.hydrate()` for the active project.
+2. The Hydrator fetches `IN_PROGRESS` and `BLOCKED` tasks, plus recently `DONE` tasks that contain a `handover_context`.
+3. The context is automatically strictly formatted as JSON, wrapped in an `<agent_memory trust="low">` XML block to prevent prompt injection, and injected into the LLM context window with a hard limit of **2048 tokens**.
+
+If an agent needs to pass knowledge to the next agent, they simply update the `handover_context` before transitioning the task. The Hydrator will automatically ensure the next agent sees it (subject to priority truncation rules if the token budget is exhausted).

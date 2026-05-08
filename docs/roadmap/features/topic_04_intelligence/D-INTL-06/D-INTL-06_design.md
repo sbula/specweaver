@@ -229,7 +229,7 @@ exposes:
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Guide-1 | Update `agent_memory_state_tracking.md` with hydration/handover protocol usage | ⬜ Pre-commit |
+| Guide-1 | Update `agent_memory_state_tracking.md` with hydration/handover protocol usage | ✅ Pre-commit |
 
 ## Sub-Feature Breakdown
 
@@ -269,7 +269,7 @@ exposes:
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Memory Hydrator & DTO | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Memory Hydrator & DTO | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Prompt Factory & Refactoring | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-3 | Handover Protocols | SF-1, SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -284,7 +284,6 @@ This design has been through **4 full Red Team / Blue Team adversarial audit cyc
 
 ## Session Handoff
 
-**Current status**: Design DRAFT — awaiting HITL approval post Red Team.
-**Next step**: After approval, run:
-`/implementation-plan docs/roadmap/features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md SF-1`
+**Current status**: SF-1 Committed ✅
+**Next step**: Run `/implementation-plan docs/roadmap/features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md SF-2` to plan the Prompt Factory Integration.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume.

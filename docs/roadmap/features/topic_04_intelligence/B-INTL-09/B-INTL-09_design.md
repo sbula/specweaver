@@ -178,7 +178,7 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 | SF-1 | SQLAlchemy Schema & Alembic Definitions | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Core CRUD & State Machine | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | DAG & Context Validation | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Resilience & Recovery | SF-2 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-4 | Resilience & Recovery | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
