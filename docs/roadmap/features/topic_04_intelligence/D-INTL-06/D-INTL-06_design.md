@@ -2,7 +2,7 @@
 
 - **Feature ID**: D-INTL-06
 - **Phase**: 3
-- **Status**: DRAFT (Post Red-Team Cycles 1+2+3)
+- **Status**: APPROVED
 - **Design Doc**: docs/roadmap/features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md
 
 ## Feature Overview
@@ -10,13 +10,13 @@
 Feature D-INTL-06 adds a **Context Hydration & Handover Engine** to the SpecWeaver intelligence layer. It solves agent context degradation during multi-step workflows by:
 
 1. **Hydrating** — querying the Memory Bank (B-INTL-09) for active task state, blockers, and handover notes.
-2. **Formatting** — rendering retrieved context as XML-tagged prompt blocks with strict token budgets and prompt injection defense.
+2. **Formatting** — rendering retrieved context as JSON prompt blocks with strict token budgets, trust tagging, and multi-layer prompt injection defense.
 3. **Injecting** — automatically including memory context in every LLM prompt via a centralized prompt factory.
 4. **Handing over** — defining formal protocols for safely passing accumulated context between agents.
 
 The hydration is **self-contained inside the prompt factory** (`workflows/commons/prompt_factory.py`). No CLI, API, RunContext, or handler wiring is needed — the factory internally calls `MemoryHydrator` when building any prompt. This eliminates entry-point coupling and ensures every LLM interaction is automatically memory-aware.
 
-D-INTL-06 does NOT touch the write-side schema, state machine, or entity definitions (owned by B-INTL-09). Key constraints: 8KB payload limit (B-INTL-09), Pydantic validation, XML-escape defense, structured logging, tach boundary compliance, and zero-regression compatibility with the existing 4,600+ test suite.
+D-INTL-06 does NOT touch the write-side schema, state machine, or entity definitions (owned by B-INTL-09). Key constraints: 8KB payload limit (B-INTL-09), Pydantic validation, multi-layer prompt injection defense (trust tagging + field truncation + pattern stripping + JSON serialization + framing instructions), structured logging, tach boundary compliance, and zero-regression compatibility with the existing 4,600+ test suite.
 
 ## Research Findings
 
@@ -145,11 +145,13 @@ No new external dependencies.
 | NFR-4 | Security: No Hallucination Transfer | All context passes through `HandoverContext.from_json_str()` (Pydantic). Invalid payloads logged at WARNING and silently dropped. |
 | NFR-5 | Backward Compatibility | No changes to `RunContext`. All existing pipeline invocations work identically. Workflow modules accept new `db: Any = None` and `project_name: str | None = None` parameters with defaults — zero-regression. |
 | NFR-6 | Observability | `INFO` on successful hydration with task count. `WARNING` on Pydantic validation failure. `DEBUG` with token estimate and truncation actions. |
-| NFR-7 | Test Coverage | 70–90% across new modules. **Unit**: `MemoryHydrator`, `HydrationResult.format_prompt_block()`, `PromptContext`, factory (with `db=None` to test fail-safe skip). **Integration**: factory produces prompt with `<agent_memory>` block from pre-populated in-memory SQLite DB. **E2E**: (1) pipeline with populated MemoryBank → prompt contains `<agent_memory>`, (2) empty MemoryBank → no `<agent_memory>`, (3) corrupted handover_context → pipeline completes (fail-safe). **Regression**: Before refactoring each workflow module, capture current prompt output via `PromptBuilder.build()` for a representative test case. After refactoring, assert prompt output is identical (minus memory context additions). XML well-formedness via `ElementTree.fromstring()`. |
+| NFR-7 | Test Coverage | 70–90% across new modules. **Unit**: `MemoryHydrator`, `HydrationResult.format_prompt_block()`, `PromptContext`, factory (with `db=None` to test fail-safe skip). **Integration**: factory produces prompt with `<agent_memory>` block from pre-populated in-memory SQLite DB. **E2E**: (1) pipeline with populated MemoryBank → prompt contains `<agent_memory>`, (2) empty MemoryBank → no `<agent_memory>`, (3) corrupted handover_context → pipeline completes (fail-safe). **Regression**: Before refactoring each workflow module, capture current prompt output via `PromptBuilder.build()` for a representative test case. After refactoring, assert prompt output is identical (minus memory context additions). JSON validity via `json.loads()`. |
 | NFR-8 | File Size | No new file exceeds 900 lines. |
 | NFR-9 | Fail-Safe Hydration | Any exception during hydration (DB failure, query timeout, Pydantic error, `db=None`) is caught, logged at WARNING. Factory returns a PromptBuilder without memory context. Pipeline MUST NOT abort due to hydration failure. |
-| NFR-10 | Prompt Injection Defense | All user-generated content (task titles, descriptions, defect descriptions, handover summaries) MUST be XML-escaped via `html.escape()` before inclusion in prompt blocks. |
-| NFR-11 | XML Well-Formedness | `format_prompt_block()` output MUST be parseable by `xml.etree.ElementTree.fromstring()`. Verified by unit tests. |
+| NFR-10 | Prompt Injection Defense: Serialization | `format_prompt_block()` renders content as JSON via `json.dumps(ensure_ascii=False)`. JSON serialization handles character escaping automatically. No raw string concatenation of user content. |
+| NFR-11 | Prompt Injection Defense: Trust Tagging | All hydrated output MUST include `_trust` and `_trust_policy` metadata fields. Handover summaries marked `_trust: "low"`. The `_trust_policy` field contains a meta-instruction telling the receiving LLM to treat the block as context data, not instructions. |
+| NFR-12 | Prompt Injection Defense: Field Truncation | Individual fields MUST be truncated before serialization: task titles ≤200 chars, handover summaries ≤500 chars, defect titles ≤200 chars, defect descriptions ≤500 chars. Limits payload size for injection attacks. |
+| NFR-13 | Prompt Injection Defense: Pattern Stripping | A configurable blocklist of known injection patterns (e.g., "ignore previous instructions", `<\|im_start\|>`, `[INST]`) MUST be stripped from all text fields before serialization. This is a defense-in-depth layer — not the primary defense. |
 
 ## Refactoring Targets (ROI Analysis)
 
@@ -199,8 +201,9 @@ No new external dependencies. SQLAlchemy >=2.0.0 and Pydantic >=2.0 already in `
 | AD-6 | Query IN_PROGRESS + BLOCKED + UPSTREAM_BLOCKED | PENDING has no context. DONE > 24h is stale. ARCHIVED has null context. UPSTREAM_BLOCKED provides dependency visibility (blockers section only). | No |
 | AD-7 | `PromptContext` DTO is internal to `workflows/commons/` | `PromptContext` is never imported by `core.flow`. Workflow modules construct it internally from their method parameters. Handlers pass `db` and `project_name` as individual params (same pattern as `constitution`, `standards`). This avoids any new cross-boundary imports. | No |
 | AD-8 | `workflows/commons/` as new orchestrator module | Consumes `specweaver/llm`, `specweaver/workspace`, and `specweaver/config`. Uses `TYPE_CHECKING` for `graph` types. All 4 workflow modules add `specweaver/commons` to their `context.yaml` consumes. Registered in `tach.toml` with `[[interfaces]]`. | No |
-| AD-9 | Handover notes tagged with `trust="low"` | LLM-generated summaries from previous agents are untrusted. The trust tag signals to the LLM that these are prior agent outputs, not system instructions. Combined with XML escaping (NFR-10). | No |
+| AD-9 | Handover notes tagged with `trust="low"` | LLM-generated summaries from previous agents are untrusted. The trust tag signals to the LLM that these are prior agent outputs, not system instructions. Combined with JSON serialization (NFR-10), trust tagging (NFR-11), field truncation (NFR-12), and pattern stripping (NFR-13). | No |
 | AD-10 | Handover save via callback injection | `PipelineRunner` accepts `on_pipeline_complete` callback (same pattern as `on_event`). The callback is wired at the entry point layer that already imports `workspace`. The runner itself never imports `workspace`. | No |
+| AD-11 | 5-layer prompt injection defense | Defense-in-depth against indirect prompt injection through the memory hydration pipeline: (1) Pydantic schema validation at write time (B-INTL-09), (2) JSON serialization at format time (NFR-10), (3) trust tagging in output (NFR-11), (4) field-level truncation (NFR-12), (5) injection pattern stripping (NFR-13). Plus: system instruction framing around memory block (SF-2, PromptFactory). | No |
 
 ## `workflows/commons/context.yaml`
 
@@ -231,7 +234,7 @@ exposes:
 ## Sub-Feature Breakdown
 
 ### SF-1: Memory Hydrator & HydrationResult DTO
-- **Scope**: Pure read-side retrieval service + DTO with XML formatting.
+- **Scope**: Pure read-side retrieval service + DTO with JSON formatting and multi-layer prompt injection defense.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5]
 - **Inputs**: `AsyncSession`, `project_name`, optional `worker_id`
 - **Outputs**: `HydrationResult` DTO with `format_prompt_block() -> str`
@@ -276,7 +279,7 @@ This design has been through **4 full Red Team / Blue Team adversarial audit cyc
 
 - **Removed**: `memory_assembler.py`, `add_memory_context()` on PromptBuilder, `RunContext.memory_context` field, CLI/API wiring, `PromptContext` import in `core.flow`
 - **Added**: `PromptContext` DTO (internal to `workflows/commons/`), `workflows/commons/` module, NFR-9 (fail-safe), NFR-10 (XML escape), NFR-11 (well-formedness), AD-9 (trust tags), AD-10 (callback injection for handover save)
-- **Security**: 3-layer defense (Pydantic validation → XML escaping → trust tagging)
+- **Security**: 5-layer defense (Pydantic schema validation → JSON serialization → trust tagging → field truncation → injection pattern stripping). Plus system instruction framing in SF-2.
 - **Architecture**: Factory-internal hydration eliminates all entry-point coupling. PromptContext is internal — no cross-boundary DTO. Handover save uses callback injection — no boundary violation in PipelineRunner.
 
 ## Session Handoff

@@ -564,7 +564,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-28:** Base Integration Contract defined in [US-28_integration.md](topics/topic_08_integration/US-28_integration.md)
     *   `✅` **B-INTL-09:** Agent Memory Bank (Schema + CRUD + Resilience) — [Design](features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md) (Complete)
-    *   `[ ]` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols)
+    *   `🟡` **D-INTL-06:** Context Hydration & Handover (Retrieval + Prompt Injection + Handover Protocols) — [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Advanced Multi-Agent Concurrency:**
         *   `[ ]` **INT-US-28-SUB:** Sub-Story Integration
@@ -612,3 +612,9 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-05:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-05/TECH-05_design.md)
 *   **Dependency:** D-INTL-06 SF-2 (Prompt Factory) — the highest-ROI refactoring (moving constitution/standards loading inside the factory) requires the factory to exist first.
 *   **Discovered during:** D-INTL-06 Red Team Cycle 4 pattern analysis.
+
+### 🔴 TECH-06: PromptBuilder Input Escaping
+**Benefit:** *Hardens the prompt assembly layer against prompt injection by ensuring all string rendering uses proper escaping.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-06:** PromptBuilder Input Escaping (Tracked as cross-cutting tech debt)
+*   **Discovered during:** D-INTL-06 Red Team Cycle 1 pattern analysis.

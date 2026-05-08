@@ -19,8 +19,8 @@ This document tracks all capabilities related to LLM integration, specification 
   > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Eliminates "Blank Canvas" LLM hallucinations during greenfield bootstrap. Injects an interactive CLI wizard (persistence, authentication, archetype choices) bounding the LLM's solution space securely into a localized `context.yaml` before `sw plan` or `sw draft` engages.
 * **`D-INTL-05` ✅: Project Metadata Injection** (Legacy: 3.15)<br>
   > _(new)_ | Inject project name, archetype, language target, date, active config into system prompt; similar to Aider's `get_platform_info()`. **Complete**: 3587 tests.
-* **`D-INTL-06` 🔜: Context Hydration & Handover Engine**
-  > _(new)_ | Specialized retrieval layer that fetches the active Task state, blockers, and handover notes from the Memory Bank, validates them via Pydantic (8KB token limit), and injects structured context into the agent's prompt. Includes handover protocols for safely passing accumulated context between agents without hallucination transfer.
+* **`D-INTL-06` 🟡: Context Hydration & Handover Engine**
+  > _(new)_ | Specialized retrieval layer that fetches the active Task state, blockers, and handover notes from the Memory Bank, validates them via Pydantic (8KB token limit), and injects structured context into the agent's prompt. Includes handover protocols for safely passing accumulated context between agents without hallucination transfer. See [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md).
 
 ## DAL-C: Enterprise Standard
 * **`C-INTL-01` ✅: Iterative Decomposition** (Legacy: 3.24)<br>
