@@ -33,6 +33,7 @@ modules = [
     { path = "src.specweaver.workspace.project.interfaces", depends_on = [] },
     { path = "src.specweaver.workspace.ast.parsers", depends_on = [] },
     { path = "src.specweaver.workspace.ast.adapters", depends_on = [] },
+    { path = "src.specweaver.workspace.memory", depends_on = [] },
     { path = "src.specweaver.workspace", depends_on = [] },
 ]
 
@@ -237,4 +238,8 @@ from = [
 expose = [
     "cli",
 ]
+
+[[interfaces]]
+from = ["src.specweaver.workspace.memory"]
+expose = ["hydrator", "queries", "models", "store", "errors", "repository"]
 
