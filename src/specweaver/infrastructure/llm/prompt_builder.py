@@ -89,7 +89,7 @@ class PromptBuilder:
     def clone(self) -> PromptBuilder:
         """Create a deep copy of this PromptBuilder."""
         import copy
-        
+
         # We pass 1.0 for budget_scale_factor and then restore the actual values
         builder = PromptBuilder(
             budget=self._budget,

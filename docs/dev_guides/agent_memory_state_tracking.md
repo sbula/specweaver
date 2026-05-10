@@ -170,3 +170,14 @@ async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         base_prompt=base_prompt
     )
 ```
+
+### 9. Handover Save Protocol (Pipeline Interception)
+
+The persistence of handover context is managed automatically by the Flow Engine (`PipelineRunner`). Agent handlers DO NOT explicitly call `save_handover_context`.
+
+When a pipeline completes, fails, or is interrupted, the runner executes a fail-safe telemetry sweep:
+1. **Scrapes Step Records**: Extracts `files_touched` from successful outputs and `error_message` strings from failures.
+2. **Sanitizes Telemetry**: Deduplicates errors, enforcing a mathematical boundary of up to 10 errors (truncated to 500 chars) and 30 files, ensuring the final JSON strictly fits within the 8KB payload budget.
+3. **Persists to DB**: Locates the active `IN_PROGRESS` task for the current project and commits the sanitized `HandoverContext` to SQLite.
+
+This mechanism ensures telemetry is permanently persisted for the *next* agent, even if the current agent crashed due to a `KeyboardInterrupt` or unhandled LLM exception.

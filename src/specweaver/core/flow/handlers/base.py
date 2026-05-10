@@ -58,6 +58,7 @@ class RunContext(BaseModel):
     plan: str | None = None  # Pre-loaded plan content (set by runner hook)
     workspace_roots: list[str] | None = None  # Override boundary roots (set by decomposition)
     api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
+    task_id: str | None = None  # Target Task ID for Handover Protocol
     db: Any = None  # Database | None — for telemetry flush (set by CLI/API)
     llm_router: Any = None  # ModelRouter | None — per-task routing (3.12b)
     project_metadata: Any = None  # ProjectMetadata | None

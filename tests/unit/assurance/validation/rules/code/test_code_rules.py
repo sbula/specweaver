@@ -4,7 +4,6 @@
 """Tests for code generation and code validation rules C01-C08."""
 
 from __future__ import annotations
-from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -18,6 +17,7 @@ from specweaver.assurance.validation.rules.code.c06_no_bare_except import NoBare
 from specweaver.assurance.validation.rules.code.c07_no_orphan_todo import NoOrphanTodoRule
 from specweaver.assurance.validation.rules.code.c08_type_hints import TypeHintsRule
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.implementation.generator import Generator
 
 # ---------------------------------------------------------------------------

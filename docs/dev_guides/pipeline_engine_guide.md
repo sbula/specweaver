@@ -215,3 +215,21 @@ To strictly enforce NFR-2 (Process Isolation and Credential Security) from Featu
 The Pipeline Engine layer handles complex environment integrations, specifically for gathering contextual data before invoking LLM logic. Background components and target context files must be stripped of bloated method implementations via the **ContextAssembler**.
 
 Due to stringent architectural constraints ensuring non-blocking performance and boundary isolation, handlers implicitly trigger evaluate_and_fetch_skeleton_context() directly within execution contexts. This dynamically proxies CodeStructureAtom through threaded execution buffers, guaranteeing stable string mapping payloads directly into subsequent Workflow abstractions.
+
+---
+
+## 11. Handover Persistence & Telemetry Conventions
+
+Starting with Feature D-INTL-06 (Context Hydration & Handover Engine), the Pipeline Engine natively protects agent context through robust lifecycle hooks.
+
+### Mechanism & Sequence
+- **Implicit Persistence**: You do not explicitly call database saving mechanics inside your custom flow handlers. The `PipelineRunner` natively triggers `_save_handover` within the core execution `finally` blocks for `run()` and `resume()`. This ensures context is mathematically captured even if `KeyboardInterrupt` violently terminates the thread.
+- **Fail-Safe Integrity**: The telemetry aggregation is wrapped in a dedicated `try...except Exception` shield. If the SQLite backend crashes, Pydantic validation fails, or filesystem permissions break, the engine suppresses the exception (logging a `WARNING`) and cleanly terminates the pipeline without a crash cascade.
+- **The `files_touched` Convention**: To pass telemetry to the memory bank, handlers must adhere to a specific dictionary structure in their returned `StepResult.output`:
+  ```python
+  return StepResult(
+      status=StepStatus.PASSED,
+      output={"files_touched": ["src/my_module/new_file.py", "docs/my_doc.md"]}
+  )
+  ```
+  The engine autonomously parses this dictionary key, deduplicates the array, and truncates paths safely. Any malformed output is gracefully ignored natively by the fail-safe type check.

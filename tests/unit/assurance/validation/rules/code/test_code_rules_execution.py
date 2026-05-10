@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
-from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
+
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 if TYPE_CHECKING:
     from pathlib import Path

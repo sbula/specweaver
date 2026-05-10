@@ -12,8 +12,6 @@ Tests verify that:
 
 from __future__ import annotations
 
-from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
@@ -21,6 +19,7 @@ import pytest
 
 from specweaver.assurance.graph.topology import TopologyContext
 from specweaver.infrastructure.llm.models import LLMResponse
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -131,6 +131,7 @@ class PipelineRunner:
             async with cqrs_context():
                 return await self._execute_loop(run)
         finally:
+            await self._save_handover(run)
             self._flush_telemetry()
 
     async def resume(self, run_id: str) -> PipelineRun:
@@ -176,6 +177,7 @@ class PipelineRunner:
             async with cqrs_context():
                 return await self._execute_loop(run)
         finally:
+            await self._save_handover(run)
             self._flush_telemetry()
 
     # ------------------------------------------------------------------
@@ -592,3 +594,12 @@ class PipelineRunner:
         from specweaver.core.flow.engine.runner_utils import flush_telemetry
 
         flush_telemetry(self._context, logger)
+
+    async def _save_handover(self, run: PipelineRun) -> None:
+        """Invoke the fail-safe handover save protocol."""
+        try:
+            from specweaver.core.flow.engine.handover import save_handover_context
+
+            await save_handover_context(self._context, run)
+        except Exception as exc:
+            logger.warning("Failed to save handover context from runner: %s", exc)

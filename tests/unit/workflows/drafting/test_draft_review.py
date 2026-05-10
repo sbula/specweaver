@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -14,6 +12,7 @@ import pytest
 
 from specweaver.infrastructure.llm.errors import GenerationError
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.drafting.drafter import SPEC_SECTIONS, Drafter
 from specweaver.workflows.review.reviewer import (
     Reviewer,
