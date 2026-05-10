@@ -17,24 +17,26 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-1. **~~Candidate A: US-28 Foundation — Agent Memory Bank~~ 🟢 COMPLETED**
-   * **Features:** `INT-US-28` ✅, `B-INTL-09` Agent Memory Bank ✅ + `D-INTL-06` Context Hydration & Handover ✅
-   * All three Core MVS items delivered. US-28 promoted to 🟢.
-2. **~~Candidate B: US-4 Completion — Base Integration Contract~~ 🟢 COMPLETED**
-   * **Features:** `INT-US-04` Base Integration Contract ✅
-   * All Core MVS items delivered. US-4 promoted to 🟢. Unlocked 10+ downstream workflows!
-3. **Candidate C: US-2 Completion — Project Metadata Injection**
-   * **Features:** `D-INTL-05` Project Metadata Injection
-   * **Pros:** Single remaining blocker for `US-2` Core. Closes the Interactive Drafter and unblocks `US-21` (Autonomous Decomposition).
-   * **Cons:** Moderate effort; fewer downstream unlocks than Candidate A.
-4. **Candidate D: US-9 Core Execution — Standard Local Execution** ← UNBLOCKED (ACTIVE FOCUS)
+1. **Candidate A: US-9 Core Execution — Standard Local Execution** ← ACTIVE FOCUS
    * **Features:** `E-EXEC-01` Standard Local Execution + `C-EXEC-02` Native CLI Action Nodes
    * **Pros:** Closes `US-9` Core (Zero-Trust Sandbox), directly unblocking `US-3` (Autonomous Implementation) and all safe code execution workflows.
-   * **Cons:** ~~Blocked by Candidate B (`US-4`)~~ **Now unblocked!** Flow Engine integration is complete.
-5. **Candidate E: US-1 Security Hardening — AST Prompt Injection Sanitization**
+   * **Cons:** None. Flow Engine integration is now complete.
+2. **Candidate B: Configurable Prompt Render Profiles** ← UNBLOCKED
+   * **Features:** `C-INTL-05` Configurable Prompt Render Profiles + `INT-US-04-SUB`
+   * **Pros:** Enhances US-4 Orchestration by allowing dynamic, context-aware templating of prompts.
+   * **Cons:** Sub-story level enhancement; does not unlock new epics directly.
+3. **Candidate C: US-2 Completion — Project Metadata Injection** ← UNBLOCKED
+   * **Features:** `D-INTL-05` Project Metadata Injection
+   * **Pros:** Single remaining blocker for `US-2` Core. Closes the Interactive Drafter and unlocks `US-21` (Autonomous Decomposition).
+   * **Cons:** Moderate effort.
+4. **Candidate D: Token-Burn Circuit Breakers (EDoS Prevention)** ← UNBLOCKED
+   * **Features:** `B-FLOW-03` Token-Burn Circuit Breakers + `INT-US-04-SUB`
+   * **Pros:** High financial security ROI. Prevents massive LLM cost overruns natively within the Flow Engine.
+   * **Cons:** Hardening measure; does not unblock downstream epics.
+5. **Candidate E: AST Prompt Injection Sanitization** ← UNBLOCKED
    * **Features:** `E-VAL-03` AST Prompt Injection Sanitization
-   * **Pros:** High security ROI. Protects the Validation Engine from prompt injection attacks embedded in source code. Fully independent — zero upstream dependency.
-   * **Cons:** Purely a hardening measure; does not unblock any downstream stories.
+   * **Pros:** High security ROI. Protects the Validation Engine from prompt injection attacks embedded in source code.
+   * **Cons:** Purely a hardening measure.
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
