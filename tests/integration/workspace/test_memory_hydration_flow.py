@@ -32,6 +32,7 @@ async def session(engine: AsyncSession) -> AsyncSession:
 @pytest_asyncio.fixture
 async def base_project(session: AsyncSession) -> Project:
     from datetime import UTC, datetime
+
     now = datetime.now(UTC)
     project = Project(
         name="test_proj",
@@ -46,21 +47,25 @@ async def base_project(session: AsyncSession) -> Project:
 
 
 @pytest.mark.asyncio
-async def test_memory_hydration_integration_flow(session: AsyncSession, base_project: Project) -> None:
+async def test_memory_hydration_integration_flow(
+    session: AsyncSession, base_project: Project
+) -> None:
     """
-    [Integration] Demonstrates end-to-end compatibility between the Write-Side 
+    [Integration] Demonstrates end-to-end compatibility between the Write-Side
     (MemoryRepository) and the Read-Side (MemoryHydrator).
     """
     repo = MemoryRepository(session)
 
     # 1. Use the real Repository API to create an Epic and Task
     import uuid
+
     epic = await repo.create_epic(base_project.name, "Feature X")
     epic_id_uuid = uuid.UUID(str(epic["id"]))
     task = await repo.create_task(base_project.name, "Implement Y", None, epic_id=epic_id_uuid)
 
     # 2. Transition task to IN_PROGRESS and simulate an agent finishing its work
     import uuid
+
     task_id_uuid = uuid.UUID(str(task["id"]))
     await repo.acquire_task(task_id_uuid, "worker_1")
 
@@ -69,7 +74,7 @@ async def test_memory_hydration_integration_flow(session: AsyncSession, base_pro
         summary="I finished part 1, but part 2 still needs doing.",
         files_touched=["src/foo.py"],
         errors_encountered=[],
-        metadata={"model": "claude"}
+        metadata={"model": "claude"},
     )
     # 3. Update the handover context using the exact mechanism from B-INTL-09
     await repo.update_handover_context(task_id_uuid, handover)

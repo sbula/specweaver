@@ -10,11 +10,12 @@ from specweaver.core.flow.handlers.review import ReviewCodeHandler
 
 
 @patch("specweaver.workflows.implementation.generator.Generator")
+@patch("specweaver.core.flow.handlers.base._build_base_prompt", new_callable=AsyncMock)
 @patch("specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context")
 @patch("specweaver.core.flow.handlers.generation.evaluate_and_fetch_mcp_context")
 @pytest.mark.asyncio
 async def test_generate_code_handler_skeleton_wiring(
-    mock_auth_mcp, mock_eval_skel, mock_generator_class, tmp_path: Path
+    mock_auth_mcp, mock_eval_skel, mock_build_base_prompt, mock_generator_class, tmp_path: Path
 ) -> None:
     """Story 9: GenerateCodeHandler properly proxies dictionary seamlessly into Generator."""
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
@@ -40,17 +41,19 @@ async def test_generate_code_handler_skeleton_wiring(
         mock_thread.assert_called_once_with(mock_eval_skel, ctx, ["c:/fake/contract.py"])
 
         mock_generator_instance.generate_code.assert_called_once()
-        kwargs = mock_generator_instance.generate_code.call_args.kwargs
-        assert "skeleton_files" in kwargs
-        assert kwargs["skeleton_files"] == {"c:/fake/contract.py": "def fake(): pass"}
+        mock_build_base_prompt.assert_called_once()
+        build_kwargs = mock_build_base_prompt.call_args.kwargs
+        assert "skeleton_files" in build_kwargs
+        assert build_kwargs["skeleton_files"] == {"c:/fake/contract.py": "def fake(): pass"}
 
 
 @patch("specweaver.workflows.review.reviewer.Reviewer")
+@patch("specweaver.core.flow.handlers.base._build_base_prompt", new_callable=AsyncMock)
 @patch("specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context")
 @patch("specweaver.core.flow.handlers.review.evaluate_and_fetch_mcp_context")
 @pytest.mark.asyncio
 async def test_review_code_handler_skeleton_wiring(
-    mock_auth_mcp, mock_eval_skel, mock_reviewer_class, tmp_path: Path
+    mock_auth_mcp, mock_eval_skel, mock_build_base_prompt, mock_reviewer_class, tmp_path: Path
 ) -> None:
     """Story 10 & 10b: ReviewCodeHandler correctly buffers context and tests cross-platform resolution mapping."""
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo_spec.md")
@@ -97,20 +100,22 @@ async def test_review_code_handler_skeleton_wiring(
         assert str(code_path) in assembly_targets
 
         mock_reviewer_instance.review_code.assert_called_once()
-        kwargs = mock_reviewer_instance.review_code.call_args.kwargs
-        assert "skeleton_files" in kwargs
-        assert kwargs["skeleton_files"] == {
+        mock_build_base_prompt.assert_called_once()
+        build_kwargs = mock_build_base_prompt.call_args.kwargs
+        assert "skeleton_files" in build_kwargs
+        assert build_kwargs["skeleton_files"] == {
             "c:/fake/contract.py": "def fake(): pass",
             str(code_path): "def code(): pass",
         }
 
 
 @patch("specweaver.workflows.review.reviewer.Reviewer")
+@patch("specweaver.core.flow.handlers.base._build_base_prompt", new_callable=AsyncMock)
 @patch("specweaver.core.flow.handlers.context_assembler.CodeStructureAtom")
 @patch("specweaver.core.flow.handlers.review.evaluate_and_fetch_mcp_context")
 @pytest.mark.asyncio
 async def test_review_e2e_fallback_protection(
-    mock_auth_mcp, mock_atom_class, mock_reviewer_class, tmp_path: Path
+    mock_auth_mcp, mock_atom_class, mock_build_base_prompt, mock_reviewer_class, tmp_path: Path
 ) -> None:
     """Story 12: Pipeline Completely suppresses binary faults and falls back downstream natively."""
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
@@ -139,6 +144,7 @@ async def test_review_e2e_fallback_protection(
     assert res.status.value == "passed"
 
     mock_reviewer_instance.review_spec.assert_called_once()
-    kwargs = mock_reviewer_instance.review_spec.call_args.kwargs
-    assert "skeleton_files" in kwargs
-    assert kwargs["skeleton_files"] == {}  # The fault MUST be suppressed and cleanly map empty
+    mock_build_base_prompt.assert_called_once()
+    build_kwargs = mock_build_base_prompt.call_args.kwargs
+    assert "skeleton_files" in build_kwargs
+    assert build_kwargs["skeleton_files"] == {}  # The fault MUST be suppressed and cleanly map empty

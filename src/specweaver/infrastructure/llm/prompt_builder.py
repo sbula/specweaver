@@ -86,6 +86,22 @@ class PromptBuilder:
         self._blocks: list[_ContentBlock] = []
         self._skeleton_files: dict[str, str] = skeleton_files or {}
 
+    def clone(self) -> PromptBuilder:
+        """Create a deep copy of this PromptBuilder."""
+        import copy
+        
+        # We pass 1.0 for budget_scale_factor and then restore the actual values
+        builder = PromptBuilder(
+            budget=self._budget,
+            adapter=self._adapter,
+            budget_scale_factor=1.0,
+            skeleton_files=self._skeleton_files.copy() if self._skeleton_files else None,
+        )
+        builder._scale = self._scale
+        builder._auto_scale = self._auto_scale
+        builder._blocks = copy.deepcopy(self._blocks)
+        return builder
+
     def add_instructions(self, text: str) -> PromptBuilder:
         """Add instruction text (priority 0 — never truncated).
 

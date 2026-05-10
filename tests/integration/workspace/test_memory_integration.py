@@ -829,6 +829,7 @@ class TestMemoryBankIntegrationSimulations:
     ) -> None:
         """INT-20: Diamond DAG A->B, A->C, B->D, C->D. Block D -> cascades to A. Unblock D -> clears all."""
         from specweaver.workspace.memory.store import TaskStatus
+
         repo = MemoryRepository(session)
         task_a = await repo.create_task(project_name=base_project.name, title="A")
         task_b = await repo.create_task(project_name=base_project.name, title="B")

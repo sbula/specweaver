@@ -136,8 +136,37 @@ cleared_ancestors = await repo.clear_upstream_blocked(task_id=task.id)
 While `MemoryRepository` handles the write-side state machine, the read-side context injection is fully autonomous and managed by the `MemoryHydrator`.
 
 Agents do not need to manually query the memory bank when starting work. Instead:
-1. The `PromptFactory` automatically calls `MemoryHydrator.hydrate()` for the active project.
+1. The `_build_base_prompt()` function automatically calls `MemoryHydrator.hydrate()` for the active project.
 2. The Hydrator fetches `IN_PROGRESS` and `BLOCKED` tasks, plus recently `DONE` tasks that contain a `handover_context`.
 3. The context is automatically strictly formatted as JSON, wrapped in an `<agent_memory trust="low">` XML block to prevent prompt injection, and injected into the LLM context window with a hard limit of **2048 tokens**.
 
 If an agent needs to pass knowledge to the next agent, they simply update the `handover_context` before transitioning the task. The Hydrator will automatically ensure the next agent sees it (subject to priority truncation rules if the token budget is exhausted).
+
+### Example: Handler-Based Prompt Assembly (IoC)
+
+SpecWeaver utilizes Inversion of Control to build the prompt. The base prompt, including the memory block, is constructed in the Application layer, completely isolating the domain workflows from `MemoryHydrator`.
+
+```python
+# In src/specweaver/core/flow/handlers/your_handler.py
+from specweaver.core.flow.handlers.base import _build_base_prompt
+
+async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+    # 1. Build the base prompt (instructions, rules, metadata, AND Agent Memory)
+    # The hydration is fail-safe; if DB fails, it gracefully omits memory.
+    base_prompt = await _build_base_prompt(
+        context,
+        instructions="You are an expert developer...",
+        include_rules=True 
+    )
+
+    # 2. Add domain-specific blocks
+    if context.topology:
+        base_prompt.add_topology([context.topology])
+
+    # 3. Pass the pre-assembled prompt down to the isolated workflow
+    result = await generator.generate_code(
+        spec_path,
+        output_path,
+        base_prompt=base_prompt
+    )
+```

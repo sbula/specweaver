@@ -16,16 +16,16 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 
-from specweaver.infrastructure.llm.models import GenerationConfig, Message, ProjectMetadata, Role
+from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
     from specweaver.infrastructure.llm.models import ToolDispatcherProtocol
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -120,46 +120,27 @@ class Reviewer:
     async def review_spec(
         self,
         spec_path: Path,
+        base_prompt: PromptBuilder,
         *,
-        topology_contexts: list[TopologyContext] | None = None,
-        constitution: str | None = None,
-        standards: str | None = None,
         mentioned_files: list[ResolvedMention] | None = None,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
-        project_metadata: ProjectMetadata | None = None,
         environment_context: str | None = None,
-        skeleton_files: dict[str, str] | None = None,
     ) -> ReviewResult:
         """Review a spec file for quality and completeness.
 
         Args:
             spec_path: Path to the spec markdown file.
-            topology_contexts: Optional topology context from the project graph.
-            constitution: Optional constitution content to inject.
-            standards: Optional project standards to inject.
+            base_prompt: Base prompt builder initialized with context.
             mentioned_files: Optional auto-detected file mentions from a prior
                 pipeline step, injected as reference context (priority 4).
+            on_tool_round: Optional callback for tool execution rounds.
             environment_context: Optional mapped string extracting physical MCP bounds.
 
         Returns:
             ReviewResult with verdict and findings.
         """
-        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
-        builder = (
-            PromptBuilder(skeleton_files=skeleton_files)
-            .add_instructions(SPEC_REVIEW_INSTRUCTIONS)
-            .add_project_metadata(project_metadata)
-            .add_file(spec_path, priority=1, role="target")
-        )
-        if constitution:
-            builder.add_constitution(constitution)
-            logger.debug("review_spec: constitution injected (%d chars)", len(constitution))
-        if standards:
-            builder.add_standards(standards)
-            logger.debug("review_spec: standards injected (%d chars)", len(standards))
-        if topology_contexts:
-            builder.add_topology(topology_contexts)
+        builder = base_prompt
+        builder.add_file(spec_path, priority=1, role="target")
         if mentioned_files:
             builder.add_mentioned_files(mentioned_files)
             logger.debug("review_spec: %d mentioned files injected", len(mentioned_files))
@@ -174,48 +155,30 @@ class Reviewer:
         self,
         code_path: Path,
         spec_path: Path,
+        base_prompt: PromptBuilder,
         *,
-        topology_contexts: list[TopologyContext] | None = None,
-        constitution: str | None = None,
-        standards: str | None = None,
         mentioned_files: list[ResolvedMention] | None = None,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
-        project_metadata: ProjectMetadata | None = None,
         environment_context: str | None = None,
-        skeleton_files: dict[str, str] | None = None,
     ) -> ReviewResult:
         """Review generated code against its source spec.
 
         Args:
             code_path: Path to the generated code file.
             spec_path: Path to the source spec file.
-            topology_contexts: Optional topology context from the project graph.
-            constitution: Optional constitution content to inject.
-            standards: Optional project standards to inject.
+            base_prompt: Base prompt builder initialized with context.
             mentioned_files: Optional auto-detected file mentions from a prior
                 pipeline step, injected as reference context (priority 4).
+            on_tool_round: Optional callback for tool execution rounds.
             environment_context: Optional mapped string extracting physical MCP bounds.
 
         Returns:
             ReviewResult with verdict and findings.
         """
-        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+        builder = base_prompt
+        builder.add_file(spec_path, priority=1, label="specification", role="reference")
+        builder.add_file(code_path, priority=2, label="generated_code", role="target")
 
-        builder = (
-            PromptBuilder(skeleton_files=skeleton_files)
-            .add_instructions(CODE_REVIEW_INSTRUCTIONS)
-            .add_project_metadata(project_metadata)
-            .add_file(spec_path, priority=1, label="specification", role="reference")
-            .add_file(code_path, priority=2, label="generated_code", role="target")
-        )
-        if constitution:
-            builder.add_constitution(constitution)
-            logger.debug("review_code: constitution injected (%d chars)", len(constitution))
-        if standards:
-            builder.add_standards(standards)
-            logger.debug("review_code: standards injected (%d chars)", len(standards))
-        if topology_contexts:
-            builder.add_topology(topology_contexts)
         if mentioned_files:
             builder.add_mentioned_files(mentioned_files)
             logger.debug("review_code: %d mentioned files injected", len(mentioned_files))

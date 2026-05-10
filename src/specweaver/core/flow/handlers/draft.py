@@ -64,6 +64,7 @@ class DraftSpecHandler:
         self, step: PipelineStep, context: RunContext, started: str
     ) -> StepResult:
         """Execute the actual interactive Drafter."""
+        from specweaver.core.flow.handlers.base import _build_base_prompt
         from specweaver.infrastructure.llm.models import GenerationConfig
         from specweaver.workflows.drafting.drafter import Drafter
 
@@ -76,10 +77,17 @@ class DraftSpecHandler:
                 run_id=getattr(context, "run_id", "") or "",
             )
 
+        base_prompt = await _build_base_prompt(
+            context=context,
+            instructions="",
+            include_rules=False,
+        )
+
         drafter = Drafter(
             llm=context.llm,
             context_provider=context.context_provider,
             config=gen_config,
+            base_prompt=base_prompt,
         )
 
         name = context.spec_path.stem.removesuffix("_spec")

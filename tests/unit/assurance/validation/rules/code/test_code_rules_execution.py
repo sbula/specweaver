@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -482,7 +483,7 @@ class TestGeneratorBehavioral:
 
         gen = Generator(llm=_failing_llm())
         with pytest.raises(GenerationError, match="LLM exploded"):
-            await gen.generate_code(spec, output)
+            await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
     @pytest.mark.asyncio
     async def test_llm_returns_empty_text(self, tmp_path: Path) -> None:
@@ -496,7 +497,7 @@ class TestGeneratorBehavioral:
             return_value=LLMResponse(text="", model="test-model"),
         )
         gen = Generator(llm=mock_llm)
-        result = await gen.generate_code(spec, output)
+        result = await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
         assert result.exists()
         assert result.read_text(encoding="utf-8") == "\n"
@@ -513,7 +514,7 @@ class TestGeneratorBehavioral:
         )
         gen = Generator(llm=mock_llm)
         with pytest.raises(FileNotFoundError):
-            await gen.generate_code(spec, output)
+            await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
     @pytest.mark.asyncio
     async def test_empty_spec_file(self, tmp_path: Path) -> None:
@@ -527,7 +528,7 @@ class TestGeneratorBehavioral:
             return_value=LLMResponse(text="pass\n", model="test-model"),
         )
         gen = Generator(llm=mock_llm)
-        result = await gen.generate_code(spec, output)
+        result = await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
         assert result.exists()
         assert "pass" in result.read_text(encoding="utf-8")
@@ -541,7 +542,7 @@ class TestGeneratorBehavioral:
 
         gen = Generator(llm=_failing_llm())
         with pytest.raises(GenerationError):
-            await gen.generate_tests(spec, output)
+            await gen.generate_tests(spec, output, base_prompt=PromptBuilder())
 
     @pytest.mark.asyncio
     async def test_output_not_written_on_error(self, tmp_path: Path) -> None:
@@ -552,7 +553,7 @@ class TestGeneratorBehavioral:
 
         gen = Generator(llm=_failing_llm())
         with pytest.raises(GenerationError):
-            await gen.generate_code(spec, output)
+            await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
         assert not output.exists()
 

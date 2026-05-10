@@ -10,7 +10,6 @@ from specweaver.core.config.database import register_fk_pragma_listener
 # We will import MemoryRepository once it's created, but for now this will cause an ImportError
 # which is expected for the RED phase.
 from specweaver.workspace.memory.repository import MemoryRepository
-from specweaver.workspace.memory.store import EpicStatus
 from specweaver.workspace.store import Base, Project
 
 
@@ -72,7 +71,9 @@ class TestMemoryRepositoryResilience:
         task_model.last_heartbeat_at = old_time
         await session.flush()
 
-        updated = await repo.pulse_heartbeat(task_id=uuid.UUID(str(task["id"])), worker_id="agent-1")
+        updated = await repo.pulse_heartbeat(
+            task_id=uuid.UUID(str(task["id"])), worker_id="agent-1"
+        )
         assert updated["last_heartbeat_at"] > old_time.isoformat()
 
     async def test_pulse_heartbeat_not_in_progress(

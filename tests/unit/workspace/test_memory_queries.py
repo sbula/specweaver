@@ -192,7 +192,7 @@ async def test_get_recent_done_tasks_excludes_stale(session: AsyncSession, base_
     t1 = await _create_task(session, base_project.name, "Stale", TaskStatus.DONE, -25)  # 25h ago
     t1.handover_context = '{"summary": "too old"}'
 
-    t2 = await _create_task(session, base_project.name, "Recent", TaskStatus.DONE, -10) # 10h ago
+    t2 = await _create_task(session, base_project.name, "Recent", TaskStatus.DONE, -10)  # 10h ago
     t2.handover_context = '{"summary": "recent"}'
 
     service = MemoryQueryService(session)
@@ -220,7 +220,9 @@ async def test_get_recent_done_tasks_custom_age(session: AsyncSession, base_proj
     assert res2[0].id == t1.id
 
 
-async def _create_defect(session: AsyncSession, task_id: uuid.UUID, title: str, status: DefectStatus) -> Defect:
+async def _create_defect(
+    session: AsyncSession, task_id: uuid.UUID, title: str, status: DefectStatus
+) -> Defect:
     now = datetime.now(UTC)
     defect = Defect(
         task_id=task_id,

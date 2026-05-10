@@ -40,7 +40,7 @@ def _sanitize(text: str, max_length: int) -> str:
 
     # Layer 4: Field-level Truncation
     if len(text) > max_length:
-        return text[:max_length - 3] + "..."
+        return text[: max_length - 3] + "..."
 
     return text
 
@@ -117,18 +117,22 @@ class MemoryHydrator:
             A HydrationResult containing the assembled and truncated context.
         """
         # Fetch active tasks
-        active_tasks_orm = list(await self.query_service.get_active_tasks(
-            self.project_name,
-            statuses=[TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.UPSTREAM_BLOCKED],
-            limit=10,
-        ))
+        active_tasks_orm = list(
+            await self.query_service.get_active_tasks(
+                self.project_name,
+                statuses=[TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.UPSTREAM_BLOCKED],
+                limit=10,
+            )
+        )
 
         # Fetch recent done tasks
-        done_tasks_orm = list(await self.query_service.get_recent_done_tasks(
-            self.project_name,
-            max_age_hours=24,
-            limit=10,
-        ))
+        done_tasks_orm = list(
+            await self.query_service.get_recent_done_tasks(
+                self.project_name,
+                max_age_hours=24,
+                limit=10,
+            )
+        )
 
         # Merge and sort
         all_tasks = active_tasks_orm + done_tasks_orm
@@ -160,32 +164,44 @@ class MemoryHydrator:
                     if task.status == TaskStatus.IN_PROGRESS and ctx.summary:
                         notes_with_time.append((task.updated_at, _sanitize(ctx.summary, 500)))
                 except Exception as e:
-                    logger.warning(f"Failed to parse handover context for task {task.id}: {e} Schema validation failed")
+                    logger.warning(
+                        f"Failed to parse handover context for task {task.id}: {e} Schema validation failed"
+                    )
 
             sanitized_title = _sanitize(task.title, 200)
 
             if task.status == TaskStatus.UPSTREAM_BLOCKED:
-                blockers.append(HydratedBlocker(
-                    task_title=sanitized_title,
-                    defect_titles=["Upstream blocked"],
-                    defect_descriptions=[]
-                ))
+                blockers.append(
+                    HydratedBlocker(
+                        task_title=sanitized_title,
+                        defect_titles=["Upstream blocked"],
+                        defect_descriptions=[],
+                    )
+                )
             elif task.status == TaskStatus.BLOCKED:
                 task_defects = defects_map.get(task.id, [])
                 d_titles = [_sanitize(d.title, 200) for d in task_defects] if task_defects else []
-                d_descs = [_sanitize(d.description, 500) for d in task_defects if d.description] if task_defects else []
-                blockers.append(HydratedBlocker(
-                    task_title=sanitized_title,
-                    defect_titles=d_titles,
-                    defect_descriptions=d_descs
-                ))
+                d_descs = (
+                    [_sanitize(d.description, 500) for d in task_defects if d.description]
+                    if task_defects
+                    else []
+                )
+                blockers.append(
+                    HydratedBlocker(
+                        task_title=sanitized_title,
+                        defect_titles=d_titles,
+                        defect_descriptions=d_descs,
+                    )
+                )
             else:
-                active_tasks.append(HydratedTask(
-                    title=sanitized_title,
-                    status=task.status.name,
-                    worker_id=task.assigned_worker_id,
-                    handover_summary=handover_summary,
-                ))
+                active_tasks.append(
+                    HydratedTask(
+                        title=sanitized_title,
+                        status=task.status.name,
+                        worker_id=task.assigned_worker_id,
+                        handover_summary=handover_summary,
+                    )
+                )
 
         # Sort notes by time (oldest first, so we pop from index 0 during truncation)
         notes_with_time.sort(key=lambda x: x[0])
@@ -207,6 +223,7 @@ class MemoryHydrator:
 
     def _apply_truncation(self, result: HydrationResult) -> HydrationResult:
         """Apply 3-stage truncation if payload exceeds token limit."""
+
         def get_estimate() -> int:
             return len(json.dumps(asdict(result))) // 4
 

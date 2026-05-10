@@ -204,6 +204,7 @@ Each feature was built incrementally across 3 phases. For each feature:
 
 **3.28 Interactive Sandbox Execution (Arbiter Feedback)** — Dual-pipeline verification resolving correlated hallucinations by physically isolating the Scenario Generator from the Code Generator. A 3rd read-only Arbiter acts as the final decision mechanism to route filtered vocabulary error traces backwards safely without polluting the code agent's system prompt with scenario schemas.
 
+**D-INTL-06 Context Hydration & Handover (SF-2 Inversion of Control)** — Centralizes agent memory hydration into `core.flow.handlers.base._build_base_prompt()`. Replaces a DRY violation across all 5 workflow modules by executing Inversion of Control (IoC). Handlers dynamically assemble `PromptBuilder` objects with system state, rules, and sqlite-backed memory context before delegating to pure Domain Layer workflows, preserving DDD boundaries while granting LLMs seamless contextual awareness of active/blocked tasks and handover constraints.
 ### How Features Map to Lifecycle Layers
 
 ```
@@ -285,7 +286,7 @@ graph TD
 | `config` | pure-logic | *(leaf)* | sandbox/* |
 | `context` | contract | *(leaf)* | sandbox/* |
 | `drafting` | orchestrator | llm, config, context | sandbox/* |
-| `flow` | orchestrator | config, llm, review, implementation, planning, validation, sandbox/qa_runner, sandbox/dispatcher, sandbox/security | sandbox/*, sandbox/*, drafting, context |
+| `flow` | orchestrator | config, llm, review, implementation, planning, validation, sandbox/qa_runner, sandbox/dispatcher, sandbox/security, workspace/memory | sandbox/* (except dispatcher/qa_runner/security), drafting, context |
 | `graph` | pure-logic | context | sandbox/*, llm, drafting, implementation |
 | `implementation` | orchestrator | llm, config, validation | *(none)* |
 | `llm` | adapter | config | sandbox/* |

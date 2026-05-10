@@ -10,7 +10,6 @@ from specweaver.core.config.database import register_fk_pragma_listener
 # We will import MemoryRepository once it's created, but for now this will cause an ImportError
 # which is expected for the RED phase.
 from specweaver.workspace.memory.repository import MemoryRepository
-from specweaver.workspace.memory.store import EpicStatus
 from specweaver.workspace.store import Base, Project
 
 
@@ -59,7 +58,9 @@ class TestMemoryRepositoryDependencies:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         context = HandoverContext(summary="test summary")
-        updated = await repo.update_handover_context(task_id=uuid.UUID(str(task["id"])), context=context)
+        updated = await repo.update_handover_context(
+            task_id=uuid.UUID(str(task["id"])), context=context
+        )
         assert updated["handover_context"] == context.to_json_str()
 
     async def test_update_handover_context_none_clears(
@@ -70,9 +71,13 @@ class TestMemoryRepositoryDependencies:
 
         repo = MemoryRepository(session)
         task = await repo.create_task(project_name=base_project.name, title="T1")
-        await repo.update_handover_context(task_id=uuid.UUID(str(task["id"])), context=HandoverContext())
+        await repo.update_handover_context(
+            task_id=uuid.UUID(str(task["id"])), context=HandoverContext()
+        )
 
-        cleared = await repo.update_handover_context(task_id=uuid.UUID(str(task["id"])), context=None)
+        cleared = await repo.update_handover_context(
+            task_id=uuid.UUID(str(task["id"])), context=None
+        )
         assert cleared["handover_context"] is None
 
     async def test_update_handover_context_task_not_found(self, session: AsyncSession) -> None:
@@ -334,5 +339,3 @@ class TestMemoryRepositoryAcquisition:
 
         assert exc_info.value.expected_version == 1
         assert exc_info.value.actual_version == 2
-
-

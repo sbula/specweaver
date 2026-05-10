@@ -163,6 +163,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Remote UI Integration:**
         *   `[ ]` **INT-US-04-SUB:** Sub-Story Integration defined in [SF-7: Remote UI Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-7-remote-ui-integration-pending-design)
         *   `[ ]` **D-UI-05:** REST API - Enterprise Configuration
+    *   🔴 **Configurable Prompt Render Profiles:**
+        *   `[ ]` **INT-US-04-SUB:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **C-INTL-05:** Configurable Prompt Render Profiles
 
 ### 🟡 US-5: Polyglot Code Understanding
 *   **User Benefit:** SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.
@@ -618,3 +621,4 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-06:** PromptBuilder Input Escaping (Tracked as cross-cutting tech debt)
 *   **Discovered during:** D-INTL-06 Red Team Cycle 1 pattern analysis.
+

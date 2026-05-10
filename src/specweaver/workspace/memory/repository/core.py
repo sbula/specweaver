@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 CIRCUIT_BREAKER_DEFECT_TITLE = "circuit_breaker: max retries exceeded"
 
+
 def _validate_non_empty(field_name: str, value: str) -> None:
     """Raise ValueError if value is empty or whitespace-only."""
     if not value or not value.strip():
@@ -428,6 +429,7 @@ class MemoryRepositoryCoreMixin:
 
     async def acquire_task(self, task_id: uuid.UUID, worker_id: str) -> dict[str, object]:
         from sqlalchemy import update
+
         task = await self.session.get(Task, task_id)
         if task is None:
             raise ValueError(f"Task not found: {task_id}")

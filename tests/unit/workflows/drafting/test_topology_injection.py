@@ -12,6 +12,8 @@ Tests verify that:
 
 from __future__ import annotations
 
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
@@ -93,7 +95,7 @@ class TestReviewerTopologyInjection:
         mock_llm = _make_mock_llm()
         reviewer = Reviewer(llm=mock_llm)
 
-        result = await reviewer.review_spec(spec)
+        result = await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.ACCEPTED
         mock_llm.generate.assert_awaited_once()
@@ -108,7 +110,7 @@ class TestReviewerTopologyInjection:
         reviewer = Reviewer(llm=mock_llm)
         contexts = _sample_topology()
 
-        await reviewer.review_spec(spec, topology_contexts=contexts)
+        await reviewer.review_spec(spec, base_prompt=PromptBuilder().add_topology(contexts))
 
         # Verify the prompt sent to LLM contains topology info
         call_args = mock_llm.generate.call_args
@@ -127,7 +129,7 @@ class TestReviewerTopologyInjection:
         mock_llm = _make_mock_llm()
         reviewer = Reviewer(llm=mock_llm)
 
-        await reviewer.review_spec(spec)
+        await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
         call_args = mock_llm.generate.call_args
         messages = call_args[0][0]
@@ -145,7 +147,7 @@ class TestReviewerTopologyInjection:
         reviewer = Reviewer(llm=mock_llm)
         contexts = _sample_topology()
 
-        await reviewer.review_code(code, spec, topology_contexts=contexts)
+        await reviewer.review_code(code, spec, base_prompt=PromptBuilder().add_topology(contexts))
 
         call_args = mock_llm.generate.call_args
         messages = call_args[0][0]
@@ -163,7 +165,7 @@ class TestReviewerTopologyInjection:
         mock_llm = _make_mock_llm()
         reviewer = Reviewer(llm=mock_llm)
 
-        await reviewer.review_code(code, spec)
+        await reviewer.review_code(code, spec, base_prompt=PromptBuilder())
 
         call_args = mock_llm.generate.call_args
         messages = call_args[0][0]
@@ -190,7 +192,7 @@ class TestGeneratorTopologyInjection:
         mock_llm = _make_mock_llm("def greet(name):\n    return f'Hello {name}'")
         gen = Generator(llm=mock_llm)
 
-        result = await gen.generate_code(spec, out)
+        result = await gen.generate_code(spec, out, base_prompt=PromptBuilder())
 
         assert result == out
         assert out.exists()
@@ -206,7 +208,7 @@ class TestGeneratorTopologyInjection:
         gen = Generator(llm=mock_llm)
         contexts = _sample_topology()
 
-        await gen.generate_code(spec, out, topology_contexts=contexts)
+        await gen.generate_code(spec, out, base_prompt=PromptBuilder().add_topology(contexts))
 
         call_args = mock_llm.generate.call_args
         messages = call_args[0][0]
@@ -224,7 +226,7 @@ class TestGeneratorTopologyInjection:
         mock_llm = _make_mock_llm("def greet(name):\n    return f'Hello {name}'")
         gen = Generator(llm=mock_llm)
 
-        await gen.generate_code(spec, out)
+        await gen.generate_code(spec, out, base_prompt=PromptBuilder())
 
         call_args = mock_llm.generate.call_args
         messages = call_args[0][0]
@@ -242,7 +244,7 @@ class TestGeneratorTopologyInjection:
         gen = Generator(llm=mock_llm)
         contexts = _sample_topology()
 
-        await gen.generate_tests(spec, out, topology_contexts=contexts)
+        await gen.generate_tests(spec, out, base_prompt=PromptBuilder().add_topology(contexts))
 
         call_args = mock_llm.generate.call_args
         messages = call_args[0][0]
@@ -259,7 +261,7 @@ class TestGeneratorTopologyInjection:
         mock_llm = _make_mock_llm("def test_greet():\n    assert True")
         gen = Generator(llm=mock_llm)
 
-        await gen.generate_tests(spec, out)
+        await gen.generate_tests(spec, out, base_prompt=PromptBuilder())
 
         call_args = mock_llm.generate.call_args
         messages = call_args[0][0]

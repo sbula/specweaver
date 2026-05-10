@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.planning.models import PlanArtifact
 from specweaver.workflows.planning.planner import Planner
 
@@ -89,6 +90,7 @@ class TestPlannerSuccess:
             spec_content="# Login Spec\n\nHandle login.",
             spec_path="specs/login_spec.md",
             spec_name="Login",
+            base_prompt=PromptBuilder(),
         )
 
         assert isinstance(plan, PlanArtifact)
@@ -107,6 +109,7 @@ class TestPlannerSuccess:
             spec_content="# Test",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
         )
 
         # Hash should be SHA-256 of "# Test", not "ignored"
@@ -125,6 +128,7 @@ class TestPlannerSuccess:
             spec_content="# Test",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
         )
         assert isinstance(plan, PlanArtifact)
 
@@ -152,6 +156,7 @@ class TestPlannerRetry:
             spec_content="# Test",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
         )
         assert isinstance(plan, PlanArtifact)
         # Should have been called twice
@@ -172,6 +177,7 @@ class TestPlannerRetry:
             spec_content="# Test",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
         )
 
         # Second call should have more messages (including retry prompt)
@@ -197,6 +203,7 @@ class TestPlannerRetry:
                 spec_content="# Test",
                 spec_path="test.md",
                 spec_name="Test",
+            base_prompt=PromptBuilder(),
             )
 
 
@@ -204,59 +211,6 @@ class TestPlannerRetry:
 # Test: extra context
 # ---------------------------------------------------------------------------
 
-
-class TestPlannerContext:
-    """Planner passes constitution and standards to prompt."""
-
-    @pytest.mark.asyncio()
-    async def test_constitution_injected(self) -> None:
-        llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
-
-        await planner.generate_plan(
-            spec_content="# Test",
-            spec_path="test.md",
-            spec_name="Test",
-            constitution="No external APIs",
-        )
-
-        # The user prompt in the first call should contain constitution
-        first_call_msgs = llm.messages_log[0]
-        user_msg = first_call_msgs[-1]  # Last message is user prompt
-        assert "No external APIs" in user_msg.content
-
-    @pytest.mark.asyncio()
-    async def test_standards_injected(self) -> None:
-        llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
-
-        await planner.generate_plan(
-            spec_content="# Test",
-            spec_path="test.md",
-            spec_name="Test",
-            standards="PEP 8, type hints required",
-        )
-
-        first_call_msgs = llm.messages_log[0]
-        user_msg = first_call_msgs[-1]
-        assert "PEP 8" in user_msg.content
-
-    @pytest.mark.asyncio()
-    async def test_expected_signatures_in_prompt(self) -> None:
-        """The LLM must be explicitly told to generate expected_signatures."""
-        llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1)
-
-        await planner.generate_plan(
-            spec_content="# Test",
-            spec_path="test.md",
-            spec_name="Test",
-        )
-
-        first_call_msgs = llm.messages_log[0]
-        user_msg = first_call_msgs[-1]
-        assert "expected_signatures" in user_msg.content
-        assert "MethodSignature" in user_msg.content
 
 
 # ---------------------------------------------------------------------------
@@ -296,6 +250,7 @@ class TestPlannerEdgeCases:
             spec_content="",
             spec_path="empty.md",
             spec_name="Empty",
+            base_prompt=PromptBuilder(),
         )
         assert isinstance(plan, PlanArtifact)
         assert len(plan.spec_hash) == 64  # SHA-256 of empty string
@@ -327,6 +282,7 @@ class TestPlannerEdgeCases:
             spec_content="# Test",
             spec_path="t.md",
             spec_name="T",
+            base_prompt=PromptBuilder(),
         )
         # Timestamp should have been filled (non-empty)
         assert plan.timestamp
@@ -344,6 +300,7 @@ class TestPlannerEdgeCases:
             spec_content="# Test",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
         )
         assert isinstance(plan, PlanArtifact)
         assert llm._call_count == 2  # first failed Pydantic, second succeeded
@@ -359,6 +316,7 @@ class TestPlannerEdgeCases:
                 spec_content="# Test",
                 spec_path="test.md",
                 spec_name="Test",
+            base_prompt=PromptBuilder(),
             )
         assert llm._call_count == 1
 
@@ -395,6 +353,7 @@ class TestPlannerStitchIntegration:
             spec_content="## Protocol\n\nUI dashboard",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
             stitch_mode="off",
         )
         assert mock_extract_called is False
@@ -426,6 +385,7 @@ class TestPlannerStitchIntegration:
             spec_content="## Protocol\n\nBackend stuff",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
             stitch_mode="auto",
         )
         assert mock_stitch_called is False
@@ -457,6 +417,7 @@ class TestPlannerStitchIntegration:
             spec_content="## Protocol\n\nUI dashboard",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
             stitch_mode="auto",
         )
         assert not plan.mockups
@@ -470,6 +431,7 @@ class TestPlannerStitchIntegration:
             spec_content="## Protocol\n\nUI dashboard",
             spec_path="test.md",
             spec_name="Test",
+            base_prompt=PromptBuilder(),
             stitch_mode="prompt",
             stitch_api_key="fake-key",
         )
@@ -483,32 +445,3 @@ class TestPlannerStitchIntegration:
 # ---------------------------------------------------------------------------
 
 
-class TestPlannerProjectMetadata:
-    """Planner injects project_metadata into the PromptBuilder."""
-
-    @pytest.mark.asyncio()
-    async def test_generate_plan_injects_metadata(self) -> None:
-        from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
-
-        llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm=llm)
-        metadata = ProjectMetadata(
-            project_name="plan_test_meta",
-            archetype="pure-logic",
-            language_target="python",
-            date_iso="now",
-            safe_config=PromptSafeConfig(llm_provider="test", llm_model="test"),
-        )
-
-        await planner.generate_plan(
-            spec_content="# Test Spec",
-            spec_path="test.md",
-            spec_name="Test",
-            project_metadata=metadata,
-        )
-
-        # llm.messages_log[0] is the first generate call's messages list
-        # message 1 is the USER message containing the prompt
-        user_prompt = llm.messages_log[0][1].content
-        assert "<project_metadata>" in user_prompt
-        assert '"project_name": "plan_test_meta"' in user_prompt

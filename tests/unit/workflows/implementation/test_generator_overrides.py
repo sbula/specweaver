@@ -45,10 +45,14 @@ class TestGeneratorOverridesInjection:
         spec.write_text("# Spec\n", encoding="utf-8")
         output = tmp_path / "out.py"
 
+        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+        base_prompt = PromptBuilder()
+
         gen = Generator(llm=mock_llm)
         await gen.generate_code(
             spec,
             output,
+            base_prompt=base_prompt,
             dictator_overrides=["Make the UI red"],
         )
 
@@ -71,10 +75,14 @@ class TestGeneratorOverridesInjection:
         spec.write_text("# Spec\n", encoding="utf-8")
         output = tmp_path / "out.py"
 
+        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+        base_prompt = PromptBuilder()
+
         gen = Generator(llm=mock_llm)
         await gen.generate_code(
             spec,
             output,
+            base_prompt=base_prompt,
             validation_findings="[LINT01] Line too long.",
         )
 
@@ -97,10 +105,14 @@ class TestGeneratorOverridesInjection:
         spec.write_text("# Spec\n", encoding="utf-8")
         output = tmp_path / "test_out.py"
 
+        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+        base_prompt = PromptBuilder()
+
         gen = Generator(llm=mock_llm)
         await gen.generate_tests(
             spec,
             output,
+            base_prompt=base_prompt,
             dictator_overrides=["Test negative balances too"],
         )
 
@@ -123,10 +135,14 @@ class TestGeneratorOverridesInjection:
         spec.write_text("# Spec\n", encoding="utf-8")
         output = tmp_path / "test_out.py"
 
+        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+        base_prompt = PromptBuilder()
+
         gen = Generator(llm=mock_llm)
         await gen.generate_tests(
             spec,
             output,
+            base_prompt=base_prompt,
             validation_findings="[COV] Missing test case.",
         )
 

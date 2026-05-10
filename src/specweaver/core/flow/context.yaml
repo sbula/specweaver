@@ -17,6 +17,7 @@ archetype: orchestrator
 
 consumes:
   - specweaver/config
+  - specweaver/workspace/memory
   - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
   - specweaver/review
   - specweaver/implementation

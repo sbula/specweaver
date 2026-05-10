@@ -17,6 +17,7 @@ from specweaver.core.flow.engine.state import StepResult, StepStatus
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult  # noqa: F401
     from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -167,3 +168,63 @@ def _error_result(message: str, started_at: str) -> StepResult:
         started_at=started_at,
         completed_at=_now_iso(),
     )
+
+
+async def _build_base_prompt(
+    context: RunContext,
+    instructions: str,
+    *,
+    include_rules: bool = True,
+    skeleton_files: dict[str, str] | None = None,
+) -> PromptBuilder:
+    """Build a PromptBuilder with base context (instructions, metadata, rules, memory).
+
+    Args:
+        context: The RunContext for this pipeline step.
+        instructions: Module-specific instruction text.
+        include_rules: If False, skips constitution and standards (2-Tier Handover for Drafts).
+        skeleton_files: Optional skeleton files for PromptBuilder constructor.
+
+    Returns:
+        A partially-built PromptBuilder ready for domain-specific additions.
+
+    The memory hydration is fail-safe: any exception during hydration (db=None,
+    DB failure, Pydantic error) is caught and logged at WARNING. The returned
+    PromptBuilder simply lacks the agent_memory block.
+    """
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
+    builder = PromptBuilder(skeleton_files=skeleton_files)
+    builder.add_instructions(instructions)
+    builder.add_project_metadata(context.project_metadata)
+
+    # Tier 1 Rules — gated by include_rules (False for drafting)
+    if include_rules:
+        if context.constitution:
+            builder.add_constitution(context.constitution)
+        if context.standards:
+            builder.add_standards(context.standards)
+
+    # Memory Hydration — fail-safe
+    if context.db is not None and context.project_path is not None:
+        try:
+            from specweaver.workspace.memory.hydrator import MemoryHydrator
+
+            async with context.db.async_session_scope() as session:
+                hydrator = MemoryHydrator(session, context.project_path.name)
+                result = await hydrator.hydrate()
+                if result.task_count > 0:
+                    block = result.format_prompt_block()
+                    builder.add_context(block, "agent_memory", priority=2)
+                    logger.info(
+                        "Hydration: %d tasks, %d tokens",
+                        result.task_count,
+                        result.token_estimate,
+                    )
+        except Exception:
+            logger.warning(
+                "Memory hydration failed — continuing without agent_memory",
+                exc_info=True,
+            )
+
+    return builder

@@ -469,7 +469,9 @@ class TestMemoryRepositoryStateMachine:
         task = await repo.create_task(project_name=base_project.name, title="T1")
 
         updated = await repo.transition_state(
-            task_id=uuid.UUID(str(task["id"])), to_status=TaskStatus.IN_PROGRESS, reason="Started work"
+            task_id=uuid.UUID(str(task["id"])),
+            to_status=TaskStatus.IN_PROGRESS,
+            reason="Started work",
         )
         assert updated["status"] == TaskStatus.IN_PROGRESS.value
 
@@ -805,5 +807,3 @@ class TestMemoryRepositoryStateMachine:
                     await repo.transition_state(
                         task_id=task_id, to_status=to_status, reason=TransitionReason.MANUAL_UNBLOCK
                     )
-
-

@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.review.reviewer import Reviewer
 
 if TYPE_CHECKING:
@@ -30,6 +31,7 @@ class TestReviewerEnvironment:
 
         await reviewer.review_spec(
             spec_path=spec,
+            base_prompt=PromptBuilder(),
             environment_context="mcp://database:\n  |\n    Users Schema: id, name",
         )
 
@@ -52,6 +54,7 @@ class TestReviewerEnvironment:
         await reviewer.review_code(
             spec_path=spec,
             code_path=code,
+            base_prompt=PromptBuilder(),
             environment_context="mcp://testing:\n  |\n    pytest-helpers-mocked",
         )
 

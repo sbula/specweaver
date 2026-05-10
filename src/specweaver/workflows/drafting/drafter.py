@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
     from specweaver.assurance.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
     from specweaver.workspace.context.provider import ContextProvider
 
 logger = logging.getLogger(__name__)
@@ -156,6 +157,7 @@ class Drafter:
         llm: LLMAdapter,
         context_provider: ContextProvider,
         config: GenerationConfig | None = None,
+        base_prompt: PromptBuilder | None = None,
     ) -> None:
         self._llm = llm
         self._context = context_provider
@@ -164,6 +166,7 @@ class Drafter:
             temperature=0.7,
             max_output_tokens=4096,
         )
+        self._base_prompt = base_prompt
 
     async def draft(
         self,
@@ -252,12 +255,14 @@ class Drafter:
             section_prompt=section_prompt,
         )
 
-        builder = (
-            PromptBuilder()
-            .add_instructions(instructions)
-            .add_project_metadata(project_metadata)
-            .add_context(user_input, "user_context")
-        )
+        builder = self._base_prompt.clone() if self._base_prompt else PromptBuilder()
+        builder.add_instructions(instructions)
+
+        if project_metadata:
+            builder.add_project_metadata(project_metadata)
+
+        builder.add_context(user_input, "user_context")
+
         if topology_contexts:
             builder.add_topology(topology_contexts)
         prompt = builder.build()

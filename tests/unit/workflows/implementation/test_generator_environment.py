@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.implementation.generator import Generator
 
 if TYPE_CHECKING:
@@ -32,6 +33,7 @@ class TestGeneratorEnvironment:
         await gen.generate_code(
             spec_path=spec,
             output_path=out,
+            base_prompt=PromptBuilder(),
             environment_context="mcp://database:\n  |\n    Users Schema: id, name",
         )
 
@@ -54,6 +56,7 @@ class TestGeneratorEnvironment:
         await gen.generate_tests(
             spec_path=spec,
             output_path=out,
+            base_prompt=PromptBuilder(),
             environment_context="mcp://testing:\n  |\n    pytest-helpers-mocked",
         )
 

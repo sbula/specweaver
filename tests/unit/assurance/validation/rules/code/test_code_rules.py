@@ -4,6 +4,7 @@
 """Tests for code generation and code validation rules C01-C08."""
 
 from __future__ import annotations
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -415,7 +416,7 @@ class TestGenerator:
         mock_llm = _make_mock_llm("def greet(name: str) -> str:\n    return f'Hello {name}!'\n")
         gen = Generator(llm=mock_llm)
 
-        result = await gen.generate_code(spec, output)
+        result = await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
         assert result.exists()
         content = result.read_text(encoding="utf-8")
@@ -431,7 +432,7 @@ class TestGenerator:
         mock_llm = _make_mock_llm("import pytest\ndef test_greet():\n    assert True\n")
         gen = Generator(llm=mock_llm)
 
-        result = await gen.generate_tests(spec, output)
+        result = await gen.generate_tests(spec, output, base_prompt=PromptBuilder())
 
         assert result.exists()
         assert "test_greet" in result.read_text(encoding="utf-8")
@@ -446,7 +447,7 @@ class TestGenerator:
         mock_llm = _make_mock_llm("pass\n")
         gen = Generator(llm=mock_llm)
 
-        result = await gen.generate_code(spec, output)
+        result = await gen.generate_code(spec, output, base_prompt=PromptBuilder())
         assert result.exists()
 
     def test_clean_code_removes_markdown_fences(self) -> None:
@@ -475,7 +476,7 @@ class TestGenerator:
         config = GenerationConfig(model="custom-model", temperature=0.1)
         gen = Generator(llm=mock_llm, config=config)
 
-        await gen.generate_code(spec, output)
+        await gen.generate_code(spec, output, base_prompt=PromptBuilder())
 
         call_args = mock_llm.generate.call_args
         used_config = call_args[0][1]

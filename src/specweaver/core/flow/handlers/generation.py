@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,7 @@ def _extract_prompt_feedback(
 class GenerateCodeHandler:
     """Handler for generate+code — LLM code generation."""
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
         if context.llm is None:
@@ -143,18 +144,27 @@ class GenerateCodeHandler:
                 targets.extend(context.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+            from specweaver.core.flow.handlers.base import _build_base_prompt
+            from specweaver.workflows.implementation.generator import CODE_GEN_INSTRUCTIONS
+
+            base_prompt = await _build_base_prompt(
+                context,
+                CODE_GEN_INSTRUCTIONS,
+                skeleton_files=s_files
+            )
+            if context.plan:
+                base_prompt.add_plan(context.plan)
+            if context.topology:
+                base_prompt.add_topology([context.topology])
+
             generated = await generator.generate_code(
                 context.spec_path,
                 output_path,
-                topology_contexts=([context.topology] if context.topology else None),
-                constitution=context.constitution,
-                plan=context.plan,
-                project_metadata=context.project_metadata,
+                base_prompt=base_prompt,
                 artifact_uuid=artifact_uuid,
                 dictator_overrides=dictator_overrides,
                 validation_findings=validation_findings,
                 environment_context=mcp_env,
-                skeleton_files=s_files,
             )
             logger.info("GenerateCodeHandler: code generated at '%s'", generated)
 
@@ -188,7 +198,7 @@ class GenerateCodeHandler:
 class GenerateTestsHandler:
     """Handler for generate+tests — LLM test generation."""
 
-    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:  # noqa: C901
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
         if context.llm is None:
@@ -236,18 +246,27 @@ class GenerateTestsHandler:
                 targets.extend(context.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+            from specweaver.core.flow.handlers.base import _build_base_prompt
+            from specweaver.workflows.implementation.generator import TEST_GEN_INSTRUCTIONS
+
+            base_prompt = await _build_base_prompt(
+                context,
+                TEST_GEN_INSTRUCTIONS,
+                skeleton_files=s_files
+            )
+            if context.plan:
+                base_prompt.add_plan(context.plan)
+            if context.topology:
+                base_prompt.add_topology([context.topology])
+
             generated = await generator.generate_tests(
                 context.spec_path,
                 output_path,
-                topology_contexts=([context.topology] if context.topology else None),
-                constitution=context.constitution,
-                plan=context.plan,
-                project_metadata=context.project_metadata,
+                base_prompt=base_prompt,
                 artifact_uuid=artifact_uuid,
                 dictator_overrides=dictator_overrides,
                 validation_findings=validation_findings,
                 environment_context=mcp_env,
-                skeleton_files=s_files,
             )
             logger.info("GenerateTestsHandler: tests generated at '%s'", generated)
 
@@ -328,9 +347,8 @@ class PlanSpecHandler:
         return adapter, config
 
     async def _generate_plan_artifact(
-        self, planner: Any, context: RunContext, spec_content: str
+        self, planner: Any, context: RunContext, spec_content: str, base_prompt: PromptBuilder
     ) -> tuple[Path, str, Any]:
-        """Helper to generate and save the plan artifact."""
         import io
         import uuid
 
@@ -353,11 +371,9 @@ class PlanSpecHandler:
             spec_content=spec_content,
             spec_path=str(context.spec_path),
             spec_name=context.spec_path.stem.replace("_spec", "").replace("_", " ").title(),
-            constitution=context.constitution,
-            standards=context.standards,
+            base_prompt=base_prompt,
             stitch_mode=stitch_mode,
             stitch_api_key=stitch_api_key,
-            project_metadata=context.project_metadata,
         )
 
         plan_path = context.spec_path.with_name(context.spec_path.stem + "_plan.yaml")
@@ -419,8 +435,21 @@ class PlanSpecHandler:
                 max_retries,
             )
 
+            from specweaver.core.flow.handlers.base import _build_base_prompt
+
+            # Note: Planner defines its own instruction string internally, so we don't pass one here
+            # (or we could extract it later). For now pass empty string or planner specific.
+            # Planner currently uses PLAN_GENERATION_INSTRUCTIONS which is inside planner.py.
+            # Let's import it.
+            from specweaver.workflows.planning.planner import PLAN_GENERATION_INSTRUCTIONS
+            base_prompt = await _build_base_prompt(
+                context,
+                PLAN_GENERATION_INSTRUCTIONS,
+                skeleton_files=None
+            )
+
             plan_path, artifact_uuid, plan_artifact = await self._generate_plan_artifact(
-                planner, context, spec_content
+                planner, context, spec_content, base_prompt
             )
 
             from specweaver.infrastructure.llm.lineage import extract_artifact_uuid

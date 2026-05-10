@@ -6,6 +6,7 @@ import nest_asyncio  # type: ignore
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine
 
+import specweaver.workspace.memory.store  # noqa: F401
 from specweaver.core.config.database import Database, session_scope
 from specweaver.core.config.paths import config_db_path
 from specweaver.core.flow.store import Base as FlowBase

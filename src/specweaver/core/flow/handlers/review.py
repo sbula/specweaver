@@ -156,16 +156,23 @@ class ReviewSpecHandler:
                 targets.extend(context.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+            from specweaver.core.flow.handlers.base import _build_base_prompt
+            from specweaver.workflows.review.reviewer import SPEC_REVIEW_INSTRUCTIONS
+
+            base_prompt = await _build_base_prompt(
+                context,
+                SPEC_REVIEW_INSTRUCTIONS,
+                skeleton_files=s_files
+            )
+            if context.topology:
+                base_prompt.add_topology([context.topology])
+
             result = await reviewer.review_spec(
                 context.spec_path,
-                topology_contexts=([context.topology] if context.topology else None),
-                constitution=context.constitution,
-                standards=context.standards,
+                base_prompt=base_prompt,
                 mentioned_files=_get_prior_mentions(context),
                 on_tool_round=on_tool_round,
-                project_metadata=context.project_metadata,
                 environment_context=mcp_env,
-                skeleton_files=s_files,
             )
             logger.info(
                 "ReviewSpecHandler: verdict=%s, findings=%d",
@@ -260,17 +267,24 @@ class ReviewCodeHandler:
                 targets.append(str(code_path))
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+            from specweaver.core.flow.handlers.base import _build_base_prompt
+            from specweaver.workflows.review.reviewer import CODE_REVIEW_INSTRUCTIONS
+
+            base_prompt = await _build_base_prompt(
+                context,
+                CODE_REVIEW_INSTRUCTIONS,
+                skeleton_files=s_files
+            )
+            if context.topology:
+                base_prompt.add_topology([context.topology])
+
             result = await reviewer.review_code(
                 code_path,
                 context.spec_path,
-                topology_contexts=([context.topology] if context.topology else None),
-                constitution=context.constitution,
-                standards=context.standards,
+                base_prompt=base_prompt,
                 mentioned_files=_get_prior_mentions(context),
                 on_tool_round=on_tool_round,
-                project_metadata=context.project_metadata,
                 environment_context=mcp_env,
-                skeleton_files=s_files,
             )
             logger.info(
                 "ReviewCodeHandler: verdict=%s, findings=%d",

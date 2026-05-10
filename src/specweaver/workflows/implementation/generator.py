@@ -13,13 +13,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.infrastructure.llm.models import GenerationConfig, Message, ProjectMetadata, Role
+from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -75,17 +75,12 @@ class Generator:
         self,
         spec_path: Path,
         output_path: Path,
+        base_prompt: PromptBuilder,
         *,
-        topology_contexts: list[TopologyContext] | None = None,
-        constitution: str | None = None,
-        standards: str | None = None,
-        plan: str | None = None,
-        project_metadata: ProjectMetadata | None = None,
         artifact_uuid: str | None = None,
         dictator_overrides: list[str] | None = None,
         validation_findings: str | None = None,
         environment_context: str | None = None,
-        skeleton_files: dict[str, str] | None = None,
     ) -> Path:
         """Generate implementation code from a spec.
 
@@ -103,32 +98,16 @@ class Generator:
         Returns:
             Path to the generated code file.
         """
-        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
-        builder = PromptBuilder(skeleton_files=skeleton_files)
+        builder = base_prompt
         if artifact_uuid:
             builder.add_artifact_tagging(artifact_uuid, "python")
 
-        builder = (
-            builder.add_instructions(CODE_GEN_INSTRUCTIONS)
-            .add_project_metadata(project_metadata)
-            .add_file(spec_path, priority=1, role="reference")
-        )
+        builder.add_file(spec_path, priority=1, role="reference")
+
         if dictator_overrides:
             builder.add_dictator_overrides(dictator_overrides)
         if validation_findings:
             builder.add_context(validation_findings, "validation_errors", priority=2)
-        if constitution:
-            builder.add_constitution(constitution)
-            logger.debug("generate_code: constitution injected (%d chars)", len(constitution))
-        if standards:
-            builder.add_standards(standards)
-            logger.debug("generate_code: standards injected (%d chars)", len(standards))
-        if plan:
-            builder.add_plan(plan)
-            logger.debug("generate_code: plan injected (%d chars)", len(plan))
-        if topology_contexts:
-            builder.add_topology(topology_contexts)
         if environment_context:
             builder.add_context(environment_context, "environment_context")
             logger.debug("generate_code: MCP env injected (%d chars)", len(environment_context))
@@ -155,17 +134,12 @@ class Generator:
         self,
         spec_path: Path,
         output_path: Path,
+        base_prompt: PromptBuilder,
         *,
-        topology_contexts: list[TopologyContext] | None = None,
-        constitution: str | None = None,
-        standards: str | None = None,
-        plan: str | None = None,
-        project_metadata: ProjectMetadata | None = None,
         artifact_uuid: str | None = None,
         dictator_overrides: list[str] | None = None,
         validation_findings: str | None = None,
         environment_context: str | None = None,
-        skeleton_files: dict[str, str] | None = None,
     ) -> Path:
         """Generate test file from a spec.
 
@@ -183,32 +157,16 @@ class Generator:
         Returns:
             Path to the generated test file.
         """
-        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
-        builder = PromptBuilder(skeleton_files=skeleton_files)
+        builder = base_prompt
         if artifact_uuid:
             builder.add_artifact_tagging(artifact_uuid, "python")
 
-        builder = (
-            builder.add_instructions(TEST_GEN_INSTRUCTIONS)
-            .add_project_metadata(project_metadata)
-            .add_file(spec_path, priority=1, role="reference")
-        )
+        builder.add_file(spec_path, priority=1, role="reference")
+
         if dictator_overrides:
             builder.add_dictator_overrides(dictator_overrides)
         if validation_findings:
             builder.add_context(validation_findings, "validation_errors", priority=2)
-        if constitution:
-            builder.add_constitution(constitution)
-            logger.debug("generate_tests: constitution injected (%d chars)", len(constitution))
-        if standards:
-            builder.add_standards(standards)
-            logger.debug("generate_tests: standards injected (%d chars)", len(standards))
-        if plan:
-            builder.add_plan(plan)
-            logger.debug("generate_tests: plan injected (%d chars)", len(plan))
-        if topology_contexts:
-            builder.add_topology(topology_contexts)
         if environment_context:
             builder.add_context(environment_context, "environment_context")
             logger.debug("generate_tests: MCP env injected (%d chars)", len(environment_context))

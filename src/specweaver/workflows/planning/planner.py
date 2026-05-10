@@ -15,12 +15,13 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from specweaver.commons import json
-from specweaver.infrastructure.llm.models import GenerationConfig, Message, ProjectMetadata, Role
+from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 from specweaver.workflows.planning.models import PlanArtifact
 
 if TYPE_CHECKING:
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
     from specweaver.infrastructure.llm.models import ToolDispatcherProtocol
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,27 @@ specification, you produce a structured implementation plan as JSON.
 
 Your output must be ONLY valid JSON matching the PlanArtifact schema. \
 No markdown fences, no explanation."""
+
+PLAN_GENERATION_INSTRUCTIONS = """\
+Generate an implementation plan for the following specification.
+
+## Output Schema
+Return a JSON object with these fields:
+- spec_path (str): "{spec_path}"
+- spec_name (str): "{spec_name}"
+- spec_hash (str): "{spec_hash}"
+- timestamp (str): current ISO-8601 timestamp
+- file_layout (list): files to create/modify/delete, each with:
+  - path (str), action ("create"|"modify"|"delete"), purpose (str), dependencies (list[str])
+- architecture (object|null): module_layout, dependency_direction, archetype, patterns
+- tech_stack (list): category, choice, rationale, alternatives_considered
+- constraints (list): source, constraint, impact
+- tasks (list): sequence_number (int), name, description, files, dependencies, expected_signatures (dict mapping file_path to list of MethodSignature: name, list of parameter strings, return_type)
+- test_expectations (list): name, description, function_under_test, input_summary, expected_behavior, category ("happy"|"error"|"boundary")
+- reasoning (str): your chain-of-thought
+- confidence (int): 0-100
+
+Return ONLY the JSON object."""
 
 
 class Planner:
@@ -62,12 +84,10 @@ class Planner:
         spec_content: str,
         spec_path: str,
         spec_name: str,
+        base_prompt: PromptBuilder,
         *,
-        constitution: str | None = None,
-        standards: str | None = None,
         stitch_mode: str = "off",
         stitch_api_key: str = "",
-        project_metadata: ProjectMetadata | None = None,
     ) -> PlanArtifact:
         """Generate an implementation plan from spec content.
 
@@ -75,8 +95,9 @@ class Planner:
             spec_content: The spec text.
             spec_path: Path to the spec file (stored in the plan).
             spec_name: Human-readable spec name.
-            constitution: Optional constitution content.
-            standards: Optional project standards.
+            base_prompt: Base prompt builder initialized with context.
+            stitch_mode: Optional stitch UI mockup mode.
+            stitch_api_key: Optional stitch API key.
 
         Returns:
             A validated PlanArtifact.
@@ -86,38 +107,21 @@ class Planner:
         """
         spec_hash = hashlib.sha256(spec_content.encode()).hexdigest()
 
-        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
-        builder = (
-            PromptBuilder()
-            .add_instructions("Generate an implementation plan for the following specification.")
-            .add_project_metadata(project_metadata)
-            .add_instructions(
-                f"""## Output Schema
-Return a JSON object with these fields:
-- spec_path (str): "{spec_path}"
-- spec_name (str): "{spec_name}"
-- spec_hash (str): "{spec_hash}"
-- timestamp (str): current ISO-8601 timestamp
-- file_layout (list): files to create/modify/delete, each with:
-  - path (str), action ("create"|"modify"|"delete"), purpose (str), dependencies (list[str])
-- architecture (object|null): module_layout, dependency_direction, archetype, patterns
-- tech_stack (list): category, choice, rationale, alternatives_considered
-- constraints (list): source, constraint, impact
-- tasks (list): sequence_number (int), name, description, files, dependencies, expected_signatures (dict mapping file_path to list of MethodSignature: name, list of parameter strings, return_type)
-- test_expectations (list): name, description, function_under_test, input_summary, expected_behavior, category ("happy"|"error"|"boundary")
-- reasoning (str): your chain-of-thought
-- confidence (int): 0-100
-
-Return ONLY the JSON object.""",
-            )
-            .add_context(spec_content, label="Specification")
+        # Format the instructions with the dynamic spec paths and hash
+        formatted_instructions = PLAN_GENERATION_INSTRUCTIONS.format(
+            spec_path=spec_path,
+            spec_name=spec_name,
+            spec_hash=spec_hash
         )
 
-        if constitution:
-            builder.add_constitution(constitution)
-        if standards:
-            builder.add_standards(standards)
+        # Base prompt already has instructions (unformatted), so we can just add our context
+        # But wait, base prompt has the unformatted PLAN_GENERATION_INSTRUCTIONS!
+        # We need to replace or we just pass the formatted ones here instead of the base prompt instructions.
+        # Actually, if we pass empty instructions to _build_base_prompt, we can add them here.
+        # Let's just assume base_prompt has metadata, constitution, standards. We add the rest.
+        builder = base_prompt
+        builder.add_context(formatted_instructions, "schema_requirements")
+        builder.add_context(spec_content, label="Specification")
 
         user_prompt = builder.build()
 

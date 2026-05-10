@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -211,7 +213,7 @@ class TestReviewer:
         )
         reviewer = Reviewer(llm=mock_llm)
 
-        result = await reviewer.review_spec(spec_file)
+        result = await reviewer.review_spec(spec_file, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.ACCEPTED
         assert len(result.findings) == 2
@@ -230,7 +232,7 @@ class TestReviewer:
         )
         reviewer = Reviewer(llm=mock_llm)
 
-        result = await reviewer.review_spec(spec_file)
+        result = await reviewer.review_spec(spec_file, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.DENIED
         assert len(result.findings) == 2
@@ -245,7 +247,7 @@ class TestReviewer:
         mock_llm = _make_mock_llm("VERDICT: ACCEPTED\n\nCode matches spec.")
         reviewer = Reviewer(llm=mock_llm)
 
-        result = await reviewer.review_code(code_file, spec_file)
+        result = await reviewer.review_code(code_file, spec_file, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.ACCEPTED
 
@@ -258,7 +260,7 @@ class TestReviewer:
         mock_llm.generate = AsyncMock(side_effect=Exception("LLM failed"))
         reviewer = Reviewer(llm=mock_llm)
 
-        result = await reviewer.review_spec(spec_file)
+        result = await reviewer.review_spec(spec_file, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.ERROR
         assert "failed" in result.summary.lower()
@@ -271,7 +273,7 @@ class TestReviewer:
         mock_llm = _make_mock_llm("Some text without any verdict marker.")
         reviewer = Reviewer(llm=mock_llm)
 
-        result = await reviewer.review_spec(spec_file)
+        result = await reviewer.review_spec(spec_file, base_prompt=PromptBuilder())
 
         # Conservative: no verdict -> denied
         assert result.verdict == ReviewVerdict.DENIED
@@ -507,7 +509,7 @@ class TestReviewerBehavioral:
         spec.write_text("# Spec", encoding="utf-8")
 
         reviewer = Reviewer(llm=_make_mock_llm("   \n\n\t  "))
-        result = await reviewer.review_spec(spec)
+        result = await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.DENIED
 
@@ -518,7 +520,7 @@ class TestReviewerBehavioral:
         spec.write_text("", encoding="utf-8")
 
         reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED\nLooks fine."))
-        result = await reviewer.review_spec(spec)
+        result = await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.ACCEPTED
 
@@ -533,7 +535,7 @@ class TestReviewerBehavioral:
 
         specific_error = GenerationError("timeout after 30s", provider="gemini")
         reviewer = Reviewer(llm=_failing_llm(specific_error))
-        result = await reviewer.review_spec(spec)
+        result = await reviewer.review_spec(spec, base_prompt=PromptBuilder())
 
         assert result.verdict == ReviewVerdict.ERROR
         assert "timeout after 30s" in result.summary
@@ -547,7 +549,7 @@ class TestReviewerBehavioral:
 
         reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED"))
         with pytest.raises(FileNotFoundError):
-            await reviewer.review_code(code, spec)
+            await reviewer.review_code(code, spec, base_prompt=PromptBuilder())
 
     @pytest.mark.asyncio
     async def test_code_review_code_not_found(self, tmp_path: Path) -> None:
@@ -558,7 +560,7 @@ class TestReviewerBehavioral:
 
         reviewer = Reviewer(llm=_make_mock_llm("VERDICT: ACCEPTED"))
         with pytest.raises(FileNotFoundError):
-            await reviewer.review_code(code, spec)
+            await reviewer.review_code(code, spec, base_prompt=PromptBuilder())
 
 
 # ---------------------------------------------------------------------------

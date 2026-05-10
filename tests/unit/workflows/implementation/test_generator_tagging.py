@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.implementation.generator import Generator
 
 if TYPE_CHECKING:
@@ -33,6 +34,7 @@ async def test_generator_injects_uuid_to_prompt(tmp_path: Path) -> None:
     await generator.generate_code(
         spec_path=spec_path,
         output_path=output_path,
+        base_prompt=PromptBuilder(),
         artifact_uuid="12345678-1234-1234-1234-123456789abc",
     )
 
@@ -64,6 +66,7 @@ async def test_generator_tests_injects_uuid_to_prompt(tmp_path: Path) -> None:
     await generator.generate_tests(
         spec_path=spec_path,
         output_path=output_path,
+        base_prompt=PromptBuilder(),
         artifact_uuid="87654321-4321-4321-4321-cba987654321",
     )
 

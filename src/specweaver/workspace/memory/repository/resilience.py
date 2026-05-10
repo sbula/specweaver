@@ -28,8 +28,11 @@ CIRCUIT_BREAKER_DEFECT_TITLE = "circuit_breaker: max retries exceeded"
 
 class _CoreMixinProtocol(Protocol):
     session: AsyncSession
+
     def _task_to_dict(self, task: Task) -> dict[str, object]: ...
-    def _build_defect(self, task_id: uuid.UUID, title: str, description: str | None = None) -> Defect: ...
+    def _build_defect(
+        self, task_id: uuid.UUID, title: str, description: str | None = None
+    ) -> Defect: ...
 
 
 class MemoryRepositoryResilienceMixin:
@@ -38,7 +41,10 @@ class MemoryRepositoryResilienceMixin:
     session: AsyncSession
 
     async def recycle_zombies(
-        self: _CoreMixinProtocol, project_name: str, timeout_minutes: int = 15, batch_size: int = 100
+        self: _CoreMixinProtocol,
+        project_name: str,
+        timeout_minutes: int = 15,
+        batch_size: int = 100,
     ) -> list[dict[str, object]]:
         """Scan for zombie tasks and recycle or circuit-break them (FR-5, FR-8)."""
         assert TaskStatus.PENDING in ALLOWED_TRANSITIONS[TaskStatus.IN_PROGRESS], (
@@ -185,7 +191,9 @@ class MemoryRepositoryResilienceMixin:
 
         queue.append(parent_id)
 
-    async def propagate_blocked(self: _CoreMixinProtocol, task_id: uuid.UUID) -> list[dict[str, object]]:
+    async def propagate_blocked(
+        self: _CoreMixinProtocol, task_id: uuid.UUID
+    ) -> list[dict[str, object]]:
         """Cascade UPSTREAM_BLOCKED to all transitive upstream ancestors (FR-9, AD-11)."""
         task = await self.session.get(Task, task_id)
         if task is None:
