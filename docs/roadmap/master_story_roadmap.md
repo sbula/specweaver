@@ -20,18 +20,17 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 1. **~~Candidate A: US-28 Foundation — Agent Memory Bank~~ 🟢 COMPLETED**
    * **Features:** `INT-US-28` ✅, `B-INTL-09` Agent Memory Bank ✅ + `D-INTL-06` Context Hydration & Handover ✅
    * All three Core MVS items delivered. US-28 promoted to 🟢.
-2. **Candidate B: US-4 Completion — Base Integration Contract** ← UNBLOCKED
-   * **Features:** `INT-US-04` Base Integration Contract
-   * **Pros:** Because the Runner architecture (`D-FLOW-04`) and Multi-Provider Registry (`E-FLOW-03`) are **already complete**, this single integration contract is the *only* remaining code needed to close US-4 and unlock 10+ downstream workflows!
-   * **Cons:** ~~Strictly blocked by Candidate A (`US-28`).~~ **Now unblocked!** US-28 is online.
+2. **~~Candidate B: US-4 Completion — Base Integration Contract~~ 🟢 COMPLETED**
+   * **Features:** `INT-US-04` Base Integration Contract ✅
+   * All Core MVS items delivered. US-4 promoted to 🟢. Unlocked 10+ downstream workflows!
 3. **Candidate C: US-2 Completion — Project Metadata Injection**
    * **Features:** `D-INTL-05` Project Metadata Injection
    * **Pros:** Single remaining blocker for `US-2` Core. Closes the Interactive Drafter and unblocks `US-21` (Autonomous Decomposition).
    * **Cons:** Moderate effort; fewer downstream unlocks than Candidate A.
-4. **Candidate D: US-9 Core Execution — Standard Local Execution**
+4. **Candidate D: US-9 Core Execution — Standard Local Execution** ← UNBLOCKED (ACTIVE FOCUS)
    * **Features:** `E-EXEC-01` Standard Local Execution + `C-EXEC-02` Native CLI Action Nodes
    * **Pros:** Closes `US-9` Core (Zero-Trust Sandbox), directly unblocking `US-3` (Autonomous Implementation) and all safe code execution workflows.
-   * **Cons:** Blocked by Candidate B (`US-4`) — cannot be merged before the Flow Engine integration is complete.
+   * **Cons:** ~~Blocked by Candidate B (`US-4`)~~ **Now unblocked!** Flow Engine integration is complete.
 5. **Candidate E: US-1 Security Hardening — AST Prompt Injection Sanitization**
    * **Features:** `E-VAL-03` AST Prompt Injection Sanitization
    * **Pros:** High security ROI. Protects the Validation Engine from prompt injection attacks embedded in source code. Fully independent — zero upstream dependency.

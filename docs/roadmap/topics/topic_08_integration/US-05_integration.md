@@ -14,5 +14,5 @@
 
 * **Framework Native Understanding (`INT-US-05-SUB`)**
   * **Status:** ✅ Complete
-  * **Integration Description:** The Framework Profile parser (`D-SENS-04`) integrates to detect context boundaries for Spring Boot, Next.js, and Django implicitly.
+  * **Integration Description:** The Macro Evaluator (`B-INTL-02`) integrates to detect context boundaries for Frameworks natively.
   * **Verifiable Proof:** Covered by E2E tests in `tests/e2e/capabilities/intelligence/` and `tests/integration/` suites.
