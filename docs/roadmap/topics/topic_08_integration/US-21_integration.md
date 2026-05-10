@@ -7,4 +7,7 @@
 
 ## Sub-Story Add-Ons
 
-* No explicit sub-story contracts defined yet.
+* **Recursive Planning (`INT-US-21-SUB`)**
+  * **Status:** ✅ Complete
+  * **Integration Description:** The `C-INTL-01` feature implements iterative decomposition, generating a structured DecompositionPlan by resolving the AST graph into sub-tasks.
+  * **Verifiable Proof:** Covered by integration testing under `pytest -m integration` and the `FeatureDecomposer` suite.

@@ -7,4 +7,12 @@
 
 ## Sub-Story Add-Ons
 
-* No explicit sub-story contracts defined yet.
+* **Intelligent Code Exclusions (`INT-US-05-SUB`)**
+  * **Status:** ✅ Complete
+  * **Integration Description:** The `.specweaverignore` engine (`C-SENS-02`) provides deterministic exclusions directly into the Extractor.
+  * **Verifiable Proof:** Covered by E2E tests in `tests/e2e/capabilities/core/` and integration tests suite `pytest -m integration`.
+
+* **Framework Native Understanding (`INT-US-05-SUB`)**
+  * **Status:** ✅ Complete
+  * **Integration Description:** The Framework Profile parser (`D-SENS-04`) integrates to detect context boundaries for Spring Boot, Next.js, and Django implicitly.
+  * **Verifiable Proof:** Covered by E2E tests in `tests/e2e/capabilities/intelligence/` and `tests/integration/` suites.

@@ -81,21 +81,21 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Depends on**: SF-1
 - **Impl Plan**: ⬜
 
-### SF-3: Parallel Multi-Spec Execution Integration (Pending Design)
+### SF-3: Parallel Multi-Spec Execution Integration (✅ Integrated)
 - **Scope**: Multi-Spec Pipeline Fan-Out integration contract.
 - **FRs**: [FR-1: Support hierarchical state tracking via `parent_id`, FR-2: Aggregate validation findings from all fan-out sub-runs]
 - **Inputs**: Array of Spec Targets triggering a `fan_out` pipeline action.
 - **Outputs**: Hierarchical `ArtifactEvent` records in the DB; aggregated `StepResult`.
 - **Depends on**: SF-1
-- **Impl Plan**: ⬜
+- **Impl Plan**: ✅
 
-### SF-4: Context Mention Highlighting Integration (Pending Design)
+### SF-4: Context Mention Highlighting Integration (✅ Integrated)
 - **Scope**: Auto Spec-Mention Detection integration contract.
 - **FRs**: [FR-1: Query Config DB for verified state of Spec Mentions, FR-2: Append retrieved state as supplementary context into `RunContext`]
 - **Inputs**: List of mentioned Spec IDs detected by the Topology Graph.
 - **Outputs**: Sanitized context string containing the state of the mentioned specs injected into the prompt.
 - **Depends on**: SF-1
-- **Impl Plan**: ⬜
+- **Impl Plan**: ✅
 
 ### SF-5: Advanced Routing & Conditional Flows Integration (Pending Design)
 - **Scope**: Deferred Router Mapping & Interactive Gate Variables integration contract.
@@ -132,8 +132,8 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Core Flow DB Integration | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-2 | Security Defenses Integration | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-3 | Parallel Multi-Spec Execution | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-4 | Context Mention Highlighting | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Parallel Multi-Spec Execution | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-4 | Context Mention Highlighting | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-5 | Advanced Routing & Conditional Flows | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-6 | Infinite Memory Management | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-7 | Remote UI Integration | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
