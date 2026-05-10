@@ -17,14 +17,13 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-1. **Candidate A: US-28 Foundation — Agent Memory Bank**
-   * **Features:** `INT-US-28`, `B-INTL-09` Agent Memory Bank (Schema + CRUD + Resilience) + `D-INTL-06` Context Hydration & Handover
-   * **Pros:** The single most critical architectural bottleneck. Unblocks `US-4` (Context-Aware Flow), `US-3` (Autonomous Implementation), and `US-19` (Fleet Orchestration). Solves agent context hallucination.
-   * **Cons:** Foundational data-layer work; delays immediate user-facing UX features.
-2. **Candidate B: US-4 Completion — Base Integration Contract**
+1. **~~Candidate A: US-28 Foundation — Agent Memory Bank~~ 🟢 COMPLETED**
+   * **Features:** `INT-US-28` ✅, `B-INTL-09` Agent Memory Bank ✅ + `D-INTL-06` Context Hydration & Handover ✅
+   * All three Core MVS items delivered. US-28 promoted to 🟢.
+2. **Candidate B: US-4 Completion — Base Integration Contract** ← UNBLOCKED
    * **Features:** `INT-US-04` Base Integration Contract
    * **Pros:** Because the Runner architecture (`D-FLOW-04`) and Multi-Provider Registry (`E-FLOW-03`) are **already complete**, this single integration contract is the *only* remaining code needed to close US-4 and unlock 10+ downstream workflows!
-   * **Cons:** Strictly blocked by Candidate A (`US-28`). Cannot begin until the State Ledger is online.
+   * **Cons:** ~~Strictly blocked by Candidate A (`US-28`).~~ **Now unblocked!** US-28 is online.
 3. **Candidate C: US-2 Completion — Project Metadata Injection**
    * **Features:** `D-INTL-05` Project Metadata Injection
    * **Pros:** Single remaining blocker for `US-2` Core. Closes the Interactive Drafter and unblocks `US-21` (Autonomous Decomposition).
@@ -117,7 +116,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-03:** Base Integration Contract defined in [US-03_integration.md](topics/topic_08_integration/US-03_integration.md)
     *   `[ ]` **US-1 Core** *(provides Validation Engine)*
     *   `[ ]` **US-9 Core** *(provides Zero-Trust Sandbox)*
-    *   `[ ]` **US-28 Core** *(provides Agent State Ledger)*
+    *   `✅` **US-28 Core** *(provides Agent State Ledger)*
     *   `✅` **D-INTL-01:** Implementation Generator
     *   `✅` **D-INTL-01:** Code Validation Rules (C01-C08, Type hints, Coverage)
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
@@ -133,7 +132,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **User Benefit:** I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-04:** Base Integration Contract defined in [INT-US-04_design.md](features/topic_08_integration/INT-US-04/INT-US-04_design.md)
-    *   `[ ]` **US-28 Core** *(provides Agent State Ledger)*
+    *   `✅` **US-28 Core** *(provides Agent State Ledger)*
     *   `✅` **E-VAL-01:** Validation Engine
     *   `✅` **D-SENS-01:** Topology Graph (`context.yaml`)
     *   `✅` **E-FLOW-01:** SQLite Config DB & Overrides
@@ -436,7 +435,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *I can design, generate, and orchestrate an entire fleet of 20+ microservices, automatically keeping their API contracts and topology synchronized across independent repositories.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-19:** Base Integration Contract defined in [US-19_integration.md](topics/topic_08_integration/US-19_integration.md)
-    *   `[ ]` **US-28 Core** *(provides Agent State Ledger)*
+    *   `✅` **US-28 Core** *(provides Agent State Ledger)*
     *   `[ ]` **US-4 Core**
     *   `[ ]` **US-5 Core**
     *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
