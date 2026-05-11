@@ -147,10 +147,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-04-SUB:** Sub-Story Integration defined in [SF-2: Security Defenses](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-2-security-defenses-integration-pending-design)
         *   `[ ]` **B-FLOW-03:** Token-Burn Circuit Breakers (EDoS Prevention)
-    *   🟡 **Parallel Multi-Spec Execution:**
+    *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **INT-US-04-SUB:** Sub-Story Integration defined in [SF-3: Parallel Multi-Spec Execution](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-3-parallel-multi-spec-execution-integration-pending-design)
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
-    *   🟡 **Context Mention Highlighting:**
+    *   🟢 **Context Mention Highlighting:**
         *   `✅` **INT-US-04-SUB:** Sub-Story Integration defined in [SF-4: Context Mention Highlighting](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-4-context-mention-highlighting-integration-pending-design)
         *   `✅` **C-SENS-01:** Auto Spec-Mention Detection
     *   🟡 **Advanced Routing & Conditional Flows:**
@@ -184,10 +184,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **API Contract Understanding:**
         *   `[ ]` **INT-US-05-SUB:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-SENS-07:** Polyglot Expansion (TypeSpec)
-    *   🟡 **Intelligent Code Exclusions:**
+    *   🟢 **Intelligent Code Exclusions:**
         *   `✅` **INT-US-05-SUB:** Sub-Story Integration (Complete)
         *   `✅` **C-SENS-02:** Smart Scan Exclusions (.specweaverignore)
-    *   🟡 **Framework Native Understanding:**
+    *   🟢 **Framework Native Understanding:**
         *   `✅` **INT-US-05-SUB:** Sub-Story Integration (Complete)
         *   `✅` **B-INTL-02:** Macro Evaluator (Rust/Kotlin plugin expansion)
     *   🔴 **Mathematical Speed & Security (Rust):**
@@ -484,7 +484,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **D-INTL-02:** Feature Decomposition
     *   `✅` **D-INTL-03:** Explicit Plan Phase
 *   **Sub-Story Add-Ons:**
-    *   🟡 **Recursive Planning:**
+    *   🟢 **Recursive Planning:**
         *   `✅` **INT-US-21-SUB:** Sub-Story Integration (Complete)
         *   `✅` **C-INTL-01:** Iterative Decomposition
 
