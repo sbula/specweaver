@@ -39,6 +39,8 @@ exposes:
   - UsageRecord
   - extract_artifact_uuid
   - wrap_artifact_tag
+  - PromptSlot
+  - RenderProfile
 
 # -- Operational Metadata --------------------------------------------------
 operational:

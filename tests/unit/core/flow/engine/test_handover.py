@@ -12,6 +12,7 @@ from specweaver.core.flow.handlers.base import RunContext
 
 if TYPE_CHECKING:
     from specweaver.workspace.memory.models import HandoverContext
+@pytest.fixture
 def mock_db():
     db = MagicMock()
     session = AsyncMock()
