@@ -40,6 +40,7 @@ from specweaver.infrastructure.llm._prompt_constants import (
     _CONSTITUTION_PREAMBLE,
     detect_language,
 )
+from specweaver.infrastructure.llm._prompt_profiles import PromptSlot, RenderProfile
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,7 @@ class PromptBuilder:
         *,
         budget_scale_factor: float = 1.0,
         skeleton_files: dict[str, str] | None = None,
+        profile: RenderProfile | None = None,
     ) -> None:
         self._budget = budget
         self._adapter = adapter
@@ -85,6 +87,19 @@ class PromptBuilder:
         self._auto_scale = budget_scale_factor == 1.0  # auto-scale when default
         self._blocks: list[_ContentBlock] = []
         self._skeleton_files: dict[str, str] = skeleton_files or {}
+
+        if profile is None:
+            import warnings
+
+            from specweaver.infrastructure.llm._prompt_profiles import _DEFAULT_PROFILE
+            warnings.warn("PromptBuilder created without explicit profile — using _DEFAULT_PROFILE. Pass a RenderProfile for explicit slot control.", DeprecationWarning, stacklevel=2)
+            self._profile = _DEFAULT_PROFILE
+        else:
+            self._profile = profile
+
+    def _is_slot_active(self, slot: PromptSlot) -> bool:
+        """Check if a slot is active in the current profile."""
+        return slot in self._profile.active_slots
 
     def clone(self) -> PromptBuilder:
         """Create a deep copy of this PromptBuilder."""
@@ -96,6 +111,7 @@ class PromptBuilder:
             adapter=self._adapter,
             budget_scale_factor=1.0,
             skeleton_files=self._skeleton_files.copy() if self._skeleton_files else None,
+            profile=self._profile,
         )
         builder._scale = self._scale
         builder._auto_scale = self._auto_scale
@@ -108,6 +124,10 @@ class PromptBuilder:
         Instructions are placed at the top of the prompt inside
         ``<instructions>`` tags.
         """
+        if not self._is_slot_active(PromptSlot.INSTRUCTIONS):
+            logger.debug("Slot %s inactive — skipping add_instructions", PromptSlot.INSTRUCTIONS)
+            return self
+
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
@@ -124,6 +144,10 @@ class PromptBuilder:
         Overrides are placed inside ``<dictator-overrides>`` tags.
         """
         if not overrides:
+            return self
+
+        if not self._is_slot_active(PromptSlot.DICTATOR_OVERRIDES):
+            logger.debug("Slot %s inactive — skipping add_dictator_overrides", PromptSlot.DICTATOR_OVERRIDES)
             return self
 
         lines = [f"- {o}" for o in overrides]
@@ -160,6 +184,10 @@ class PromptBuilder:
             skeleton: If True, uses the language's native AST parser to condense the file
                 into only structural interfaces, skipping method implementations directly.
         """
+        if not self._is_slot_active(PromptSlot.FILE):
+            logger.debug("Slot %s inactive — skipping add_file for %s", PromptSlot.FILE, path)
+            return self
+
         content = path.read_text(encoding="utf-8")
         lang = detect_language(path)
 
@@ -197,6 +225,7 @@ class PromptBuilder:
         label: str,
         *,
         priority: int = 3,
+        slot: PromptSlot = PromptSlot.CONTEXT,
     ) -> PromptBuilder:
         """Add an arbitrary context block.
 
@@ -204,12 +233,17 @@ class PromptBuilder:
             text: The context text.
             label: A descriptive label (e.g. ``"topology_summary"``).
             priority: Truncation priority.  Default 3.
+            slot: The slot to place this context block into. Default is CONTEXT.
         """
+        if not self._is_slot_active(slot):
+            logger.debug("Slot %s inactive — skipping add_context for %s", slot, label)
+            return self
+
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
                 priority=max(1, priority),
-                kind="context",
+                kind=slot.value,
                 label=label,
                 tokens=self._count(text),
             ),
@@ -229,6 +263,10 @@ class PromptBuilder:
             priority: Truncation priority. Default 1 (highly preferred).
         """
         if not metadata:
+            return self
+
+        if not self._is_slot_active(PromptSlot.METADATA):
+            logger.debug("Slot %s inactive — skipping add_project_metadata", PromptSlot.METADATA)
             return self
 
         from specweaver.commons import json
@@ -264,6 +302,10 @@ class PromptBuilder:
         if not contexts:
             return self
 
+        if not self._is_slot_active(PromptSlot.TOPOLOGY):
+            logger.debug("Slot %s inactive — skipping add_topology", PromptSlot.TOPOLOGY)
+            return self
+
         lines: list[str] = []
         for ctx in contexts:
             constraints_str = ", ".join(ctx.constraints) if ctx.constraints else "none"
@@ -290,6 +332,10 @@ class PromptBuilder:
         Reminders are placed after all other content to reinforce
         critical instructions.  Priority 0 — never truncated.
         """
+        if not self._is_slot_active(PromptSlot.REMINDER):
+            logger.debug("Slot %s inactive — skipping add_reminder", PromptSlot.REMINDER)
+            return self
+
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
@@ -306,6 +352,10 @@ class PromptBuilder:
         Constitution is rendered after instructions and before topology,
         inside ``<constitution>`` tags with a fixed preamble.
         """
+        if not self._is_slot_active(PromptSlot.CONSTITUTION):
+            logger.debug("Slot %s inactive — skipping add_constitution", PromptSlot.CONSTITUTION)
+            return self
+
         full_text = f"{_CONSTITUTION_PREAMBLE}\n\n{text.strip()}"
         self._blocks.append(
             _ContentBlock(
@@ -323,6 +373,10 @@ class PromptBuilder:
         Standards are rendered after constitution, before topology,
         inside ``<standards>`` tags.
         """
+        if not self._is_slot_active(PromptSlot.STANDARDS):
+            logger.debug("Slot %s inactive — skipping add_standards", PromptSlot.STANDARDS)
+            return self
+
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
@@ -341,6 +395,10 @@ class PromptBuilder:
         selective section extraction (file_layout, architecture,
         tasks, test_expectations) from the full Plan YAML.
         """
+        if not self._is_slot_active(PromptSlot.PLAN):
+            logger.debug("Slot %s inactive — skipping add_plan", PromptSlot.PLAN)
+            return self
+
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
@@ -370,6 +428,13 @@ class PromptBuilder:
             skeleton: By default, mentioned referenced files are massively
                 condensed via AST boundaries to avoid inflating token constraints.
         """
+        if not mentions:
+            return self
+
+        if not self._is_slot_active(PromptSlot.MENTIONED):
+            logger.debug("Slot %s inactive — skipping add_mentioned_files", PromptSlot.MENTIONED)
+            return self
+
         # Collect paths already in the builder to avoid duplicates
         existing_paths = {block.file_path for block in self._blocks if block.file_path}
 
@@ -609,4 +674,4 @@ class PromptBuilder:
         """Render blocks into XML-tagged prompt text."""
         from specweaver.infrastructure.llm._prompt_render import render_blocks
 
-        return render_blocks(blocks)
+        return render_blocks(blocks, order=self._profile.order)

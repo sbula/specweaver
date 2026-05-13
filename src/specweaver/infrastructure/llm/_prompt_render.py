@@ -11,6 +11,9 @@ from typing import TYPE_CHECKING
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from specweaver.infrastructure.llm._prompt_profiles import PromptSlot
     from specweaver.infrastructure.llm.prompt_builder import _ContentBlock
 
 
@@ -64,55 +67,79 @@ def _render_mentioned(blocks: list[_ContentBlock]) -> str | None:
     return f"<mentioned_files>\n{inner}\n</mentioned_files>"
 
 
-def render_blocks(blocks: list[_ContentBlock]) -> str:
-    """Render blocks into XML-tagged prompt text."""
-    logger.debug("Rendering %d prompt blocks", len(blocks))
-    parts: list[str] = []
-
-    # Render standard top-level tagged blocks in exact order
-    ordered_tags = [
-        "instructions",
-        "dictator-overrides",
-        "project_metadata",
-        "constitution",
-        "standards",
-        "plan",
-    ]
-    for tag in ordered_tags:
-        rendered = _render_tagged_blocks(blocks, tag, tag)
-        if rendered:
-            parts.append(rendered)
-
-    # Topology (before files — gives structural context)
+def _render_topology(blocks: list[_ContentBlock]) -> str | None:
+    """Render topology blocks into XML."""
     topology = [b for b in blocks if b.kind == "topology"]
+    if not topology:
+        return None
+    parts: list[str] = []
     for topo in topology:
         marker = "\n[truncated]" if topo.truncated else ""
         parts.append(
             f"<topology>\n{topo.text}{marker}\n</topology>",
         )
+    return "\n\n".join(parts)
 
-    # Files (delegated to render_files)
-    file_xml = render_files(blocks)
-    if file_xml:
-        parts.append(file_xml)
 
-    # Mentioned files (auto-detected from prior LLM responses)
-    mentioned_xml = _render_mentioned(blocks)
-    if mentioned_xml:
-        parts.append(mentioned_xml)
-
-    # Context blocks
+def _render_contexts(blocks: list[_ContentBlock]) -> str | None:
+    """Render context blocks into XML."""
     contexts = [b for b in blocks if b.kind == "context"]
+    if not contexts:
+        return None
+    parts: list[str] = []
     for ctx in contexts:
         marker = "\n[truncated]" if ctx.truncated else ""
         parts.append(
             f'<context label="{ctx.label}">\n{ctx.text}{marker}\n</context>',
         )
+    return "\n\n".join(parts)
 
-    # Reminders at the very end
-    reminders = [b for b in blocks if b.kind == "reminder"]
-    if reminders:
-        reminder_text = "\n\n".join(b.text for b in reminders)
-        parts.append(f"<reminder>\n{reminder_text}\n</reminder>")
+
+_SLOT_RENDERERS: dict[str, Callable[[list[_ContentBlock]], str | None]] = {
+    "topology": _render_topology,
+    "file": render_files,
+    "mentioned": _render_mentioned,
+    "context": _render_contexts,
+}
+
+
+def render_blocks(
+    blocks: list[_ContentBlock],
+    order: tuple[PromptSlot, ...] | None = None,
+) -> str:
+    """Render blocks into XML-tagged prompt text."""
+    logger.debug("Rendering %d prompt blocks", len(blocks))
+    parts: list[str] = []
+
+    if order is None:
+        ordered_tags = [
+            "instructions",
+            "dictator-overrides",
+            "project_metadata",
+            "constitution",
+            "standards",
+            "plan",
+            "topology",
+            "file",
+            "mentioned",
+            "context",
+            "reminder",
+            "agent_memory",
+        ]
+        for tag in ordered_tags:
+            if tag in _SLOT_RENDERERS:
+                rendered = _SLOT_RENDERERS[tag](blocks)
+            else:
+                rendered = _render_tagged_blocks(blocks, tag, tag)
+            if rendered:
+                parts.append(rendered)
+    else:
+        for slot in order:
+            if slot.value in _SLOT_RENDERERS:
+                rendered = _SLOT_RENDERERS[slot.value](blocks)
+            else:
+                rendered = _render_tagged_blocks(blocks, slot.value, slot.value)
+            if rendered:
+                parts.append(rendered)
 
     return "\n\n".join(parts)

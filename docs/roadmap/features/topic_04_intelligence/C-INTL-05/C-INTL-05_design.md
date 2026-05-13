@@ -142,7 +142,7 @@ No new external dependencies. This feature is entirely stdlib + Pydantic-based.
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Adding New Prompt Slots | How to add a new PromptSlot enum variant and register it in the appropriate RenderProfiles | ⬜ To be written during Pre-commit |
+| Adding New Prompt Slots | How to add a new PromptSlot enum variant and register it in the appropriate RenderProfiles | ✅ [adding_prompt_slots.md](../../../../dev_guides/adding_prompt_slots.md) |
 
 ## Sub-Feature Breakdown
 
@@ -184,12 +184,12 @@ No new external dependencies. This feature is entirely stdlib + Pydantic-based.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------| 
-| SF-1 | Slot Registry & Profile Mechanism | — | ✅ | ✅ | [/] | ✅ | ⬜ |
-| SF-2 | Profile-Driven Rendering & Builder Refactoring | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Slot Registry & Profile Mechanism | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Profile-Driven Rendering & Builder Refactoring | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Caller Migration & Unification | SF-2 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Dev in progress for SF-1.
-**Next step**: Run TDD implementation for SF-1.
+**Current status**: SF-2 Pre-Commit Quality Gate Complete.
+**Next step**: Run `/implementation-plan` workflow for SF-3.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
