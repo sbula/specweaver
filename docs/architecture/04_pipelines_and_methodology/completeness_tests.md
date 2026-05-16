@@ -4,9 +4,9 @@
 > **Date**: 2026-03-08
 > **Scope**: Universal. Applies to any project at any decomposition level.
 > **Related**:
-> - [Spec Methodology](spec_methodology.md) — defines Structure Tests (the other axis)
-> - [Static Spec Readiness Analysis](../analysis/static_spec_readiness_analysis.md) — static automation for Structure Tests
-> - [Fractal Readiness Walkthrough](../analysis/fractal_readiness_walkthrough.md) — worked examples of Structure Tests
+> - [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md) — defines Structure Tests (the other axis)
+> - [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md) — static automation for Structure Tests
+> - [Fractal Readiness Walkthrough](../../analysis/fractal_readiness_walkthrough.md) — worked examples of Structure Tests
 
 ---
 

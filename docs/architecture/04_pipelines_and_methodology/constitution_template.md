@@ -4,7 +4,7 @@
 > **Date**: 2026-03-08
 > **Scope**: Universal template. Each project using SpecWeaver creates its own constitution from this template.
 > **Related**:
-> - [Methodology Index](methodology_index.md) — consolidated overview
+> - [Methodology Index](../04_pipelines_and_methodology/methodology_index.md) — consolidated overview
 > - [DMZ Repository — SOUL.md](https://github.com/TheMorpheus407/the-dmz) — reference implementation (the DMZ project's `SOUL.md` serves as its constitution)
 
 ---

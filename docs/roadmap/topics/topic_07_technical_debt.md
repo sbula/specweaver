@@ -38,3 +38,7 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 ## Security & Validation
 * **`TECH-06` 🔴: PromptBuilder Input Escaping Gap**
   > _(new)_ | The `_prompt_render.py` rendering functions use raw f-strings with no escaping. While currently safe because all inputs are internally system-generated, this must be hardened before any feature injects user-generated content directly into `add_context()` labels or block contents. D-INTL-06 sidesteps this by using `json.dumps()` for its specific memory blocks, but the base builder is still vulnerable to XML injection if fed raw user strings. Needs `html.escape()` or similar structured injection defenses built directly into `PromptBuilder.add_context()`. Discovered during D-INTL-06 Red Team Cycle 1.
+
+## Documentation & Knowledge Architecture
+* **`TECH-07` 🟢: Architectural Documentation Modularization**
+  > [Description](../features/topic_07_technical_debt/TECH-07/TECH-07_design.md) | A severe structural refactoring of the monolithic `docs/architecture` directory. Slices the 46KB `architecture_reference.md` and 17 loosely organized files into a visually-rich, GitHub-publishable static site structure perfectly aligned with Domain-Driven Design (Hexagonal Layers, Bounded Contexts). Uses a Non-Destructive Copy-and-Verify strategy to guarantee zero data loss. Formalizes the Composition Root vs Factory debates into ADRs.

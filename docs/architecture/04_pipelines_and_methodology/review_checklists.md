@@ -4,15 +4,15 @@
 > **Date**: 2026-03-08
 > **Scope**: Universal pattern. Each project creates its own checklist from this guide.
 > **Related**:
-> - [Lifecycle Layers — L5 Review](lifecycle_layers.md) — where checklists are used
-> - [Completeness Tests — T10 Done Definition](completeness_tests.md) — the generic completeness test that checklists extend
+> - [Lifecycle Layers — L5 Review](../01_foundational_principles/lifecycle_layers.md) — where checklists are used
+> - [Completeness Tests — T10 Done Definition](../04_pipelines_and_methodology/completeness_tests.md) — the generic completeness test that checklists extend
 > - [DMZ Repository — reviewer.md](https://github.com/TheMorpheus407/the-dmz) — reference implementation (15-point checklist)
 
 ---
 
 ## Purpose
 
-The 10-test battery (see [Spec Methodology](spec_methodology.md)) is **universal** — it works for any project. But every project also has **domain-specific** quality concerns that the universal tests don't cover.
+The 10-test battery (see [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md)) is **universal** — it works for any project. But every project also has **domain-specific** quality concerns that the universal tests don't cover.
 
 A Review Checklist is a **project-specific extension** of Test 10 (Done Definition). It turns "is completion verifiable?" into "does this code meet OUR project's specific quality bar?"
 

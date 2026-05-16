@@ -3,7 +3,7 @@
 > **Status**: DRAFT — Work in progress. Findings consolidated from architectural review; further discussion required.
 > **Scope**: Universal. This methodology applies to any project managed by SpecWeaver, including SpecWeaver itself.
 > **Date**: 2026-03-08
-> **Companion**: [Completeness Tests](completeness_tests.md) — the second axis (detail/implementability), orthogonal to the structure tests defined here.
+> **Companion**: [Completeness Tests](../04_pipelines_and_methodology/completeness_tests.md) — the second axis (detail/implementability), orthogonal to the structure tests defined here.
 
 ---
 
@@ -227,7 +227,7 @@ When writing or reviewing a spec, use these rules to determine where a concern b
 
 ## 7. Automation Potential
 
-> **Detailed analysis**: [Static Spec Readiness Analysis](../analysis/static_spec_readiness_analysis.md)
+> **Detailed analysis**: [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md)
 
 Most readiness tests can be partially or fully automated using **static code analysis** (no LLM tokens required). The static checks act as a gate: only borderline cases are escalated to an LLM for judgment.
 
@@ -247,7 +247,7 @@ Most readiness tests can be partially or fully automated using **static code ana
 
 ## 8. Fractal Application — Same Tests, Every Level
 
-> **Concrete walkthrough**: [Fractal Readiness Walkthrough](../analysis/fractal_readiness_walkthrough.md) — demonstrates all 5 tests at all 4 levels using real SpecWeaver examples.
+> **Concrete walkthrough**: [Fractal Readiness Walkthrough](../../analysis/fractal_readiness_walkthrough.md) — demonstrates all 5 tests at all 4 levels using real SpecWeaver examples.
 
 The 5 readiness tests are **not specific to specifications**. They are decomposition tests that apply at every level of software architecture. The tests are identical — only the thresholds and input format change.
 
@@ -297,7 +297,7 @@ The **anti-signal** is also identical: if the resulting sub-units constantly cro
 | **L3** | Source code (`.py`, `.ts`, etc.) | AST parser (class definitions, method count, imports) |
 | **L4** | Source code (single function) | AST parser (parameters, branches, calls, LOC) |
 
-The static checks from the [Static Spec Readiness Analysis](../analysis/static_spec_readiness_analysis.md) cover L1-L2. For L3-L4, the same tests use code-level signals:
+The static checks from the [Static Spec Readiness Analysis](../../analysis/static_spec_readiness_analysis.md) cover L1-L2. For L3-L4, the same tests use code-level signals:
 
 | Test | Spec Signal (L1-L2) | Code Signal (L3-L4) |
 |------|---------------------|---------------------|

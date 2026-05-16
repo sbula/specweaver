@@ -4,9 +4,9 @@
 > **Date**: 2026-03-10
 > **Scope**: Universal. Defines a fractal boundary manifest that works at any hierarchy level (system through sub-module) for all SpecWeaver-managed projects.
 > **Related**:
-> - [Lifecycle Layers](lifecycle_layers.md) — the layer system these boundaries protect
+> - [Lifecycle Layers](../01_foundational_principles/lifecycle_layers.md) — the layer system these boundaries protect
 > - [Codebase Context Specification (CCS)](https://github.com/Agentic-Insights/codebase-context-spec) — the community standard we extend
-> - [Spec Methodology](spec_methodology.md) — the 10-test battery that gates layer transitions
+> - [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md) — the 10-test battery that gates layer transitions
 
 ---
 

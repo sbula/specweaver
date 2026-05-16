@@ -4,8 +4,8 @@
 > **Date**: 2026-03-08
 > **Scope**: Universal. Describes what happens at each layer of the software development lifecycle when using SpecWeaver.
 > **Related**:
-> - [Methodology Index](methodology_index.md) — consolidated overview
-> - [Spec Methodology](spec_methodology.md) — the 10-test battery that gates every layer transition
+> - [Methodology Index](../04_pipelines_and_methodology/methodology_index.md) — consolidated overview
+> - [Spec Methodology](../04_pipelines_and_methodology/spec_methodology.md) — the 10-test battery that gates every layer transition
 > - [DMZ Repository](https://github.com/TheMorpheus407/the-dmz) — reference implementation for L4-L5 (Code + Review)
 
 ---
@@ -227,7 +227,7 @@ Research → Implement → Review A → Review B → Finalize
 ### Input
 - Implementation from L4
 - Component Spec the code was built from
-- Project-specific Review Checklist (see [Review Checklists](review_checklists.md))
+- Project-specific Review Checklist (see [Review Checklists](../04_pipelines_and_methodology/review_checklists.md))
 
 ### Process
 1. Reviewer agent reads the code changes
