@@ -42,3 +42,7 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 ## Documentation & Knowledge Architecture
 * **`TECH-07` 🟢: Architectural Documentation Modularization**
   > [Description](../features/topic_07_technical_debt/TECH-07/TECH-07_design.md) | A severe structural refactoring of the monolithic `docs/architecture` directory. Slices the 46KB `architecture_reference.md` and 17 loosely organized files into a visually-rich, GitHub-publishable static site structure perfectly aligned with Domain-Driven Design (Hexagonal Layers, Bounded Contexts). Uses a Non-Destructive Copy-and-Verify strategy to guarantee zero data loss. Formalizes the Composition Root vs Factory debates into ADRs.
+
+## Delivery Mechanism Purification
+* **`TECH-08` 🔴: CLI ApplicationService Layer Extraction**
+  > _(new)_ | Further purifies the Delivery Mechanism by extracting an explicit `ApplicationService` or `UseCase` layer between the Typer router and the Flow Engine. Ensures the CLI router handles only argument parsing, moving the Composition Root hydration (TECH-05) into a dedicated service layer. Discovered and formalized during the TECH-05 ADR 002 debate.

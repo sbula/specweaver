@@ -625,3 +625,14 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-06:** PromptBuilder Input Escaping (Tracked as cross-cutting tech debt)
 *   **Discovered during:** D-INTL-06 Red Team Cycle 1 pattern analysis.
 
+### 🟢 TECH-07: Architectural Documentation Modularization
+**Benefit:** *Transforms the impenetrable 46KB `architecture_reference.md` monolith into a visually-rich, GitHub-publishable static site structure perfectly aligned with Domain-Driven Design.*
+*   **Core Required (MVS):**
+    *   `✅` **TECH-07:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-07/TECH-07_design.md)
+
+### 🔴 TECH-08: CLI ApplicationService Layer Extraction
+**Benefit:** *Further purifies the Delivery Mechanism by extracting an explicit `ApplicationService` or `UseCase` layer between the Typer router and the Flow Engine, ensuring the CLI router handles only arguments, not composition logic.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-08:** CLI ApplicationService Layer Extraction
+*   **Discovered during:** TECH-05 ADR 002 (Composition Root vs Factories) debate.
+
