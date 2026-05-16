@@ -29,7 +29,7 @@ Feature TECH-08 adds an explicit `ApplicationService` (or `UseCase`) layer betwe
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | **Create Service** | Developer | Instantiate `FlowOrchestrator` | A reusable Application Service exists that accepts standard execution parameters (`project_path`, `spec_path`) and either a `pipeline_name` string or a dynamic `PipelineDefinition` object. |
+| FR-1 | **Create Service** | Developer | Instantiate `FlowOrchestrator` | A reusable Application Service exists that accepts standard execution parameters (`project_path`, `spec_path`, injected `db: Database`) and either a `pipeline_name` string or a dynamic `PipelineDefinition` object. |
 | FR-2 | **Encapsulate Hydration** | `FlowOrchestrator` | Construct `RunContext` | The service successfully loads the `Constitution`, `Standards`, and DB session, and binds them to the context, replacing the CLI's logic. |
 | FR-3 | **Encapsulate Infrastructure** | `FlowOrchestrator` | Initialize LLM | The service accepts a `require_llm` flag. If True, it successfully resolves and binds the `ModelRouter` and `LLM Adapter` to the context before invoking the `PipelineRunner`. If False, it bypasses LLM loading to prevent crashes in CI environments. |
 | FR-4 | **Refactor CLI** | CLI Routers | Invoke `FlowOrchestrator` | `core.flow.interfaces.cli`, `workflows.review.interfaces.cli`, and `workflows.implementation.interfaces.cli` no longer contain `RunContext` initialization or cross-interface imports. |
@@ -42,6 +42,9 @@ Feature TECH-08 adds an explicit `ApplicationService` (or `UseCase`) layer betwe
 | NFR-1 | **Architecture Strictness** | The `core.application` module MUST be sealed in `tach.toml` and ONLY depend on `workspace`, `assurance`, `infrastructure.llm`, and `core.flow`. No domain module may depend on `core.application`. |
 | NFR-2 | **Decoupled Error Handling** | The `core.application` module MUST NOT import `typer`, `fastapi`, or `rich`. All errors must be pure Domain Exceptions (e.g., `MissingConstitutionError`) that the Delivery Mechanism catches and translates. |
 | NFR-3 | **Interface Stability** | The external CLI commands (`sw run`, `sw review`) and HTTP endpoints MUST NOT change their external signatures, arguments, or behavior. |
+| NFR-4 | **DAL Enforcement** | The `FlowOrchestrator` MUST NOT perform raw file I/O. All Constitution and Standards hydration MUST route through public `workspace` and `assurance` Domain APIs to guarantee security boundaries and path validation. |
+| NFR-5 | **Async Event Loop** | The `FlowOrchestrator.run_pipeline` MUST be an `async def` method. It MUST NOT manage the event loop via `asyncio.run()` internally, leaving event loop ownership to the CLI (which will wrap the call) and FastAPI (which awaits natively). |
+| NFR-6 | **Anti-God-Object (OCP)** | The `FlowOrchestrator` MUST be completely generic. It is strictly forbidden from containing `if/else` logic based on the `pipeline_name`. |
 
 ## External Dependencies
 
