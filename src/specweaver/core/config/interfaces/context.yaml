@@ -10,7 +10,7 @@ dependencies:
   - specweaver.core.config.database
   - specweaver.core.config.paths
   - specweaver.core.config.profiles
-  - specweaver.core.config.cli_db_utils
+  - specweaver.core.config.db_bootstrap
   - specweaver.infrastructure.llm.models
   - specweaver.infrastructure.llm.store
   - specweaver.infrastructure.llm.adapters.registry

@@ -17,7 +17,7 @@ import typer
 from rich.console import Console
 
 from specweaver._version import __version__
-from specweaver.core.config.cli_db_utils import get_db
+from specweaver.core.config.db_bootstrap import get_db
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(
