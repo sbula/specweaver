@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import pytest
-
 from specweaver.infrastructure.llm._prompt_profiles import PromptSlot
 from specweaver.infrastructure.llm._prompt_render import (
     _render_contexts,
-    _render_tagged_blocks,
     _render_topology,
     render_blocks,
 )

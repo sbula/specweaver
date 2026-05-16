@@ -147,4 +147,6 @@ async def test_review_e2e_fallback_protection(
     mock_build_base_prompt.assert_called_once()
     build_kwargs = mock_build_base_prompt.call_args.kwargs
     assert "skeleton_files" in build_kwargs
-    assert build_kwargs["skeleton_files"] == {}  # The fault MUST be suppressed and cleanly map empty
+    assert (
+        build_kwargs["skeleton_files"] == {}
+    )  # The fault MUST be suppressed and cleanly map empty

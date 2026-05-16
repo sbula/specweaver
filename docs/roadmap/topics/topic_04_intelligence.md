@@ -19,7 +19,7 @@ This document tracks all capabilities related to LLM integration, specification 
   > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Eliminates "Blank Canvas" LLM hallucinations during greenfield bootstrap. Injects an interactive CLI wizard (persistence, authentication, archetype choices) bounding the LLM's solution space securely into a localized `context.yaml` before `sw plan` or `sw draft` engages.
 * **`D-INTL-05` ✅: Project Metadata Injection** (Legacy: 3.15)<br>
   > _(new)_ | Inject project name, archetype, language target, date, active config into system prompt; similar to Aider's `get_platform_info()`. **Complete**: 3587 tests.
-* **`D-INTL-06` 🟡: Context Hydration & Handover Engine**
+* **`D-INTL-06` ✅: Context Hydration & Handover Engine**
   > _(new)_ | Specialized retrieval layer that fetches the active Task state, blockers, and handover notes from the Memory Bank, validates them via Pydantic (8KB token limit), and injects structured context into the agent's prompt. Includes handover protocols for safely passing accumulated context between agents without hallucination transfer. See [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md).
 
 ## DAL-C: Enterprise Standard
@@ -31,7 +31,7 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | Archaeology tool for brownfield adoption. Uses AST Skeleton Extraction combined with Multi-Modal extraction loops from PDFs/Diagrams mapped as [semantically_similar] to draft baseline Spec.md contracts from legacy DB/Java code.
 * **`C-INTL-04` 🔜: Conversation Summarization** (Legacy: 4.6)<br>
   > _(inspired by Aider)_ — Compress old multi-turn drafting/review messages when context fills up; keep recent turns + summary of history. _(Blueprint: [`aider/history.py`](https://github.com/Aider-AI/aider/blob/main/aider/history.py) `summarize_end()` — ORIGINS.md § Aider)_
-* **`C-INTL-05` 🟡: Configurable Prompt Render Profiles**<br>
+* **`C-INTL-05` ✅: Configurable Prompt Render Profiles**<br>
   > _(new)_ | Replaces the hardcoded prompt block rendering sequence with a configurable, profile-based pipeline. This eliminates the maintenance bottleneck in `_prompt_render.py` when adding new context sources and formally implements the 2-Tier Handover standard natively in the PromptBuilder layer. See [Design](../features/topic_04_intelligence/C-INTL-05/C-INTL-05_design.md).
 
 ## DAL-B: High-Assurance

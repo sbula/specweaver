@@ -12,7 +12,7 @@ Adversarial Test Matrix for _build_base_prompt:
 
 1. Happy Path:
    - test_build_base_prompt_happy_path: Full context with active tasks returns builder with memory, instructions, metadata, constitution, standards.
-   - test_build_base_prompt_include_rules_false: Drafting tier 2 mode skips constitution/standards but includes memory.
+   - test_build_base_prompt_interactive_profile: Drafting tier 2 mode skips constitution/standards but includes memory.
 
 2. Boundary/Edge Cases:
    - test_build_base_prompt_db_none: Gracefully skips memory block when db is None.
@@ -84,14 +84,16 @@ async def test_build_base_prompt_happy_path(mock_hydrator_class, run_context):
 
 @pytest.mark.asyncio
 @patch("specweaver.workspace.memory.hydrator.MemoryHydrator")
-async def test_build_base_prompt_include_rules_false(mock_hydrator_class, run_context):
+async def test_build_base_prompt_interactive_profile(mock_hydrator_class, run_context):
+    from specweaver.core.flow.handlers._profiles import INTERACTIVE
+
     mock_hydrator = mock_hydrator_class.return_value
     mock_result = MagicMock()
     mock_result.task_count = 2
     mock_result.format_prompt_block.return_value = "<agent_memory>Tasks here</agent_memory>"
     mock_hydrator.hydrate = AsyncMock(return_value=mock_result)
 
-    builder = await _build_base_prompt(run_context, "Drafting tier 2", include_rules=False)
+    builder = await _build_base_prompt(run_context, "Drafting tier 2", profile=INTERACTIVE)
     prompt = builder.build()
 
     assert "Drafting tier 2" in prompt

@@ -8,12 +8,23 @@ from specweaver.core.flow.engine.state import RunStatus
 
 class MockPath:
     name = "test_project"
-    def resolve(self): return self
-    def __str__(self): return "test_project"
+
+    def resolve(self):
+        return self
+
+    def __str__(self):
+        return "test_project"
+
     @property
-    def parent(self): return self
-    def exists(self): return True
-    def __truediv__(self, other): return self
+    def parent(self):
+        return self
+
+    def exists(self):
+        return True
+
+    def __truediv__(self, other):
+        return self
+
 
 class MockContext:
     project_path = MockPath()
@@ -21,9 +32,12 @@ class MockContext:
     db = MagicMock()
     dal_level = "DAL_A"
 
+
 class MockPipeline:
-    name = "test_pipeline"
-    steps: list = []
+    def __init__(self):
+        self.name = "test_pipeline"
+        self.steps: list = []
+
 
 @pytest.fixture
 def runner():
@@ -56,11 +70,13 @@ async def test_runner_run_calls_save_handover(runner):
     runner._save_handover.assert_called_once_with(ANY)
     runner._flush_telemetry.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_handover_called_on_run_failed(runner):
     runner._run.status = RunStatus.FAILED
     await runner.run()
     runner._save_handover.assert_called_once_with(ANY)
+
 
 @pytest.mark.asyncio
 async def test_handover_called_on_park(runner):
@@ -78,6 +94,7 @@ async def test_handover_exception_does_not_crash_runner(mock_save, runner):
     mock_save.side_effect = Exception("Crash")
     await runner.run()  # Should not raise exception
     mock_save.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_handover_called_on_empty_pipeline(runner):

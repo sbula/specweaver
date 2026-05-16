@@ -49,11 +49,13 @@ FULL = RenderProfile(
 
 MINIMAL = RenderProfile(
     name="MINIMAL",
-    active_slots=frozenset({
-        PromptSlot.INSTRUCTIONS,
-        PromptSlot.METADATA,
-        PromptSlot.TOPOLOGY,
-    }),
+    active_slots=frozenset(
+        {
+            PromptSlot.INSTRUCTIONS,
+            PromptSlot.METADATA,
+            PromptSlot.TOPOLOGY,
+        }
+    ),
     order=(
         PromptSlot.INSTRUCTIONS,
         PromptSlot.METADATA,
@@ -65,13 +67,15 @@ Used by the Decomposer and Planner."""
 
 INTERACTIVE = RenderProfile(
     name="INTERACTIVE",
-    active_slots=_ALL_SLOTS - frozenset({
-        PromptSlot.CONSTITUTION,
-        PromptSlot.STANDARDS,
-    }),
+    active_slots=_ALL_SLOTS
+    - frozenset(
+        {
+            PromptSlot.CONSTITUTION,
+            PromptSlot.STANDARDS,
+        }
+    ),
     order=tuple(
-        s for s in _STANDARD_ORDER
-        if s not in {PromptSlot.CONSTITUTION, PromptSlot.STANDARDS}
+        s for s in _STANDARD_ORDER if s not in {PromptSlot.CONSTITUTION, PromptSlot.STANDARDS}
     ),
 )
 """Interactive profile — all slots except constitution and standards.
@@ -79,10 +83,12 @@ Used by the Drafter for interactive spec authoring."""
 
 ARBITER = RenderProfile(
     name="ARBITER",
-    active_slots=frozenset({
-        PromptSlot.INSTRUCTIONS,
-        PromptSlot.CONTEXT,
-    }),
+    active_slots=frozenset(
+        {
+            PromptSlot.INSTRUCTIONS,
+            PromptSlot.CONTEXT,
+        }
+    ),
     order=(
         PromptSlot.INSTRUCTIONS,
         PromptSlot.CONTEXT,

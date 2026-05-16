@@ -38,9 +38,14 @@ async def test_decompose_returns_plan(
     mock_response.text = '{"feature_spec": "path.md", "components": [], "integration_seams": [], "build_sequence": [], "coverage_score": 1.0, "timestamp": "2026-01-01T00:00:00Z"}'
     mock_llm.generate.return_value = mock_response
 
+    from specweaver.core.flow.handlers._profiles import MINIMAL
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
     # Test executing decompose
     plan = await decomposer.decompose(
-        feature_name="test_feature", spec_content="Feature Spec Content Dummy"
+        feature_name="test_feature",
+        spec_content="Feature Spec Content Dummy",
+        base_prompt=PromptBuilder(profile=MINIMAL)
     )
 
     assert isinstance(plan, DecompositionPlan)
@@ -56,8 +61,15 @@ async def test_decompose_llm_exception(
     decomposer = FeatureDecomposer(llm=mock_llm, context_provider=mock_context_provider)
     mock_llm.generate.side_effect = Exception("API Connect Timeout")
 
+    from specweaver.core.flow.handlers._profiles import MINIMAL
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
     with pytest.raises(Exception, match="API Connect Timeout"):
-        await decomposer.decompose(feature_name="test", spec_content="spec")
+        await decomposer.decompose(
+            feature_name="test",
+            spec_content="spec",
+            base_prompt=PromptBuilder(profile=MINIMAL)
+        )
 
 
 @pytest.mark.asyncio
@@ -72,8 +84,15 @@ async def test_decompose_pydantic_validation_error(
     mock_response.text = '{"feature_spec": "path.md"}'
     mock_llm.generate.return_value = mock_response
 
+    from specweaver.core.flow.handlers._profiles import MINIMAL
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
     with pytest.raises(ValueError, match="structurally valid"):
-        await decomposer.decompose(feature_name="test", spec_content="spec")
+        await decomposer.decompose(
+            feature_name="test",
+            spec_content="spec",
+            base_prompt=PromptBuilder(profile=MINIMAL)
+        )
 
 
 def test_decompose_instruction_template_has_topology_directions() -> None:

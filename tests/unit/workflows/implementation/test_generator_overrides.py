@@ -46,6 +46,7 @@ class TestGeneratorOverridesInjection:
         output = tmp_path / "out.py"
 
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
         base_prompt = PromptBuilder()
 
         gen = Generator(llm=mock_llm)
@@ -76,6 +77,7 @@ class TestGeneratorOverridesInjection:
         output = tmp_path / "out.py"
 
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
         base_prompt = PromptBuilder()
 
         gen = Generator(llm=mock_llm)
@@ -106,6 +108,7 @@ class TestGeneratorOverridesInjection:
         output = tmp_path / "test_out.py"
 
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
         base_prompt = PromptBuilder()
 
         gen = Generator(llm=mock_llm)
@@ -136,6 +139,7 @@ class TestGeneratorOverridesInjection:
         output = tmp_path / "test_out.py"
 
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
         base_prompt = PromptBuilder()
 
         gen = Generator(llm=mock_llm)

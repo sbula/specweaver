@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 async def save_handover_context(context: RunContext, run: PipelineRun) -> None:  # noqa: C901
     """
     Persists pipeline telemetry to the Agent Memory Bank for handover scenarios.
-    
-    This function is fail-safe. If anything goes wrong (e.g., database unavailable, 
-    missing task IDs, serialization errors), it gracefully catches the exception, logs 
+
+    This function is fail-safe. If anything goes wrong (e.g., database unavailable,
+    missing task IDs, serialization errors), it gracefully catches the exception, logs
     a warning, and allows the pipeline cleanup to continue uninterrupted.
-    
+
     Args:
         context: The execution context (provides database connection and task targeting).
         run: The current state of the pipeline run.
@@ -29,7 +29,9 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None: 
     try:
         # 1. Status and Integrity Guards
         if run.status in (RunStatus.PARKED, RunStatus.NOT_STARTED):
-            logger.debug("[run_id=%s] Skipping handover save for status: %s", run.run_id, run.status.value)
+            logger.debug(
+                "[run_id=%s] Skipping handover save for status: %s", run.run_id, run.status.value
+            )
             return
 
         if run.parent_run_id is not None:
@@ -37,11 +39,15 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None: 
             return
 
         if not run.step_records:
-            logger.debug("[run_id=%s] Skipping handover save: Pipeline has 0 steps executed.", run.run_id)
+            logger.debug(
+                "[run_id=%s] Skipping handover save: Pipeline has 0 steps executed.", run.run_id
+            )
             return
 
         if context.db is None:
-            logger.warning("[run_id=%s] Skipping handover save: Database connection is missing.", run.run_id)
+            logger.warning(
+                "[run_id=%s] Skipping handover save: Database connection is missing.", run.run_id
+            )
             return
 
         # 2. Telemetry Collection & Mathematical Bounding
@@ -49,7 +55,11 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None: 
 
         errors: list[str] = []
         for step in run.step_records:
-            if step.result and step.result.status in (StepStatus.FAILED, StepStatus.ERROR) and step.result.error_message:
+            if (
+                step.result
+                and step.result.status in (StepStatus.FAILED, StepStatus.ERROR)
+                and step.result.error_message
+            ):
                 errors.append(str(step.result.error_message))
 
         # Deduplicate, cap at 10 items, truncate to 500 chars
@@ -80,7 +90,7 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None: 
             summary=summary,
             files_touched=truncated_files,
             errors_encountered=truncated_errors,
-            metadata=metadata
+            metadata=metadata,
         )
 
         # 3. Persistence
@@ -94,8 +104,7 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None: 
             else:
                 # Fallback to the most recently created IN_PROGRESS task
                 active_tasks = await repo.list_tasks(
-                    project_name=context.project_path.name,
-                    status=TaskStatus.IN_PROGRESS
+                    project_name=context.project_path.name, status=TaskStatus.IN_PROGRESS
                 )
                 if active_tasks and len(active_tasks) > 0:
                     target_task_id = uuid.UUID(str(active_tasks[0]["id"]))
@@ -103,7 +112,7 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None: 
             if target_task_id is None:
                 logger.warning(
                     "[run_id=%s] Skipping handover save: No active task found for persistence.",
-                    run.run_id
+                    run.run_id,
                 )
                 return
 
@@ -111,13 +120,10 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None: 
             logger.info(
                 "[run_id=%s] Successfully saved handover context to task %s",
                 run.run_id,
-                target_task_id
+                target_task_id,
             )
 
     except Exception as exc:
         logger.warning(
-            "[run_id=%s] Failed to save handover context: %s",
-            run.run_id,
-            str(exc),
-            exc_info=True
+            "[run_id=%s] Failed to save handover context: %s", run.run_id, str(exc), exc_info=True
         )

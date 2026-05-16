@@ -38,11 +38,18 @@ class DecomposeFeatureHandler(StepHandler):
             if context.spec_path.exists():
                 spec_content = context.spec_path.read_text(encoding="utf-8")
 
+            from specweaver.core.flow.handlers._profiles import MINIMAL
+            from specweaver.core.flow.handlers.base import _build_base_prompt
+
+            base_prompt = await _build_base_prompt(
+                context, instructions="", profile=MINIMAL
+            )
+
             plan = await decomposer.decompose(
                 feature_name=feature_name,
                 spec_content=spec_content,
+                base_prompt=base_prompt,
                 topology_contexts=[context.topology] if context.topology else None,
-                project_metadata=context.project_metadata,
             )
 
             # FR-5 Coverage Assertion Bounds

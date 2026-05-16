@@ -57,7 +57,9 @@ class FakeDB:
 
 
 @pytest.mark.asyncio
-async def test_build_base_prompt_with_hydration(db_session: AsyncSession, base_project: Project) -> None:
+async def test_build_base_prompt_with_hydration(
+    db_session: AsyncSession, base_project: Project
+) -> None:
     """
     [Integration - Happy Path]
     Test that _build_base_prompt properly integrates with the real SQLite
@@ -110,7 +112,9 @@ async def test_build_base_prompt_with_hydration(db_session: AsyncSession, base_p
 
 
 @pytest.mark.asyncio
-async def test_build_base_prompt_with_corrupted_handover(db_session: AsyncSession, base_project: Project) -> None:
+async def test_build_base_prompt_with_corrupted_handover(
+    db_session: AsyncSession, base_project: Project
+) -> None:
     """
     [Integration - Degradation]
     Test that a corrupted handover_context in the real database causes
@@ -129,9 +133,12 @@ async def test_build_base_prompt_with_corrupted_handover(db_session: AsyncSessio
 
     # Inject invalid JSON directly
     from sqlalchemy import text
-    await db_session.execute(text(
-        "UPDATE memory_tasks SET handover_context = 'INVALID_JSON_HERE' WHERE title = 'Corrupted Task'"
-    ))
+
+    await db_session.execute(
+        text(
+            "UPDATE memory_tasks SET handover_context = 'INVALID_JSON_HERE' WHERE title = 'Corrupted Task'"
+        )
+    )
     await db_session.commit()
 
     # 2. Setup RunContext
@@ -143,7 +150,9 @@ async def test_build_base_prompt_with_corrupted_handover(db_session: AsyncSessio
             archetype="generic",
             language_target="python",
             date_iso="2026-05-09",
-            safe_config=PromptSafeConfig(llm_model="test", llm_provider="test", validation_rules={})
+            safe_config=PromptSafeConfig(
+                llm_model="test", llm_provider="test", validation_rules={}
+            ),
         ),
         constitution="Be safe.",
         standards="Use types.",

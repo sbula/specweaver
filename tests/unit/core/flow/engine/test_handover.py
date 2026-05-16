@@ -1,7 +1,7 @@
 import uuid
-from typing import TYPE_CHECKING
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -12,6 +12,8 @@ from specweaver.core.flow.handlers.base import RunContext
 
 if TYPE_CHECKING:
     from specweaver.workspace.memory.models import HandoverContext
+
+
 @pytest.fixture
 def mock_db():
     db = MagicMock()
@@ -25,8 +27,7 @@ def mock_db():
 def mock_repo(monkeypatch):
     repo = AsyncMock()
     monkeypatch.setattr(
-        "specweaver.core.flow.engine.handover.MemoryRepository",
-        MagicMock(return_value=repo)
+        "specweaver.core.flow.engine.handover.MemoryRepository", MagicMock(return_value=repo)
     )
     return repo
 
@@ -54,16 +55,19 @@ def create_pipeline_run(status: RunStatus, steps: int = 1) -> PipelineRun:
     )
     for i in range(steps):
         from specweaver.core.flow.engine.state import StepRecord
+
         run.step_records.append(
             StepRecord(
                 step_name=f"step_{i}",
-                status=status if status in (StepStatus.PASSED, StepStatus.FAILED, StepStatus.ERROR) else StepStatus.PASSED,
+                status=status
+                if status in (StepStatus.PASSED, StepStatus.FAILED, StepStatus.ERROR)
+                else StepStatus.PASSED,
                 result=StepResult(
                     status=StepStatus.PASSED,
                     started_at=datetime.now(UTC).isoformat(),
                     completed_at=datetime.now(UTC).isoformat(),
                     output={"files_touched": [f"file_{i}.py"]},
-                )
+                ),
             )
         )
     return run
@@ -136,8 +140,17 @@ async def test_error_deduplication(run_context, mock_repo):
     # Add identical errors
     for _ in range(3):
         from specweaver.core.flow.engine.state import StepRecord
+
         run.step_records.append(
-            StepRecord(step_name="err_step", result=StepResult(status=StepStatus.ERROR, error_message="Duplicate Error", started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat()))
+            StepRecord(
+                step_name="err_step",
+                result=StepResult(
+                    status=StepStatus.ERROR,
+                    error_message="Duplicate Error",
+                    started_at=datetime.now(UTC).isoformat(),
+                    completed_at=datetime.now(UTC).isoformat(),
+                ),
+            )
         )
 
     await save_handover_context(run_context, run)
@@ -155,8 +168,17 @@ async def test_error_truncation_and_capping(run_context, mock_repo):
     long_msg = "A" * 600
     for i in range(15):
         from specweaver.core.flow.engine.state import StepRecord
+
         run.step_records.append(
-            StepRecord(step_name=f"step_{i}", result=StepResult(status=StepStatus.ERROR, error_message=f"{long_msg}{i}", started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat()))
+            StepRecord(
+                step_name=f"step_{i}",
+                result=StepResult(
+                    status=StepStatus.ERROR,
+                    error_message=f"{long_msg}{i}",
+                    started_at=datetime.now(UTC).isoformat(),
+                    completed_at=datetime.now(UTC).isoformat(),
+                ),
+            )
         )
 
     await save_handover_context(run_context, run)
@@ -174,9 +196,30 @@ async def test_files_touched_type_safety(run_context, mock_repo):
 
     # output is a string (bypassing pydantic for hostile input)
     from specweaver.core.flow.engine.state import StepRecord
-    run.step_records.append(StepRecord(step_name="s1", result=StepResult.model_construct(status=StepStatus.PASSED, output="I am a string", started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat())))
+
+    run.step_records.append(
+        StepRecord(
+            step_name="s1",
+            result=StepResult.model_construct(
+                status=StepStatus.PASSED,
+                output="I am a string",
+                started_at=datetime.now(UTC).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
+            ),
+        )
+    )
     # output is None
-    run.step_records.append(StepRecord(step_name="s2", result=StepResult.model_construct(status=StepStatus.PASSED, output=None, started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat())))
+    run.step_records.append(
+        StepRecord(
+            step_name="s2",
+            result=StepResult.model_construct(
+                status=StepStatus.PASSED,
+                output=None,
+                started_at=datetime.now(UTC).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
+            ),
+        )
+    )
 
     # Should not crash
     await save_handover_context(run_context, run)
@@ -192,7 +235,18 @@ async def test_files_deduplication_and_truncation(run_context, mock_repo):
 
     long_file = "B" * 200
     from specweaver.core.flow.engine.state import StepRecord
-    run.step_records.append(StepRecord(step_name="s1", result=StepResult(status=StepStatus.PASSED, output={"files_touched": [long_file, long_file, "normal_file.py"]}, started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat())))
+
+    run.step_records.append(
+        StepRecord(
+            step_name="s1",
+            result=StepResult(
+                status=StepStatus.PASSED,
+                output={"files_touched": [long_file, long_file, "normal_file.py"]},
+                started_at=datetime.now(UTC).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
+            ),
+        )
+    )
 
     await save_handover_context(run_context, run)
     ctx: HandoverContext = mock_repo.update_handover_context.call_args[0][1]
@@ -254,9 +308,18 @@ async def test_errors_order_preserved(run_context, mock_repo):
     run_context.task_id = str(uuid.uuid4())
     run = create_pipeline_run(RunStatus.FAILED, steps=0)
     from specweaver.core.flow.engine.state import StepRecord
+
     for msg in ["Error A", "Error B", "Error A", "Error C"]:
         run.step_records.append(
-            StepRecord(step_name="err", result=StepResult(status=StepStatus.ERROR, error_message=msg, started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat()))
+            StepRecord(
+                step_name="err",
+                result=StepResult(
+                    status=StepStatus.ERROR,
+                    error_message=msg,
+                    started_at=datetime.now(UTC).isoformat(),
+                    completed_at=datetime.now(UTC).isoformat(),
+                ),
+            )
         )
     await save_handover_context(run_context, run)
     ctx: HandoverContext = mock_repo.update_handover_context.call_args[0][1]
@@ -269,7 +332,18 @@ async def test_files_touched_capped_at_30(run_context, mock_repo):
     run = create_pipeline_run(RunStatus.COMPLETED, steps=0)
     files = [f"file_{i}.py" for i in range(50)]
     from specweaver.core.flow.engine.state import StepRecord
-    run.step_records.append(StepRecord(step_name="files", result=StepResult(status=StepStatus.PASSED, output={"files_touched": files}, started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat())))
+
+    run.step_records.append(
+        StepRecord(
+            step_name="files",
+            result=StepResult(
+                status=StepStatus.PASSED,
+                output={"files_touched": files},
+                started_at=datetime.now(UTC).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
+            ),
+        )
+    )
     await save_handover_context(run_context, run)
     ctx: HandoverContext = mock_repo.update_handover_context.call_args[0][1]
     assert len(ctx.files_touched) == 30
@@ -299,12 +373,31 @@ async def test_handover_under_8kb(run_context, mock_repo):
     run = create_pipeline_run(RunStatus.FAILED, steps=0)
     long_msg = "A" * 600
     from specweaver.core.flow.engine.state import StepRecord
+
     for i in range(15):
         run.step_records.append(
-            StepRecord(step_name=f"err_{i}", result=StepResult(status=StepStatus.ERROR, error_message=f"{long_msg}{i}", started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat()))
+            StepRecord(
+                step_name=f"err_{i}",
+                result=StepResult(
+                    status=StepStatus.ERROR,
+                    error_message=f"{long_msg}{i}",
+                    started_at=datetime.now(UTC).isoformat(),
+                    completed_at=datetime.now(UTC).isoformat(),
+                ),
+            )
         )
     files = ["B" * 200 for _ in range(50)]
-    run.step_records.append(StepRecord(step_name="files", result=StepResult(status=StepStatus.PASSED, output={"files_touched": files}, started_at=datetime.now(UTC).isoformat(), completed_at=datetime.now(UTC).isoformat())))
+    run.step_records.append(
+        StepRecord(
+            step_name="files",
+            result=StepResult(
+                status=StepStatus.PASSED,
+                output={"files_touched": files},
+                started_at=datetime.now(UTC).isoformat(),
+                completed_at=datetime.now(UTC).isoformat(),
+            ),
+        )
+    )
 
     await save_handover_context(run_context, run)
     ctx: HandoverContext = mock_repo.update_handover_context.call_args[0][1]
@@ -321,4 +414,3 @@ async def test_summary_format(run_context, mock_repo):
     assert "test_pipeline" in ctx.summary
     assert "completed" in ctx.summary
     assert "5 steps" in ctx.summary
-

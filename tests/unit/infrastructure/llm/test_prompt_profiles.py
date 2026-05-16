@@ -49,7 +49,7 @@ class TestRenderProfile:
         profile = RenderProfile(
             name="test_profile",
             active_slots=frozenset({PromptSlot.INSTRUCTIONS, PromptSlot.CONTEXT}),
-            order=(PromptSlot.INSTRUCTIONS, PromptSlot.CONTEXT)
+            order=(PromptSlot.INSTRUCTIONS, PromptSlot.CONTEXT),
         )
         assert profile.name == "test_profile"
         assert profile.active_slots == frozenset({PromptSlot.INSTRUCTIONS, PromptSlot.CONTEXT})
@@ -62,7 +62,7 @@ class TestRenderProfile:
             RenderProfile(
                 name="test_missing",
                 active_slots=frozenset({PromptSlot.INSTRUCTIONS, PromptSlot.CONTEXT}),
-                order=(PromptSlot.INSTRUCTIONS,)
+                order=(PromptSlot.INSTRUCTIONS,),
             )
 
         # Extra ordered slot
@@ -70,7 +70,7 @@ class TestRenderProfile:
             RenderProfile(
                 name="test_extra",
                 active_slots=frozenset({PromptSlot.INSTRUCTIONS}),
-                order=(PromptSlot.INSTRUCTIONS, PromptSlot.CONTEXT)
+                order=(PromptSlot.INSTRUCTIONS, PromptSlot.CONTEXT),
             )
 
     def test_render_profile_duplicate_order_violation(self) -> None:
@@ -79,7 +79,7 @@ class TestRenderProfile:
             RenderProfile(
                 name="test_dup",
                 active_slots=frozenset({PromptSlot.INSTRUCTIONS}),
-                order=(PromptSlot.INSTRUCTIONS, PromptSlot.INSTRUCTIONS)
+                order=(PromptSlot.INSTRUCTIONS, PromptSlot.INSTRUCTIONS),
             )
 
     def test_render_profile_frozen(self) -> None:
@@ -87,45 +87,37 @@ class TestRenderProfile:
         profile = RenderProfile(
             name="test_frozen",
             active_slots=frozenset({PromptSlot.INSTRUCTIONS}),
-            order=(PromptSlot.INSTRUCTIONS,)
+            order=(PromptSlot.INSTRUCTIONS,),
         )
         with pytest.raises(FrozenInstanceError):
-            profile.name = "mutated" # type: ignore
+            profile.name = "mutated"  # type: ignore
         with pytest.raises(FrozenInstanceError):
-            profile.active_slots = frozenset() # type: ignore
+            profile.active_slots = frozenset()  # type: ignore
 
     def test_render_profile_equality_by_value(self) -> None:
         """T9: Two profiles with same fields are equal."""
         profile_a = RenderProfile(
             name="test_eq",
             active_slots=frozenset({PromptSlot.INSTRUCTIONS}),
-            order=(PromptSlot.INSTRUCTIONS,)
+            order=(PromptSlot.INSTRUCTIONS,),
         )
         profile_b = RenderProfile(
             name="test_eq",
             active_slots=frozenset({PromptSlot.INSTRUCTIONS}),
-            order=(PromptSlot.INSTRUCTIONS,)
+            order=(PromptSlot.INSTRUCTIONS,),
         )
         assert profile_a == profile_b
         assert profile_a is not profile_b
 
     def test_render_profile_empty_active_slots(self) -> None:
         """T10: Empty active_slots + empty order is valid."""
-        profile = RenderProfile(
-            name="test_empty",
-            active_slots=frozenset(),
-            order=()
-        )
+        profile = RenderProfile(name="test_empty", active_slots=frozenset(), order=())
         assert len(profile.active_slots) == 0
         assert len(profile.order) == 0
 
     def test_render_profile_name_in_repr(self) -> None:
         """T11: Name appears in repr for debugging."""
-        profile = RenderProfile(
-            name="test_repr_name",
-            active_slots=frozenset(),
-            order=()
-        )
+        profile = RenderProfile(name="test_repr_name", active_slots=frozenset(), order=())
         assert "test_repr_name" in repr(profile)
 
     def test_render_profile_single_slot(self) -> None:
@@ -133,7 +125,7 @@ class TestRenderProfile:
         profile = RenderProfile(
             name="single",
             active_slots=frozenset({PromptSlot.INSTRUCTIONS}),
-            order=(PromptSlot.INSTRUCTIONS,)
+            order=(PromptSlot.INSTRUCTIONS,),
         )
         assert profile.name == "single"
         assert len(profile.active_slots) == 1

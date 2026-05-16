@@ -177,7 +177,6 @@ async def _build_base_prompt(
     instructions: str,
     *,
     profile: RenderProfile | None = None,
-    include_rules: bool = True,
     skeleton_files: dict[str, str] | None = None,
 ) -> PromptBuilder:
     """Build a PromptBuilder with base context (instructions, metadata, rules, memory).
@@ -185,8 +184,7 @@ async def _build_base_prompt(
     Args:
         context: The RunContext for this pipeline step.
         instructions: Module-specific instruction text.
-        profile: The RenderProfile to use for rendering slots.
-        include_rules: DEPRECATED — If False, skips constitution and standards.
+        profile: The RenderProfile to use for rendering slots. Defaults to FULL.
         skeleton_files: Optional skeleton files for PromptBuilder constructor.
 
     Returns:
@@ -196,28 +194,12 @@ async def _build_base_prompt(
     DB failure, Pydantic error) is caught and logged at WARNING. The returned
     PromptBuilder simply lacks the agent_memory block.
     """
-    import warnings
-
-    from specweaver.core.flow.handlers._profiles import FULL, INTERACTIVE
+    from specweaver.core.flow.handlers._profiles import FULL
     from specweaver.infrastructure.llm._prompt_profiles import PromptSlot
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
-    if profile is not None and not include_rules:
-        warnings.warn(
-            f"Both profile and include_rules were passed. "
-            f"Profile '{profile.name}' takes precedence. "
-            f"include_rules is deprecated.",
-            DeprecationWarning, stacklevel=2,
-        )
-    elif profile is None:
-        if include_rules:
-            profile = FULL
-        else:
-            warnings.warn(
-                "include_rules is deprecated — use profile=INTERACTIVE",
-                DeprecationWarning, stacklevel=2,
-            )
-            profile = INTERACTIVE
+    if profile is None:
+        profile = FULL
 
     builder = PromptBuilder(profile=profile, skeleton_files=skeleton_files)
     builder.add_instructions(instructions)
@@ -229,7 +211,11 @@ async def _build_base_prompt(
         builder.add_standards(context.standards)
 
     # Memory Hydration — fail-safe
-    if PromptSlot.AGENT_MEMORY in profile.active_slots and context.db is not None and context.project_path is not None:
+    if (
+        PromptSlot.AGENT_MEMORY in profile.active_slots
+        and context.db is not None
+        and context.project_path is not None
+    ):
         try:
             from specweaver.workspace.memory.hydrator import MemoryHydrator
 
@@ -238,7 +224,9 @@ async def _build_base_prompt(
                 result = await hydrator.hydrate()
                 if result.task_count > 0:
                     block = result.format_prompt_block()
-                    builder.add_context(block, "agent_memory", priority=2, slot=PromptSlot.AGENT_MEMORY)
+                    builder.add_context(
+                        block, "agent_memory", priority=2, slot=PromptSlot.AGENT_MEMORY
+                    )
                     logger.info(
                         "Hydration: %d tasks, %d tokens",
                         result.task_count,

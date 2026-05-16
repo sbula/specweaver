@@ -144,13 +144,12 @@ class GenerateCodeHandler:
                 targets.extend(context.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+            from specweaver.core.flow.handlers._profiles import FULL
             from specweaver.core.flow.handlers.base import _build_base_prompt
             from specweaver.workflows.implementation.generator import CODE_GEN_INSTRUCTIONS
 
             base_prompt = await _build_base_prompt(
-                context,
-                CODE_GEN_INSTRUCTIONS,
-                skeleton_files=s_files
+                context, CODE_GEN_INSTRUCTIONS, profile=FULL, skeleton_files=s_files
             )
             if context.plan:
                 base_prompt.add_plan(context.plan)
@@ -246,13 +245,12 @@ class GenerateTestsHandler:
                 targets.extend(context.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+            from specweaver.core.flow.handlers._profiles import FULL
             from specweaver.core.flow.handlers.base import _build_base_prompt
             from specweaver.workflows.implementation.generator import TEST_GEN_INSTRUCTIONS
 
             base_prompt = await _build_base_prompt(
-                context,
-                TEST_GEN_INSTRUCTIONS,
-                skeleton_files=s_files
+                context, TEST_GEN_INSTRUCTIONS, profile=FULL, skeleton_files=s_files
             )
             if context.plan:
                 base_prompt.add_plan(context.plan)
@@ -435,6 +433,7 @@ class PlanSpecHandler:
                 max_retries,
             )
 
+            from specweaver.core.flow.handlers._profiles import FULL
             from specweaver.core.flow.handlers.base import _build_base_prompt
 
             # Note: Planner defines its own instruction string internally, so we don't pass one here
@@ -442,10 +441,9 @@ class PlanSpecHandler:
             # Planner currently uses PLAN_GENERATION_INSTRUCTIONS which is inside planner.py.
             # Let's import it.
             from specweaver.workflows.planning.planner import PLAN_GENERATION_INSTRUCTIONS
+
             base_prompt = await _build_base_prompt(
-                context,
-                PLAN_GENERATION_INSTRUCTIONS,
-                skeleton_files=None
+                context, PLAN_GENERATION_INSTRUCTIONS, profile=FULL, skeleton_files=None
             )
 
             plan_path, artifact_uuid, plan_artifact = await self._generate_plan_artifact(

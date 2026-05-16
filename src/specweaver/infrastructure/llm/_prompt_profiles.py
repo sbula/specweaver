@@ -77,9 +77,7 @@ class RenderProfile:
                 f"active_slots. {'; '.join(parts)}"
             )
         if len(self.order) != len(order_set):
-            raise ValueError(
-                f"RenderProfile '{self.name}': order contains duplicate slots"
-            )
+            raise ValueError(f"RenderProfile '{self.name}': order contains duplicate slots")
 
 
 # ---------------------------------------------------------------------------

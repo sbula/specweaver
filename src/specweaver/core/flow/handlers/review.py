@@ -156,13 +156,12 @@ class ReviewSpecHandler:
                 targets.extend(context.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+            from specweaver.core.flow.handlers._profiles import FULL
             from specweaver.core.flow.handlers.base import _build_base_prompt
             from specweaver.workflows.review.reviewer import SPEC_REVIEW_INSTRUCTIONS
 
             base_prompt = await _build_base_prompt(
-                context,
-                SPEC_REVIEW_INSTRUCTIONS,
-                skeleton_files=s_files
+                context, SPEC_REVIEW_INSTRUCTIONS, profile=FULL, skeleton_files=s_files
             )
             if context.topology:
                 base_prompt.add_topology([context.topology])
@@ -267,13 +266,12 @@ class ReviewCodeHandler:
                 targets.append(str(code_path))
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+            from specweaver.core.flow.handlers._profiles import FULL
             from specweaver.core.flow.handlers.base import _build_base_prompt
             from specweaver.workflows.review.reviewer import CODE_REVIEW_INSTRUCTIONS
 
             base_prompt = await _build_base_prompt(
-                context,
-                CODE_REVIEW_INSTRUCTIONS,
-                skeleton_files=s_files
+                context, CODE_REVIEW_INSTRUCTIONS, profile=FULL, skeleton_files=s_files
             )
             if context.topology:
                 base_prompt.add_topology([context.topology])

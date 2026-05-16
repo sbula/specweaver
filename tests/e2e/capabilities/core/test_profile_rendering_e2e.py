@@ -92,23 +92,26 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
 
     # Create a custom handler that strictly uses the ARBITER profile to ensure E2E connectivity
     class MockHandler(DraftSpecHandler):
-        async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
-            # Manually invoke with ARBITER to prove the pipe truncates it
+        async def execute(self, step: PipelineStep, run_context: RunContext) -> StepResult:
             from specweaver.core.flow.handlers.base import _build_base_prompt
+            try:
+                # Manually invoke with ARBITER to prove the pipe truncates it
+                prompt = await _build_base_prompt(run_context, "Test instructions", profile=ARBITER)
 
-            prompt = await _build_base_prompt(context, "Test instructions", profile=ARBITER)
+                # Send to mock LLM to capture it
+                from specweaver.infrastructure.llm.models import Message, Role
+                await run_context.llm.generate([Message(role=Role.USER, content=prompt.build())])
 
-            # Send to mock LLM to capture it
-            from specweaver.infrastructure.llm.models import Message, Role
+                from specweaver.core.flow.engine.state import StepResult
+                from specweaver.core.flow.handlers.base import _now_iso
 
-            await context.llm.generate([Message(role=Role.USER, content=prompt.build())])
-
-            from specweaver.core.flow.engine.state import StepResult
-            from specweaver.core.flow.handlers.base import _now_iso
-
-            return StepResult(
-                status=StepStatus.PASSED, output={}, started_at=_now_iso(), completed_at=_now_iso()
-            )
+                return StepResult(
+                    status=StepStatus.PASSED, output={}, started_at=_now_iso(), completed_at=_now_iso()
+                )
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                raise e
 
     pipeline = PipelineDefinition.create_single_step(
         name="test_arbiter",
@@ -164,7 +167,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
 
     runner_instance = PipelineRunner(pipeline, context)
     # Inject our mock handler
-    runner_instance._registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler)  # type: ignore
+    runner_instance._registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler())  # type: ignore
 
     asyncio.run(runner_instance.run())
 
@@ -219,27 +222,31 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     from specweaver.core.flow.handlers.draft import DraftSpecHandler
 
     class MockHandler(DraftSpecHandler):
-        async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        async def execute(self, step: PipelineStep, run_context: RunContext) -> StepResult:
             from specweaver.core.flow.handlers.base import _build_base_prompt
             from specweaver.infrastructure.llm.models import TokenBudget
+            try:
+                # Use FULL profile but strict budget
+                prompt = await _build_base_prompt(run_context, "Test instructions", profile=FULL)
+                prompt._budget = TokenBudget(limit=100)  # strictly limit tokens
 
-            # Use FULL profile but strict budget
-            prompt = await _build_base_prompt(context, "Test instructions", profile=FULL)
-            prompt._budget = TokenBudget(limit=100)  # strictly limit tokens
+                # Add a massive low priority context
+                prompt.add_context("A" * 5000, "massive_context", priority=3)
 
-            # Add a massive low priority context
-            prompt.add_context("A" * 5000, "massive_context", priority=3)
+                from specweaver.infrastructure.llm.models import Message, Role
 
-            from specweaver.infrastructure.llm.models import Message, Role
+                await run_context.llm.generate([Message(role=Role.USER, content=prompt.build())])
 
-            await context.llm.generate([Message(role=Role.USER, content=prompt.build())])
+                from specweaver.core.flow.engine.state import StepResult
+                from specweaver.core.flow.handlers.base import _now_iso
 
-            from specweaver.core.flow.engine.state import StepResult
-            from specweaver.core.flow.handlers.base import _now_iso
-
-            return StepResult(
-                status=StepStatus.PASSED, output={}, started_at=_now_iso(), completed_at=_now_iso()
-            )
+                return StepResult(
+                    status=StepStatus.PASSED, output={}, started_at=_now_iso(), completed_at=_now_iso()
+                )
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                raise e
 
     pipeline = PipelineDefinition.create_single_step(
         name="test_full_budget",
@@ -261,7 +268,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     )
 
     runner_instance = PipelineRunner(pipeline, context)
-    runner_instance._registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler)  # type: ignore
+    runner_instance._registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler())  # type: ignore
 
     asyncio.run(runner_instance.run())
 

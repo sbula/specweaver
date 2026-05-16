@@ -130,18 +130,18 @@ class ArbitrateVerdictHandler(StepHandler):
             filter_impl = create_stack_trace_filter(context.project_path)
             filtered_trace = filter_impl.filter(raw_tracing)
 
-            spec_content = ""
             if context.spec_path.exists():
-                spec_content = context.spec_path.read_text(encoding="utf-8")
+                pass
 
-            from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+            from specweaver.core.flow.handlers._profiles import ARBITER
+            from specweaver.core.flow.handlers.base import _build_base_prompt
 
-            builder = PromptBuilder()
-            builder.add_instructions(ARBITRATE_INSTRUCTIONS)
-            builder.add_context(spec_content, label="Spec Definition")
-            builder.add_context(filtered_trace, label="Failures")
+            base_prompt = await _build_base_prompt(
+                context, ARBITRATE_INSTRUCTIONS, profile=ARBITER
+            )
+            base_prompt.add_context(filtered_trace, label="Failures")
 
-            prompt = builder.build()
+            prompt = base_prompt.build()
             raw_response = await context.llm.generate(prompt)
 
             try:

@@ -23,11 +23,13 @@ class TestPolicyProfiles:
 
     def test_minimal_profile_exact_slots(self) -> None:
         """P3: MINIMAL has exactly 3 slots."""
-        assert MINIMAL.active_slots == frozenset({
-            PromptSlot.INSTRUCTIONS,
-            PromptSlot.METADATA,
-            PromptSlot.TOPOLOGY,
-        })
+        assert MINIMAL.active_slots == frozenset(
+            {
+                PromptSlot.INSTRUCTIONS,
+                PromptSlot.METADATA,
+                PromptSlot.TOPOLOGY,
+            }
+        )
 
     def test_minimal_profile_order(self) -> None:
         """P4: MINIMAL order matches its active_slots."""
@@ -48,10 +50,12 @@ class TestPolicyProfiles:
 
     def test_arbiter_exact_slots(self) -> None:
         """P8: ARBITER has exactly 2 slots."""
-        assert ARBITER.active_slots == frozenset({
-            PromptSlot.INSTRUCTIONS,
-            PromptSlot.CONTEXT,
-        })
+        assert ARBITER.active_slots == frozenset(
+            {
+                PromptSlot.INSTRUCTIONS,
+                PromptSlot.CONTEXT,
+            }
+        )
 
     def test_all_profiles_pass_validation(self) -> None:
         """P9: All 4 profiles satisfy the order == active_slots invariant."""
@@ -73,7 +77,7 @@ class TestPolicyProfiles:
         """P11: All profiles reject attribute mutation."""
         for p in [FULL, MINIMAL, INTERACTIVE, ARBITER]:
             with pytest.raises(FrozenInstanceError):
-                p.name = "hacked" # type: ignore
+                p.name = "hacked"  # type: ignore
 
     def test_standard_order_matches_enum_definition(self) -> None:
         """P12: _STANDARD_ORDER matches tuple(PromptSlot). Ensures backward compat without boundary violation."""

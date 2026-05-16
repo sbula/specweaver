@@ -203,14 +203,13 @@ class TestPlannerRetry:
                 spec_content="# Test",
                 spec_path="test.md",
                 spec_name="Test",
-            base_prompt=PromptBuilder(),
+                base_prompt=PromptBuilder(),
             )
 
 
 # ---------------------------------------------------------------------------
 # Test: extra context
 # ---------------------------------------------------------------------------
-
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +315,7 @@ class TestPlannerEdgeCases:
                 spec_content="# Test",
                 spec_path="test.md",
                 spec_name="Test",
-            base_prompt=PromptBuilder(),
+                base_prompt=PromptBuilder(),
             )
         assert llm._call_count == 1
 
@@ -443,5 +442,3 @@ class TestPlannerStitchIntegration:
 # ---------------------------------------------------------------------------
 # Project Metadata injection
 # ---------------------------------------------------------------------------
-
-

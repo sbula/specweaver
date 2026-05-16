@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import warnings
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from specweaver.infrastructure.llm._prompt_profiles import (
+    _DEFAULT_PROFILE,
     PromptSlot,
     RenderProfile,
-    _DEFAULT_PROFILE,
 )
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 FULL = RenderProfile(
     name="full",
@@ -139,6 +142,3 @@ def test_is_slot_active_returns_correct() -> None:
     builder = PromptBuilder(profile=ARBITER)
     assert builder._is_slot_active(PromptSlot.INSTRUCTIONS) is True
     assert builder._is_slot_active(PromptSlot.CONSTITUTION) is False
-
-
-

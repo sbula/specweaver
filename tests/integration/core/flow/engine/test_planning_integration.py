@@ -102,7 +102,7 @@ class TestPlannerToRenderer:
             spec_content="# Login Spec\nHandle login.",
             spec_path="specs/login_spec.md",
             spec_name="Login",
-            base_prompt=PromptBuilder()
+            base_prompt=PromptBuilder(),
         )
 
         md = render_plan_markdown(plan)
@@ -560,12 +560,16 @@ class TestPlannerWithConstitutionAndStandards:
         from specweaver.workflows.planning.planner import Planner
 
         planner = Planner(llm, max_retries=1)
-        pb = PromptBuilder().add_constitution("Always follow security best practices.").add_standards("Use PEP 8 naming conventions.")
+        pb = (
+            PromptBuilder()
+            .add_constitution("Always follow security best practices.")
+            .add_standards("Use PEP 8 naming conventions.")
+        )
         plan = await planner.generate_plan(
             spec_content="# Login Spec\nHandle login.",
             spec_path="specs/login_spec.md",
             spec_name="Login",
-            base_prompt=pb
+            base_prompt=pb,
         )
 
         # Verify the plan was generated correctly
@@ -663,7 +667,7 @@ class TestPlannerRetryWithCleanJson:
             spec_content="# Spec\nContent.",
             spec_path="specs/test.md",
             spec_name="Test",
-            base_prompt=PromptBuilder()
+            base_prompt=PromptBuilder(),
         )
 
         assert plan.spec_name == "Test"

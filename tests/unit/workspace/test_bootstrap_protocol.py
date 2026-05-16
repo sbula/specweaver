@@ -43,7 +43,10 @@ async def base_project(session: AsyncSession) -> Project:
     await session.refresh(project)
     return project
 
-async def _create_task(session: AsyncSession, project_name: str, title: str, status: TaskStatus) -> Task:
+
+async def _create_task(
+    session: AsyncSession, project_name: str, title: str, status: TaskStatus
+) -> Task:
     task = Task(
         id=uuid.uuid4(),
         project_name=project_name,
@@ -56,10 +59,13 @@ async def _create_task(session: AsyncSession, project_name: str, title: str, sta
     await session.flush()
     return task
 
+
 @pytest.mark.asyncio
 async def test_bootstrap_hydrates_existing_handover(session: AsyncSession, base_project: Project):
     """Happy Path: Task with handover_context JSON has summary in handover_notes."""
-    task = await _create_task(session, base_project.name, "Task with Handover", TaskStatus.IN_PROGRESS)
+    task = await _create_task(
+        session, base_project.name, "Task with Handover", TaskStatus.IN_PROGRESS
+    )
     task.handover_context = json.dumps({"summary": "This is a handover note."})
     await session.commit()
 
@@ -70,10 +76,15 @@ async def test_bootstrap_hydrates_existing_handover(session: AsyncSession, base_
     assert result.active_tasks[0].handover_summary == "This is a handover note."
     assert "This is a handover note." in result.handover_notes
 
+
 @pytest.mark.asyncio
-async def test_bootstrap_with_corrupt_handover(session: AsyncSession, base_project: Project, caplog):
+async def test_bootstrap_with_corrupt_handover(
+    session: AsyncSession, base_project: Project, caplog
+):
     """Graceful Degradation: Task with invalid JSON logs WARNING, task included without summary."""
-    task = await _create_task(session, base_project.name, "Task with Corrupt Handover", TaskStatus.IN_PROGRESS)
+    task = await _create_task(
+        session, base_project.name, "Task with Corrupt Handover", TaskStatus.IN_PROGRESS
+    )
     task.handover_context = "INVALID JSON DATA"
     await session.commit()
 
@@ -85,10 +96,13 @@ async def test_bootstrap_with_corrupt_handover(session: AsyncSession, base_proje
     assert result.active_tasks[0].handover_summary is None
     assert "Failed to parse handover context" in caplog.text
 
+
 @pytest.mark.asyncio
 async def test_bootstrap_with_null_handover(session: AsyncSession, base_project: Project):
     """Boundary Case: Task with handover_context = None -> Task included, no handover notes."""
-    task = await _create_task(session, base_project.name, "Task without Handover", TaskStatus.IN_PROGRESS)
+    task = await _create_task(
+        session, base_project.name, "Task without Handover", TaskStatus.IN_PROGRESS
+    )
     task.handover_context = None
     await session.commit()
 
@@ -99,10 +113,13 @@ async def test_bootstrap_with_null_handover(session: AsyncSession, base_project:
     assert result.active_tasks[0].handover_summary is None
     assert len(result.handover_notes) == 0
 
+
 @pytest.mark.asyncio
 async def test_bootstrap_trust_tagging(session: AsyncSession, base_project: Project):
     """Hostile/Safety: Task with handover context -> format_prompt_block() includes _trust: low."""
-    task = await _create_task(session, base_project.name, "Task with Handover", TaskStatus.IN_PROGRESS)
+    task = await _create_task(
+        session, base_project.name, "Task with Handover", TaskStatus.IN_PROGRESS
+    )
     task.handover_context = json.dumps({"summary": "Handover Note"})
     await session.commit()
 
@@ -115,6 +132,7 @@ async def test_bootstrap_trust_tagging(session: AsyncSession, base_project: Proj
     assert xml_output.startswith("<agent_memory")
     assert 'trust="low"' in xml_output
     assert "_trust" in xml_output
+
 
 @pytest.mark.asyncio
 async def test_bootstrap_multiple_tasks_with_handover(session: AsyncSession, base_project: Project):

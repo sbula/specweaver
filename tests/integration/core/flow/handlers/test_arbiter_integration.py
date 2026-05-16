@@ -15,6 +15,15 @@ def run_context():
     ctx.spec_path = MagicMock()
     ctx.spec_path.stem = "auth_spec.md"
     ctx.project_path = "/mock/project"
+    from specweaver.infrastructure.llm.models import ProjectMetadata
+    ctx.project_metadata = ProjectMetadata(
+        project_name="test", summary="x", archetype="orchestrator", language_target="python", date_iso="2026", safe_config={"llm_model": "test", "llm_provider": "test"}
+    )
+    ctx.constitution = ""
+    ctx.standards = ""
+    ctx.run_id = "test_run"
+    ctx.step_records = []
+
     ctx.feedback = {
         "run_scenario_tests": {
             "output": {"results": [{"status": "FAIL", "message": "AssertionError: 1 != 2"}]}

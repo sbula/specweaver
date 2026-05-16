@@ -165,7 +165,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **D-UI-05:** REST API - Enterprise Configuration
     *   🔴 **Configurable Prompt Render Profiles:**
         *   `[ ]` **INT-US-04-SUB:** Sub-Story Integration (Pending Design)
-        *   `[/]` **C-INTL-05:** Configurable Prompt Render Profiles
+        *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles
 
 ### 🟢 US-5: Polyglot Code Understanding
 *   **User Benefit:** SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.

@@ -92,7 +92,12 @@ class PromptBuilder:
             import warnings
 
             from specweaver.infrastructure.llm._prompt_profiles import _DEFAULT_PROFILE
-            warnings.warn("PromptBuilder created without explicit profile — using _DEFAULT_PROFILE. Pass a RenderProfile for explicit slot control.", DeprecationWarning, stacklevel=2)
+
+            warnings.warn(
+                "PromptBuilder created without explicit profile — using _DEFAULT_PROFILE. Pass a RenderProfile for explicit slot control.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             self._profile = _DEFAULT_PROFILE
         else:
             self._profile = profile
@@ -147,7 +152,9 @@ class PromptBuilder:
             return self
 
         if not self._is_slot_active(PromptSlot.DICTATOR_OVERRIDES):
-            logger.debug("Slot %s inactive — skipping add_dictator_overrides", PromptSlot.DICTATOR_OVERRIDES)
+            logger.debug(
+                "Slot %s inactive — skipping add_dictator_overrides", PromptSlot.DICTATOR_OVERRIDES
+            )
             return self
 
         lines = [f"- {o}" for o in overrides]

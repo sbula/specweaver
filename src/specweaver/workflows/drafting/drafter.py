@@ -154,10 +154,10 @@ class Drafter:
 
     def __init__(
         self,
+        base_prompt: PromptBuilder,
         llm: LLMAdapter,
         context_provider: ContextProvider,
         config: GenerationConfig | None = None,
-        base_prompt: PromptBuilder | None = None,
     ) -> None:
         self._llm = llm
         self._context = context_provider
@@ -247,15 +247,13 @@ class Drafter:
         project_metadata: ProjectMetadata | None = None,
     ) -> str:
         """Generate content for a single spec section using the LLM."""
-        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
         instructions = _SECTION_INSTRUCTION_TEMPLATE.format(
             name=name,
             section_name=section_name,
             section_prompt=section_prompt,
         )
 
-        builder = self._base_prompt.clone() if self._base_prompt else PromptBuilder()
+        builder = self._base_prompt.clone()
         builder.add_instructions(instructions)
 
         if project_metadata:

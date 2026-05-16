@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.drafting.feature_drafter import (
     _FEATURE_SPEC_TEMPLATE,
     FEATURE_SECTIONS,
@@ -116,7 +117,7 @@ class TestFeatureDrafter:
     async def test_draft_creates_file(
         self, mock_llm: AsyncMock, mock_context: AsyncMock, tmp_path: Path
     ) -> None:
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         result = await drafter.draft("sell_shares", tmp_path)
         assert result.exists()
         assert result.name == "sell_shares_feature_spec.md"
@@ -125,7 +126,7 @@ class TestFeatureDrafter:
     async def test_draft_calls_llm_per_section(
         self, mock_llm: AsyncMock, mock_context: AsyncMock, tmp_path: Path
     ) -> None:
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         await drafter.draft("sell_shares", tmp_path)
         assert mock_llm.generate.call_count == 6
 
@@ -133,7 +134,7 @@ class TestFeatureDrafter:
     async def test_draft_asks_user_per_section(
         self, mock_llm: AsyncMock, mock_context: AsyncMock, tmp_path: Path
     ) -> None:
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         await drafter.draft("sell_shares", tmp_path)
         assert mock_context.ask.call_count == 6
 
@@ -141,7 +142,7 @@ class TestFeatureDrafter:
     async def test_draft_content_includes_all_headings(
         self, mock_llm: AsyncMock, mock_context: AsyncMock, tmp_path: Path
     ) -> None:
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         path = await drafter.draft("sell_shares", tmp_path)
         content = path.read_text(encoding="utf-8")
         for section in FEATURE_SECTIONS:
@@ -155,7 +156,7 @@ class TestFeatureDrafter:
         mock_response = AsyncMock()
         mock_response.text = "Mock LLM output indicating DAL_A rating."
         mock_llm.generate = AsyncMock(return_value=mock_response)
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         path = await drafter.draft("critical_system", tmp_path)
         content = path.read_text(encoding="utf-8")
         assert "## Risk Assessment (DAL)" in content
@@ -168,7 +169,7 @@ class TestFeatureDrafter:
         context = AsyncMock()
         # First question answered, rest skipped
         context.ask = AsyncMock(side_effect=["answer", "", "", "", "", ""])
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=context)
         path = await drafter.draft("test_feature", tmp_path)
         content = path.read_text(encoding="utf-8")
         assert "TODO" in content
@@ -180,7 +181,7 @@ class TestFeatureDrafter:
         self, mock_llm: AsyncMock, mock_context: AsyncMock, tmp_path: Path
     ) -> None:
         output = tmp_path / "nested" / "dir"
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         path = await drafter.draft("test", output)
         assert output.exists()
         assert path.parent == output
@@ -213,7 +214,7 @@ class TestFeatureDrafterEdgeCases:
         """If LLM raises mid-draft, exception propagates (no partial file)."""
         llm = AsyncMock()
         llm.generate = AsyncMock(side_effect=RuntimeError("LLM down"))
-        drafter = FeatureDrafter(llm=llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=llm, context_provider=mock_context)
         with pytest.raises(RuntimeError, match="LLM down"):
             await drafter.draft("crash_test", tmp_path)
         # No file should be written
@@ -244,7 +245,7 @@ class TestFeatureDrafterEdgeCases:
         self, mock_llm: AsyncMock, mock_context: AsyncMock, tmp_path: Path
     ) -> None:
         """Drafting when file already exists silently overwrites."""
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         # Create a file first
         existing = tmp_path / "sell_shares_feature_spec.md"
         existing.write_text("OLD CONTENT", encoding="utf-8")
@@ -258,7 +259,7 @@ class TestFeatureDrafterEdgeCases:
         self, mock_llm: AsyncMock, mock_context: AsyncMock, tmp_path: Path
     ) -> None:
         """Feature name underscores are converted to title case in spec."""
-        drafter = FeatureDrafter(llm=mock_llm, context_provider=mock_context)
+        drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         path = await drafter.draft("sell_my_shares", tmp_path)
         content = path.read_text(encoding="utf-8")
         assert "Sell My Shares" in content

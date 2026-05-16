@@ -109,9 +109,7 @@ class Planner:
 
         # Format the instructions with the dynamic spec paths and hash
         formatted_instructions = PLAN_GENERATION_INSTRUCTIONS.format(
-            spec_path=spec_path,
-            spec_name=spec_name,
-            spec_hash=spec_hash
+            spec_path=spec_path, spec_name=spec_name, spec_hash=spec_hash
         )
 
         # Base prompt already has instructions (unformatted), so we can just add our context

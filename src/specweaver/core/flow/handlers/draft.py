@@ -77,10 +77,12 @@ class DraftSpecHandler:
                 run_id=getattr(context, "run_id", "") or "",
             )
 
+        from specweaver.core.flow.handlers._profiles import INTERACTIVE
+
         base_prompt = await _build_base_prompt(
             context=context,
             instructions="",
-            include_rules=False,
+            profile=INTERACTIVE,
         )
 
         drafter = Drafter(

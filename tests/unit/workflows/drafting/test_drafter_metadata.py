@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig
+from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.drafting.drafter import Drafter
 
 
@@ -25,7 +26,7 @@ class TestDrafterProjectMetadata:
         mock_context = AsyncMock()
         mock_context.ask.return_value = "yes"
 
-        drafter = Drafter(llm=mock_llm, context_provider=mock_context)
+        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
         metadata = ProjectMetadata(
             project_name="draft_test",
             archetype="pure-logic",

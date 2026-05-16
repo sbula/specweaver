@@ -61,6 +61,8 @@ async def test_decompose_feature_handler_success(
 
         assert result.status == StepStatus.PASSED
         mock_decomposer.decompose.assert_called_once()
+        _, kwargs = mock_decomposer.decompose.call_args
+        assert "base_prompt" in kwargs
         assert result.output.get("coverage_score") == 1.0
 
 

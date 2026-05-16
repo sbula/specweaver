@@ -20,7 +20,9 @@ def _make_mock_llm(captured_prompts: list[str]) -> object:
     mock_llm.available.return_value = True
     mock_llm.provider_name = "mock"
 
-    async def _generate(messages: list[Any], config: Any=None, dispatcher: Any=None, on_tool_round: Any=None) -> LLMResponse:
+    async def _generate(
+        messages: list[Any], config: Any = None, dispatcher: Any = None, on_tool_round: Any = None
+    ) -> LLMResponse:
         for msg in messages:
             if hasattr(msg, "content"):
                 captured_prompts.append(msg.content)
@@ -32,7 +34,9 @@ def _make_mock_llm(captured_prompts: list[str]) -> object:
 
 
 @pytest.fixture()
-def project_with_spec(tmp_path: Path, _mock_db: Database, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
+def project_with_spec(
+    tmp_path: Path, _mock_db: Database, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path]:
     project_dir = tmp_path / "e2e-pipe"
     project_dir.mkdir()
 
@@ -50,9 +54,7 @@ def project_with_spec(tmp_path: Path, _mock_db: Database, monkeypatch: pytest.Mo
 
 class TestPipelineHydrationE2E:
     def test_pipeline_execution_with_populated_memory(
-        self,
-        project_with_spec: tuple[Path, Path],
-        _mock_db: Database
+        self, project_with_spec: tuple[Path, Path], _mock_db: Database
     ) -> None:
         """
         [E2E - Happy Path]
@@ -66,6 +68,7 @@ class TestPipelineHydrationE2E:
         async def prepopulate_db() -> None:
             async with db.async_session_scope() as session:
                 from sqlalchemy import text
+
                 res = await session.execute(text("SELECT * FROM projects"))
                 print("PROJECTS IN DB:", res.fetchall())
 
@@ -105,9 +108,7 @@ class TestPipelineHydrationE2E:
         assert "E2E test memory." in full_prompt
 
     def test_pipeline_execution_with_empty_memory(
-        self,
-        project_with_spec: tuple[Path, Path],
-        _mock_db: Database
+        self, project_with_spec: tuple[Path, Path], _mock_db: Database
     ) -> None:
         """
         [E2E - Degradation]
@@ -119,10 +120,12 @@ class TestPipelineHydrationE2E:
         async def check_db() -> None:
             async with _mock_db.async_session_scope() as session:
                 from sqlalchemy import text
+
                 res = await session.execute(text("SELECT * FROM projects"))
                 print("PROJECTS IN DB:", res.fetchall())
 
         import asyncio
+
         asyncio.run(check_db())
 
         captured_prompts: list[str] = []
@@ -137,9 +140,7 @@ class TestPipelineHydrationE2E:
         assert "<agent_memory" not in full_prompt
 
     def test_pipeline_execution_with_corrupted_memory(
-        self,
-        project_with_spec: tuple[Path, Path],
-        _mock_db: Database
+        self, project_with_spec: tuple[Path, Path], _mock_db: Database
     ) -> None:
         """
         [E2E - Graceful Degradation]
@@ -153,30 +154,42 @@ class TestPipelineHydrationE2E:
         async def prepopulate_db_corrupted() -> None:
             async with db.async_session_scope() as session:
                 from sqlalchemy import text
+
                 res = await session.execute(text("SELECT * FROM projects"))
                 print("PROJECTS IN DB CORRUPTED:", res.fetchall())
 
                 # The project already exists from `init`. We just need an Epic and a corrupted Task.
-                await session.execute(text(
-                    "INSERT INTO memory_epics (id, project_name, title, status, created_at, updated_at) "
-                    "VALUES (:id, :proj, :title, 'OPEN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
-                ), {"id": "123e4567-e89b-12d3-a456-426614174000", "proj": project_name, "title": "Epic"})
+                await session.execute(
+                    text(
+                        "INSERT INTO memory_epics (id, project_name, title, status, created_at, updated_at) "
+                        "VALUES (:id, :proj, :title, 'OPEN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+                    ),
+                    {
+                        "id": "123e4567-e89b-12d3-a456-426614174000",
+                        "proj": project_name,
+                        "title": "Epic",
+                    },
+                )
 
                 # Insert a corrupted task directly
-                await session.execute(text(
-                    "INSERT INTO memory_tasks (id, project_name, title, status, created_at, updated_at, handover_context, epic_id, assigned_worker_id, last_heartbeat_at, version, attempt_count) "
-                    "VALUES (:id, :proj, :title, 'IN_PROGRESS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, :bad_json, :epic_id, NULL, NULL, 1, 0)"
-                ), {
-                    "id": "123e4567-e89b-12d3-a456-426614174001",
-                    "proj": project_name,
-                    "title": "Corrupted Task",
-                    "epic_id": "123e4567-e89b-12d3-a456-426614174000",
-                    "bad_json": '{"invalid": "schema", "missing": "fields"}'
-                })
+                await session.execute(
+                    text(
+                        "INSERT INTO memory_tasks (id, project_name, title, status, created_at, updated_at, handover_context, epic_id, assigned_worker_id, last_heartbeat_at, version, attempt_count) "
+                        "VALUES (:id, :proj, :title, 'IN_PROGRESS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, :bad_json, :epic_id, NULL, NULL, 1, 0)"
+                    ),
+                    {
+                        "id": "123e4567-e89b-12d3-a456-426614174001",
+                        "proj": project_name,
+                        "title": "Corrupted Task",
+                        "epic_id": "123e4567-e89b-12d3-a456-426614174000",
+                        "bad_json": '{"invalid": "schema", "missing": "fields"}',
+                    },
+                )
 
                 await session.commit()
 
         import asyncio
+
         asyncio.run(prepopulate_db_corrupted())
 
         captured_prompts: list[str] = []
@@ -191,4 +204,3 @@ class TestPipelineHydrationE2E:
         assert "<agent_memory" in full_prompt
         assert "Corrupted Task" in full_prompt
         assert "invalid" not in full_prompt  # The bad JSON should be dropped cleanly
-

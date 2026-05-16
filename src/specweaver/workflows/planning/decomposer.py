@@ -13,12 +13,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.infrastructure.llm.models import GenerationConfig, Message, ProjectMetadata, Role
+from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 from specweaver.workflows.planning.decomposition import DecompositionPlan
 
 if TYPE_CHECKING:
     from specweaver.assurance.graph.topology import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
+    from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
     from specweaver.workspace.context.provider import ContextProvider
 
 logger = logging.getLogger(__name__)
@@ -65,31 +66,27 @@ class FeatureDecomposer:
         self,
         feature_name: str,
         spec_content: str,
+        base_prompt: PromptBuilder,
         *,
         topology_contexts: list[TopologyContext] | None = None,
-        project_metadata: ProjectMetadata | None = None,
     ) -> DecompositionPlan:
         """Decompose a feature spec into a structured plan.
 
         Args:
             feature_name: Name of the feature.
             spec_content: The full markdown content of the feature spec.
+            base_prompt: The base prompt built via the profile system.
             topology_contexts: Optional graph contexts for blast radius alignment.
-            project_metadata: Optional project metadata.
 
         Returns:
             The parsed DecompositionPlan.
         """
-        from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-
         instructions = _DECOMPOSE_INSTRUCTION_TEMPLATE.format(
             feature_name=feature_name,
             spec_content=spec_content,
         )
 
-        builder = (
-            PromptBuilder().add_instructions(instructions).add_project_metadata(project_metadata)
-        )
+        builder = base_prompt.clone().add_instructions(instructions)
 
         if topology_contexts:
             builder.add_topology(topology_contexts)

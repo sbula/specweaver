@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-import warnings
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -9,7 +7,6 @@ import pytest
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
 from specweaver.core.flow.handlers.base import RunContext, _build_base_prompt
-from specweaver.infrastructure.llm._prompt_profiles import PromptSlot
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
 
 
@@ -56,7 +53,7 @@ async def test_build_base_prompt_with_profile_full(mock_hydrator_class, run_cont
 
     builder = await _build_base_prompt(run_context, "Instr", profile=FULL)
     output = builder.build()
-    
+
     assert "<constitution>" in output
     assert "<standards>" in output
     assert "<agent_memory>" in output
@@ -102,26 +99,10 @@ async def test_build_base_prompt_with_profile_minimal(run_context):
 
 
 @pytest.mark.asyncio
-async def test_build_base_prompt_deprecated_include_rules(run_context):
-    # H5
-    with pytest.warns(DeprecationWarning, match="include_rules is deprecated"):
-        builder = await _build_base_prompt(run_context, "Instr", include_rules=False)
-    output = builder.build()
-    assert "<constitution>" not in output
-
-
-@pytest.mark.asyncio
-async def test_build_base_prompt_profile_overrides_include_rules(run_context):
-    # H6
-    with pytest.warns(DeprecationWarning, match="Both profile and include_rules were passed"):
-        builder = await _build_base_prompt(run_context, "Instr", profile=MINIMAL, include_rules=False)
-    output = builder.build()
-    assert "<constitution>" not in output
-
-
-@pytest.mark.asyncio
 @patch("specweaver.workspace.memory.hydrator.MemoryHydrator")
-async def test_build_base_prompt_memory_skipped_when_slot_inactive(mock_hydrator_class, run_context):
+async def test_build_base_prompt_memory_skipped_when_slot_inactive(
+    mock_hydrator_class, run_context
+):
     # H7
     builder = await _build_base_prompt(run_context, "Instr", profile=MINIMAL)
     output = builder.build()
