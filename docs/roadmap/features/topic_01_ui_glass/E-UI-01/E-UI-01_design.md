@@ -25,7 +25,7 @@ Feature E-UI-01 establishes the foundational CLI Entry Point (`sw`) using Typer.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Project Scaffold + CLI Shell | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Project Scaffold + CLI Shell | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

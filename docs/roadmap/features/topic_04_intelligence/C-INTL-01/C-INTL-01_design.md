@@ -81,34 +81,34 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Sub-Feature Breakdown
 
-### SF-1: Hierarchical Orchestration Engine Support
+### SF-01: Hierarchical Orchestration Engine Support
 - **Scope**: Implements multi-pipeline spawning / dynamic `fan_out` within `flow/runner.py` to allow triggering component pipelines programmatically from a Decomposition plan.
 - **FRs**: [FR-1, FR-3]
 - **Inputs**: A parsed `DecompositionPlan` and a target pipeline reference (e.g. `new_feature.yaml` or Component equivalent).
 - **Outputs**: Dynamic pipeline executions logged in `flow.store`.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-01/C-INTL-01_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-01/C-INTL-01_sf01_implementation_plan.md
 
-### SF-2: Verified Iterative Loop & Traceability Enforcement
+### SF-02: Verified Iterative Loop & Traceability Enforcement
 - **Scope**: Implements the DMZ-style retry loop, HITL presentation integration, and Blast Radius coverage mapping (FR-5).
 - **FRs**: [FR-2, FR-4, FR-5]
 - **Inputs**: Generated component specs and the top-level Feature Spec.
 - **Outputs**: Assertions mapping 100% coverage, loop control (3-strikes).
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-01/C-INTL-01_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-01/C-INTL-01_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Hierarchical Orchestration Support | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-2 | Verified Iterative Loop | SF-1 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-01 | Hierarchical Orchestration Support | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Verified Iterative Loop | SF-01 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-2 Pre-Commit COMPLETE. Ready for final Git Commit.
+**Current status**: SF-02 Pre-Commit COMPLETE. Ready for final Git Commit.

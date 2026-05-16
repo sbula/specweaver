@@ -64,37 +64,37 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Sub-Feature Breakdown
 
-### SF-1: Plugin Composition & AST Search
+### SF-01: Plugin Composition & AST Search
 - **Scope**: Update `ArchetypeResolver` and `dispatcher.py` to parse an expandable `plugins` array. Update `list_symbols` in Tool Definitions and AST parsers to support an optional string `decorator_filter` that reads from the `framework_markers` payload.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: `context.yaml` definitions and LLM Tool Calls.
 - **Outputs**: Agent can successfully retrieve target code blocks exclusively possessing specific Framework properties.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30a/feature_3.30a_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.30a/feature_3.30a_sf01_implementation_plan.md
 
-### SF-2: Dynamic Tool Gating Intercept
+### SF-02: Dynamic Tool Gating Intercept
 - **Scope**: Aggregate `intents.hide` properties from `CodeStructureAtom`'s loaded schema cluster into the `CodeStructureTool` JSON defintions via `dispatcher.py`.
 - **FRs**: [FR-3, FR-4]
-- **Inputs**: Properly composited schema dict from SF-1.
+- **Inputs**: Properly composited schema dict from SF-01.
 - **Outputs**: Properly restricted list of `ToolDefinition`s sent to LLM prompt.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30a/feature_3.30a_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.30a/feature_3.30a_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Plugin Composition & AST Search | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Dynamic Tool Gating Intercept | SF-1 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-01 | Plugin Composition & AST Search | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Dynamic Tool Gating Intercept | SF-01 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-2 Pre-Commit Gate passed natively. Handing over to user for commit phase.
+**Current status**: SF-02 Pre-Commit Gate passed natively. Handing over to user for commit phase.
 **Next step**: User commits the changes using their VCS.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

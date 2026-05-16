@@ -60,24 +60,24 @@ Inspired by Aider's `get_platform_info()`, which explicitly tells the LLM the op
 
 Single feature — no decomposition.
 
-### SF-1: Metadata Injection implementation
+### SF-01: Metadata Injection implementation
 - **Scope**: Extend `PromptBuilder` to accept and format project metadata, and update handlers/orchestrators to provide it.
 - **FRs**: [FR-1, FR-2, FR-3]
 - **Inputs**: Current `SpecWeaverSettings`, Project name from context, system state.
 - **Outputs**: `<project_metadata>` tag within LLM prompt.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/D-INTL-05/feature_3_15_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/D-INTL-05/feature_3_15_sf01_implementation_plan.md
 
 ## Execution Order
 
 Single feature.
-1. SF-1 (no deps — start immediately)
+1. SF-01 (no deps — start immediately)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Metadata Injection | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Metadata Injection | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

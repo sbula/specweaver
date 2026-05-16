@@ -19,7 +19,7 @@ Feature D-VAL-01 defines the Code Validation engine, capable of running determin
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | QA Runner Implementation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | QA Runner Implementation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

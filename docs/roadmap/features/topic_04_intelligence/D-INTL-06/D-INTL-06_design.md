@@ -172,7 +172,7 @@ No new external dependencies.
 
 ### RT-3: Tach Registration for `workspace.memory`
 
-**Current State**: ✅ Done (SF-1). `workspace.memory` is registered in `tach.toml` (line 36) with `[[interfaces]]` exposing `hydrator`, `queries`, `models`, `store`, `errors`, `repository` (lines 243-244).
+**Current State**: ✅ Done (SF-01). `workspace.memory` is registered in `tach.toml` (line 36) with `[[interfaces]]` exposing `hydrator`, `queries`, `models`, `store`, `errors`, `repository` (lines 243-244).
 
 **Remaining**: Add `src.specweaver.workspace.memory` to `core.flow`'s `depends_on` list so `_build_base_prompt()` can legally import `MemoryHydrator`.
 
@@ -196,7 +196,7 @@ No new external dependencies. SQLAlchemy >=2.0.0 and Pydantic >=2.0 already in `
 | AD-8 | No new domain modules — pure DDD isolation maintained | Prompt assembly stays in the Application Layer (`core.flow`) as a module-level function. No `workflows/commons` module. Workflow domain modules remain isolated bounded contexts with no shared dependencies. `core.flow` already has the orchestrator archetype and legal access to both `llm` and `workspace.memory`. | No |
 | AD-9 | Handover notes tagged with `trust="low"` | LLM-generated summaries from previous agents are untrusted. The trust tag signals to the LLM that these are prior agent outputs, not system instructions. Combined with JSON serialization (NFR-10), trust tagging (NFR-11), field truncation (NFR-12), and pattern stripping (NFR-13). | No |
 | AD-10 | Handover save via callback injection | `PipelineRunner` accepts `on_pipeline_complete` callback (same pattern as `on_event`). The callback is wired at the entry point layer that already imports `workspace`. The runner itself never imports `workspace`. | No |
-| AD-11 | 5-layer prompt injection defense | Defense-in-depth against indirect prompt injection through the memory hydration pipeline: (1) Pydantic schema validation at write time (B-INTL-09), (2) JSON serialization at format time (NFR-10), (3) trust tagging in output (NFR-11), (4) field-level truncation (NFR-12), (5) injection pattern stripping (NFR-13). Plus: system instruction framing around memory block (SF-2, `_build_base_prompt`). | No |
+| AD-11 | 5-layer prompt injection defense | Defense-in-depth against indirect prompt injection through the memory hydration pipeline: (1) Pydantic schema validation at write time (B-INTL-09), (2) JSON serialization at format time (NFR-10), (3) trust tagging in output (NFR-11), (4) field-level truncation (NFR-12), (5) injection pattern stripping (NFR-13). Plus: system instruction framing around memory block (SF-02, `_build_base_prompt`). | No |
 
 ## Boundary Changes Required
 
@@ -220,45 +220,45 @@ No new module registration needed. No workflow `context.yaml` updates needed.
 
 ## Sub-Feature Breakdown
 
-### SF-1: Memory Hydrator & HydrationResult DTO
+### SF-01: Memory Hydrator & HydrationResult DTO
 - **Scope**: Pure read-side retrieval service + DTO with JSON formatting and multi-layer prompt injection defense.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5]
 - **Inputs**: `AsyncSession`, `project_name`, optional `worker_id`
 - **Outputs**: `HydrationResult` DTO with `format_prompt_block() -> str`
 - **Depends on**: none (B-INTL-09 committed)
 - **tach**: Register `workspace.memory` in `tach.toml` + `[[interfaces]]`
-- **Impl Plan**: D-INTL-06_sf1_implementation_plan.md
+- **Impl Plan**: D-INTL-06_sf01_implementation_plan.md
 
-### SF-2: Prompt Assembly via Inversion of Control
+### SF-02: Prompt Assembly via Inversion of Control
 - **Scope**: Add `_build_base_prompt()` to `core.flow.handlers.base` (Application Layer) with fail-safe memory hydration. Refactor all 5 workflow modules to accept `base_prompt: PromptBuilder` instead of individual params. Handlers call `_build_base_prompt()` and pass the pre-built builder down. `include_rules=False` for drafting enforces 2-Tier Handover. Add `workspace/memory` to `core.flow` consumes. Include before/after prompt regression tests.
 - **FRs**: [FR-6, FR-7]
 - **Inputs**: `RunContext` (already contains constitution, standards, db, project_path)
 - **Outputs**: Pre-configured `PromptBuilder` with memory context included
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **tach**: Add `workspace.memory` to `core.flow` depends_on
-- **Impl Plan**: D-INTL-06_sf2_implementation_plan.md
+- **Impl Plan**: D-INTL-06_sf02_implementation_plan.md
 
-### SF-3: Handover Protocols
+### SF-03: Handover Protocols
 - **Scope**: Implement save protocol via `on_pipeline_complete` callback injection into `PipelineRunner` (fires in `finally` block). CLI entry point provides the `task_id` via closure. Implement bootstrap protocol (standard task list formatting with trust tagging). Wire callback at entry point layer (`core/flow/interfaces/cli.py`).
 - **FRs**: [FR-8, FR-9]
 - **Inputs**: Completed pipeline step results; `on_pipeline_complete` callback
 - **Outputs**: `HandoverContext` persisted; notes included in `<agent_memory>` block
-- **Depends on**: SF-1, SF-2
-- **Impl Plan**: D-INTL-06_sf3_implementation_plan.md
+- **Depends on**: SF-01, SF-02
+- **Impl Plan**: D-INTL-06_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. **SF-1** (no deps — start immediately)
-2. **SF-2** (depends on SF-1 — sequential)
-3. **SF-3** (depends on SF-1 + SF-2 — sequential)
+1. **SF-01** (no deps — start immediately)
+2. **SF-02** (depends on SF-01 — sequential)
+3. **SF-03** (depends on SF-01 + SF-02 — sequential)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Memory Hydrator & DTO | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Prompt Assembly via IoC | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Handover Protocols | SF-1, SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Memory Hydrator & DTO | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Prompt Assembly via IoC | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Handover Protocols | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Red Team Audit Summary
 
@@ -266,11 +266,11 @@ This design has been through **4 full Red Team / Blue Team adversarial audit cyc
 
 - **Removed**: `memory_assembler.py`, `add_memory_context()` on PromptBuilder, `RunContext.memory_context` field, CLI/API wiring, `workflows/commons` module (DDD anti-pattern)
 - **Added**: `_build_base_prompt()` in Application Layer (`core.flow.handlers.base`), `include_rules` flag for 2-Tier Handover, NFR-9 (fail-safe), NFR-10 (XML escape), NFR-11 (well-formedness), AD-9 (trust tags), AD-10 (callback injection for handover save)
-- **Security**: 5-layer defense (Pydantic schema validation → JSON serialization → trust tagging → field truncation → injection pattern stripping). Plus system instruction framing in SF-2.
+- **Security**: 5-layer defense (Pydantic schema validation → JSON serialization → trust tagging → field truncation → injection pattern stripping). Plus system instruction framing in SF-02.
 - **Architecture**: Handler-internal hydration eliminates all entry-point coupling. No intermediate DTO needed — RunContext is sufficient. Handover save uses callback injection — no boundary violation in PipelineRunner.
 
 ## Session Handoff
 
-**Current status**: SF-1 Committed ✅. SF-2 Committed ✅. SF-3 Committed ✅. Feature Complete!
+**Current status**: SF-01 Committed ✅. SF-02 Committed ✅. SF-03 Committed ✅. Feature Complete!
 **Next step**: Proceed to next feature on the roadmap.
 **If resuming mid-feature**: D-INTL-06 is fully closed.

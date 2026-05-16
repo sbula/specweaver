@@ -52,48 +52,48 @@ None required. Uses native `hashlib` and `json`.
 
 ## Sub-Feature Breakdown
 
-### SF-1: Polyglot Parser Decoupling
+### SF-01: Polyglot Parser Decoupling
 - **Scope**: Resolves legacy AST technical debt. Extracts `CodeStructureInterface` and language `codestructure.py` out of `loom/commons/language` and moves them downward into `workspace/ast/parsers/`. Upgrades `workspace/context/analyzers.py` to natively utilize these Tree-Sitter engines instead of raw Python `ast`. Updates all imports across `assurance`, `loom`, and `workspace`.
 - **FRs**: [NFR-2]
 - **Inputs**: Existing tree-sitter bindings.
 - **Outputs**: Centralized `workspace/ast/parsers/` domain.
 - **Depends on**: none
 
-### SF-2: Semantic State caching (DependencyHasher)
+### SF-02: Semantic State caching (DependencyHasher)
 - **Scope**: Implements a dedicated utility for computing and persisting shallow and structural Merkle dependencies targetting `<project_root>/.specweaver/topology.cache.json`. **MUST** securely inject `/.specweaver/` into the `.gitignore` using a tracked comment block to prevent tracking pollution!
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: OS file chunks, Tree-Sitter extracted dotted imports.
 - **Outputs**: Serialized pure-data cache map (with versions and mtime signatures to support NFR-1 incremental speeds).
-- **Depends on**: [SF-1]
+- **Depends on**: [SF-01]
 
-### SF-3: Incremental Topology Crawler
+### SF-03: Incremental Topology Crawler
 - **Scope**: Modifies `topology.py` `TopologyGraph.from_project()` to actively diff against the Semantic Cache, applying subtree invalidations natively via Tarjan's SCC cycle-loop breaking instead of global recursive parsing.
 - **FRs**: [FR-3]
 - **Inputs**: Semantic Cache map.
 - **Outputs**: Instantiated TopologyGraph.
-- **Depends on**: [SF-2]
+- **Depends on**: [SF-02]
 
-### SF-4: Pipeline Execution Optimization
+### SF-04: Pipeline Execution Optimization
 - **Scope**: Modifies the broader SpecWeaver orchestration engine (`QARunner`, `PipelineRunner`, and `EngineFileExecutor`) to exclusively consume `graph.stale_nodes`. Instructs downstream testing plugins to bypass `clean` nodes conditionally, and dictates explicit cache-flush persistence hooks to trigger strictly post-validation. Integrates `.specweaver` into ephemeral Worktree sandboxes natively.
 - **FRs**: [NFR-1]
 - **Inputs**: Instantiated `TopologyGraph`, `stale_nodes` set.
 - **Outputs**: High-speed incremental validation pipelines, updated Cache.
-- **Depends on**: [SF-3]
+- **Depends on**: [SF-03]
 
 ## Execution Order
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
-3. SF-3 (depends on SF-2)
-4. SF-4 (depends on SF-3)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
+3. SF-03 (depends on SF-02)
+4. SF-04 (depends on SF-03)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Polyglot Parser Decoupling | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Semantic State Caching | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Incremental Topology | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Pipeline Execution Optimization | SF-3 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Polyglot Parser Decoupling | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Semantic State Caching | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Incremental Topology | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-04 | Pipeline Execution Optimization | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

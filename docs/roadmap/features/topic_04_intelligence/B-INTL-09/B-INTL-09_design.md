@@ -5,10 +5,10 @@
 - **Status**: APPROVED
 - **Design Doc**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md
 - **Absorbs**: Former `C-EXEC-05` (Issue Tracker Atoms) and `B-INTL-10` (Agentic Workflow State Ledger)
-- **SF-1 Status**: 🟢 Completed
-- **SF-2 Status**: 🟢 Completed
-- **SF-3 Status**: 🟢 Completed
-- **SF-4 Status**: 🟢 Completed
+- **SF-01 Status**: 🟢 Completed
+- **SF-02 Status**: 🟢 Completed
+- **SF-03 Status**: 🟢 Completed
+- **SF-04 Status**: 🟢 Completed
 
 ## Feature Overview
 
@@ -133,55 +133,55 @@ The `MemoryRepository` MUST enforce this matrix. Any transition not explicitly m
 
 ## Sub-Feature Breakdown
 
-### SF-1: SQLAlchemy Schema & Alembic Definitions
+### SF-01: SQLAlchemy Schema & Alembic Definitions
 - **Scope**: Define the strict OCC/Cascade SQLAlchemy entity classes (Task with all columns/indexes, Epic with OPEN/CLOSED status, TaskDependency with indexed FKs, StateTransition with bounded `TransitionReason` enum, Defect) reusing `Base` from `workspace.store`. Register PRAGMA event listener. Add explicit model imports to `alembic/env.py`. Generate the DB migration.
 - **FRs**: [FR-1, FR-2, FR-3, FR-6]
 - **Inputs**: `specweaver/workspace/store.py` Base class (import, do not redefine).
 - **Outputs**: `src/specweaver/workspace/memory/store.py` (Models + PRAGMA listener + indexes + TransitionReason enum) + updated `alembic/env.py` + `alembic/versions/` migration script.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf01_implementation_plan.md
 
-### SF-2: Core CRUD & State Machine
+### SF-02: Core CRUD & State Machine
 - **Scope**: Implement the foundational `MemoryRepository` with basic CRUD operations, the formal State Transition Matrix enforcement, defect invariants (no `DONE` with `OPEN` defects), and context cleanup on `ARCHIVED`.
 - **FRs**: [FR-4 (core CRUD + state matrix + defect invariants), FR-7]
-- **Inputs**: The SQLAlchemy models defined in SF-1.
+- **Inputs**: The SQLAlchemy models defined in SF-01.
 - **Outputs**: `MemoryRepository` class with `create_task`, `get_task`, `list_tasks`, `transition_state` (matrix enforcement + defect invariants), `update_handover_context` (basic), `mark_archived` (context truncation). Structured logging on state transitions.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf02_implementation_plan.md
 
-### SF-3: DAG & Context Validation
+### SF-03: DAG & Context Validation
 - **Scope**: Implement dependency graph management with `WITH RECURSIVE` cycle detection, transactional OCC `acquire_task` with exponential backoff + jitter, and Pydantic `HandoverContext` validation with 8KB truncation.
 - **FRs**: [FR-4 (DAG cycle checks + OCC acquire + Pydantic context validation)]
-- **Inputs**: The `MemoryRepository` core CRUD from SF-2.
+- **Inputs**: The `MemoryRepository` core CRUD from SF-02.
 - **Outputs**: `insert_dependency` (WITH RECURSIVE cycle check), `acquire_task` (transactional OCC + backoff), `update_handover_context` (Pydantic 8KB validation + truncation).
-- **Depends on**: SF-2
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf3_implementation_plan.md
+- **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf03_implementation_plan.md
 
-### SF-4: Resilience & Recovery
+### SF-04: Resilience & Recovery
 - **Scope**: Implement Zombie Recovery with heartbeat scanning, 3-Strike Circuit Breaker, and upstream `BLOCKED` → `UPSTREAM_BLOCKED` DAG propagation with reverse-clear on unblock.
 - **FRs**: [FR-5, FR-8, FR-9]
-- **Inputs**: The `MemoryRepository` core CRUD and state machine from SF-2.
+- **Inputs**: The `MemoryRepository` core CRUD and state machine from SF-02.
 - **Outputs**: `recycle_zombies` (heartbeat scan + attempt_count increment), `circuit_breaker` (auto-BLOCKED + Defect creation), `propagate_blocked` (upstream cascade), `clear_upstream_blocked` (reverse cascade). Structured logging on all resilience events.
-- **Depends on**: SF-2
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf4_implementation_plan.md
+- **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf04_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (Schema & DB Migration) — start immediately.
-2. SF-2 (Core CRUD & State Machine) — depends on SF-1.
-3. SF-3 and SF-4 **in parallel** — both depend only on SF-2.
+1. SF-01 (Schema & DB Migration) — start immediately.
+2. SF-02 (Core CRUD & State Machine) — depends on SF-01.
+3. SF-03 and SF-04 **in parallel** — both depend only on SF-02.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | SQLAlchemy Schema & Alembic Definitions | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Core CRUD & State Machine | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | DAG & Context Validation | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Resilience & Recovery | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | SQLAlchemy Schema & Alembic Definitions | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Core CRUD & State Machine | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | DAG & Context Validation | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-04 | Resilience & Recovery | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-2 Implementation Plan is APPROVED.
-**Next step**: Run `/dev docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf2_implementation_plan.md` to begin TDD development.
+**Current status**: SF-02 Implementation Plan is APPROVED.
+**Next step**: Run `/dev docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_sf02_implementation_plan.md` to begin TDD development.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

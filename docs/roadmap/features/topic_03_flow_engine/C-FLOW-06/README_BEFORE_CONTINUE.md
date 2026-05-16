@@ -1,11 +1,11 @@
-# STOP! READ BEFORE CONTINUING SF-2
+# STOP! READ BEFORE CONTINUING SF-02
 
-## Current State of SF-2 (Impact-Aware Testing & DAL Enforcements)
+## Current State of SF-02 (Impact-Aware Testing & DAL Enforcements)
 
-We attempted to push SF-2 through the `/pre-commit` gate, but it was **HALTED during Phase 2 (Test Gap Analysis)** due to severe missed requirements and an architectural violation in the original design.
+We attempted to push SF-02 through the `/pre-commit` gate, but it was **HALTED during Phase 2 (Test Gap Analysis)** due to severe missed requirements and an architectural violation in the original design.
 
 ### 1. FR-2 (Test Limiting) was COMPLETELY MISSED
-The previous implementation plan for SF-2 (`feature_3_32d_sf2_implementation_plan.md`) completely forgot to include FR-2. 
+The previous implementation plan for SF-02 (`feature_3_32d_sf02_implementation_plan.md`) completely forgot to include FR-2. 
 - Only FR-3 (DAL Enforcements) was implemented.
 - `QARunnerTool` and test impact-caching have NOT been built yet.
 - You must resume development to implement FR-2.

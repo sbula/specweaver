@@ -26,7 +26,7 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`C-INTL-01` ✅: Iterative Decomposition** (Legacy: 3.24)<br>
   > `future_capabilities_reference.md` §18 | Builds on basic foundation: DMZ-style iterative loop, automated quality gates, recursive decomposition (feature → sub-features → components).
 * **`C-INTL-02` ✅: MCP Client Architecture** (Legacy: 3.32c)<br>
-  > [Arch Doc](../architecture/mcp_architecture_design.md) | Restructuring `context/providers.py` to natively support the Model Context Protocol (MCP). Implements the core Context Harness (JSON-RPC over stdio, Proxy Agents, Lazy Resource URIs) standardizing external integrations for future tools (Jira, Confluence). **Complete**: SF-1, SF-2, SF-3, and SF-4 (MCP Explorer Tool).
+  > [Arch Doc](../architecture/mcp_architecture_design.md) | Restructuring `context/providers.py` to natively support the Model Context Protocol (MCP). Implements the core Context Harness (JSON-RPC over stdio, Proxy Agents, Lazy Resource URIs) standardizing external integrations for future tools (Jira, Confluence). **Complete**: SF-01, SF-02, SF-03, and SF-04 (MCP Explorer Tool).
 * **`C-INTL-03` 🔜: Reverse-Weaving** (Legacy: 3.43)<br>
   > _(new)_ | Archaeology tool for brownfield adoption. Uses AST Skeleton Extraction combined with Multi-Modal extraction loops from PDFs/Diagrams mapped as [semantically_similar] to draft baseline Spec.md contracts from legacy DB/Java code.
 * **`C-INTL-04` 🔜: Conversation Summarization** (Legacy: 4.6)<br>
@@ -36,9 +36,9 @@ This document tracks all capabilities related to LLM integration, specification 
 
 ## DAL-B: High-Assurance
 * **`B-INTL-01` ✅: Archetype Rule Sets** (Legacy: 3.29)<br>
-  > _(new)_ | Auto-provisioned rules for specific architectural profiles (`kotlin-service`, `rust-worker`) to enforce framework-specific standards inherently. **Complete**: SF-1 (Injection), SF-2 (Language Commons Framework Schemas), and SF-3 (Archetype Rule Bounds + Plugins).
+  > _(new)_ | Auto-provisioned rules for specific architectural profiles (`kotlin-service`, `rust-worker`) to enforce framework-specific standards inherently. **Complete**: SF-01 (Injection), SF-02 (Language Commons Framework Schemas), and SF-03 (Archetype Rule Bounds + Plugins).
 * **`B-INTL-02` ✅: Macro Evaluator** (Legacy: 3.30)<br>
-  > _(new)_ | Specialized indexer capable of unrolling Rust Procedural Macros (`#[derive]`) and Kotlin Compiler Plugins (Spring Boot annotations) so the LLM understands the true runtime reality, not just the raw signature. **Complete:** SF-1, SF-2, and SF-3 implemented. 4241 tests natively passing.
+  > _(new)_ | Specialized indexer capable of unrolling Rust Procedural Macros (`#[derive]`) and Kotlin Compiler Plugins (Spring Boot annotations) so the LLM understands the true runtime reality, not just the raw signature. **Complete:** SF-01, SF-02, and SF-03 implemented. 4241 tests natively passing.
 * **`B-INTL-03` 🔜: Synthetic Commons** (Legacy: 3.51)<br>
   > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Pre-emptive architectural de-duplication. Scans drafted subfeatures in `DecomposeHandler` for cross-cutting overlaps (e.g. shared schemas/utils) and extracts them into a synthetic "Tier 0" feature, forcing subfeatures to share logic rather than parallelizing duplicate implementations.
 * **`B-INTL-04` 🔮: Dynamic AI Arbiter** (Legacy: 5.8)<br>
@@ -52,7 +52,9 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`B-INTL-08` 🔮: Semantic Code Review**<br>
   > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system.
 * **`B-INTL-09` 🟡: Agent Memory Bank**
-  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). **Complete:** SF-1 (Schema & DB Migration). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_
+  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). **Complete:** SF-01 (Schema & DB Migration). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_
+* **`B-INTL-10` 🔮: Declarative Prompt Optimization**
+  > _(new)_ | DSPy-style declarative routing and dynamic prompt generation. Persists profiles in the Config DB (SQLite). The PipelineRunner dynamically fetches and compiles the optimized prompt profile based on runtime execution routing, telemetry, and active models, enabling AI-driven A/B testing of prompt structures.
 
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>

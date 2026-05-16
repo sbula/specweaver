@@ -1,8 +1,8 @@
-# Implementation Plan: Automated Traceability Matrix [SF-1: Traceability Engine]
+# Implementation Plan: Automated Traceability Matrix [SF-01: Traceability Engine]
 - **Feature ID**: 3.21
-- **Sub-Feature**: SF-1 — Traceability Engine
+- **Sub-Feature**: SF-01 — Traceability Engine
 - **Design Document**: docs/roadmap/features/topic_05_validation/C-VAL-04/C-VAL-04_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-1
+- **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/C-VAL-04/C-VAL-04_implementation_plan.md
 - **Status**: APPROVED
 

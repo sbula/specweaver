@@ -279,7 +279,7 @@ db.get_project_routing_entries(project_name)  # NEW method needed — SELECT WHE
 ```
 
 Note: `unlink_project_profile` and `get_project_routing_entries` are new DB methods
-to be added to `_db_llm_mixin.py` as part of SF-1.
+to be added to `_db_llm_mixin.py` as part of SF-01.
 
 ### AD-7: Unified LLM call interface — `generate(messages, config)` everywhere
 
@@ -288,19 +288,19 @@ string — bypassing `GenerationConfig` entirely. This is a **latent bug**: it f
 runtime when telemetry is active (`TelemetryCollector.generate()` requires both
 `messages: list[Message]` and `config: GenerationConfig`).
 
-SF-1 refactors `_llm_fix()` to use the standard interface:
+SF-01 refactors `_llm_fix()` to use the standard interface:
 ```
 generate(messages: list[Message], config: GenerationConfig) → LLMResponse
 ```
 
-**After SF-1, this is the single unified LLM call interface for all handlers.**
+**After SF-01, this is the single unified LLM call interface for all handlers.**
 No handler passes a raw string to `generate()`. The interface is defined in
 `LLMAdapter` (abstract base) and respected by all adapters and `TelemetryCollector`.
 This unification is a pre-condition for routing to work uniformly across all task types.
 
 ---
 
-## CLI Command Specification (SF-2)
+## CLI Command Specification (SF-02)
 
 All commands operate on the **active project**.
 
@@ -333,7 +333,7 @@ added to `cli/config_commands.py`, following the pattern of existing command gro
 
 ## Sub-Feature Breakdown
 
-### SF-1: ModelRouter + DB + Handler Integration
+### SF-01: ModelRouter + DB + Handler Integration
 
 **Scope**: The data model and routing engine.
 - New file: `llm/router.py` — `RouterResult` NamedTuple + `ModelRouter` class
@@ -362,11 +362,11 @@ FR-5 (persistence), FR-6 (telemetry), FR-7 (multi-model)
 - New unit tests: `tests/unit/llm/test_router.py`
 
 **Depends on**: none
-**Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf1_implementation_plan.md`
+**Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf01_implementation_plan.md`
 
 ---
 
-### SF-2: CLI Routing Commands
+### SF-02: CLI Routing Commands
 
 **Scope**: The user-facing `sw config routing` command group.
 - Modified: `cli/config_commands.py` — add `routing_app` Typer sub-application with
@@ -374,7 +374,7 @@ FR-5 (persistence), FR-6 (telemetry), FR-7 (multi-model)
 
 **FRs**: FR-4
 
-**Inputs**: SF-1's `unlink_project_profile()` and `get_project_routing_entries()` DB methods
+**Inputs**: SF-01's `unlink_project_profile()` and `get_project_routing_entries()` DB methods
 
 **Outputs**:
 - `sw config routing set implement claude-profile` → inserts DB row, prints confirmation
@@ -382,19 +382,19 @@ FR-5 (persistence), FR-6 (telemetry), FR-7 (multi-model)
 - `sw config routing clear [task_type]` → removes row(s), prints confirmation
 - New unit tests: `tests/unit/cli/test_config_routing_commands.py`
 
-**Depends on**: SF-1 (needs the two new DB methods)
-**Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf2_implementation_plan.md`
+**Depends on**: SF-01 (needs the two new DB methods)
+**Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf02_implementation_plan.md`
 
 ---
 
 ## Dependency Graph
 
 ```
-SF-1 (ModelRouter + DB + handlers)
-  └──▶ SF-2 (CLI commands)
+SF-01 (ModelRouter + DB + handlers)
+  └──▶ SF-02 (CLI commands)
 ```
 
-Topological execution order: SF-1, then SF-2. Linear — no parallelism.
+Topological execution order: SF-01, then SF-02. Linear — no parallelism.
 
 ---
 
@@ -402,13 +402,13 @@ Topological execution order: SF-1, then SF-2. Linear — no parallelism.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | ModelRouter + DB + handler integration | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | CLI routing commands | SF-1 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-01 | ModelRouter + DB + handler integration | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | CLI routing commands | SF-01 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ---
 
 ## Session Handoff
 
-**Current status**: SF-2 Pre-Commit complete. Ready for Commit Boundary.
-**Next step**: Run `/dev docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf2_implementation_plan.md`
+**Current status**: SF-02 Pre-Commit complete. Ready for Commit Boundary.
+**Next step**: Run `/dev docs/roadmap/features/topic_03_flow_engine/D-FLOW-03/D-FLOW-03_sf02_implementation_plan.md`
 **If resuming mid-feature**: Read Progress Tracker. Find first ⬜ in the Dev/Pre-Commit/Committed columns.

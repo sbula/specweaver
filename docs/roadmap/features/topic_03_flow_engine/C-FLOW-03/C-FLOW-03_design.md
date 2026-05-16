@@ -80,43 +80,43 @@ Key constraints: Must use Topology Graph for blast radius prediction, must run d
 
 ## Sub-Feature Breakdown
 
-### SF-1: Topological DAG Wave Generation
+### SF-01: Topological DAG Wave Generation
 - **Scope**: Upgrades `DecompositionPlan` JSON schema to demand explicit `depends_on` nodes and target modules. Implements `TopologyGraph` collision detection logic within the Orchestration layer to classify components into mutually exclusive operational subsets (Waves).
 - **FRs**: [FR-1, FR-6]
 - **Inputs**: DecompositionPlan (Component JSON outputs), TopologyGraph.
 - **Outputs**: Computationally filtered batches of PipelineDefinitions ready for safe `fan_out`.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf01_implementation_plan.md
 
-### SF-2: Sandbox Environmental Isolation
+### SF-02: Sandbox Environmental Isolation
 - **Scope**: Modifies `PipelineRunner._execute_loop` and `RunContext` to accept env-var propagation (like `SW_PORT_OFFSET`), introduces strict serialized `git worktree add` loops to prevent index locking crashes, and implements SQLite Resource Reservation logic.
 - **FRs**: [FR-2, FR-3, FR-4]
 - **Inputs**: RunContext hash hints, `use_worktree` context.
 - **Outputs**: Environment variables exposed correctly into spawned executor sub-shells, parked overlapping sessions gracefully.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf02_implementation_plan.md
 
-### SF-3: Parallel Engine Hardening
+### SF-03: Parallel Engine Hardening
 - **Scope**: Embeds LLM-Provider bound `asyncio.Semaphore` throttling, extracts shared file (Documentation/Lock files) modifications securely into deferred `GateType.JOIN` or sequential `Wave 0` steps.
 - **FRs**: [FR-5]
 - **Inputs**: Package generation steps, pipeline configurations.
 - **Outputs**: Resilient orchestrator logic free of HTTP 429 timeouts and `.lock` file conflicts.
-- **Depends on**: SF-2
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf3_implementation_plan.md
+- **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.27/feature_3.27_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (No deps - start immediately)
-2. SF-2 (Depends on SF-1)
-3. SF-3 (Depends on SF-2)
+1. SF-01 (No deps - start immediately)
+2. SF-02 (Depends on SF-01)
+3. SF-03 (Depends on SF-02)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Topological DAG Wave Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Sandbox Environmental Isolation | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Parallel Engine Hardening | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Topological DAG Wave Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Sandbox Environmental Isolation | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Parallel Engine Hardening | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

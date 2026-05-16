@@ -146,7 +146,7 @@ No new external dependencies. This feature is entirely stdlib + Pydantic-based.
 
 ## Sub-Feature Breakdown
 
-### SF-1: Slot Registry & Profile Mechanism
+### SF-01: Slot Registry & Profile Mechanism
 - **Scope**: Define the `PromptSlot` enum and `RenderProfile` frozen dataclass (mechanism types, with `__post_init__` validation that `order ⊆ active_slots`) in `infrastructure/llm/`. Define the 4 named profile constants (policy) in `core/flow/handlers/_profiles.py`:
   - `FULL`: All slots
   - `MINIMAL`: `{INSTRUCTIONS, METADATA, TOPOLOGY}`
@@ -156,39 +156,39 @@ No new external dependencies. This feature is entirely stdlib + Pydantic-based.
 - **Inputs**: Current hardcoded block kinds from `_prompt_render.py`
 - **Outputs**: `PromptSlot` enum + `RenderProfile` dataclass in `infrastructure/llm/_prompt_profiles.py`. Profile constants (`FULL`, `MINIMAL`, `INTERACTIVE`, `ARBITER`) in `core/flow/handlers/_profiles.py`
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf01_implementation_plan.md
 
-### SF-2: Profile-Driven Rendering & Builder Refactoring
+### SF-02: Profile-Driven Rendering & Builder Refactoring
 - **Scope**: Refactor `PromptBuilder` and `_prompt_render.py` to use profiles for slot selection and rendering order. Refactor `_build_base_prompt()` signature to accept `profile: RenderProfile`.
 - **FRs**: [FR-4, FR-5, FR-6]
-- **Inputs**: `PromptSlot` enum, `RenderProfile` dataclass, and profile constants from SF-1
+- **Inputs**: `PromptSlot` enum, `RenderProfile` dataclass, and profile constants from SF-01
 - **Outputs**: Profile-aware `PromptBuilder`, profile-driven `render_blocks()`, refactored `_build_base_prompt()`
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf02_implementation_plan.md
 
-### SF-3: Caller Migration & Unification
+### SF-03: Caller Migration & Unification
 - **Scope**: Migrate all handler callsites to use explicit profiles. Refactor `ArbitrateVerdictHandler` to call `_build_base_prompt(profile=ARBITER)`. Refactor `DecomposeFeatureHandler` to pre-build PromptBuilder and inject into `FeatureDecomposer` via DI.
 - **FRs**: [FR-7, FR-8]
-- **Inputs**: Refactored `_build_base_prompt()` API from SF-2
+- **Inputs**: Refactored `_build_base_prompt()` API from SF-02
 - **Outputs**: All 8+ callsites using explicit `RenderProfile` constants. Arbiter handler uses centralized assembly. Decomposer receives pre-built PromptBuilder via IoC.
-- **Depends on**: SF-2
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf3_implementation_plan.md
+- **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-05/C-INTL-05_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. **SF-1** (no deps — start immediately): Pure data definitions, zero side effects
-2. **SF-2** (depends on SF-1): Core refactoring of the render pipeline and builder
-3. **SF-3** (depends on SF-2): Mechanical caller migration across all handler files
+1. **SF-01** (no deps — start immediately): Pure data definitions, zero side effects
+2. **SF-02** (depends on SF-01): Core refactoring of the render pipeline and builder
+3. **SF-03** (depends on SF-02): Mechanical caller migration across all handler files
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------| 
-| SF-1 | Slot Registry & Profile Mechanism | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Profile-Driven Rendering & Builder Refactoring | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Caller Migration & Unification | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Slot Registry & Profile Mechanism | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Profile-Driven Rendering & Builder Refactoring | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Caller Migration & Unification | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Feature Complete. All 3 SFs (SF-1, SF-2, SF-3) have been implemented, tested, and audited successfully.
+**Current status**: Feature Complete. All 3 SFs (SF-01, SF-02, SF-03) have been implemented, tested, and audited successfully.
 **Next step**: Wait for HITL commit approval.

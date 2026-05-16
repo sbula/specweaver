@@ -21,7 +21,7 @@ Feature E-INTL-01 establishes the foundational multi-provider LLM Adapter archit
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | LLM Adapter & Rules | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | LLM Adapter & Rules | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

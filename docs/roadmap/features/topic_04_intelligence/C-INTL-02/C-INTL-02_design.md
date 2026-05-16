@@ -64,56 +64,56 @@ Key constraints: Must use the Pre-Fetched Context Envelope pattern to avoid Syst
 
 ## Sub-Feature Breakdown
 
-### SF-1: Context YAML & Vault Bindings
+### SF-01: Context YAML & Vault Bindings
 - **Scope**: Updates the Pydantic boundary schema to seamlessly accept `mcp_servers` mappings and dynamic `.specweaver/vault.env` token replacement.
 - **FRs**: [FR-1]
 - **Inputs**: `context.yaml`
 - **Outputs**: Updated Boundary config models
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf01_implementation_plan.md
 
-### SF-2: MCP Execution Atom (Loom Layer)
+### SF-02: MCP Execution Atom (Loom Layer)
 - **Scope**: Implements the raw subprocess connection logic bridging JSON-RPC via `stdio` inside `loom/commons/mcp/executor.py` and exposes it via `loom/atoms/mcp/atom.py` to strictly adhere to the `context.yaml` isolation boundaries.
 - **FRs**: [FR-2]
 - **Inputs**: Docker launch command
 - **Outputs**: active JSON-RPC Atom connection
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf02_implementation_plan.md
 
-### SF-3: The Pre-Fetch Assembler (Flow Engine)
+### SF-03: The Pre-Fetch Assembler (Flow Engine)
 - **Scope**: Implements the context extraction logic inside `flow/handlers.py` (which is legally permitted to execute Atoms). Identifies `consumes_resources`, executes the `MCPAtom` pre-fetch, and binds the envelope to the LLM step config.
 - **FRs**: [FR-3, FR-4]
 - **Inputs**: `MCPAtom`, `consumes_resources` array.
 - **Outputs**: Injected Context Envelope.
-- **Depends on**: SF-2
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf3_implementation_plan.md
+- **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf03_implementation_plan.md
 
-### SF-4: MCP Explorer Tool (Architect Layer)
+### SF-04: MCP Explorer Tool (Architect Layer)
 - **Scope**: Implements `MCPExplorerTool` in `loom/tools/mcp/tool.py`, exposing the MCP `resources/list` endpoint strictly to L2 Architect roles, allowing them to map available URIs to `context.yaml` dependencies without seeing heavy schemas.
 - **FRs**: [FR-1]
 - **Inputs**: MCP URIs, Agent queries
 - **Outputs**: Lightweight array of available URIs
-- **Depends on**: SF-2
-- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf4_implementation_plan.md
+- **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf04_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (Boundary schemas updates)
-2. SF-2 (Stdio connection logic)
-3. SF-3 and SF-4 in parallel (Assembler string injection & Explorer Tool)
+1. SF-01 (Boundary schemas updates)
+2. SF-02 (Stdio connection logic)
+3. SF-03 and SF-04 in parallel (Assembler string injection & Explorer Tool)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Context YAML & Vault Bindings | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | MCP Execution Atom | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | The Pre-Fetch Assembler | SF-2 | ✅ | ✅ | ✅ | ✅ | ⚪ |
-| SF-4 | MCP Explorer Tool | SF-2 | ✅ | ✅ | ⚪ | ⚪ | ⚪ |
+| SF-01 | Context YAML & Vault Bindings | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | MCP Execution Atom | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | The Pre-Fetch Assembler | SF-02 | ✅ | ✅ | ✅ | ✅ | ⚪ |
+| SF-04 | MCP Explorer Tool | SF-02 | ✅ | ✅ | ⚪ | ⚪ | ⚪ |
 
 ## Session Handoff
 
-**Current status**: SF-4 IMPL PLAN APPROVED!
+**Current status**: SF-04 IMPL PLAN APPROVED!
 **Next step**: Run:
-`/dev docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf4_implementation_plan.md`
+`/dev docs/roadmap/features/topic_04_intelligence/C-INTL-02/C-INTL-02_sf04_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⚪ in any row and resume from there using the appropriate workflow.

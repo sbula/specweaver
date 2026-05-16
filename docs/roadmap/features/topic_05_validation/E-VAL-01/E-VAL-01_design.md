@@ -20,7 +20,7 @@ Feature E-VAL-01 establishes the Core Validation Engine and the deterministic `S
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Validation Engine & Static Rules | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Validation Engine & Static Rules | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

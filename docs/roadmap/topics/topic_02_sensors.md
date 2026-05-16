@@ -14,7 +14,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`D-SENS-01` ✅: Topology Graph** (Legacy: Step 7)<br>
   > _(new)_ | In-memory dependency graph from `context.yaml` files. Foundation for impact analysis and context-enriched prompts. Language-agnostic code analysis framework for auto-generating missing `context.yaml`.
 * **`D-SENS-02` ✅: Polyglot AST Extractor** (Legacy: 3.22)<br>
-  > _(new)_ | _Pivoted from Context Ledger (304 Caching) to prevent LLM memory hallucination._ Provides read_skeleton, read_symbol, and AST mutation capabilities via Tree-Sitter. Target expansion to 25 languages mapping native graph relationships. **Complete**: SF-1 (Read) and SF-2 (Write) across 5 languages fully completed and bound to Engine with 90%+ coverage.
+  > _(new)_ | _Pivoted from Context Ledger (304 Caching) to prevent LLM memory hallucination._ Provides read_skeleton, read_symbol, and AST mutation capabilities via Tree-Sitter. Target expansion to 25 languages mapping native graph relationships. **Complete**: SF-01 (Read) and SF-02 (Write) across 5 languages fully completed and bound to Engine with 90%+ coverage.
 * **`D-SENS-03` ✅: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)<br>
   > _(new)_ | Targeted expansion of Tree-sitter grammars focusing strictly on high-value enterprise domains: **Markdown** (mandatory for Spec.md traceability bounds), **C/C++** (Systems/Legacy), **Go** (Cloud-Native infrastructure), and **Standard SQL** (baseline ANSI schemas to empower the DB Context Harness), avoiding dialect nightmare traps. **Complete:** Markdown, C/C++, Go, and SQL parsers are completed with Dot-Notation and capability filtering.
 * **`D-SENS-04` 🔜: Parallel AST Extraction Engine**
@@ -26,7 +26,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 * **`C-SENS-01` ✅: Spec-Mention Detection** (Legacy: 3.11)<br>
   > _(new)_ | Scan LLM responses for spec/file names → auto-pull into context for follow-up calls. Pure-logic `llm/mention_scanner/` module + resolver with workspace boundary enforcement. Follow-up injection wired through `Reviewer.mentioned_files` param. **Complete**: scanner, resolver, PromptBuilder integration, follow-up injection, 3353 tests. See [implementation plan](features/topic_02_sensors/C-SENS-01/C-SENS-01_implementation_plan.md).
 * **`C-SENS-02` ✅: Smart Scan Exclusions** (Legacy: 3.32b)<br>
-  > _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore`. **Complete:** SF-1, SF-2, SF-3 (Polyglot Hashing), SF-4 (Analyzer DI), and SF-5 (DI Remediation).
+  > _(inspired by PasteMax)_ | 3-tier file exclusion: binary exts, default patterns (.git, __pycache__), per-project overrides + `.specweaverignore`. **Complete:** SF-01, SF-02, SF-03 (Polyglot Hashing), SF-04 (Analyzer DI), and SF-05 (DI Remediation).
 * **`C-SENS-03` 🔜: Symbol Index Gates** (Legacy: 4.1)<br>
   > `future_capabilities_reference.md` §11 | Symbol index + anti-hallucination gate
 * **`C-SENS-04` 🔜: Infrastructure-as-Code Extraction (HCL2)**<br>
@@ -54,7 +54,7 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
 
 ## DAL-A: Mission-Critical
 * **`A-SENS-01` ✅: Deep Semantic Hashing** (Legacy: 3.32)<br>
-  > _(new)_ | Replaces shallow file hashing with "Dependency Hashing" (hash changes if imported modules change). Uses Merkle-trees to keep the Topology Graph explicitly in sync without full project crawls. **Complete:** SF-1, SF-2, SF-3, and SF-4 (Incremental Pipeline Bypassing).
+  > _(new)_ | Replaces shallow file hashing with "Dependency Hashing" (hash changes if imported modules change). Uses Merkle-trees to keep the Topology Graph explicitly in sync without full project crawls. **Complete:** SF-01, SF-02, SF-03, and SF-04 (Incremental Pipeline Bypassing).
 * **`A-SENS-02` 🔜: Postgres pgvector Sidecar** (Legacy: 3.33 / 5.1)<br>
   > _(new)_ | Toggle between local SQLite/BM25 (Bicycle mode) and a unified **PostgreSQL (Apache AGE + pgvector)** sidecar (Rocket mode) to map cross-service GraphRAG topologies and vectors in a single transactional backend. Phase D.1 → D.2
 * **`A-SENS-03` 🔜: Event-Driven Knowledge Graph** (Legacy: 5.2)<br>

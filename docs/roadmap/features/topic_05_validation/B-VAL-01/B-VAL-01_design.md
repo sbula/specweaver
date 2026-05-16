@@ -61,35 +61,35 @@ None specified in ORIGINS.md beyond the high-level roadmap.
 
 ## Sub-Feature Breakdown
 
-### SF-1: AST Drift & Coverage Engine
+### SF-01: AST Drift & Coverage Engine
 - **Scope**: Core pure-logic component combining AST parser with Spec rule comparative matching.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4]
 - **Inputs**: Source code file path and its parent Spec constraints (via `models`).
 - **Outputs**: Structured drift and coverage findings (no LLM involved).
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf01_implementation_plan.md
 
-### SF-2: Flow Integration & CLI (`sw drift`)
+### SF-02: Flow Integration & CLI (`sw drift`)
 - **Scope**: Expose the detector to pipelines and the CLI, providing opt-in LLM root-cause pinpointing.
 - **FRs**: [FR-5, FR-6]
-- **Inputs**: User CLI arguments, findings from SF-1, and UUIDs from DB context.
+- **Inputs**: User CLI arguments, findings from SF-01, and UUIDs from DB context.
 - **Outputs**: Pipeline step execution, terminal rendering, and an LLM root-cause response if requested.
-- **Depends on**: [SF-1]
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf2_implementation_plan.md
+- **Depends on**: [SF-01]
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | AST Drift Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Flow Integration & CLI | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | AST Drift Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Flow Integration & CLI | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Implementation Plan APPROVED for SF-2. Ready for Flow Validation & CLI development.
-**Next step**: Run TDD workflow: `/dev docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf2_implementation_plan.md`
+**Current status**: Implementation Plan APPROVED for SF-02. Ready for Flow Validation & CLI development.
+**Next step**: Run TDD workflow: `/dev docs/roadmap/features/topic_05_validation/B-VAL-01/B-VAL-01_sf02_implementation_plan.md`

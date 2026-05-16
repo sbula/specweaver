@@ -4,7 +4,7 @@
 - **Phase**: N/A (Technical Debt)
 - **Status**: 🔴 PENDING
 - **Discovered during**: D-INTL-06 Red Team Cycle 4 pattern analysis
-- **Dependency**: D-INTL-06 SF-2 (Prompt Factory) for highest-ROI refactoring
+- **Dependency**: D-INTL-06 SF-02 (Prompt Factory) for highest-ROI refactoring
 
 ## Goal
 
@@ -66,14 +66,14 @@ Its `model_post_init` is 67 lines of side-effect-heavy initialization (parser in
 - Parsed tools (`parsers`, `analyzer_factory`)
 
 **Fix (phased):**
-1. **Phase 1** (with D-INTL-06 SF-2): Move `constitution`, `standards`, and `plan` loading into the prompt factory. Remove from RunContext. (-3 fields)
+1. **Phase 1** (with D-INTL-06 SF-02): Move `constitution`, `standards`, and `plan` loading into the prompt factory. Remove from RunContext. (-3 fields)
 2. **Phase 2** (future): Split RunContext into focused sub-contexts (e.g., `ExecutionIdentity`, `InfraHandles`, `DomainState`).
 
-**Effort:** Phase 1: ~4h (after SF-2). Phase 2: High (~8h, requires careful refactoring across all handlers).
+**Effort:** Phase 1: ~4h (after SF-02). Phase 2: High (~8h, requires careful refactoring across all handlers).
 
 ## Highest-ROI Refactoring
 
-After D-INTL-06 SF-2 lands the `build_base_prompt()` factory, move constitution and standards loading **inside the factory** — same pattern as memory hydration. This resolves all three findings in one shot:
+After D-INTL-06 SF-02 lands the `build_base_prompt()` factory, move constitution and standards loading **inside the factory** — same pattern as memory hydration. This resolves all three findings in one shot:
 
 | Metric | Before | After |
 |---|---|---|
@@ -90,5 +90,5 @@ After D-INTL-06 SF-2 lands the `build_base_prompt()` factory, move constitution 
 | SR-1 | Move `_load_constitution_content` to domain layer | Finding 1 | Low (~30 min) | Medium | None |
 | SR-2 | Move `_load_standards_content` to domain layer | Finding 1 | Low (~30 min) | Medium | None |
 | SR-3 | Extract `_run_workspace_op` to shared utility | Finding 2 | Medium (~2h) | Medium | Careful planning |
-| SR-4 | Load constitution/standards/plan inside factory | All 3 | High (~4h) | **Very High** | D-INTL-06 SF-2 |
+| SR-4 | Load constitution/standards/plan inside factory | All 3 | High (~4h) | **Very High** | D-INTL-06 SF-02 |
 | SR-5 | Split RunContext into focused sub-contexts | Finding 3 | High (~8h) | High | SR-4 |

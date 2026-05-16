@@ -98,7 +98,7 @@ SpecWeaver's implementation aligns with 2024-2026 industry best practices:
 
 ## Sub-Feature Breakdown
 
-### SF-1: Polish & Close
+### SF-01: Polish & Close
 - **Scope**: Complete the remaining polish items to make E-FLOW-03 shippable.
 - **FRs**: FR-6 (optional deps)
 - **Work**:
@@ -108,7 +108,7 @@ SpecWeaver's implementation aligns with 2024-2026 industry best practices:
   4. Add E2E test (mocked HTTP layer, not mocked adapter layer)
   5. Update documentation (README, quickstart, architecture_reference)
 - **Depends on**: Nothing.
-- **Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/E-FLOW-03/E-FLOW-03_sf1_implementation_plan.md`
+- **Impl Plan**: `docs/roadmap/features/topic_03_flow_engine/E-FLOW-03/E-FLOW-03_sf01_implementation_plan.md`
 
 ## Definition of Done
 
@@ -127,16 +127,16 @@ E-FLOW-03 is complete when ALL of the following are true:
 
 ## Execution Order
 
-1. SF-1 (Polish & Close) — single commit boundary.
+1. SF-01 (Polish & Close) — single commit boundary.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Polish & Close | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Polish & Close | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
 **Current status**: Design APPROVED. Core implementation complete (all adapters, registry, factory, config, tests). Polish items remain.
-**Next step**: Create SF-1 implementation plan, then `/dev`.
+**Next step**: Create SF-01 implementation plan, then `/dev`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume.

@@ -1,8 +1,8 @@
-# Implementation Plan: Router-Based Flow Control [SF-1: Core Router Implementation]
+# Implementation Plan: Router-Based Flow Control [SF-01: Core Router Implementation]
 - **Feature ID**: 3.25
-- **Sub-Feature**: SF-1 — Core Router Implementation
+- **Sub-Feature**: SF-01 — Core Router Implementation
 - **Design Document**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-02/C-FLOW-02_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-1
+- **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-02/C-FLOW-02_implementation_plan.md
 - **Status**: APPROVED
 

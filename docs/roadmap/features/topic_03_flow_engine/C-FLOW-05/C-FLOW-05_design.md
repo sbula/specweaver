@@ -66,7 +66,7 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 Single feature — no decomposition.
 
-### SF-1: Interactive Gate Variables (HITL)
+### SF-01: Interactive Gate Variables (HITL)
 - **Scope**: Extend PromptBuilder and Generation handlers to parse and prioritize HITL remarks over linter outputs.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: `RunContext.feedback` dict containing loop-back findings and specifically parked remarks.
@@ -82,11 +82,11 @@ Single feature — no decomposition.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Interactive Gate Variables | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Interactive Gate Variables | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Current status**: Implementation Plan APPROVED.
-**Next step**: Run `/dev docs/roadmap/phase_3/feature_3.26c/feature_3.26c_sf1_implementation_plan.md`
+**Next step**: Run `/dev docs/roadmap/phase_3/feature_3.26c/feature_3.26c_sf01_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

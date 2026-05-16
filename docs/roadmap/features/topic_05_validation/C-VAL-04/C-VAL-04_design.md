@@ -66,7 +66,7 @@ Key constraints: Hard-fails the validation pipeline if coverage is incomplete. M
 
 Single feature — no decomposition.
 
-### SF-1: Traceability Validation Engine
+### SF-01: Traceability Validation Engine
 - **Scope**: Implements spec parsing for FR/NFRs, AST extraction of `@traces` from test files, and the code rule pipeline hook to enforce coverage.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4]
 - **Inputs**: The L3 Spec text/file path, and generated test files.
@@ -76,18 +76,18 @@ Single feature — no decomposition.
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
+1. SF-01 (no deps — start immediately)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Traceability Validation Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Traceability Validation Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
 **Current status**: Implementation Plan APPROVED.
 **Next step**: Run:
-`/dev docs/roadmap/features/topic_05_validation/C-VAL-04/C-VAL-04_implementation_plan.md SF-1`
+`/dev docs/roadmap/features/topic_05_validation/C-VAL-04/C-VAL-04_implementation_plan.md SF-01`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

@@ -14,8 +14,8 @@ Feature 3.13a adds a unified execution flow to single-shot CLI commands (`sw rev
 ### Codebase Patterns
 
 > [!WARNING]
-> **[HISTORICAL CONTEXT]** The research findings below describe the codebase state BEFORE SF-1 and SF-2 were implemented.
-> SF-1 and SF-2 are COMMITTED. The ONLY remaining work is SF-3 (Logging Rollout).
+> **[HISTORICAL CONTEXT]** The research findings below describe the codebase state BEFORE SF-01 and SF-02 were implemented.
+> SF-01 and SF-02 are COMMITTED. The ONLY remaining work is SF-03 (Logging Rollout).
 > Do NOT re-implement or modify any PipelineRunner, CLI command routing, or logging infrastructure code.
 
 Existing CLI commands such as `sw review` manually instantiate their backing domain objects (e.g., `Reviewer`) and manually trigger telemetry flushing. The `PipelineRunner` successfully orchestrates multi-step pipelines and robustly manages telemetry, database contexts, and gates automatically. Reusing `PipelineRunner` for single-step programmatic definitions unifies these paths without creating new architectural patterns. The existing `telemetry_logger.py` uses standard library Python logging but defaults the console to a plain `StreamHandler` rather than integrating with `Rich`. 
@@ -64,48 +64,48 @@ No external blueprint references are strictly required, though this follows the 
 
 ## Sub-Feature Breakdown
 
-### SF-1: Universal Logging Reform
+### SF-01: Universal Logging Reform
 - **Scope**: Reform the `telemetry_logger.py` infrastructure to unify terminal output via `Rich` and disk output via simple JSON representation.
 - **FRs**: [FR-2, FR-3]
 - **Inputs**: Logger configuration requests from CLI/System.
 - **Outputs**: Formatted console strings, JSON file lines.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf01_implementation_plan.md
 
-### SF-2: Unified CLI Runner
+### SF-02: Unified CLI Runner
 - **Scope**: Refactor single-shot CLI commands (`sw review`, `sw draft`, etc.) to execute via programmatic dynamic 1-step pipelines using `PipelineRunner`.
 - **FRs**: [FR-1, FR-4, FR-5]
 - **Inputs**: CLI command arguments, current project context.
 - **Outputs**: Validated module executions natively integrated with `flow/` engine, telemetry flushed.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf02_implementation_plan.md
 
-### SF-3: Logging Rollout
+### SF-03: Logging Rollout
 - **Scope**: Add structured logging calls (`logger.debug`, `logger.info`, `logger.warning`, `logger.error`) to every module, class, and public method across the entire `src/specweaver/` tree. Ensure every module declares `logger = logging.getLogger(__name__)` and every public function/method emits at least method-entry debug logs and error-path logs.
 - **FRs**: [FR-6]
-- **Inputs**: Existing module source code, logging infrastructure from SF-1.
+- **Inputs**: Existing module source code, logging infrastructure from SF-01.
 - **Outputs**: All modules instrumented with structured logging calls.
-- **Depends on**: SF-1 (logging infrastructure must be in place)
-- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf3_implementation_plan.md
+- **Depends on**: SF-01 (logging infrastructure must be in place)
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 and SF-2 can be executed in parallel (both have no shared functional dependencies).
-2. SF-3 depends on SF-1 (must complete first). SF-3 can run in parallel with SF-2.
+1. SF-01 and SF-02 can be executed in parallel (both have no shared functional dependencies).
+2. SF-03 depends on SF-01 (must complete first). SF-03 can run in parallel with SF-02.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Universal Logging Reform | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Unified CLI Runner | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Logging Rollout | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Universal Logging Reform | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Unified CLI Runner | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Logging Rollout | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 
 
 
 ## Session Handoff
 
-**Current status**: SF-1 ✅ Committed. SF-2 ✅ Committed. SF-3 ✅ Committed. The entire D-FLOW-04 feature is COMPLETE!
+**Current status**: SF-01 ✅ Committed. SF-02 ✅ Committed. SF-03 ✅ Committed. The entire D-FLOW-04 feature is COMPLETE!
 **Next step**: Move on to the next major feature in the roadmap.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

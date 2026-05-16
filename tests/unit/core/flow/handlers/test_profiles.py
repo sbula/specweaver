@@ -8,6 +8,8 @@ from specweaver.core.flow.handlers._profiles import (
     FULL,
     INTERACTIVE,
     MINIMAL,
+    PROFILE_REGISTRY,
+    resolve_profile,
 )
 from specweaver.infrastructure.llm._prompt_profiles import PromptSlot, RenderProfile
 
@@ -89,3 +91,39 @@ class TestPolicyProfiles:
         assert MINIMAL.name == "MINIMAL"
         assert INTERACTIVE.name == "INTERACTIVE"
         assert ARBITER.name == "ARBITER"
+
+
+class TestProfileResolution:
+    def test_resolve_profile_happy_path(self) -> None:
+        """P14: Resolves valid names to profiles."""
+        assert resolve_profile("MINIMAL", default=FULL) is MINIMAL
+        assert resolve_profile("INTERACTIVE", default=MINIMAL) is INTERACTIVE
+
+    def test_resolve_profile_case_insensitive(self) -> None:
+        """P15: Resolves valid names regardless of case and whitespace."""
+        assert resolve_profile("minimal", default=FULL) is MINIMAL
+        assert resolve_profile("  aRBiTEr  ", default=FULL) is ARBITER
+
+    def test_resolve_profile_empty_string_returns_default(self) -> None:
+        """P16: Empty string or None returns default."""
+        assert resolve_profile("", default=FULL) is FULL
+        assert resolve_profile("   ", default=MINIMAL) is MINIMAL
+        assert resolve_profile(None, default=ARBITER) is ARBITER
+
+    def test_resolve_profile_invalid_type_raises(self) -> None:
+        """P17: Type coercion edge cases raise ValueError."""
+        with pytest.raises(ValueError, match="must be a string"):
+            resolve_profile(True, default=FULL)  # type: ignore
+
+        with pytest.raises(ValueError, match="must be a string"):
+            resolve_profile(42, default=FULL)  # type: ignore
+
+    def test_resolve_profile_unknown_name_raises(self) -> None:
+        """P18: Unknown names raise ValueError (fail-fast)."""
+        with pytest.raises(ValueError, match="Unknown render profile 'TYPO'"):
+            resolve_profile("TYPO", default=FULL)
+
+    def test_registry_is_immutable(self) -> None:
+        """P19: PROFILE_REGISTRY is immutable."""
+        with pytest.raises(TypeError):
+            PROFILE_REGISTRY["NEW"] = FULL  # type: ignore

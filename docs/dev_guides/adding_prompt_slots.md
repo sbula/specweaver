@@ -88,3 +88,38 @@ builder.add_context(
 ```
 
 If the active `RenderProfile` does not contain `PromptSlot.CONSOLIDATED_MEMORY` in its `active_slots`, the `add_context` call will safely ignore it, saving token budgets and eliminating unnecessary downstream I/O.
+
+## Registering New Profiles
+
+If you need a completely new profile for a specific orchestration flow, you must register it in the `PROFILE_REGISTRY` to make it resolvable dynamically from YAML configs.
+
+1. **Define the Profile:** Create your `RenderProfile` instance in `specweaver/core/flow/handlers/_profiles.py`.
+2. **Add to Registry:** Append your new profile to the `PROFILE_REGISTRY` tuple at the bottom of the file.
+
+```python
+# specweaver/core/flow/handlers/_profiles.py
+from types import MappingProxyType
+
+MY_NEW_PROFILE = RenderProfile(
+    name="MY_NEW_PROFILE",
+    active_slots=frozenset([PromptSlot.INSTRUCTIONS, PromptSlot.PLAN]),
+    order=(PromptSlot.INSTRUCTIONS, PromptSlot.PLAN)
+)
+
+PROFILE_REGISTRY = MappingProxyType(
+    {p.name.lower(): p for p in (
+        FULL,
+        MINIMAL,
+        # ...
+        MY_NEW_PROFILE, # Add it here!
+    )}
+)
+```
+
+By registering it here, users can seamlessly select it in their YAML steps:
+```yaml
+- action: "generate"
+  target: "code"
+  params:
+    render_profile: "my_new_profile"
+```

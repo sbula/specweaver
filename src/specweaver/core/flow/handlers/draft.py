@@ -9,7 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext, _now_iso
+from specweaver.core.flow.handlers.base import RunContext, _error_result, _now_iso
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -77,12 +77,17 @@ class DraftSpecHandler:
                 run_id=getattr(context, "run_id", "") or "",
             )
 
-        from specweaver.core.flow.handlers._profiles import INTERACTIVE
+        from specweaver.core.flow.handlers._profiles import INTERACTIVE, resolve_profile
+
+        try:
+            profile = resolve_profile(step.params.get("render_profile"), default=INTERACTIVE)
+        except ValueError as e:
+            return _error_result(str(e), started)
 
         base_prompt = await _build_base_prompt(
             context=context,
             instructions="",
-            profile=INTERACTIVE,
+            profile=profile,
         )
 
         drafter = Drafter(
@@ -138,6 +143,4 @@ class DraftSpecHandler:
                 artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
-            from specweaver.core.flow.handlers.base import _error_result
-
             return _error_result(f"Drafting failed: {exc}", started)

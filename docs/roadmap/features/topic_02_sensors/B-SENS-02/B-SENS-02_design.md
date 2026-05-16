@@ -73,42 +73,42 @@ Key constraints: Must be language-agnostic, must deduplicate nodes via Deep Sema
 | AD-13 | Soft Deletes (Tombstoning) | When a node's hash disappears (e.g., during Git branch switching), use `is_active=FALSE` instead of hard `DELETE` to preserve LLM-generated metadata if the branch returns. | No |
 | AD-14 | Flattened Closures | Inner functions (e.g., Python nested `def`) must be serialized inside their parent's body, not extracted as standalone nodes, to prevent graph pollution. | No |
 | AD-15 | Overload Ambiguity Fallback | If an edge target is ambiguous in dynamic languages (e.g., overloaded `execute`), the `CALLS` edge must link to the parent `DATA_STRUCTURE` rather than guessing the wrong `PROCEDURE`. | No |
-| AD-16 | KISS Principle Enforcement | The engine must use direct Python functions and `NetworkX`. Building complex PubSub event brokers or Observer patterns inside SF-1 is explicitly forbidden. | No |
+| AD-16 | KISS Principle Enforcement | The engine must use direct Python functions and `NetworkX`. Building complex PubSub event brokers or Observer patterns inside SF-01 is explicitly forbidden. | No |
 | AD-17 | Federated GraphRAG | Graphs are bounded per-microservice. Cross-repo linkage is achieved dynamically at query-time via `API_CONTRACT` URI nodes (`service://...`), preventing global DB lock contention. | No |
 
 ## Security & Red Team Mitigations
 
 | # | Vulnerability | Mitigation Strategy | Assigned Sub-Feature |
 |---|---------------|---------------------|----------------------|
-| RT-1 | **SQL Injection (AST Poisoning)** | 100% parameterized queries (`?` bindings) required for all inserts. Raw AST string concatenation is forbidden. | SF-1 |
-| RT-2 | **AST Bomb (Stack Overflow)** | Strict recursion depth bounds (e.g., `MAX_AST_DEPTH = 500`). Graceful failure with `is_partial=True` flag. | SF-3 & SF-4 |
-| RT-3 | **Ghost Node Spoofing** | Prioritize internal `D-SENS-01` topology resolution over package manifest resolution to prevent attackers from spoofing internal RPCs. | SF-2 |
-| RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` to allow smooth asynchronous background flushes to the database. | SF-2 |
-| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-1 |
-| RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-1 & SF-2 |
-| RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-1 |
-| RT-11 | **Stale Graph Boot Trap** | SF-3 MUST compare `A-SENS-01` file hashes against the DB on boot. Any mismatch triggers an immediate purge and re-parse of that file's subgraph. | SF-3 |
-| RT-12 | **Orphaned Node Accumulation** | Updating a modified file MUST trigger a hard reset (`DELETE FROM nodes WHERE file_id = X`) before inserting the new AST nodes to wipe deleted functions/ghosts. | SF-1 |
-| RT-13 | **Memory Bloat Eviction** | The in-memory `NetworkX` graph MUST be tied to the CLI process lifecycle. If running as a daemon, it MUST support an explicit `clear_cache()` command. | SF-1 |
-| RT-14 | **Declarative AST Crash** | The `OntologyMapper` MUST NOT assume files contain executable `PROCEDURE` nodes (e.g., TypeSpec/HCL2). It must map `API_CONTRACT` gracefully without throwing exceptions. | SF-1 |
-| RT-15 | **Syntax Error Poisoning** | `D-SENS-02` ASTs will contain `ERROR` nodes if code is half-written. The mapper MUST gracefully skip `ERROR` blocks rather than crashing the ingestion pipeline. | SF-1 |
-| RT-16 | **GraphML Path Traversal** | The `export_graph` path target MUST be explicitly sanitized and bounded strictly inside `workspace_root` to prevent `../../../etc/passwd` overwrites. | SF-1 |
-| RT-17 | **Centrality Math Collapse** | Internal NetworkX routing should use fast `INTEGER` node IDs for matrix math (Feature 3.38), restricting the massive string `semantic_hash` to external lookup dictionaries. | SF-1 & SF-2 |
-| RT-18 | **NetworkX Thread Contention** | NetworkX is not thread-safe. All in-memory `DiGraph` mutations (INSERT/DELETE) MUST be wrapped in a `threading.Lock()` to prevent fatal process crashes during parallel agent execution. | SF-1 |
-| RT-19 | **Auto-Generated Code Bloat** | The ingestion engine MUST skip files exceeding 1MB or containing known auto-generated headers (e.g., protobuf, minified JS) to prevent severe graph bloating and performance degradation. | SF-1 |
-| RT-20 | **Symlink Infinite Recursion** | The file scanner MUST explicitly ignore OS symlinks (`os.path.islink()`) to prevent `RecursionError` crashes caused by recursive directory loops. | SF-1 |
-| RT-21 | **Case-Insensitive Path Thrashing** | All `file_id` and import paths MUST be normalized (e.g., absolute and lowercased on Windows/Mac) to prevent OS capitalization changes from triggering massive ghost-deletions. | SF-1 |
-| RT-22 | **Serialization Infinite Loops** | Functions that serialize NetworkX subgraphs into Markdown strings for the LLM MUST maintain a `visited_nodes` set to break circular import cycles and prevent stringifier crashes. | SF-1 |
-| RT-23 | **AST Metadata Prompt Injection** | Data injected into `metadata JSON` from the AST MUST be sanitized to strip potential LLM hijack strings (e.g., `<|im_start|>`) hiding in developer comments. | SF-1 |
-| RT-24 | **OOM Memory Bombing** | Implementation of RT-19 (File size limits) MUST use `os.path.getsize(path)` to check the file size *before* opening the I/O stream, preventing massive 5GB files from triggering an Out-Of-Memory crash. | SF-1 |
-| RT-25 | **Metadata Black Hole Attack** | The `GraphNode` Pydantic model MUST enforce a strict 2KB limit on the dumped `metadata` JSON blob. Storing raw code or embeddings in metadata is strictly forbidden. | SF-1 |
-| RT-26 | **Namespace Prefix Spoofing** | ID prefixes MUST be deterministically prepended by the `GraphRepository` (reading `context.yaml`), NOT passed as a flexible argument by the AST parser, preventing agents from spoofing cross-service IDs. | SF-2 |
-| RT-27 | **Infinite Depth OOM Crash** | The `InMemoryGraphEngine` MUST enforce a hard-coded maximum depth (e.g., `max(requested, 5)`) on all subgraph extraction queries to prevent catastrophic enterprise-wide memory loads. | SF-1 |
-| RT-28 | **Standard Library Ghost Swarm** | The `OntologyMapper` MUST detect and silently drop `CALLS` edges pointing to native language standard libraries (e.g., `sys.stdlib_module_names`) to prevent millions of useless nodes. | SF-1 |
-| RT-29 | **Metadata Key Obfuscation** | The `metadata` JSON blob MUST be strictly validated via Pydantic Discriminated Unions per `NodeKind`. Unstructured `Dict[str, Any]` is forbidden. Unrecognized keys must be silently dropped to prevent data smuggling. | SF-1 |
-| RT-30 | **Local Context YAML Poisoning** | The Orchestrator MUST validate the local `context.yaml` `service_name` against the global `~/.specweaver/specweaver.db` registry on boot to prevent rogue agents from hijacking other microservice namespaces, before passing the validated name to the GraphRepository. | SF-3 |
-| RT-31 | **Parallel Query Exhaustion** | The `InMemoryGraphEngine` MUST use an async `Semaphore` to limit concurrent subgraph extractions (e.g., max 3) to prevent LLM loops from triggering an OOM crash via parallel `NetworkX` instances. | SF-1 |
-| RT-32 | **Polyglot Ghost Blindspot** | Language-specific AST parsers (`D-SENS-02`) MUST provide standard library exclusion Regexes (e.g., `^java\..*`) to the `OntologyMapper` because the Python `sys` module cannot identify Java/Go/Rust built-ins. | SF-1 |
+| RT-1 | **SQL Injection (AST Poisoning)** | 100% parameterized queries (`?` bindings) required for all inserts. Raw AST string concatenation is forbidden. | SF-01 |
+| RT-2 | **AST Bomb (Stack Overflow)** | Strict recursion depth bounds (e.g., `MAX_AST_DEPTH = 500`). Graceful failure with `is_partial=True` flag. | SF-03 & SF-04 |
+| RT-3 | **Ghost Node Spoofing** | Prioritize internal `D-SENS-01` topology resolution over package manifest resolution to prevent attackers from spoofing internal RPCs. | SF-02 |
+| RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` to allow smooth asynchronous background flushes to the database. | SF-02 |
+| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-01 |
+| RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-01 & SF-02 |
+| RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-01 |
+| RT-11 | **Stale Graph Boot Trap** | SF-03 MUST compare `A-SENS-01` file hashes against the DB on boot. Any mismatch triggers an immediate purge and re-parse of that file's subgraph. | SF-03 |
+| RT-12 | **Orphaned Node Accumulation** | Updating a modified file MUST trigger a hard reset (`DELETE FROM nodes WHERE file_id = X`) before inserting the new AST nodes to wipe deleted functions/ghosts. | SF-01 |
+| RT-13 | **Memory Bloat Eviction** | The in-memory `NetworkX` graph MUST be tied to the CLI process lifecycle. If running as a daemon, it MUST support an explicit `clear_cache()` command. | SF-01 |
+| RT-14 | **Declarative AST Crash** | The `OntologyMapper` MUST NOT assume files contain executable `PROCEDURE` nodes (e.g., TypeSpec/HCL2). It must map `API_CONTRACT` gracefully without throwing exceptions. | SF-01 |
+| RT-15 | **Syntax Error Poisoning** | `D-SENS-02` ASTs will contain `ERROR` nodes if code is half-written. The mapper MUST gracefully skip `ERROR` blocks rather than crashing the ingestion pipeline. | SF-01 |
+| RT-16 | **GraphML Path Traversal** | The `export_graph` path target MUST be explicitly sanitized and bounded strictly inside `workspace_root` to prevent `../../../etc/passwd` overwrites. | SF-01 |
+| RT-17 | **Centrality Math Collapse** | Internal NetworkX routing should use fast `INTEGER` node IDs for matrix math (Feature 3.38), restricting the massive string `semantic_hash` to external lookup dictionaries. | SF-01 & SF-02 |
+| RT-18 | **NetworkX Thread Contention** | NetworkX is not thread-safe. All in-memory `DiGraph` mutations (INSERT/DELETE) MUST be wrapped in a `threading.Lock()` to prevent fatal process crashes during parallel agent execution. | SF-01 |
+| RT-19 | **Auto-Generated Code Bloat** | The ingestion engine MUST skip files exceeding 1MB or containing known auto-generated headers (e.g., protobuf, minified JS) to prevent severe graph bloating and performance degradation. | SF-01 |
+| RT-20 | **Symlink Infinite Recursion** | The file scanner MUST explicitly ignore OS symlinks (`os.path.islink()`) to prevent `RecursionError` crashes caused by recursive directory loops. | SF-01 |
+| RT-21 | **Case-Insensitive Path Thrashing** | All `file_id` and import paths MUST be normalized (e.g., absolute and lowercased on Windows/Mac) to prevent OS capitalization changes from triggering massive ghost-deletions. | SF-01 |
+| RT-22 | **Serialization Infinite Loops** | Functions that serialize NetworkX subgraphs into Markdown strings for the LLM MUST maintain a `visited_nodes` set to break circular import cycles and prevent stringifier crashes. | SF-01 |
+| RT-23 | **AST Metadata Prompt Injection** | Data injected into `metadata JSON` from the AST MUST be sanitized to strip potential LLM hijack strings (e.g., `<|im_start|>`) hiding in developer comments. | SF-01 |
+| RT-24 | **OOM Memory Bombing** | Implementation of RT-19 (File size limits) MUST use `os.path.getsize(path)` to check the file size *before* opening the I/O stream, preventing massive 5GB files from triggering an Out-Of-Memory crash. | SF-01 |
+| RT-25 | **Metadata Black Hole Attack** | The `GraphNode` Pydantic model MUST enforce a strict 2KB limit on the dumped `metadata` JSON blob. Storing raw code or embeddings in metadata is strictly forbidden. | SF-01 |
+| RT-26 | **Namespace Prefix Spoofing** | ID prefixes MUST be deterministically prepended by the `GraphRepository` (reading `context.yaml`), NOT passed as a flexible argument by the AST parser, preventing agents from spoofing cross-service IDs. | SF-02 |
+| RT-27 | **Infinite Depth OOM Crash** | The `InMemoryGraphEngine` MUST enforce a hard-coded maximum depth (e.g., `max(requested, 5)`) on all subgraph extraction queries to prevent catastrophic enterprise-wide memory loads. | SF-01 |
+| RT-28 | **Standard Library Ghost Swarm** | The `OntologyMapper` MUST detect and silently drop `CALLS` edges pointing to native language standard libraries (e.g., `sys.stdlib_module_names`) to prevent millions of useless nodes. | SF-01 |
+| RT-29 | **Metadata Key Obfuscation** | The `metadata` JSON blob MUST be strictly validated via Pydantic Discriminated Unions per `NodeKind`. Unstructured `Dict[str, Any]` is forbidden. Unrecognized keys must be silently dropped to prevent data smuggling. | SF-01 |
+| RT-30 | **Local Context YAML Poisoning** | The Orchestrator MUST validate the local `context.yaml` `service_name` against the global `~/.specweaver/specweaver.db` registry on boot to prevent rogue agents from hijacking other microservice namespaces, before passing the validated name to the GraphRepository. | SF-03 |
+| RT-31 | **Parallel Query Exhaustion** | The `InMemoryGraphEngine` MUST use an async `Semaphore` to limit concurrent subgraph extractions (e.g., max 3) to prevent LLM loops from triggering an OOM crash via parallel `NetworkX` instances. | SF-01 |
+| RT-32 | **Polyglot Ghost Blindspot** | Language-specific AST parsers (`D-SENS-02`) MUST provide standard library exclusion Regexes (e.g., `^java\..*`) to the `OntologyMapper` because the Python `sys` module cannot identify Java/Go/Rust built-ins. | SF-01 |
 
 ## Developer Guides Required
 
@@ -151,7 +151,7 @@ For Monorepos (containing multiple microservices) or strongly modularized monoli
     *   **Internal Routing**: Subgraphs are isolated at query-time using the `package_name` or `service_name` properties on the `GraphNode`.
     *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g., `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the monolith is ever refactored or communicates with an external microservice.
 
-### SQLite Schema Contract (SF-2)
+### SQLite Schema Contract (SF-02)
 The `GraphRepository` MUST implement at least this baseline schema to prevent B-Tree fragmentation:
 *   `nodes` table: `(id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, name TEXT, semantic_hash TEXT UNIQUE, clone_hash TEXT, file_id TEXT, metadata JSON)`
 *   `edges` table: `(source_id INTEGER, target_id INTEGER, type TEXT, metadata JSON, PRIMARY KEY (source_id, target_id, type))`
@@ -161,7 +161,7 @@ The `GraphRepository` MUST implement at least this baseline schema to prevent B-
 To handle continuous codebase evolution (refactoring, file deletions, moving functions) without accumulating "Ghost Nodes" or duplicating data, the graph MUST adhere to this strict lifecycle:
 
 ### 1. The Cold Start (Boot)
-When SpecWeaver initializes, SF-2 reads the SQLite backup. It cross-references the stored `semantic_hash` of each file against the current filesystem (`A-SENS-01`). 
+When SpecWeaver initializes, SF-02 reads the SQLite backup. It cross-references the stored `semantic_hash` of each file against the current filesystem (`A-SENS-01`). 
 *   **Match:** The file's subgraph is safely loaded into the in-memory NetworkX engine.
 *   **Mismatch / Missing:** The file is flagged as `DIRTY` for re-ingestion.
 
@@ -174,7 +174,7 @@ When a file is flagged as `DIRTY`, the engine avoids rebuilding the entire file'
 5.  **Preserve (Unchanged):** If the hash matches (e.g., you just added a comment or a blank line elsewhere in the file), DO NOTHING. The existing node and all its inbound/outbound edges remain perfectly intact.
 
 ### 3. The Synchronization Cycle (Async Flush)
-Once the NetworkX graph is updated, SF-2 asynchronously pushes the new subgraphs to SQLite via an `UPSERT` operation, ensuring the persistent save-state matches memory.
+Once the NetworkX graph is updated, SF-02 asynchronously pushes the new subgraphs to SQLite via an `UPSERT` operation, ensuring the persistent save-state matches memory.
 
 ### 4. Handling Refactoring (Moving Functions)
 Because the Knowledge Graph relies on `semantic_hash` (A-SENS-01) as the unique identifier rather than arbitrary IDs, moving a function from `auth.py` to `utils.py` without changing its code preserves its hash. 
@@ -182,7 +182,7 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 
 ## Sub-Feature Breakdown
 
-### SF-1: In-Memory Knowledge Graph Engine & Enterprise Ontology
+### SF-01: In-Memory Knowledge Graph Engine & Enterprise Ontology
 - **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/graph/` (pure-logic). It is blind to the filesystem, the database, and the AST parser. It only accepts raw JSON dicts passed down from the orchestrator. Expands the ontology to capture macro-architectural boundaries as Edges. Exposes the read query API.
 - **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
 - **Inputs**: Raw JSON dictionaries (AST data, topology data) passed via orchestration.
@@ -190,15 +190,15 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Depends on**: none
 - **Impl Plan**: ⬜
 
-### SF-2: Persistent Storage Adapter (SQLite)
+### SF-02: Persistent Storage Adapter (SQLite)
 - **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely isolated from `config/` to keep structural graph data separate from application settings. Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the `NetworkX` graph.
 - **FRs**: [FR-3, FR-6]
 - **Inputs**: In-memory `NetworkX` graph.
 - **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/specweaver.db`.
-- **Depends on**: [SF-1]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
+- **Depends on**: [SF-01]
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf02_implementation_plan.md
 
-### SF-3: Graph Builder Orchestration & Harmonization
+### SF-03: Graph Builder Orchestration & Harmonization
 - **Scope**: Creates the new `src/specweaver/graph/core/builder/` (orchestrator) module to coordinate the new sensor triad. First, it implements the pipeline to extract the AST via a generic AST-to-Dict adapter (wrapping `workspace.parsers`), injecting this adapter into the `GraphBuilder` orchestrator at the CLI root to maintain strict domain boundaries. The orchestrator enforces ID Prefixing (e.g., `monolith:billing:ast:<hash>`) across the `InMemoryGraphEngine` and `graph_store/`.
   Second, it aggressively refactors the project's existing legacy graphs to use this exact same triad by establishing feature-specific graph sub-modules:
   1. **Topology Graph (`D-SENS-01`)**: Migrates pure graph math (Tarjan's, cycle detection) from `src/specweaver/assurance/graph/topology.py` into a new `specweaver.graph.topology` module. `assurance` delegates to this module for computation.
@@ -206,20 +206,20 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **FRs**: [FR-1, FR-6]
 - **Inputs**: File system paths, legacy graph generators.
 - **Outputs**: Harmonized pipeline orchestrating AST/Topology extraction into the SQLite DB.
-- **Depends on**: [SF-1, SF-2]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf3_implementation_plan.md
+- **Depends on**: [SF-01, SF-02]
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
-3. SF-3 (depends on SF-1, SF-2)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
+3. SF-03 (depends on SF-01, SF-02)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | In-Memory Graph Engine & Enterprise Ontology | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | In-Memory Graph Engine & Enterprise Ontology | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 ### Blueprint References
 - `tree-climber` repository: Kildall's iterative dataflow analysis framework (`RoundRobinSolver`) and Visitor Pattern (see `docs/analysis/B-SENS-02_tree_climber_analysis.md`).
 
@@ -268,42 +268,42 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 | AD-13 | Soft Deletes (Tombstoning) | When a node's hash disappears (e.g., during Git branch switching), use `is_active=FALSE` instead of hard `DELETE` to preserve LLM-generated metadata if the branch returns. | No |
 | AD-14 | Flattened Closures | Inner functions (e.g., Python nested `def`) must be serialized inside their parent's body, not extracted as standalone nodes, to prevent graph pollution. | No |
 | AD-15 | Overload Ambiguity Fallback | If an edge target is ambiguous in dynamic languages (e.g., overloaded `execute`), the `CALLS` edge must link to the parent `DATA_STRUCTURE` rather than guessing the wrong `PROCEDURE`. | No |
-| AD-16 | KISS Principle Enforcement | The engine must use direct Python functions and `NetworkX`. Building complex PubSub event brokers or Observer patterns inside SF-1 is explicitly forbidden. | No |
+| AD-16 | KISS Principle Enforcement | The engine must use direct Python functions and `NetworkX`. Building complex PubSub event brokers or Observer patterns inside SF-01 is explicitly forbidden. | No |
 | AD-17 | Federated GraphRAG | Graphs are bounded per-microservice. Cross-repo linkage is achieved dynamically at query-time via `API_CONTRACT` URI nodes (`service://...`), preventing global DB lock contention. | No |
 
 ## Security & Red Team Mitigations
 
 | # | Vulnerability | Mitigation Strategy | Assigned Sub-Feature |
 |---|---------------|---------------------|----------------------|
-| RT-1 | **SQL Injection (AST Poisoning)** | 100% parameterized queries (`?` bindings) required for all inserts. Raw AST string concatenation is forbidden. | SF-1 |
-| RT-2 | **AST Bomb (Stack Overflow)** | Strict recursion depth bounds (e.g., `MAX_AST_DEPTH = 500`). Graceful failure with `is_partial=True` flag. | SF-3 & SF-4 |
-| RT-3 | **Ghost Node Spoofing** | Prioritize internal `D-SENS-01` topology resolution over package manifest resolution to prevent attackers from spoofing internal RPCs. | SF-2 |
-| RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` to allow smooth asynchronous background flushes to the database. | SF-2 |
-| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-1 |
-| RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-1 & SF-2 |
-| RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-1 |
-| RT-11 | **Stale Graph Boot Trap** | SF-3 MUST compare `A-SENS-01` file hashes against the DB on boot. Any mismatch triggers an immediate purge and re-parse of that file's subgraph. | SF-3 |
-| RT-12 | **Orphaned Node Accumulation** | Updating a modified file MUST trigger a hard reset (`DELETE FROM nodes WHERE file_id = X`) before inserting the new AST nodes to wipe deleted functions/ghosts. | SF-1 |
-| RT-13 | **Memory Bloat Eviction** | The in-memory `NetworkX` graph MUST be tied to the CLI process lifecycle. If running as a daemon, it MUST support an explicit `clear_cache()` command. | SF-1 |
-| RT-14 | **Declarative AST Crash** | The `OntologyMapper` MUST NOT assume files contain executable `PROCEDURE` nodes (e.g., TypeSpec/HCL2). It must map `API_CONTRACT` gracefully without throwing exceptions. | SF-1 |
-| RT-15 | **Syntax Error Poisoning** | `D-SENS-02` ASTs will contain `ERROR` nodes if code is half-written. The mapper MUST gracefully skip `ERROR` blocks rather than crashing the ingestion pipeline. | SF-1 |
-| RT-16 | **GraphML Path Traversal** | The `export_graph` path target MUST be explicitly sanitized and bounded strictly inside `workspace_root` to prevent `../../../etc/passwd` overwrites. | SF-1 |
-| RT-17 | **Centrality Math Collapse** | Internal NetworkX routing should use fast `INTEGER` node IDs for matrix math (Feature 3.38), restricting the massive string `semantic_hash` to external lookup dictionaries. | SF-1 & SF-2 |
-| RT-18 | **NetworkX Thread Contention** | NetworkX is not thread-safe. All in-memory `DiGraph` mutations (INSERT/DELETE) MUST be wrapped in a `threading.Lock()` to prevent fatal process crashes during parallel agent execution. | SF-1 |
-| RT-19 | **Auto-Generated Code Bloat** | The ingestion engine MUST skip files exceeding 1MB or containing known auto-generated headers (e.g., protobuf, minified JS) to prevent severe graph bloating and performance degradation. | SF-1 |
-| RT-20 | **Symlink Infinite Recursion** | The file scanner MUST explicitly ignore OS symlinks (`os.path.islink()`) to prevent `RecursionError` crashes caused by recursive directory loops. | SF-1 |
-| RT-21 | **Case-Insensitive Path Thrashing** | All `file_id` and import paths MUST be normalized (e.g., absolute and lowercased on Windows/Mac) to prevent OS capitalization changes from triggering massive ghost-deletions. | SF-1 |
-| RT-22 | **Serialization Infinite Loops** | Functions that serialize NetworkX subgraphs into Markdown strings for the LLM MUST maintain a `visited_nodes` set to break circular import cycles and prevent stringifier crashes. | SF-1 |
-| RT-23 | **AST Metadata Prompt Injection** | Data injected into `metadata JSON` from the AST MUST be sanitized to strip potential LLM hijack strings (e.g., `<|im_start|>`) hiding in developer comments. | SF-1 |
-| RT-24 | **OOM Memory Bombing** | Implementation of RT-19 (File size limits) MUST use `os.path.getsize(path)` to check the file size *before* opening the I/O stream, preventing massive 5GB files from triggering an Out-Of-Memory crash. | SF-1 |
-| RT-25 | **Metadata Black Hole Attack** | The `GraphNode` Pydantic model MUST enforce a strict 2KB limit on the dumped `metadata` JSON blob. Storing raw code or embeddings in metadata is strictly forbidden. | SF-1 |
-| RT-26 | **Namespace Prefix Spoofing** | ID prefixes MUST be deterministically prepended by the `GraphRepository` (reading `context.yaml`), NOT passed as a flexible argument by the AST parser, preventing agents from spoofing cross-service IDs. | SF-2 |
-| RT-27 | **Infinite Depth OOM Crash** | The `InMemoryGraphEngine` MUST enforce a hard-coded maximum depth (e.g., `max(requested, 5)`) on all subgraph extraction queries to prevent catastrophic enterprise-wide memory loads. | SF-1 |
-| RT-28 | **Standard Library Ghost Swarm** | The `OntologyMapper` MUST detect and silently drop `CALLS` edges pointing to native language standard libraries (e.g., `sys.stdlib_module_names`) to prevent millions of useless nodes. | SF-1 |
-| RT-29 | **Metadata Key Obfuscation** | The `metadata` JSON blob MUST be strictly validated via Pydantic Discriminated Unions per `NodeKind`. Unstructured `Dict[str, Any]` is forbidden. Unrecognized keys must be silently dropped to prevent data smuggling. | SF-1 |
-| RT-30 | **Local Context YAML Poisoning** | The Orchestrator MUST validate the local `context.yaml` `service_name` against the global `~/.specweaver/specweaver.db` registry on boot to prevent rogue agents from hijacking other microservice namespaces, before passing the validated name to the GraphRepository. | SF-3 |
-| RT-31 | **Parallel Query Exhaustion** | The `InMemoryGraphEngine` MUST use an async `Semaphore` to limit concurrent subgraph extractions (e.g., max 3) to prevent LLM loops from triggering an OOM crash via parallel `NetworkX` instances. | SF-1 |
-| RT-32 | **Polyglot Ghost Blindspot** | Language-specific AST parsers (`D-SENS-02`) MUST provide standard library exclusion Regexes (e.g., `^java\..*`) to the `OntologyMapper` because the Python `sys` module cannot identify Java/Go/Rust built-ins. | SF-1 |
+| RT-1 | **SQL Injection (AST Poisoning)** | 100% parameterized queries (`?` bindings) required for all inserts. Raw AST string concatenation is forbidden. | SF-01 |
+| RT-2 | **AST Bomb (Stack Overflow)** | Strict recursion depth bounds (e.g., `MAX_AST_DEPTH = 500`). Graceful failure with `is_partial=True` flag. | SF-03 & SF-04 |
+| RT-3 | **Ghost Node Spoofing** | Prioritize internal `D-SENS-01` topology resolution over package manifest resolution to prevent attackers from spoofing internal RPCs. | SF-02 |
+| RT-4 | **SQLite Lock Contention** | Enable `PRAGMA journal_mode=WAL;` to allow smooth asynchronous background flushes to the database. | SF-02 |
+| RT-5 | **GraphML Info Leak** | Automatically append `*.graphml` to `.gitignore` upon generation to prevent proprietary architecture leaks. | SF-01 |
+| RT-6 | **Structural Hash Collision** | The experimental Structural Hash MUST be confined to a `clone_hash` column. Semantic Hash must remain the unique Primary Key. | SF-01 & SF-02 |
+| RT-8 | **Ghost Edge Stagnation** | Edge invalidation MUST be explicitly bi-directional. When a node is UPSERTED, all incoming AND outgoing edges must be wiped before recalculation. | SF-01 |
+| RT-11 | **Stale Graph Boot Trap** | SF-03 MUST compare `A-SENS-01` file hashes against the DB on boot. Any mismatch triggers an immediate purge and re-parse of that file's subgraph. | SF-03 |
+| RT-12 | **Orphaned Node Accumulation** | Updating a modified file MUST trigger a hard reset (`DELETE FROM nodes WHERE file_id = X`) before inserting the new AST nodes to wipe deleted functions/ghosts. | SF-01 |
+| RT-13 | **Memory Bloat Eviction** | The in-memory `NetworkX` graph MUST be tied to the CLI process lifecycle. If running as a daemon, it MUST support an explicit `clear_cache()` command. | SF-01 |
+| RT-14 | **Declarative AST Crash** | The `OntologyMapper` MUST NOT assume files contain executable `PROCEDURE` nodes (e.g., TypeSpec/HCL2). It must map `API_CONTRACT` gracefully without throwing exceptions. | SF-01 |
+| RT-15 | **Syntax Error Poisoning** | `D-SENS-02` ASTs will contain `ERROR` nodes if code is half-written. The mapper MUST gracefully skip `ERROR` blocks rather than crashing the ingestion pipeline. | SF-01 |
+| RT-16 | **GraphML Path Traversal** | The `export_graph` path target MUST be explicitly sanitized and bounded strictly inside `workspace_root` to prevent `../../../etc/passwd` overwrites. | SF-01 |
+| RT-17 | **Centrality Math Collapse** | Internal NetworkX routing should use fast `INTEGER` node IDs for matrix math (Feature 3.38), restricting the massive string `semantic_hash` to external lookup dictionaries. | SF-01 & SF-02 |
+| RT-18 | **NetworkX Thread Contention** | NetworkX is not thread-safe. All in-memory `DiGraph` mutations (INSERT/DELETE) MUST be wrapped in a `threading.Lock()` to prevent fatal process crashes during parallel agent execution. | SF-01 |
+| RT-19 | **Auto-Generated Code Bloat** | The ingestion engine MUST skip files exceeding 1MB or containing known auto-generated headers (e.g., protobuf, minified JS) to prevent severe graph bloating and performance degradation. | SF-01 |
+| RT-20 | **Symlink Infinite Recursion** | The file scanner MUST explicitly ignore OS symlinks (`os.path.islink()`) to prevent `RecursionError` crashes caused by recursive directory loops. | SF-01 |
+| RT-21 | **Case-Insensitive Path Thrashing** | All `file_id` and import paths MUST be normalized (e.g., absolute and lowercased on Windows/Mac) to prevent OS capitalization changes from triggering massive ghost-deletions. | SF-01 |
+| RT-22 | **Serialization Infinite Loops** | Functions that serialize NetworkX subgraphs into Markdown strings for the LLM MUST maintain a `visited_nodes` set to break circular import cycles and prevent stringifier crashes. | SF-01 |
+| RT-23 | **AST Metadata Prompt Injection** | Data injected into `metadata JSON` from the AST MUST be sanitized to strip potential LLM hijack strings (e.g., `<|im_start|>`) hiding in developer comments. | SF-01 |
+| RT-24 | **OOM Memory Bombing** | Implementation of RT-19 (File size limits) MUST use `os.path.getsize(path)` to check the file size *before* opening the I/O stream, preventing massive 5GB files from triggering an Out-Of-Memory crash. | SF-01 |
+| RT-25 | **Metadata Black Hole Attack** | The `GraphNode` Pydantic model MUST enforce a strict 2KB limit on the dumped `metadata` JSON blob. Storing raw code or embeddings in metadata is strictly forbidden. | SF-01 |
+| RT-26 | **Namespace Prefix Spoofing** | ID prefixes MUST be deterministically prepended by the `GraphRepository` (reading `context.yaml`), NOT passed as a flexible argument by the AST parser, preventing agents from spoofing cross-service IDs. | SF-02 |
+| RT-27 | **Infinite Depth OOM Crash** | The `InMemoryGraphEngine` MUST enforce a hard-coded maximum depth (e.g., `max(requested, 5)`) on all subgraph extraction queries to prevent catastrophic enterprise-wide memory loads. | SF-01 |
+| RT-28 | **Standard Library Ghost Swarm** | The `OntologyMapper` MUST detect and silently drop `CALLS` edges pointing to native language standard libraries (e.g., `sys.stdlib_module_names`) to prevent millions of useless nodes. | SF-01 |
+| RT-29 | **Metadata Key Obfuscation** | The `metadata` JSON blob MUST be strictly validated via Pydantic Discriminated Unions per `NodeKind`. Unstructured `Dict[str, Any]` is forbidden. Unrecognized keys must be silently dropped to prevent data smuggling. | SF-01 |
+| RT-30 | **Local Context YAML Poisoning** | The Orchestrator MUST validate the local `context.yaml` `service_name` against the global `~/.specweaver/specweaver.db` registry on boot to prevent rogue agents from hijacking other microservice namespaces, before passing the validated name to the GraphRepository. | SF-03 |
+| RT-31 | **Parallel Query Exhaustion** | The `InMemoryGraphEngine` MUST use an async `Semaphore` to limit concurrent subgraph extractions (e.g., max 3) to prevent LLM loops from triggering an OOM crash via parallel `NetworkX` instances. | SF-01 |
+| RT-32 | **Polyglot Ghost Blindspot** | Language-specific AST parsers (`D-SENS-02`) MUST provide standard library exclusion Regexes (e.g., `^java\..*`) to the `OntologyMapper` because the Python `sys` module cannot identify Java/Go/Rust built-ins. | SF-01 |
 
 ## Developer Guides Required
 
@@ -346,7 +346,7 @@ For Monorepos (containing multiple microservices) or strongly modularized monoli
     *   **Internal Routing**: Subgraphs are isolated at query-time using the `package_name` or `service_name` properties on the `GraphNode`.
     *   **ID Prefixing Still Applies**: Even in a single-DB monolith, the ID prefixing rule (e.g., `monolith:billing:ast:123`) is strictly enforced to ensure the IDs are globally safe if the monolith is ever refactored or communicates with an external microservice.
 
-### SQLite Schema Contract (SF-2)
+### SQLite Schema Contract (SF-02)
 The `GraphRepository` MUST implement at least this baseline schema to prevent B-Tree fragmentation:
 *   `nodes` table: `(id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, name TEXT, semantic_hash TEXT UNIQUE, clone_hash TEXT, file_id TEXT, metadata JSON)`
 *   `edges` table: `(source_id INTEGER, target_id INTEGER, type TEXT, metadata JSON, PRIMARY KEY (source_id, target_id, type))`
@@ -356,7 +356,7 @@ The `GraphRepository` MUST implement at least this baseline schema to prevent B-
 To handle continuous codebase evolution (refactoring, file deletions, moving functions) without accumulating "Ghost Nodes" or duplicating data, the graph MUST adhere to this strict lifecycle:
 
 ### 1. The Cold Start (Boot)
-When SpecWeaver initializes, SF-2 reads the SQLite backup. It cross-references the stored `semantic_hash` of each file against the current filesystem (`A-SENS-01`). 
+When SpecWeaver initializes, SF-02 reads the SQLite backup. It cross-references the stored `semantic_hash` of each file against the current filesystem (`A-SENS-01`). 
 *   **Match:** The file's subgraph is safely loaded into the in-memory NetworkX engine.
 *   **Mismatch / Missing:** The file is flagged as `DIRTY` for re-ingestion.
 
@@ -369,7 +369,7 @@ When a file is flagged as `DIRTY`, the engine avoids rebuilding the entire file'
 5.  **Preserve (Unchanged):** If the hash matches (e.g., you just added a comment or a blank line elsewhere in the file), DO NOTHING. The existing node and all its inbound/outbound edges remain perfectly intact.
 
 ### 3. The Synchronization Cycle (Async Flush)
-Once the NetworkX graph is updated, SF-2 asynchronously pushes the new subgraphs to SQLite via an `UPSERT` operation, ensuring the persistent save-state matches memory.
+Once the NetworkX graph is updated, SF-02 asynchronously pushes the new subgraphs to SQLite via an `UPSERT` operation, ensuring the persistent save-state matches memory.
 
 ### 4. Handling Refactoring (Moving Functions)
 Because the Knowledge Graph relies on `semantic_hash` (A-SENS-01) as the unique identifier rather than arbitrary IDs, moving a function from `auth.py` to `utils.py` without changing its code preserves its hash. 
@@ -377,7 +377,7 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 
 ## Sub-Feature Breakdown
 
-### SF-1: In-Memory Knowledge Graph Engine & Enterprise Ontology
+### SF-01: In-Memory Knowledge Graph Engine & Enterprise Ontology
 - **Scope**: Parses AST dictionaries via the `OntologyMapper`, applies semantic hashes, and builds the primary in-memory `NetworkX` graph. Resides entirely in `src/specweaver/graph/` (pure-logic). It is blind to the filesystem, the database, and the AST parser. It only accepts raw JSON dicts passed down from the orchestrator. Expands the ontology to capture macro-architectural boundaries as Edges. Exposes the read query API.
 - **FRs**: [FR-1, FR-2, FR-6, FR-7, EXP-1]
 - **Inputs**: Raw JSON dictionaries (AST data, topology data) passed via orchestration.
@@ -385,15 +385,15 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Depends on**: none
 - **Impl Plan**: ⬜
 
-### SF-2: Persistent Storage Adapter (SQLite)
+### SF-02: Persistent Storage Adapter (SQLite)
 - **Scope**: Creates the new `src/specweaver/graph_store/` (adapter) module. This is completely isolated from `config/` to keep structural graph data separate from application settings. Implements the `GraphRepository` adapter. Promotes `service_name` and `package_name` to explicit, indexed DB columns to prevent Context Window collapse. Handles asynchronous flush/load of the `NetworkX` graph.
 - **FRs**: [FR-3, FR-6]
 - **Inputs**: In-memory `NetworkX` graph.
 - **Outputs**: `ProjectDatabase` SQLite connection object targeting `.specweaver/specweaver.db`.
-- **Depends on**: [SF-1]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf2_implementation_plan.md
+- **Depends on**: [SF-01]
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf02_implementation_plan.md
 
-### SF-3: Graph Builder Orchestration & Harmonization
+### SF-03: Graph Builder Orchestration & Harmonization
 - **Scope**: Creates the new `src/specweaver/graph/core/builder/` (orchestrator) module to coordinate the new sensor triad. First, it implements the pipeline to extract the AST via a generic AST-to-Dict adapter (wrapping `workspace.parsers`), injecting this adapter into the `GraphBuilder` orchestrator at the CLI root to maintain strict domain boundaries. The orchestrator enforces ID Prefixing (e.g., `monolith:billing:ast:<hash>`) across the `InMemoryGraphEngine` and `graph_store/`.
   Second, it aggressively refactors the project's existing legacy graphs to use this exact same triad by establishing feature-specific graph sub-modules:
   1. **Topology Graph (`D-SENS-01`)**: Migrates pure graph math (Tarjan's, cycle detection) from `src/specweaver/assurance/graph/topology.py` into a new `specweaver.graph.topology` module. `assurance` delegates to this module for computation.
@@ -401,28 +401,28 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **FRs**: [FR-1, FR-6]
 - **Inputs**: File system paths, legacy graph generators.
 - **Outputs**: Harmonized pipeline orchestrating AST/Topology extraction into the SQLite DB.
-- **Depends on**: [SF-1, SF-2]
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf3_implementation_plan.md
+- **Depends on**: [SF-01, SF-02]
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf03_implementation_plan.md
 - **Technical Debt Spawns**:
   - `TECH-02`: Structural Refactoring of Workspace AST Module (Extracting `workspace.parsers` to `workspace.ast.parsers`).
   - `TECH-03`: Architectural Analysis & Refactoring of `sw graph build` CLI (Moving orchestration to `GraphBuildAtom`).
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
-3. SF-3 (depends on SF-1, SF-2)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
+3. SF-03 (depends on SF-01, SF-02)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | In-Memory Graph Engine & Enterprise Ontology | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Persistent Storage Adapter | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Graph Builder Orchestration & Harmonization | SF-1, SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | In-Memory Graph Engine & Enterprise Ontology | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Persistent Storage Adapter | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Graph Builder Orchestration & Harmonization | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-3 Commit Boundary 3 and Commit Boundary 4 are **COMPLETED**.
+**Current status**: SF-03 Commit Boundary 3 and Commit Boundary 4 are **COMPLETED**.
 **Next step**: 
 1. Proceed to the next feature in the active routing queue.

@@ -21,7 +21,7 @@ Feature E-INTL-02 introduces the interactive Human-In-The-Loop Spec Drafting orc
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Spec Drafting & Spec Review | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Spec Drafting & Spec Review | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

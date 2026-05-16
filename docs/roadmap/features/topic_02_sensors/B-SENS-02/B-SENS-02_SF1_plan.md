@@ -1,6 +1,6 @@
-# Implementation Plan: B-SENS-02 [SF-1: In-Memory Graph Engine & Enterprise Ontology]
+# Implementation Plan: B-SENS-02 [SF-01: In-Memory Graph Engine & Enterprise Ontology]
 - **Feature ID**: B-SENS-02
-- **Sub-Feature**: SF-1 — In-Memory Graph Engine & Enterprise Ontology
+- **Sub-Feature**: SF-01 — In-Memory Graph Engine & Enterprise Ontology
 - **Design Document**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_design.md
 - **Status**: APPROVED
 
@@ -37,7 +37,7 @@ src/specweaver/graph/
 
 ---
 
-## File Manifest for SF-1 Execution
+## File Manifest for SF-01 Execution
 
 ### 1. `src/specweaver/graph/` (The Bounded Context)
 *   `[x]` `src/specweaver/graph/context.yaml`

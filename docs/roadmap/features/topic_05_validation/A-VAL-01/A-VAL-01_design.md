@@ -67,57 +67,57 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Sub-Feature Breakdown
 
-### SF-1: ProtocolSchemaInterface & YAML Parsers
+### SF-01: ProtocolSchemaInterface & YAML Parsers
 - **Scope**: Creates the `commons/protocol` core boundaries and implements YAML-based extractors.
 - **FRs**: [FR-1, FR-3]
 - **Inputs**: OpenAPI / AsyncAPI raw file content 
 - **Outputs**: Normalized Protocol Schema DTOs (Endpoints, Messages)
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf01_implementation_plan.md
 
-### SF-2: gRPC Protobuf Parser
+### SF-02: gRPC Protobuf Parser
 - **Scope**: Adds `.proto` parsing capabilities extending the `ProtocolSchemaInterface`.
 - **FRs**: [FR-2]
 - **Inputs**: raw `.proto` definitions
 - **Outputs**: Normalized Protocol Schema DTOs mapped from RPC services
-- **Depends on**: [SF-1]
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf2_implementation_plan.md
+- **Depends on**: [SF-01]
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf02_implementation_plan.md
 
-### SF-3: Core Flow Engine Alignment (Atom/Tool)
+### SF-03: Core Flow Engine Alignment (Atom/Tool)
 - **Scope**: Exposes the schema extractors securely to the Validation and Review layer via Engine Atoms.
 - **FRs**: [FR-4]
 - **Inputs**: File intents from LLM adapters
 - **Outputs**: Extracted Schema Nodes returned to orchestrator context
-- **Depends on**: [SF-1, SF-2]
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf3_implementation_plan.md
+- **Depends on**: [SF-01, SF-02]
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf03_implementation_plan.md
 
-### SF-4: Contract Drift Validation Rules
+### SF-04: Contract Drift Validation Rules
 - **Scope**: Connects `ValidationEngine` Rules (e.g. `C13_Contract_Drift.py`) to mathematically assert backend code matches Protocol payloads.
 - **FRs**: [FR-5]
 - **Inputs**: AST Code nodes and Protocol Schema nodes
 - **Outputs**: Validation Findings (PASS or ERROR)
-- **Depends on**: [SF-3]
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf4_implementation_plan.md
+- **Depends on**: [SF-03]
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/A-VAL-01/A-VAL-01_sf04_implementation_plan.md
 
 ## Execution Order
 
 Topological sort.
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends only on SF-1)
-3. SF-3 (depends on SF-1 and SF-2)
-4. SF-4 (depends on SF-3)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends only on SF-01)
+3. SF-03 (depends on SF-01 and SF-02)
+4. SF-04 (depends on SF-03)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | ProtocolSchemaInterface & YAML Parsers | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | gRPC Protobuf Parser | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Core Flow Engine Alignment (Atom/Tool) | SF-1, SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Contract Drift Validation Rules | SF-3 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-01 | ProtocolSchemaInterface & YAML Parsers | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | gRPC Protobuf Parser | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Core Flow Engine Alignment (Atom/Tool) | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-04 | Contract Drift Validation Rules | SF-03 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-4 Completed ✅. Feature 3.31 has been perfectly integrated and validated mathematically by the AST Engine!
+**Current status**: SF-04 Completed ✅. Feature 3.31 has been perfectly integrated and validated mathematically by the AST Engine!
 **Next step**: Run `git commit` and trigger Phase 4 roadmap.
 in any row and resume from there using the appropriate workflow.

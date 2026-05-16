@@ -64,33 +64,33 @@ None.
 
 ## Sub-Feature Breakdown
 
-### SF-1: Workspace AST Directory Migration
+### SF-01: Workspace AST Directory Migration
 - **Scope**: Moves `src/specweaver/workspace/ast/parsers` and `src/specweaver/workspace/ast/adapters` (along with their corresponding `tests/unit/workspace/...` directories) into the new `workspace/ast/` boundary.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: Existing directory structures.
 - **Outputs**: Relocated source and test directories, updated `context.yaml` definitions (e.g. `name: ast.parsers`), and new explicit `tach.toml` interface boundaries.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-02/TECH-02_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-02/TECH-02_sf01_implementation_plan.md
 
-### SF-2: Global Import Harmonization
+### SF-02: Global Import Harmonization
 - **Scope**: Updates all `context.yaml` boundaries and `.py` module imports across the codebase (`assurance`, `flow`, `loom`, `llm`, `tests`) to point to the new `workspace.ast` boundary.
 - **FRs**: [FR-3]
-- **Inputs**: Updated namespace boundaries from SF-1.
+- **Inputs**: Updated namespace boundaries from SF-01.
 - **Outputs**: Mass regex search-and-replace completing the architectural decoupling.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-02/TECH-02_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-02/TECH-02_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Workspace AST Directory Migration | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Global Import Harmonization | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Workspace AST Directory Migration | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Global Import Harmonization | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

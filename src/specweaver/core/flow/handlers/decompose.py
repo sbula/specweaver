@@ -9,7 +9,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import RunContext, StepHandler
+from specweaver.core.flow.handlers.base import RunContext, StepHandler, _error_result, _now_iso
 from specweaver.workflows.planning.decomposer import FeatureDecomposer
 
 if TYPE_CHECKING:
@@ -23,6 +23,7 @@ class DecomposeFeatureHandler(StepHandler):
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.info("Executing DECOMPOSE FEATURE for %s", context.run_id)
+        started = _now_iso()
 
         try:
             # Reconstruct the feature name from step params if passed, or derived
@@ -38,11 +39,16 @@ class DecomposeFeatureHandler(StepHandler):
             if context.spec_path.exists():
                 spec_content = context.spec_path.read_text(encoding="utf-8")
 
-            from specweaver.core.flow.handlers._profiles import MINIMAL
+            from specweaver.core.flow.handlers._profiles import MINIMAL, resolve_profile
             from specweaver.core.flow.handlers.base import _build_base_prompt
 
+            try:
+                profile = resolve_profile(step.params.get("render_profile"), default=MINIMAL)
+            except ValueError as e:
+                return _error_result(str(e), started)
+
             base_prompt = await _build_base_prompt(
-                context, instructions="", profile=MINIMAL
+                context, instructions="", profile=profile
             )
 
             plan = await decomposer.decompose(

@@ -65,83 +65,97 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Sub-Feature Breakdown
 
-### SF-1: Core Flow DB Integration
+### SF-01: Core Flow DB Integration
 - **Scope**: Implements the persistent handshake from validation output to configuration state.
 - **FRs**: [FR-1, FR-2, FR-3]
 - **Inputs**: Validation Engine `RuleResult` findings via `ValidateSpecHandler`.
 - **Outputs**: Stateful SQLite records accessible to `GenerateCodeHandler`.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_sf01_implementation_plan.md
 
-### SF-2: Security Defenses Integration (Pending Design)
+### SF-02: Security Defenses Integration (Pending Design)
 - **Scope**: Token-Burn Circuit Breakers (EDoS Prevention) integration contract.
 - **FRs**: [FR-1: Record aggregate token usage per `run_id`, FR-2: Halt execution and throw `CircuitBreakerException` if budget exceeded]
 - **Inputs**: Token usage metrics from `LLMAdapter` responses.
 - **Outputs**: `CircuitBreakerEvent` logged to the Config DB; Pipeline halts securely.
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **Impl Plan**: ⬜
 
-### SF-3: Parallel Multi-Spec Execution Integration (✅ Integrated)
+### SF-03: Parallel Multi-Spec Execution Integration (✅ Integrated)
 - **Scope**: Multi-Spec Pipeline Fan-Out integration contract.
 - **FRs**: [FR-1: Support hierarchical state tracking via `parent_id`, FR-2: Aggregate validation findings from all fan-out sub-runs]
 - **Inputs**: Array of Spec Targets triggering a `fan_out` pipeline action.
 - **Outputs**: Hierarchical `ArtifactEvent` records in the DB; aggregated `StepResult`.
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **Impl Plan**: ✅
 
-### SF-4: Context Mention Highlighting Integration (✅ Integrated)
+### SF-04: Context Mention Highlighting Integration (✅ Integrated)
 - **Scope**: Auto Spec-Mention Detection integration contract.
 - **FRs**: [FR-1: Query Config DB for verified state of Spec Mentions, FR-2: Append retrieved state as supplementary context into `RunContext`]
 - **Inputs**: List of mentioned Spec IDs detected by the Topology Graph.
 - **Outputs**: Sanitized context string containing the state of the mentioned specs injected into the prompt.
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **Impl Plan**: ✅
 
-### SF-5: Advanced Routing & Conditional Flows Integration (Pending Design)
+### SF-05: Advanced Routing & Conditional Flows Integration (Pending Design)
 - **Scope**: Deferred Router Mapping & Interactive Gate Variables integration contract.
 - **FRs**: [FR-1: Persist pipeline suspension states (`GATE_PENDING`, etc.), FR-2: Serialize `RunContext` to DB and terminate thread, FR-3: Restore `RunContext` from DB on resume trigger]
 - **Inputs**: `GateDefinition` rules; CLI/API approval events.
 - **Outputs**: Suspended pipeline state records; Restored execution threads.
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **Impl Plan**: ⬜
 
-### SF-6: Infinite Memory Management Integration (Pending Design)
+### SF-06: Infinite Memory Management Integration (Pending Design)
 - **Scope**: Conversation Summarization (Token compression) integration contract.
 - **FRs**: [FR-1: Trigger summarization handler when token count exceeds threshold, FR-2: Persist compressed summary and mark raw history events as `ARCHIVED`]
 - **Inputs**: Token count metrics from `RunContext`; Raw history array.
 - **Outputs**: Compressed `SummaryContext` injected into future steps; `ARCHIVED` status applied to old DB records.
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 - **Impl Plan**: ⬜
 
-### SF-7: Remote UI Integration (Pending Design)
+### SF-07: Remote UI Integration (Pending Design)
 - **Scope**: REST API - Enterprise Configuration integration contract.
 - **FRs**: [FR-1: Expose structured query boundaries for REST API fetching without executing Runner logic, FR-2: Flush real-time progress events to DB]
 - **Inputs**: HTTP GET requests from the UI.
 - **Outputs**: Read-only JSON serialization of `ArtifactEvent` and `ValidationResult` states.
-- **Depends on**: SF-1
+- **Depends on**: SF-01
+- **Impl Plan**: ⬜
+
+### SF-08: Configurable Prompt Render Profiles Integration
+- **Scope**: Integrating C-INTL-05 `RenderProfile` capabilities into the pipeline orchestration layer via Step Parameter Injection and a `ProfileRegistry`.
+- **FRs**: [FR-1: Expose `render_profile` in `PipelineStep.params`, FR-2: Provide a `ProfileRegistry` to resolve named profiles, FR-3: Update Handlers to resolve dynamic profiles before fallback.]
+- **Inputs**: `PipelineStep` params dictionary; `ProfileRegistry` mapping.
+- **Outputs**: Handlers executing with the dynamically resolved `RenderProfile`.
+- **Depends on**: SF-01
+- **Impl Plan**: ✅
+
+### SF-09: Declarative Dynamic Prompt Routing Integration (Pending Design)
+- **Scope**: B-INTL-10 Declarative Prompt Optimization (DSPy-style routing) integration contract.
+- **Depends on**: SF-01
 - **Impl Plan**: ⬜
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 through SF-7 can run in parallel (all depend on SF-1)
+1. SF-01 (no deps — start immediately)
+2. SF-02 through SF-09 can run in parallel (all depend on SF-01)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Core Flow DB Integration | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-2 | Security Defenses Integration | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-3 | Parallel Multi-Spec Execution | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Context Mention Highlighting | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-5 | Advanced Routing & Conditional Flows | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-6 | Infinite Memory Management | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-7 | Remote UI Integration | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Core Flow DB Integration | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Security Defenses Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Parallel Multi-Spec Execution | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-04 | Context Mention Highlighting | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-05 | Advanced Routing & Conditional Flows | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-06 | Infinite Memory Management | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-07 | Remote UI Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-08 | Configurable Prompt Render Profiles Integration | SF-01 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-09 | Declarative Dynamic Prompt Routing Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED.
-**Next step**: Run:
-`/implementation-plan docs/roadmap/features/topic_08_integration/INT-US-04/INT-US-04_design.md SF-1`
+**Current status**: Impl Plan APPROVED.
+**Next step**: Run `/dev` for SF-08 implementation.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

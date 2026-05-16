@@ -118,32 +118,7 @@ class ReviewSpecHandler:
                 tool_dispatcher=_build_tool_dispatcher(context, role="reviewer"),
             )
 
-            def on_tool_round(round_num: int, messages: list[Message]) -> None:
-                from specweaver.infrastructure.llm.mention_scanner.scanner import extract_mentions
-                from specweaver.infrastructure.llm.models import Message, Role
 
-                last_msg = messages[-1]
-                if last_msg.role == Role.ASSISTANT:
-                    candidates = extract_mentions(last_msg.content)
-                    if candidates:
-                        resolved = _resolve_mentions(
-                            candidates,
-                            context.project_path,
-                            workspace_roots=(
-                                [context.project_path / r for r in context.workspace_roots]
-                                if context.workspace_roots
-                                else None
-                            ),
-                        )
-                        if resolved:
-                            for r in resolved:
-                                with contextlib.suppress(OSError):
-                                    messages.append(
-                                        Message(
-                                            role=Role.USER,
-                                            content=f"Auto-resolved file `{r.original}`:\\n\\n```\\n{r.resolved_path.read_text('utf-8')}\\n```",
-                                        )
-                                    )
 
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
@@ -156,12 +131,17 @@ class ReviewSpecHandler:
                 targets.extend(context.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
-            from specweaver.core.flow.handlers._profiles import FULL
+            from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
             from specweaver.core.flow.handlers.base import _build_base_prompt
             from specweaver.workflows.review.reviewer import SPEC_REVIEW_INSTRUCTIONS
 
+            try:
+                profile = resolve_profile(step.params.get("render_profile"), default=FULL)
+            except ValueError as e:
+                return _error_result(str(e), started)
+
             base_prompt = await _build_base_prompt(
-                context, SPEC_REVIEW_INSTRUCTIONS, profile=FULL, skeleton_files=s_files
+                context, SPEC_REVIEW_INSTRUCTIONS, profile=profile, skeleton_files=s_files
             )
             if context.topology:
                 base_prompt.add_topology([context.topology])
@@ -170,7 +150,7 @@ class ReviewSpecHandler:
                 context.spec_path,
                 base_prompt=base_prompt,
                 mentioned_files=_get_prior_mentions(context),
-                on_tool_round=on_tool_round,
+                on_tool_round=lambda rn, msgs: self._inject_mentions(rn, msgs, context),
                 environment_context=mcp_env,
             )
             logger.info(
@@ -197,6 +177,35 @@ class ReviewSpecHandler:
         except Exception as exc:
             logger.exception("ReviewSpecHandler: unhandled exception during spec review")
             return _error_result(str(exc), started)
+
+    def _inject_mentions(self, round_num: int, messages: list[Any], context: RunContext) -> None:
+        import contextlib
+
+        from specweaver.infrastructure.llm.mention_scanner.scanner import extract_mentions
+        from specweaver.infrastructure.llm.models import Message, Role
+
+        last_msg = messages[-1]
+        if last_msg.role == Role.ASSISTANT:
+            candidates = extract_mentions(last_msg.content)
+            if candidates:
+                resolved = _resolve_mentions(
+                    candidates,
+                    context.project_path,
+                    workspace_roots=(
+                        [context.project_path / r for r in context.workspace_roots]
+                        if context.workspace_roots
+                        else None
+                    ),
+                )
+                if resolved:
+                    for r in resolved:
+                        with contextlib.suppress(OSError):
+                            messages.append(
+                                Message(
+                                    role=Role.USER,
+                                    content=f"Auto-resolved file `{r.original}`:\n\n```\n{r.resolved_path.read_text('utf-8')}\n```",
+                                )
+                            )
 
 
 class ReviewCodeHandler:
@@ -266,12 +275,17 @@ class ReviewCodeHandler:
                 targets.append(str(code_path))
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
-            from specweaver.core.flow.handlers._profiles import FULL
+            from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
             from specweaver.core.flow.handlers.base import _build_base_prompt
             from specweaver.workflows.review.reviewer import CODE_REVIEW_INSTRUCTIONS
 
+            try:
+                profile = resolve_profile(step.params.get("render_profile"), default=FULL)
+            except ValueError as e:
+                return _error_result(str(e), started)
+
             base_prompt = await _build_base_prompt(
-                context, CODE_REVIEW_INSTRUCTIONS, profile=FULL, skeleton_files=s_files
+                context, CODE_REVIEW_INSTRUCTIONS, profile=profile, skeleton_files=s_files
             )
             if context.topology:
                 base_prompt.add_topology([context.topology])

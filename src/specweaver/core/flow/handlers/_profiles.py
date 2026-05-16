@@ -12,7 +12,14 @@ Usage by handlers::
     base_prompt = await _build_base_prompt(context, instructions, profile=FULL)
 """
 
+import logging
+from types import MappingProxyType
+from typing import Any
+
 from specweaver.infrastructure.llm._prompt_profiles import PromptSlot, RenderProfile
+
+logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Standard rendering order (matches current hardcoded sequence in
@@ -96,3 +103,50 @@ ARBITER = RenderProfile(
 )
 """Arbiter profile — instructions + context only.
 Used by the ArbitrateVerdictHandler for minimal, focused arbitration."""
+
+# ---------------------------------------------------------------------------
+# Profile Registry and Resolution (FR-2, FR-3)
+# ---------------------------------------------------------------------------
+
+PROFILE_REGISTRY: MappingProxyType[str, RenderProfile] = MappingProxyType(
+    {
+        "FULL": FULL,
+        "MINIMAL": MINIMAL,
+        "INTERACTIVE": INTERACTIVE,
+        "ARBITER": ARBITER,
+    }
+)
+"""Immutable registry mapping string identifiers to RenderProfile objects."""
+
+
+def resolve_profile(name: Any, default: RenderProfile) -> RenderProfile:
+    """Resolve a dynamic string identifier to a RenderProfile object.
+
+    Args:
+        name: The profile name requested (e.g., from step.params).
+        default: The fallback profile to use if name is not provided or empty.
+
+    Returns:
+        The resolved RenderProfile object.
+
+    Raises:
+        ValueError: If name is not a string, or if it is an unknown profile.
+    """
+    if name is None:
+        return default
+
+    if not isinstance(name, str):
+        raise ValueError(f"Profile name must be a string, got {type(name).__name__}")
+
+    stripped = name.strip()
+    if not stripped:
+        return default
+
+    normalized = stripped.upper()
+    if normalized in PROFILE_REGISTRY:
+        profile = PROFILE_REGISTRY[normalized]
+        logger.info("Profile override: '%s' -> %s", name, profile.name)
+        return profile
+
+    valid_profiles = sorted(PROFILE_REGISTRY.keys())
+    raise ValueError(f"Unknown render profile '{name}'. Valid profiles: {valid_profiles}")

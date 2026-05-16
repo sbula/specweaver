@@ -24,7 +24,7 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
     *   **Existing Features Profit:** Phase 3.30 (Macro Evaluator) and Phase 3.32a (Context Condensation) will inherit a much more robust and unified text-mutation engine.
 *   **Cons:**
     *   Requires touching all existing stable parsers, meaning we must run the full polyglot AST integration test suite to verify no regressions occur during the migration.
-*   **Recommendation:** This refactoring should be **SF-1**. It perfectly aligns with the `pure-logic` archetype of the `workspace/ast/parsers` module and provides immense architectural leverage for this feature and all future language expansions.
+*   **Recommendation:** This refactoring should be **SF-01**. It perfectly aligns with the `pure-logic` archetype of the `workspace/ast/parsers` module and provides immense architectural leverage for this feature and all future language expansions.
 
 ---
 
@@ -52,15 +52,15 @@ Before adding 4 new parsers (C, C++, Go, SQL), we should extract a `BaseTreeSitt
 
 | Sub-Feature | ID | Dependencies | Impl Plan | Dev | Pre-Commit | Committed |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| **AST Base Class Refactoring** | SF-1 | None | ✅ | ✅ | ✅ | ✅ |
-| **Markdown Parser Completion** | SF-2 | SF-1 | ✅ | ✅ | ✅ | ✅ |
-| **C/C++ Parser Implementation** | SF-3 | SF-1 | ✅ | ✅ | ✅ | ✅ |
-| **Go Parser Implementation** | SF-4 | SF-1 | ✅ | ✅ | ✅ | ✅ |
-| **SQL Parser Implementation** | SF-5 | SF-1 | ✅ | ✅ | ✅ | ⬜ |
+| **AST Base Class Refactoring** | SF-01 | None | ✅ | ✅ | ✅ | ✅ |
+| **Markdown Parser Completion** | SF-02 | SF-01 | ✅ | ✅ | ✅ | ✅ |
+| **C/C++ Parser Implementation** | SF-03 | SF-01 | ✅ | ✅ | ✅ | ✅ |
+| **Go Parser Implementation** | SF-04 | SF-01 | ✅ | ✅ | ✅ | ✅ |
+| **SQL Parser Implementation** | SF-05 | SF-01 | ✅ | ✅ | ✅ | ⬜ |
 
 ---
 
 ## 6. Session Handoff
 Status: **COMPLETED**
-The implementation plan for SF-5 (SQL Parser Implementation) is complete and approved.
-Next Step: Run `/dev docs/roadmap/features/topic_02_sensors/D-SENS-03/D-SENS-03_sf5_implementation_plan.md` to begin implementation of SF-5.
+The implementation plan for SF-05 (SQL Parser Implementation) is complete and approved.
+Next Step: Run `/dev docs/roadmap/features/topic_02_sensors/D-SENS-03/D-SENS-03_sf05_implementation_plan.md` to begin implementation of SF-05.

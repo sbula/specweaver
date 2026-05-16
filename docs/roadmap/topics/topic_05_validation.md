@@ -18,7 +18,7 @@ This document tracks all capabilities related to static analysis, linting, rules
 * **`D-VAL-03` ✅: Polyglot QARunner** (Legacy: 3.19)<br>
   > _(new)_ | Wraps target-language CLI commands (`cargo`, `gradlew`, `pytest`) into a unified `LanguageRunnerInterface`. Treats execution as a Black Box (validating exit codes/stderr) to prevent Python AST hardcoding. **Complete.**
 * **`D-VAL-04` ✅: Adaptive Assurance Standards** (Legacy: 3.32a)<br>
-  > _(new)_ | Toggles `StandardsAnalyzer` behavior between mining legacy styles ("Mimicry") vs injecting built-in idiomatic targets ("Best Practice"). Configured via `specweaver.toml`. Prevents the "Empty Repository" context vacuum for greenfield builds. **Complete:** SF-1 (Adaptive standard targeting) and SF-2 (Context Condensation Skeletons) fully integrated and heavily optimized.
+  > _(new)_ | Toggles `StandardsAnalyzer` behavior between mining legacy styles ("Mimicry") vs injecting built-in idiomatic targets ("Best Practice"). Configured via `specweaver.toml`. Prevents the "Empty Repository" context vacuum for greenfield builds. **Complete:** SF-01 (Adaptive standard targeting) and SF-02 (Context Condensation Skeletons) fully integrated and heavily optimized.
 
 ## DAL-C: Enterprise Standard
 * **`C-VAL-01` ✅: Constitution Artifact** (Legacy: 3.2)<br>
@@ -32,9 +32,9 @@ This document tracks all capabilities related to static analysis, linting, rules
 
 ## DAL-B: High-Assurance
 * **`B-VAL-01` ✅: AST Drift Detection** (Legacy: 3.18)<br>
-  > _(deferred from 3.14)_ | Builds on UUIDs to provide deep, parser-backed drift detection. **Complete**: SF-1 and SF-2 integrated into Flow engine and CLI. Tests passing.
+  > _(deferred from 3.14)_ | Builds on UUIDs to provide deep, parser-backed drift detection. **Complete**: SF-01 and SF-02 integrated into Flow engine and CLI. Tests passing.
 * **`B-VAL-02` ✅: Spec Rot Interceptor** (Legacy: 3.23)<br>
-  > _(new)_ | The "2nd-Day Problem" solver. Blocks builds/commits if the implementation AST diverges from the `Spec.md` markdown, forcing developers to reconcile documentation with hot-fixes. **Complete:** SF-1 and SF-2 integrated into Flow engine and CLI. Tests passing.
+  > _(new)_ | The "2nd-Day Problem" solver. Blocks builds/commits if the implementation AST diverges from the `Spec.md` markdown, forcing developers to reconcile documentation with hot-fixes. **Complete:** SF-01 and SF-02 integrated into Flow engine and CLI. Tests passing.
 * **`B-VAL-03` 🔜: Semantic Completeness Review** (Legacy: 3.42)<br>
   > _(new)_ | An LLM-backed Code Validation Rule (`C10_test_completeness.py`) that analyzes the agent's generated test suite against the target spec to assert whether all unhappy paths, error bounds, and expected outcomes are semantically verified. Emits ERRORs for missing branch coverage to ensure thorough completeness.
 * **`B-VAL-04` 🔜: SWE-Bench QA Gates** (Legacy: 3.47)<br>

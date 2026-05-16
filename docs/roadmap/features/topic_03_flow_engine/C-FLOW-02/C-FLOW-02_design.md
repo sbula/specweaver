@@ -61,7 +61,7 @@ Key constraints: To prevent python evaluations on untrusted YAML, the routing co
 
 Single feature — no decomposition.
 
-### SF-1: Core Router Implementation
+### SF-01: Core Router Implementation
 - **Scope**: Extend `models.py`, `runner.py`, and create `routers.py` to enable declarative flow control branching.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5]
 - **Inputs**: Executable `PipelineStep` objects with `router` configs, and the resulting `StepResult.result_data`.
@@ -71,17 +71,17 @@ Single feature — no decomposition.
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
+1. SF-01 (no deps — start immediately)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Core Router Implementation | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Core Router Implementation | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Implementation Plan APPROVED for SF-1.
+**Current status**: Implementation Plan APPROVED for SF-01.
 **Next step**: Run:
 `/dev docs/roadmap/features/topic_03_flow_engine/C-FLOW-02/C-FLOW-02_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there.

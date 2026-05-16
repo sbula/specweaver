@@ -65,37 +65,37 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Sub-Feature Breakdown
 
-### SF-1: Context Condensation & Scaffolding
+### SF-01: Context Condensation & Scaffolding
 - **Scope**: Implements AST Skeleton logic in `PromptBuilder` and scaffolds native `context.yaml` profiles on `sw init`.
 - **FRs**: [FR-1, FR-4]
 - **Inputs**: Polyglot parsers, `PromptBuilder` context lists, CLI initialization paths.
 - **Outputs**: Truncated XML payloads and initialized `.specweaver/` structures.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_sf01_implementation_plan.md
 
-### SF-2: Impact-Aware Testing & DAL Enforcements
+### SF-02: Impact-Aware Testing & DAL Enforcements
 - **Scope**: Re-wires `QARunnerTool` to filter targets via the Topology Graph and implements native DAL boundaries to enforce validation failures.
 - **FRs**: [FR-2, FR-3]
 - **Inputs**: DAG nodes, Pytest targets, `DALResolver` thresholds.
 - **Outputs**: Truncated Pytest stdout logs, and non-zero OS level exit boundaries.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-06/C-FLOW-06_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Context Condensation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Impact-Aware Testing & DAL | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Context Condensation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Impact-Aware Testing & DAL | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-2 Development was halted due to missed FR-2 and an AD-1 architectural violation. See `README_BEFORE_CONTINUE.md`.
-**Next step**: Fix design and resume Dev workflow for SF-2.
+**Current status**: SF-02 Development was halted due to missed FR-2 and an AD-1 architectural violation. See `README_BEFORE_CONTINUE.md`.
+**Next step**: Fix design and resume Dev workflow for SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

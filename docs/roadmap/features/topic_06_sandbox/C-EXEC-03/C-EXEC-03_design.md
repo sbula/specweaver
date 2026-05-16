@@ -72,33 +72,33 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Sub-Feature Breakdown
 
-### SF-1: Domain & Documentation Realignment (File Refactoring & Path Update)
+### SF-01: Domain & Documentation Realignment (File Refactoring & Path Update)
 - **Scope**: Physically migrates Source directories to the 6 macro-domains, structures `tests/`, and patches all Python absolute imports in parallel. Addresses documentation moves.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-11, FR-12]
 - **Inputs**: Current `src/specweaver/*` flat mapping.
 - **Outputs**: 4 new macro-domains holding accurately remapped imports.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.26a/feature_3.26a_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.26a/feature_3.26a_sf01_implementation_plan.md
 
-### SF-2: Boundary Enforcement (Tach Matrix Matrix)
+### SF-02: Boundary Enforcement (Tach Matrix Matrix)
 - **Scope**: Repairs the broken architectural test boundaries (Graph & Tach).
 - **FRs**: [FR-10]
 - **Inputs**: Updated namespace boundaries.
 - **Outputs**: Valid `tach.toml` resulting in flawless `tach check` and 3884 passing execution tests.
-- **Depends on**: [SF-1]
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.26a/feature_3.26a_sf2_implementation_plan.md
+- **Depends on**: [SF-01]
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.26a/feature_3.26a_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (No deps — Refactor file systems and strings first to repair IDE errors).
-2. SF-2 (Depends on SF-1 — Locks boundary validation matrix post-file move).
+1. SF-01 (No deps — Refactor file systems and strings first to repair IDE errors).
+2. SF-02 (Depends on SF-01 — Locks boundary validation matrix post-file move).
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Domain File Realignment | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Boundary Matrix Sync | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Domain File Realignment | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Boundary Matrix Sync | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

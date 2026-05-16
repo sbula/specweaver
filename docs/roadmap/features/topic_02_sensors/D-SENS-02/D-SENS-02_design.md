@@ -9,7 +9,7 @@
 
 Feature 3.22 solves the critical problem of LLM "Context Window Bloat" and API cost-explosion during long multi-turn agent sessions. Instead of returning a dangerous `[304 Not Modified]` that degrades the agent's attention span, the system provides an advanced, polyglot **CodeStructureTool**: providing `read_file_structure(file)` and `read_symbol(file, symbol)`. 
 
-These intents utilize `tree-sitter` and a consolidated `loom/commons/language/` registry to extract just the signatures/docstrings of a file, or the specific implementation of a requested class/function. It completely offloads syntax parsing to language-specific `.scm` node queries running in the isolated `Loom` Engine Sandbox via Atoms. Furthermore, a follow-up feature (SF-2) introduces `write_symbol` to allow surgical AST body patching.
+These intents utilize `tree-sitter` and a consolidated `loom/commons/language/` registry to extract just the signatures/docstrings of a file, or the specific implementation of a requested class/function. It completely offloads syntax parsing to language-specific `.scm` node queries running in the isolated `Loom` Engine Sandbox via Atoms. Furthermore, a follow-up feature (SF-02) introduces `write_symbol` to allow surgical AST body patching.
 
 ## Discarded Concepts (The "304" Problem)
 
@@ -40,7 +40,7 @@ SpecWeaver's domain-driven architecture demands a strict separation between Pure
 | FR-2 | Symbol Extraction | CodeStructureTool | reads a specific symbol | The system SHALL return the entire implementation payload of exclusively the requested symbol (class/function) from the target file. |
 | FR-3 | Polyglot Registry | Flow Engine | centralizes language I/O | The system SHALL unify test-running (`runner.py`) and AST execution (`ast_parser.py`) exclusively within `loom/commons/language/<name>`. |
 | FR-4 | Query Fallback | CodeStructureTool | encounters unsupported language | If the file's language has no registered extractor plugin, the system SHALL throw an explicit error reminding the LLM to use `read_file` instead. |
-| FR-5 | Symbol Replacement | CodeStructureTool | writes into a specific symbol | *(SF-2)* The system SHALL safely replace the body of a specific AST symbol with new code logic without relying on regex or fragile byte matching. |
+| FR-5 | Symbol Replacement | CodeStructureTool | writes into a specific symbol | *(SF-02)* The system SHALL safely replace the body of a specific AST symbol with new code logic without relying on regex or fragile byte matching. |
 | FR-6 | Symbol Listing | CodeStructureTool | lists available symbols | The system SHALL return a flat array mapping of all targetable symbols within a file, filterable by a designated visibility constraint (e.g. `['public']`). |
 | FR-7 | Symbol Body Extraction | CodeStructureTool | reads only the inner block | The system SHALL selectively return only the internal execution logic block (`{...}`) of a symbol without extracting its decorators or external class wrappers. |
 
@@ -61,29 +61,29 @@ SpecWeaver's domain-driven architecture demands a strict separation between Pure
 
 ## Sub-Feature Breakdown
 
-### SF-1: Polyglot AST Extractor (CodeStructureTool: Read Side)
+### SF-01: Polyglot AST Extractor (CodeStructureTool: Read Side)
 - **Scope**: Create the `loom/commons/language/` registry. Build the `AstAtom` component and provide `read_file_structure` and `read_symbol` intents via the agent-facing `CodeStructureTool`.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4]
 - **Depends on**: none
 
-### SF-2: AST Symbol Writer (CodeStructureTool: Write Side)
-- **Scope**: Extend the AST integration to support surgically replacing symbol bodies (`write_symbol`) leveraging the parser established in SF-1.
+### SF-02: AST Symbol Writer (CodeStructureTool: Write Side)
+- **Scope**: Extend the AST integration to support surgically replacing symbol bodies (`write_symbol`) leveraging the parser established in SF-01.
 - **FRs**: [FR-5]
-- **Depends on**: SF-1
+- **Depends on**: SF-01
 
 ## Execution Order
 
-1. SF-1
-2. SF-2
+1. SF-01
+2. SF-02
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Polyglot AST Extractor (Read Side) | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | AST Symbol Writer (Write Side) | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Polyglot AST Extractor (Read Side) | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | AST Symbol Writer (Write Side) | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Implementation Plan for SF-2 COMPLETE and APPROVED.
-**Next step**: Run `/dev` to build SF-2 according to `feature_3_22_sf2_implementation_plan.md`.
+**Current status**: Implementation Plan for SF-02 COMPLETE and APPROVED.
+**Next step**: Run `/dev` to build SF-02 according to `feature_3_22_sf02_implementation_plan.md`.

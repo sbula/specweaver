@@ -26,14 +26,14 @@ This document tracks all massive refactoring efforts, technical debt removal, an
   >
   > **Finding 3 — RunContext God Object (23 fields):** `RunContext` in `core/flow/handlers/base.py` has 23 fields and a 67-line `model_post_init` with side-effect-heavy initialization. Every new feature adds a field (`constitution`, `standards`, `plan`, `project_metadata`, `workspace_roots`, `api_contract_paths`, `db`, `llm_router`...). This is a classic God Object / grab-bag anti-pattern.
   >
-  > **Highest-ROI Refactoring:** After D-INTL-06 SF-2 lands the shared `build_base_prompt()` factory in `workflows/commons/`, move constitution and standards loading INSIDE the factory (same pattern as memory hydration). This eliminates 2 RunContext fields, 10+ cross-interface imports, and makes the factory the single source of truth for all prompt context injection. Estimated effort: ~4h. Unblocks clean integration of all future context sources (conversation history, knowledge graph snippets).
+  > **Highest-ROI Refactoring:** After D-INTL-06 SF-02 lands the shared `build_base_prompt()` factory in `workflows/commons/`, move constitution and standards loading INSIDE the factory (same pattern as memory hydration). This eliminates 2 RunContext fields, 10+ cross-interface imports, and makes the factory the single source of truth for all prompt context injection. Estimated effort: ~4h. Unblocks clean integration of all future context sources (conversation history, knowledge graph snippets).
   >
   > | Sub-Refactoring | What it fixes | Effort | ROI | Dependency |
   > |---|---|---|---|---|
   > | Move `_load_constitution_content` to `workspace/project/constitution.py` | Finding 1 | Low (~30 min) | Medium | None |
   > | Move `_load_standards_content` to `assurance/standards/loader.py` | Finding 1 | Low (~30 min) | Medium | None |
   > | Extract `_run_workspace_op` to a shared utility | Finding 2 | Medium (~2h) | Medium | Requires careful planning |
-  > | Load constitution/standards inside factory | Findings 1+2+3 | High (~4h) | **Very High** | After D-INTL-06 SF-2 |
+  > | Load constitution/standards inside factory | Findings 1+2+3 | High (~4h) | **Very High** | After D-INTL-06 SF-02 |
 
 ## Security & Validation
 * **`TECH-06` 🔴: PromptBuilder Input Escaping Gap**

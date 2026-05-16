@@ -64,43 +64,43 @@ Feature 3.29 (Archetype-Based Rule Sets) - Loading declarative YAML bounds from 
 
 ## Sub-Feature Breakdown
 
-### SF-1: Core Schema Evaluator Engine
+### SF-01: Core Schema Evaluator Engine
 - **Scope**: Implement the parser logic inside `commons/language/evaluator.py` to ingest YAML maps and transform AST `extract_framework_markers()` output into readable runtime strings.
 - **FRs**: [FR-1]
 - **Inputs**: AST Framework dict, YAML mapping.
 - **Outputs**: Evaluated text (e.g., `Endpoint: GET /api`).
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf01_implementation_plan.md
 
-### SF-2: Native Core Framework Libraries
+### SF-02: Native Core Framework Libraries
 - **Scope**: Write the default YAML Evaluation schemas for major ecosystem lifecycles explicitly covering Java/Kotlin (Spring Boot, Quarkus), TS (NestJS), Python (FastAPI, Django), and Rust (Actix).
 - **FRs**: [FR-2]
 - **Inputs**: Framework API Docs.
 - **Outputs**: Declarative YAML Maps.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf02_implementation_plan.md
 
-### SF-3: Tool Intent & Guide Publishing
+### SF-03: Tool Intent & Guide Publishing
 - **Scope**: Extend `CodeStructureTool` with the `read_unrolled_symbol` integration. Write the comprehensive Developer Guide ensuring the platform can easily onboard new frameworks.
 - **FRs**: [FR-3]
 - **Inputs**: Evaluator Engine, Documentation.
 - **Outputs**: JSON Schema update to agents, Published MD.
-- **Depends on**: SF-2
-- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf3_implementation_plan.md
+- **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/phase_3/feature_3.30/feature_3.30_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends only on SF-1)
-3. SF-3 (depends dynamically on SF-2 completion)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends only on SF-01)
+3. SF-03 (depends dynamically on SF-02 completion)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Core Schema Evaluator Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Native Core Framework Libraries | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Tool Intent & Guide Publishing | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Core Schema Evaluator Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Native Core Framework Libraries | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Tool Intent & Guide Publishing | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

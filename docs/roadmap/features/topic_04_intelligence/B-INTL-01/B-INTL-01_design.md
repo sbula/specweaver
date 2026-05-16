@@ -63,43 +63,43 @@ Crucially, this design heavily relies on **Dependency Injection**: The `flow` en
 
 ## Sub-Feature Breakdown
 
-### SF-1: Dependency Injection & Orchestrator Routing
+### SF-01: Dependency Injection & Orchestrator Routing
 - **Scope**: Modifies `flow/runner.py` and `flow/_validation.py` to route YAML archetypes and inject memory-safe `CodeStructureAtom` payloads into the rule parameter checks.
 - **FRs**: [FR-1]
 - **Inputs**: `context.yaml` topology bounds.
 - **Outputs**: Activated Pipelines & DI AST variables.
 - **Depends on**: none
 
-### SF-2: Language Commons Framework Schemas
+### SF-02: Language Commons Framework Schemas
 - **Scope**: Modifies `loom/commons/language/` to add specific Framework `.scm` queries (Annotations, Decorators, Traits) for polyglot structural payloads.
 - **FRs**: [FR-2]
 - **Inputs**: OS file handles.
 - **Outputs**: Serialized pure-data Structural Payloads.
-- **Depends on**: [SF-1]
+- **Depends on**: [SF-01]
 
-### SF-3: Pure Logic Archetype Validators
+### SF-03: Pure Logic Archetype Validators
 - **Scope**: Creates the `C12` and `S12` pure logic wrappers inside `assurance/validation/rules/` matching parameters to DI payloads.
 - **FRs**: [FR-3, FR-4]
 - **Inputs**: Payload dictionaries, YAML `PARAM_MAP` overrides.
 - **Outputs**: Gate `RuleResult` findings.
-- **Depends on**: [SF-1, SF-2]
+- **Depends on**: [SF-01, SF-02]
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
-3. SF-3 (depends on SF-2)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
+3. SF-03 (depends on SF-02)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Injection & Orchestrator | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Commons Framework Schema | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Archetype Validators     | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Injection & Orchestrator | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Commons Framework Schema | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Archetype Validators     | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Feature 3.29 SF-1, SF-2, and SF-3 are all completed and committed.
+**Current status**: Feature 3.29 SF-01, SF-02, and SF-03 are all completed and committed.
 **Next step**: Proceed to subsequent Phase 3 features.
 **If resuming mid-feature**: Feature 3.29 is complete.

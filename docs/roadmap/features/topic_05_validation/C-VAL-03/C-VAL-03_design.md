@@ -22,16 +22,16 @@ SpecWeaver must be able to support "Mixed Criticality" software systems where so
 
 To prevent hallucinations, the implementation of Feature 3.20b must physically occur in the following established architectural layers:
 
-*   **DAL Schema & Impact Matrix (SF-1):**
+*   **DAL Schema & Impact Matrix (SF-01):**
     *   `src/specweaver/validation/models.py`: Define `DALLevel(str, Enum)` and update validation schemas.
     *   `src/specweaver/config/settings.py`: Configure Pydantic's `SettingsConfigDict` to load and deep-merge the local `.specweaver/dal_definitions.yaml`.
-*   **Fractal Resolution Engine (SF-2):**
+*   **Fractal Resolution Engine (SF-02):**
     *   `src/specweaver/validation/pipeline.py`: Inside the `ValidationRunner`, implement the `O(1)` cached `resolve_dal()` directory-walker logic before applying rulesets.
-*   **Validation Override Consolidation (SF-3):**
+*   **Validation Override Consolidation (SF-03):**
     *   `src/specweaver/config/database.py` and `config/_schema.py`: Delete legacy SQLite `validation_overrides` tables and finalize the DAL-centric matrix workflow.
-*   **Generative HARA Governance (SF-4):**
+*   **Generative HARA Governance (SF-04):**
     *   `src/specweaver/drafting/decomposition.py` (or prompt templates): Inject HARA heuristics (Topology + Data Sensitivity) into the prompt building cycle so the AI proposes optimal DAL strings during `/design` scaffoldings.
-*   **Outsourced FFI Rules (SF-5):**
+*   **Outsourced FFI Rules (SF-05):**
     *   `src/specweaver/loom/commons/qa_runner/{language}/runner.py`: Implement the stubs for `run_architecture_check` in Java (ArchUnit) and TypeScript (ESLint) to actively enforce boundaries dynamically loaded from `context.yaml` and DAL overrides.
 
 ## 4. External Dependencies
@@ -54,27 +54,27 @@ To prevent hallucinations, the implementation of Feature 3.20b must physically o
 
 | SF ID | Name | Description | Status |
 |:---|:---|:---|:---|
-| **SF-1** | DAL Schema & Pydantic Impact Matrix Merge | Define the `DALLevel` enumerations and configure `pydantic-settings` to safely deep-merge `dal_definitions.yaml` over base profiles. | [x] Complete |
-| **SF-2** | Fractal Resolution Engine | Implement `O(1)` cached directory-tree walking in `ValidationRunner` to map target files to their closest `context.yaml` DAL. | [x] Complete |
-| **SF-3** | Validation Override Consolidation (Cleanup) | Strip the legacy SQLite `validation_overrides` tables and force all resolution exclusively through the DAL Impact matrices and rule sub-pipeline inheritance. | [x] Complete |
-| **SF-4** | Generative HARA (AI Governance Proposal) | Update the `/design` scaffolding workflow so LLMs analyze topological edges/data to propose a DAL, requiring HITL approval. | [ ] Pending |
-| **SF-5** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [x] Complete |
+| **SF-01** | DAL Schema & Pydantic Impact Matrix Merge | Define the `DALLevel` enumerations and configure `pydantic-settings` to safely deep-merge `dal_definitions.yaml` over base profiles. | [x] Complete |
+| **SF-02** | Fractal Resolution Engine | Implement `O(1)` cached directory-tree walking in `ValidationRunner` to map target files to their closest `context.yaml` DAL. | [x] Complete |
+| **SF-03** | Validation Override Consolidation (Cleanup) | Strip the legacy SQLite `validation_overrides` tables and force all resolution exclusively through the DAL Impact matrices and rule sub-pipeline inheritance. | [x] Complete |
+| **SF-04** | Generative HARA (AI Governance Proposal) | Update the `/design` scaffolding workflow so LLMs analyze topological edges/data to propose a DAL, requiring HITL approval. | [ ] Pending |
+| **SF-05** | Polyglot Architecture Configs | The generic `run_architecture_check` interface was established in 3.20a. Here, we build out the concrete Polyglot adapters (`JavaRunner` -> ArchUnit, `TypeScriptRunner` -> ESLint) and dynamically generation their configuration payloads based on `context.yaml` constraints and the active DAL string. | [x] Complete |
 
 ## 6. Progress Tracker
 - [x] Requirements Finalized
-- [x] SF-1 Implementation Plan ✅
-- [x] SF-1 Implementation
-- [x] SF-2 Implementation Plan ✅
-- [x] SF-2 Implementation ✅
-- [x] SF-3 Implementation Plan ✅
-- [x] SF-3 Implementation ✅ (Dev ✅, Pre-Commit ✅, Committed ✅)
-- [x] SF-4 Implementation Plan ✅
-- [x] SF-4 Implementation ✅ (Pre-Commit ✅, Committed ✅)
-- [x] SF-5 Implementation Plan ✅
-- [x] SF-5 Implementation ✅ (Dev ✅, Pre-Commit ✅, Committed ✅)
+- [x] SF-01 Implementation Plan ✅
+- [x] SF-01 Implementation
+- [x] SF-02 Implementation Plan ✅
+- [x] SF-02 Implementation ✅
+- [x] SF-03 Implementation Plan ✅
+- [x] SF-03 Implementation ✅ (Dev ✅, Pre-Commit ✅, Committed ✅)
+- [x] SF-04 Implementation Plan ✅
+- [x] SF-04 Implementation ✅ (Pre-Commit ✅, Committed ✅)
+- [x] SF-05 Implementation Plan ✅
+- [x] SF-05 Implementation ✅ (Dev ✅, Pre-Commit ✅, Committed ✅)
 
 ## 7. Session Handoff
 
-**Current status**: SF-5 is complete and committed.
-**Next step**: Proceed with SF-6 or wrap up Feature 3.20b.
+**Current status**: SF-05 is complete and committed.
+**Next step**: Proceed with SF-06 or wrap up Feature 3.20b.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

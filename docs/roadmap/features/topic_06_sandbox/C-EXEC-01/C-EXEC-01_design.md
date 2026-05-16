@@ -20,14 +20,14 @@ Currently, SpecWeaver relies on standard Python linting (`ruff`) and `__init__.p
 
 To prevent breaking the CI pipeline, the implementation of Feature 3.20a must physically target the following files:
 
-*   **SF-1 (Base Layer Initialization):**
+*   **SF-01 (Base Layer Initialization):**
     *   `pyproject.toml`: Add `tach` to dev dependencies.
     *   `tach.toml` (or `tach.yml`): Root configuration defining the Base Layer boundaries (`src.specweaver.core.config`, `src.specweaver.assurance.standards`).
-*   **SF-2 (Resource/Capability Hardening):**
+*   **SF-02 (Resource/Capability Hardening):**
     *   `tach.toml`: Define Resource Layer (`src.specweaver.infrastructure.llm`, `src.specweaver.assurance.graph`) and block upward dependencies.
-*   **SF-3 (Presentation Layer):**
+*   **SF-03 (Presentation Layer):**
     *   `tach.toml`: Define Presentation Layer (`src.specweaver.interfaces.api`, `src.specweaver.interfaces.cli`) and block internal logic from importing them.
-*   **SF-4 (Interface Enforcement):**
+*   **SF-04 (Interface Enforcement):**
     *   `tach.toml`: Enable `interfaces:` mapping.
     *   Delete `__init__.py` boilerplate across `src/specweaver/**`.
 
@@ -43,33 +43,33 @@ To prevent breaking the CI pipeline, the implementation of Feature 3.20a must ph
 
 | SF ID | Name | Description | Status |
 |:---|:---|:---|:---|
-| **SF-1** | Initialization & Base Layer Isolation | Install Tach. Map `config`, `standards`, and `logging.py` as strict base layers. Ensure they import absolutely nothing else from SpecWeaver. | [x] Committed |
-| **SF-2** | Resource & Core Capability Hardening | Apply Tach rules to the `llm`, `graph`, `context`, and `project` modules. Formally isolate the `llm` engine from the business logic. | [x] Committed |
-| **SF-3** | Presentation Layer Sterilization | Enforce that no domain logic inside `src/specweaver` is allowed to depend on `api` or `cli`. | [x] Committed |
-| **SF-4** | Public Interface Enforcement | Use Tach's `interfaces:` to declare strict public boundaries and delete the messy `__init__.py` boilerplate hacks. | [x] Committed |
-| **SF-5** | Legacy Linter Subsumption | Outsource manual architectural tests (soft-deprecations, cyclic guards) to Tach. | [x] Committed |
-| **SF-6** | Global Implicit Namespace Conversion | Delete all 20 remaining internal `__init__.py` proxy files and enforce global `strict = true` topology using Tach. | [x] Committed |
-| **SF-7** | Target Rule C05 Subsumption (Tach) | Gut the hardcoded AST parser inside `c05_import_direction.py`. Replace it with a subprocess execution of `tach check` on the target project, mapping structural boundary violations into standard SpecWeaver Findings. | [x] Committed |
-| **SF-8** | TopologyGraph to Tach Adapter | Build an adapter or synchronization layer ensuring that when SpecWeaver maps `context.yaml` boundaries across a target codebase, a `tach.toml` is dynamically generated or synchronized behind the scenes. | [x] Committed |
+| **SF-01** | Initialization & Base Layer Isolation | Install Tach. Map `config`, `standards`, and `logging.py` as strict base layers. Ensure they import absolutely nothing else from SpecWeaver. | [x] Committed |
+| **SF-02** | Resource & Core Capability Hardening | Apply Tach rules to the `llm`, `graph`, `context`, and `project` modules. Formally isolate the `llm` engine from the business logic. | [x] Committed |
+| **SF-03** | Presentation Layer Sterilization | Enforce that no domain logic inside `src/specweaver` is allowed to depend on `api` or `cli`. | [x] Committed |
+| **SF-04** | Public Interface Enforcement | Use Tach's `interfaces:` to declare strict public boundaries and delete the messy `__init__.py` boilerplate hacks. | [x] Committed |
+| **SF-05** | Legacy Linter Subsumption | Outsource manual architectural tests (soft-deprecations, cyclic guards) to Tach. | [x] Committed |
+| **SF-06** | Global Implicit Namespace Conversion | Delete all 20 remaining internal `__init__.py` proxy files and enforce global `strict = true` topology using Tach. | [x] Committed |
+| **SF-07** | Target Rule C05 Subsumption (Tach) | Gut the hardcoded AST parser inside `c05_import_direction.py`. Replace it with a subprocess execution of `tach check` on the target project, mapping structural boundary violations into standard SpecWeaver Findings. | [x] Committed |
+| **SF-08** | TopologyGraph to Tach Adapter | Build an adapter or synchronization layer ensuring that when SpecWeaver maps `context.yaml` boundaries across a target codebase, a `tach.toml` is dynamically generated or synchronized behind the scenes. | [x] Committed |
 
 
 ## 6. Progress Tracker
 - [x] Requirements Finalized
-- [x] SF-1 Implementation (Committed)
-- [x] SF-2 Implementation Plan
-- [x] SF-2 Implementation (Committed)
-- [x] SF-3 Implementation Plan
-- [x] SF-3 Implementation (Committed)
-- [x] SF-4 Implementation Plan
-- [x] SF-4 Implementation (Committed)
-- [x] SF-5 Implementation Plan
-- [x] SF-5 Implementation (Committed)
-- [x] SF-6 Implementation Plan
-- [x] SF-6 Implementation
-- [x] SF-7 Implementation Plan
-- [x] SF-7 Implementation
-- [x] SF-8 Implementation Plan
-- [x] SF-8 Implementation
+- [x] SF-01 Implementation (Committed)
+- [x] SF-02 Implementation Plan
+- [x] SF-02 Implementation (Committed)
+- [x] SF-03 Implementation Plan
+- [x] SF-03 Implementation (Committed)
+- [x] SF-04 Implementation Plan
+- [x] SF-04 Implementation (Committed)
+- [x] SF-05 Implementation Plan
+- [x] SF-05 Implementation (Committed)
+- [x] SF-06 Implementation Plan
+- [x] SF-06 Implementation
+- [x] SF-07 Implementation Plan
+- [x] SF-07 Implementation
+- [x] SF-08 Implementation Plan
+- [x] SF-08 Implementation
 - [x] Feature 3.20a Fully Complete
 
 ## 7. Session Handoff

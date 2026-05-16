@@ -21,7 +21,7 @@ Feature D-INTL-01 provides the core generation routines for writing application 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Generation Engine & Review | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Generation Engine & Review | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

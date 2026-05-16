@@ -68,43 +68,43 @@ Key constraints: Minimal code pollution (one `# sw-artifact: <uuid>` tag per fil
 
 ## Sub-Feature Breakdown
 
-### SF-1: Lineage Database & Flow Integration
+### SF-01: Lineage Database & Flow Integration
 - **Scope**: Implements the SQLite persistence and UUID context propagation within the PipelineRunner.
 - **FRs**: [FR-1, FR-3]
 - **Inputs**: Current `run_id` and pipeline definition context (parent artifact DB).
 - **Outputs**: UUIDs passed down to handlers; DB rows persisted in `lineage_graph`.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf01_implementation_plan.md
 
-### SF-2: Artifact Tagging Engine
+### SF-02: Artifact Tagging Engine
 - **Scope**: Injects instructions into LLM prompts via `PromptBuilder` to write UUID tags and coordinates generation handlers to bind `parent_uuid` to `artifact_uuid`.
 - **FRs**: [FR-2]
-- **Inputs**: Generated UUIDs from SF-1.
+- **Inputs**: Generated UUIDs from SF-01.
 - **Outputs**: Generated code on disk containing `# sw-artifact: <uuid>`.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf02_implementation_plan.md
 
-### SF-3: Verification & CLI Tools
+### SF-03: Verification & CLI Tools
 - **Scope**: Implements orphan detection, manual tagging, and lineage tracing CLI commands.
 - **FRs**: [FR-4, FR-5, FR-6]
 - **Inputs**: `pathlib` scans of `src/` and SQLite SELECT queries.
 - **Outputs**: Terminal output and exit codes for CI.
-- **Depends on**: SF-1, SF-2
-- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf3_implementation_plan.md
+- **Depends on**: SF-01, SF-02
+- **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-01/B-SENS-01_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
-3. SF-3 (depends on SF-2)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
+3. SF-03 (depends on SF-02)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | DB & Flow | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Tagging | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Verification CLI | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | DB & Flow | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Tagging | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Verification CLI | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 

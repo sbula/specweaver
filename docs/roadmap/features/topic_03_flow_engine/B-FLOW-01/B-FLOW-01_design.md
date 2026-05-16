@@ -292,7 +292,7 @@ Every reused component is verified: **can the consuming module actually import i
 
 ## Sub-Feature Breakdown
 
-> **Consolidation (5→3)**: Original 11 sub-features (3.28a–j) were first consolidated to 5, then to 3 balanced SFs after identifying that SF-4 was too thin (~20 lines) for its own commit boundary, and SF-1/SF-2 were both small independent foundation work.
+> **Consolidation (5→3)**: Original 11 sub-features (3.28a–j) were first consolidated to 5, then to 3 balanced SFs after identifying that SF-04 was too thin (~20 lines) for its own commit boundary, and SF-01/SF-02 were both small independent foundation work.
 >
 > **Key reuse insight**: 3.28g (JOIN gate) and 3.28h (parallel orchestrator) are **already fully implemented** by Feature 3.27. The `scenario_agent` role (3.28e) is ~60% done — only a new role definition in the dispatcher factory is needed.
 

@@ -129,45 +129,45 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 
 ## Sub-Feature Breakdown
 
-### SF-1: Deconstruct `core/config/` Database Monolith
+### SF-01: Deconstruct `core/config/` Database Monolith
 - **Scope**: Extracts LLM telemetry, Flow state, and Profile database logic into independent domain stores.
 - **FRs**: [FR-1, FR-2, FR-3]
 - **Inputs**: Legacy `_db_mixin` classes and SQLAlchemy models.
 - **Outputs**: Decentralized `store/` packages inside their respective domains.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf01_implementation_plan.md
 
-### SF-2: Decentralize `interfaces/cli/` Layer
+### SF-02: Decentralize `interfaces/cli/` Layer
 - **Scope**: Moves CLI commands into domain folders and sets up dynamic Typer registration.
 - **FRs**: [FR-4, FR-5]
 - **Inputs**: Existing Typer modules in `interfaces/cli/`.
 - **Outputs**: Domain-specific `cli.py` modules mounted to `main.py`.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf2_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf02_implementation_plan.md
 
-### SF-3: Consolidate `core/loom/` Sandbox
+### SF-03: Consolidate `core/loom/` Sandbox
 - **Scope**: Reorganizes the execution engine into pure `sandbox/` bounded contexts honoring the 4-layer architecture.
 - **FRs**: [FR-6]
 - **Inputs**: `core/loom/atoms`, `core/loom/tools`, `core/loom/commons`.
 - **Outputs**: Feature-packaged sandbox directories (`sandbox/git`, etc.).
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf3_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-01/TECH-01_sf03_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1, SF-2, and SF-3 can run in parallel (no shared dependencies).
+1. SF-01, SF-02, and SF-03 can run in parallel (no shared dependencies).
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Decentralize CLI Layer | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Consolidate Sandbox | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Decentralize CLI Layer | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Consolidate Sandbox | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-3 fully implemented, tested, and committed. TECH-01 refactoring is complete.
+**Current status**: SF-03 fully implemented, tested, and committed. TECH-01 refactoring is complete.
 **Next step**: Proceed with the next feature in the master story roadmap.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

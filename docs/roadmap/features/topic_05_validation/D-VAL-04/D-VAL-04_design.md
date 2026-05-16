@@ -63,35 +63,35 @@ Based on the explicit request for **ROI analysis and optimization**, an analysis
 
 ## Sub-Feature Breakdown
 
-### SF-1: Adaptive Standard Configurations
+### SF-01: Adaptive Standard Configurations
 - **Scope**: Toggle logic in `StandardsAnalyzer` and configuration parsing for "mimicry" vs "best_practice" and mapping historical `context.db` defaults.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: `specweaver.toml` config settings, greenfield target paths.
 - **Outputs**: Resolved built-in standard rules payloads.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_sf01_implementation_plan.md
 
-### SF-2: Context Condensation Skeletons (Performance ROI)
+### SF-02: Context Condensation Skeletons (Performance ROI)
 - **Scope**: Integration of AST extraction skeletons natively into the context layer limiting token payload sizes.
 - **FRs**: [FR-3, FR-4]
 - **Inputs**: Legacy source dependencies topological structures.
 - **Outputs**: Truncated prompt boundaries reflecting identical semantic data maps.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-04/D-VAL-04_sf02_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (no deps — start immediately)
-2. SF-2 (depends on SF-1)
+1. SF-01 (no deps — start immediately)
+2. SF-02 (depends on SF-01)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Adaptive Standard Configurations | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Context Condensation Skeletons | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-01 | Adaptive Standard Configurations | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Context Condensation Skeletons | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: [x] Feature 3.32a fully implemented! SF-1 and SF-2 are merged.
+**Current status**: [x] Feature 3.32a fully implemented! SF-01 and SF-02 are merged.
 **Next step**: Select the next feature from the roadmap.

@@ -64,57 +64,57 @@ none stated
 
 ## Sub-Feature Breakdown
 
-### SF-1: Core Interface, Compilers & Python/TS Handlers
+### SF-01: Core Interface, Compilers & Python/TS Handlers
 - **Scope**: Updates `interface.py` and `qa_runner/tool.py` to accept stacktraces/SARIF bounds and add `compile`/`debug` commands. Aligns the `PythonQARunner` and implements the `TypeScriptRunner`.
 - **FRs**: [FR-1, FR-2, FR-3, FR-7, FR-8]
 - **Inputs**: Polyglot execution parameters simulating Agents requesting builds/tests.
 - **Outputs**: Validated compile/debug/test/lint/complexity runners using mock JUnit/SARIF files.
 - **Depends on**: none
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf1_implementation_plan.md
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf01_implementation_plan.md
 
-### SF-2: JVM Handlers (Java & Kotlin)
+### SF-02: JVM Handlers (Java & Kotlin)
 - **Scope**: Implements `JavaRunner` and `KotlinRunner` compiling and parsing outputs from Gradle (`gradlew`), Maven (`mvn`), detekt, and PMD.
 - **FRs**: [FR-5, FR-6, FR-8]
 - **Inputs**: JVM polyglot requests and mock JVM fail/pass payloads.
 - **Outputs**: Validated Java and Kotlin compilation & test runners.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf2_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf02_implementation_plan.md
 
-### SF-3: Rust Handler
+### SF-03: Rust Handler
 - **Scope**: Implements `RustRunner` using Cargo and Clippy natively, mapping `cargo build` exits to the generic bounds.
 - **FRs**: [FR-4, FR-8]
 - **Inputs**: Rust polyglot requests.
 - **Outputs**: Validated Rust runner integrating `cargo`.
-- **Depends on**: SF-1
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf3_implementation_plan.md
+- **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf03_implementation_plan.md
 
-### SF-4: Polyglot Submodule Architecture Refactor
+### SF-04: Polyglot Submodule Architecture Refactor
 - **Scope**: Refactors god-classes (`java.py`, `kotlin.py`, `rust.py`) into dedicated package submodules (`java/runner.py`, `java/parsers.py`) alongside migrating their respective unit and integration test folders natively inside `tests/unit/.../java/` to prevent directory and module bloat. **Must natively refactor `_parse_detekt_complexity` and `_parse_pmd_complexity` to extract values purely via structural SARIF properties instead of brittle string regex scraping (fixing compiler upgrade vulnerability)**. **Must perform an exhaustive evaluation and backfill of E2E and Unit test gaps across all Polyglot handlers (Java/Kotlin/Rust) to ensure complete ecosystem parity and structural coverage.**
 - **FRs**: [FR-1]
 - **Inputs**: Existing unified runner files.
 - **Outputs**: Clean domain-driven package modules mapping per-language correctly.
-- **Depends on**: SF-2, SF-3
-- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf4_implementation_plan.md
+- **Depends on**: SF-02, SF-03
+- **Impl Plan**: docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf04_implementation_plan.md
 
 ## Execution Order
 
-1. SF-1 (Core Interface, Compilers & Python/TS)
-2. SF-2 (JVM Handlers) and SF-3 (Rust Handler) in parallel (both depend only on SF-1)
-3. SF-4 (Polyglot Submodule Architecture Refactor)
+1. SF-01 (Core Interface, Compilers & Python/TS)
+2. SF-02 (JVM Handlers) and SF-03 (Rust Handler) in parallel (both depend only on SF-01)
+3. SF-04 (Polyglot Submodule Architecture Refactor)
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Core Interface & Python/TS | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | JVM Handlers (Java & Kotlin)| SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Rust Handler | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Submodule Refactoring | SF-2, SF-3 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Core Interface & Python/TS | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | JVM Handlers (Java & Kotlin)| SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | Rust Handler | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-04 | Submodule Refactoring | SF-02, SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
-Execute `@[/dev]` targeting `docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf4_implementation_plan.md` to begin safely refactoring the Polyglot boundaries.
-**Current status**: Implementation Plan for SF-3 is APPROVED.
-**Next step**: Run the following command to begin building the code for SF-3 via TDD:
-`@[/dev] docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf3_implementation_plan.md`
+Execute `@[/dev]` targeting `docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf04_implementation_plan.md` to begin safely refactoring the Polyglot boundaries.
+**Current status**: Implementation Plan for SF-03 is APPROVED.
+**Next step**: Run the following command to begin building the code for SF-03 via TDD:
+`@[/dev] docs/roadmap/features/topic_05_validation/D-VAL-03/D-VAL-03_sf03_implementation_plan.md`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

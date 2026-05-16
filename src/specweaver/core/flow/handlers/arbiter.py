@@ -133,11 +133,16 @@ class ArbitrateVerdictHandler(StepHandler):
             if context.spec_path.exists():
                 pass
 
-            from specweaver.core.flow.handlers._profiles import ARBITER
+            from specweaver.core.flow.handlers._profiles import ARBITER, resolve_profile
             from specweaver.core.flow.handlers.base import _build_base_prompt
 
+            try:
+                profile = resolve_profile(step.params.get("render_profile"), default=ARBITER)
+            except ValueError as e:
+                return _error_result(str(e), started)
+
             base_prompt = await _build_base_prompt(
-                context, ARBITRATE_INSTRUCTIONS, profile=ARBITER
+                context, ARBITRATE_INSTRUCTIONS, profile=profile
             )
             base_prompt.add_context(filtered_trace, label="Failures")
 
