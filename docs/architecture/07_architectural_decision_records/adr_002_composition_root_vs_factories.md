@@ -49,5 +49,5 @@ To resolve the DRY violation without breaking the Composition Root pattern, we w
 2. Instead, we will replace the 20-line private helper functions (`_load_constitution_content`, `_load_standards_content`) in the CLI with clean, 1-line public Domain APIs (`find_constitution` and `load_standards_content_async`).
 3. This slims the CLI down to a pure declarative injector, maintaining Dependency Inversion while resolving the code smell.
 
-## Future Adaptations (TECH-06)
-In the future, to further purify the CLI, we may extract an explicit `ApplicationService` or `UseCase` layer between the Typer router and the Engine to house this Composition Root logic, rather than mixing it with argument parsing.
+## Future Adaptations (TECH-08 — CANCELLED)
+This section originally proposed extracting an explicit `ApplicationService` layer (TECH-08). After two rounds of adversarial Red Team / Blue Team analysis, this was proven to be an empty indirection wrapper with zero ROI. The constraints required (no typer, no db, no file I/O, no if/else, must be async) stripped it down to a single-line delegation to `PipelineRunner`. The real fix is TECH-05: expose the misplaced private CLI helpers as public Domain APIs.

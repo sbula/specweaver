@@ -630,9 +630,7 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `✅` **TECH-07:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-07/TECH-07_design.md)
 
-### 🔴 TECH-08: CLI ApplicationService Layer Extraction
-**Benefit:** *Further purifies the Delivery Mechanism by extracting an explicit `ApplicationService` or `UseCase` layer between the Typer router and the Flow Engine, ensuring the CLI router handles only arguments, not composition logic.*
-*   **Core Required (MVS):**
-    *   `[ ]` **TECH-08:** CLI ApplicationService Layer Extraction
-*   **Discovered during:** TECH-05 ADR 002 (Composition Root vs Factories) debate.
+### ⚫ TECH-08: CLI ApplicationService Layer Extraction — CANCELLED
+**Benefit:** ~~*Further purifies the Delivery Mechanism by extracting an explicit `ApplicationService` or `UseCase` layer between the Typer router and the Flow Engine.*~~
+*   **Status:** CANCELLED — subsumed by TECH-05. Two rounds of adversarial RT/BT analysis proved this would be an empty indirection wrapper with zero ROI. The real fix is TECH-05: expose private CLI helpers as public Domain APIs.
 

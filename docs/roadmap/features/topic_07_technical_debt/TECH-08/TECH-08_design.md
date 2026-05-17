@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-08
 - **Phase**: 5
-- **Status**: DRAFT
+- **Status**: CANCELLED — subsumed by TECH-05. Adversarial analysis (2 RT/BT rounds) proved this would be an empty indirection layer with zero ROI. See `tech_08_deep_analysis.md`.
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-08/TECH-08_design.md
 
 ## Feature Overview
