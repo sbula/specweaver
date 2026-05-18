@@ -7,35 +7,22 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from specweaver.workspace.context.inferrer import ContextInferrer
-
-import anyio
-import typer
-from rich.table import Table
 
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.project.constitution import find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
 from specweaver.workspace.project.scaffold import scaffold_project
 from specweaver.workspace.project.tach_sync import sync_tach_toml
-from specweaver.workspace.store import WorkspaceRepository
+
+import typer
+from rich.table import Table
 
 logger = logging.getLogger(__name__)
 
-
-def _run_workspace_op(method_name: str, *args: Any, **kwargs: Any) -> Any:
-    db = _core.get_db()
-
-    async def _action() -> Any:
-        async with db.async_session_scope() as session:
-            repo = WorkspaceRepository(session)
-            method = getattr(repo, method_name)
-            return await method(*args, **kwargs)
-
-    return anyio.run(_action)
 
 
 workspace_cli = typer.Typer(no_args_is_help=True)
@@ -70,15 +57,14 @@ def init(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    # Register in DB
     _core.get_db()
     try:
-        _run_workspace_op("register_project", name, str(project_path))
+        _core.run_repo_op(lambda r: r.register_project(name, str(project_path)))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    _run_workspace_op("set_active_project", name)
+    _core.run_repo_op(lambda r: r.set_active_project(name))
 
     # Scaffold files
     try:
@@ -119,7 +105,7 @@ def use(
     """Switch the active project."""
     logger.debug("Executing use command")
     _core.get_db()
-    proj = _run_workspace_op("get_project", name)
+    proj = _core.run_repo_op(lambda r: r.get_project(name))
     if not proj:
         _core.console.print(
             f"[red]Error:[/red] Project '{name}' not found. "
@@ -137,7 +123,7 @@ def use(
         )
         raise typer.Exit(code=1)
 
-    _run_workspace_op("set_active_project", name)
+    _core.run_repo_op(lambda r: r.set_active_project(name))
     _core.console.print(f"[green]Switched[/green] to project [bold]{name}[/bold] ({root})")
 
 
@@ -146,8 +132,8 @@ def projects() -> None:
     """List all registered projects."""
     logger.debug("Executing projects command")
     _core.get_db()
-    all_projects = _run_workspace_op("list_projects")
-    active = _run_workspace_op("get_active_project")
+    all_projects = _core.run_repo_op(lambda r: r.list_projects())
+    active = _core.run_repo_op(lambda r: r.get_active_project())
 
     if not all_projects:
         _core.console.print(
@@ -188,7 +174,7 @@ def remove(
     """Unregister a project from SpecWeaver."""
     logger.debug("Executing remove command")
     _core.get_db()
-    proj = _run_workspace_op("get_project", name)
+    proj = _core.run_repo_op(lambda r: r.get_project(name))
     if not proj:
         _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
         raise typer.Exit(code=1)
@@ -201,7 +187,7 @@ def remove(
             _core.console.print("[dim]Cancelled.[/dim]")
             return
 
-    _run_workspace_op("remove_project", name)
+    _core.run_repo_op(lambda r: r.remove_project(name))
     _core.console.print(f"[green]Removed[/green] project [bold]{name}[/bold]")
 
 
@@ -222,7 +208,7 @@ def update(
     _core.get_db()
     if field == "path":
         try:
-            _run_workspace_op("update_project_path", name, value)
+            _core.run_repo_op(lambda r: r.update_project_path(name, value))
         except ValueError as exc:
             _core.console.print(f"[red]Error:[/red] {exc}")
             raise typer.Exit(code=1) from exc
@@ -277,7 +263,7 @@ def scan() -> None:
     """Scan the active project and auto-generate missing context.yaml files."""
     logger.debug("Executing scan command")
     _core.get_db()
-    active = _run_workspace_op("get_active_project")
+    active = _core.run_repo_op(lambda r: r.get_active_project())
     if not active:
         _core.console.print(
             "[red]Error:[/red] No active project. "
@@ -285,7 +271,7 @@ def scan() -> None:
         )
         raise typer.Exit(code=1)
 
-    proj = _run_workspace_op("get_project", active)
+    proj = _core.run_repo_op(lambda r: r.get_project(active))
     if proj is None:
         _core.console.print(f"[red]Error:[/red] Project '{active}' not found.")
         raise typer.Exit(code=1)
@@ -324,15 +310,6 @@ def scan() -> None:
     except Exception as exc:
         _core.console.print(f"  [red]\u2717[/red] Tach Sync Failed: {exc}")
 
-
-def _load_constitution_content(
-    project_path: Path,
-    spec_path: Path | None = None,
-) -> str | None:
-    """Load constitution content for the given project, or None."""
-
-    info = find_constitution(project_path, spec_path=spec_path)
-    return info.content if info else None
 
 
 from specweaver.workspace.project.interfaces.cli_constitution import constitution_app  # noqa: E402

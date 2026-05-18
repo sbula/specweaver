@@ -28,7 +28,7 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path, monkeypatch):
     """Patch get_db() to use a temp DB for all standards tests."""
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
 
     db_path = tmp_path / ".specweaver-test" / "specweaver.db"
@@ -36,7 +36,7 @@ def _mock_db(tmp_path, monkeypatch):
     bootstrap_database(str(db_path))
     db = Database(db_path)
 
-    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.db_bootstrap.get_db", lambda: db)
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
     monkeypatch.setattr("specweaver.core.config.paths.config_db_path", lambda: db_path)
     return db
@@ -71,132 +71,6 @@ def _seed_standards(db, name: str, count: int = 2) -> None:
             data={"style": "google"},
             confidence=0.72,
         )
-
-
-# ---------------------------------------------------------------------------
-# Item 1: _load_standards_content()
-# ---------------------------------------------------------------------------
-
-
-class TestLoadStandardsContent:
-    """Unit tests for the _load_standards_content helper."""
-
-    def test_no_active_project_returns_none(self, _mock_db) -> None:
-        """No active project → returns None."""
-        from pathlib import Path
-
-        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-
-        assert _load_standards_content(Path(".")) is None
-
-    def test_active_project_no_standards_returns_none(
-        self,
-        tmp_path: Path,
-        _mock_db,
-    ) -> None:
-        """Active project but no standards → returns None."""
-        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-
-        _init_project(_mock_db, "empty_proj", str(tmp_path))
-        assert _load_standards_content(tmp_path) is None
-
-    def test_returns_formatted_string(
-        self,
-        tmp_path: Path,
-        _mock_db,
-    ) -> None:
-        """With standards in DB, returns formatted multi-line string."""
-        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-
-        _init_project(_mock_db, "proj", str(tmp_path))
-        _seed_standards(_mock_db, "proj", count=1)
-
-        result = _load_standards_content(tmp_path)
-        assert result is not None
-        assert "snake_case" in result
-        assert "naming" in result
-        assert "SHOULD follow" in result
-
-    def test_multiple_standards_all_rendered(
-        self,
-        tmp_path: Path,
-        _mock_db,
-    ) -> None:
-        """Multiple standards are all included in output."""
-        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-
-        _init_project(_mock_db, "proj", str(tmp_path))
-        _seed_standards(_mock_db, "proj", count=2)
-
-        result = _load_standards_content(tmp_path)
-        assert result is not None
-        assert "naming" in result
-        assert "docstrings" in result
-
-    def test_data_as_json_string(
-        self,
-        tmp_path: Path,
-        _mock_db,
-    ) -> None:
-        """Handles data stored as JSON string (not dict)."""
-        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-
-        _init_project(_mock_db, "proj", str(tmp_path))
-        # save_standard serialises data internally, but let's verify the
-        # formatter handles both possibilities by roundtripping.
-        _run_workspace_op(
-            _mock_db,
-            "save_standard",
-            project_name="proj",
-            scope=".",
-            language="python",
-            category="imports",
-            data={"style": "grouped"},
-            confidence=0.9,
-        )
-
-        result = _load_standards_content(tmp_path)
-        assert result is not None
-        assert "grouped" in result
-
-    def test_confidence_formatted_as_percent(
-        self,
-        tmp_path: Path,
-        _mock_db,
-    ) -> None:
-        """Confidence is formatted as percentage (e.g. 85%)."""
-        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-
-        _init_project(_mock_db, "proj", str(tmp_path))
-        _seed_standards(_mock_db, "proj", count=1)
-
-        result = _load_standards_content(tmp_path)
-        assert result is not None
-        assert "85%" in result
-
-    def test_empty_data_dict(
-        self,
-        tmp_path: Path,
-        _mock_db,
-    ) -> None:
-        """Standard with empty data dict doesn't crash."""
-        from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-
-        _init_project(_mock_db, "proj", str(tmp_path))
-        _run_workspace_op(
-            _mock_db,
-            "save_standard",
-            project_name="proj",
-            scope=".",
-            language="python",
-            category="empty_cat",
-            data={},
-            confidence=0.5,
-        )
-
-        result = _load_standards_content(tmp_path)
-        assert result is not None
-        assert "empty_cat" in result
 
 
 # ---------------------------------------------------------------------------

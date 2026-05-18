@@ -43,7 +43,7 @@ def test_dal_impact_matrix(tmp_path):
     import yaml
 
     from specweaver.commons.enums.dal import DALLevel
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.core.config.settings import DALImpactMatrix
     from specweaver.core.config.settings_loader import load_settings
@@ -90,7 +90,7 @@ def test_dal_impact_matrix(tmp_path):
 
 def test_load_settings_missing_dal_file(tmp_path):
     """Verify load_settings() gracefully skips missing dal_definitions.yaml."""
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.core.config.settings import DALImpactMatrix
     from specweaver.core.config.settings_loader import load_settings
@@ -108,7 +108,7 @@ def test_load_settings_missing_dal_file(tmp_path):
 
 def test_load_settings_invalid_yaml(tmp_path):
     """Verify load_settings() gracefully swallows fundamentally invalid YAML."""
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.core.config.settings import DALImpactMatrix
     from specweaver.core.config.settings_loader import load_settings
@@ -133,7 +133,7 @@ def test_load_settings_invalid_schema(tmp_path):
     """Verify load_settings() swallows Pydantic schema validation failures."""
     import yaml
 
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.core.config.settings import DALImpactMatrix
     from specweaver.core.config.settings_loader import load_settings

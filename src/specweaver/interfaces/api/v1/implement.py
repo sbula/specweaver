@@ -35,13 +35,10 @@ async def implement_spec(
     project_root, spec_path = await resolve_file_in_project(body.file, body.project, db)
 
     from specweaver.core.config.settings_loader import load_settings_async
-    from specweaver.graph.interfaces.cli import (
-        _load_topology,
-        _select_topology_contexts,
-    )
+    from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
     from specweaver.workflows.implementation.generator import Generator
-    from specweaver.workspace.project.interfaces.cli import _load_constitution_content
+    from specweaver.workspace.project.constitution import find_constitution
 
     settings = await load_settings_async(db, body.project)
 
@@ -62,9 +59,9 @@ async def implement_spec(
     generator = Generator(llm=adapter, config=gen_config)
 
     # Load topology context
-    topo_graph = _load_topology(project_root)
+    topo_graph = load_topology(project_root)
     module_name = spec_path.stem.removesuffix("_spec")
-    topo_contexts = _select_topology_contexts(
+    topo_contexts = select_topology_contexts(
         topo_graph,
         module_name,
         selector_name=body.selector,
@@ -77,7 +74,8 @@ async def implement_spec(
 
     from specweaver.assurance.standards.loader import load_standards_content_async
 
-    constitution = _load_constitution_content(project_root, spec_path=spec_path)
+    _info = find_constitution(project_root, spec_path=spec_path)
+    constitution = _info.content if _info else None
     standards = await load_standards_content_async(
         db,
         project_name=body.project,

@@ -28,7 +28,9 @@ def test_cli_pipelines_injects_model_router_in_run(
 
     with (
         patch("specweaver.core.flow.interfaces.cli._core.get_db", return_value=mock_active_db),
-        patch("specweaver.core.flow.interfaces.cli._load_standards_content", return_value=None),
+        patch("specweaver.core.flow.interfaces.cli.load_standards_content", return_value=None),
+        patch("specweaver.core.flow.interfaces.cli.find_constitution", return_value=None),
+        patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
         patch("specweaver.core.flow.interfaces.cli.resolve_project_path", return_value=project_dir),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
     ):
@@ -84,7 +86,9 @@ def test_cli_pipelines_injects_model_router_in_resume(
 
     with (
         patch("specweaver.core.flow.interfaces.cli._core.get_db", return_value=mock_active_db),
-        patch("specweaver.core.flow.interfaces.cli._load_standards_content", return_value=None),
+        patch("specweaver.core.flow.interfaces.cli.load_standards_content", return_value=None),
+        patch("specweaver.core.flow.interfaces.cli.find_constitution", return_value=None),
+        patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
         patch("specweaver.core.flow.interfaces.cli.resolve_project_path", return_value=project_dir),
         patch("specweaver.core.flow.interfaces.cli._get_state_store", return_value=mock_state_db),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
@@ -120,7 +124,9 @@ def test_empty_pipeline_spec_edgecase(mock_active_db: MagicMock, tmp_path: Path)
 
     with (
         patch("specweaver.core.flow.interfaces.cli._core.get_db", return_value=mock_active_db),
-        patch("specweaver.core.flow.interfaces.cli._load_standards_content", return_value=None),
+        patch("specweaver.core.flow.interfaces.cli.load_standards_content", return_value=None),
+        patch("specweaver.core.flow.interfaces.cli.find_constitution", return_value=None),
+        patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
     ):
         # We don't mock runner here; we let it execute up to the empty file exception
         with pytest.raises(typer.Exit) as exc_info:

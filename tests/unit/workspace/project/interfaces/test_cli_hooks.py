@@ -14,7 +14,7 @@ from specweaver.interfaces.cli.main import app
 def _mock_workspace(monkeypatch):
     """Patch _run_workspace_op so we don't hit the real DB and cause aiosqlite warnings."""
     monkeypatch.setattr(
-        "specweaver.workspace.project.interfaces.cli._run_workspace_op",
+        "specweaver.interfaces.cli._core.run_repo_op",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr("specweaver.telemetry_logger.setup_logging", lambda *args, **kwargs: None)

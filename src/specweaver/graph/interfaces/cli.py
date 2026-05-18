@@ -21,34 +21,13 @@ from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli import _core
 from specweaver.interfaces.cli._core import console, get_db
 from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
-from specweaver.workspace.project.interfaces.cli import _run_workspace_op
+
 
 if TYPE_CHECKING:
     from specweaver.assurance.graph.topology import TopologyContext, TopologyGraph
 
 logger = logging.getLogger(__name__)
 
-
-def _load_topology(project_path: Path) -> TopologyGraph | None:
-    """Try to load the project's topology graph from context.yaml files.
-
-    Returns ``None`` (with a dim console note) if no context.yaml files
-    are found -- this keeps all LLM commands usable without context.
-    """
-    from specweaver.assurance.graph.topology import TopologyGraph
-    from specweaver.graph.topology.engine import TopologyEngine
-
-    engine = TopologyEngine()
-    graph = TopologyGraph.from_project(project_path, engine, auto_infer=False)
-    if not graph.nodes:
-        _core.console.print(
-            "[dim]No context.yaml files found -- topology context disabled.[/dim]",
-        )
-        return None
-    _core.console.print(
-        f"[dim]Loaded topology: {len(graph.nodes)} modules.[/dim]",
-    )
-    return graph
 
 
 # -- Graph App --------------------------------------------------------------
@@ -109,7 +88,11 @@ def build(
 
         # RT-30: Validate local context.yaml against project
         service_name = "default"
-        topology = _load_topology(project_path)
+        from specweaver.assurance.graph.loader import load_topology
+
+        topology = load_topology(project_path)
+        if topology is None:
+            _core.console.print("[dim]No context.yaml files found -- topology context disabled.[/dim]")
         if topology and topology.nodes:
             # Try to find a root node (level = system or similar)
             # Or just take the first one if it's a microservice
@@ -194,11 +177,11 @@ def tag(
         rprint(f"[green]Added tag {target_uuid} to {target}[/green]")
 
     get_db()
-    active = _run_workspace_op("get_active_project")
+    active = _core.run_repo_op(lambda r: r.get_active_project())
     if not active:
         typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
-    proj = _run_workspace_op("get_project", active)
+    proj = _core.run_repo_op(lambda r: r.get_project(active))
     if not proj:
         typer.secho("Active project not found in global database.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
@@ -246,11 +229,11 @@ def tree_command(  # noqa: C901
             pass
 
     get_db()
-    active = _run_workspace_op("get_active_project")
+    active = _core.run_repo_op(lambda r: r.get_active_project())
     if not active:
         typer.secho("No active project. Run 'sw project set <name>' first.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
-    proj = _run_workspace_op("get_project", active)
+    proj = _core.run_repo_op(lambda r: r.get_project(active))
     if not proj:
         typer.secho("Active project not found in global database.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
@@ -325,63 +308,3 @@ def check_lineage(src_dir: Path) -> list[str]:
     return sorted(orphans)
 
 
-# Selector name -> class mapping (configurable via --selector)
-_SELECTOR_MAP: dict[str, type] = {}
-
-
-def _get_selector_map() -> dict[str, type]:
-    """Lazily populate and return the selector name->class mapping."""
-    if not _SELECTOR_MAP:
-        from specweaver.assurance.graph.selectors import (
-            ConstraintOnlySelector,
-            DirectNeighborSelector,
-            ImpactWeightedSelector,
-            NHopConstraintSelector,
-        )
-
-        _SELECTOR_MAP.update(
-            {
-                "direct": DirectNeighborSelector,
-                "nhop": NHopConstraintSelector,
-                "constraint": ConstraintOnlySelector,
-                "impact": ImpactWeightedSelector,
-            }
-        )
-    return _SELECTOR_MAP
-
-
-def _select_topology_contexts(
-    graph: TopologyGraph | None,
-    module_name: str,
-    *,
-    selector_name: str = "direct",
-) -> list[TopologyContext] | None:
-    """Run a selector and return topology contexts, or None."""
-    if graph is None:
-        return None
-
-    selector_map = _get_selector_map()
-    selector_cls = selector_map.get(selector_name)
-    if selector_cls is None:
-        from specweaver.interfaces.cli._core import console
-
-        console.print(
-            f"[yellow]Warning:[/yellow] Unknown selector '{selector_name}', "
-            "falling back to 'direct'.",
-        )
-        from specweaver.assurance.graph.selectors import DirectNeighborSelector
-
-        selector_cls = DirectNeighborSelector
-
-    selector = selector_cls()
-    related = selector.select(graph, module_name)
-    if not related:
-        return None
-
-    contexts = graph.format_context_summary(module_name, related)
-    from specweaver.interfaces.cli._core import console
-
-    console.print(
-        f"[dim]Topology: {len(contexts)} related module(s) via {selector_name} selector.[/dim]",
-    )
-    return contexts

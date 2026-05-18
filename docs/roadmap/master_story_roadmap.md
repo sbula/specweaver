@@ -612,10 +612,10 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-04:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-04/TECH-04_design.md)
 
-### 🔴 TECH-05: Context Loading Pipeline Refactoring
+### 🟢 TECH-05: Context Loading Pipeline Refactoring
 **Benefit:** *Eliminates business logic from CLI layers, kills the cross-interface spider web of private helper imports, and reduces RunContext from a 23-field God Object to a lean execution context.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-05:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-05/TECH-05_design.md)
+    *   `✅` **TECH-05:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-05/TECH-05_design.md)
 *   **Dependency:** D-INTL-06 SF-02 (Prompt Factory) — the highest-ROI refactoring (moving constitution/standards loading inside the factory) requires the factory to exist first.
 *   **Discovered during:** D-INTL-06 Red Team Cycle 4 pattern analysis.
 

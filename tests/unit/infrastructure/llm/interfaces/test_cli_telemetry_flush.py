@@ -52,20 +52,26 @@ class TestReviewCommandFlush:
 
         with (
             patch(
-                "specweaver.workflows.review.interfaces.cli._require_llm_adapter",
+                "specweaver.core.config.settings_loader.load_settings",
+                return_value=mock_settings,
+            ),
+            patch(
+                "specweaver.infrastructure.llm.factory.create_llm_adapter",
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
+            patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch("specweaver.interfaces.cli._core.get_db", return_value=MagicMock()),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",
                 return_value=tmp_path,
             ),
-            patch("specweaver.graph.interfaces.cli._load_topology", return_value=None),
+            patch("specweaver.assurance.graph.loader.load_topology", return_value=None),
             patch(
-                "specweaver.workspace.project.interfaces.cli._load_constitution_content",
+                "specweaver.workflows.review.interfaces.cli.find_constitution",
                 return_value=None,
             ),
             patch(
-                "specweaver.assurance.standards.interfaces.cli._load_standards_content",
+                "specweaver.workflows.review.interfaces.cli.load_standards_content",
                 return_value=None,
             ),
             contextlib.suppress(SystemExit),
@@ -92,20 +98,26 @@ class TestImplementCommandFlush:
 
         with (
             patch(
-                "specweaver.workflows.implementation.interfaces.cli._require_llm_adapter",
+                "specweaver.core.config.settings_loader.load_settings",
+                return_value=mock_settings,
+            ),
+            patch(
+                "specweaver.infrastructure.llm.factory.create_llm_adapter",
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
+            patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch("specweaver.interfaces.cli._core.get_db", return_value=MagicMock()),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",
                 return_value=tmp_path,
             ),
-            patch("specweaver.graph.interfaces.cli._load_topology", return_value=None),
+            patch("specweaver.assurance.graph.loader.load_topology", return_value=None),
             patch(
-                "specweaver.workspace.project.interfaces.cli._load_constitution_content",
+                "specweaver.workflows.implementation.interfaces.cli.find_constitution",
                 return_value=None,
             ),
             patch(
-                "specweaver.assurance.standards.interfaces.cli._load_standards_content",
+                "specweaver.workflows.implementation.interfaces.cli.load_standards_content",
                 return_value=None,
             ),
             patch(
@@ -138,14 +150,20 @@ class TestDraftCommandFlush:
 
         with (
             patch(
-                "specweaver.workflows.review.interfaces.cli._require_llm_adapter",
+                "specweaver.core.config.settings_loader.load_settings",
+                return_value=mock_settings,
+            ),
+            patch(
+                "specweaver.infrastructure.llm.factory.create_llm_adapter",
                 return_value=(mock_settings, mock_collector, MagicMock()),
             ),
+            patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
+            patch("specweaver.interfaces.cli._core.get_db", return_value=MagicMock()),
             patch(
                 "specweaver.workspace.project.discovery.resolve_project_path",
                 return_value=tmp_path,
             ),
-            patch("specweaver.graph.interfaces.cli._load_topology", return_value=None),
+            patch("specweaver.assurance.graph.loader.load_topology", return_value=None),
         ):
             # Ensure specs dir exists and target doesn't
             (tmp_path / "specs").mkdir(exist_ok=True)

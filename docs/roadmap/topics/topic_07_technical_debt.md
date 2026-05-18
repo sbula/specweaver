@@ -17,7 +17,7 @@ This document tracks all massive refactoring efforts, technical debt removal, an
   > [Description](../features/topic_07_technical_debt/TECH-04/TECH-04_design.md) | Refactor all existing database tables to use a strict domain-prefix naming convention (e.g., `workspace_projects`, `flow_artifact_events`). Established during B-INTL-09 with the `memory_` prefix pattern. Prevents naming collisions as domain count grows.
 
 ## Context Loading & RunContext Anti-Patterns
-* **`TECH-05` 🔴: Context Loading Pipeline Refactoring**
+* **`TECH-05` 🟢: Context Loading Pipeline Refactoring**
   > [Description](../features/topic_07_technical_debt/TECH-05/TECH-05_design.md) | Three interrelated anti-patterns discovered during D-INTL-06 Red Team analysis that compound as new context sources are added:
   >
   > **Finding 1 — Business Logic in Interface/CLI Layers:** `_load_constitution_content()` is defined in `workspace/project/interfaces/cli.py` and `_load_standards_content()` in `assurance/standards/interfaces/cli.py`. These are data loading utilities, not CLI commands. They should live in their respective domain modules (`workspace/project/constitution.py`, `assurance/standards/loader.py`). The standards loader additionally couples to the CLI singleton via `_core.get_db()`.

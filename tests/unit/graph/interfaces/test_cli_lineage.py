@@ -126,12 +126,13 @@ def test_tag_command_adds_tag_and_logs_to_db(tmp_path):
         patch("specweaver.graph.interfaces.cli.uuid.uuid4") as mock_uuid,
         patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
         patch("specweaver.graph.interfaces.cli.LineageRepository") as mock_repo_class,
-        patch("specweaver.graph.interfaces.cli._run_workspace_op") as mock_ws_op,
+        patch("specweaver.interfaces.cli._core.run_repo_op") as mock_repo_op,
     ):
         mock_uuid.return_value = "mocked-uuid-123"
-        mock_ws_op.side_effect = lambda op, *args: (
-            "test-proj" if op == "get_active_project" else {"root_path": "/tmp/test-proj"}
-        )
+        mock_repo_op.side_effect = [
+            "test-proj",  # get_active_project
+            {"root_path": "/tmp/test-proj"},  # get_project
+        ]
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_repo = MagicMock()
@@ -162,11 +163,12 @@ def test_tag_command_logs_edit_for_existing_tag(tmp_path):
     with (
         patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
         patch("specweaver.graph.interfaces.cli.LineageRepository") as mock_repo_class,
-        patch("specweaver.graph.interfaces.cli._run_workspace_op") as mock_ws_op,
+        patch("specweaver.interfaces.cli._core.run_repo_op") as mock_repo_op,
     ):
-        mock_ws_op.side_effect = lambda op, *args: (
-            "test-proj" if op == "get_active_project" else {"root_path": "/tmp/test-proj"}
-        )
+        mock_repo_op.side_effect = [
+            "test-proj",  # get_active_project
+            {"root_path": "/tmp/test-proj"},  # get_project
+        ]
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
         mock_repo = MagicMock()
@@ -191,11 +193,12 @@ def test_tree_command_displays_lineage():
         patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
         patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
         patch("specweaver.graph.interfaces.cli.LineageRepository"),
-        patch("specweaver.graph.interfaces.cli._run_workspace_op") as mock_ws_op,
+        patch("specweaver.interfaces.cli._core.run_repo_op") as mock_repo_op,
     ):
-        mock_ws_op.side_effect = lambda op, *args: (
-            "test-proj" if op == "get_active_project" else {"root_path": "/tmp/test-proj"}
-        )
+        mock_repo_op.side_effect = [
+            "test-proj",  # get_active_project
+            {"root_path": "/tmp/test-proj"},  # get_project
+        ]
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
 
@@ -251,11 +254,12 @@ def test_tree_command_reads_uuid_from_file_content(tmp_path):
         patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
         patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
         patch("specweaver.graph.interfaces.cli.LineageRepository"),
-        patch("specweaver.graph.interfaces.cli._run_workspace_op") as mock_ws_op,
+        patch("specweaver.interfaces.cli._core.run_repo_op") as mock_repo_op,
     ):
-        mock_ws_op.side_effect = lambda op, *args: (
-            "test-proj" if op == "get_active_project" else {"root_path": "/tmp/test-proj"}
-        )
+        mock_repo_op.side_effect = [
+            "test-proj",  # get_active_project
+            {"root_path": "/tmp/test-proj"},  # get_project
+        ]
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
 
@@ -283,11 +287,12 @@ def test_tree_command_graceful_missing_history():
         patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
         patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
         patch("specweaver.graph.interfaces.cli.LineageRepository"),
-        patch("specweaver.graph.interfaces.cli._run_workspace_op") as mock_ws_op,
+        patch("specweaver.interfaces.cli._core.run_repo_op") as mock_repo_op,
     ):
-        mock_ws_op.side_effect = lambda op, *args: (
-            "test-proj" if op == "get_active_project" else {"root_path": "/tmp/test-proj"}
-        )
+        mock_repo_op.side_effect = [
+            "test-proj",  # get_active_project
+            {"root_path": "/tmp/test-proj"},  # get_project
+        ]
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
 
@@ -314,11 +319,12 @@ def test_tree_command_handles_circular_references():
         patch("specweaver.graph.interfaces.cli.get_db") as mock_get_db,
         patch("specweaver.graph.interfaces.cli.LineageEngine") as mock_engine_class,
         patch("specweaver.graph.interfaces.cli.LineageRepository"),
-        patch("specweaver.graph.interfaces.cli._run_workspace_op") as mock_ws_op,
+        patch("specweaver.interfaces.cli._core.run_repo_op") as mock_repo_op,
     ):
-        mock_ws_op.side_effect = lambda op, *args: (
-            "test-proj" if op == "get_active_project" else {"root_path": "/tmp/test-proj"}
-        )
+        mock_repo_op.side_effect = [
+            "test-proj",  # get_active_project
+            {"root_path": "/tmp/test-proj"},  # get_project
+        ]
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
 

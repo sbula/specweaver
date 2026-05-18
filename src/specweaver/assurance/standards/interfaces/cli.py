@@ -15,7 +15,7 @@ from rich.table import Table
 from specweaver.commons import json
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
-from specweaver.workspace.project.interfaces.cli import _run_workspace_op
+
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def standards_scan(  # noqa: C901
 
     name = _core._require_active_project()
     db = _core.get_db()
-    proj = _run_workspace_op("get_project", name)
+    proj = _core.run_repo_op(lambda r: r.get_project(name))
     if proj is None:
         _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
         raise typer.Exit(code=1)
@@ -158,7 +158,7 @@ def standards_scan(  # noqa: C901
     # Load existing for re-scan diff
     existing_by_scope: dict[str, list[dict[str, Any]]] = {}
     for s in scope_results:
-        existing_by_scope[s] = _run_workspace_op("get_standards", name, scope=s)
+        existing_by_scope[s] = _core.run_repo_op(lambda r, _s=s: r.get_standards(name, scope=_s))
 
     # HITL review
     if no_review:
@@ -197,15 +197,16 @@ def _save_accepted_standards(
     for s, results in accepted.items():
         for result in results:
             confirmed = "hitl" if not no_review else None
-            _run_workspace_op(
-                "save_standard",
-                project_name=project_name,
-                scope=s,
-                language=result.language or "unknown",
-                category=result.category,
-                data=dict(result.dominant),
-                confidence=result.confidence,
-                confirmed_by=confirmed,
+            _core.run_repo_op(
+                lambda r, _p=project_name, _s=s, _r=result, _c=confirmed: r.save_standard(
+                    project_name=_p,
+                    scope=_s,
+                    language=_r.language or "unknown",
+                    category=_r.category,
+                    data=dict(_r.dominant),
+                    confidence=_r.confidence,
+                    confirmed_by=_c,
+                )
             )
             saved += 1
             _core.console.print(
@@ -242,19 +243,11 @@ def _maybe_bootstrap_constitution(
     if not needs_bootstrap:
         return
 
-    import anyio
-
-    from specweaver.workspace.store import WorkspaceRepository
-
-    async def _get_mode() -> str:
-        async with db.async_session_scope() as session:
-            return await WorkspaceRepository(session).get_auto_bootstrap(project_name)
-
-    bootstrap_mode = anyio.run(_get_mode)
+    bootstrap_mode = _core.run_repo_op(lambda r: r.get_auto_bootstrap(project_name))
     languages = sorted({r.language or "unknown" for results in accepted.values() for r in results})
 
     if bootstrap_mode == "auto":
-        all_standards = _run_workspace_op("get_standards", project_name)
+        all_standards = _core.run_repo_op(lambda r: r.get_standards(project_name))
         project_slug = project_path.name.lower().replace(" ", "-")
         result = generate_constitution_from_standards(
             project_path,
@@ -273,7 +266,7 @@ def _maybe_bootstrap_constitution(
             default=True,
         )
         if do_bootstrap:
-            all_standards = _run_workspace_op("get_standards", project_name)
+            all_standards = _core.run_repo_op(lambda r: r.get_standards(project_name))
             project_slug = project_path.name.lower().replace(" ", "-")
             result = generate_constitution_from_standards(
                 project_path,
@@ -346,7 +339,7 @@ def standards_show(
     name = _core._require_active_project()
     _core.get_db()
 
-    standards = _run_workspace_op("get_standards", name, scope=scope, language=language)
+    standards = _core.run_repo_op(lambda r: r.get_standards(name, scope=scope, language=language))
 
     if not standards:
         _core.console.print(
@@ -398,7 +391,7 @@ def standards_clear(
     name = _core._require_active_project()
     _core.get_db()
 
-    _run_workspace_op("clear_standards", name, scope=scope)
+    _core.run_repo_op(lambda r: r.clear_standards(name, scope=scope))
 
     scope_msg = f" (scope: {scope})" if scope else ""
     _core.console.print(
@@ -413,7 +406,7 @@ def standards_scopes() -> None:
     name = _core._require_active_project()
     _core.get_db()
 
-    stored_scopes = _run_workspace_op("list_scopes", name)
+    stored_scopes = _core.run_repo_op(lambda r: r.list_scopes(name))
 
     if not stored_scopes:
         _core.console.print(
@@ -429,7 +422,7 @@ def standards_scopes() -> None:
     table.add_column("Last Scanned")
 
     for scope_name in stored_scopes:
-        standards = _run_workspace_op("get_standards", name, scope=scope_name)
+        standards = _core.run_repo_op(lambda r, _sn=scope_name: r.get_standards(name, scope=_sn))
         if not standards:
             continue
         languages_str = sorted({str(s["language"]) for s in standards})
@@ -444,25 +437,3 @@ def standards_scopes() -> None:
 
     _core.console.print(table)
 
-
-def _load_standards_content(
-    project_path: Path,
-    target_path: Path | None = None,
-    *,
-    max_chars: int = 2000,
-) -> str | None:
-    """Load formatted standards from DB for prompt injection, or None."""
-    from specweaver.assurance.standards.loader import load_standards_content
-
-    db = _core.get_db()
-    active = _run_workspace_op("get_active_project")
-    if not active:
-        return None
-
-    return load_standards_content(
-        db,
-        active,
-        project_path,
-        target_path=target_path,
-        max_chars=max_chars,
-    )

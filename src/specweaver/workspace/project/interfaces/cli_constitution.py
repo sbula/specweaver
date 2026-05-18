@@ -7,7 +7,7 @@ import typer
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.project.constitution import check_constitution, find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
-from specweaver.workspace.project.interfaces.cli import _run_workspace_op
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,18 +77,11 @@ def constitution_check(
     # Try to get the configured max size from DB
     max_size_kwargs: dict[str, int] = {}
     try:
-        db = _core.get_db()
-        active = _run_workspace_op("get_active_project")
+        active = _core.run_repo_op(lambda r: r.get_active_project())
         if active:
-            import anyio
-
-            from specweaver.workspace.store import WorkspaceRepository
-
-            async def _get_max_size() -> int:
-                async with db.async_session_scope() as session:
-                    return await WorkspaceRepository(session).get_constitution_max_size(active)
-
-            max_size_kwargs["max_size"] = anyio.run(_get_max_size)
+            max_size_kwargs["max_size"] = _core.run_repo_op(
+                lambda r: r.get_constitution_max_size(active)
+            )
     except Exception:
         pass  # Fall back to default if DB unavailable
 
@@ -190,7 +183,7 @@ def constitution_bootstrap(
     # Load standards from DB
     _core.get_db()
     name = _core._require_active_project()
-    standards = _run_workspace_op("get_standards", name)
+    standards = _core.run_repo_op(lambda r: r.get_standards(name))
 
     if not standards:
         _core.console.print(

@@ -7,7 +7,6 @@ constitution max size, and domain profiles, plus model routing."""
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import anyio
 import typer
@@ -16,21 +15,11 @@ from rich.table import Table
 from specweaver.infrastructure.llm.models import TaskType
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
-from specweaver.workspace.store import WorkspaceRepository
 
 logger = logging.getLogger(__name__)
 
 
-def _run_workspace_op(method_name: str, *args: Any) -> Any:
-    db = _core.get_db()
 
-    async def _action() -> Any:
-        async with db.async_session_scope() as session:
-            repo = WorkspaceRepository(session)
-            method = getattr(repo, method_name)
-            return await method(*args)
-
-    return anyio.run(_action)
 
 
 # -- Config App -------------------------------------------------------------
@@ -47,7 +36,7 @@ def config_list() -> None:
     """List all validation rules currently applied via the active pipeline."""
     name = _core._require_active_project()
 
-    profile_name = _run_workspace_op("get_domain_profile", name)
+    profile_name = _core.run_repo_op(lambda r: r.get_domain_profile(name))
     if profile_name:
         _core.console.print(
             f"Validation rules for project [bold]{name}[/bold] are fully declarative "
@@ -71,7 +60,7 @@ def config_set_log_level(
     """Set the log level for the active project."""
     name = _core._require_active_project()
     try:
-        _run_workspace_op("set_log_level", name, level)
+        _core.run_repo_op(lambda r: r.set_log_level(name, level))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -88,7 +77,7 @@ def config_get_log_level() -> None:
     """Show the current log level for the active project."""
     name = _core._require_active_project()
     try:
-        level = _run_workspace_op("get_log_level", name)
+        level = _core.run_repo_op(lambda r: r.get_log_level(name))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -110,7 +99,7 @@ def config_set_constitution_max_size(
     """Set the maximum allowed CONSTITUTION.md size for the active project."""
     name = _core._require_active_project()
     try:
-        _run_workspace_op("set_constitution_max_size", name, size)
+        _core.run_repo_op(lambda r: r.set_constitution_max_size(name, size))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -126,7 +115,7 @@ def config_get_constitution_max_size() -> None:
     """Show the current constitution max size for the active project."""
     name = _core._require_active_project()
     try:
-        max_size = _run_workspace_op("get_constitution_max_size", name)
+        max_size = _core.run_repo_op(lambda r: r.get_constitution_max_size(name))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -151,7 +140,7 @@ def config_set_auto_bootstrap(
     """
     name = _core._require_active_project()
     try:
-        _run_workspace_op("set_auto_bootstrap", name, mode)
+        _core.run_repo_op(lambda r: r.set_auto_bootstrap(name, mode))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -167,7 +156,7 @@ def config_get_auto_bootstrap() -> None:
     """Show the current auto-bootstrap mode for the active project."""
     name = _core._require_active_project()
     try:
-        mode = _run_workspace_op("get_auto_bootstrap", name)
+        mode = _core.run_repo_op(lambda r: r.get_auto_bootstrap(name))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -258,7 +247,7 @@ def config_set_profile(
     """Activate a domain profile for the active project."""
     name = _core._require_active_project()
     try:
-        _run_workspace_op("set_domain_profile", name, profile_name)
+        _core.run_repo_op(lambda r: r.set_domain_profile(name, profile_name))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -275,7 +264,7 @@ def config_get_profile() -> None:
     """Show the active domain profile for the current project."""
     name = _core._require_active_project()
     try:
-        profile_name = _run_workspace_op("get_domain_profile", name)
+        profile_name = _core.run_repo_op(lambda r: r.get_domain_profile(name))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -295,7 +284,7 @@ def config_reset_profile() -> None:
     """Deactivate the domain profile for the active project."""
     name = _core._require_active_project()
     try:
-        _run_workspace_op("clear_domain_profile", name)
+        _core.run_repo_op(lambda r: r.clear_domain_profile(name))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc

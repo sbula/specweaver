@@ -6,65 +6,15 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
 
 import anyio
 import typer
 from rich.table import Table
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from specweaver.core.config.settings import SpecWeaverSettings
-
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import get_default_cost_table
 from specweaver.interfaces.cli import _core
 from specweaver.interfaces.cli._core import console
-from specweaver.workspace.project.interfaces.cli import _run_workspace_op
-
-
-def _require_llm_adapter(
-    project_path: Path,
-    *,
-    llm_role: str = "draft",
-) -> tuple[SpecWeaverSettings, Any, Any]:
-    from specweaver.core.config.settings_loader import load_settings
-    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
-    from specweaver.interfaces.cli import _core
-
-    db = _core.get_db()
-    project = _run_workspace_op("get_active_project")
-
-    try:
-        settings = load_settings(db, project, llm_role=llm_role)
-        return create_llm_adapter(
-            settings,
-            telemetry_project=project,
-        )
-    except LLMAdapterError as exc:
-        console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
-    except ValueError as exc:
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.warning("DB profile failed, using hardcoded fallback: %s", exc)
-
-        from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
-
-        settings = SpecWeaverSettings(
-            llm=LLMSettings(provider="gemini", model="gemini-3-flash-preview", api_key="test-key")
-        )
-        try:
-            return create_llm_adapter(
-                settings,
-                telemetry_project=project,
-            )
-        except LLMAdapterError as inner_exc:
-            console.print(f"[red]Error:[/red] {inner_exc}")
-            raise typer.Exit(code=1) from inner_exc
-
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +147,7 @@ def usage(
 
     project: str | None = None
     if not all_projects:
-        project = _run_workspace_op("get_active_project")
+        project = _core.run_repo_op(lambda r: r.get_active_project())
         if not project:
             _core.console.print(
                 "[yellow]No active project.[/yellow] "

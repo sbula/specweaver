@@ -1,13 +1,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""TDD tests for CLI topology wiring: _select_topology_contexts and --selector flag."""
+"""TDD tests for topology wiring: select_topology_contexts and --selector flag."""
 
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from specweaver.graph.interfaces.cli import _get_selector_map, _select_topology_contexts
+from specweaver.assurance.graph.loader import _get_selector_map, select_topology_contexts
 
 
 class TestSelectorMap:
@@ -39,7 +39,7 @@ class TestSelectTopologyContexts:
     """Tests for _select_topology_contexts helper."""
 
     def test_returns_none_when_no_graph(self) -> None:
-        result = _select_topology_contexts(None, "greet_service")
+        result = select_topology_contexts(None, "greet_service")
         assert result is None
 
     def test_returns_none_when_no_related_modules(self) -> None:
@@ -50,7 +50,7 @@ class TestSelectTopologyContexts:
             "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
             return_value=set(),
         ):
-            result = _select_topology_contexts(
+            result = select_topology_contexts(
                 mock_graph,
                 "isolated_module",
                 selector_name="direct",
@@ -67,7 +67,7 @@ class TestSelectTopologyContexts:
             "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
             return_value={"auth_service", "user_store"},
         ):
-            result = _select_topology_contexts(
+            result = select_topology_contexts(
                 mock_graph,
                 "greet_service",
                 selector_name="direct",
@@ -88,7 +88,7 @@ class TestSelectTopologyContexts:
             "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
             return_value={"some_module"},
         ):
-            result = _select_topology_contexts(
+            result = select_topology_contexts(
                 mock_graph,
                 "greet_service",
                 selector_name="nonexistent",
@@ -106,7 +106,7 @@ class TestSelectTopologyContexts:
             "specweaver.assurance.graph.selectors.NHopConstraintSelector.select",
             return_value={"related_module"},
         ) as mock_select:
-            _select_topology_contexts(
+            select_topology_contexts(
                 mock_graph,
                 "greet_service",
                 selector_name="nhop",

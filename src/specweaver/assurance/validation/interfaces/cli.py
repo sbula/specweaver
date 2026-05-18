@@ -14,7 +14,7 @@ from rich.table import Table
 
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.project.discovery import resolve_project_path
-from specweaver.workspace.project.interfaces.cli import _run_workspace_op
+
 
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult
@@ -112,7 +112,7 @@ def _resolve_pipeline_name(
     active_profile = None
     if active_project:
         with contextlib.suppress(ValueError, Exception):
-            active_profile = _run_workspace_op("get_domain_profile", active_project)
+            active_profile = _core.run_repo_op(lambda r: r.get_domain_profile(active_project))
 
     try:
         return resolve_pipeline_name(
@@ -198,12 +198,12 @@ def check(
         from specweaver.graph.interfaces.cli import check_lineage
 
         _core.get_db()
-        active = _run_workspace_op("get_active_project")
+        active = _core.run_repo_op(lambda r: r.get_active_project())
 
         if project:
             proj_path = Path(project)
         elif active:
-            proj_data = _run_workspace_op("get_project", active)
+            proj_data = _core.run_repo_op(lambda r: r.get_project(active))
             proj_path = Path(str(proj_data["root_path"])) if proj_data else Path.cwd()
         else:
             proj_path = Path.cwd()
@@ -242,7 +242,7 @@ def check(
         project_dir = Path(project) if project else None
 
     # Determine active project for profile-aware pipeline selection
-    active = _run_workspace_op("get_active_project")
+    active = _core.run_repo_op(lambda r: r.get_active_project())
     pipeline_name = _resolve_pipeline_name(level, pipeline, active_project=active)
 
     try:

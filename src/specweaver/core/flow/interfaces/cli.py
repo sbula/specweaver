@@ -12,21 +12,14 @@ from typing import TYPE_CHECKING
 
 import typer
 
-from specweaver.assurance.standards.interfaces.cli import _load_standards_content
+from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
+from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.base import RunContext
-from specweaver.graph.interfaces.cli import (
-    _load_topology,
-    _select_topology_contexts,
-)
-from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
+from specweaver.workspace.project.constitution import find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
-from specweaver.workspace.project.interfaces.cli import (
-    _load_constitution_content,
-    _run_workspace_op,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -246,17 +239,25 @@ def _execute_run(  # noqa: C901
     # Build run context
     from specweaver.infrastructure.llm.router import ModelRouter
 
+    _info = find_constitution(project_path, spec_path=spec_path)
+    constitution_content = _info.content if _info else None
+
+    active = _core.run_repo_op(lambda r: r.get_active_project())
+    db = _core.get_db()
+    standards_content = (
+        load_standards_content(db, active, project_path, target_path=spec_path)
+        if active
+        else None
+    )
+
     context = RunContext(
         analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
-        constitution=_load_constitution_content(
-            project_path,
-            spec_path=spec_path,
-        ),
-        standards=_load_standards_content(project_path, target_path=spec_path),
-        db=_core.get_db(),
+        constitution=constitution_content,
+        standards=standards_content,
+        db=db,
     )
 
     from specweaver.core.config.settings_loader import load_settings
@@ -271,19 +272,22 @@ def _execute_run(  # noqa: C901
     # Wire up LLM if needed (non-validate-only pipelines)
     if pipeline_def.name != "validate_only":
         try:
-            _, adapter, _gen_config = _require_llm_adapter(project_path)
+            from specweaver.core.config.settings_loader import load_settings
+            from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+
+            settings = load_settings(_core.get_db(), project_path.name)
+            _, adapter, _gen_config = create_llm_adapter(settings, telemetry_project=project_path.name)
             context.llm = adapter
-        except (typer.Exit, SystemExit):
-            if pipeline_def.name != "validate_only":
-                _core.console.print(
-                    "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
-                )
+        except (LLMAdapterError, ValueError):
+            _core.console.print(
+                "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
+            )
 
     # Load topology
-    topo_graph = _load_topology(project_path)
+    topo_graph = load_topology(project_path)
     if topo_graph:
         module_name = spec_path.stem.removesuffix("_spec")
-        topo_contexts = _select_topology_contexts(
+        topo_contexts = select_topology_contexts(
             topo_graph,
             module_name,
             selector_name=selector,
@@ -381,7 +385,7 @@ def resume(  # noqa: C901
         # Auto-detect: find latest resumable run for active project
         name = _core._require_active_project()
         _core.get_db()
-        proj = _run_workspace_op("get_project", name)
+        proj = _core.run_repo_op(lambda r: r.get_project(name))
         if not proj:
             _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
             raise typer.Exit(code=1)
@@ -417,17 +421,25 @@ def resume(  # noqa: C901
     project_path = resolve_project_path(None)
     spec_path = Path(run_state.spec_path)
 
+    _info = find_constitution(project_path, spec_path=spec_path)
+    constitution_content = _info.content if _info else None
+
+    resume_active = _core.run_repo_op(lambda r: r.get_active_project())
+    db = _core.get_db()
+    standards_content = (
+        load_standards_content(db, resume_active, project_path, target_path=spec_path)
+        if resume_active
+        else None
+    )
+
     context = RunContext(
         analyzer_factory=AnalyzerFactory,
         project_path=project_path,
         spec_path=spec_path,
         output_dir=project_path / "src",
-        constitution=_load_constitution_content(
-            project_path,
-            spec_path=spec_path,
-        ),
-        standards=_load_standards_content(project_path, target_path=spec_path),
-        db=_core.get_db(),
+        constitution=constitution_content,
+        standards=standards_content,
+        db=db,
     )
 
     from specweaver.core.config.settings_loader import load_settings

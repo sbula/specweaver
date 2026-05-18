@@ -11,16 +11,12 @@ from pathlib import Path
 
 import typer
 
-from specweaver.assurance.standards.interfaces.cli import _load_standards_content
-from specweaver.graph.interfaces.cli import (
-    _load_topology,
-    _select_topology_contexts,
-)
-from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
+from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
+from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
+from specweaver.workspace.project.constitution import find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
-from specweaver.workspace.project.interfaces.cli import _load_constitution_content
 
 logger = logging.getLogger(__name__)
 
@@ -73,14 +69,27 @@ def implement(
     from specweaver.core.flow.engine.state import StepStatus
     from specweaver.core.flow.handlers.base import RunContext
 
-    settings, adapter, _ = _require_llm_adapter(project_path)
+    from specweaver.core.config.settings_loader import load_settings
+    from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+
+    db = _core.get_db()
+    project = _core.run_repo_op(lambda r: r.get_active_project())
+    try:
+        settings = load_settings(db, project)
+        settings, adapter, _ = create_llm_adapter(settings, telemetry_project=project)
+    except LLMAdapterError as exc:
+        _core.console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    except ValueError as exc:
+        _core.console.print(f"[red]Error:[/red] LLM configuration failed: {exc}")
+        raise typer.Exit(code=1) from exc
     if settings and getattr(settings, "llm", None):
         settings.llm.temperature = 0.2  # Low temperature for code
 
     # Load topology context for the implementation target
-    topo_graph = _load_topology(project_path)
+    topo_graph = load_topology(project_path)
     module_name = spec_path.stem.removesuffix("_spec")
-    topo_contexts = _select_topology_contexts(
+    topo_contexts = select_topology_contexts(
         topo_graph,
         module_name,
         selector_name=selector,
@@ -102,12 +111,14 @@ def implement(
         f"  [dim]Code:[/dim]  {code_path}\n  [dim]Tests:[/dim] {test_path}\n",
     )
 
-    # Load constitution for this project
-    constitution_content = _load_constitution_content(
-        project_path,
-        spec_path=spec_path,
+    constitution_info = find_constitution(project_path, spec_path=spec_path)
+    constitution_content = constitution_info.content if constitution_info else None
+    active = _core.run_repo_op(lambda r: r.get_active_project())
+    standards_content = (
+        load_standards_content(db, active, project_path, target_path=spec_path)
+        if active
+        else None
     )
-    standards_content = _load_standards_content(project_path, target_path=spec_path)
 
     pipeline = PipelineDefinition(
         name="implement_spec",

@@ -22,7 +22,7 @@ from specweaver.interfaces.cli._core import (  # noqa: F401
     console,
     logger,
 )
-from specweaver.workspace.project.interfaces.cli import _run_workspace_op
+
 
 
 @app.callback()
@@ -42,18 +42,10 @@ def _app_callback(
     from specweaver.telemetry_logger import setup_logging
 
     db = _core.get_db()
-    active = _run_workspace_op("get_active_project")
+    active = _core.run_repo_op(lambda r: r.get_active_project())
     if active:
         try:
-            import anyio
-
-            from specweaver.workspace.store import WorkspaceRepository
-
-            async def _get_level() -> str:
-                async with db.async_session_scope() as session:
-                    return await WorkspaceRepository(session).get_log_level(active)
-
-            level = anyio.run(_get_level)
+            level = _core.run_repo_op(lambda r: r.get_log_level(active))
         except (ValueError, Exception):
             level = "DEBUG"
     else:

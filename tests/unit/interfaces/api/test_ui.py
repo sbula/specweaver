@@ -15,7 +15,7 @@ from specweaver.interfaces.api.app import create_app
 @pytest.fixture()
 def client(tmp_path):
     """TestClient for the API."""
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
@@ -218,7 +218,7 @@ def test_submit_hitl_gate(tmp_path) -> None:
     from starlette.testclient import TestClient
 
     # Set up DB and project
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
@@ -299,7 +299,7 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
 
     from starlette.testclient import TestClient
 
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore

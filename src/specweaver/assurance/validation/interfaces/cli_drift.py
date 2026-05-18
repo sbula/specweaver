@@ -84,9 +84,17 @@ def drift_check(
     )
 
     if analyze:
-        from specweaver.infrastructure.llm.interfaces.cli import _require_llm_adapter
+        from specweaver.core.config.settings_loader import load_settings
+        from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
-        _, adapter, _ = _require_llm_adapter(project_path)
+        drift_db = _core.get_db()
+        drift_project = _core.run_repo_op(lambda r: r.get_active_project())
+        try:
+            settings = load_settings(drift_db, drift_project)
+            _, adapter, _ = create_llm_adapter(settings, telemetry_project=drift_project)
+        except (LLMAdapterError, ValueError) as exc:
+            _core.console.print(f"[red]Error:[/red] {exc}")
+            raise typer.Exit(code=1) from exc
         context.llm = adapter
 
     runner = PipelineRunner(pipeline, context)

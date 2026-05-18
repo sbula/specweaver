@@ -12,7 +12,9 @@ local binding.
 from __future__ import annotations
 
 import logging
+from typing import TypeVar
 
+import anyio
 import typer
 from rich.console import Console
 
@@ -29,17 +31,42 @@ app = typer.Typer(
 
 console = Console()
 
+_T = TypeVar("_T")
 
-__all__ = ["_require_active_project", "app", "console", "get_db", "logger"]
+__all__ = ["_require_active_project", "app", "console", "get_db", "logger", "run_repo_op"]
+
+
+def run_repo_op(fn):
+    """Run a typed WorkspaceRepository operation synchronously (CLI only).
+
+    Replaces the string-dispatched ``_run_workspace_op`` anti-pattern.
+    Each caller passes a typed coroutine function (lambda or async def),
+    giving IDE autocomplete and grep-ability.
+
+    Example::
+
+        active = run_repo_op(lambda r: r.get_active_project())
+        proj = run_repo_op(lambda r: r.get_project(name))
+
+    Warning: This is CLI-only infrastructure. API handlers must use
+    async sessions directly via FastAPI dependency injection.
+    """
+    from specweaver.workspace.store import WorkspaceRepository
+
+    db = get_db()
+
+    async def _action():
+        async with db.async_session_scope() as session:
+            return await fn(WorkspaceRepository(session))
+
+    return anyio.run(_action)
 
 
 def _require_active_project() -> str:
     """Get the active project name or exit with error."""
     logger.debug("Executing _require_active_project")
-    from specweaver.workspace.project.interfaces.cli import _run_workspace_op
-
     get_db()
-    name_raw = _run_workspace_op("get_active_project")
+    name_raw = run_repo_op(lambda r: r.get_active_project())
     if not name_raw:
         console.print(
             "[red]Error:[/red] No active project. "
@@ -54,3 +81,4 @@ def _version_callback(value: bool) -> None:
     if value:
         console.print(f"SpecWeaver v{__version__}")
         raise typer.Exit()
+

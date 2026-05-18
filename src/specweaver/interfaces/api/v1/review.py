@@ -37,7 +37,7 @@ async def review_spec(
     from specweaver.core.config.settings_loader import load_settings_async
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
     from specweaver.workflows.review.reviewer import Reviewer
-    from specweaver.workspace.project.interfaces.cli import _load_constitution_content
+    from specweaver.workspace.project.constitution import find_constitution
 
     settings = await load_settings_async(db, body.project)
 
@@ -57,7 +57,8 @@ async def review_spec(
 
     reviewer = Reviewer(llm=adapter, config=gen_config)
 
-    constitution = _load_constitution_content(project_root, spec_path=abs_path)
+    _info = find_constitution(project_root, spec_path=abs_path)
+    constitution = _info.content if _info else None
     standards = await load_standards_content_async(
         db,
         project_name=body.project,

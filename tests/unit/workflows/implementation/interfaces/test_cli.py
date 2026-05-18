@@ -27,12 +27,12 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.core.config.cli_db_utils.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.db_bootstrap.get_db", lambda: db)
     return db
 
 
@@ -63,14 +63,16 @@ def _make_mock_adapter(text: str = "pass\n") -> MagicMock:
 class TestImplementOutputPaths:
     """Test implement command output file naming."""
 
-    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
+    @patch("specweaver.core.config.settings_loader.load_settings")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
     @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
     def test_output_files_created(
         self,
         mock_ensure_schema,
         mock_log_event,
-        mock_require,
+        mock_load,
+        mock_create,
         tmp_path: Path,
     ) -> None:
         """implement → creates code + test files."""
@@ -81,7 +83,8 @@ class TestImplementOutputPaths:
         mock_settings = MagicMock()
         mock_settings.llm.model = "gemini-2.5-pro"
 
-        mock_require.return_value = (
+        mock_load.return_value = mock_settings
+        mock_create.return_value = (
             mock_settings,
             _make_mock_adapter("def greet(): pass\n"),
             MagicMock(temperature=0.7),
@@ -95,14 +98,16 @@ class TestImplementOutputPaths:
         assert (project / "src" / "greeter.py").exists()
         assert (project / "tests" / "test_greeter.py").exists()
 
-    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
+    @patch("specweaver.core.config.settings_loader.load_settings")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
     @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
     def test_spec_suffix_stripped(
         self,
         mock_ensure_schema,
         mock_log_event,
-        mock_require,
+        mock_load,
+        mock_create,
         tmp_path: Path,
     ) -> None:
         """'_spec' suffix stripped from output filenames."""
@@ -113,7 +118,8 @@ class TestImplementOutputPaths:
         mock_settings = MagicMock()
         mock_settings.llm.model = "gemini-2.5-pro"
 
-        mock_require.return_value = (
+        mock_load.return_value = mock_settings
+        mock_create.return_value = (
             mock_settings,
             _make_mock_adapter("pass\n"),
             MagicMock(temperature=0.7),

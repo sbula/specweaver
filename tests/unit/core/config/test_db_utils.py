@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import pytest
 from sqlalchemy import select
 
-from specweaver.core.config.cli_db_utils import bootstrap_database
+from specweaver.core.config.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import create_async_engine, session_scope
 from specweaver.infrastructure.llm.store import LlmProfile
 
