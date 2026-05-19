@@ -19,9 +19,6 @@ from specweaver.interfaces.cli import _core
 logger = logging.getLogger(__name__)
 
 
-
-
-
 # -- Config App -------------------------------------------------------------
 
 config_app = typer.Typer(

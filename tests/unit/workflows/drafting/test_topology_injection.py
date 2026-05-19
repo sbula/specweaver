@@ -291,7 +291,9 @@ class TestDrafterTopologyInjection:
                 return "test answer"
 
         mock_llm = _make_mock_llm("Generated section content")
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=QuickProvider())
+        drafter = Drafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=QuickProvider()
+        )
         specs_dir = tmp_path / "specs"
 
         result = await drafter.draft("greet_service", specs_dir)
@@ -314,7 +316,9 @@ class TestDrafterTopologyInjection:
                 return "test answer"
 
         mock_llm = _make_mock_llm("Generated content")
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=QuickProvider())
+        drafter = Drafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=QuickProvider()
+        )
         specs_dir = tmp_path / "specs"
         contexts = _sample_topology()
 
@@ -348,7 +352,9 @@ class TestDrafterTopologyInjection:
                 return "test answer"
 
         mock_llm = _make_mock_llm("Generated content")
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=TrackingProvider())
+        drafter = Drafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=TrackingProvider()
+        )
         specs_dir = tmp_path / "specs"
         contexts = _sample_topology()
 

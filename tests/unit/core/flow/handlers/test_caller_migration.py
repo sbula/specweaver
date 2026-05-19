@@ -57,7 +57,9 @@ async def test_draft_handler_uses_interactive_profile(mock_drafter_class, mock_b
     if run_context.spec_path.exists():
         run_context.spec_path.unlink()
 
-    step = PipelineStep(name="draft", module="feature", action="draft", target="spec", handler="DraftSpecHandler")
+    step = PipelineStep(
+        name="draft", module="feature", action="draft", target="spec", handler="DraftSpecHandler"
+    )
     await handler.execute(step, run_context)
 
     # M1 verification
@@ -81,7 +83,14 @@ async def test_generate_code_uses_full_profile(mock_generator_class, mock_build,
     run_context.llm = AsyncMock()
     run_context.context_provider = AsyncMock()
 
-    step = PipelineStep(name="gen", module="feature", action="generate", target="code", handler="GenerateCodeHandler", params={"output_dir": "/tmp/out"})
+    step = PipelineStep(
+        name="gen",
+        module="feature",
+        action="generate",
+        target="code",
+        handler="GenerateCodeHandler",
+        params={"output_dir": "/tmp/out"},
+    )
     await handler.execute(step, run_context)
 
     # M2 verification
@@ -105,7 +114,14 @@ async def test_generate_tests_uses_full_profile(mock_generator_class, mock_build
     run_context.llm = AsyncMock()
     run_context.context_provider = AsyncMock()
 
-    step = PipelineStep(name="gen", module="feature", action="generate", target="tests", handler="GenerateTestsHandler", params={"output_dir": "/tmp/out"})
+    step = PipelineStep(
+        name="gen",
+        module="feature",
+        action="generate",
+        target="tests",
+        handler="GenerateTestsHandler",
+        params={"output_dir": "/tmp/out"},
+    )
     await handler.execute(step, run_context)
 
     # M3 verification
@@ -129,7 +145,9 @@ async def test_plan_spec_uses_full_profile(mock_planner_class, mock_build, run_c
     run_context.llm = AsyncMock()
     run_context.context_provider = AsyncMock()
 
-    step = PipelineStep(name="plan", module="feature", action="plan", target="spec", handler="PlanSpecHandler")
+    step = PipelineStep(
+        name="plan", module="feature", action="plan", target="spec", handler="PlanSpecHandler"
+    )
     await handler.execute(step, run_context)
 
     # M4 verification
@@ -153,7 +171,9 @@ async def test_review_spec_uses_full_profile(mock_reviewer_class, mock_build, ru
     run_context.llm = AsyncMock()
     run_context.context_provider = AsyncMock()
 
-    step = PipelineStep(name="rev", module="feature", action="review", target="spec", handler="ReviewSpecHandler")
+    step = PipelineStep(
+        name="rev", module="feature", action="review", target="spec", handler="ReviewSpecHandler"
+    )
     await handler.execute(step, run_context)
 
     # M5 verification
@@ -165,7 +185,9 @@ async def test_review_spec_uses_full_profile(mock_reviewer_class, mock_build, ru
 @pytest.mark.asyncio
 @patch("specweaver.core.flow.handlers.base._build_base_prompt")
 @patch("specweaver.workflows.review.reviewer.Reviewer")
-async def test_review_code_uses_full_profile(mock_reviewer_class, mock_build, run_context, tmp_path):
+async def test_review_code_uses_full_profile(
+    mock_reviewer_class, mock_build, run_context, tmp_path
+):
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.handlers.review import ReviewCodeHandler
 
@@ -180,7 +202,14 @@ async def test_review_code_uses_full_profile(mock_reviewer_class, mock_build, ru
     code_file = tmp_path / "code.py"
     code_file.write_text("print('hello')", encoding="utf-8")
 
-    step = PipelineStep(name="rev", module="feature", action="review", target="code", handler="ReviewCodeHandler", params={"target_path": str(code_file)})
+    step = PipelineStep(
+        name="rev",
+        module="feature",
+        action="review",
+        target="code",
+        handler="ReviewCodeHandler",
+        params={"target_path": str(code_file)},
+    )
 
     await handler.execute(step, run_context)
 
@@ -203,7 +232,13 @@ async def test_arbitrate_verdict_uses_arbiter_profile(mock_build, run_context, t
     run_context.llm = AsyncMock()
     run_context.llm.generate.return_value = '{"verdict": "CODE_BUG", "spec_clause": "test", "coding_feedback": "test", "scenario_feedback": "test"}'
 
-    step = PipelineStep(name="arb", module="feature", action="arbitrate", target="verdict", handler="ArbitrateVerdictHandler")
+    step = PipelineStep(
+        name="arb",
+        module="feature",
+        action="arbitrate",
+        target="verdict",
+        handler="ArbitrateVerdictHandler",
+    )
 
     await handler.execute(step, run_context)
 
@@ -224,7 +259,9 @@ async def test_decompose_feature_uses_minimal_profile(mock_build, run_context, t
     mock_build.return_value = AsyncMock()
     mock_build.return_value.build.return_value = "fake prompt"
 
-    with patch("specweaver.core.flow.handlers.decompose.FeatureDecomposer") as mock_decomposer_class:
+    with patch(
+        "specweaver.core.flow.handlers.decompose.FeatureDecomposer"
+    ) as mock_decomposer_class:
         mock_decomposer = mock_decomposer_class.return_value
         mock_plan = MagicMock()
         mock_plan.coverage_score = 1.0
@@ -233,7 +270,13 @@ async def test_decompose_feature_uses_minimal_profile(mock_build, run_context, t
         handler = DecomposeFeatureHandler()
         run_context.llm = AsyncMock()
 
-        step = PipelineStep(name="dec", module="feature", action="decompose", target="feature", handler="DecomposeFeatureHandler")
+        step = PipelineStep(
+            name="dec",
+            module="feature",
+            action="decompose",
+            target="feature",
+            handler="DecomposeFeatureHandler",
+        )
 
         await handler.execute(step, run_context)
 

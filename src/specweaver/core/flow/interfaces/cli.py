@@ -245,9 +245,7 @@ def _execute_run(  # noqa: C901
     active = _core.run_repo_op(lambda r: r.get_active_project())
     db = _core.get_db()
     standards_content = (
-        load_standards_content(db, active, project_path, target_path=spec_path)
-        if active
-        else None
+        load_standards_content(db, active, project_path, target_path=spec_path) if active else None
     )
 
     context = RunContext(
@@ -276,7 +274,9 @@ def _execute_run(  # noqa: C901
             from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
             settings = load_settings(_core.get_db(), project_path.name)
-            _, adapter, _gen_config = create_llm_adapter(settings, telemetry_project=project_path.name)
+            _, adapter, _gen_config = create_llm_adapter(
+                settings, telemetry_project=project_path.name
+            )
             context.llm = adapter
         except (LLMAdapterError, ValueError):
             _core.console.print(

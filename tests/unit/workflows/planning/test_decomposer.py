@@ -45,7 +45,7 @@ async def test_decompose_returns_plan(
     plan = await decomposer.decompose(
         feature_name="test_feature",
         spec_content="Feature Spec Content Dummy",
-        base_prompt=PromptBuilder(profile=MINIMAL)
+        base_prompt=PromptBuilder(profile=MINIMAL),
     )
 
     assert isinstance(plan, DecompositionPlan)
@@ -66,9 +66,7 @@ async def test_decompose_llm_exception(
 
     with pytest.raises(Exception, match="API Connect Timeout"):
         await decomposer.decompose(
-            feature_name="test",
-            spec_content="spec",
-            base_prompt=PromptBuilder(profile=MINIMAL)
+            feature_name="test", spec_content="spec", base_prompt=PromptBuilder(profile=MINIMAL)
         )
 
 
@@ -89,9 +87,7 @@ async def test_decompose_pydantic_validation_error(
 
     with pytest.raises(ValueError, match="structurally valid"):
         await decomposer.decompose(
-            feature_name="test",
-            spec_content="spec",
-            base_prompt=PromptBuilder(profile=MINIMAL)
+            feature_name="test", spec_content="spec", base_prompt=PromptBuilder(profile=MINIMAL)
         )
 
 

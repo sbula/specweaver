@@ -27,7 +27,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
         from specweaver.core.config.database import Database
 
         try:
-            from specweaver.core.config.cli_db_utils import bootstrap_database
+            from specweaver.core.config.db_bootstrap import bootstrap_database
 
             bootstrap_database(str(db_path))
         except Exception:
@@ -35,7 +35,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
         return Database(db_path)
 
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", _native_get_db)
-    monkeypatch.setattr("specweaver.core.config.cli_db_utils.config_db_path", lambda: db_path)
+    monkeypatch.setattr("specweaver.core.config.db_bootstrap.config_db_path", lambda: db_path)
 
     assert not db_path.exists()
 
@@ -67,7 +67,7 @@ def test_cli_bootstrap_e2e_idempotency(tmp_path: Path, monkeypatch: pytest.Monke
         from specweaver.core.config.database import Database
 
         try:
-            from specweaver.core.config.cli_db_utils import bootstrap_database
+            from specweaver.core.config.db_bootstrap import bootstrap_database
 
             bootstrap_database(str(db_path))
         except Exception:
@@ -75,7 +75,7 @@ def test_cli_bootstrap_e2e_idempotency(tmp_path: Path, monkeypatch: pytest.Monke
         return Database(db_path)
 
     monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", _native_get_db)
-    monkeypatch.setattr("specweaver.core.config.cli_db_utils.config_db_path", lambda: db_path)
+    monkeypatch.setattr("specweaver.core.config.db_bootstrap.config_db_path", lambda: db_path)
 
     # Run once
     runner.invoke(app, ["projects"])

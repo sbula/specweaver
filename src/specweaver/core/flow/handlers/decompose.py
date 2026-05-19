@@ -47,9 +47,7 @@ class DecomposeFeatureHandler(StepHandler):
             except ValueError as e:
                 return _error_result(str(e), started)
 
-            base_prompt = await _build_base_prompt(
-                context, instructions="", profile=profile
-            )
+            base_prompt = await _build_base_prompt(context, instructions="", profile=profile)
 
             plan = await decomposer.decompose(
                 feature_name=feature_name,

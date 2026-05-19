@@ -16,7 +16,6 @@ from specweaver.commons import json
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -436,4 +435,3 @@ def standards_scopes() -> None:
         )
 
     _core.console.print(table)
-

@@ -23,8 +23,8 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
-    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     data_dir = tmp_path / ".specweaver-test"
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -55,14 +55,8 @@ def _make_mock_adapter(response_text: str = "pass\n") -> MagicMock:
 
 def _scaffold_project(tmp_path: object) -> object:
     """Create a minimal scaffolded project for testing."""
-    sw_dir = tmp_path / ".specweaver"
-    sw_dir.mkdir()
-    specs_dir = tmp_path / "specs"
-    specs_dir.mkdir()
-    src_dir = tmp_path / "src"
-    src_dir.mkdir()
-    tests_dir = tmp_path / "tests"
-    tests_dir.mkdir()
+    result = runner.invoke(app, ["init", "test_proj", "--path", str(tmp_path)])
+    assert result.exit_code == 0
     return tmp_path
 
 
@@ -74,7 +68,7 @@ def _scaffold_project(tmp_path: object) -> object:
 class TestImplementFlow:
     """Test sw implement command."""
 
-    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_implement_generates_files(
         self,
         mock_require,
@@ -113,7 +107,7 @@ class TestImplementFlow:
         assert code_path.exists()
         assert test_path.exists()
 
-    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_implement_spec_suffix_removal(
         self,
         mock_require,
@@ -166,7 +160,7 @@ class TestImplementFlow:
 class TestFullPipeline:
     """Test the full SpecWeaver pipeline end-to-end."""
 
-    @patch("specweaver.workflows.implementation.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_full_pipeline(
         self,
         mock_require,

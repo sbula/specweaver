@@ -81,4 +81,3 @@ def _version_callback(value: bool) -> None:
     if value:
         console.print(f"SpecWeaver v{__version__}")
         raise typer.Exit()
-

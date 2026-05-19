@@ -14,7 +14,7 @@ runner = CliRunner()
 def isolated_db(tmp_path):
     # Set up a real database for the CLI to interact with during E2E
     db_path = tmp_path / "specweaver.db"
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(db_path))
     db = Database(str(db_path))

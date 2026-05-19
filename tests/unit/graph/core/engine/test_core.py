@@ -1,7 +1,5 @@
 import threading
 
-import pytest
-
 from specweaver.graph.core.engine.core import InMemoryGraphEngine
 from specweaver.graph.core.engine.models import GraphEdge, GraphNode
 from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
@@ -30,11 +28,10 @@ def test_engine_thread_safety():
     for t in threads:
         t.join()
 
-    assert len(engine._graph.nodes) == 1000
+    assert len(engine._nx_graph.nodes) == 1000
 
 
-@pytest.mark.asyncio
-async def test_extract_subgraph_max_depth():
+def test_extract_subgraph_max_depth():
     """Verify max depth restriction for subgraph extraction (RT-27)."""
     engine = InMemoryGraphEngine()
 
@@ -55,7 +52,7 @@ async def test_extract_subgraph_max_depth():
 
     # Extract from node_0 with depth 10. Max depth is hard-coded to 5.
     # Therefore, it should return nodes 0, 1, 2, 3, 4, 5 (total 6 nodes)
-    subgraph = await engine.extract_subgraph("node_0", 10)
+    subgraph = engine.extract_subgraph("node_0", 10)
 
     assert len(subgraph.nodes) == 6
     assert "node_0" in subgraph.nodes
@@ -69,7 +66,27 @@ def test_clear_cache():
     engine.upsert_node(
         GraphNode(semantic_hash="test", kind=NodeKind.FILE, name="test", file_id="test.py")
     )
-    assert len(engine._graph.nodes) == 1
+    assert len(engine._nx_graph.nodes) == 1
     engine.clear_cache()
-    assert len(engine._graph.nodes) == 0
-    assert len(engine._hash_to_int) == 0
+    assert len(engine._nx_graph.nodes) == 0
+    assert len(engine._file_index) == 0
+
+
+def test_extract_subgraph_node_not_found():
+    """Verify NodeNotFound is raised on unknown hash (Story 1)."""
+    from specweaver.graph.core.engine.protocol import NodeNotFoundError
+
+    engine = InMemoryGraphEngine()
+    import pytest
+
+    with pytest.raises(NodeNotFoundError):
+        engine.extract_subgraph("nonexistent_hash", 2)
+
+
+def test_extract_subgraph_rejects_int_ids():
+    """Verify legacy integer IDs are rejected safely (Story 3)."""
+    engine = InMemoryGraphEngine()
+    import pytest
+
+    with pytest.raises(ValueError, match="requires a string hash"):
+        engine.extract_subgraph(123, 2)  # type: ignore

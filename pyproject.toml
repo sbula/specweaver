@@ -82,6 +82,8 @@ asyncio_mode = "auto"
 addopts = "--import-mode=importlib -v --tb=short -m 'not live'"
 markers = [
     "live: tests that require real external API keys and network access",
+    "integration: tests that exercise multiple layers but mock external dependencies",
+    "e2e: end-to-end tests that simulate full real-world scenarios",
 ]
 
 [tool.ruff]

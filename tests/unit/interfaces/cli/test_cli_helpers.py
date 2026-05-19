@@ -9,8 +9,7 @@ Tests: _print_summary, _select_topology_contexts,
 
 from __future__ import annotations
 
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import typer
@@ -30,8 +29,6 @@ def _mock_db_fixture(tmp_path, monkeypatch):
         monkeypatch.setattr("specweaver.core.config.db_bootstrap.get_db", lambda: db)
         return db
 
-
-from unittest.mock import AsyncMock  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # _print_summary
@@ -101,5 +98,3 @@ class TestPrintSummary:
         from specweaver.assurance.validation.interfaces.cli import _print_summary
 
         _print_summary([])  # should not raise
-
-

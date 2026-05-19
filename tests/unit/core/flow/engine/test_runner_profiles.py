@@ -32,19 +32,22 @@ async def test_pipeline_runner_passes_render_profile_to_handler():
 
     # 2. Setup runner and context
     from pathlib import Path
+
     context = RunContext(
         workspace_dir=Path("/tmp/workspace"),
         project_path=Path("/tmp/workspace/project"),
-        spec_path=Path("/tmp/workspace/project/spec.yaml")
+        spec_path=Path("/tmp/workspace/project/spec.yaml"),
     )
     context.llm = MagicMock()
     context.context_provider = MagicMock()
 
     # Create the handler instance we will mock internally
     from specweaver.core.flow.handlers.generation import GenerateCodeHandler
+
     mock_handler_instance = GenerateCodeHandler()
 
     from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+
     registry = StepHandlerRegistry()
     # Override the generate:code handler with our mock instance
     registry.register("generate", "code", mock_handler_instance)

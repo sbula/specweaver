@@ -118,8 +118,6 @@ class ReviewSpecHandler:
                 tool_dispatcher=_build_tool_dispatcher(context, role="reviewer"),
             )
 
-
-
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
             from specweaver.core.flow.handlers.context_assembler import (

@@ -12,17 +12,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from specweaver.workspace.context.inferrer import ContextInferrer
 
+import typer
+from rich.table import Table
+
 from specweaver.interfaces.cli import _core
-from specweaver.workspace.project.constitution import find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
 from specweaver.workspace.project.scaffold import scaffold_project
 from specweaver.workspace.project.tach_sync import sync_tach_toml
 
-import typer
-from rich.table import Table
-
 logger = logging.getLogger(__name__)
-
 
 
 workspace_cli = typer.Typer(no_args_is_help=True)
@@ -309,7 +307,6 @@ def scan() -> None:
         )
     except Exception as exc:
         _core.console.print(f"  [red]\u2717[/red] Tach Sync Failed: {exc}")
-
 
 
 from specweaver.workspace.project.interfaces.cli_constitution import constitution_app  # noqa: E402

@@ -43,6 +43,3 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 * **`TECH-07` 🟢: Architectural Documentation Modularization**
   > [Description](../features/topic_07_technical_debt/TECH-07/TECH-07_design.md) | A severe structural refactoring of the monolithic `docs/architecture` directory. Slices the 46KB `architecture_reference.md` and 17 loosely organized files into a visually-rich, GitHub-publishable static site structure perfectly aligned with Domain-Driven Design (Hexagonal Layers, Bounded Contexts). Uses a Non-Destructive Copy-and-Verify strategy to guarantee zero data loss. Formalizes the Composition Root vs Factory debates into ADRs.
 
-## Delivery Mechanism Purification
-* **`TECH-08` ⚫: CLI ApplicationService Layer Extraction — CANCELLED**
-  > Subsumed by TECH-05. Two rounds of adversarial RT/BT analysis proved this would be an empty indirection wrapper with zero ROI. The private CLI helpers that caused the "spider web" are just misplaced domain logic — moving them to public Domain APIs (TECH-05) solves the problem without a new architectural layer.

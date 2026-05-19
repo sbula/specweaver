@@ -219,7 +219,7 @@ class TestLineageE2EFlow:
             target=StepTarget.SPEC,
         )
         db_path = _isolate_env / "specweaver.db"
-        from specweaver.core.config.cli_db_utils import bootstrap_database
+        from specweaver.core.config.db_bootstrap import bootstrap_database
 
         bootstrap_database(str(db_path))
         context = RunContext(

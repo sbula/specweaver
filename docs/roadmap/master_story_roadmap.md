@@ -1,4 +1,4 @@
-# Master User Story Roadmap
+﻿# Master User Story Roadmap
 
 This is the unified, single-numbering format (US-1 to US-18) covering the entire lifespan of the platform.
 
@@ -629,8 +629,4 @@ These stories do not add new user-facing features, but are critical epics requir
 **Benefit:** *Transforms the impenetrable 46KB `architecture_reference.md` monolith into a visually-rich, GitHub-publishable static site structure perfectly aligned with Domain-Driven Design.*
 *   **Core Required (MVS):**
     *   `✅` **TECH-07:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-07/TECH-07_design.md)
-
-### ⚫ TECH-08: CLI ApplicationService Layer Extraction — CANCELLED
-**Benefit:** ~~*Further purifies the Delivery Mechanism by extracting an explicit `ApplicationService` or `UseCase` layer between the Typer router and the Flow Engine.*~~
-*   **Status:** CANCELLED — subsumed by TECH-05. Two rounds of adversarial RT/BT analysis proved this would be an empty indirection wrapper with zero ROI. The real fix is TECH-05: expose private CLI helpers as public Domain APIs.
 

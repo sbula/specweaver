@@ -15,7 +15,6 @@ from rich.table import Table
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.project.discovery import resolve_project_path
 
-
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult
 

@@ -45,8 +45,8 @@ def test_real_file_system_integration(tmp_path):
     builder.ingest_file(str(user_service))
 
     # Verify graph populated: 1 FILE, 1 DATA_STRUCTURE, 1 PROCEDURE
-    assert len(engine._graph.nodes) == 3
-    node_names = {data["name"] for _, data in engine._graph.nodes(data=True)}
+    assert len(engine.export_semantic_digraph().nodes) == 3
+    node_names = {data["name"] for _, data in engine.export_semantic_digraph().nodes(data=True)}
     assert "createUser" in node_names
 
     # 2. UPDATE UserService (Add comments / whitespace -> Should be IDEMPOTENT)
@@ -56,7 +56,7 @@ def test_real_file_system_integration(tmp_path):
     )
     builder.ingest_file(str(user_service))
     # Still 3 nodes. Nothing duplicated, nothing lost.
-    assert len(engine._graph.nodes) == 3
+    assert len(engine.export_semantic_digraph().nodes) == 3
 
     # 3. UPDATE file (Add new method, remove old method)
     user_service.write_text(
@@ -65,13 +65,13 @@ def test_real_file_system_integration(tmp_path):
     builder.ingest_file(str(user_service))
 
     # Verify graph delta applied: 'createUser' removed, 'deleteUser' added.
-    assert len(engine._graph.nodes) == 3
-    node_names = {data["name"] for _, data in engine._graph.nodes(data=True)}
+    assert len(engine.export_semantic_digraph().nodes) == 3
+    node_names = {data["name"] for _, data in engine.export_semantic_digraph().nodes(data=True)}
     assert "createUser" not in node_names
     assert "deleteUser" in node_names
 
     # Verify edges: The new PROCEDURE 'deleteUser' must have a CONTAINS edge from the FILE
-    edges = list(engine._graph.edges(data=True))
+    edges = list(engine.export_semantic_digraph().edges(data=True))
     assert len(edges) == 2  # FILE -> UserService, FILE -> deleteUser
 
     # 4. DELETE file
@@ -79,9 +79,9 @@ def test_real_file_system_integration(tmp_path):
     builder.ingest_file(str(user_service))
 
     # Verify graph delta applied: child nodes removed!
-    assert len(engine._graph.nodes) == 1
-    node_names = {data["name"] for _, data in engine._graph.nodes(data=True)}
+    assert len(engine.export_semantic_digraph().nodes) == 1
+    node_names = {data["name"] for _, data in engine.export_semantic_digraph().nodes(data=True)}
     assert "UserService.java" in node_names
     # And edges removed!
-    edges = list(engine._graph.edges(data=True))
+    edges = list(engine.export_semantic_digraph().edges(data=True))
     assert len(edges) == 0

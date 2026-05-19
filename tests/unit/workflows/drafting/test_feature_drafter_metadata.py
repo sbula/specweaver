@@ -26,7 +26,9 @@ class TestFeatureDrafterProjectMetadata:
         mock_context = AsyncMock()
         mock_context.ask.return_value = "yes"
 
-        feature_drafter = FeatureDrafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context)
+        feature_drafter = FeatureDrafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=mock_context
+        )
         metadata = ProjectMetadata(
             project_name="feature_draft_test",
             archetype="plugin",

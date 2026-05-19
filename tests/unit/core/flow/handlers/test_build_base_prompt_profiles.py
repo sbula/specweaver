@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from typing import Any
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
 from specweaver.core.flow.handlers.base import RunContext, _build_base_prompt
@@ -161,7 +161,12 @@ class TestHandlerProfileIntegration:
         ],
     )
     async def test_handler_backward_compatibility_uses_default_profile(
-        self, handler_class: str, default_profile: Any, module_path: str, run_context: Any, mock_build_base_prompt: Any
+        self,
+        handler_class: str,
+        default_profile: Any,
+        module_path: str,
+        run_context: Any,
+        mock_build_base_prompt: Any,
     ) -> None:
         """H10: Handlers use their static default profile when no render_profile is in params."""
         import importlib
@@ -171,7 +176,9 @@ class TestHandlerProfileIntegration:
         module = importlib.import_module(module_path)
         handler_class_ref = getattr(module, handler_class)
         handler = handler_class_ref()
-        step = PipelineStep(name="test_step", action=StepAction.GENERATE, target=StepTarget.CODE, params={})
+        step = PipelineStep(
+            name="test_step", action=StepAction.GENERATE, target=StepTarget.CODE, params={}
+        )
 
         # We expect a failure because LLM is None or other setup is missing, but that's fine.
         # We just want to check the call args to _build_base_prompt if it gets called.
@@ -183,18 +190,44 @@ class TestHandlerProfileIntegration:
         def mock_exists(self: Any) -> bool:
             return not ("draft" in handler_class.lower() and "spec" in str(self))
 
-        with patch("specweaver.core.flow.handlers.generation.Generator", new=MagicMock(), create=True), \
-             patch("specweaver.core.flow.handlers.review.Reviewer", new=MagicMock(), create=True), \
-             patch("specweaver.core.flow.handlers.draft.Drafter", new=MagicMock(), create=True), \
-             patch("specweaver.core.flow.handlers.decompose.FeatureDecomposer", new=MagicMock(), create=True), \
-             patch("specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context", return_value=[]), \
-             patch("specweaver.core.flow.handlers.mcp_assembler.evaluate_and_fetch_mcp_context", return_value=None), \
-             patch("specweaver.core.flow.handlers.review._build_tool_dispatcher", return_value=MagicMock()), \
-             patch("specweaver.core.flow.handlers.generation._build_tool_dispatcher", return_value=MagicMock()), \
-             patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter", return_value=MagicMock()), \
-             patch("specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path", return_value=Path("/tmp/fake_project/code.py")), \
-             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists), \
-             patch("pathlib.Path.read_text", return_value="mock spec"):
+        with (
+            patch(
+                "specweaver.core.flow.handlers.generation.Generator", new=MagicMock(), create=True
+            ),
+            patch("specweaver.core.flow.handlers.review.Reviewer", new=MagicMock(), create=True),
+            patch("specweaver.core.flow.handlers.draft.Drafter", new=MagicMock(), create=True),
+            patch(
+                "specweaver.core.flow.handlers.decompose.FeatureDecomposer",
+                new=MagicMock(),
+                create=True,
+            ),
+            patch(
+                "specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context",
+                return_value=[],
+            ),
+            patch(
+                "specweaver.core.flow.handlers.mcp_assembler.evaluate_and_fetch_mcp_context",
+                return_value=None,
+            ),
+            patch(
+                "specweaver.core.flow.handlers.review._build_tool_dispatcher",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "specweaver.core.flow.handlers.generation._build_tool_dispatcher",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path",
+                return_value=Path("/tmp/fake_project/code.py"),
+            ),
+            patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),
+            patch("pathlib.Path.read_text", return_value="mock spec"),
+        ):
             result = await handler.execute(step, run_context)
             print(f"\n\nBACKWARD COMPAT RESULT: {result}\n\n")
 
@@ -218,7 +251,12 @@ class TestHandlerProfileIntegration:
         ],
     )
     async def test_handler_uses_override_profile(
-        self, handler_class: str, default_profile: Any, module_path: str, run_context: Any, mock_build_base_prompt: Any
+        self,
+        handler_class: str,
+        default_profile: Any,
+        module_path: str,
+        run_context: Any,
+        mock_build_base_prompt: Any,
     ) -> None:
         """H11: Handlers use the render_profile override from step.params."""
         import importlib
@@ -229,7 +267,12 @@ class TestHandlerProfileIntegration:
         handler_class_ref = getattr(module, handler_class)
         handler = handler_class_ref()
         # Override with MINIMAL
-        step = PipelineStep(name="test_step", action=StepAction.GENERATE, target=StepTarget.CODE, params={"render_profile": "MINIMAL"})
+        step = PipelineStep(
+            name="test_step",
+            action=StepAction.GENERATE,
+            target=StepTarget.CODE,
+            params={"render_profile": "MINIMAL"},
+        )
 
         run_context.llm = MagicMock()
         run_context.context_provider = MagicMock()
@@ -237,15 +280,34 @@ class TestHandlerProfileIntegration:
         def mock_exists(self: Any) -> bool:
             return not ("draft" in handler_class.lower() and "spec" in str(self))
 
-        with patch("specweaver.core.flow.handlers.generation.Generator", new=MagicMock(), create=True), \
-             patch("specweaver.core.flow.handlers.review.Reviewer", new=MagicMock(), create=True), \
-             patch("specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context", return_value=[]), \
-             patch("specweaver.core.flow.handlers.mcp_assembler.evaluate_and_fetch_mcp_context", return_value=None), \
-             patch("specweaver.core.flow.handlers.review._build_tool_dispatcher", return_value=MagicMock()), \
-             patch("specweaver.core.flow.handlers.generation._build_tool_dispatcher", return_value=MagicMock()), \
-             patch("specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path", return_value=Path("/tmp/fake_project/code.py")), \
-             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists), \
-             patch("pathlib.Path.read_text", return_value="mock spec"):
+        with (
+            patch(
+                "specweaver.core.flow.handlers.generation.Generator", new=MagicMock(), create=True
+            ),
+            patch("specweaver.core.flow.handlers.review.Reviewer", new=MagicMock(), create=True),
+            patch(
+                "specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context",
+                return_value=[],
+            ),
+            patch(
+                "specweaver.core.flow.handlers.mcp_assembler.evaluate_and_fetch_mcp_context",
+                return_value=None,
+            ),
+            patch(
+                "specweaver.core.flow.handlers.review._build_tool_dispatcher",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "specweaver.core.flow.handlers.generation._build_tool_dispatcher",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path",
+                return_value=Path("/tmp/fake_project/code.py"),
+            ),
+            patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),
+            patch("pathlib.Path.read_text", return_value="mock spec"),
+        ):
             result = await handler.execute(step, run_context)
             print(f"\n\nRESULT: {result}\n\n")
 
@@ -280,28 +342,52 @@ class TestHandlerProfileIntegration:
         handler_class_ref = getattr(module, handler_class)
         handler = handler_class_ref()
         # Override with INVALID
-        step = PipelineStep(name="test_step", action=StepAction.GENERATE, target=StepTarget.CODE, params={"render_profile": "INVALID"})
+        step = PipelineStep(
+            name="test_step",
+            action=StepAction.GENERATE,
+            target=StepTarget.CODE,
+            params={"render_profile": "INVALID"},
+        )
 
         run_context.llm = MagicMock()
         run_context.context_provider = MagicMock()
+
         # We don't need to mock Generator here because resolve_profile should fail before instantiation
         def mock_exists(self: Any) -> bool:
             if "draft" in handler_class.lower() and "spec" in str(self):
                 return False
             return True
 
-        with patch("specweaver.core.flow.handlers.generation.Generator", new=MagicMock(), create=True), \
-             patch("specweaver.core.flow.handlers.review.Reviewer", new=MagicMock(), create=True), \
-             patch("specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context", return_value=[]), \
-             patch("specweaver.core.flow.handlers.mcp_assembler.evaluate_and_fetch_mcp_context", return_value=None), \
-             patch("specweaver.core.flow.handlers.review._build_tool_dispatcher", return_value=MagicMock()), \
-             patch("specweaver.core.flow.handlers.generation._build_tool_dispatcher", return_value=MagicMock()), \
-             patch("specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path", return_value=Path("/tmp/fake_project/code.py")), \
-             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists), \
-             patch("pathlib.Path.read_text", return_value="mock spec"):
+        with (
+            patch(
+                "specweaver.core.flow.handlers.generation.Generator", new=MagicMock(), create=True
+            ),
+            patch("specweaver.core.flow.handlers.review.Reviewer", new=MagicMock(), create=True),
+            patch(
+                "specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context",
+                return_value=[],
+            ),
+            patch(
+                "specweaver.core.flow.handlers.mcp_assembler.evaluate_and_fetch_mcp_context",
+                return_value=None,
+            ),
+            patch(
+                "specweaver.core.flow.handlers.review._build_tool_dispatcher",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "specweaver.core.flow.handlers.generation._build_tool_dispatcher",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path",
+                return_value=Path("/tmp/fake_project/code.py"),
+            ),
+            patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),
+            patch("pathlib.Path.read_text", return_value="mock spec"),
+        ):
             result = await handler.execute(step, run_context)
 
         assert result.status == StepStatus.ERROR
         assert "Unknown render profile 'INVALID'" in result.error_message
         assert not mock_build_base_prompt.called
-

@@ -14,7 +14,6 @@ from rich.table import Table
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import get_default_cost_table
 from specweaver.interfaces.cli import _core
-from specweaver.interfaces.cli._core import console
 
 logger = logging.getLogger(__name__)
 

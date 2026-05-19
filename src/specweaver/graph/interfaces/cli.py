@@ -7,7 +7,7 @@ import logging
 import sys
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import Annotated, Any
 
 import typer
 from rich import print as rprint
@@ -22,12 +22,7 @@ from specweaver.interfaces.cli import _core
 from specweaver.interfaces.cli._core import console, get_db
 from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
 
-
-if TYPE_CHECKING:
-    from specweaver.assurance.graph.topology import TopologyContext, TopologyGraph
-
 logger = logging.getLogger(__name__)
-
 
 
 # -- Graph App --------------------------------------------------------------
@@ -92,7 +87,9 @@ def build(
 
         topology = load_topology(project_path)
         if topology is None:
-            _core.console.print("[dim]No context.yaml files found -- topology context disabled.[/dim]")
+            _core.console.print(
+                "[dim]No context.yaml files found -- topology context disabled.[/dim]"
+            )
         if topology and topology.nodes:
             # Try to find a root node (level = system or similar)
             # Or just take the first one if it's a microservice
@@ -306,5 +303,3 @@ def check_lineage(src_dir: Path) -> list[str]:
             logger.warning("Could not read file %s: %s", py_file, e)
 
     return sorted(orphans)
-
-

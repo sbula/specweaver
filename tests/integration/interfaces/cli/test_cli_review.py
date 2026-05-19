@@ -26,8 +26,8 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
-    from specweaver.core.config.cli_db_utils import bootstrap_database
     from specweaver.core.config.database import Database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     data_dir = tmp_path / ".specweaver-test"
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -83,7 +83,7 @@ class TestReviewErrors:
         # Should fail at the LLM adapter step (no API key) or spec not found
         assert result.exit_code == 1
 
-    @patch("specweaver.workflows.review.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_review_spec_accepted(
         self,
         mock_llm,
@@ -120,7 +120,7 @@ class TestReviewErrors:
         assert result.exit_code == 0
         assert "ACCEPTED" in result.output
 
-    @patch("specweaver.workflows.review.interfaces.cli._require_llm_adapter")
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
     def test_review_spec_denied(
         self,
         mock_llm,

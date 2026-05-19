@@ -83,7 +83,5 @@ def select_topology_contexts(
         return None
 
     contexts = graph.format_context_summary(module_name, related)
-    logger.debug(
-        "Topology: %d related module(s) via %s selector.", len(contexts), selector_name
-    )
+    logger.debug("Topology: %d related module(s) via %s selector.", len(contexts), selector_name)
     return contexts

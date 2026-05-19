@@ -8,7 +8,6 @@ from specweaver.interfaces.cli import _core
 from specweaver.workspace.project.constitution import check_constitution, find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
 
-
 logger = logging.getLogger(__name__)
 
 constitution_app = typer.Typer(

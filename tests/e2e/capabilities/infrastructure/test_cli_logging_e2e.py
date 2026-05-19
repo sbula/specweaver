@@ -4,7 +4,6 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
@@ -16,7 +15,6 @@ if TYPE_CHECKING:
 runner = CliRunner()
 
 
-@pytest.mark.asyncio
 async def test_cli_execution_suppresses_debug_and_writes_json(tmp_path: Path) -> None:
     from unittest.mock import patch
 
@@ -29,11 +27,8 @@ async def test_cli_execution_suppresses_debug_and_writes_json(tmp_path: Path) ->
 
     with (
         patch("specweaver.telemetry_logger._get_logs_dir", return_value=tmp_path),
-        patch(
-            "specweaver.workspace.project.interfaces.cli._run_workspace_op", side_effect=_mock_op
-        ),
-        patch("specweaver.interfaces.cli.main._run_workspace_op", side_effect=_mock_op),
-        patch("specweaver.core.config.cli_db_utils.get_db"),
+        patch("specweaver.interfaces.cli._core.run_repo_op", side_effect=_mock_op),
+        patch("specweaver.core.config.db_bootstrap.get_db"),
         patch("specweaver.interfaces.cli._core.get_db"),
     ):
         teardown_logging()

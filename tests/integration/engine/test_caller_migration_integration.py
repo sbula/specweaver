@@ -41,7 +41,13 @@ async def test_integration_arbitrate_verdict_full_path(mock_build, mock_run_cont
     mock_run_context.llm.generate.return_value = '{"verdict": "code_bug", "spec_clause": "test", "coding_feedback": "test", "scenario_feedback": "test"}'
 
     handler = ArbitrateVerdictHandler()
-    step = PipelineStep(name="arb", module="feature", action="arbitrate", target="verdict", handler="ArbitrateVerdictHandler")
+    step = PipelineStep(
+        name="arb",
+        module="feature",
+        action="arbitrate",
+        target="verdict",
+        handler="ArbitrateVerdictHandler",
+    )
 
     result = await handler.execute(step, mock_run_context)
 
@@ -59,13 +65,16 @@ async def test_integration_arbitrate_verdict_full_path(mock_build, mock_run_cont
 @pytest.mark.asyncio
 @patch("specweaver.core.flow.handlers.decompose.FeatureDecomposer")
 @patch("specweaver.core.flow.handlers.base._build_base_prompt", new_callable=AsyncMock)
-async def test_integration_decompose_feature_full_path(mock_build, mock_decomposer_class, mock_run_context, tmp_path):
+async def test_integration_decompose_feature_full_path(
+    mock_build, mock_decomposer_class, mock_run_context, tmp_path
+):
     """I2: Verify Decomposer full path execution injects correct profile and builds properly."""
     mock_builder = AsyncMock()
     mock_build.return_value = mock_builder
 
     mock_decomposer = mock_decomposer_class.return_value
     from unittest.mock import MagicMock
+
     mock_plan = MagicMock()
     mock_plan.coverage_score = 1.0
     mock_plan.model_dump.return_value = {"coverage_score": 1.0}
@@ -76,7 +85,13 @@ async def test_integration_decompose_feature_full_path(mock_build, mock_decompos
     mock_run_context.spec_path.write_text("# Test", encoding="utf-8")
 
     handler = DecomposeFeatureHandler()
-    step = PipelineStep(name="dec", module="feature", action="decompose", target="feature", handler="DecomposeFeatureHandler")
+    step = PipelineStep(
+        name="dec",
+        module="feature",
+        action="decompose",
+        target="feature",
+        handler="DecomposeFeatureHandler",
+    )
 
     result = await handler.execute(step, mock_run_context)
 

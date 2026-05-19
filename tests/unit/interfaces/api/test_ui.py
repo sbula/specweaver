@@ -217,9 +217,10 @@ def test_submit_hitl_gate(tmp_path) -> None:
 
     from starlette.testclient import TestClient
 
+    from specweaver.core.config.database import Database
+
     # Set up DB and project
     from specweaver.core.config.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api import app as api_app
@@ -299,8 +300,8 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
 
     from starlette.testclient import TestClient
 
-    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.app import create_app

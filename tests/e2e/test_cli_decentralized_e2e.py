@@ -24,7 +24,7 @@ def _patch_config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
         db_path = tmp_path / "specweaver.db"
         try:
-            from specweaver.core.config.cli_db_utils import bootstrap_database
+            from specweaver.core.config.db_bootstrap import bootstrap_database
 
             bootstrap_database(str(db_path))
         except Exception:

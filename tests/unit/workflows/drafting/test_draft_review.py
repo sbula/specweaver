@@ -180,7 +180,9 @@ class TestDrafter:
         mock_llm = _make_mock_llm()
         provider = MockContextProvider()
         config = GenerationConfig(model="custom-model", temperature=0.2)
-        drafter = Drafter(base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider, config=config)
+        drafter = Drafter(
+            base_prompt=PromptBuilder(), llm=mock_llm, context_provider=provider, config=config
+        )
 
         await drafter.draft("custom", tmp_path)
 
@@ -461,7 +463,8 @@ class TestDrafterBehavioral:
         tmp_path: Path,
     ) -> None:
         """Failure: LLM error during _generate_section → propagates."""
-        drafter = Drafter(base_prompt=PromptBuilder(),
+        drafter = Drafter(
+            base_prompt=PromptBuilder(),
             llm=_failing_llm(),
             context_provider=MockContextProvider(),
         )
@@ -471,7 +474,8 @@ class TestDrafterBehavioral:
     @pytest.mark.asyncio
     async def test_name_with_special_chars(self, tmp_path: Path) -> None:
         """Unexpected input: name with special chars → file still created."""
-        drafter = Drafter(base_prompt=PromptBuilder(),
+        drafter = Drafter(
+            base_prompt=PromptBuilder(),
             llm=_make_mock_llm("Generated content"),
             context_provider=MockContextProvider(),
         )
@@ -483,7 +487,8 @@ class TestDrafterBehavioral:
     @pytest.mark.asyncio
     async def test_empty_name(self, tmp_path: Path) -> None:
         """Boundary: empty component name → file still created."""
-        drafter = Drafter(base_prompt=PromptBuilder(),
+        drafter = Drafter(
+            base_prompt=PromptBuilder(),
             llm=_make_mock_llm("Generated content"),
             context_provider=MockContextProvider(),
         )
@@ -739,7 +744,8 @@ class TestDrafterAllSkipped:
         tmp_path: Path,
     ) -> None:
         """All 5 sections skipped → file created with TODO placeholders."""
-        drafter = Drafter(base_prompt=PromptBuilder(),
+        drafter = Drafter(
+            base_prompt=PromptBuilder(),
             llm=_make_mock_llm("Should not be called"),
             context_provider=SkipContextProvider(),
         )

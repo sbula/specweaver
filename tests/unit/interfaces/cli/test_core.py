@@ -10,7 +10,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import typer
 
-
 # ---------------------------------------------------------------------------
 # run_repo_op
 # ---------------------------------------------------------------------------

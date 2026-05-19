@@ -22,8 +22,8 @@ runner = CliRunner()
 def _mock_db(tmp_path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
 
-    from specweaver.core.config.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")

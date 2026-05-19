@@ -59,6 +59,7 @@ def implement(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
+    from specweaver.core.config.settings_loader import load_settings
     from specweaver.core.flow.engine.models import (
         PipelineDefinition,
         PipelineStep,
@@ -68,8 +69,6 @@ def implement(
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
     from specweaver.core.flow.handlers.base import RunContext
-
-    from specweaver.core.config.settings_loader import load_settings
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
     db = _core.get_db()
@@ -115,9 +114,7 @@ def implement(
     constitution_content = constitution_info.content if constitution_info else None
     active = _core.run_repo_op(lambda r: r.get_active_project())
     standards_content = (
-        load_standards_content(db, active, project_path, target_path=spec_path)
-        if active
-        else None
+        load_standards_content(db, active, project_path, target_path=spec_path) if active else None
     )
 
     pipeline = PipelineDefinition(

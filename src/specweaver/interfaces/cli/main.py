@@ -24,7 +24,6 @@ from specweaver.interfaces.cli._core import (  # noqa: F401
 )
 
 
-
 @app.callback()
 def _app_callback(
     *,
@@ -41,7 +40,7 @@ def _app_callback(
     from specweaver.interfaces.cli import _core
     from specweaver.telemetry_logger import setup_logging
 
-    db = _core.get_db()
+    # db = _core.get_db()
     active = _core.run_repo_op(lambda r: r.get_active_project())
     if active:
         try:

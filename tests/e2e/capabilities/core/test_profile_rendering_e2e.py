@@ -94,22 +94,28 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     class MockHandler(DraftSpecHandler):
         async def execute(self, step: PipelineStep, run_context: RunContext) -> StepResult:
             from specweaver.core.flow.handlers.base import _build_base_prompt
+
             try:
                 # Manually invoke with ARBITER to prove the pipe truncates it
                 prompt = await _build_base_prompt(run_context, "Test instructions", profile=ARBITER)
 
                 # Send to mock LLM to capture it
                 from specweaver.infrastructure.llm.models import Message, Role
+
                 await run_context.llm.generate([Message(role=Role.USER, content=prompt.build())])
 
                 from specweaver.core.flow.engine.state import StepResult
                 from specweaver.core.flow.handlers.base import _now_iso
 
                 return StepResult(
-                    status=StepStatus.PASSED, output={}, started_at=_now_iso(), completed_at=_now_iso()
+                    status=StepStatus.PASSED,
+                    output={},
+                    started_at=_now_iso(),
+                    completed_at=_now_iso(),
                 )
             except Exception as e:
                 import traceback
+
                 traceback.print_exc()
                 raise e
 
@@ -120,7 +126,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     )
 
     db_path = _isolate_env / "specweaver.db"
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(db_path))
 
@@ -225,6 +231,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
         async def execute(self, step: PipelineStep, run_context: RunContext) -> StepResult:
             from specweaver.core.flow.handlers.base import _build_base_prompt
             from specweaver.infrastructure.llm.models import TokenBudget
+
             try:
                 # Use FULL profile but strict budget
                 prompt = await _build_base_prompt(run_context, "Test instructions", profile=FULL)
@@ -241,10 +248,14 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
                 from specweaver.core.flow.handlers.base import _now_iso
 
                 return StepResult(
-                    status=StepStatus.PASSED, output={}, started_at=_now_iso(), completed_at=_now_iso()
+                    status=StepStatus.PASSED,
+                    output={},
+                    started_at=_now_iso(),
+                    completed_at=_now_iso(),
                 )
             except Exception as e:
                 import traceback
+
                 traceback.print_exc()
                 raise e
 
@@ -255,7 +266,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     )
 
     db_path = _isolate_env / "specweaver.db"
-    from specweaver.core.config.cli_db_utils import bootstrap_database
+    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(db_path))
 

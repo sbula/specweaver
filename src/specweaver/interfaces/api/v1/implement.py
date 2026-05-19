@@ -34,8 +34,8 @@ async def implement_spec(
     """
     project_root, spec_path = await resolve_file_in_project(body.file, body.project, db)
 
-    from specweaver.core.config.settings_loader import load_settings_async
     from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
+    from specweaver.core.config.settings_loader import load_settings_async
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
     from specweaver.workflows.implementation.generator import Generator
     from specweaver.workspace.project.constitution import find_constitution

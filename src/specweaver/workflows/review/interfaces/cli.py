@@ -62,19 +62,18 @@ def draft(
         )
         raise typer.Exit(code=1)
 
+    from specweaver.core.config.settings_loader import load_settings
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
     from specweaver.core.flow.handlers.base import RunContext
-    from specweaver.workspace.context.hitl_provider import HITLProvider
-
-    from specweaver.core.config.settings_loader import load_settings
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+    from specweaver.workspace.context.hitl_provider import HITLProvider
 
     db = _core.get_db()
     project = _core.run_repo_op(lambda r: r.get_active_project())
     try:
-        settings = load_settings(db, project)
+        settings = load_settings(db, project, llm_role="draft")
         settings, adapter, _ = create_llm_adapter(settings, telemetry_project=project)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
@@ -169,11 +168,10 @@ def review(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
+    from specweaver.core.config.settings_loader import load_settings
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers.base import RunContext
-
-    from specweaver.core.config.settings_loader import load_settings
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
     db = _core.get_db()
@@ -233,9 +231,9 @@ def review(
         llm=adapter,
         config=settings,
         topology=topo_contexts,
-        constitution=(
-            lambda info: info.content if info else None
-        )(find_constitution(project_path, spec_path=actual_spec_path)),
+        constitution=(lambda info: info.content if info else None)(
+            find_constitution(project_path, spec_path=actual_spec_path)
+        ),
         standards=(
             load_standards_content(db, project, project_path, target_path=target_path)
             if project

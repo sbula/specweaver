@@ -1,8 +1,11 @@
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from specweaver.graph.core.builder.mapper import OntologyMapper
 from specweaver.graph.core.engine.hashing import SemanticHasher
+
+if TYPE_CHECKING:
+    from specweaver.graph.core.engine.protocol import GraphEngineProtocol
 
 
 class GraphBuilder:
@@ -11,7 +14,9 @@ class GraphBuilder:
     Coordinates the pure-logic engine with file system events and boundaries.
     """
 
-    def __init__(self, engine: Any, parser: Any = None, id_prefix: str = "") -> None:
+    def __init__(
+        self, engine: "GraphEngineProtocol", parser: Any = None, id_prefix: str = ""
+    ) -> None:
         """
         Initializes the GraphBuilder.
 
@@ -36,7 +41,7 @@ class GraphBuilder:
         new_edge_keys = {(e.source_hash, e.target_hash) for e in new_edges}
 
         file_hash = self.hasher.hash_file(filepath)
-        norm_path = self.hasher._normalize_path(filepath)
+        norm_path = self.hasher.normalize_path(filepath)
 
         existing_hashes, existing_edge_keys = self._get_existing_elements(
             filepath, norm_path, file_hash
@@ -77,22 +82,14 @@ class GraphBuilder:
     def _get_existing_elements(
         self, filepath: str, norm_path: str, file_hash: str
     ) -> tuple[set[str], set[tuple[str, str]]]:
-        existing_hashes: set[str] = set()
-        existing_edge_keys: set[tuple[str, str]] = set()
+        # Use public API for nodes (uses the _file_index internally for O(1) performance)
+        existing_hashes = self.engine.get_nodes_for_file(filepath)
 
-        with self.engine._lock:
-            for int_id, data in self.engine._graph.nodes(data=True):
-                if data.get("file_id") in (filepath, norm_path) and (
-                    semantic_hash := self.engine._int_to_hash.get(int_id)
-                ):
-                    existing_hashes.add(semantic_hash)
+        # Include the file's own hash in case it has incoming/outgoing edges not strictly bound to its internal AST
+        query_hashes = existing_hashes | {file_hash}
 
-            for u, v, _data in self.engine._graph.edges(data=True):
-                if (
-                    (source_hash := self.engine._int_to_hash.get(u)) in existing_hashes
-                    or source_hash == file_hash
-                ) and (target_hash := self.engine._int_to_hash.get(v)):
-                    existing_edge_keys.add((source_hash, target_hash))
+        # Use public API for edges (uses NetworkX nbunch optimized lookup)
+        existing_edge_keys = self.engine.get_edges_involving(query_hashes)
 
         return existing_hashes, existing_edge_keys
 

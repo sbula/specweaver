@@ -141,9 +141,7 @@ class ArbitrateVerdictHandler(StepHandler):
             except ValueError as e:
                 return _error_result(str(e), started)
 
-            base_prompt = await _build_base_prompt(
-                context, ARBITRATE_INSTRUCTIONS, profile=profile
-            )
+            base_prompt = await _build_base_prompt(context, ARBITRATE_INSTRUCTIONS, profile=profile)
             base_prompt.add_context(filtered_trace, label="Failures")
 
             prompt = base_prompt.build()
