@@ -161,7 +161,7 @@ class TestStandardsInjectionE2E:
         #         from specweaver.assurance.standards.interfaces.cli import _load_standards_content
 
         name = _unique_name()
-        project = _create_python_project(tmp_path, name)
+        _create_python_project(tmp_path, name)
 
         # Scan to populate DB
         scan = runner.invoke(app, ["standards", "scan", "--no-review"])

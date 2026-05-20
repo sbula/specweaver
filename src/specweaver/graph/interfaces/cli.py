@@ -13,40 +13,15 @@ import typer
 from rich import print as rprint
 from rich.tree import Tree
 
-from specweaver.graph.core.builder.orchestrator import GraphBuilder
-from specweaver.graph.core.engine.core import InMemoryGraphEngine
-from specweaver.graph.core.store.repository import SqliteGraphRepository
 from specweaver.graph.lineage.engine import LineageEngine
 from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 from specweaver.interfaces.cli import _core
 from specweaver.interfaces.cli._core import console, get_db
-from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
 
 logger = logging.getLogger(__name__)
 
 
 # -- Graph App --------------------------------------------------------------
-
-
-def _purge_stale_nodes(target_path: Path, repo: SqliteGraphRepository) -> None:
-    """RT-11: Stale Graph Boot Trap - Cross-reference DB against disk and purge deleted files."""
-    existing_files = repo.get_all_file_hashes()
-
-    found_on_disk = set()
-    if target_path.is_file():
-        found_on_disk.add(str(target_path))
-    elif target_path.is_dir():
-        for filepath in target_path.rglob("*"):
-            if filepath.is_file():
-                found_on_disk.add(str(filepath))
-    else:
-        found_on_disk.add(str(target_path))
-
-    for db_file in existing_files:
-        if db_file not in found_on_disk and not Path(db_file).exists():
-            console.print(f"[dim]Purging deleted file from Knowledge Graph: {db_file}[/dim]")
-            repo.purge_file(db_file)
-
 
 graph_app = typer.Typer(
     name="graph",
@@ -77,55 +52,10 @@ def build(
     Extracts the AST, hashes it, and persists it to the local SQLite database.
     """
     try:
-        # Dependency Injection (CB4 Wiring)
-        engine = InMemoryGraphEngine()
-        db_path = str(project_path / ".specweaver" / "graph.db")
+        from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
 
-        # RT-30: Validate local context.yaml against project
-        service_name = "default"
-        from specweaver.assurance.graph.loader import load_topology
-
-        topology = load_topology(project_path)
-        if topology is None:
-            _core.console.print(
-                "[dim]No context.yaml files found -- topology context disabled.[/dim]"
-            )
-        if topology and topology.nodes:
-            # Try to find a root node (level = system or similar)
-            # Or just take the first one if it's a microservice
-            for node in topology.nodes.values():
-                if node.yaml_path and str(node.yaml_path.parent) == str(project_path.resolve()):
-                    service_name = node.name
-                    break
-
-        repo = SqliteGraphRepository(db_path, service_name)
-
-        # RT-11: Stale Graph Boot Trap
-        target_path = Path(target)
-        _purge_stale_nodes(target_path, repo)
-
-        # Load any existing state AFTER purge
-        graph, _ = repo.load_from_db()
-        engine._graph = graph
-
-        # Inject the workspace parser adapter with ID Prefixing
-        builder = GraphBuilder(engine=engine, parser=extract_ast_dict, id_prefix=service_name)
-
-        # Ingest the target
-        if target_path.is_file():
-            builder.ingest_file(str(target_path))
-        elif target_path.is_dir():
-            for filepath in target_path.rglob("*"):
-                if filepath.is_file():
-                    builder.ingest_file(str(filepath))
-        else:
-            builder.ingest_file(str(target_path))
-
-        # Persist back
-        repo.flush_to_db(engine)
-
-        console.print(f"[green]Successfully built graph for {target}[/green]")
-
+        count = GraphOrchestrator.build_target(Path(target), project_path)
+        console.print(f"[green]Successfully built graph for {target} ({count} files)[/green]")
     except Exception as e:
         console.print(f"[red]Failed to build graph: {e}[/red]")
         sys.exit(1)
@@ -267,39 +197,3 @@ def tree_command(  # noqa: C901
 
     build_node(tree_data, tree)
     console.print(tree)
-
-
-def check_lineage(src_dir: Path) -> list[str]:
-    """Scan the source directory for Python files missing artifact tags.
-
-    Returns a list of absolute paths to files that are missing the '# sw-artifact:' tag.
-    """
-    orphans: list[str] = []
-
-    if not src_dir.exists() or not src_dir.is_dir():
-        return orphans
-
-    # Directories to skip
-    excluded_dirs = {".tmp", ".venv", "__pycache__", ".git", ".pytest_cache"}
-
-    # Iterate through all .py files in src_dir
-    for py_file in src_dir.rglob("*.py"):
-        # Check if the file is inside any excluded directory
-        is_excluded = False
-        for part in py_file.parts:
-            if part in excluded_dirs:
-                is_excluded = True
-                break
-
-        if is_excluded:
-            continue
-
-        # Read the file and check for the tag
-        try:
-            content = py_file.read_text(encoding="utf-8")
-            if "# sw-artifact:" not in content:
-                orphans.append(str(py_file.resolve()))
-        except Exception as e:
-            logger.warning("Could not read file %s: %s", py_file, e)
-
-    return sorted(orphans)

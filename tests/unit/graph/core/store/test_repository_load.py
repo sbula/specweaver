@@ -33,23 +33,22 @@ def test_load_happy_path(repo):
         "test_service:ast:123", "test_service:ast:456", type="CALLS", metadata={"weight": 1}
     )
 
-    repo.flush_to_db(g_in)
+    repo.persist_semantic_digraph(g_in)
 
-    g_out, hash_to_id = repo.load_from_db()
+    g_out = repo.load_from_db()
 
     assert isinstance(g_out, nx.DiGraph)
     assert len(g_out.nodes) == 2
     assert len(g_out.edges) == 1
 
-    # Internal NetworkX nodes should use the fast integer IDs
+    # Internal NetworkX nodes should use semantic hashes
     node_ids = list(g_out.nodes())
-    assert isinstance(node_ids[0], int)
+    assert isinstance(node_ids[0], str)
 
     # The attributes must be mapped back correctly
-    id_123 = hash_to_id["test_service:ast:123"]
-    id_456 = hash_to_id["test_service:ast:456"]
+    id_123 = "test_service:ast:123"
+    id_456 = "test_service:ast:456"
 
-    assert g_out.nodes[id_123]["semantic_hash"] == "test_service:ast:123"
     assert g_out.nodes[id_123]["metadata"] == {"key": "value"}
     assert g_out.nodes[id_123]["clone_hash"] == "c1"
 
@@ -64,16 +63,16 @@ def test_load_ignores_tombstoned_nodes(repo):
     """Test that load_from_db skips nodes with is_active=0."""
     g_in = nx.DiGraph()
     g_in.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={})
-    repo.flush_to_db(g_in)
+    repo.persist_semantic_digraph(g_in)
 
     # Manually tombstone it
     with sqlite3.connect(repo.db_path) as conn:
         conn.execute("UPDATE nodes SET is_active=0;")
 
-    g_out, hash_to_id = repo.load_from_db()
+    g_out = repo.load_from_db()
 
     assert len(g_out.nodes) == 0
-    assert "test_service:ast:123" not in hash_to_id
+    assert "test_service:ast:123" not in g_out.nodes
 
 
 def test_load_ignores_ghost_nodes(repo):
@@ -81,9 +80,9 @@ def test_load_ignores_ghost_nodes(repo):
     g_in = nx.DiGraph()
     g_in.add_node("test_service:ast:123", file_id="file1", package_name="pkg1", metadata={})
     g_in.add_edge("test_service:ast:123", "test_service:ast:GHOST", type="CALLS", metadata={})
-    repo.flush_to_db(g_in)
+    repo.persist_semantic_digraph(g_in)
 
-    g_out, _hash_to_id = repo.load_from_db()
+    g_out = repo.load_from_db()
 
     # The GHOST node is inserted as is_active=0 by flush_to_db.
     # Therefore, it should NOT be in the loaded graph.
@@ -112,11 +111,11 @@ def test_load_corrupted_node_metadata(repo):
             ),
         )
 
-    g_out, hash_to_id = repo.load_from_db()
+    g_out = repo.load_from_db()
 
     # It should not crash, and should load the node with empty metadata {}
     assert len(g_out.nodes) == 1
-    node_id = hash_to_id["test_service:ast:bad_node"]
+    node_id = "test_service:ast:bad_node"
     assert g_out.nodes[node_id]["metadata"] == {}
 
 
@@ -154,8 +153,18 @@ def test_load_corrupted_edge_metadata(repo):
             (id1, id2, "CALLS", "INVALID_JSON_EDGE"),
         )
 
-    g_out, _hash_to_id = repo.load_from_db()
+    g_out = repo.load_from_db()
 
     assert len(g_out.edges) == 1
-    edge_data = g_out.edges[id1, id2]
+
+    # We must retrieve by semantic hash keys, but here we only have the integer IDs.
+    # We can retrieve the semantic hashes by fetching them.
+    with sqlite3.connect(repo.db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT semantic_hash FROM nodes WHERE id=?", (id1,))
+        hash1 = cursor.fetchone()[0]
+        cursor.execute("SELECT semantic_hash FROM nodes WHERE id=?", (id2,))
+        hash2 = cursor.fetchone()[0]
+
+    edge_data = g_out.edges[hash1, hash2]
     assert edge_data["metadata"] == {}

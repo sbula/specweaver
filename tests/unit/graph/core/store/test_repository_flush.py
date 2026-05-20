@@ -23,7 +23,7 @@ def test_flush_happy_path(repo):
     )
     g.add_edge("test_service:ast:123", "test_service:ast:456", type="CALLS", metadata={"weight": 1})
 
-    repo.flush_to_db(g)
+    repo.persist_semantic_digraph(g)
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
@@ -77,7 +77,7 @@ def test_flush_large_graph_chunking(repo):
                 f"test_service:ast:{i - 1}", f"test_service:ast:{i}", type="CALLS", metadata={}
             )
 
-    repo.flush_to_db(g)
+    repo.persist_semantic_digraph(g)
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
@@ -109,7 +109,7 @@ def test_flush_tombstone_recovery(repo):
         metadata={"new": "data"},
         clone_hash="new_clone",
     )
-    repo.flush_to_db(g)
+    repo.persist_semantic_digraph(g)
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
@@ -140,7 +140,7 @@ def test_flush_lazy_target(repo):
     g.add_edge("test_service:ast:123", "test_service:ast:GHOST", type="CALLS", metadata={})
     # Notice "test_service:ast:GHOST" is NOT added as a node with metadata.
 
-    repo.flush_to_db(g)
+    repo.persist_semantic_digraph(g)
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
@@ -172,7 +172,7 @@ def test_flush_unserializable_metadata(repo):
         metadata={"unserializable": set([4, 5])},
     )
 
-    repo.flush_to_db(g)  # Should not raise InterfaceError
+    repo.persist_semantic_digraph(g)  # Should not raise InterfaceError
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
@@ -189,7 +189,7 @@ def test_flush_unserializable_metadata(repo):
 def test_flush_empty_graph(repo):
     """[Boundary] Flushing an empty graph should not crash and leave DB empty."""
     g = nx.DiGraph()
-    repo.flush_to_db(g)
+    repo.persist_semantic_digraph(g)
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
@@ -210,7 +210,7 @@ def test_flush_prefix_spoofing(repo):
         service_name="hacked_service",
     )
 
-    repo.flush_to_db(g)
+    repo.persist_semantic_digraph(g)
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()

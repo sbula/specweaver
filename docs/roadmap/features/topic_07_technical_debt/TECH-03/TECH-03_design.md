@@ -318,7 +318,7 @@ When Rust arrives: `RustGraphEngine` implements this Protocol. Zero changes to b
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Engine Simplification, ID Safety & Rust Seam | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-01 | Engine Simplification, ID Safety & Rust Seam | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | CLI Logic Extraction & Cleanup | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Future Tech Debt (Identified, Not In Scope)

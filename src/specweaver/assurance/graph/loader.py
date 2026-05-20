@@ -56,6 +56,25 @@ def load_topology(project_path: Path) -> TopologyGraph | None:
     return graph
 
 
+def resolve_service_name(topology: TopologyGraph | None, target_path: Path) -> str:
+    """Resolve the logical service name for a given file path based on the topology graph.
+
+    If no topology is present or no matching node is found, returns 'default'.
+    """
+    if topology is None or getattr(topology, "nodes", None) is None or not topology.nodes:
+        return "default"
+
+    target_str = str(target_path.resolve()).replace("\\", "/")
+
+    for node in topology.nodes.values():
+        if getattr(node, "path", None):
+            node_path_str = str(Path(node.path).resolve()).replace("\\", "/")
+            if target_str.startswith(node_path_str):
+                return node.name
+
+    return "default"
+
+
 def select_topology_contexts(
     graph: TopologyGraph | None,
     module_name: str,

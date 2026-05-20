@@ -79,6 +79,34 @@ class GraphBuilder:
             ast_data = self.parser(str(path))
             self.ingest_ast(filepath, ast_data)
 
+    def collect_files(self, target_path: Path) -> set[str]:
+        """Collects all python files from a target path."""
+        target = Path(target_path)
+        if target.is_file():
+            if target.suffix == ".py":
+                return {str(target)}
+            return set()
+
+        found = set()
+        for p in target.rglob("*.py"):
+            if p.is_file():
+                found.add(str(p))
+        return found
+
+    def ingest_target(self, target_path: Path) -> int:
+        """Collects files and ingests them, returning the number of ingested files."""
+        # Special case: if it's a non-existent path, fall back to ingest_file for degradation
+        if not Path(target_path).exists():
+            self.ingest_file(str(target_path))
+            return 1
+
+        files = self.collect_files(target_path)
+        count = 0
+        for f in files:
+            self.ingest_file(f)
+            count += 1
+        return count
+
     def _get_existing_elements(
         self, filepath: str, norm_path: str, file_hash: str
     ) -> tuple[set[str], set[tuple[str, str]]]:
@@ -136,3 +164,43 @@ class GraphBuilder:
         # Append or create
         with open(gitignore_path, "a", encoding="utf-8") as f:
             f.write("\n# SpecWeaver auto-generated graph exports\n*.graphml\n")
+
+
+class GraphOrchestrator:
+    """High-level service coordinating graph ingestion and persistence."""
+
+    @staticmethod
+    def build_target(target_path: Path, project_path: Path) -> int:
+        from specweaver.assurance.graph.loader import load_topology
+        from specweaver.graph.core.engine.core import InMemoryGraphEngine
+        from specweaver.graph.core.store.repository import SqliteGraphRepository
+        from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict
+
+        service_name = "default"
+        topology = load_topology(project_path)
+        if topology and topology.nodes:
+            for node in topology.nodes.values():
+                if node.yaml_path and str(node.yaml_path.parent) == str(project_path.resolve()):
+                    service_name = node.name
+                    break
+
+        db_path = str(project_path / ".specweaver" / "graph.db")
+        repo = SqliteGraphRepository(db_path, service_name)
+        engine = InMemoryGraphEngine()
+        builder = GraphBuilder(engine=engine, parser=extract_ast_dict, id_prefix=service_name)
+
+        # Stale Graph Boot Trap
+        files = builder.collect_files(target_path)
+        repo.purge_stale_entries(files)
+
+        # Load existing graph state
+        semantic_digraph = repo.load_from_db()
+        engine.load_semantic_digraph(semantic_digraph)
+
+        # Ingest
+        count = builder.ingest_target(target_path)
+
+        # Persist
+        repo.persist_semantic_digraph(engine.export_semantic_digraph())
+
+        return count

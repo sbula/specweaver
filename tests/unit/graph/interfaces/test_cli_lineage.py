@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from specweaver.graph.interfaces.cli import check_lineage
 from specweaver.graph.interfaces.cli import lineage_app as app
+from specweaver.graph.lineage.scanner import check_lineage
 
 runner = CliRunner()
 

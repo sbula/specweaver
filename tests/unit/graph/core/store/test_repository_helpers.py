@@ -23,7 +23,7 @@ def test_get_all_file_hashes(repo):
     # file3 has no clone hash
     g.add_node("test_service:ast:4", file_id="file3")
 
-    repo.flush_to_db(g)
+    repo.persist_semantic_digraph(g)
 
     # Also add a node for a different service to ensure isolation
     with sqlite3.connect(repo.db_path) as conn:
@@ -43,7 +43,7 @@ def test_purge_file(repo):
     g = nx.DiGraph()
     g.add_node("test_service:ast:1", file_id="file1")
     g.add_node("test_service:ast:2", file_id="file2")
-    repo.flush_to_db(g)
+    repo.persist_semantic_digraph(g)
 
     repo.purge_file("file1")
 
@@ -65,9 +65,9 @@ def test_full_graph_lifecycle(repo):
     g1.add_node("test_service:ast:1", file_id="file1", clone_hash="v1")
     g1.add_node("test_service:ast:2", file_id="file2", clone_hash="v1")
     g1.add_edge("test_service:ast:1", "test_service:ast:2", type="CALLS")
-    repo.flush_to_db(g1)
+    repo.persist_semantic_digraph(g1)
 
-    g_out, _ = repo.load_from_db()
+    g_out = repo.load_from_db()
     assert len(g_out.nodes) == 2
     assert len(g_out.edges) == 1
 
@@ -79,18 +79,18 @@ def test_full_graph_lifecycle(repo):
 
     # In a real orchestrator, we would purge file1 before flushing its new state
     repo.purge_file("file1")
-    repo.flush_to_db(g2)
+    repo.persist_semantic_digraph(g2)
 
     # 3. Read it back
-    g_out_2, id_map = repo.load_from_db()
+    g_out_2 = repo.load_from_db()
     assert len(g_out_2.nodes) == 2  # 1_new and 2
-    assert "test_service:ast:1_new" in id_map
-    assert "test_service:ast:1" not in id_map  # Tombstoned
+    assert "test_service:ast:1_new" in g_out_2.nodes
+    assert "test_service:ast:1" not in g_out_2.nodes  # Tombstoned
 
     # 4. Delete nodes (simulate deleting file2)
     repo.purge_file("file2")
 
     # 5. Read it back
-    g_out_3, _id_map_3 = repo.load_from_db()
+    g_out_3 = repo.load_from_db()
     assert len(g_out_3.nodes) == 1  # Only 1_new is left
     assert len(g_out_3.edges) == 0  # Edge should be gone since target is tombstoned!

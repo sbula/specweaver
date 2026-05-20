@@ -5,6 +5,7 @@ source_roots = [
 exact = true
 modules = [
     { path = "src.specweaver.graph", depends_on = [] },
+    { path = "src.specweaver.graph.lineage", depends_on = [] },
     { path = "src.specweaver.graph.interfaces", depends_on = [] },
     { path = "src.specweaver.assurance.standards", depends_on = [] },
     { path = "src.specweaver.assurance.standards.interfaces", depends_on = [] },

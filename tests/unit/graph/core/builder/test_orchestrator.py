@@ -115,3 +115,55 @@ def test_builder_ingest_ast_edge_delta():
     builder.ingest_ast("src/test.py", ast_data_v2)
 
     assert len(engine._nx_graph.edges) >= 0
+
+
+def test_orchestrator_build_target_happy_path(tmp_path):
+    from unittest.mock import MagicMock, patch
+    import networkx as nx
+    from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
+
+    mock_topology = MagicMock()
+    mock_node = MagicMock()
+    mock_node.name = "my_service"
+    mock_node.yaml_path = tmp_path / "context.yaml"
+    mock_topology.nodes = {"my_service": mock_node}
+
+    mock_repo = MagicMock()
+    mock_repo.load_from_db.return_value = nx.DiGraph()
+
+    with patch("specweaver.assurance.graph.loader.load_topology", return_value=mock_topology), \
+         patch("specweaver.graph.core.store.repository.SqliteGraphRepository", return_value=mock_repo), \
+         patch("specweaver.graph.core.builder.orchestrator.GraphBuilder") as mock_builder_class:
+        
+        mock_builder = MagicMock()
+        mock_builder.collect_files.return_value = {"file1.py"}
+        mock_builder.ingest_target.return_value = 1
+        mock_builder_class.return_value = mock_builder
+
+        count = GraphOrchestrator.build_target(tmp_path / "file1.py", tmp_path)
+        assert count == 1
+        mock_repo.purge_stale_entries.assert_called_once_with({"file1.py"})
+        mock_repo.load_from_db.assert_called_once()
+        mock_repo.persist_semantic_digraph.assert_called_once()
+
+
+def test_orchestrator_build_target_fallback(tmp_path):
+    from unittest.mock import MagicMock, patch
+    import networkx as nx
+    from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
+
+    mock_repo = MagicMock()
+    mock_repo.load_from_db.return_value = nx.DiGraph()
+
+    with patch("specweaver.assurance.graph.loader.load_topology", return_value=None), \
+         patch("specweaver.graph.core.store.repository.SqliteGraphRepository", return_value=mock_repo) as mock_repo_class, \
+         patch("specweaver.graph.core.builder.orchestrator.GraphBuilder") as mock_builder_class:
+        
+        mock_builder = MagicMock()
+        mock_builder.collect_files.return_value = set()
+        mock_builder.ingest_target.return_value = 0
+        mock_builder_class.return_value = mock_builder
+
+        count = GraphOrchestrator.build_target(tmp_path, tmp_path)
+        assert count == 0
+        mock_repo_class.assert_called_once_with(str(tmp_path / ".specweaver" / "graph.db"), "default")

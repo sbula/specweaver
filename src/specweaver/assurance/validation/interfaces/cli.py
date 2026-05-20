@@ -194,7 +194,7 @@ def check(
     from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 
     if lineage:
-        from specweaver.graph.interfaces.cli import check_lineage
+        from specweaver.graph.lineage.scanner import check_lineage
 
         _core.get_db()
         active = _core.run_repo_op(lambda r: r.get_active_project())

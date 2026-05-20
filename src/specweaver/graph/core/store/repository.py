@@ -1,29 +1,11 @@
+import json
 import sqlite3
-from abc import ABC, abstractmethod
 from typing import Any
 
-
-class AbstractGraphRepository(ABC):
-    """Abstract interface for persistent Graph Storage to support future Postgres adapter."""
-
-    @abstractmethod
-    def flush_to_db(self, nx_graph: Any) -> None:
-        pass
-
-    @abstractmethod
-    def load_from_db(self) -> tuple[Any, dict[str, int]]:
-        pass
-
-    @abstractmethod
-    def purge_file(self, file_id: str) -> None:
-        pass
-
-    @abstractmethod
-    def get_all_file_hashes(self) -> dict[str, str]:
-        pass
+import networkx as nx
 
 
-class SqliteGraphRepository(AbstractGraphRepository):
+class SqliteGraphRepository:
     """SQLite implementation of the Graph Repository."""
 
     def __init__(self, db_path: str, validated_service_name: str):
@@ -35,6 +17,7 @@ class SqliteGraphRepository(AbstractGraphRepository):
         conn = sqlite3.connect(self.db_path)
         # WAL mode to prevent Lock Contention (RT-4)
         conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA busy_timeout=5000;")
         # Enable Foreign Keys
         conn.execute("PRAGMA foreign_keys=ON;")
         return conn
@@ -67,9 +50,7 @@ class SqliteGraphRepository(AbstractGraphRepository):
                 )
             """)
 
-    def _extract_nodes(self, nx_graph: Any) -> tuple[list[Any], list[Any]]:
-        import json
-
+    def _extract_nodes(self, nx_graph: nx.DiGraph) -> tuple[list[Any], list[Any]]:
         node_batch = []
         ghost_hashes = set()
 
@@ -112,10 +93,8 @@ class SqliteGraphRepository(AbstractGraphRepository):
                 hash_to_id[h] = int_id
         return hash_to_id
 
-    def flush_to_db(self, nx_graph: Any) -> None:
-        import json
-
-        node_batch, ghost_batch = self._extract_nodes(nx_graph)
+    def persist_semantic_digraph(self, semantic_digraph: nx.DiGraph) -> None:
+        node_batch, ghost_batch = self._extract_nodes(semantic_digraph)
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -140,7 +119,7 @@ class SqliteGraphRepository(AbstractGraphRepository):
             hash_to_id = self._get_hash_to_id_map(cursor, all_hashes)
 
             edge_batch = []
-            for source_hash, target_hash, data in nx_graph.edges(data=True):
+            for source_hash, target_hash, data in semantic_digraph.edges(data=True):
                 source_id = hash_to_id.get(source_hash)
                 target_id = hash_to_id.get(target_hash)
                 if source_id is not None and target_id is not None:
@@ -156,13 +135,8 @@ class SqliteGraphRepository(AbstractGraphRepository):
 
             conn.commit()
 
-    def load_from_db(self) -> tuple[Any, dict[str, int]]:
-        import json
-
-        import networkx as nx  # type: ignore
-
+    def load_from_db(self) -> nx.DiGraph:
         nx_graph = nx.DiGraph()
-        hash_to_id = {}
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -178,7 +152,7 @@ class SqliteGraphRepository(AbstractGraphRepository):
 
             for row in cursor.fetchall():
                 (
-                    node_id,
+                    _node_id,
                     semantic_hash,
                     clone_hash,
                     file_id,
@@ -187,16 +161,13 @@ class SqliteGraphRepository(AbstractGraphRepository):
                     meta_str,
                 ) = row
 
-                hash_to_id[semantic_hash] = node_id
-
                 try:
                     metadata = json.loads(meta_str) if meta_str else {}
                 except json.JSONDecodeError:
                     metadata = {}
 
                 nx_graph.add_node(
-                    node_id,
-                    semantic_hash=semantic_hash,
+                    semantic_hash,
                     clone_hash=clone_hash,
                     file_id=file_id,
                     service_name=service_name,
@@ -206,7 +177,7 @@ class SqliteGraphRepository(AbstractGraphRepository):
 
             cursor.execute(
                 """
-                SELECT e.source_id, e.target_id, e.type, e.metadata
+                SELECT n1.semantic_hash, n2.semantic_hash, e.type, e.metadata
                 FROM edges e
                 JOIN nodes n1 ON e.source_id = n1.id
                 JOIN nodes n2 ON e.target_id = n2.id
@@ -216,15 +187,15 @@ class SqliteGraphRepository(AbstractGraphRepository):
                 (self.validated_service_name, self.validated_service_name),
             )
 
-            for source_id, target_id, edge_type, meta_str in cursor.fetchall():
+            for source_hash, target_hash, edge_type, meta_str in cursor.fetchall():
                 try:
                     metadata = json.loads(meta_str) if meta_str else {}
                 except json.JSONDecodeError:
                     metadata = {}
 
-                nx_graph.add_edge(source_id, target_id, type=edge_type, metadata=metadata)
+                nx_graph.add_edge(source_hash, target_hash, type=edge_type, metadata=metadata)
 
-        return nx_graph, hash_to_id
+        return nx_graph
 
     def purge_file(self, file_id: str) -> None:
         with self._get_connection() as conn:
@@ -237,6 +208,39 @@ class SqliteGraphRepository(AbstractGraphRepository):
                 (file_id, self.validated_service_name),
             )
             conn.commit()
+
+    def purge_stale_entries(self, known_file_ids: set[str]) -> list[str]:
+        from specweaver.graph.core.engine.hashing import SemanticHasher
+
+        normalized_known = {SemanticHasher.normalize_path(fid) for fid in known_file_ids}
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT DISTINCT file_id
+                FROM nodes
+                WHERE is_active = 1 AND service_name = ? AND file_id != ""
+                """,
+                (self.validated_service_name,),
+            )
+
+            db_files = {row[0] for row in cursor.fetchall()}
+            stale_files = list(db_files - normalized_known)
+
+            if stale_files:
+                placeholders = ",".join(["?"] * len(stale_files))
+                cursor.execute(
+                    f"""
+                    UPDATE nodes
+                    SET is_active = 0
+                    WHERE service_name = ? AND file_id IN ({placeholders})
+                    """,
+                    [self.validated_service_name, *stale_files],
+                )
+                conn.commit()
+
+            return stale_files
 
     def get_all_file_hashes(self) -> dict[str, str]:
         with self._get_connection() as conn:

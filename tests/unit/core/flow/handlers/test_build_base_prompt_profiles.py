@@ -354,9 +354,7 @@ class TestHandlerProfileIntegration:
 
         # We don't need to mock Generator here because resolve_profile should fail before instantiation
         def mock_exists(self: Any) -> bool:
-            if "draft" in handler_class.lower() and "spec" in str(self):
-                return False
-            return True
+            return not ("draft" in handler_class.lower() and "spec" in str(self))
 
         with (
             patch(

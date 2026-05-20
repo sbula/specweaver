@@ -1,9 +1,13 @@
+from typing import TYPE_CHECKING
+
 import networkx as nx
 
 from specweaver.graph.core.engine.core import InMemoryGraphEngine
 from specweaver.graph.core.engine.models import GraphEdge, GraphNode
 from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
-from specweaver.graph.core.engine.protocol import GraphEngineProtocol
+
+if TYPE_CHECKING:
+    from specweaver.graph.core.engine.protocol import GraphEngineProtocol
 
 
 def test_protocol_structural_conformance():
