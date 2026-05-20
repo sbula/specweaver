@@ -119,7 +119,9 @@ def test_builder_ingest_ast_edge_delta():
 
 def test_orchestrator_build_target_happy_path(tmp_path):
     from unittest.mock import MagicMock, patch
+
     import networkx as nx
+
     from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
 
     mock_topology = MagicMock()
@@ -131,10 +133,13 @@ def test_orchestrator_build_target_happy_path(tmp_path):
     mock_repo = MagicMock()
     mock_repo.load_from_db.return_value = nx.DiGraph()
 
-    with patch("specweaver.assurance.graph.loader.load_topology", return_value=mock_topology), \
-         patch("specweaver.graph.core.store.repository.SqliteGraphRepository", return_value=mock_repo), \
-         patch("specweaver.graph.core.builder.orchestrator.GraphBuilder") as mock_builder_class:
-        
+    with (
+        patch("specweaver.assurance.graph.loader.load_topology", return_value=mock_topology),
+        patch(
+            "specweaver.graph.core.store.repository.SqliteGraphRepository", return_value=mock_repo
+        ),
+        patch("specweaver.graph.core.builder.orchestrator.GraphBuilder") as mock_builder_class,
+    ):
         mock_builder = MagicMock()
         mock_builder.collect_files.return_value = {"file1.py"}
         mock_builder.ingest_target.return_value = 1
@@ -149,16 +154,21 @@ def test_orchestrator_build_target_happy_path(tmp_path):
 
 def test_orchestrator_build_target_fallback(tmp_path):
     from unittest.mock import MagicMock, patch
+
     import networkx as nx
+
     from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
 
     mock_repo = MagicMock()
     mock_repo.load_from_db.return_value = nx.DiGraph()
 
-    with patch("specweaver.assurance.graph.loader.load_topology", return_value=None), \
-         patch("specweaver.graph.core.store.repository.SqliteGraphRepository", return_value=mock_repo) as mock_repo_class, \
-         patch("specweaver.graph.core.builder.orchestrator.GraphBuilder") as mock_builder_class:
-        
+    with (
+        patch("specweaver.assurance.graph.loader.load_topology", return_value=None),
+        patch(
+            "specweaver.graph.core.store.repository.SqliteGraphRepository", return_value=mock_repo
+        ) as mock_repo_class,
+        patch("specweaver.graph.core.builder.orchestrator.GraphBuilder") as mock_builder_class,
+    ):
         mock_builder = MagicMock()
         mock_builder.collect_files.return_value = set()
         mock_builder.ingest_target.return_value = 0
@@ -166,4 +176,6 @@ def test_orchestrator_build_target_fallback(tmp_path):
 
         count = GraphOrchestrator.build_target(tmp_path, tmp_path)
         assert count == 0
-        mock_repo_class.assert_called_once_with(str(tmp_path / ".specweaver" / "graph.db"), "default")
+        mock_repo_class.assert_called_once_with(
+            str(tmp_path / ".specweaver" / "graph.db"), "default"
+        )

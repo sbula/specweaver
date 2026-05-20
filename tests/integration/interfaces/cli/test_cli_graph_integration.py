@@ -1,9 +1,9 @@
-from pathlib import Path
-from typer.testing import CliRunner
 import sqlite3
 
-from specweaver.interfaces.cli.main import app
+from typer.testing import CliRunner
+
 from specweaver.interfaces.cli._core import get_db
+from specweaver.interfaces.cli.main import app
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
 runner = CliRunner()
@@ -31,9 +31,7 @@ def test_graph_build_integration_real_flow(tmp_path, monkeypatch):
     )
 
     # Act: Run command
-    result = runner.invoke(
-        app, ["graph", "build", str(test_file), "-p", str(tmp_path)]
-    )
+    result = runner.invoke(app, ["graph", "build", str(test_file), "-p", str(tmp_path)])
 
     # Assert CLI succeeded
     assert result.exit_code == 0
@@ -47,10 +45,10 @@ def test_graph_build_integration_real_flow(tmp_path, monkeypatch):
         cursor = conn.cursor()
         cursor.execute("SELECT semantic_hash, file_id, service_name, is_active FROM nodes")
         nodes = cursor.fetchall()
-        
+
         # Verify default service name and normalized file path
         assert len(nodes) > 0
-        for semantic_hash, file_id, service_name, is_active in nodes:
+        for _semantic_hash, file_id, service_name, is_active in nodes:
             assert service_name == "default"
             assert is_active == 1
             assert "math_utils.py" in file_id
@@ -80,9 +78,7 @@ def test_graph_build_integration_topology_service(tmp_path, monkeypatch):
     test_file.write_text("class Processor:\n    pass\n", encoding="utf-8")
 
     # Act: Run command
-    result = runner.invoke(
-        app, ["graph", "build", str(test_file), "-p", str(tmp_path)]
-    )
+    result = runner.invoke(app, ["graph", "build", str(test_file), "-p", str(tmp_path)])
 
     assert result.exit_code == 0
 
