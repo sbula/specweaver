@@ -9,7 +9,7 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 ## Architecture & Restructuring
 * **`TECH-02` 🟢: Structural Refactoring of Workspace AST Module**
   > [Description](../features/topic_07_technical_debt/TECH-02/TECH-02_ast_restructuring.md) | To make the bounded context crystal clear, we want to introduce a dedicated `ast` boundary inside the workspace module. This separates mechanical Tree-Sitter extraction (`parsers`) from output mapping (`adapters`).
-* **`TECH-03` 🔴: Architectural Analysis & Refactoring of `sw graph build` CLI**
+* **`TECH-03` 🟢: Architectural Analysis & Refactoring of `sw graph build` CLI**
   > [Description](../features/topic_07_technical_debt/TECH-03/TECH-03_graph_cli_analysis.md) | Analyzing whether a standalone CLI command for graph building is an architectural violation (leaky abstraction/duplicated orchestration). Proposes either migrating the orchestration logic into a centralized `GraphBuildAtom` or deprecating the CLI entirely in favor of an autonomous `spinUp` workflow.
 
 ## Schema & Data Layer

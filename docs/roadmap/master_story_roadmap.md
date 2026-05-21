@@ -1,4 +1,4 @@
-﻿# Master User Story Roadmap
+# Master User Story Roadmap
 
 This is the unified, single-numbering format (US-1 to US-18) covering the entire lifespan of the platform.
 
@@ -602,10 +602,10 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `✅` **TECH-02:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-02/TECH-02_ast_restructuring.md)
 
-### 🔴 TECH-03: Architectural Analysis & Refactoring of `sw graph build` CLI
+### 🟢 TECH-03: Architectural Analysis & Refactoring of `sw graph build` CLI
 **Benefit:** *Strips hardcoded logic from the CLI, enabling pure headless execution of the Graph Builder from any background Atom.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-03:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-03/TECH-03_graph_cli_analysis.md)
+    *   `[x]` **TECH-03:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-03/TECH-03_graph_cli_analysis.md)
 
 ### 🔴 TECH-04: Database Table Prefix Harmonization
 **Benefit:** *All database tables use a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows.*

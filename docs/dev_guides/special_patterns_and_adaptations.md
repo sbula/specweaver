@@ -300,15 +300,19 @@ Instead of `SELECT`ing every node and deciding whether to `UPDATE` or `INSERT` i
 
 ---
 
-## 19. Integer-Mapped Centrality (The RT-17 Math Fix)
+## 19. Elimination of Integer Mapping (TECH-03 De-optimization)
 
-When reconstituting the Persistent SQLite backup back into an in-memory `NetworkX` graph, using string-based `semantic_hash` as the primary NetworkX Node ID resulted in a 400% latency spike during complex Centrality or Pathing mathematical analysis (e.g. `nx.betweenness_centrality`).
+Initially, when reconstituting the Persistent SQLite backup back into an in-memory `NetworkX` graph, an integer remapping layer (`_hash_to_int`, `_int_to_hash`, `_next_int_id`) was introduced to map string-based `semantic_hash` keys to internal autoincrement `int` IDs. This was intended as a performance optimization for NetworkX centrality analysis.
 
-### How it works:
-Instead of importing the string hashes as primary keys, `load_from_db()` strictly assigns the SQLite `INTEGER PRIMARY KEY AUTOINCREMENT` `id` as the physical `NetworkX` node identifier. The `semantic_hash` is explicitly relegated to an internal `node["semantic_hash"]` attribute dictionary. 
+However, feature refactoring TECH-03 revealed that this integer mapping layer was a premature optimization (no actual matrix math or centrality calculations at scale exist in the codebase) and served as the sole root cause of three major data integrity bugs:
+1. **AP-4**: Type mismatch during db flushes.
+2. **AP-10**: Internal ID map corruption when loading a loaded graph directly into the engine.
+3. **AP-11**: Non-roundtrippable load/flush loops.
 
-### Why we do it:
-NetworkX math operations natively optimize for `int` bindings via C-extensions or Numpy arrays under the hood. String manipulation permanently destroys this optimization. By passing back a synchronized `hash_to_id` map (`dict[str, int]`) to the Orchestrator, external string-based lookups remain `O(1)` without polluting the core graphing engine's math execution bounds.
+### Decoupled ID Design:
+As part of TECH-03, this entire integer remapping layer was deleted. The system now enforces a clean separation of concerns:
+- **Canonical ID**: All public APIs and the in-memory `InMemoryGraphEngine` natively use the `semantic_hash` string as the `NetworkX` node key. This makes roundtrips trivial and eliminates translation bugs.
+- **Storage ID**: Autoincrement integers (`ROWID`) are used strictly as internal foreign keys inside `SqliteGraphRepository` for edge-table efficiency, and never leak outside the storage implementation.
 
 ---
 
