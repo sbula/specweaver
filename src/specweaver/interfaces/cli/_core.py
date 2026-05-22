@@ -12,7 +12,10 @@ local binding.
 from __future__ import annotations
 
 import logging
-from typing import TypeVar
+from typing import TYPE_CHECKING, Awaitable, Callable, TypeVar
+
+if TYPE_CHECKING:
+    from specweaver.workspace.store import WorkspaceRepository
 
 import anyio
 import typer
@@ -36,7 +39,7 @@ _T = TypeVar("_T")
 __all__ = ["_require_active_project", "app", "console", "get_db", "logger", "run_repo_op"]
 
 
-def run_repo_op(fn):
+def run_repo_op(fn: Callable[[WorkspaceRepository], Awaitable[_T]]) -> _T:
     """Run a typed WorkspaceRepository operation synchronously (CLI only).
 
     Replaces the string-dispatched ``_run_workspace_op`` anti-pattern.
@@ -55,7 +58,7 @@ def run_repo_op(fn):
 
     db = get_db()
 
-    async def _action():
+    async def _action() -> _T:
         async with db.async_session_scope() as session:
             return await fn(WorkspaceRepository(session))
 

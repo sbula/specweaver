@@ -20,6 +20,18 @@ forbids:
 
 exposes:
   - DALLevel
+  - TestFailure
+  - TestRunResult
+  - LintError
+  - LintRunResult
+  - ComplexityViolation
+  - ComplexityRunResult
+  - CompileError
+  - CompileRunResult
+  - OutputEvent
+  - DebugRunResult
+  - ArchitectureViolation
+  - ArchitectureRunResult
 
 # -- Operational Metadata --------------------------------------------------
 operational:

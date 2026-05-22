@@ -79,7 +79,7 @@ class TestLineageE2EFlow:
             ),
         ):
             mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
-            with patch("specweaver.workspace.context.hitl_provider.HITLProvider") as mock_hitl_cls:
+            with patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls:
                 mock_hitl = AsyncMock()
                 mock_hitl.ask = AsyncMock(return_value="")
                 mock_hitl_cls.return_value = mock_hitl
@@ -140,7 +140,7 @@ class TestLineageE2EFlow:
             ),
         ):
             mock_req.return_value = (mock_settings, mock_llm, GenerationConfig(model="mock"))
-            with patch("specweaver.workspace.context.hitl_provider.HITLProvider") as mock_hitl_cls:
+            with patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls:
                 mock_hitl = AsyncMock()
                 mock_hitl.ask = AsyncMock(return_value="")
                 mock_hitl_cls.return_value = mock_hitl

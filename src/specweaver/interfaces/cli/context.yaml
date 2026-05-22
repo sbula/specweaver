@@ -53,6 +53,7 @@ exposes:
   - app
   - console
   - get_db
+  - HITLProvider
 
 # -- Operational Metadata --------------------------------------------------
 operational:

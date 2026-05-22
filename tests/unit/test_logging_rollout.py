@@ -75,12 +75,11 @@ class TestBatch1LoggingRollout:
         """workspace/context modules should declare loggers."""
         from specweaver.workspace.context import (
             analyzer_protocols,
-            hitl_provider,
             inferrer,
             provider,
         )
 
-        for mod in (analyzer_protocols, hitl_provider, inferrer, provider):
+        for mod in (analyzer_protocols, inferrer, provider):
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__
@@ -221,7 +220,7 @@ class TestBatch4LoggingRollout:
         from specweaver.core.config.interfaces import cli as config
         from specweaver.core.flow.interfaces import cli as flow_cli
         from specweaver.infrastructure.llm.interfaces import cli as llm_cli
-        from specweaver.interfaces.cli import main
+        from specweaver.interfaces.cli import main, hitl_provider
         from specweaver.interfaces.cli.routers import serve_router as serve
         from specweaver.workspace.project.interfaces import cli as workspace
 
@@ -233,8 +232,9 @@ class TestBatch4LoggingRollout:
         assert hasattr(flow_cli, "logger")
         assert hasattr(serve, "logger")
         assert hasattr(standards, "logger"), "standards must have a logger"
+        assert hasattr(hitl_provider, "logger"), "hitl_provider must have a logger"
 
-        for mod in (config, workspace, llm_cli, flow_cli, serve, standards):
+        for mod in (config, workspace, llm_cli, flow_cli, serve, standards, hitl_provider):
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__
 

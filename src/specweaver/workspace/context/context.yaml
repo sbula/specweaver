@@ -16,7 +16,6 @@ forbids:
 
 exposes:
   - ContextProvider
-  - HITLProvider
 
 # -- Operational Metadata --------------------------------------------------
 operational:

@@ -17,10 +17,11 @@ def _block(
     tokens: int | None = None,
     truncated: bool = False,
 ) -> _ContentBlock:
+    actual_text = text + "\n[truncated]" if truncated else text
     return _ContentBlock(
         kind=kind,
         label=label,
-        text=text,
+        text=actual_text,
         priority=priority,
         tokens=tokens or 10,
         truncated=truncated,

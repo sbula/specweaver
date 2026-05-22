@@ -4,6 +4,7 @@
 """HITL context provider — interactive user input during spec drafting.
 
 Uses Rich prompts to ask the user questions and collect answers.
+Coupled to the CLI UI rendering library (Rich).
 """
 
 from __future__ import annotations

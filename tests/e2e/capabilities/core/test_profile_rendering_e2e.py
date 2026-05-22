@@ -57,7 +57,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     with (
         patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
         patch("specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None),
-        patch("specweaver.workspace.context.hitl_provider.HITLProvider") as mock_hitl_cls,
+        patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls,
     ):
         mock_req.return_value = (None, mock_llm, GenerationConfig(model="mock"))
         mock_hitl = AsyncMock()

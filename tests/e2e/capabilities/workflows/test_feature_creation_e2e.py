@@ -171,7 +171,7 @@ class TestFeatureCreationFullCycle:
         project_dir, spec = _create_project_with_spec(tmp_path)
 
         # Mock HITL to auto-skip (empty answers — will park the run)
-        with patch("specweaver.workspace.context.hitl_provider.HITLProvider") as mock_hitl_cls:
+        with patch("specweaver.interfaces.cli.hitl_provider.HITLProvider") as mock_hitl_cls:
             mock_hitl = AsyncMock()
             mock_hitl.ask = AsyncMock(return_value="")
             mock_hitl.name = "mock_hitl"

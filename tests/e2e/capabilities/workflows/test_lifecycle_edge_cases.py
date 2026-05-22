@@ -319,7 +319,7 @@ class TestMediumPriorityEdgeCases:
         with (
             patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
             patch(
-                "specweaver.workspace.context.hitl_provider.HITLProvider",
+                "specweaver.interfaces.cli.hitl_provider.HITLProvider",
             ) as mock_hitl_cls,
         ):
             mock_req.return_value = (

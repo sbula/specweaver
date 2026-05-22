@@ -68,7 +68,7 @@ def draft(
     from specweaver.core.flow.engine.state import StepStatus
     from specweaver.core.flow.handlers.base import RunContext
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
-    from specweaver.workspace.context.hitl_provider import HITLProvider
+    from specweaver.interfaces.cli.hitl_provider import HITLProvider
 
     db = _core.get_db()
     project = _core.run_repo_op(lambda r: r.get_active_project())

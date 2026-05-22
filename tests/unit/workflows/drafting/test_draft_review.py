@@ -20,7 +20,7 @@ from specweaver.workflows.review.reviewer import (
     ReviewResult,
     ReviewVerdict,
 )
-from specweaver.workspace.context.hitl_provider import HITLProvider
+from specweaver.interfaces.cli.hitl_provider import HITLProvider
 from specweaver.workspace.context.provider import ContextProvider
 
 if TYPE_CHECKING:
@@ -372,7 +372,7 @@ class TestHITLProvider:
         provider = HITLProvider()
         assert provider.name == "hitl"
 
-    @patch("specweaver.workspace.context.hitl_provider.Prompt.ask")
+    @patch("specweaver.interfaces.cli.hitl_provider.Prompt.ask")
     async def test_ask_returns_stripped_input(
         self,
         mock_ask: MagicMock,
@@ -385,7 +385,7 @@ class TestHITLProvider:
         result = await provider.ask("What does it do?")
         assert result == "user answer"
 
-    @patch("specweaver.workspace.context.hitl_provider.Prompt.ask")
+    @patch("specweaver.interfaces.cli.hitl_provider.Prompt.ask")
     async def test_ask_with_section(
         self,
         mock_ask: MagicMock,
@@ -405,7 +405,7 @@ class TestHITLProvider:
         section_printed = any("Section:" in str(c) and "Purpose" in str(c) for c in calls)
         assert section_printed
 
-    @patch("specweaver.workspace.context.hitl_provider.Prompt.ask")
+    @patch("specweaver.interfaces.cli.hitl_provider.Prompt.ask")
     async def test_ask_without_section(
         self,
         mock_ask: MagicMock,
@@ -421,7 +421,7 @@ class TestHITLProvider:
         section_printed = any("Section:" in str(c) for c in calls)
         assert not section_printed
 
-    @patch("specweaver.workspace.context.hitl_provider.Prompt.ask")
+    @patch("specweaver.interfaces.cli.hitl_provider.Prompt.ask")
     async def test_ask_empty_input(
         self,
         mock_ask: MagicMock,

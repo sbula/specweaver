@@ -622,7 +622,7 @@ These stories do not add new user-facing features, but are critical epics requir
 ### 🔴 TECH-06: PromptBuilder Input Escaping
 **Benefit:** *Hardens the prompt assembly layer against prompt injection by ensuring all string rendering uses proper escaping.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-06:** PromptBuilder Input Escaping (Tracked as cross-cutting tech debt)
+    *   `[/]` **TECH-06:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-06/TECH-06_design.md) (Tracked as cross-cutting tech debt)
 *   **Discovered during:** D-INTL-06 Red Team Cycle 1 pattern analysis.
 
 ### 🟢 TECH-07: Architectural Documentation Modularization

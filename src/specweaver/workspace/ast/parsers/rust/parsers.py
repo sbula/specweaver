@@ -6,7 +6,7 @@
 import logging
 from typing import Any
 
-from specweaver.sandbox.qa_runner.core.interface import ComplexityViolation
+from specweaver.commons.qa import ComplexityViolation
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for specweaver.workspace.context.hitl_provider — interactive HITL context."""
+"""Unit tests for specweaver.interfaces.cli.hitl_provider — interactive HITL context."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from rich.console import Console
 
-from specweaver.workspace.context.hitl_provider import HITLProvider
+from specweaver.interfaces.cli.hitl_provider import HITLProvider
 from specweaver.workspace.context.provider import ContextProvider
 
 
@@ -41,7 +41,7 @@ class TestHITLProviderAsk:
     async def test_ask_returns_user_input(self) -> None:
         provider = HITLProvider()
         with patch(
-            "specweaver.workspace.context.hitl_provider.Prompt.ask", return_value="my answer"
+            "specweaver.interfaces.cli.hitl_provider.Prompt.ask", return_value="my answer"
         ):
             result = await provider.ask("What is X?")
         assert result == "my answer"
@@ -50,7 +50,7 @@ class TestHITLProviderAsk:
     async def test_ask_strips_whitespace(self) -> None:
         provider = HITLProvider()
         with patch(
-            "specweaver.workspace.context.hitl_provider.Prompt.ask", return_value="  padded  "
+            "specweaver.interfaces.cli.hitl_provider.Prompt.ask", return_value="  padded  "
         ):
             result = await provider.ask("Q?")
         assert result == "padded"
@@ -58,7 +58,7 @@ class TestHITLProviderAsk:
     @pytest.mark.asyncio
     async def test_ask_empty_returns_empty(self) -> None:
         provider = HITLProvider()
-        with patch("specweaver.workspace.context.hitl_provider.Prompt.ask", return_value=""):
+        with patch("specweaver.interfaces.cli.hitl_provider.Prompt.ask", return_value=""):
             result = await provider.ask("Q?")
         assert result == ""
 
@@ -66,7 +66,7 @@ class TestHITLProviderAsk:
     async def test_ask_with_section_prints_context(self) -> None:
         console = MagicMock(spec=Console)
         provider = HITLProvider(console=console)
-        with patch("specweaver.workspace.context.hitl_provider.Prompt.ask", return_value="ok"):
+        with patch("specweaver.interfaces.cli.hitl_provider.Prompt.ask", return_value="ok"):
             await provider.ask("Q?", section="Purpose")
         # Should have printed section context
         calls = [str(c) for c in console.print.call_args_list]
@@ -76,7 +76,7 @@ class TestHITLProviderAsk:
     async def test_ask_without_section_no_section_line(self) -> None:
         console = MagicMock(spec=Console)
         provider = HITLProvider(console=console)
-        with patch("specweaver.workspace.context.hitl_provider.Prompt.ask", return_value="ok"):
+        with patch("specweaver.interfaces.cli.hitl_provider.Prompt.ask", return_value="ok"):
             await provider.ask("Q?")
         # Only the question should be printed, not a section context
         assert console.print.call_count == 1

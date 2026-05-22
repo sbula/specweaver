@@ -41,6 +41,7 @@ from specweaver.infrastructure.llm._prompt_constants import (
     detect_language,
 )
 from specweaver.infrastructure.llm._prompt_profiles import PromptSlot, RenderProfile
+from specweaver.infrastructure.llm.escaping import apply_escaping
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ class _ContentBlock:
     role: str = ""  # trust signal: "reference" | "target" | ""
     tokens: int = 0
     truncated: bool = False
+    escaping: str = "raw"
 
 
 class PromptBuilder:
@@ -123,7 +125,7 @@ class PromptBuilder:
         builder._blocks = copy.deepcopy(self._blocks)
         return builder
 
-    def add_instructions(self, text: str) -> PromptBuilder:
+    def add_instructions(self, text: str, *, escaping: str | None = None) -> PromptBuilder:
         """Add instruction text (priority 0 — never truncated).
 
         Instructions are placed at the top of the prompt inside
@@ -133,17 +135,22 @@ class PromptBuilder:
             logger.debug("Slot %s inactive — skipping add_instructions", PromptSlot.INSTRUCTIONS)
             return self
 
+        actual_escaping = escaping if escaping is not None else "raw"
+        apply_escaping("", actual_escaping)
+
+        tokens = self._count(apply_escaping(text, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
                 priority=0,
                 kind="instructions",
-                tokens=self._count(text),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
 
-    def add_dictator_overrides(self, overrides: list[str]) -> PromptBuilder:
+    def add_dictator_overrides(self, overrides: list[str], *, escaping: str | None = None) -> PromptBuilder:
         """Add human-in-the-loop dictator override blocks (priority 0 — never truncated).
 
         Overrides are placed inside ``<dictator-overrides>`` tags.
@@ -157,16 +164,21 @@ class PromptBuilder:
             )
             return self
 
+        actual_escaping = escaping if escaping is not None else "raw"
+        apply_escaping("", actual_escaping)
+
         lines = [f"- {o}" for o in overrides]
         text_block = "\n".join(lines)
 
+        tokens = self._count(apply_escaping(text_block, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=text_block,
                 priority=0,
                 kind="dictator-overrides",
                 label="dictator-overrides",
-                tokens=self._count(text_block),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
@@ -179,6 +191,7 @@ class PromptBuilder:
         label: str = "",
         role: str = "",
         skeleton: bool = False,
+        escaping: str | None = None,
     ) -> PromptBuilder:
         """Read a file and add it as a ``<file>`` block.
 
@@ -190,6 +203,7 @@ class PromptBuilder:
                 ``"target"`` (file being reviewed/generated).  Empty = no signal.
             skeleton: If True, uses the language's native AST parser to condense the file
                 into only structural interfaces, skipping method implementations directly.
+            escaping: Optional escaping strategy. Defaults to "cdata".
         """
         if not self._is_slot_active(PromptSlot.FILE):
             logger.debug("Slot %s inactive — skipping add_file for %s", PromptSlot.FILE, path)
@@ -212,6 +226,10 @@ class PromptBuilder:
                 except ImportError:
                     pass
 
+        actual_escaping = escaping if escaping is not None else "cdata"
+        apply_escaping("", actual_escaping)
+
+        tokens = self._count(apply_escaping(content, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=content,
@@ -221,7 +239,8 @@ class PromptBuilder:
                 language=lang,
                 file_path=str(path),
                 role=role,
-                tokens=self._count(content),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
@@ -233,6 +252,7 @@ class PromptBuilder:
         *,
         priority: int = 3,
         slot: PromptSlot = PromptSlot.CONTEXT,
+        escaping: str | None = None,
     ) -> PromptBuilder:
         """Add an arbitrary context block.
 
@@ -241,18 +261,24 @@ class PromptBuilder:
             label: A descriptive label (e.g. ``"topology_summary"``).
             priority: Truncation priority.  Default 3.
             slot: The slot to place this context block into. Default is CONTEXT.
+            escaping: Optional escaping strategy. Defaults to "cdata".
         """
         if not self._is_slot_active(slot):
             logger.debug("Slot %s inactive — skipping add_context for %s", slot, label)
             return self
 
+        actual_escaping = escaping if escaping is not None else "cdata"
+        apply_escaping("", actual_escaping)
+
+        tokens = self._count(apply_escaping(text, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
                 priority=max(1, priority),
                 kind=slot.value,
                 label=label,
-                tokens=self._count(text),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
@@ -262,12 +288,14 @@ class PromptBuilder:
         metadata: ProjectMetadata | None,
         *,
         priority: int = 1,
+        escaping: str | None = None,
     ) -> PromptBuilder:
         """Add project metadata (e.g. environment, safe config).
 
         Args:
             metadata: The ProjectMetadata DTO (ignored if None).
             priority: Truncation priority. Default 1 (highly preferred).
+            escaping: Optional escaping strategy. Defaults to "raw".
         """
         if not metadata:
             return self
@@ -278,17 +306,22 @@ class PromptBuilder:
 
         from specweaver.commons import json
 
+        actual_escaping = escaping if escaping is not None else "raw"
+        apply_escaping("", actual_escaping)
+
         # We masquarade JSON as YAML block to avoid ruamel.yaml stream parsing overhead
         raw_dict = metadata.model_dump()
         yaml_content = f"project_metadata:\n{json.dumps(raw_dict, indent=2)}"
 
+        tokens = self._count(apply_escaping(yaml_content, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=yaml_content,
                 priority=max(1, priority),
                 kind="project_metadata",
                 label="project_metadata",
-                tokens=self._count(yaml_content),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
@@ -298,6 +331,7 @@ class PromptBuilder:
         contexts: list[TopologyContext],
         *,
         priority: int = 2,
+        escaping: str | None = None,
     ) -> PromptBuilder:
         """Add topology context rendered as ``<topology>`` XML.
 
@@ -305,6 +339,7 @@ class PromptBuilder:
             contexts: List of ``TopologyContext`` from
                 ``TopologyGraph.format_context_summary()``.
             priority: Truncation priority.  Default 2.
+            escaping: Optional escaping strategy. Defaults to "raw".
         """
         if not contexts:
             return self
@@ -312,6 +347,9 @@ class PromptBuilder:
         if not self._is_slot_active(PromptSlot.TOPOLOGY):
             logger.debug("Slot %s inactive — skipping add_topology", PromptSlot.TOPOLOGY)
             return self
+
+        actual_escaping = escaping if escaping is not None else "raw"
+        apply_escaping("", actual_escaping)
 
         lines: list[str] = []
         for ctx in contexts:
@@ -322,18 +360,20 @@ class PromptBuilder:
                 f"constraints={constraints_str}]"
             )
         text = "\n".join(lines)
+        tokens = self._count(apply_escaping(text, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=text,
                 priority=max(1, priority),
                 kind="topology",
                 label="topology",
-                tokens=self._count(text),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
 
-    def add_reminder(self, text: str) -> PromptBuilder:
+    def add_reminder(self, text: str, *, escaping: str | None = None) -> PromptBuilder:
         """Add a reminder block rendered at the bottom of the prompt.
 
         Reminders are placed after all other content to reinforce
@@ -343,17 +383,22 @@ class PromptBuilder:
             logger.debug("Slot %s inactive — skipping add_reminder", PromptSlot.REMINDER)
             return self
 
+        actual_escaping = escaping if escaping is not None else "raw"
+        apply_escaping("", actual_escaping)
+
+        tokens = self._count(apply_escaping(text, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
                 priority=0,
                 kind="reminder",
-                tokens=self._count(text),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
 
-    def add_constitution(self, text: str) -> PromptBuilder:
+    def add_constitution(self, text: str, *, escaping: str | None = None) -> PromptBuilder:
         """Add constitution text (priority 0 — never truncated).
 
         Constitution is rendered after instructions and before topology,
@@ -363,18 +408,23 @@ class PromptBuilder:
             logger.debug("Slot %s inactive — skipping add_constitution", PromptSlot.CONSTITUTION)
             return self
 
+        actual_escaping = escaping if escaping is not None else "raw"
+        apply_escaping("", actual_escaping)
+
         full_text = f"{_CONSTITUTION_PREAMBLE}\n\n{text.strip()}"
+        tokens = self._count(apply_escaping(full_text, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=full_text,
                 priority=0,
                 kind="constitution",
-                tokens=self._count(full_text),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
 
-    def add_standards(self, text: str) -> PromptBuilder:
+    def add_standards(self, text: str, *, escaping: str | None = None) -> PromptBuilder:
         """Add project standards (priority 1 — truncatable).
 
         Standards are rendered after constitution, before topology,
@@ -384,17 +434,22 @@ class PromptBuilder:
             logger.debug("Slot %s inactive — skipping add_standards", PromptSlot.STANDARDS)
             return self
 
+        actual_escaping = escaping if escaping is not None else "raw"
+        apply_escaping("", actual_escaping)
+
+        tokens = self._count(apply_escaping(text, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
                 priority=1,
                 kind="standards",
-                tokens=self._count(text),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
 
-    def add_plan(self, text: str) -> PromptBuilder:
+    def add_plan(self, text: str, *, escaping: str | None = None) -> PromptBuilder:
         """Add implementation plan context (priority 1 — truncatable).
 
         Plan content is rendered after standards, before topology,
@@ -406,12 +461,17 @@ class PromptBuilder:
             logger.debug("Slot %s inactive — skipping add_plan", PromptSlot.PLAN)
             return self
 
+        actual_escaping = escaping if escaping is not None else "raw"
+        apply_escaping("", actual_escaping)
+
+        tokens = self._count(apply_escaping(text, actual_escaping))
         self._blocks.append(
             _ContentBlock(
                 text=text.strip(),
                 priority=1,
                 kind="plan",
-                tokens=self._count(text),
+                tokens=tokens,
+                escaping=actual_escaping,
             ),
         )
         return self
@@ -422,6 +482,7 @@ class PromptBuilder:
         *,
         max_files: int = 5,
         skeleton: bool = True,
+        escaping: str | None = None,
     ) -> PromptBuilder:
         """Add auto-detected file mentions from LLM responses.
 
@@ -434,6 +495,7 @@ class PromptBuilder:
             max_files: Maximum number of mentioned files to add.  Default 5.
             skeleton: By default, mentioned referenced files are massively
                 condensed via AST boundaries to avoid inflating token constraints.
+            escaping: Optional escaping strategy. Defaults to "cdata".
         """
         if not mentions:
             return self
@@ -441,6 +503,9 @@ class PromptBuilder:
         if not self._is_slot_active(PromptSlot.MENTIONED):
             logger.debug("Slot %s inactive — skipping add_mentioned_files", PromptSlot.MENTIONED)
             return self
+
+        actual_escaping = escaping if escaping is not None else "cdata"
+        apply_escaping("", actual_escaping)
 
         # Collect paths already in the builder to avoid duplicates
         existing_paths = {block.file_path for block in self._blocks if block.file_path}
@@ -470,6 +535,7 @@ class PromptBuilder:
                     except ImportError:
                         pass
 
+            tokens = self._count(apply_escaping(content, actual_escaping))
             self._blocks.append(
                 _ContentBlock(
                     text=content,
@@ -479,7 +545,8 @@ class PromptBuilder:
                     language=lang,
                     file_path=path_str,
                     role="reference",
-                    tokens=self._count(content),
+                    tokens=tokens,
+                    escaping=actual_escaping,
                 ),
             )
             existing_paths.add(path_str)
@@ -653,7 +720,11 @@ class PromptBuilder:
             elif share > 0:
                 # Truncate to share
                 char_limit = share * 4  # reverse of len//4 estimate
-                truncated_text = block.text[:char_limit]
+                # Perform character slicing on the raw text before escaping is applied
+                truncated_text = block.text[:char_limit] + "\n[truncated]"
+                # Recalculate escaped token footprint of the truncated block
+                escaped_text = apply_escaping(truncated_text, block.escaping)
+                tokens = self._count(escaped_text)
                 result.append(
                     _ContentBlock(
                         text=truncated_text,
@@ -662,8 +733,9 @@ class PromptBuilder:
                         label=block.label,
                         language=block.language,
                         file_path=block.file_path,
-                        tokens=share,
+                        tokens=tokens,
                         truncated=True,
+                        escaping=block.escaping,
                     ),
                 )
             # else: share == 0, block is dropped entirely

@@ -6,7 +6,7 @@
 import logging
 import re
 
-from specweaver.sandbox.qa_runner.core.interface import CompileError
+from specweaver.commons.qa import CompileError
 
 logger = logging.getLogger(__name__)
 
