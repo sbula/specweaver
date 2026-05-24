@@ -76,9 +76,11 @@ class TestRunRepoOp:
         async def _raise(_r):
             raise ValueError("repo error")
 
-        with patch("specweaver.interfaces.cli._core.get_db", return_value=mock_db):
-            with pytest.raises(ValueError, match="repo error"):
-                run_repo_op(_raise)
+        with (
+            patch("specweaver.interfaces.cli._core.get_db", return_value=mock_db),
+            pytest.raises(ValueError, match="repo error"),
+        ):
+            run_repo_op(_raise)
 
     def test_session_scope_is_closed_after_call(self) -> None:
         """async_session_scope __aexit__ is called (session is closed)."""
@@ -108,9 +110,11 @@ class TestRequireActiveProject:
         """Returns project name string when active project exists."""
         from specweaver.interfaces.cli import _core
 
-        with patch.object(_core, "run_repo_op", return_value="my-project"):
-            with patch.object(_core, "get_db", return_value=MagicMock()):
-                result = _core._require_active_project()
+        with (
+            patch.object(_core, "run_repo_op", return_value="my-project"),
+            patch.object(_core, "get_db", return_value=MagicMock()),
+        ):
+            result = _core._require_active_project()
 
         assert result == "my-project"
 
@@ -118,10 +122,12 @@ class TestRequireActiveProject:
         """Raises typer.Exit(code=1) when no active project."""
         from specweaver.interfaces.cli import _core
 
-        with patch.object(_core, "run_repo_op", return_value=None):
-            with patch.object(_core, "get_db", return_value=MagicMock()):
-                with pytest.raises(typer.Exit) as exc_info:
-                    _core._require_active_project()
+        with (
+            patch.object(_core, "run_repo_op", return_value=None),
+            patch.object(_core, "get_db", return_value=MagicMock()),
+            pytest.raises(typer.Exit) as exc_info,
+        ):
+            _core._require_active_project()
 
         assert exc_info.value.exit_code == 1
 
@@ -129,10 +135,12 @@ class TestRequireActiveProject:
         """Empty string is falsy → also exits."""
         from specweaver.interfaces.cli import _core
 
-        with patch.object(_core, "run_repo_op", return_value=""):
-            with patch.object(_core, "get_db", return_value=MagicMock()):
-                with pytest.raises(typer.Exit) as exc_info:
-                    _core._require_active_project()
+        with (
+            patch.object(_core, "run_repo_op", return_value=""),
+            patch.object(_core, "get_db", return_value=MagicMock()),
+            pytest.raises(typer.Exit) as exc_info,
+        ):
+            _core._require_active_project()
 
         assert exc_info.value.exit_code == 1
 

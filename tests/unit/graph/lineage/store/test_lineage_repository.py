@@ -1,6 +1,6 @@
-import pytest
 from pathlib import Path
-from typing import Any
+
+import pytest
 
 from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 

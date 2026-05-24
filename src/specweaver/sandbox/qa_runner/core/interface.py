@@ -14,22 +14,18 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from specweaver.commons.qa import (
-    TestFailure,
-    TestRunResult,
-    LintError,
-    LintRunResult,
-    ComplexityViolation,
-    ComplexityRunResult,
-    CompileError,
-    CompileRunResult,
-    OutputEvent,
-    DebugRunResult,
-    ArchitectureViolation,
-    ArchitectureRunResult,
-)
+from typing import TYPE_CHECKING
 
-from specweaver.commons.enums.dal import DALLevel
+if TYPE_CHECKING:
+    from specweaver.commons.enums.dal import DALLevel
+    from specweaver.commons.qa import (
+        ArchitectureRunResult,
+        CompileRunResult,
+        ComplexityRunResult,
+        DebugRunResult,
+        LintRunResult,
+        TestRunResult,
+    )
 
 logger = logging.getLogger(__name__)
 

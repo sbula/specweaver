@@ -220,7 +220,7 @@ class TestBatch4LoggingRollout:
         from specweaver.core.config.interfaces import cli as config
         from specweaver.core.flow.interfaces import cli as flow_cli
         from specweaver.infrastructure.llm.interfaces import cli as llm_cli
-        from specweaver.interfaces.cli import main, hitl_provider
+        from specweaver.interfaces.cli import hitl_provider, main
         from specweaver.interfaces.cli.routers import serve_router as serve
         from specweaver.workspace.project.interfaces import cli as workspace
 

@@ -12,9 +12,11 @@ local binding.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Awaitable, Callable, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from specweaver.workspace.store import WorkspaceRepository
 
 import anyio

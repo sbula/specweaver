@@ -13,6 +13,7 @@ import pytest
 from specweaver.infrastructure.llm.errors import GenerationError
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+from specweaver.interfaces.cli.hitl_provider import HITLProvider
 from specweaver.workflows.drafting.drafter import SPEC_SECTIONS, Drafter
 from specweaver.workflows.review.reviewer import (
     Reviewer,
@@ -20,7 +21,6 @@ from specweaver.workflows.review.reviewer import (
     ReviewResult,
     ReviewVerdict,
 )
-from specweaver.interfaces.cli.hitl_provider import HITLProvider
 from specweaver.workspace.context.provider import ContextProvider
 
 if TYPE_CHECKING:
