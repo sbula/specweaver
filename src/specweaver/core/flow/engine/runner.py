@@ -89,7 +89,6 @@ class PipelineRunner:
             self._context.dal_level = resolver.resolve(target)
 
     def _setup_sandbox_caches(self, wt_dir: str) -> None:
-        """Symlink heavy project caches into the worktree to save disk space (FR-2)."""
         setup_sandbox_caches(self._context, wt_dir, logger)
 
     async def run(self, parent_run_id: str | None = None) -> PipelineRun:
@@ -565,41 +564,25 @@ class PipelineRunner:
     # ------------------------------------------------------------------
 
     def _persist(self, run: PipelineRun) -> None:
-        """Save state if a store is configured."""
         if self._store is not None:
             run.updated_at = _now_iso()
             self._store.save_run(run)
 
-    def _log(
-        self,
-        run: PipelineRun,
-        event: str,
-        step_name: str | None = None,
-    ) -> None:
-        """Log an audit event if a store is configured."""
+    def _log(self, run: PipelineRun, event: str, step_name: str | None = None) -> None:
         if self._store is not None:
-            self._store.log_event(
-                run.run_id,
-                event,
-                step_name=step_name,
-            )
+            self._store.log_event(run.run_id, event, step_name=step_name)
 
     def _emit(self, event: str, **kwargs: Any) -> None:
-        """Fire a progress event to the callback, if configured."""
         if self._on_event is not None:
             self._on_event(event, **kwargs)
 
     def _flush_telemetry(self) -> None:
-        """Flush telemetry if context.llm is a TelemetryCollector."""
         from specweaver.core.flow.engine.runner_utils import flush_telemetry
-
         flush_telemetry(self._context, logger)
 
     async def _save_handover(self, run: PipelineRun) -> None:
-        """Invoke the fail-safe handover save protocol."""
         try:
             from specweaver.core.flow.engine.handover import save_handover_context
-
             await save_handover_context(self._context, run)
         except Exception as exc:
             logger.warning("Failed to save handover context from runner: %s", exc)

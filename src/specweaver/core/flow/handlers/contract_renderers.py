@@ -359,3 +359,54 @@ def render_contract(
         return render_rust_trait(class_name, signatures, docstrings)
     # Default — Python and any unknown
     return render_python_protocol(class_name, signatures, docstrings)
+
+
+def extract_contract(text: str) -> str | None:
+    """Extract the Contract section content from a spec."""
+    pattern = re.compile(
+        r"^##\s+(?:\d+\.\s+)?Contract\s*$",
+        re.MULTILINE | re.IGNORECASE,
+    )
+    match = pattern.search(text)
+    if not match:
+        return None
+    start = match.end()
+    next_header = re.search(r"^##\s+", text[start:], re.MULTILINE)
+    if next_header:
+        return text[start : start + next_header.start()]
+    return text[start:]
+
+
+def extract_signatures(contract_text: str) -> list[str]:
+    """Extract Python function/method signatures from code blocks."""
+    code_blocks = re.findall(r"```python\s*\n(.*?)```", contract_text, re.DOTALL)
+    signatures: list[str] = []
+    for block in code_blocks:
+        for match in re.finditer(
+            r"^\s*((?:async\s+)?def\s+\w+\(.*?\)(?:\s*->\s*[^\n:]+)?)\s*:",
+            block,
+            re.MULTILINE | re.DOTALL,
+        ):
+            signatures.append(match.group(1).strip())
+    return signatures
+
+
+def extract_docstrings(contract_text: str) -> dict[str, str]:
+    """Extract docstrings paired with function names from code blocks.
+
+    Returns a mapping of function_name -> docstring content.
+    """
+    code_blocks = re.findall(r"```python\s*\n(.*?)```", contract_text, re.DOTALL)
+    docstrings: dict[str, str] = {}
+    for block in code_blocks:
+        for match in re.finditer(
+            r"(?:async\s+)?def\s+(\w+)\(.*?\).*?:\s*\n"
+            r'\s+"""(.*?)"""',
+            block,
+            re.DOTALL,
+        ):
+            func_name = match.group(1)
+            docstring = match.group(2).strip()
+            docstrings[func_name] = docstring
+    return docstrings
+

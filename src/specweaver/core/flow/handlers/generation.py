@@ -513,19 +513,27 @@ class GenerateContractHandler:
 
         started = _now_iso()
         try:
+            from specweaver.core.flow.handlers.contract_renderers import (
+                contract_extension,
+                extract_contract,
+                extract_docstrings,
+                extract_signatures,
+                render_contract,
+            )
+
             spec_text = context.spec_path.read_text(encoding="utf-8")
-            contract_section = self._extract_contract(spec_text)
+            contract_section = extract_contract(spec_text)
             if contract_section is None:
                 return _error_result("No ## Contract section found in spec", started)
 
-            signatures = self._extract_signatures(contract_section)
+            signatures = extract_signatures(contract_section)
             if not signatures:
                 return _error_result(
                     "No Python function signatures found in Contract code blocks",
                     started,
                 )
 
-            docstrings = self._extract_docstrings(contract_section)
+            docstrings = extract_docstrings(contract_section)
 
             contracts_dir = context.project_path / "contracts"
             contracts_dir.mkdir(parents=True, exist_ok=True)
@@ -533,10 +541,6 @@ class GenerateContractHandler:
             class_name = stem.replace("_", " ").title().replace(" ", "")
 
             # Language-agnostic dispatch using Atom Proxy
-            from specweaver.core.flow.handlers.contract_renderers import (
-                contract_extension,
-                render_contract,
-            )
             from specweaver.sandbox.language.core.atom import LanguageAtom
 
             atom = LanguageAtom(cwd=context.project_path)
@@ -568,56 +572,17 @@ class GenerateContractHandler:
 
     @staticmethod
     def _extract_contract(text: str) -> str | None:
-        """Extract the Contract section content from a spec."""
-        import re
-
-        pattern = re.compile(
-            r"^##\s+(?:\d+\.\s+)?Contract\s*$",
-            re.MULTILINE | re.IGNORECASE,
-        )
-        match = pattern.search(text)
-        if not match:
-            return None
-        start = match.end()
-        next_header = re.search(r"^##\s+", text[start:], re.MULTILINE)
-        if next_header:
-            return text[start : start + next_header.start()]
-        return text[start:]
+        from specweaver.core.flow.handlers.contract_renderers import extract_contract
+        return extract_contract(text)
 
     @staticmethod
     def _extract_signatures(contract_text: str) -> list[str]:
-        """Extract Python function/method signatures from code blocks."""
-        import re
-
-        code_blocks = re.findall(r"```python\s*\n(.*?)```", contract_text, re.DOTALL)
-        signatures: list[str] = []
-        for block in code_blocks:
-            for match in re.finditer(
-                r"^\s*((?:async\s+)?def\s+\w+\(.*?\)(?:\s*->\s*[^\n:]+)?)\s*:",
-                block,
-                re.MULTILINE | re.DOTALL,
-            ):
-                signatures.append(match.group(1).strip())
-        return signatures
+        from specweaver.core.flow.handlers.contract_renderers import extract_signatures
+        return extract_signatures(contract_text)
 
     @staticmethod
     def _extract_docstrings(contract_text: str) -> dict[str, str]:
-        """Extract docstrings paired with function names from code blocks.
+        from specweaver.core.flow.handlers.contract_renderers import extract_docstrings
+        return extract_docstrings(contract_text)
 
-        Returns a mapping of function_name -> docstring content.
-        """
-        import re
 
-        code_blocks = re.findall(r"```python\s*\n(.*?)```", contract_text, re.DOTALL)
-        docstrings: dict[str, str] = {}
-        for block in code_blocks:
-            for match in re.finditer(
-                r"(?:async\s+)?def\s+(\w+)\(.*?\).*?:\s*\n"
-                r'\s+"""(.*?)"""',
-                block,
-                re.DOTALL,
-            ):
-                func_name = match.group(1)
-                docstring = match.group(2).strip()
-                docstrings[func_name] = docstring
-        return docstrings
