@@ -77,9 +77,10 @@ def test_file_too_large(tmp_path: Path) -> None:
     class MockStat:
         st_size: int = 11 * 1024 * 1024
 
-    with patch.object(Path, "stat", return_value=MockStat()):
-        with pytest.raises(ValueError, match="exceeds 10MB limit"):
-            adapter.get_prompt_content()
+    with patch.object(Path, "stat", return_value=MockStat()), pytest.raises(
+        ValueError, match="exceeds 10MB limit"
+    ):
+        adapter.get_prompt_content()
 
 def test_file_skeleton_failure_fallback(tmp_path: Path) -> None:
     f = tmp_path / "invalid.py"

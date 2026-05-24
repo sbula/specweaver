@@ -80,6 +80,7 @@ class FilePromptAdapter:
             else:
                 try:
                     from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
+
                     content = extract_ast_skeleton(self._path, content)
                 except Exception:
                     pass  # Graceful fallback to raw file content if AST parser fails
@@ -95,7 +96,7 @@ class FilePromptAdapter:
             escaped_role = escape_xml_attribute(self._role)
             attrs += f' role="{escaped_role}"'
         escaped_text = apply_escaping(content, self._escaping)
-        return f'<file {attrs}>\n{escaped_text}\n</file>'
+        return f"<file {attrs}>\n{escaped_text}\n</file>"
 
     def get_prompt_label(self) -> str:
         return self._label
@@ -107,6 +108,7 @@ class ProjectMetadataPromptAdapter:
 
     def get_prompt_content(self, char_limit: int | None = None) -> str:
         import json
+
         raw_dict = self._metadata.model_dump()
         yaml_content = f"project_metadata:\n{json.dumps(raw_dict, indent=2)}"
         if char_limit is not None:

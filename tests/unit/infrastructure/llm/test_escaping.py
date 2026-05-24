@@ -1,17 +1,17 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-import pytest
 import json
 
+import pytest
+
 from specweaver.infrastructure.llm.escaping import (
-    escape_xml_text,
-    escape_xml_attribute,
+    apply_escaping,
     escape_cdata,
     escape_json,
-    apply_escaping,
+    escape_xml_attribute,
+    escape_xml_text,
 )
-
 
 # ==============================================================================
 # 1. Happy Path Tests

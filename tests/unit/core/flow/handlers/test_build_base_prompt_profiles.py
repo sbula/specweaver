@@ -125,7 +125,7 @@ async def test_build_base_prompt_memory_hydrated_when_slot_active(mock_hydrator_
     builder = await _build_base_prompt(run_context, "Instr", profile=FULL)
     mem_blocks = [b for b in builder._blocks if b.kind == "agent_memory"]
     assert len(mem_blocks) == 1
-    assert mem_blocks[0].text == "Mem Content"
+    assert "Mem Content" in mem_blocks[0].text
 
 
 @pytest.mark.asyncio

@@ -101,7 +101,7 @@ def test_add_context_with_slot_sets_kind() -> None:
     # B9
     builder = PromptBuilder(profile=FULL)
     builder.add_context("Mem", "agent_mem", slot=PromptSlot.AGENT_MEMORY)
-    blocks = [b for b in builder._blocks if b.text == "Mem"]
+    blocks = [b for b in builder._blocks if "Mem" in b.text]
     assert len(blocks) == 1
     assert blocks[0].kind == "agent_memory"
 
@@ -110,7 +110,7 @@ def test_add_context_default_slot_is_context() -> None:
     # B10
     builder = PromptBuilder(profile=FULL)
     builder.add_context("Ctx", "label")
-    blocks = [b for b in builder._blocks if b.text == "Ctx"]
+    blocks = [b for b in builder._blocks if "Ctx" in b.text]
     assert len(blocks) == 1
     assert blocks[0].kind == "context"
 

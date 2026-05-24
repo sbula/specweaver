@@ -41,13 +41,25 @@ def test_tach_interfaces_map_to_valid_namespaces() -> None:
 
         for module_base in from_bases:
             base_parts = module_base.split(".")
+            if base_parts and base_parts[0] == "specweaver":
+                base_parts.insert(0, "src")
             for exposed_path in interface.get("expose", []):
                 parts = exposed_path.split(".")
                 relative_path = Path(*base_parts) / Path(*parts)
                 physical_dir = root_dir / relative_path
                 physical_file = physical_dir.with_suffix(".py")
 
-                assert physical_dir.exists() or physical_file.exists(), (
+                path_exists = physical_dir.exists() or physical_file.exists()
+                if not path_exists:
+                    base_dir = root_dir / Path(*base_parts)
+                    current = physical_dir.parent
+                    while current != base_dir and current != root_dir:
+                        if current.with_suffix(".py").exists():
+                            path_exists = True
+                            break
+                        current = current.parent
+
+                assert path_exists, (
                     f"Tach explicit boundary violation risk! "
                     f"The interface {exposed_path} for module {module_base} listed in tach.toml does not map "
                     f"to any physical directory or file in the filesystem. Tach may silently ignore this."

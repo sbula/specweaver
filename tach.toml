@@ -363,7 +363,6 @@ from = [
 ]
 expose = [
     "cli",
-    "dal_resolver",
 ]
 
 [[interfaces]]
@@ -388,7 +387,6 @@ from = [
 ]
 expose = [
     "cli",
-    "adapters.reviewer",
 ]
 
 [[interfaces]]
