@@ -36,7 +36,7 @@ This document tracks all massive refactoring efforts, technical debt removal, an
   > | Load constitution/standards inside factory | Findings 1+2+3 | High (~4h) | **Very High** | After D-INTL-06 SF-02 |
 
 ## Security & Validation
-* **`TECH-06` 🟡: PromptBuilder Input Escaping Gap**
+* **`TECH-06` 🟢: PromptBuilder Input Escaping Gap**
   > [Description](../features/topic_07_technical_debt/TECH-06/TECH-06_design.md) | The `_prompt_render.py` rendering functions use raw f-strings with no escaping. While currently safe because all inputs are internally system-generated, this must be hardened before any feature injects user-generated content directly into `add_context()` labels or block contents. D-INTL-06 sidesteps this by using `json.dumps()` for its specific memory blocks, but the base builder is still vulnerable to XML injection if fed raw user strings. Needs structured injection defenses (XML/CDATA/JSON) built directly into `PromptBuilder` and XML attribute escaping in render layers. Discovered during D-INTL-06 Red Team Cycle 1.
 
 ## Documentation & Knowledge Architecture

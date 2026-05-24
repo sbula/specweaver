@@ -93,10 +93,9 @@ Feature TECH-06 adds a pluggable context loading architecture and an injection-s
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Escaping Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Pluggable Contexts | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Pluggable Contexts | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-1 fully implemented and committed. SF-2 implementation plan ready.
-**Next step**: Start implementation of SF-2 using TDD and clean architecture.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
+**Current status**: Both SF-1 and SF-2 are fully implemented, verified, and committed. All quality gates (linting, types, 88%+ test coverage, zero new tach violations) have passed.
+**Next step**: Proceed with topic-level technical debt cleanup or feature tasks.

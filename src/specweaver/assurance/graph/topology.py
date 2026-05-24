@@ -80,6 +80,22 @@ class TopologyContext:
     mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)
     consumes_resources: list[str] = field(default_factory=list)
 
+    def get_prompt_content(self, char_limit: int | None = None) -> str:
+        """Return natively formatted topology XML block."""
+        constraints_str = ", ".join(self.constraints) if self.constraints else "none"
+        content = (
+            f"  - {self.name} ({self.relationship}): "
+            f"{self.purpose} [archetype={self.archetype}, "
+            f"constraints={constraints_str}]"
+        )
+        if char_limit is not None:
+            content = content[:char_limit] + "\n[truncated]"
+        return f"<topology>\n{content}\n</topology>"
+
+    def get_prompt_label(self) -> str:
+        """Return the module name as label."""
+        return self.name
+
 
 class TopologyGraph:
     """In-memory directed graph built from context.yaml files.
