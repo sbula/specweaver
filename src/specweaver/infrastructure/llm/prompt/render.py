@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from specweaver.infrastructure.llm.prompt.builder import _ContentBlock
+    from specweaver.infrastructure.llm.prompt.block import _ContentBlock
     from specweaver.infrastructure.llm.prompt.profiles import PromptSlot
 
 

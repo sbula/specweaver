@@ -5,7 +5,8 @@
 
 import logging
 
-from specweaver.infrastructure.llm.prompt.builder import PromptBuilder, _ContentBlock
+from specweaver.infrastructure.llm.prompt.block import _ContentBlock
+from specweaver.infrastructure.llm.prompt.builder import PromptBuilder
 from specweaver.infrastructure.llm.prompt.constants import detect_language
 
 logger = logging.getLogger(__name__)
