@@ -63,7 +63,7 @@ Feature TECH-06 adds a pluggable context loading architecture and an injection-s
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Pluggable Contexts | Guide on how to write custom context providers for LLM prompts | ⬜ To be written during Pre-commit |
+| Pluggable Contexts | Guide on how to write custom context providers for LLM prompts | ✅ Written |
 
 ## Sub-Feature Breakdown
 
@@ -92,11 +92,11 @@ Feature TECH-06 adds a pluggable context loading architecture and an injection-s
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | Escaping Engine | — | ✅ | ✅ | ✅ | 🟡 | ⬜ |
-| SF-2 | Pluggable Contexts | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | Escaping Engine | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Pluggable Contexts | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 implemented; awaiting HITL gate approval on Combined Phase 1 & 2 analysis.
-**Next step**: Once approved, run the remaining checks and commit SF-1, then proceed with SF-2 planning and implementation.
+**Current status**: SF-1 fully implemented and committed. SF-2 implementation plan ready.
+**Next step**: Start implementation of SF-2 using TDD and clean architecture.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
