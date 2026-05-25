@@ -128,12 +128,12 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | BaseTool & Registry | — | ✅ | ✅ | ✅ | ⬜ | ⬜ |
+| SF-1 | BaseTool & Registry | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Sandbox Alignment | SF-1 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-3 | Dispatcher Integration | SF-2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-4 | Validation Isolation | SF-3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Handoff
 
-**Current status**: Design APPROVED — SF-1 implemented and verified (9 green, 1 xfail conformance test). Pre-commit quality gate pending.
-**Next step**: Run `/pre-commit` to validate SF-1, then `/implementation-plan TECH-01b, sf-2` to create the SF-2 implementation plan.
+**Current status**: SF-1 implemented, pre-committed, and pushed to main branch.
+**Next step**: Run `/implementation-plan TECH-01b, sf-2` to create the SF-2 implementation plan.
