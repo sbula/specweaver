@@ -19,6 +19,7 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, Any
 
+from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.filesystem.interfaces.models import (
     ROLE_INTENTS,
     FileSystemToolError,
@@ -40,7 +41,7 @@ if TYPE_CHECKING:
     from specweaver.sandbox.filesystem.core.executor import ExecutorResult, FileExecutor
 
 
-class FileSystemTool:
+class FileSystemTool(BaseTool):
     """Intent-based filesystem operations with boundary enforcement.
 
     Args:

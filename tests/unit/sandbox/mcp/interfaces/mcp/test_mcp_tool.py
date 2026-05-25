@@ -8,26 +8,26 @@ from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
 
 class TestMCPExplorerTool:
     @pytest.fixture
-    def mock_context(self) -> MagicMock:
-        ctx = MagicMock()
-        ctx.topology.mcp_servers = {
+    def mock_topology(self) -> MagicMock:
+        topo = MagicMock()
+        topo.mcp_servers = {
             "test-db": {
                 "command": "docker",
                 "args": ["run", "-i", "db-mcp"],
                 "env": {},
             }
         }
-        return ctx
+        return topo
 
-    def test_list_servers(self, mock_context: MagicMock) -> None:
-        tool = MCPExplorerTool(mock_context)
+    def test_list_servers(self, mock_topology: MagicMock) -> None:
+        tool = MCPExplorerTool(topology=mock_topology)
         result = tool._intent_list_servers({})
         assert result.status == "success"
         parsed = json.loads(result.data)
         assert parsed == ["test-db"]
 
     @patch("specweaver.sandbox.mcp.interfaces.tool.MCPExecutor")
-    def test_list_resources(self, mock_executor_class: MagicMock, mock_context: MagicMock) -> None:
+    def test_list_resources(self, mock_executor_class: MagicMock, mock_topology: MagicMock) -> None:
         mock_instance = MagicMock()
         mock_executor_class.return_value = mock_instance
 
@@ -38,7 +38,7 @@ class TestMCPExplorerTool:
             {"result": {"resources": [{"uri": "test://my-uri"}]}},  # list
         ]
 
-        tool = MCPExplorerTool(mock_context)
+        tool = MCPExplorerTool(topology=mock_topology)
         result = tool._intent_list_resources({"server_name": "test-db"})
 
         assert result.status == "success"
@@ -51,7 +51,7 @@ class TestMCPExplorerTool:
         mock_instance.close.assert_called_once()
 
     @patch("specweaver.sandbox.mcp.interfaces.tool.MCPExecutor")
-    def test_read_resource(self, mock_executor_class: MagicMock, mock_context: MagicMock) -> None:
+    def test_read_resource(self, mock_executor_class: MagicMock, mock_topology: MagicMock) -> None:
         mock_instance = MagicMock()
         mock_executor_class.return_value = mock_instance
 
@@ -61,7 +61,7 @@ class TestMCPExplorerTool:
             {"result": {"contents": [{"text": "DB SCHEMA..."}]}},  # read
         ]
 
-        tool = MCPExplorerTool(mock_context)
+        tool = MCPExplorerTool(topology=mock_topology)
         result = tool._intent_read_resource({"server_name": "test-db", "uri": "test://my-uri"})
 
         assert result.status == "success"
@@ -73,29 +73,27 @@ class TestMCPExplorerTool:
         assert last_call_args.kwargs.get("method") == "resources/read"
         assert last_call_args.kwargs.get("params", {}).get("uri") == "test://my-uri"
 
-    def test_missing_server_name(self, mock_context: MagicMock) -> None:
-        tool = MCPExplorerTool(mock_context)
+    def test_missing_server_name(self, mock_topology: MagicMock) -> None:
+        tool = MCPExplorerTool(topology=mock_topology)
         result = tool._intent_list_resources({})
         assert result.status == "error"
         assert "Missing" in result.message
 
-    def test_unknown_server_name(self, mock_context: MagicMock) -> None:
-        tool = MCPExplorerTool(mock_context)
+    def test_unknown_server_name(self, mock_topology: MagicMock) -> None:
+        tool = MCPExplorerTool(topology=mock_topology)
         result = tool._intent_list_resources({"server_name": "non-existent"})
         assert result.status == "error"
         assert "Unknown MCP" in result.message
 
     def test_execute_mcp_query_missing_topology(self) -> None:
-        ctx = MagicMock()
-        del ctx.topology
-        tool = MCPExplorerTool(ctx)
+        tool = MCPExplorerTool(topology=None)
         result = tool._execute_mcp_query("test-db", "resources/list", {})
         assert result.status == "error"
         assert "Context Topology missing" in result.message
 
     @patch("specweaver.sandbox.mcp.interfaces.tool.MCPExecutor")
     def test_execute_mcp_query_executor_error(
-        self, mock_executor_class: MagicMock, mock_context: MagicMock
+        self, mock_executor_class: MagicMock, mock_topology: MagicMock
     ) -> None:
         from specweaver.sandbox.mcp.core.executor import MCPExecutorError
 
@@ -103,16 +101,16 @@ class TestMCPExplorerTool:
         mock_executor_class.return_value = mock_instance
         mock_instance.call_rpc.side_effect = MCPExecutorError("Failed to run dummy")
 
-        tool = MCPExplorerTool(mock_context)
+        tool = MCPExplorerTool(topology=mock_topology)
         result = tool._execute_mcp_query("test-db", "resources/list", {})
         assert result.status == "error"
         assert "Execution Error against test-db" in result.message
         assert "Failed to run dummy" in result.message
 
     def test_execute_mcp_query_missing_command(self) -> None:
-        ctx = MagicMock()
-        ctx.topology.mcp_servers = {"test-db": {"args": ["just_args"]}}
-        tool = MCPExplorerTool(ctx)
+        topo = MagicMock()
+        topo.mcp_servers = {"test-db": {"args": ["just_args"]}}
+        tool = MCPExplorerTool(topology=topo)
         result = tool._execute_mcp_query("test-db", "resources/list", {})
         assert result.status == "error"
         assert "missing target executable command bounds" in result.message
@@ -132,9 +130,9 @@ class TestArchitectMCPInterface:
     def test_definitions(self) -> None:
         from specweaver.sandbox.mcp.interfaces.facades import ArchitectMCPInterface
 
-        ctx = MagicMock()
-        ctx.topology.mcp_servers = {"test-db": {}}
-        tool = MCPExplorerTool(ctx)
+        topo = MagicMock()
+        topo.mcp_servers = {"test-db": {}}
+        tool = MCPExplorerTool(topology=topo)
         interface = ArchitectMCPInterface(tool)
 
         defs = interface.definitions()

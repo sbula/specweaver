@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.filesystem.core.executor import FileExecutor
 from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
 
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-class ImplementerFileInterface:
+class ImplementerFileInterface(BaseTool):
     """Filesystem interface for the Implementer role.
 
     Allowed intents: read_file, write_file, edit_file, create_file,
@@ -47,6 +48,10 @@ class ImplementerFileInterface:
 
     def __init__(self, tool: FileSystemTool) -> None:
         self._tool = tool
+
+    @property
+    def role(self) -> str:
+        return self._tool.role
 
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
@@ -92,7 +97,7 @@ class ImplementerFileInterface:
         return self._tool.find_files(path, pattern, **kwargs)  # type: ignore[arg-type]
 
 
-class ReviewerFileInterface:
+class ReviewerFileInterface(BaseTool):
     """Filesystem interface for the Reviewer role.
 
     Allowed intents: read_file, list_directory, search_content, grep, find_files.
@@ -101,6 +106,10 @@ class ReviewerFileInterface:
 
     def __init__(self, tool: FileSystemTool) -> None:
         self._tool = tool
+
+    @property
+    def role(self) -> str:
+        return self._tool.role
 
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
@@ -126,7 +135,7 @@ class ReviewerFileInterface:
         return self._tool.find_files(path, pattern, **kwargs)  # type: ignore[arg-type]
 
 
-class DrafterFileInterface:
+class DrafterFileInterface(BaseTool):
     """Filesystem interface for the Drafter role.
 
     Allowed intents: read_file, write_file, create_file, delete_file,
@@ -136,6 +145,10 @@ class DrafterFileInterface:
 
     def __init__(self, tool: FileSystemTool) -> None:
         self._tool = tool
+
+    @property
+    def role(self) -> str:
+        return self._tool.role
 
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()

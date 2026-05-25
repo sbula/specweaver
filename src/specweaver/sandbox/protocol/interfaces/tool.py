@@ -2,15 +2,20 @@ import logging
 from typing import Any
 
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
+from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.protocol.core.atom import ProtocolAtom
 
 logger = logging.getLogger(__name__)
 
 
-class ProtocolTool:
+class ProtocolTool(BaseTool):
     """
     Native intent-based wrapper tool targeting Protocol extraction safely via the Atom layer.
     """
+
+    @property
+    def role(self) -> str:
+        return BaseTool.NO_ROLE
 
     def definitions(self) -> list[ToolDefinition]:
         """Provides the schema for LLMs to invoke this tool."""

@@ -13,6 +13,8 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from specweaver.sandbox.base import BaseTool
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -79,7 +81,7 @@ class QARunnerToolError(Exception):
 # ---------------------------------------------------------------------------
 
 
-class QARunnerTool:
+class QARunnerTool(BaseTool):
     """Agent-facing test runner with role-based intent gating.
 
     Args:

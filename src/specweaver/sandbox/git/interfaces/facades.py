@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 from specweaver.sandbox.git.core.executor import GitExecutor
 from specweaver.sandbox.git.interfaces.tool import (
@@ -40,7 +41,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ImplementerGitInterface:
+class ImplementerGitInterface(BaseTool):
     """Git interface for the Implementer role.
 
     Allowed intents: commit, inspect_changes, discard,
@@ -49,6 +50,10 @@ class ImplementerGitInterface:
 
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
+
+    @property
+    def role(self) -> str:
+        return self._tool.role
 
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
@@ -78,7 +83,7 @@ class ImplementerGitInterface:
         return self._tool.switch_branch(name)
 
 
-class ReviewerGitInterface:
+class ReviewerGitInterface(BaseTool):
     """Git interface for the Reviewer role.
 
     Allowed intents: history, show_commit, blame, compare, list_branches.
@@ -87,6 +92,10 @@ class ReviewerGitInterface:
 
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
+
+    @property
+    def role(self) -> str:
+        return self._tool.role
 
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
@@ -112,7 +121,7 @@ class ReviewerGitInterface:
         return self._tool.list_branches()
 
 
-class DebuggerGitInterface:
+class DebuggerGitInterface(BaseTool):
     """Git interface for the Debugger role.
 
     Allowed intents: history, file_history, show_old,
@@ -121,6 +130,10 @@ class DebuggerGitInterface:
 
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
+
+    @property
+    def role(self) -> str:
+        return self._tool.role
 
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
@@ -150,7 +163,7 @@ class DebuggerGitInterface:
         return self._tool.inspect_changes()
 
 
-class DrafterGitInterface:
+class DrafterGitInterface(BaseTool):
     """Git interface for the Drafter role.
 
     Allowed intents: commit, inspect_changes, discard.
@@ -158,6 +171,10 @@ class DrafterGitInterface:
 
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
+
+    @property
+    def role(self) -> str:
+        return self._tool.role
 
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
@@ -175,7 +192,7 @@ class DrafterGitInterface:
         return self._tool.discard(file)
 
 
-class ConflictResolverGitInterface:
+class ConflictResolverGitInterface(BaseTool):
     """Git interface for conflict resolution.
 
     Hidden role — only the Engine can activate this.
@@ -185,6 +202,10 @@ class ConflictResolverGitInterface:
 
     def __init__(self, tool: GitTool) -> None:
         self._tool = tool
+
+    @property
+    def role(self) -> str:
+        return self._tool.role
 
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
@@ -214,14 +235,7 @@ class ConflictResolverGitInterface:
 # Factory
 # ---------------------------------------------------------------------------
 
-_ROLE_INTERFACE_MAP = {
-    "implementer": ImplementerGitInterface,
-    "reviewer": ReviewerGitInterface,
-    "planner": ReviewerGitInterface,
-    "debugger": DebuggerGitInterface,
-    "drafter": DrafterGitInterface,
-    "conflict_resolver": ConflictResolverGitInterface,
-}
+from typing import Callable, Dict
 
 GitInterface = (
     ImplementerGitInterface
@@ -230,6 +244,17 @@ GitInterface = (
     | DrafterGitInterface
     | ConflictResolverGitInterface
 )
+
+_ROLE_INTERFACE_MAP: dict[str, type[GitInterface]] = {
+    "implementer": ImplementerGitInterface,
+    "reviewer": ReviewerGitInterface,
+    "scenario_agent": ReviewerGitInterface,
+    "arbiter_agent": ReviewerGitInterface,
+    "planner": ReviewerGitInterface,
+    "debugger": DebuggerGitInterface,
+    "drafter": DrafterGitInterface,
+    "conflict_resolver": ConflictResolverGitInterface,
+}
 
 
 def create_git_interface(role: str, cwd: Path) -> GitInterface:
@@ -263,4 +288,4 @@ def create_git_interface(role: str, cwd: Path) -> GitInterface:
     tool = GitTool(executor=executor, role=role)
 
     interface_cls = _ROLE_INTERFACE_MAP[role]
-    return interface_cls(tool)  # type: ignore[return-value]
+    return interface_cls(tool)

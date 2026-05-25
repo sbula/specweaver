@@ -16,6 +16,8 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from specweaver.sandbox.base import BaseTool
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -39,6 +41,8 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
         {"commit", "inspect_changes", "discard", "uncommit", "start_branch", "switch_branch"}
     ),
     "reviewer": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
+    "scenario_agent": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
+    "arbiter_agent": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
     "planner": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
     "debugger": frozenset(
         {"history", "file_history", "show_old", "search_history", "reflog", "inspect_changes"}
@@ -102,7 +106,7 @@ class GitToolError(Exception):
     """Raised when a GitTool operation is blocked or invalid."""
 
 
-class GitTool:
+class GitTool(BaseTool):
     """High-level intent-based git operations (capability provider).
 
     Args:

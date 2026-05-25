@@ -6,32 +6,49 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from specweaver.commons import json
+from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
 from specweaver.sandbox.mcp.interfaces.models import ToolResult
+
+if TYPE_CHECKING:
+    from specweaver.infrastructure.llm.models import ToolDefinition
 
 logger = logging.getLogger(__name__)
 
 
-class MCPExplorerTool:
+class MCPExplorerTool(BaseTool):
     """Tool for L2 Architect exploration of external MCP interfaces."""
 
-    def __init__(self, context: Any) -> None:
-        self.context = context
+    def __init__(self, topology: Any = None) -> None:
+        self._topology = topology
         self.ROLE_INTENTS = {
             "architect": frozenset({"list_servers", "list_resources", "read_resource"})
         }
+
+    @property
+    def role(self) -> str:
+        return self.NO_ROLE
+
+    def definitions(self) -> list[ToolDefinition]:
+        from specweaver.sandbox.mcp.interfaces.definitions import (
+            LIST_RESOURCES_DEF,
+            LIST_SERVERS_DEF,
+            READ_RESOURCE_DEF,
+        )
+
+        return [LIST_SERVERS_DEF, LIST_RESOURCES_DEF, READ_RESOURCE_DEF]
 
     def _execute_mcp_query(
         self, server_name: str, method: str, params: dict[str, Any]
     ) -> ToolResult:
         """Helper to invoke a short-lived MCP bounds query."""
-        if not self.context or not getattr(self.context, "topology", None):
+        if not self._topology:
             return ToolResult(status="error", message="Context Topology missing.")
 
-        servers = getattr(self.context.topology, "mcp_servers", {})
+        servers = getattr(self._topology, "mcp_servers", {})
         if server_name not in servers:
             return ToolResult(status="error", message=f"Unknown MCP server '{server_name}'.")
 
@@ -72,11 +89,9 @@ class MCPExplorerTool:
                 executor.close()
 
     def _intent_list_servers(self, inputs: dict[str, Any]) -> ToolResult:
-        if not getattr(self.context, "topology", None) or not getattr(
-            self.context.topology, "mcp_servers", None
-        ):
+        if not self._topology or not getattr(self._topology, "mcp_servers", None):
             return ToolResult(status="success", data="[]")
-        mcp_servers = self.context.topology.mcp_servers
+        mcp_servers = self._topology.mcp_servers
         return ToolResult(status="success", data=json.dumps(list(mcp_servers.keys())))
 
     def _intent_list_resources(self, inputs: dict[str, Any]) -> ToolResult:

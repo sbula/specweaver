@@ -79,10 +79,15 @@ class BaseTool(ABC):
     physically absent), so no `allowed_intents` property is required here.
     """
 
+    NO_ROLE: str = "no_role"
+
     @property
     @abstractmethod
     def role(self) -> str:
-        """The role this facade is configured for."""
+        """The role this facade is configured for.
+
+        Return BaseTool.NO_ROLE for tools without role-based access control.
+        """
 
     @abstractmethod
     def definitions(self) -> list[ToolDefinition]:

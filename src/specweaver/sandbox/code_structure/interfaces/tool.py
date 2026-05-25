@@ -11,11 +11,13 @@ import posixpath
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.security import AccessMode, FolderGrant
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from specweaver.infrastructure.llm.models import ToolDefinition
     from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
 # ---------------------------------------------------------------------------
@@ -72,7 +74,7 @@ class CodeStructureToolError(Exception):
     """Raised when an operation is blocked by role or config."""
 
 
-class CodeStructureTool:
+class CodeStructureTool(BaseTool):
     """Agent-facing AST extraction with role-based internet gating and folder grants.
 
     Args:
@@ -261,7 +263,7 @@ class CodeStructureTool:
             data=res.exports,
         )
 
-    def definitions(self) -> list[Any]:
+    def definitions(self) -> list[ToolDefinition]:
         from specweaver.sandbox.code_structure.interfaces.definitions import (
             get_code_structure_schema,
         )

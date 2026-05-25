@@ -144,7 +144,6 @@ class TestToolRegistry:
         assert isinstance(tools[0], ToolB)
         assert tools[0].role == "b"
 
-    @pytest.mark.xfail(reason="Intentionally RED at end of SF-1. Domains don't implement BaseTool yet.")
     def test_standard_registry_tools_are_basetool_instances(self) -> None:
         """TDD red-phase marker for SF-2: domain facades must inherit BaseTool."""
         registry = get_standard_registry()
@@ -153,3 +152,166 @@ class TestToolRegistry:
         tools = registry.create_tools(["web"], role="reviewer")
         assert len(tools) == 1
         assert isinstance(tools[0], BaseTool), "Domain tools must inherit from BaseTool"
+
+
+class TestNoRoleSentinel:
+    def test_no_role_constant_value(self) -> None:
+        assert BaseTool.NO_ROLE == "no_role"
+
+
+class TestBaseToolConformance:
+    @pytest.mark.parametrize(
+        "tool_factory",
+        [
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.filesystem.interfaces.tool", fromlist=[""]).FileSystemTool(
+                    executor=__import__("unittest.mock").mock.MagicMock(),
+                    role="implementer",
+                    grants=[]
+                ),
+                id="FileSystemTool"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.git.interfaces.tool", fromlist=[""]).GitTool(
+                    executor=__import__("unittest.mock").mock.MagicMock(),
+                    role="implementer"
+                ),
+                id="GitTool"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.web.interfaces.tool", fromlist=[""]).WebTool(
+                    role="implementer",
+                    api_key="dummy",
+                    engine_id="dummy"
+                ),
+                id="WebTool"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.code_structure.interfaces.tool", fromlist=[""]).CodeStructureTool(
+                    atom=__import__("unittest.mock").mock.MagicMock(
+                        get_supported_capabilities=__import__("unittest.mock").mock.MagicMock(return_value=([], []))
+                    ),
+                    role="implementer",
+                    grants=[]
+                ),
+                id="CodeStructureTool"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.qa_runner.interfaces.tool", fromlist=[""]).QARunnerTool(
+                    atom=__import__("unittest.mock").mock.MagicMock(),
+                    role="implementer"
+                ),
+                id="QARunnerTool"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.protocol.interfaces.tool", fromlist=[""]).ProtocolTool(),
+                id="ProtocolTool"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.mcp.interfaces.tool", fromlist=[""]).MCPExplorerTool(topology=None),
+                id="MCPExplorerTool"
+            ),
+        ]
+    )
+    def test_domain_tools_inherit_basetool(self, tool_factory: Any) -> None:
+        tool = tool_factory()
+        assert isinstance(tool, BaseTool)
+        assert isinstance(tool.role, str)
+        assert isinstance(tool.definitions(), list)
+
+
+class TestFacadeConformance:
+    @pytest.mark.parametrize(
+        "facade_factory",
+        [
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.filesystem.interfaces.facades", fromlist=[""]).ImplementerFileInterface(
+                    __import__("specweaver.sandbox.filesystem.interfaces.tool", fromlist=[""]).FileSystemTool(
+                        executor=__import__("unittest.mock").mock.MagicMock(),
+                        role="implementer",
+                        grants=[]
+                    )
+                ),
+                id="ImplementerFileInterface"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.filesystem.interfaces.facades", fromlist=[""]).ReviewerFileInterface(
+                    __import__("specweaver.sandbox.filesystem.interfaces.tool", fromlist=[""]).FileSystemTool(
+                        executor=__import__("unittest.mock").mock.MagicMock(),
+                        role="reviewer",
+                        grants=[]
+                    )
+                ),
+                id="ReviewerFileInterface"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.filesystem.interfaces.facades", fromlist=[""]).DrafterFileInterface(
+                    __import__("specweaver.sandbox.filesystem.interfaces.tool", fromlist=[""]).FileSystemTool(
+                        executor=__import__("unittest.mock").mock.MagicMock(),
+                        role="drafter",
+                        grants=[]
+                    )
+                ),
+                id="DrafterFileInterface"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.git.interfaces.facades", fromlist=[""]).ImplementerGitInterface(
+                    __import__("specweaver.sandbox.git.interfaces.tool", fromlist=[""]).GitTool(
+                        executor=__import__("unittest.mock").mock.MagicMock(),
+                        role="implementer"
+                    )
+                ),
+                id="ImplementerGitInterface"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.git.interfaces.facades", fromlist=[""]).ReviewerGitInterface(
+                    __import__("specweaver.sandbox.git.interfaces.tool", fromlist=[""]).GitTool(
+                        executor=__import__("unittest.mock").mock.MagicMock(),
+                        role="reviewer"
+                    )
+                ),
+                id="ReviewerGitInterface"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.git.interfaces.facades", fromlist=[""]).DebuggerGitInterface(
+                    __import__("specweaver.sandbox.git.interfaces.tool", fromlist=[""]).GitTool(
+                        executor=__import__("unittest.mock").mock.MagicMock(),
+                        role="debugger"
+                    )
+                ),
+                id="DebuggerGitInterface"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.git.interfaces.facades", fromlist=[""]).DrafterGitInterface(
+                    __import__("specweaver.sandbox.git.interfaces.tool", fromlist=[""]).GitTool(
+                        executor=__import__("unittest.mock").mock.MagicMock(),
+                        role="drafter"
+                    )
+                ),
+                id="DrafterGitInterface"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.git.interfaces.facades", fromlist=[""]).ConflictResolverGitInterface(
+                    __import__("specweaver.sandbox.git.interfaces.tool", fromlist=[""]).GitTool(
+                        executor=__import__("unittest.mock").mock.MagicMock(),
+                        role="conflict_resolver"
+                    )
+                ),
+                id="ConflictResolverGitInterface"
+            ),
+            pytest.param(
+                lambda: __import__("specweaver.sandbox.mcp.interfaces.facades", fromlist=[""]).ArchitectMCPInterface(
+                    __import__("specweaver.sandbox.mcp.interfaces.tool", fromlist=[""]).MCPExplorerTool(
+                        topology=None
+                    )
+                ),
+                id="ArchitectMCPInterface"
+            ),
+        ]
+    )
+    def test_domain_facades_inherit_basetool_and_delegate_role(self, facade_factory: Any) -> None:
+        facade = facade_factory()
+        assert isinstance(facade, BaseTool)
+        assert facade.role == facade._tool.role
+        assert isinstance(facade.definitions(), list)
+

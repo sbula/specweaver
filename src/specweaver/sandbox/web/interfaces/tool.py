@@ -14,6 +14,8 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from specweaver.sandbox.base import BaseTool
+
 if TYPE_CHECKING:
     from specweaver.infrastructure.llm.models import ToolDefinition
 
@@ -62,7 +64,7 @@ class WebToolError(Exception):
 # ---------------------------------------------------------------------------
 
 
-class WebTool:
+class WebTool(BaseTool):
     """Intent-based web operations with role-based access control.
 
     Args:

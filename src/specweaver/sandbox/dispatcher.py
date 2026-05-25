@@ -231,16 +231,9 @@ class ToolDispatcher:
             interfaces.append(web_tool)
 
         if "mcp" in allowed_tools and role == "architect":
-            from specweaver.sandbox.mcp.interfaces.facades import ArchitectMCPInterface
-            from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
+            from specweaver.sandbox.mcp.interfaces.facades import create_mcp_interface
 
-            # MCP requires the actual topology server mappings
-            class DummyContext:  # Temporary bridge since MCPExplorerTool expects context object
-                def __init__(self, topo: Any) -> None:
-                    self.topology = topo
-
-            mcp_tool = MCPExplorerTool(context=DummyContext(topology))
-            mcp_interface = ArchitectMCPInterface(mcp_tool)
+            mcp_interface = create_mcp_interface(role=role, topology=topology)
             interfaces.append(mcp_interface)
 
         return cls(interfaces)
