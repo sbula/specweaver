@@ -94,7 +94,7 @@ Want to build on the engine? SpecWeaver is built with Python 3.11+, `uv`, and SQ
 # Install with dev dependencies
 uv sync --all-extras
 
-# Run the 4,500+ test suite
+# Run the 4,900+ test suite
 uv run pytest
 
 # Run linter and architectural checks

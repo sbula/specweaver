@@ -13,7 +13,10 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from specweaver.infrastructure.llm.models import ToolDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -66,3 +69,21 @@ class Atom(ABC):
         Used strictly for releasing OS-level resources.
         Must NOT perform logical rollback.
         """
+
+
+class BaseTool(ABC):
+    """Abstract base class representing an LLM-accessible sandbox tool.
+
+    All sandbox tool facades must inherit this class. Role-based access
+    control (RBAC) is enforced structurally by the facade layer (methods
+    physically absent), so no `allowed_intents` property is required here.
+    """
+
+    @property
+    @abstractmethod
+    def role(self) -> str:
+        """The role this facade is configured for."""
+
+    @abstractmethod
+    def definitions(self) -> list[ToolDefinition]:
+        """Return the list of tool definitions for LLM registration."""

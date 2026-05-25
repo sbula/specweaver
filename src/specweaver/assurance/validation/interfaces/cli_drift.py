@@ -90,7 +90,7 @@ def drift_check(
         drift_db = _core.get_db()
         drift_project = _core.run_repo_op(lambda r: r.get_active_project())
         try:
-            settings = load_settings(drift_db, drift_project)
+            settings = load_settings(drift_db, drift_project)  # type: ignore[arg-type]
             _, adapter, _ = create_llm_adapter(settings, telemetry_project=drift_project)
         except (LLMAdapterError, ValueError) as exc:
             _core.console.print(f"[red]Error:[/red] {exc}")

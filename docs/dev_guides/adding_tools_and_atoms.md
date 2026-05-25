@@ -63,8 +63,9 @@ To add a new capability string (like `SearchWeb`):
 3. **The Atom calls the Executor directly; it NEVER imports the Tool.** (However, an Untrusted Tool *can* instantiate an Atom instance to reuse its operations, provided the Tool validates Role constraints first).
 
 ### D. Wire It Up
-1. Connect the newly defined `ToolDefinition` payload into the LLM context injector.
-2. Hook the Intent strings heavily into `flow/_review` or `flow/_generation` via the central `sandbox/dispatcher.py` to ensure routing natively triggers the tool functions.
+1. Your Tool facade must inherit from `BaseTool` (located in `specweaver.sandbox.base`) and implement the `role` property and `definitions()` method.
+2. Register the tool factory inside `specweaver.sandbox.registry.get_standard_registry()` using a lazy-loaded closure that cherry-picks only the necessary `kwargs` (e.g., `role`, `cwd`).
+3. The Flow Engine will automatically resolve and inject the tool during pipeline execution via the `ToolRegistry` without any manual binding in `dispatcher.py`.
 
 ---
 

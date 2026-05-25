@@ -313,6 +313,7 @@ expose = [
     "language.core",
     "code_structure.core",
     "code_structure.interfaces",
+    "registry",
 ]
 
 [[interfaces]]

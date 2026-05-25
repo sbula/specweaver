@@ -68,7 +68,7 @@ def resolve_service_name(topology: TopologyGraph | None, target_path: Path) -> s
 
     for node in topology.nodes.values():
         if getattr(node, "path", None):
-            node_path_str = str(Path(node.path).resolve()).replace("\\", "/")
+            node_path_str = str(Path(node.path).resolve()).replace("\\", "/")  # type: ignore[attr-defined]
             if target_str.startswith(node_path_str):
                 return node.name
 

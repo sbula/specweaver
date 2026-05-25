@@ -5,6 +5,8 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 ## Domain-Driven Design (DDD)
 * **`TECH-01` 🔜: Domain-Driven Design Unification**
   > [Description](../features/topic_07_technical_debt/TECH-01/TECH-01_ddd_refactor.md) | SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales. The massive refactoring effort to align the legacy `config/`, `cli/`, and `loom/` layers with the pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad.
+* **`TECH-01b` 🟡: BaseTool Meta-Class Registry**
+  > [Description](../features/topic_07_technical_debt/TECH-01b/TECH-01b_base_tool_registry.md) | Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.
 
 ## Architecture & Restructuring
 * **`TECH-02` 🟢: Structural Refactoring of Workspace AST Module**

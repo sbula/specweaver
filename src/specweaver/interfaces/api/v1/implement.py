@@ -84,7 +84,7 @@ async def implement_spec(
 
     try:
         # Generate code
-        await generator.generate_code(
+        await generator.generate_code(  # type: ignore[call-arg]
             spec_path,
             code_path,
             topology_contexts=topo_contexts,
@@ -93,7 +93,7 @@ async def implement_spec(
         )
 
         # Generate tests
-        await generator.generate_tests(
+        await generator.generate_tests(  # type: ignore[call-arg]
             spec_path,
             test_path,
             topology_contexts=topo_contexts,

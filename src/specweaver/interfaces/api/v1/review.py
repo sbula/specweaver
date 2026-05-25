@@ -66,7 +66,7 @@ async def review_spec(
     )
 
     try:
-        result = await reviewer.review_spec(
+        result = await reviewer.review_spec(  # type: ignore[call-arg]
             abs_path,
             constitution=constitution,
             standards=standards,

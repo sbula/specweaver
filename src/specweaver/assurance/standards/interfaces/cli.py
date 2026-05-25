@@ -157,7 +157,7 @@ def standards_scan(  # noqa: C901
     # Load existing for re-scan diff
     existing_by_scope: dict[str, list[dict[str, Any]]] = {}
     for s in scope_results:
-        existing_by_scope[s] = _core.run_repo_op(lambda r, _s=s: r.get_standards(name, scope=_s))
+        existing_by_scope[s] = _core.run_repo_op(lambda r, _s=s: r.get_standards(name, scope=_s))  # type: ignore[misc]
 
     # HITL review
     if no_review:
@@ -197,7 +197,7 @@ def _save_accepted_standards(
         for result in results:
             confirmed = "hitl" if not no_review else None
             _core.run_repo_op(
-                lambda r, _p=project_name, _s=s, _r=result, _c=confirmed: r.save_standard(
+                lambda r, _p=project_name, _s=s, _r=result, _c=confirmed: r.save_standard(  # type: ignore[misc]
                     project_name=_p,
                     scope=_s,
                     language=_r.language or "unknown",
@@ -421,7 +421,7 @@ def standards_scopes() -> None:
     table.add_column("Last Scanned")
 
     for scope_name in stored_scopes:
-        standards = _core.run_repo_op(lambda r, _sn=scope_name: r.get_standards(name, scope=_sn))
+        standards = _core.run_repo_op(lambda r, _sn=scope_name: r.get_standards(name, scope=_sn))  # type: ignore[misc]
         if not standards:
             continue
         languages_str = sorted({str(s["language"]) for s in standards})

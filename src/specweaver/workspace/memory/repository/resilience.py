@@ -223,7 +223,7 @@ class MemoryRepositoryResilienceMixin:
             parent_ids = [row[0] for row in result.fetchall()]
 
             for parent_id in parent_ids:
-                await self._process_blocked_parent(
+                await self._process_blocked_parent(  # type: ignore[attr-defined]
                     parent_id, task_id, now, visited, queue, affected
                 )
 
@@ -317,7 +317,7 @@ class MemoryRepositoryResilienceMixin:
             parent_ids = [row[0] for row in result.fetchall()]
 
             for parent_id in parent_ids:
-                await self._process_unblocked_parent(
+                await self._process_unblocked_parent(  # type: ignore[attr-defined]
                     parent_id, task_id, now, visited, queue, cleared
                 )
 

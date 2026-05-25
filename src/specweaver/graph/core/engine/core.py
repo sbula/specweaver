@@ -2,7 +2,7 @@ import threading
 from enum import Enum
 from typing import Any
 
-import networkx as nx  # type: ignore  # type: ignore
+import networkx as nx
 
 from specweaver.graph.core.engine.models import GraphEdge, GraphNode
 
@@ -14,7 +14,7 @@ class InMemoryGraphEngine:
     """
 
     def __init__(self) -> None:
-        self._nx_graph = nx.DiGraph()
+        self._nx_graph = nx.DiGraph()  # type: ignore[var-annotated]
         self._lock = threading.Lock()
         self._file_index: dict[str, set[str]] = {}
 
@@ -61,7 +61,7 @@ class InMemoryGraphEngine:
             self._nx_graph.clear()
             self._file_index.clear()
 
-    def extract_subgraph(self, start_hash: str, requested_depth: int) -> nx.DiGraph:
+    def extract_subgraph(self, start_hash: str, requested_depth: int) -> nx.DiGraph:  # type: ignore[type-arg]
         """
         Extracts a subgraph centered around the start_hash.
         RT-27: Limits depth.
@@ -81,7 +81,7 @@ class InMemoryGraphEngine:
             subgraph_semantic = nx.ego_graph(
                 self._nx_graph, start_hash, radius=max_depth, undirected=True
             )
-            return subgraph_semantic
+            return subgraph_semantic  # type: ignore[no-any-return]
 
     def _serialize_attributes(self, data: dict[str, Any]) -> dict[str, Any]:
         """Helper to safely serialize dictionaries and enums for GraphML."""
@@ -103,7 +103,7 @@ class InMemoryGraphEngine:
         RT-22: Serialization must handle complex types (like metadata dicts).
         """
         with self._lock:
-            export_graph = nx.DiGraph()
+            export_graph = nx.DiGraph()  # type: ignore[var-annotated]
             for n, data in self._nx_graph.nodes(data=True):
                 safe_data = self._serialize_attributes(data)
                 export_graph.add_node(n, **safe_data)
@@ -114,7 +114,7 @@ class InMemoryGraphEngine:
 
             return "".join(nx.generate_graphml(export_graph))
 
-    def export_semantic_digraph(self) -> nx.DiGraph:
+    def export_semantic_digraph(self) -> nx.DiGraph:  # type: ignore[type-arg]
         """
         Exports a shallow copy of the internal graph.
         WARNING: Node attribute dicts are shared references. Treat as read-only.
@@ -122,7 +122,7 @@ class InMemoryGraphEngine:
         with self._lock:
             return nx.DiGraph(self._nx_graph)
 
-    def load_semantic_digraph(self, semantic_digraph: nx.DiGraph) -> None:
+    def load_semantic_digraph(self, semantic_digraph: nx.DiGraph) -> None:  # type: ignore[type-arg]
         """
         Replaces the engine's internal state with the provided graph.
         Rebuilds the file index.

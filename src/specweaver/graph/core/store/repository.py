@@ -50,7 +50,7 @@ class SqliteGraphRepository:
                 )
             """)
 
-    def _extract_nodes(self, nx_graph: nx.DiGraph) -> tuple[list[Any], list[Any]]:
+    def _extract_nodes(self, nx_graph: nx.DiGraph) -> tuple[list[Any], list[Any]]:  # type: ignore[type-arg]
         node_batch = []
         ghost_hashes = set()
 
@@ -93,7 +93,7 @@ class SqliteGraphRepository:
                 hash_to_id[h] = int_id
         return hash_to_id
 
-    def persist_semantic_digraph(self, semantic_digraph: nx.DiGraph) -> None:
+    def persist_semantic_digraph(self, semantic_digraph: nx.DiGraph) -> None:  # type: ignore[type-arg]
         node_batch, ghost_batch = self._extract_nodes(semantic_digraph)
 
         with self._get_connection() as conn:
@@ -135,8 +135,8 @@ class SqliteGraphRepository:
 
             conn.commit()
 
-    def load_from_db(self) -> nx.DiGraph:
-        nx_graph = nx.DiGraph()
+    def load_from_db(self) -> nx.DiGraph:  # type: ignore[type-arg]
+        nx_graph = nx.DiGraph()  # type: ignore[var-annotated]
 
         with self._get_connection() as conn:
             cursor = conn.cursor()

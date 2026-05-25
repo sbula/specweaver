@@ -73,7 +73,7 @@ def draft(
     db = _core.get_db()
     project = _core.run_repo_op(lambda r: r.get_active_project())
     try:
-        settings = load_settings(db, project, llm_role="draft")
+        settings = load_settings(db, project, llm_role="draft")  # type: ignore[arg-type]
         settings, adapter, _ = create_llm_adapter(settings, telemetry_project=project)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
@@ -177,7 +177,7 @@ def review(
     db = _core.get_db()
     project = _core.run_repo_op(lambda r: r.get_active_project())
     try:
-        settings = load_settings(db, project)
+        settings = load_settings(db, project)  # type: ignore[arg-type]
         settings, adapter, _ = create_llm_adapter(settings, telemetry_project=project)
     except LLMAdapterError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")

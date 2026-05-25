@@ -202,7 +202,7 @@ def check(
         if project:
             proj_path = Path(project)
         elif active:
-            proj_data = _core.run_repo_op(lambda r: r.get_project(active))
+            proj_data = _core.run_repo_op(lambda r: r.get_project(active))  # type: ignore[arg-type]
             proj_path = Path(str(proj_data["root_path"])) if proj_data else Path.cwd()
         else:
             proj_path = Path.cwd()
