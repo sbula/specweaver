@@ -96,7 +96,7 @@ class ToolDispatcher:
             return {"error": f"Tool execution failed: {exc!s}"}
 
     @classmethod
-    def create_standard_set(  # noqa: C901
+    def create_standard_set(
         cls,
         boundary: Any,
         role: str,
@@ -115,125 +115,128 @@ class ToolDispatcher:
         Returns:
             A configured ToolDispatcher encompassing all allowed intents.
         """
-        interfaces: list[Any] = []
+        from specweaver.sandbox.registry import get_standard_registry
 
-        if "fs" in allowed_tools or "filesystem" in allowed_tools:
-            # Isolate imports so flow/ doesn't violate boundaries
-            from specweaver.sandbox.filesystem.interfaces.facades import create_filesystem_interface
-            from specweaver.sandbox.security import AccessMode, FolderGrant
+        kwargs = cls._build_registry_kwargs(
+            boundary=boundary,
+            role=role,
+            allowed_tools=allowed_tools,
+            analyzer_factory=analyzer_factory,
+            topology=topology,
+            parsers=parsers,
+        )
 
-            exclude_dirs: set[str] = set()
-            exclude_patterns: set[str] = set()
-            for analyzer in analyzer_factory.get_all_analyzers() if analyzer_factory else []:
-                for ign in analyzer.get_default_directory_ignores():
-                    exclude_dirs.add(ign.rstrip("/"))
-                for pat in analyzer.get_binary_ignore_patterns():
-                    exclude_patterns.add(pat)
+        registry = get_standard_registry()
+        tools = registry.create_tools(allowed_tools, **kwargs)
 
-            grants = []
-            if role == "scenario_agent":
-                # Strict FR-5a isolation: scenario agent cannot read src/ or tests/
-                for root in boundary.roots:
-                    grants.append(
-                        FolderGrant(str(root / "scenarios"), AccessMode.FULL, recursive=True)
-                    )
-                    grants.append(FolderGrant(str(root / "specs"), AccessMode.READ, recursive=True))
-                    grants.append(
-                        FolderGrant(str(root / "contracts"), AccessMode.READ, recursive=True)
-                    )
-            elif role == "arbiter_agent":
-                from specweaver.sandbox.security import ReadOnlyWorkspaceBoundary
+        return cls(tools)
 
-                if isinstance(boundary, ReadOnlyWorkspaceBoundary):
-                    for api_path in boundary.api_paths:
-                        grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
-                else:
-                    # Degraded fallback: treat all paths as read-only
-                    for root in boundary.roots:
-                        grants.append(FolderGrant(str(root), AccessMode.READ, recursive=True))
-                    for api_path in boundary.api_paths:
-                        grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
-            else:
-                for root in boundary.roots:
-                    grants.append(FolderGrant(str(root), AccessMode.FULL, recursive=True))
+    @classmethod
+    def _compute_fs_excludes(cls, analyzer_factory: Any | None) -> tuple[set[str], set[str]]:
+        exclude_dirs: set[str] = set()
+        exclude_patterns: set[str] = set()
+        if not analyzer_factory:
+            return exclude_dirs, exclude_patterns
+
+        for analyzer in analyzer_factory.get_all_analyzers():
+            for ign in analyzer.get_default_directory_ignores():
+                exclude_dirs.add(ign.rstrip("/"))
+            for pat in analyzer.get_binary_ignore_patterns():
+                exclude_patterns.add(pat)
+        return exclude_dirs, exclude_patterns
+
+    @classmethod
+    def _compute_role_grants(cls, role: str, boundary: Any) -> list[Any]:
+        from specweaver.sandbox.security import AccessMode, FolderGrant, ReadOnlyWorkspaceBoundary
+
+        grants = []
+        if role == "scenario_agent":
+            for root in boundary.roots:
+                grants.append(FolderGrant(str(root / "scenarios"), AccessMode.FULL, recursive=True))
+                grants.append(FolderGrant(str(root / "specs"), AccessMode.READ, recursive=True))
+                grants.append(FolderGrant(str(root / "contracts"), AccessMode.READ, recursive=True))
+        elif role == "arbiter_agent":
+            if isinstance(boundary, ReadOnlyWorkspaceBoundary):
                 for api_path in boundary.api_paths:
                     grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
-
-            # The first root acts as the cwd for relative paths. Fallback to api_paths if empty.
-            cwd_path = boundary.roots[0] if boundary.roots else boundary.api_paths[0]
-            fs_interface = create_filesystem_interface(
-                role,
-                cwd=cwd_path,
-                grants=grants,
-                exclude_dirs=exclude_dirs,
-                exclude_patterns=exclude_patterns,
-            )
-            interfaces.append(fs_interface)
-
-        if "ast" in allowed_tools or "codestructure" in allowed_tools:
-            # Isolate AST dependencies
-            from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
-            from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
-            from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
-            from specweaver.sandbox.security import AccessMode, FolderGrant
-            from specweaver.workflows.evaluators.loader import load_evaluator_schemas
-
-            project_dir = boundary.roots[0] if boundary.roots else None
-            schemas = load_evaluator_schemas(project_dir=project_dir)
-
-            # Extract archetype dynamically to guarantee framework isolation
-            active_archetype = "generic"
-            plugins: list[str] = []
-            if project_dir:
-                try:
-                    from specweaver.core.config.archetype_resolver import ArchetypeResolver
-
-                    resolver = ArchetypeResolver(project_dir)
-                    resolved_arch = resolver.resolve(project_dir / "stub")
-                    active_archetype = resolved_arch if resolved_arch else "generic"
-                    plugins = resolver.resolve_plugins(project_dir / "stub")
-                except Exception:
-                    pass
-
-            # Atom executes locally reading files relative to project root
-            atom = CodeStructureAtom(
-                EngineFileExecutor(boundary.roots[0]),
-                evaluator_schemas=schemas,
-                active_archetype=active_archetype,
-                plugins=plugins,
-                parsers=parsers,
-            )
-
-            # Reuse exact read-only grant logic from fs
-            grants = []
+            else:
+                for root in boundary.roots:
+                    grants.append(FolderGrant(str(root), AccessMode.READ, recursive=True))
+                for api_path in boundary.api_paths:
+                    grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
+        else:
             for root in boundary.roots:
                 grants.append(FolderGrant(str(root), AccessMode.FULL, recursive=True))
             for api_path in boundary.api_paths:
                 grants.append(FolderGrant(str(api_path), AccessMode.READ, recursive=True))
+        return grants
 
-            # Extract mathematically aggregated tool intent gates mapped by plugins (FR-3, FR-4)
-            raw_intents = atom.active_evaluator.get("intents") or {}
-            raw_hide = raw_intents.get("hide", []) if isinstance(raw_intents, dict) else []
-            hidden_intents = raw_hide if isinstance(raw_hide, list) else [str(raw_hide)]
+    @classmethod
+    def _build_ast_kwargs(
+        cls, boundary: Any, cwd_path: Any, allowed_tools: list[str], parsers: Any | None
+    ) -> tuple[Any, list[str]]:
+        if "ast" not in allowed_tools and "codestructure" not in allowed_tools:
+            return None, []
 
-            ast_interface = CodeStructureTool(
-                atom=atom, role=role, grants=grants, hidden_intents=hidden_intents
-            )
-            interfaces.append(ast_interface)
+        from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+        from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor
+        from specweaver.workflows.evaluators.loader import load_evaluator_schemas
 
-        if "web" in allowed_tools:
-            # Provide WebTool directly if web search is enabled
-            from specweaver.sandbox.web.interfaces.tool import WebTool
+        project_dir = boundary.roots[0] if boundary.roots else None
+        schemas = load_evaluator_schemas(project_dir=project_dir)
 
-            # Note: The factory doesn't read env directly since it's a domain boundary.
-            # but WebTool safely degrades if api_key isn't supplied (web_enabled=False).
-            web_tool = WebTool(role=role)
-            interfaces.append(web_tool)
+        active_archetype = "generic"
+        plugins: list[str] = []
+        if project_dir:
+            try:
+                from specweaver.core.config.archetype_resolver import ArchetypeResolver
 
-        if "mcp" in allowed_tools and role == "architect":
-            from specweaver.sandbox.mcp.interfaces.facades import create_mcp_interface
+                resolver = ArchetypeResolver(project_dir)
+                resolved_arch = resolver.resolve(project_dir / "stub")
+                active_archetype = resolved_arch if resolved_arch else "generic"
+                plugins = resolver.resolve_plugins(project_dir / "stub")
+            except Exception:
+                pass
 
-            mcp_interface = create_mcp_interface(role=role, topology=topology)
-            interfaces.append(mcp_interface)
+        executor = EngineFileExecutor(cwd_path)
+        atom = CodeStructureAtom(
+            executor,
+            evaluator_schemas=schemas,
+            active_archetype=active_archetype,
+            plugins=plugins,
+            parsers=parsers,
+        )
 
-        return cls(interfaces)
+        raw_intents = atom.active_evaluator.get("intents") or {}
+        raw_hide = raw_intents.get("hide", []) if isinstance(raw_intents, dict) else []
+        hidden_intents = raw_hide if isinstance(raw_hide, list) else [str(raw_hide)]
+
+        return atom, hidden_intents
+
+    @classmethod
+    def _build_registry_kwargs(
+        cls,
+        boundary: Any,
+        role: str,
+        allowed_tools: list[str],
+        analyzer_factory: Any | None = None,
+        topology: Any | None = None,
+        parsers: Any | None = None,
+    ) -> dict[str, Any]:
+        """Build the shared configuration kwargs required by tool registry factories."""
+        exclude_dirs, exclude_patterns = cls._compute_fs_excludes(analyzer_factory)
+        grants = cls._compute_role_grants(role, boundary)
+        cwd_path = boundary.roots[0] if boundary.roots else boundary.api_paths[0]
+        atom, hidden_intents = cls._build_ast_kwargs(boundary, cwd_path, allowed_tools, parsers)
+
+        return {
+            "boundary": boundary,
+            "role": role,
+            "cwd": cwd_path,
+            "grants": grants,
+            "exclude_dirs": exclude_dirs,
+            "exclude_patterns": exclude_patterns,
+            "atom": atom,
+            "hidden_intents": hidden_intents,
+            "topology": topology,
+        }

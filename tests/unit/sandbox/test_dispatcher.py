@@ -349,3 +349,36 @@ class TestToolDispatcherMCPIntegration:
         )
         names = [d.name for d in dispatcher.available_tools()]
         assert "list_servers" not in names
+
+
+class TestDispatcherInternalMethods:
+    """Explicit unit tests for the extracted _compute_* classmethods to ensure strict coverage."""
+
+    def test_compute_fs_excludes_null_factory(self) -> None:
+        from specweaver.sandbox.dispatcher import ToolDispatcher
+
+        exclude_dirs, exclude_patterns = ToolDispatcher._compute_fs_excludes(None)
+        assert len(exclude_dirs) == 0
+        assert len(exclude_patterns) == 0
+
+    def test_compute_role_grants_scenario_agent(self, project: Path) -> None:
+        from specweaver.sandbox.dispatcher import ToolDispatcher
+        from specweaver.sandbox.security import WorkspaceBoundary
+
+        boundary = WorkspaceBoundary(roots=[project])
+        grants = ToolDispatcher._compute_role_grants("scenario_agent", boundary)
+
+        paths = [g.path for g in grants]
+        # scenario_agent gets FULL access to scenarios/ and READ to specs/ and contracts/
+        assert str(project / "scenarios") in paths
+        assert str(project / "specs") in paths
+        assert str(project / "contracts") in paths
+
+    def test_build_ast_kwargs_not_allowed(self, project: Path) -> None:
+        from specweaver.sandbox.dispatcher import ToolDispatcher
+        from specweaver.sandbox.security import WorkspaceBoundary
+
+        boundary = WorkspaceBoundary(roots=[project])
+        atom, hidden = ToolDispatcher._build_ast_kwargs(boundary, project, ["fs"], None)
+        assert atom is None
+        assert hidden == []

@@ -596,6 +596,8 @@ These stories do not add new user-facing features, but are critical epics requir
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.*
 *   **Core Required (MVS):**
     *   `[x]` **TECH-01b:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-01b_base_tool_registry.md)
+*   **Verifiable Proof:**
+    *   `tests/integration/sandbox/test_dispatcher_sf3_integration.py`
 
 ### 🟢 TECH-02: Structural Refactoring of Workspace AST Module
 **Benefit:** *Crystal clear boundary separation between mechanical Tree-Sitter extraction and semantic ontology mapping.*

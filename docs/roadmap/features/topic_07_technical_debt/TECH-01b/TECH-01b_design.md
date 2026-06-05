@@ -130,10 +130,10 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | BaseTool & Registry | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Sandbox Alignment | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Dispatcher Integration | SF-2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Dispatcher Integration | SF-2 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | SF-4 | Validation Isolation | SF-3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Handoff
 
-**Current status**: SF-2 implemented, integration tests passing, pre-commit checks executed successfully. Awaiting final user approval for git commit.
-**Next step**: User to approve SF-2 commit boundary, then proceed to `/implementation-plan TECH-01b, sf-3`.
+**Current status**: SF-3 implementation plan approved.
+**Next step**: Run `/dev docs/roadmap/features/topic_07_technical_debt/TECH-01b/TECH-01b_sf3_implementation_plan.md` to begin implementation.
