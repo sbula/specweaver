@@ -131,9 +131,9 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 | SF-1 | BaseTool & Registry | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Sandbox Alignment | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Dispatcher Integration | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Validation Isolation | SF-3 | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| SF-4 | Validation Isolation | SF-3 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Handoff
 
-**Current status**: SF-4 pre-commit quality gate passed. Ready to commit.
-**Next step**: Atomic commit for SF-4.
+**Current status**: TECH-01b complete. All 4 sub-features committed.
+**Commit**: `f74f5844` — feat(TECH-01b/SF-4): isolate validation layer from sandbox imports
