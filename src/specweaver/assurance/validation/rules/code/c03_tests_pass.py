@@ -1,10 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""C03: Tests Pass — runs pytest on the test file and checks results.
+"""C03: Tests Pass — checks pre-hydrated test execution results.
 
-Delegates pytest execution to the shared PythonQARunner from the
-commons layer, eliminating duplicate subprocess handling.
+Reads test results from self.context["qa_tests_result"], which is
+populated by the flow layer's validation hydrator (AD-4, AD-5).
+No sandbox imports — this rule is pure logic.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class TestsPassRule(Rule):
-    """Run pytest and check that all tests pass."""
+    """Check that all tests pass using pre-hydrated QA context."""
 
     @property
     def rule_id(self) -> str:
@@ -53,30 +54,24 @@ class TestsPassRule(Rule):
 
         test_file = matches[0]
 
-        # Delegate to QARunnerAtom via intent
-        from specweaver.sandbox.base import AtomStatus
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
-
-        atom = QARunnerAtom(cwd=project_root)
-        try:
-            result = atom.run(
-                {
-                    "intent": "run_tests",
-                    "target": str(test_file.relative_to(project_root)),
-                    "kind": "",
-                    "timeout": 60,
-                }
+        # Read pre-hydrated QA results from context
+        result_data = self.context.get("qa_tests_result")
+        if result_data is None:
+            return self._fail(
+                "Test execution results not available (QA context not hydrated)",
+                [Finding(message="Rule requires pre-hydrated QA context", severity=Severity.ERROR)],
             )
 
-            if result.status == AtomStatus.FAILED and "timed out" in (result.message or "").lower():
-                raise TimeoutError("Tests timed out")
-        except TimeoutError:
+        # Check for timeout
+        if result_data.get("status") == "FAILED" and "timed out" in (
+            result_data.get("message") or ""
+        ).lower():
             return self._fail(
                 "Tests timed out after 60 seconds",
                 [Finding(message="Test execution timed out", severity=Severity.ERROR)],
             )
 
-        exports = result.exports or {}
+        exports = result_data.get("exports") or {}
         failed = exports.get("failed", 0)
         errors = exports.get("errors", 0)
 

@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.assurance.validation.executor import execute_validation_pipeline
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 from specweaver.core.config.settings import ValidationSettings
+from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ class TestArchitectureE2E:
     async def test_validation_pipeline_fails_on_architecture(
         self, architecture_workspace: Path
     ) -> None:
-        """Story 7: Pipeline natively aborts on C05 failure."""
+        """Story 7: Full flow hydrates QA context and C05 FAIL on violation."""
         target_file = architecture_workspace / "src" / "my_project" / "core" / "bad_impl.py"
         code = target_file.read_text()
 
@@ -71,11 +71,11 @@ class TestArchitectureE2E:
         pipeline = load_pipeline_yaml("validation_code_default")
         ValidationSettings()
 
-        # We need to execute the pipeline with the correct file path to trigger Tach
-        # In a real environment the graph topology / node context provides this
-        # but execute_validation_pipeline takes `spec_path`.
-
-        results = execute_validation_pipeline(pipeline, code, spec_path=target_file)
+        # Use execute_validation_flow which hydrates QA context (runs atom)
+        # before passing to the pipeline — this is the real production path.
+        results = execute_validation_flow(
+            pipeline, code, spec_path=target_file, project_root=architecture_workspace
+        )
 
         c05 = next(r for r in results if r.rule_id == "C05")
         assert c05.status == Status.FAIL

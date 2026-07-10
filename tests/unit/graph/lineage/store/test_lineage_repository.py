@@ -104,6 +104,7 @@ class TestLineageRepository:
 
     def test_log_artifact_event_concurrent_writes(self, repo: LineageRepository) -> None:
         import threading
+
         num_threads = 20
         threads = []
         errors: list[Exception] = []
@@ -111,11 +112,7 @@ class TestLineageRepository:
         def worker(thread_idx: int) -> None:
             try:
                 repo.log_artifact_event(
-                    f"art-{thread_idx}",
-                    None,
-                    f"run-{thread_idx}",
-                    "CREATED",
-                    "model-xyz"
+                    f"art-{thread_idx}", None, f"run-{thread_idx}", "CREATED", "model-xyz"
                 )
             except Exception as e:
                 errors.append(e)
@@ -136,8 +133,7 @@ class TestLineageRepository:
 
     def test_log_artifact_event_invalid_db_path(self, tmp_path: Path) -> None:
         import sqlite3
+
         invalid_repo = LineageRepository(str(tmp_path))
         with pytest.raises(sqlite3.OperationalError):
             invalid_repo.log_artifact_event("uuid-1", None, "run-1", "CREATED", "model")
-
-

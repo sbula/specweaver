@@ -389,6 +389,7 @@ class QARunnerAtom(Atom):
 
         Context keys:
             target: str — file or directory to check (required).
+            dal_level: DALLevel | None — active DAL for strictness decisions (optional).
         """
         target = context.get("target")
         if not target:
@@ -397,7 +398,8 @@ class QARunnerAtom(Atom):
                 message="Missing 'target' in context for run_architecture intent.",
             )
 
-        result = self._runner.run_architecture_check(target=target)
+        dal_level = context.get("dal_level")
+        result = self._runner.run_architecture_check(target=target, dal_level=dal_level)
 
         exports: dict[str, Any] = {
             "violation_count": result.violation_count,

@@ -32,7 +32,7 @@ depends_on = ["specweaver.core.config", "specweaver.workspace.project", "specwea
 
 [[modules]]
 path = "specweaver.assurance.validation"
-depends_on = ["specweaver.sandbox", "specweaver.workspace.analyzers", "specweaver.core.config",
+depends_on = ["specweaver.workspace.analyzers", "specweaver.core.config",
 ]
 
 [[modules]]

@@ -41,7 +41,12 @@ class TestTypeScriptRunner:
 
     def test_run_debugger_parsing(self, tmp_path: Path) -> None:
         runner = TypeScriptRunner(cwd=tmp_path)
-        with patch("subprocess.run") as mock_run:
+        with (
+            patch("subprocess.run") as mock_run,
+            patch("shutil.which") as mock_which,
+        ):
+            # Simulate tsx available on PATH
+            mock_which.side_effect = lambda cmd: f"/usr/bin/{cmd}" if cmd != "npx" else None
             mock_run.return_value = MagicMock(
                 returncode=1,
                 stdout="App started\nProcessing...",
@@ -51,7 +56,11 @@ class TestTypeScriptRunner:
             result = runner.run_debugger(target=".", entrypoint="src/index.ts")
 
             mock_run.assert_called_once()
-            assert "ts-node" in mock_run.call_args[0][0]
+            cmd_args = mock_run.call_args[0][0]
+            # tsx is preferred over ts-node when available
+            assert any("tsx" in str(arg) for arg in cmd_args), (
+                f"Expected 'tsx' in command, got {cmd_args}"
+            )
 
             assert result.exit_code == 1
             assert len(result.events) == 3
@@ -63,6 +72,24 @@ class TestTypeScriptRunner:
             assert events[1].output == "Processing..."
             assert events[2].category == "stderr"
             assert events[2].output == "Warning: deprecated"
+
+    def test_run_debugger_ts_node_fallback(self, tmp_path: Path) -> None:
+        """When tsx is not installed, falls back to ts-node via npx."""
+        runner = TypeScriptRunner(cwd=tmp_path)
+        with (
+            patch("subprocess.run") as mock_run,
+            patch("shutil.which") as mock_which,
+        ):
+            # tsx NOT on PATH, npx IS
+            mock_which.side_effect = lambda cmd: "/usr/bin/npx" if cmd == "npx" else None
+            mock_run.return_value = MagicMock(returncode=0, stdout="OK", stderr="")
+
+            result = runner.run_debugger(target=".", entrypoint="src/index.ts")
+
+            mock_run.assert_called_once()
+            cmd_args = mock_run.call_args[0][0]
+            assert "ts-node" in cmd_args, f"Expected 'ts-node' fallback, got {cmd_args}"
+            assert result.exit_code == 0
 
     def test_run_debugger_js_fallback(self, tmp_path: Path) -> None:
         runner = TypeScriptRunner(cwd=tmp_path)

@@ -60,7 +60,7 @@ def test_e2e_typescript_qarunner_tooling(tmp_path: Path) -> None:
 
     npm_bin = shutil.which("npm") or "npm"
     subprocess.run(
-        [npm_bin, "install", "typescript", "ts-node", "@types/node"],
+        [npm_bin, "install", "typescript", "tsx", "ts-node", "@types/node"],
         cwd=project_dir,
         check=True,
         capture_output=True,

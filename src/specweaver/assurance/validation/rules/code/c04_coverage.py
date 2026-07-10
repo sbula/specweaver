@@ -1,10 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""C04: Coverage — checks that test coverage meets the threshold.
+"""C04: Coverage — checks pre-hydrated coverage results.
 
-Delegates pytest+coverage execution to the shared PythonQARunner
-from the commons layer, eliminating duplicate subprocess handling.
+Reads coverage data from self.context["qa_coverage_result"], which is
+populated by the flow layer's validation hydrator (AD-4, AD-5).
+No sandbox imports — this rule is pure logic.
 """
 
 from __future__ import annotations
@@ -41,38 +42,24 @@ class CoverageRule(Rule):
         if spec_path is None:
             return self._skip("No file path provided")
 
-        # Find project root
-        project_root = spec_path.parent
-        while project_root != project_root.parent:
-            if (project_root / "pyproject.toml").exists():
-                break
-            project_root = project_root.parent
-
-        # Delegate to QARunnerAtom via intent
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
-
-        atom = QARunnerAtom(cwd=project_root)
-        try:
-            result = atom.run(
-                {
-                    "intent": "run_tests",
-                    "target": str(spec_path),
-                    "kind": "",
-                    "timeout": 120,
-                    "coverage": True,
-                    "coverage_threshold": self._threshold,
-                }
+        # Read pre-hydrated QA results from context
+        result_data = self.context.get("qa_coverage_result")
+        if result_data is None:
+            return self._fail(
+                "Coverage results not available (QA context not hydrated)",
+                [Finding(message="Rule requires pre-hydrated QA context", severity=Severity.ERROR)],
             )
 
-            if result.status == "failed" and "timed out" in (result.message or "").lower():
-                raise TimeoutError("Coverage check timed out")
-        except TimeoutError:
+        # Check for timeout
+        if result_data.get("status") == "FAILED" and "timed out" in (
+            result_data.get("message") or ""
+        ).lower():
             return self._fail(
                 "Coverage check timed out",
                 [Finding(message="Coverage check timed out after 120s", severity=Severity.ERROR)],
             )
 
-        exports = result.exports or {}
+        exports = result_data.get("exports") or {}
         coverage = exports.get("coverage_pct")
 
         if coverage is None:

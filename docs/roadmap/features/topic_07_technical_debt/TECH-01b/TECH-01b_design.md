@@ -74,8 +74,8 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| Guide-1 | How to expose and register a new sandbox tool | ⬜ To be written during Pre-commit |
-| Guide-2 | How to write a validation rule that receives injected context | ⬜ To be written during Pre-commit |
+| Guide-1 | How to expose and register a new sandbox tool | ✅ See `docs/dev_guides/adding_tools_and_atoms.md` §D |
+| Guide-2 | How to write a validation rule that receives injected context | ✅ See `docs/dev_guides/adding_validation_rules.md` §5 |
 
 ## Sub-Feature Breakdown
 
@@ -131,9 +131,9 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 | SF-1 | BaseTool & Registry | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Sandbox Alignment | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Dispatcher Integration | SF-2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-4 | Validation Isolation | SF-3 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-4 | Validation Isolation | SF-3 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ## Handoff
 
-**Current status**: SF-3 committed.
-**Next step**: Run `/implementation-plan` for SF-4 to begin Validation Layer Isolation.
+**Current status**: SF-4 pre-commit quality gate passed. Ready to commit.
+**Next step**: Atomic commit for SF-4.

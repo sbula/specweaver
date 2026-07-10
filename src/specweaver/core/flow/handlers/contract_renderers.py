@@ -409,4 +409,3 @@ def extract_docstrings(contract_text: str) -> dict[str, str]:
             docstring = match.group(2).strip()
             docstrings[func_name] = docstring
     return docstrings
-

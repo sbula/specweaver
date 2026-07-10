@@ -571,6 +571,35 @@ class TestAtomRunArchitecture:
         assert result.status == AtomStatus.FAILED
         assert "target" in result.message.lower()
 
+    def test_architecture_forwards_dal_level(self, tmp_path: Path) -> None:
+        """dal_level from context must be forwarded to run_architecture_check."""
+        from specweaver.commons.enums.dal import DALLevel
+        from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
+
+        atom = QARunnerAtom(cwd=tmp_path)
+        mock_result = ArchitectureRunResult(violation_count=0, violations=[])
+        with patch.object(
+            atom._runner, "run_architecture_check", return_value=mock_result
+        ) as mock_check:
+            atom.run(
+                {"intent": "run_architecture", "target": "src/", "dal_level": DALLevel.DAL_B}
+            )
+
+        mock_check.assert_called_once_with(target="src/", dal_level=DALLevel.DAL_B)
+
+    def test_architecture_forwards_none_dal_level(self, tmp_path: Path) -> None:
+        """When dal_level is absent from context, None must be forwarded."""
+        from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
+
+        atom = QARunnerAtom(cwd=tmp_path)
+        mock_result = ArchitectureRunResult(violation_count=0, violations=[])
+        with patch.object(
+            atom._runner, "run_architecture_check", return_value=mock_result
+        ) as mock_check:
+            atom.run({"intent": "run_architecture", "target": "src/"})
+
+        mock_check.assert_called_once_with(target="src/", dal_level=None)
+
 
 def test_resolve_runner_languages(tmp_path: Path) -> None:
     from specweaver.sandbox.language.core.java.runner import JavaRunner

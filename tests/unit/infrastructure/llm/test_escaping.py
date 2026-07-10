@@ -17,6 +17,7 @@ from specweaver.infrastructure.llm.escaping import (
 # 1. Happy Path Tests
 # ==============================================================================
 
+
 def test_escape_xml_text_happy():
     raw = "Hello & World <script> && </script>"
     # Standard XML escaping converts & -> &amp;, < -> &lt;, > -> &gt;
@@ -56,6 +57,7 @@ def test_apply_escaping_dispatch():
 # 2. Boundary / Edge Case Tests
 # ==============================================================================
 
+
 def test_escaping_empty_inputs():
     assert escape_xml_text("") == ""
     assert escape_xml_attribute("") == ""
@@ -74,6 +76,7 @@ def test_escaping_massive_payload():
 # 3. Graceful Degradation Tests
 # ==============================================================================
 
+
 def test_apply_escaping_invalid_strategy():
     with pytest.raises(ValueError) as exc:
         apply_escaping("test", "invalid_strategy")
@@ -83,6 +86,7 @@ def test_apply_escaping_invalid_strategy():
 # ==============================================================================
 # 4. Hostile / Wrong Input Tests
 # ==============================================================================
+
 
 def test_escape_cdata_breakout_injection():
     # CDATA breakout sequence

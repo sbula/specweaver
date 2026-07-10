@@ -429,12 +429,41 @@ class PythonQARunner(QARunnerInterface):
         target: str,
         dal_level: DALLevel | None = None,
     ) -> ArchitectureRunResult:
-        """Run architectural boundary checks via tach.
+        """Run architectural boundary checks via tach + context.yaml forbids.
 
-        Executes `uv run tach check --output json` (or equivalent).
+        Combines two checks:
+        1. Global tach boundary check (existing behavior)
+        2. Per-file context.yaml forbids check (new — parity with TS/Java)
+
+        Args:
+            target: File or directory to check (relative to cwd).
+            dal_level: Active DAL for the target boundary.
         """
-        logger.debug("PythonQARunner.run_architecture_check: target=%s", target)
+        logger.debug(
+            "PythonQARunner.run_architecture_check: target=%s, dal=%s", target, dal_level
+        )
 
+        target_path = self._cwd / target
+
+        # --- Phase 1: context.yaml forbids check ---
+        from specweaver.sandbox.language.core.python.forbids_checker import (
+            check_file_forbids,
+        )
+
+        forbids_violations = check_file_forbids(target_path, self._cwd)
+
+        # --- Phase 2: tach boundary check (existing behavior) ---
+        tach_result = self._run_tach_check()
+
+        # --- Merge results ---
+        all_violations = forbids_violations + tach_result.violations
+        return ArchitectureRunResult(
+            violation_count=len(all_violations),
+            violations=all_violations,
+        )
+
+    def _run_tach_check(self) -> ArchitectureRunResult:
+        """Run global tach boundary check (extracted from original method)."""
         try:
             proc = subprocess.run(
                 ["python", "-m", "tach", "check", "--output", "json"],
@@ -444,9 +473,9 @@ class PythonQARunner(QARunnerInterface):
                 cwd=str(self._cwd),
             )
             if proc.stderr:
-                logger.debug(f"PythonQARunner: tach check stderr: {proc.stderr}")
+                logger.debug("PythonQARunner: tach check stderr: %s", proc.stderr)
         except subprocess.TimeoutExpired:
-            logger.warning("PythonQARunner: tach check timed out (target=%s)", target)
+            logger.warning("PythonQARunner: tach check timed out")
             return ArchitectureRunResult(
                 violation_count=1,
                 violations=[

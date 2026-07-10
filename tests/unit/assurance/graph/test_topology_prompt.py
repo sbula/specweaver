@@ -28,7 +28,10 @@ def test_topology_context_prompt_formatting() -> None:
     content = ctx.get_prompt_content()
     assert "<topology>" in content
     assert "</topology>" in content
-    assert "  - my-module (direct dependency): Perform database updates [archetype=service, constraints=reliable, fast]" in content
+    assert (
+        "  - my-module (direct dependency): Perform database updates [archetype=service, constraints=reliable, fast]"
+        in content
+    )
 
 
 def test_topology_context_truncation() -> None:

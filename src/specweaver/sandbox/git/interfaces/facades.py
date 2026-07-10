@@ -235,7 +235,6 @@ class ConflictResolverGitInterface(BaseTool):
 # Factory
 # ---------------------------------------------------------------------------
 
-from typing import Callable, Dict
 
 GitInterface = (
     ImplementerGitInterface

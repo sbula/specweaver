@@ -578,11 +578,13 @@ class PipelineRunner:
 
     def _flush_telemetry(self) -> None:
         from specweaver.core.flow.engine.runner_utils import flush_telemetry
+
         flush_telemetry(self._context, logger)
 
     async def _save_handover(self, run: PipelineRun) -> None:
         try:
             from specweaver.core.flow.engine.handover import save_handover_context
+
             await save_handover_context(self._context, run)
         except Exception as exc:
             logger.warning("Failed to save handover context from runner: %s", exc)

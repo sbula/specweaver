@@ -141,11 +141,16 @@ class TypeScriptRunner(QARunnerInterface):
         """Execute a process and stream runtime outputs."""
         npx_bin = shutil.which("npx") or "npx"
         node_bin = shutil.which("node") or "node"
-        cmd = (
-            [npx_bin, "ts-node", entrypoint]
-            if entrypoint.endswith(".ts")
-            else [node_bin, entrypoint]
-        )
+        if entrypoint.endswith(".ts"):
+            # Prefer tsx (modern, Node v22+ compatible) over ts-node
+            tsx_bin = shutil.which("tsx")
+            cmd = (
+                [tsx_bin, entrypoint]
+                if tsx_bin
+                else [npx_bin, "ts-node", entrypoint]
+            )
+        else:
+            cmd = [node_bin, entrypoint]
         logger.debug("Running TypeScript debugger wrapper: %s", shlex.join(cmd))
 
         start_time = time.monotonic()

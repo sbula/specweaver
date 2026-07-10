@@ -62,6 +62,7 @@ def get_standard_registry() -> ToolRegistry:
 
     def create_fs(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.filesystem.interfaces.facades import create_filesystem_interface
+
         return create_filesystem_interface(
             role=kwargs["role"],
             cwd=kwargs["cwd"],
@@ -72,6 +73,7 @@ def get_standard_registry() -> ToolRegistry:
 
     def create_ast(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
+
         return CodeStructureTool(
             atom=kwargs["atom"],
             role=kwargs["role"],
@@ -81,18 +83,22 @@ def get_standard_registry() -> ToolRegistry:
 
     def create_web(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.web.interfaces.tool import WebTool
+
         return WebTool(role=kwargs["role"])
 
     def create_mcp(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.mcp.interfaces.facades import create_mcp_interface
+
         return create_mcp_interface(role=kwargs["role"], topology=kwargs.get("topology"))
 
     def create_git(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.git.interfaces.facades import create_git_interface
+
         return create_git_interface(role=kwargs["role"], cwd=kwargs["cwd"])
 
     def create_protocol(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.protocol.interfaces.tool import ProtocolTool
+
         return ProtocolTool()
 
     registry.register("fs", create_fs)
@@ -105,4 +111,3 @@ def get_standard_registry() -> ToolRegistry:
     registry.register("protocol", create_protocol)
 
     return registry
-

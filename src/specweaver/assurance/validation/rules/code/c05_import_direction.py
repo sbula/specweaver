@@ -1,7 +1,12 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""C05: Import Direction — checks that imports follow layering rules."""
+"""C05: Import Direction — checks pre-hydrated architecture results.
+
+Reads architecture check results from self.context["qa_architecture_result"],
+which is populated by the flow layer's validation hydrator (AD-4, AD-5).
+No sandbox imports — this rule is pure logic.
+"""
 
 from __future__ import annotations
 
@@ -12,15 +17,9 @@ from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Se
 if TYPE_CHECKING:
     from pathlib import Path
 
-# Allowed import layers (lower -> cannot import higher)
-# For now, a simple check: implementation should not import from CLI
-_FORBIDDEN_IMPORTS = [
-    "specweaver.interfaces.cli",  # No component should import from CLI
-]
-
 
 class ImportDirectionRule(Rule):
-    """Check that imports follow the correct layering direction (Tach)."""
+    """Check that imports follow the correct layering direction."""
 
     @property
     def rule_id(self) -> str:
@@ -34,33 +33,14 @@ class ImportDirectionRule(Rule):
         if not spec_path:
             return self._skip("Cannot run architecture checks without a file path")
 
-        import logging
-
-        from specweaver.core.config.dal_resolver import DALResolver
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
-
-        logger = logging.getLogger(__name__)
-
-        try:
-            cwd = spec_path.parent
-            atom = QARunnerAtom(cwd=cwd)
-
-            # Resolve the active DAL for this boundary
-            resolver = DALResolver(project_root=cwd)
-            dal_enum = resolver.resolve(target_path=spec_path)
-
-            result = atom.run(
-                {
-                    "intent": "run_architecture",
-                    "target": str(spec_path.absolute()),
-                    "dal_level": dal_enum,
-                }
+        # Read pre-hydrated QA results from context
+        result_data = self.context.get("qa_architecture_result")
+        if result_data is None:
+            return self._skip(
+                "Architecture check results not available (QA context not hydrated)"
             )
-        except Exception as e:
-            logger.warning("C05 architecture check failed: %s", e)
-            return self._skip(f"Architecture engine failure: {e}")
 
-        exports = result.exports or {}
+        exports = result_data.get("exports") or {}
         violation_count = exports.get("violation_count", 0)
 
         if violation_count == 0:

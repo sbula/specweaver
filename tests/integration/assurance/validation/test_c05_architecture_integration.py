@@ -66,6 +66,25 @@ depends_on = ["my_project.core"] # UI CAN depend on Core
     return tmp_path
 
 
+def _run_architecture_and_build_context(workspace: Path) -> dict:
+    """Run native architecture check and return hydrated context dict."""
+    runner = PythonQARunner(cwd=workspace)
+    result = runner.run_architecture_check(target=".")
+    return {
+        "qa_architecture_result": {
+            "status": "SUCCESS",
+            "message": "Architecture check complete",
+            "exports": {
+                "violation_count": result.violation_count,
+                "violations": [
+                    {"code": v.code, "message": v.message}
+                    for v in result.violations
+                ],
+            },
+        }
+    }
+
+
 class TestArchitectureIntegration:
     """Integration stories for Architecture validation."""
 
@@ -98,11 +117,12 @@ class TestArchitectureIntegration:
 
     @pytest.mark.integration
     def test_c05_full_native_invocation(self, tach_workspace: Path) -> None:
-        """Story 6: C05 invokes PythonQARunner natively returning RuleResult FAIL."""
+        """Story 6: C05 reads hydrated QA context from real tach run → FAIL."""
         code = (tach_workspace / "src" / "my_project" / "core" / "bad.py").read_text()
         rule = ImportDirectionRule()
+        # Inject pre-hydrated context from native tach execution
+        rule.context = _run_architecture_and_build_context(tach_workspace)
 
-        # We pass the file path to run Native architecture check
         result = rule.check(
             code, spec_path=tach_workspace / "src" / "my_project" / "core" / "bad.py"
         )
@@ -121,6 +141,8 @@ class TestArchitectureIntegration:
 
         code = bad_core.read_text()
         rule = ImportDirectionRule()
+        # Inject pre-hydrated context from native tach execution (no violations now)
+        rule.context = _run_architecture_and_build_context(tach_workspace)
 
         result = rule.check(code, spec_path=bad_core)
         assert result.status == Status.PASS

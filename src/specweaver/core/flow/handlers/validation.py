@@ -274,13 +274,13 @@ class ValidateCodeHandler:
         import specweaver.assurance.validation.rules.code  # noqa: F401
         from specweaver.assurance.validation.executor import (
             apply_settings_to_pipeline,
-            execute_validation_pipeline,
         )
         from specweaver.assurance.validation.models import (
             RuleResult,  # noqa: F401 — for type narrowing
         )
         from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.archetype_resolver import ArchetypeResolver
+        from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
         from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
         archetype = None
@@ -323,10 +323,11 @@ class ValidateCodeHandler:
             step.params["ast_payload"] = ast_payload
 
         content = code_path.read_text(encoding="utf-8")
-        return execute_validation_pipeline(
+        return execute_validation_flow(
             pipeline,
             content,
             spec_path,
+            project_root=project_path,
             context={"analyzer_factory": analyzer_factory} if analyzer_factory else None,
         )
 

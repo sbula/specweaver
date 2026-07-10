@@ -138,6 +138,32 @@ def _build_result_label(level: str, pipeline: str | None, pipeline_name: str) ->
 validation_cli = typer.Typer(no_args_is_help=True)
 
 
+def _run_lineage_scan(project: str | None) -> None:
+    """Run a lineage scan and report results (extracted for complexity)."""
+    from specweaver.graph.lineage.scanner import check_lineage
+
+    _core.get_db()
+    active = _core.run_repo_op(lambda r: r.get_active_project())
+
+    if project:
+        proj_path = Path(project)
+    elif active:
+        proj_data = _core.run_repo_op(lambda r: r.get_project(active))
+        proj_path = Path(str(proj_data["root_path"])) if proj_data else Path.cwd()
+    else:
+        proj_path = Path.cwd()
+
+    src_dir = proj_path / "src"
+
+    orphans = check_lineage(src_dir)
+    if orphans:
+        _core.console.print("[red]Lineage Tracking Error:[/red] Missing '# sw-artifact:' tags.")
+        for orphan in orphans:
+            _core.console.print(f"  - {orphan}")
+        raise typer.Exit(code=1)
+
+    _core.console.print("[green]Lineage scan passed.[/green] All files correctly tagged.")
+
 @validation_cli.command(name="check")
 def check(
     target: str = typer.Argument(
@@ -194,29 +220,7 @@ def check(
     from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 
     if lineage:
-        from specweaver.graph.lineage.scanner import check_lineage
-
-        _core.get_db()
-        active = _core.run_repo_op(lambda r: r.get_active_project())
-
-        if project:
-            proj_path = Path(project)
-        elif active:
-            proj_data = _core.run_repo_op(lambda r: r.get_project(active))  # type: ignore[arg-type]
-            proj_path = Path(str(proj_data["root_path"])) if proj_data else Path.cwd()
-        else:
-            proj_path = Path.cwd()
-
-        src_dir = proj_path / "src"
-
-        orphans = check_lineage(src_dir)
-        if orphans:
-            _core.console.print("[red]Lineage Tracking Error:[/red] Missing '# sw-artifact:' tags.")
-            for orphan in orphans:
-                _core.console.print(f"  - {orphan}")
-            raise typer.Exit(code=1)
-
-        _core.console.print("[green]Lineage scan passed.[/green] All files correctly tagged.")
+        _run_lineage_scan(project)
         return
 
     target_path = Path(target)
@@ -257,7 +261,18 @@ def check(
     dal_level = dal_resolver.resolve(target_path)
     effective_strict = strict or (dal_level.is_strict if dal_level else False)
 
-    results = execute_validation_pipeline(resolved, content, target_path)
+    if level == "code":
+        from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
+
+        results = execute_validation_flow(
+            resolved,
+            content,
+            target_path,
+            project_root=project_root,
+            dal_level=dal_level,
+        )
+    else:
+        results = execute_validation_pipeline(resolved, content, target_path)
 
     label = _build_result_label(level, pipeline, pipeline_name)
     dal_str = dal_level.value if dal_level else "Unbound"

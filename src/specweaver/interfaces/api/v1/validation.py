@@ -64,7 +64,21 @@ async def run_check(
     )
 
     resolved = load_pipeline_yaml(pipeline_name, project_dir=project_root)
-    results = execute_validation_pipeline(resolved, content, abs_path)
+    if body.level == "code":
+        from specweaver.core.config.dal_resolver import DALResolver
+        from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
+
+        dal_resolver = DALResolver(project_root)
+        dal_level = dal_resolver.resolve(abs_path)
+        results = execute_validation_flow(
+            resolved,
+            content,
+            abs_path,
+            project_root=project_root,
+            dal_level=dal_level,
+        )
+    else:
+        results = execute_validation_pipeline(resolved, content, abs_path)
 
     # Build response envelope
     rule_results = [

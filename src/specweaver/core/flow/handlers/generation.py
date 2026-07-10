@@ -573,16 +573,17 @@ class GenerateContractHandler:
     @staticmethod
     def _extract_contract(text: str) -> str | None:
         from specweaver.core.flow.handlers.contract_renderers import extract_contract
+
         return extract_contract(text)
 
     @staticmethod
     def _extract_signatures(contract_text: str) -> list[str]:
         from specweaver.core.flow.handlers.contract_renderers import extract_signatures
+
         return extract_signatures(contract_text)
 
     @staticmethod
     def _extract_docstrings(contract_text: str) -> dict[str, str]:
         from specweaver.core.flow.handlers.contract_renderers import extract_docstrings
+
         return extract_docstrings(contract_text)
-
-

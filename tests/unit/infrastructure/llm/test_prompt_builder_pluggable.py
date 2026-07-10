@@ -25,7 +25,7 @@ class DummyAdapter:
         if char_limit is not None:
             text = text[:char_limit] + "\n[truncated]"
         # Wrap it directly in custom tags to simulate pre-escaped formatting
-        return f"<custom_tag name=\"{self.label}\">{text}</custom_tag>"
+        return f'<custom_tag name="{self.label}">{text}</custom_tag>'
 
 
 def test_conformance_check() -> None:
@@ -52,6 +52,7 @@ def test_add_context_type_error() -> None:
         # An arbitrary class with no get_prompt_content/label methods
         class InvalidSource:
             pass
+
         builder.add_context(InvalidSource())  # type: ignore
 
 

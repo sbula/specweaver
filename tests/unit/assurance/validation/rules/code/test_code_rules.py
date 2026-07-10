@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -115,79 +115,65 @@ class TestC02TestsExist:
 
 
 class TestC05ImportDirection:
-    """Test the Import Direction rule via Tach Atom."""
+    """Test the Import Direction rule via context injection."""
 
     def test_clean_imports(self, tmp_path: pytest.TempPathFactory) -> None:
-        from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
-
-        code = "from specweaver.infrastructure.llm.models import Message\n"
         rule = ImportDirectionRule()
-        spec_path = tmp_path / "test.py"
-        with patch(
-            "specweaver.sandbox.language.core.python.runner.PythonQARunner.run_architecture_check"
-        ) as mock_run:
-            mock_run.return_value = ArchitectureRunResult(violation_count=0, violations=[])
-            result = rule.check(code, spec_path=spec_path)
-            assert result.status == Status.PASS
+        rule.context = {
+            "qa_architecture_result": {
+                "status": "SUCCESS",
+                "message": "OK",
+                "exports": {"violation_count": 0, "violations": []},
+            }
+        }
+        result = rule.check("", spec_path=tmp_path / "test.py")
+        assert result.status == Status.PASS
 
     def test_forbidden_cli_import(self, tmp_path: pytest.TempPathFactory) -> None:
-        from specweaver.sandbox.qa_runner.core.interface import (
-            ArchitectureRunResult,
-            ArchitectureViolation,
-        )
-
-        code = "from specweaver.interfaces.cli.main import app\n"
         rule = ImportDirectionRule()
-        spec_path = tmp_path / "test.py"
-        with patch(
-            "specweaver.sandbox.language.core.python.runner.PythonQARunner.run_architecture_check"
-        ) as mock_run:
-            mock_run.return_value = ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(
-                        file="test.py",
-                        code="UndeclaredDependency",
-                        message="Module 'specweaver.interfaces.cli' is not allowed",
-                    )
-                ],
-            )
-            result = rule.check(code, spec_path=spec_path)
-            assert result.status == Status.FAIL
-            assert "Architecture boundary violated" in result.findings[0].message
+        rule.context = {
+            "qa_architecture_result": {
+                "status": "FAILED",
+                "message": "1 violation",
+                "exports": {
+                    "violation_count": 1,
+                    "violations": [
+                        {
+                            "file": "test.py",
+                            "code": "UndeclaredDependency",
+                            "message": "Module 'specweaver.interfaces.cli' is not allowed",
+                        }
+                    ],
+                },
+            }
+        }
+        result = rule.check("", spec_path=tmp_path / "test.py")
+        assert result.status == Status.FAIL
+        assert "Architecture boundary violated" in result.findings[0].message
 
     def test_no_file_path_skips(self) -> None:
-        code = "import specweaver.interfaces.cli\n"
         rule = ImportDirectionRule()
-        result = rule.check(code)  # No spec_path
+        result = rule.check("")  # No spec_path
         assert result.status == Status.SKIP
 
-    def test_engine_failure_skips(self, tmp_path: pytest.TempPathFactory) -> None:
-        code = "import specweaver.interfaces.cli\n"
+    def test_missing_context_skips(self, tmp_path: pytest.TempPathFactory) -> None:
         rule = ImportDirectionRule()
-        spec_path = tmp_path / "test.py"
-        with patch(
-            "specweaver.sandbox.language.core.python.runner.PythonQARunner.run_architecture_check",
-            side_effect=Exception("Timeout"),
-        ):
-            result = rule.check(code, spec_path=spec_path)
-            assert result.status == Status.SKIP
-            assert "Architecture engine failure" in result.message
+        rule.context = {}  # No qa_architecture_result key
+        result = rule.check("", spec_path=tmp_path / "test.py")
+        assert result.status == Status.SKIP
+        assert "not available" in result.message.lower() or "not hydrated" in result.message.lower()
 
     def test_missing_payload_fails(self, tmp_path: pytest.TempPathFactory) -> None:
-        from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
-
-        code = "from specweaver.interfaces.cli.main import app\n"
         rule = ImportDirectionRule()
-        spec_path = tmp_path / "test.py"
-        with patch(
-            "specweaver.sandbox.language.core.python.runner.PythonQARunner.run_architecture_check"
-        ) as mock_run:
-            # violation_count > 0 but violations is empty
-            mock_run.return_value = ArchitectureRunResult(violation_count=2, violations=[])
-            result = rule.check(code, spec_path=spec_path)
-            assert result.status == Status.FAIL
-            assert "Architectural violations detected." in result.message
+        rule.context = {
+            "qa_architecture_result": {
+                "status": "FAILED",
+                "message": "2 violations",
+                "exports": {"violation_count": 2, "violations": []},
+            }
+        }
+        result = rule.check("", spec_path=tmp_path / "test.py")
+        assert result.status == Status.FAIL
 
     def test_rule_id(self) -> None:
         assert ImportDirectionRule().rule_id == "C05"

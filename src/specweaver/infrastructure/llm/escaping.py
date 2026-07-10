@@ -36,11 +36,14 @@ def escape_xml_attribute(value: str) -> str:
     """
     if not isinstance(value, str):
         raise TypeError(f"Expected str, got type: {type(value).__name__}")
-    return xml.sax.saxutils.escape(value, {
-        '"': "&quot;",
-        "'": "&apos;",
-        ">": "&gt;",
-    })
+    return xml.sax.saxutils.escape(
+        value,
+        {
+            '"': "&quot;",
+            "'": "&apos;",
+            ">": "&gt;",
+        },
+    )
 
 
 def escape_cdata(text: str) -> str:
@@ -79,4 +82,3 @@ def apply_escaping(text: str, strategy: EscapingStrategy | str) -> str:
         return escape_json(text)
     else:
         raise ValueError(f"Unknown escaping strategy: {strat}")
-

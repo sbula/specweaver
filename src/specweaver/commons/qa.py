@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 @dataclass(frozen=True)
 class TestFailure:
     """A single test failure."""
+
     nodeid: str
     message: str
     stdout: str = ""
@@ -26,6 +27,7 @@ class TestFailure:
 @dataclass(frozen=True)
 class TestRunResult:
     """Structured result from running tests."""
+
     passed: int
     failed: int
     errors: int
@@ -41,6 +43,7 @@ class TestRunResult:
 @dataclass(frozen=True)
 class LintError:
     """A single linter finding."""
+
     file: str
     line: int
     code: str
@@ -53,6 +56,7 @@ class LintError:
 @dataclass(frozen=True)
 class LintRunResult:
     """Structured result from running a linter."""
+
     error_count: int
     fixable_count: int
     fixed_count: int
@@ -64,6 +68,7 @@ class LintRunResult:
 @dataclass(frozen=True)
 class ComplexityViolation:
     """A single complexity threshold violation."""
+
     file: str
     line: int
     function: str
@@ -76,6 +81,7 @@ class ComplexityViolation:
 @dataclass(frozen=True)
 class ComplexityRunResult:
     """Structured result from running complexity checks."""
+
     violation_count: int
     max_complexity: int
     violations: list[ComplexityViolation] = field(default_factory=list)
@@ -86,6 +92,7 @@ class ComplexityRunResult:
 @dataclass(frozen=True)
 class CompileError:
     """A single compilation error or warning."""
+
     file: str
     line: int
     column: int
@@ -99,6 +106,7 @@ class CompileError:
 @dataclass(frozen=True)
 class CompileRunResult:
     """Structured result from running a compiler."""
+
     error_count: int
     warning_count: int
     errors: list[CompileError] = field(default_factory=list)
@@ -109,6 +117,7 @@ class CompileRunResult:
 @dataclass(frozen=True)
 class OutputEvent:
     """A standard debug output event mapped from DAP protocol."""
+
     category: str
     output: str
     file: str = ""
@@ -120,6 +129,7 @@ class OutputEvent:
 @dataclass(frozen=True)
 class DebugRunResult:
     """Structured result from a debug execution."""
+
     exit_code: int
     duration_seconds: float
     events: list[OutputEvent] = field(default_factory=list)
@@ -130,6 +140,7 @@ class DebugRunResult:
 @dataclass(frozen=True)
 class ArchitectureViolation:
     """A single architectural boundary finding."""
+
     file: str
     code: str
     message: str
@@ -141,6 +152,7 @@ class ArchitectureViolation:
 @dataclass(frozen=True)
 class ArchitectureRunResult:
     """Structured result from running an architectural linters."""
+
     violation_count: int
     violations: list[ArchitectureViolation] = field(default_factory=list)
 

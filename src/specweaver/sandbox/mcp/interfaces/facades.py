@@ -69,4 +69,3 @@ def create_mcp_interface(role: str, topology: Any = None) -> ArchitectMCPInterfa
 
     tool = MCPExplorerTool(topology=topology)
     return ArchitectMCPInterface(tool)
-
