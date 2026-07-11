@@ -1,0 +1,29 @@
+---
+description: "Phase 3: Implement missing tests identified in Phase 2."
+---
+
+# Phase 3: Implement Missing Tests
+
+> [!CAUTION]
+> **ANTI-LAZINESS DIRECTIVE: DO NOT SKIP THIS PHASE!**
+> AI agents have a known failure mode of skipping Phase 3 and assuming existing tests or minimal happy-path tests are "good enough." 
+> THIS IS STRICTLY FORBIDDEN.
+> You MUST explicitly write tests for EVERY SINGLE:
+> 1. Error path (e.g. ValueError, None inputs, empty strings)
+> 2. Boundary condition (e.g. casing differences like "PYTHON" vs "python")
+> 3. Negative branch (e.g. missing fields, malformed inputs)
+> 
+> **If you did not write a new test for every single branch you touched, STOP and write it now.**
+
+3.1. You MUST implement ALL missing tests identified in Phase 2 (after HITL confirmation).
+     Follow existing test patterns (fixtures, helpers, naming conventions)
+     already established in the test files.
+3.1b **MANDATORY HITL YIELD**: Instead of proceeding directly to Phase 4, you MUST explicitly list exactly which edge cases you just implemented tests for and YIELD YOUR TURN. A yield means making ZERO further tool calls. You must end your response and wait for the user to type a reply explicitly approving the tests before you can start Phase 4.
+3.2. Run ruff on any new or modified test files to ensure lint-clean:
+     ```
+     python -m ruff check tests/
+     ```
+     Fix any errors immediately!
+
+> [!IMPORTANT]
+> **NO HITL GATE HERE:**: Phase 3 is complete. If all the required tests are implemented and passes flawlessly, update `task.md` and PROCEED IMMEDIATELY to Phase 4. Do NOT stop to ask the user for permission to continue.
