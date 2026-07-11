@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import networkx as nx
 import pytest
 

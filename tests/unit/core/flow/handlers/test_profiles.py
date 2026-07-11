@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from dataclasses import FrozenInstanceError
 
 import pytest

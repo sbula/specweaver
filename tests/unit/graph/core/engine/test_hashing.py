@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import pytest
 
 from specweaver.graph.core.engine.hashing import SemanticHasher

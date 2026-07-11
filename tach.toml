@@ -1,420 +1,203 @@
 exclude = []
-source_roots = [
-    "src",
-]
+source_roots = [ "src",]
 exact = true
-
 [[modules]]
 path = "specweaver.graph"
-depends_on = ["specweaver.workspace.ast.adapters",
-]
+depends_on = [ "specweaver.workspace.ast.adapters",]
 
 [[modules]]
 path = "specweaver.graph.lineage"
-depends_on = [
-]
+depends_on = []
 
 [[modules]]
 path = "specweaver.graph.interfaces"
-depends_on = [
-    "specweaver.graph", "specweaver.interfaces.cli", "specweaver.core.config", "specweaver.graph.lineage",
-]
+depends_on = [ "specweaver.graph", "specweaver.interfaces.cli", "specweaver.core.config", "specweaver.graph.lineage",]
 
 [[modules]]
 path = "specweaver.assurance.standards"
-depends_on = ["specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.ast.parsers",
-]
+depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.assurance.standards.interfaces"
-depends_on = ["specweaver.core.config", "specweaver.workspace.project", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm",
-]
+depends_on = [ "specweaver.core.config", "specweaver.workspace.project", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.assurance.validation"
-depends_on = ["specweaver.workspace.analyzers", "specweaver.core.config",
-]
+depends_on = [ "specweaver.workspace.analyzers", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.assurance.validation.interfaces"
-depends_on = ["specweaver.workspace.analyzers", "specweaver.core.flow", "specweaver.graph.lineage", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.config",
-]
+depends_on = [ "specweaver.workspace.analyzers", "specweaver.core.flow", "specweaver.graph.lineage", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.core.config"
-depends_on = ["specweaver.core.flow", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.memory",
-]
+depends_on = [ "specweaver.core.flow", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.config.interfaces"
-depends_on = ["specweaver.interfaces.cli", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.core.config",
-]
+depends_on = [ "specweaver.interfaces.cli", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.core.flow"
-depends_on = [
-    "specweaver.graph", "specweaver.workflows.planning", "specweaver.workflows.implementation", "specweaver.sandbox", "specweaver.workflows.review", "specweaver.infrastructure.llm", "specweaver.workflows.drafting", "specweaver.core.config", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",
-]
+depends_on = [ "specweaver.graph", "specweaver.workflows.planning", "specweaver.workflows.implementation", "specweaver.sandbox", "specweaver.workflows.review", "specweaver.infrastructure.llm", "specweaver.workflows.drafting", "specweaver.core.config", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
-depends_on = ["specweaver.core.config", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.workspace.project", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm",
-]
+depends_on = [ "specweaver.core.config", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.workspace.project", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.sandbox"
-depends_on = ["specweaver.workspace.ast.parsers", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm",
-]
+depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.infrastructure.llm"
-depends_on = ["specweaver.workspace.ast.parsers", "specweaver.core.config",
-]
+depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.infrastructure.llm.interfaces"
-depends_on = ["specweaver.interfaces.cli", "specweaver.infrastructure.llm",
-]
+depends_on = [ "specweaver.interfaces.cli", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.interfaces.api"
-depends_on = ["specweaver.workflows.review", "specweaver.core.config", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.workflows.implementation",
-]
+depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.workflows.implementation",]
 
 [[modules]]
 path = "specweaver.interfaces.cli"
-depends_on = ["specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context",
-]
+depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.workflows.drafting"
-depends_on = ["specweaver.infrastructure.llm",
-]
+depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.implementation"
-depends_on = ["specweaver.infrastructure.llm",
-]
+depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.implementation.interfaces"
-depends_on = ["specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace.analyzers", "specweaver.core.config", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.flow",
-]
+depends_on = [ "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace.analyzers", "specweaver.core.config", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.flow",]
 
 [[modules]]
 path = "specweaver.workflows.pipelines"
-depends_on = [
-]
+depends_on = []
 
 [[modules]]
 path = "specweaver.workflows.planning"
-depends_on = ["specweaver.infrastructure.llm",
-]
+depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.review"
-depends_on = ["specweaver.infrastructure.llm",
-]
+depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.review.interfaces"
-depends_on = ["specweaver.workflows.review", "specweaver.core.config", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.infrastructure.llm", "specweaver.workspace.analyzers", "specweaver.assurance.standards", "specweaver.interfaces.cli",
-]
+depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.infrastructure.llm", "specweaver.workspace.analyzers", "specweaver.assurance.standards", "specweaver.interfaces.cli",]
 
 [[modules]]
 path = "specweaver.workspace.context"
-depends_on = [
-]
+depends_on = []
 
 [[modules]]
 path = "specweaver.workspace.analyzers"
-depends_on = ["specweaver.workspace.ast.parsers", "specweaver.workspace.context",
-]
+depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.workspace.project"
-depends_on = ["specweaver.workspace.ast.parsers", "specweaver.workspace.analyzers",
-]
+depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.workspace.analyzers",]
 
 [[modules]]
 path = "specweaver.workspace.project.interfaces"
-depends_on = [
-    "specweaver.graph", "specweaver.workspace.project", "specweaver.workspace.analyzers", "specweaver.interfaces.cli", "specweaver.workspace.context",
-]
+depends_on = [ "specweaver.graph", "specweaver.workspace.project", "specweaver.workspace.analyzers", "specweaver.interfaces.cli", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.workspace.ast.parsers"
-depends_on = [
-]
+depends_on = []
 
 [[modules]]
 path = "specweaver.workspace.ast.adapters"
-depends_on = ["specweaver.workspace.ast.parsers",
-]
+depends_on = [ "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.workspace.memory"
-depends_on = ["specweaver.core.config", "specweaver.workspace",
-]
+depends_on = [ "specweaver.core.config", "specweaver.workspace",]
 
 [[modules]]
 path = "specweaver.workspace"
-depends_on = ["specweaver.core.config",
-]
+depends_on = [ "specweaver.core.config",]
 
 [[interfaces]]
-from = [
-    "specweaver.workspace.ast.parsers",
-]
-expose = [
-    "interfaces",
-    "interfaces.CodeStructureError",
-    "interfaces.CodeStructureInterface",
-    "interfaces.ScenarioConverterInterface",
-    "interfaces.StackTraceFilterInterface",
-    "factory",
-    "factory.get_default_parsers",
-    "python.codestructure",
-    "python.codestructure.PythonCodeStructure",
-    "java.codestructure",
-    "java.codestructure.JavaCodeStructure",
-    "java.parsers",
-    "java.parsers.parse_pmd_complexity",
-    "kotlin.codestructure",
-    "kotlin.codestructure.KotlinCodeStructure",
-    "kotlin.parsers",
-    "kotlin.parsers.parse_detekt_complexity",
-    "rust.codestructure",
-    "rust.codestructure.RustCodeStructure",
-    "rust.parsers",
-    "rust.parsers.parse_clippy_complexity",
-    "typescript.codestructure",
-    "typescript.codestructure.TypeScriptCodeStructure",
-    "typescript.parsers",
-    "typescript.parsers.extract_tsc_errors",
-    "c.codestructure",
-    "cpp.codestructure",
-    "go.codestructure",
-    "markdown.codestructure",
-    "sql.codestructure",
-    "exclusions",
-    "exclusions.SpecWeaverIgnoreParser",
-]
+from = [ "specweaver.workspace.ast.parsers",]
+expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStructureInterface", "interfaces.ScenarioConverterInterface", "interfaces.StackTraceFilterInterface", "factory", "factory.get_default_parsers", "python.codestructure", "python.codestructure.PythonCodeStructure", "java.codestructure", "java.codestructure.JavaCodeStructure", "java.parsers", "java.parsers.parse_pmd_complexity", "kotlin.codestructure", "kotlin.codestructure.KotlinCodeStructure", "kotlin.parsers", "kotlin.parsers.parse_detekt_complexity", "rust.codestructure", "rust.codestructure.RustCodeStructure", "rust.parsers", "rust.parsers.parse_clippy_complexity", "typescript.codestructure", "typescript.codestructure.TypeScriptCodeStructure", "typescript.parsers", "typescript.parsers.extract_tsc_errors", "c.codestructure", "cpp.codestructure", "go.codestructure", "markdown.codestructure", "sql.codestructure", "exclusions", "exclusions.SpecWeaverIgnoreParser",]
 
 [[interfaces]]
-from = [
-    "specweaver.workspace.ast.adapters",
-]
-expose = [
-    "graph_adapter",
-    "graph_adapter.extract_ast_dict",
-]
+from = [ "specweaver.workspace.ast.adapters",]
+expose = [ "graph_adapter", "graph_adapter.extract_ast_dict",]
 
 [[interfaces]]
-from = [
-    "specweaver.workspace.project",
-]
-expose = [
-    "constitution",
-    "constitution.find_constitution",
-    "constitution.check_constitution",
-    "constitution.generate_constitution",
-    "constitution.generate_constitution_from_standards",
-    "scaffold",
-    "scaffold.scaffold_project",
-    "discovery",
-    "discovery.resolve_project_path",
-    "tach_sync",
-    "tach_sync.sync_tach_toml",
-]
+from = [ "specweaver.workspace.project",]
+expose = [ "constitution", "constitution.find_constitution", "constitution.check_constitution", "constitution.generate_constitution", "constitution.generate_constitution_from_standards", "scaffold", "scaffold.scaffold_project", "discovery", "discovery.resolve_project_path", "tach_sync", "tach_sync.sync_tach_toml", "constitution.CONSTITUTION_FILENAME", "constitution.is_unmodified_starter",]
 
 [[interfaces]]
-from = [
-    "specweaver.workspace.context",
-]
-expose = [
-    "provider",
-    "provider.ContextProvider",
-    "inferrer",
-    "inferrer.ContextInferrer",
-    "analyzer_protocols",
-    "analyzer_protocols.LanguageAnalyzer",
-]
+from = [ "specweaver.workspace.context",]
+expose = [ "provider", "provider.ContextProvider", "inferrer", "inferrer.ContextInferrer", "analyzer_protocols", "analyzer_protocols.LanguageAnalyzer",]
 
 [[interfaces]]
-from = [
-    "specweaver.workspace.analyzers",
-]
-expose = [
-    "factory",
-    "factory.AnalyzerFactory",
-]
+from = [ "specweaver.workspace.analyzers",]
+expose = [ "factory", "factory.AnalyzerFactory",]
 
 [[interfaces]]
-from = [
-    "specweaver.graph",
-]
-expose = [
-    "core.engine.core",
-    "core.engine.models",
-    "lineage.engine",
-    "lineage.repository",
-    "topology.engine",
-    "topology.engine.TopologyEngine",
-]
+from = [ "specweaver.graph",]
+expose = [ "core.engine.core", "core.engine.models", "lineage.engine", "lineage.repository", "topology.engine", "topology.engine.TopologyEngine", "core.builder.orchestrator.GraphOrchestrator",]
 
 [[interfaces]]
-from = [
-    "specweaver.infrastructure.llm",
-]
-expose = [
-    "models",
-    "models.GenerationConfig",
-    "models.Message",
-    "models.Role",
-    "models.ToolDispatcherProtocol",
-    "models.ToolDefinition",
-    "models.ToolParameter",
-    "models.ProjectMetadata",
-    "adapters.base",
-    "adapters.registry",
-    "prompt_builder",
-    "mention_scanner.models",
-    "mention_scanner.scanner",
-    "telemetry",
-    "router",
-    "collector",
-    "factory",
-    "factory.LLMAdapterError",
-    "factory.create_llm_adapter",
-    "lineage",
-]
+from = [ "specweaver.infrastructure.llm",]
+expose = [ "models", "models.GenerationConfig", "models.Message", "models.Role", "models.ToolDispatcherProtocol", "models.ToolDefinition", "models.ToolParameter", "models.ProjectMetadata", "adapters.base", "adapters.registry", "prompt_builder", "mention_scanner.models", "mention_scanner.scanner", "telemetry", "router", "collector", "factory", "factory.LLMAdapterError", "factory.create_llm_adapter", "lineage", "models.PromptSafeConfig", "lineage.extract_artifact_uuid", "mention_scanner.models.ResolvedMention", "adapters.registry.get_all_adapters", "lineage.wrap_artifact_tag", "adapters.gemini.GeminiAdapter", "mention_scanner.scanner.extract_mentions", "store.LlmProfile", "prompt_builder.PromptBuilder", "telemetry.get_default_cost_table", "store.Base", "models.TaskType", "_prompt_profiles.RenderProfile", "router.ModelRouter", "collector.TelemetryCollector", "_prompt_profiles.PromptSlot", "store.LlmRepository",]
 
 [[interfaces]]
-from = [
-    "specweaver.sandbox",
-]
-expose = [
-    "dispatcher",
-    "security",
-    "base",
-    "rule_atom",
-    "git.core",
-    "git.interfaces",
-    "filesystem.core",
-    "filesystem.interfaces",
-    "qa_runner.core",
-    "qa_runner.interfaces",
-    "mcp.core",
-    "mcp.interfaces",
-    "protocol.core",
-    "protocol.interfaces",
-    "web.interfaces",
-    "language.core",
-    "code_structure.core",
-    "code_structure.interfaces",
-    "registry",
-]
+from = [ "specweaver.sandbox",]
+expose = [ "dispatcher", "security", "base", "rule_atom", "git.core", "git.interfaces", "filesystem.core", "filesystem.interfaces", "qa_runner.core", "qa_runner.interfaces", "mcp.core", "mcp.interfaces", "protocol.core", "protocol.interfaces", "web.interfaces", "language.core", "code_structure.core", "code_structure.interfaces", "registry", "language.core.atom.LanguageAtom", "code_structure.core.atom.CodeStructureAtom", "security.WorkspaceBoundary", "language.core.scenario_converter_factory.create_scenario_converter", "dispatcher.ToolDispatcher", "git.core.atom.GitAtom", "base.AtomStatus", "qa_runner.core.atom.QARunnerAtom", "language.core.stack_trace_filter_factory.create_stack_trace_filter", "mcp.core.atom.MCPAtom", "filesystem.core.atom.FileSystemAtom",]
 
 [[interfaces]]
-from = [
-    "specweaver.assurance.validation",
-]
-expose = [
-    "executor",
-    "loader",
-    "models",
-    "models.Status",
-    "pipeline",
-    "pipeline_loader",
-    "registry",
-    "rules",
-    "spec_kind",
-    "drift_detector",
-    "inheritance",
-]
+from = [ "specweaver.assurance.validation",]
+expose = [ "executor", "loader", "models", "models.Status", "pipeline", "pipeline_loader", "registry", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "pipeline_loader.load_pipeline_yaml", "pipeline_loader.resolve_pipeline_name", "executor.execute_validation_pipeline",]
 
 [[interfaces]]
-from = [
-    "specweaver.assurance.validation.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.assurance.validation.interfaces",]
+expose = [ "cli", "cli.validation_cli",]
 
 [[interfaces]]
-from = [
-    "specweaver.assurance.standards.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.assurance.standards.interfaces",]
+expose = [ "cli", "cli.standards_app",]
 
 [[interfaces]]
-from = [
-    "specweaver.infrastructure.llm.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.infrastructure.llm.interfaces",]
+expose = [ "cli", "cli.usage_app", "cli.costs_app",]
 
 [[interfaces]]
-from = [
-    "specweaver.core.config.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.core.config.interfaces",]
+expose = [ "cli", "cli.config_app",]
 
 [[interfaces]]
-from = [
-    "specweaver.graph.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.graph.interfaces",]
+expose = [ "cli", "cli.graph_app", "cli.lineage_app",]
 
 [[interfaces]]
-from = [
-    "specweaver.workflows.implementation.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.workflows.implementation.interfaces",]
+expose = [ "cli", "cli.implement_cli",]
 
 [[interfaces]]
-from = [
-    "specweaver.workflows.review.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.workflows.review.interfaces",]
+expose = [ "cli", "cli.review_cli",]
 
 [[interfaces]]
-from = [
-    "specweaver.workspace.project.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.workspace.project.interfaces",]
+expose = [ "cli", "cli.workspace_cli",]
 
 [[interfaces]]
-from = [
-    "specweaver.core.flow.interfaces",
-]
-expose = [
-    "cli",
-]
+from = [ "specweaver.core.flow.interfaces",]
+expose = [ "cli", "cli.flow_cli",]
 
 [[interfaces]]
-from = [
-    "specweaver.workspace.memory",
-]
-expose = [
-    "hydrator",
-    "queries",
-    "models",
-    "store",
-    "errors",
-    "repository",
-]
+from = [ "specweaver.workspace.memory",]
+expose = [ "hydrator", "queries", "models", "store", "errors", "repository", "store.TaskStatus", "repository.MemoryRepository", "hydrator.MemoryHydrator", "models.HandoverContext",]
+

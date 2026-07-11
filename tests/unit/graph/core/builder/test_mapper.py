@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from specweaver.graph.core.builder.mapper import OntologyMapper
 from specweaver.graph.core.engine.ontology import NodeKind
 

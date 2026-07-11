@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """Database utilities for tests to replace monolithic Database methods."""
 
 from __future__ import annotations

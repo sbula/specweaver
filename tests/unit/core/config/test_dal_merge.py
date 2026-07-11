@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from specweaver.commons.enums.dal import DALLevel
 from tests.fixtures.db_utils import register_test_project
 

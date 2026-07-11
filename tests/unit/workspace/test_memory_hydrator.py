@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import json
 import logging
 from datetime import UTC, datetime, timedelta

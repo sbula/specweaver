@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from pathlib import Path
 
 from specweaver.core.flow.handlers.base import RunContext

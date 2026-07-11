@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import logging
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch

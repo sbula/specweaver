@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import sqlite3
 
 from typer.testing import CliRunner

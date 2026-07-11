@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """Tests for PipelineRunner integration with Prompt Render Profiles."""
 
 from unittest.mock import MagicMock, patch

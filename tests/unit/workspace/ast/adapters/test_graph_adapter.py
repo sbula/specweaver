@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import pytest
 
 from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict

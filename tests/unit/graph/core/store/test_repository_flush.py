@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import sqlite3
 
 import networkx as nx

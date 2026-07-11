@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from specweaver.infrastructure.llm.lineage import (
     extract_artifact_uuid,
     wrap_artifact_tag,

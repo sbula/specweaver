@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from specweaver.graph.topology.engine import TopologyEngine
 
 

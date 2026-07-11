@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app

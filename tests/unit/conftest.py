@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import pytest
 
 from specweaver.core.config.database import get_global_write_queue

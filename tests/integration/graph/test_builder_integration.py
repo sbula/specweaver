@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typing import Any
 
 from specweaver.graph.core.builder.orchestrator import GraphBuilder

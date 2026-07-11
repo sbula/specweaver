@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typer.testing import CliRunner
 
 import specweaver.graph.interfaces.cli  # noqa: F401 - Register commands

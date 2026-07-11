@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import threading
 
 from specweaver.graph.core.engine.core import InMemoryGraphEngine

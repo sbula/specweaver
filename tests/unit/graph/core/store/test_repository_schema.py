@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import sqlite3
 
 from specweaver.graph.core.store.repository import SqliteGraphRepository

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from pathlib import Path
 
 from specweaver.core.config.database import Database

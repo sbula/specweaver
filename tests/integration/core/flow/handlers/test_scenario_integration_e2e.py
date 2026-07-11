@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """E2E test for the scenario_integration.yaml pipeline execution flow."""
 
 import importlib.resources

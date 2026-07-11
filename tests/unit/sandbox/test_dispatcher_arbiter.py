@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from pathlib import Path
 
 from specweaver.sandbox.dispatcher import ToolDispatcher

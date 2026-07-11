@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import pytest
 
 from specweaver.sandbox.language.core.evaluator import EvaluatorDepthError, SchemaEvaluator

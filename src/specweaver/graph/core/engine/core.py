@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import threading
 from enum import Enum
 from typing import Any

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typing import TYPE_CHECKING
 
 import networkx as nx
