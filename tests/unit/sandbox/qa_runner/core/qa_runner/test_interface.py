@@ -6,10 +6,12 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.execution.models import SubprocessResult
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
 from specweaver.sandbox.qa_runner.core.interface import (
     ComplexityRunResult,
@@ -23,6 +25,23 @@ from specweaver.sandbox.qa_runner.core.interface import (
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+def _make_result(
+    exit_code: int = 0,
+    stdout: str = "",
+    stderr: str = "",
+    timed_out: bool = False,
+    duration_seconds: float = 0.01,
+) -> SubprocessResult:
+    """Helper to build SubprocessResult for tests."""
+    return SubprocessResult(
+        exit_code=exit_code,
+        stdout=stdout,
+        stderr=stderr,
+        timed_out=timed_out,
+        duration_seconds=duration_seconds,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -145,38 +164,35 @@ class TestInterfaceContract:
 
 
 class TestPythonQARunnerTests:
-    """Tests for PythonQARunner.run_tests via subprocess mocking."""
+    """Tests for PythonQARunner.run_tests via executor mocking."""
 
     def test_all_tests_pass(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "5 passed in 0.50s\n"
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(
+            exit_code=0, stdout="5 passed in 0.50s\n"
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result) as mock_run:
-            result = runner.run_tests(target="tests/unit/", kind="unit")
+        result = runner.run_tests(target="tests/unit/", kind="unit")
 
         assert result.passed == 5
         assert result.failed == 0
         assert result.total == 5
         assert result.failures == []
         # Verify pytest was called with -m unit
-        call_args = mock_run.call_args[0][0]
+        call_args = mock_executor.execute.call_args[0][0]
         assert "-m" in call_args
         assert "unit" in call_args
 
     def test_some_tests_fail(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 1
-        mock_result.stdout = (
-            "FAILED tests/test_foo.py::test_bar - assert 1 == 2\n3 passed, 2 failed in 1.20s\n"
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(
+            exit_code=1,
+            stdout="FAILED tests/test_foo.py::test_bar - assert 1 == 2\n3 passed, 2 failed in 1.20s\n",
         )
-        mock_result.stderr = ""
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result):
-            result = runner.run_tests(target="tests/")
+        result = runner.run_tests(target="tests/")
 
         assert result.passed == 3
         assert result.failed == 2
@@ -184,56 +200,51 @@ class TestPythonQARunnerTests:
         assert len(result.failures) >= 1
 
     def test_timeout_returns_error(self, tmp_path: Path) -> None:
-        import subprocess
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(timed_out=True, duration_seconds=120.0)
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        runner = PythonQARunner(cwd=tmp_path)
-
-        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("pytest", 120)):
-            result = runner.run_tests(target="tests/", timeout=120)
+        result = runner.run_tests(target="tests/", timeout=120)
 
         assert result.failed > 0 or result.errors > 0
         assert result.total >= 0
 
     def test_with_coverage(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "5 passed in 0.50s\nTOTAL                  100     15     85%\n"
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(
+            exit_code=0, stdout="5 passed in 0.50s\nTOTAL                  100     15     85%\n"
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result) as mock_run:
-            result = runner.run_tests(target="tests/", coverage=True)
+        result = runner.run_tests(target="tests/", coverage=True)
 
         assert result.coverage_pct == 85.0
-        call_args = mock_run.call_args[0][0]
+        call_args = mock_executor.execute.call_args[0][0]
         assert "--cov" in call_args
 
     def test_scope_parameter(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "3 passed in 0.30s\n"
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(
+            exit_code=0, stdout="3 passed in 0.30s\n"
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result) as mock_run:
-            result = runner.run_tests(target="tests/", kind="unit", scope="flow")
+        result = runner.run_tests(target="tests/", kind="unit", scope="flow")
 
         assert result.passed == 3
-        # scope should filter via -k or target path
-        call_args = mock_run.call_args[0][0]
+        call_args = mock_executor.execute.call_args[0][0]
         assert "flow" in " ".join(call_args)
 
     def test_kind_e2e(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "2 passed in 5.00s\n"
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(
+            exit_code=0, stdout="2 passed in 5.00s\n"
+        )
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result) as mock_run:
-            _ = runner.run_tests(target="tests/", kind="e2e")
+        _ = runner.run_tests(target="tests/", kind="e2e")
 
-        call_args = mock_run.call_args[0][0]
+        call_args = mock_executor.execute.call_args[0][0]
         assert "-m" in call_args
         assert "e2e" in call_args
 
@@ -244,17 +255,14 @@ class TestPythonQARunnerTests:
 
 
 class TestPythonQARunnerLinter:
-    """Tests for PythonQARunner.run_linter via subprocess mocking."""
+    """Tests for PythonQARunner.run_linter via executor mocking."""
 
     def test_linter_clean(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "[]"
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result):
-            result = runner.run_linter(target="src/")
+        result = runner.run_linter(target="src/")
 
         assert result.error_count == 0
         assert result.errors == []
@@ -262,7 +270,6 @@ class TestPythonQARunnerLinter:
     def test_linter_errors(self, tmp_path: Path) -> None:
         import json
 
-        runner = PythonQARunner(cwd=tmp_path)
         lint_output = json.dumps(
             [
                 {
@@ -279,13 +286,11 @@ class TestPythonQARunnerLinter:
                 },
             ]
         )
-        mock_result = MagicMock()
-        mock_result.returncode = 1
-        mock_result.stdout = lint_output
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=1, stdout=lint_output)
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result):
-            result = runner.run_linter(target="src/")
+        result = runner.run_linter(target="src/")
 
         assert result.error_count == 2
         assert len(result.errors) == 2
@@ -293,26 +298,22 @@ class TestPythonQARunnerLinter:
         assert result.errors[1].file == "bar.py"
 
     def test_linter_with_fix(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "[]"
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result) as mock_run:
-            result = runner.run_linter(target="src/", fix=True)
+        result = runner.run_linter(target="src/", fix=True)
 
         assert result.error_count == 0
-        # With fix=True, should call ruff format then ruff check --fix
-        assert mock_run.call_count >= 2
+        # With fix=True, should call executor 3x: format, check --fix, check
+        assert mock_executor.execute.call_count >= 2
 
     def test_linter_timeout(self, tmp_path: Path) -> None:
-        import subprocess
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(timed_out=True)
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        runner = PythonQARunner(cwd=tmp_path)
-
-        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("ruff", 60)):
-            result = runner.run_linter(target="src/")
+        result = runner.run_linter(target="src/")
 
         assert result.error_count >= 0  # Should not crash
 
@@ -323,17 +324,14 @@ class TestPythonQARunnerLinter:
 
 
 class TestPythonQARunnerComplexity:
-    """Tests for PythonQARunner.run_complexity via subprocess mocking."""
+    """Tests for PythonQARunner.run_complexity via executor mocking."""
 
     def test_complexity_clean(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "[]"
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result):
-            result = runner.run_complexity(target="src/")
+        result = runner.run_complexity(target="src/")
 
         assert result.violation_count == 0
         assert result.max_complexity == 10
@@ -342,7 +340,6 @@ class TestPythonQARunnerComplexity:
     def test_complexity_violations(self, tmp_path: Path) -> None:
         import json
 
-        runner = PythonQARunner(cwd=tmp_path)
         ruff_output = json.dumps(
             [
                 {
@@ -353,13 +350,11 @@ class TestPythonQARunnerComplexity:
                 },
             ]
         )
-        mock_result = MagicMock()
-        mock_result.returncode = 1
-        mock_result.stdout = ruff_output
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=1, stdout=ruff_output)
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result):
-            result = runner.run_complexity(target="src/", max_complexity=10)
+        result = runner.run_complexity(target="src/", max_complexity=10)
 
         assert result.violation_count == 1
         assert result.max_complexity == 10
@@ -369,26 +364,22 @@ class TestPythonQARunnerComplexity:
         assert result.violations[0].complexity == 12
 
     def test_complexity_custom_threshold(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
-        mock_result = MagicMock()
-        mock_result.returncode = 0
-        mock_result.stdout = "[]"
-        mock_result.stderr = ""
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        with patch("subprocess.run", return_value=mock_result) as mock_run:
-            result = runner.run_complexity(target="src/", max_complexity=5)
+        result = runner.run_complexity(target="src/", max_complexity=5)
 
         assert result.max_complexity == 5
         # Check the --config flag includes our threshold
-        call_args = mock_run.call_args[0][0]
+        call_args = mock_executor.execute.call_args[0][0]
         assert any("max-complexity=5" in str(a) for a in call_args)
 
     def test_complexity_timeout(self, tmp_path: Path) -> None:
-        import subprocess
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(timed_out=True)
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
-        runner = PythonQARunner(cwd=tmp_path)
-
-        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("ruff", 60)):
-            result = runner.run_complexity(target="src/")
+        result = runner.run_complexity(target="src/")
 
         assert result.violation_count == 0  # Should not crash

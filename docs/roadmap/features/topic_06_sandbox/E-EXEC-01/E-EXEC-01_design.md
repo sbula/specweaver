@@ -189,12 +189,12 @@ Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/fi
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | SubprocessExecutor Core | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
-| SF-2 | Language Runner Migration | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | SubprocessExecutor Core | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Language Runner Migration | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Impl Plan APPROVED (2026-07-11).
-**Next step**: Run:
-`/dev docs/roadmap/features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_sf1_implementation_plan.md`
+**Current status**: SF-2 Impl Plan APPROVED (2026-07-11).
+**Next step**: Implement SF-2 using:
+`please implement E-EXEC-01 SF-2`
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

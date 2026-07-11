@@ -456,3 +456,69 @@ class TestSubprocessExecutorExecute:
         # But testing weakset size is flaky due to gc, so we just verify it doesn't crash.
         import specweaver.sandbox.execution._signals as sig
         sig._cleanup_active_processes()  # Should not crash
+
+
+# ---------------------------------------------------------------------------
+# Task T0.2: input_text support for SubprocessExecutor.execute()
+# ---------------------------------------------------------------------------
+
+
+class TestSubprocessExecutorInputText:
+    """Tests for input_text parameter on SubprocessExecutor.execute()."""
+
+    # Happy path
+    def test_input_text_piped_to_stdin(self, tmp_path: Path) -> None:
+        """input_text is received by child process on stdin."""
+        from specweaver.sandbox.execution.executor import SubprocessExecutor
+
+        executor = SubprocessExecutor(cwd=tmp_path)
+        py = "python" if sys.platform == "win32" else "python3"
+        # Child reads stdin and echoes it
+        result = executor.execute(
+            [py, "-c", "import sys; data = sys.stdin.read(); print(data.strip())"],
+            input_text="hello from stdin",
+        )
+        assert result.exit_code == 0
+        assert "hello from stdin" in result.stdout
+
+    # Boundary / Edge cases
+    def test_input_text_none_default(self, tmp_path: Path) -> None:
+        """Default input_text=None means no stdin is piped."""
+        from specweaver.sandbox.execution.executor import SubprocessExecutor
+
+        executor = SubprocessExecutor(cwd=tmp_path)
+        py = "python" if sys.platform == "win32" else "python3"
+        # Without input_text, stdin should not block the child
+        result = executor.execute([py, "-c", "print('no stdin needed')"])
+        assert result.exit_code == 0
+        assert "no stdin needed" in result.stdout
+
+    def test_input_text_empty_string(self, tmp_path: Path) -> None:
+        """Empty string input_text pipes empty stdin (EOF immediately)."""
+        from specweaver.sandbox.execution.executor import SubprocessExecutor
+
+        executor = SubprocessExecutor(cwd=tmp_path)
+        py = "python" if sys.platform == "win32" else "python3"
+        result = executor.execute(
+            [py, "-c", "import sys; data = sys.stdin.read(); print(f'got:{len(data)}')"],
+            input_text="",
+        )
+        assert result.exit_code == 0
+        assert "got:0" in result.stdout
+
+    # Graceful degradation
+    def test_input_text_with_timeout(self, tmp_path: Path) -> None:
+        """input_text works correctly with timeout — process completes before timeout."""
+        from specweaver.sandbox.execution.executor import SubprocessExecutor
+
+        executor = SubprocessExecutor(cwd=tmp_path)
+        py = "python" if sys.platform == "win32" else "python3"
+        result = executor.execute(
+            [py, "-c", "import sys; print(sys.stdin.read().upper())"],
+            input_text="make me uppercase",
+            timeout_seconds=10,
+        )
+        assert result.exit_code == 0
+        assert "MAKE ME UPPERCASE" in result.stdout
+        assert result.timed_out is False
+

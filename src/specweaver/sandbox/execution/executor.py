@@ -94,6 +94,7 @@ class SubprocessExecutor:
         timeout_seconds: int | None = None,
         extra_env: dict[str, str] | None = None,
         cwd_override: Path | None = None,
+        input_text: str | None = None,
     ) -> SubprocessResult:
         """Execute a subprocess with full security and telemetry.
 
@@ -102,6 +103,7 @@ class SubprocessExecutor:
             timeout_seconds: Override default timeout. Uses constructor default if None.
             extra_env: Additional env vars to inject into child.
             cwd_override: Override working directory for this execution.
+            input_text: Text to pipe to the child's stdin. None means no stdin.
 
         Returns:
             SubprocessResult with structured output and telemetry.
@@ -121,6 +123,7 @@ class SubprocessExecutor:
         popen_kwargs: dict[str, object] = {
             "stdout": subprocess.PIPE,
             "stderr": subprocess.PIPE,
+            "stdin": subprocess.PIPE if input_text is not None else subprocess.DEVNULL,
             "text": True,
             "cwd": str(effective_cwd),
             "env": env,
@@ -141,7 +144,9 @@ class SubprocessExecutor:
             # Apply post-start limits (Windows Job Objects)
             self._limiter.apply_post_start(proc, self._resource_limits)
 
-            stdout, stderr = proc.communicate(timeout=effective_timeout)
+            stdout, stderr = proc.communicate(
+                input=input_text, timeout=effective_timeout,
+            )
             exit_code = proc.returncode
 
         except subprocess.TimeoutExpired:

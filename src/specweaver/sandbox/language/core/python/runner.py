@@ -4,18 +4,16 @@
 """Python test runner — pytest + ruff implementation.
 
 Implements QARunnerInterface for Python projects.
-Uses subprocess to run pytest (tests) and ruff (linting).
+Delegates subprocess execution to SubprocessExecutor.
 """
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import re
 import shlex
-import subprocess
+import shutil
 import sys
-import time
 from typing import TYPE_CHECKING, TypedDict
 
 from specweaver.commons import json
@@ -37,6 +35,8 @@ from specweaver.sandbox.qa_runner.core.interface import (
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from specweaver.sandbox.execution.executor import SubprocessExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -117,14 +117,22 @@ def _parse_pytest_output(stdout: str) -> _ParsedOutput:
 class PythonQARunner(QARunnerInterface):
     """Python test runner using pytest and ruff.
 
-    TODO(migration): This stub is temporary. It will be deleted the polyglot migration work is fully done.
+    Delegates all subprocess execution to SubprocessExecutor for unified
+    timeout handling, credential stripping, and resource limits.
 
     Args:
         cwd: Project root directory.
+        executor: Optional SubprocessExecutor instance (DI). Creates one from cwd if None.
     """
 
-    def __init__(self, cwd: Path) -> None:
+    _DEFAULT_TIMEOUT: int = 120
+    _BUILD_TIMEOUT: int = 300
+
+    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
+        from specweaver.sandbox.execution.executor import SubprocessExecutor as _Executor
+
         self._cwd = cwd
+        self._executor = executor or _Executor(cwd=cwd)
 
     @property
     def language_name(self) -> str:
@@ -163,17 +171,9 @@ class PythonQARunner(QARunnerInterface):
         if coverage:
             cmd.extend(["--cov", target, "--cov-report", "term"])
 
-        start = time.monotonic()
-        try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=str(self._cwd),
-            )
-        except subprocess.TimeoutExpired:
-            elapsed = time.monotonic() - start
+        result = self._executor.execute(cmd, timeout_seconds=timeout)
+
+        if result.timed_out:
             logger.warning(
                 "PythonQARunner: pytest timed out after %ds (target=%s)", timeout, target
             )
@@ -189,18 +189,17 @@ class PythonQARunner(QARunnerInterface):
                         message=f"Test execution timed out after {timeout}s",
                     )
                 ],
-                duration_seconds=elapsed,
+                duration_seconds=result.duration_seconds,
             )
 
-        elapsed = time.monotonic() - start
-        parsed = _parse_pytest_output(proc.stdout)
+        parsed = _parse_pytest_output(result.stdout)
         logger.info(
             "PythonQARunner: tests complete — passed=%d failed=%d errors=%d skipped=%d (%.2fs)",
             parsed["passed"],
             parsed["failed"],
             parsed["errors"],
             parsed["skipped"],
-            elapsed,
+            result.duration_seconds,
         )
 
         return TestRunResult(
@@ -211,7 +210,7 @@ class PythonQARunner(QARunnerInterface):
             total=parsed["total"],
             failures=parsed["failures"],
             coverage_pct=parsed["coverage_pct"],
-            duration_seconds=parsed.get("duration", elapsed),
+            duration_seconds=parsed.get("duration", result.duration_seconds),
         )
 
     def run_linter(
@@ -225,43 +224,30 @@ class PythonQARunner(QARunnerInterface):
 
         # If fix=True, run ruff format first, then ruff check --fix
         if fix:
-            with contextlib.suppress(subprocess.TimeoutExpired):
-                subprocess.run(
-                    ["python", "-m", "ruff", "format", target],
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                    cwd=str(self._cwd),
-                )
+            self._executor.execute(
+                ["python", "-m", "ruff", "format", target],
+                timeout_seconds=self._DEFAULT_TIMEOUT,
+            )
+            # Ignore timeout on format — best-effort
 
-            try:
-                fix_result = subprocess.run(
-                    ["python", "-m", "ruff", "check", target, "--fix", "--output-format=json"],
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                    cwd=str(self._cwd),
-                )
-                # After fix, count remaining issues
+            fix_result = self._executor.execute(
+                ["python", "-m", "ruff", "check", target, "--fix", "--output-format=json"],
+                timeout_seconds=self._DEFAULT_TIMEOUT,
+            )
+            if not fix_result.timed_out:
                 fix_data = self._parse_ruff_json(fix_result.stdout)
                 fixed_count = len(fix_data.get("fixed", []))
-            except subprocess.TimeoutExpired:
-                pass
 
         # Run final check to get current state
-        try:
-            proc = subprocess.run(
-                ["python", "-m", "ruff", "check", target, "--output-format=json"],
-                capture_output=True,
-                text=True,
-                timeout=60,
-                cwd=str(self._cwd),
-            )
-        except subprocess.TimeoutExpired:
+        result = self._executor.execute(
+            ["python", "-m", "ruff", "check", target, "--output-format=json"],
+            timeout_seconds=self._DEFAULT_TIMEOUT,
+        )
+        if result.timed_out:
             logger.warning("PythonQARunner: ruff linting timed out (target=%s)", target)
             return LintRunResult(error_count=0, fixable_count=0, fixed_count=0, errors=[])
 
-        return self._build_lint_result(proc.stdout, fixed_count)
+        return self._build_lint_result(result.stdout, fixed_count)
 
     def _parse_ruff_json(self, stdout: str) -> dict[str, list[dict[str, object]]]:
         """Parse ruff --output-format=json output."""
@@ -309,32 +295,28 @@ class PythonQARunner(QARunnerInterface):
 
         Uses the ruff C901 rule with a configurable threshold.
         """
-        try:
-            proc = subprocess.run(
-                [
-                    "python",
-                    "-m",
-                    "ruff",
-                    "check",
-                    target,
-                    "--select",
-                    "C90",
-                    f"--config=lint.mccabe.max-complexity={max_complexity}",
-                    "--output-format=json",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=60,
-                cwd=str(self._cwd),
-            )
-        except subprocess.TimeoutExpired:
+        result = self._executor.execute(
+            [
+                "python",
+                "-m",
+                "ruff",
+                "check",
+                target,
+                "--select",
+                "C90",
+                f"--config=lint.mccabe.max-complexity={max_complexity}",
+                "--output-format=json",
+            ],
+            timeout_seconds=self._DEFAULT_TIMEOUT,
+        )
+        if result.timed_out:
             logger.warning("PythonQARunner: complexity check timed out (target=%s)", target)
             return ComplexityRunResult(
                 violation_count=0,
                 max_complexity=max_complexity,
             )
 
-        return self._build_complexity_result(proc.stdout, max_complexity)
+        return self._build_complexity_result(result.stdout, max_complexity)
 
     def _build_complexity_result(
         self,
@@ -393,35 +375,19 @@ class PythonQARunner(QARunnerInterface):
         cmd = [sys.executable, entrypoint]
         logger.debug("Running Python debugger wrapper: %s", shlex.join(cmd))
 
-        start_time = time.monotonic()
-        try:
-            proc = subprocess.run(
-                cmd,
-                cwd=self._cwd,
-                capture_output=True,
-                text=True,
-                timeout=300,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
+        result = self._executor.execute(cmd, timeout_seconds=self._BUILD_TIMEOUT)
+
+        if result.timed_out:
             return DebugRunResult(
                 exit_code=124,
-                duration_seconds=300.0,
+                duration_seconds=result.duration_seconds,
                 events=[OutputEvent(category="stderr", output="Timeout expired")],
             )
 
-        duration = time.monotonic() - start_time
-
-        events: list[OutputEvent] = []
-        for line in proc.stdout.splitlines():
-            events.append(OutputEvent(category="stdout", output=line))
-        for line in proc.stderr.splitlines():
-            events.append(OutputEvent(category="stderr", output=line))
-
         return DebugRunResult(
-            exit_code=proc.returncode,
-            duration_seconds=duration,
-            events=events,
+            exit_code=result.exit_code,
+            duration_seconds=result.duration_seconds,
+            events=result.events,
         )
 
     def run_architecture_check(
@@ -464,17 +430,29 @@ class PythonQARunner(QARunnerInterface):
 
     def _run_tach_check(self) -> ArchitectureRunResult:
         """Run global tach boundary check (extracted from original method)."""
-        try:
-            proc = subprocess.run(
-                ["python", "-m", "tach", "check", "--output", "json"],
-                capture_output=True,
-                text=True,
-                timeout=60,
-                cwd=str(self._cwd),
+        # H-1 / RED-1.2: Pre-check tool existence before calling executor
+        if not shutil.which("tach"):
+            logger.warning("PythonQARunner: tach not found")
+            return ArchitectureRunResult(
+                violation_count=1,
+                violations=[
+                    ArchitectureViolation(
+                        file="<validation_engine>",
+                        code="FileNotFoundError",
+                        message="Tach architectural linter is not installed or not found in PATH.",
+                    )
+                ],
             )
-            if proc.stderr:
-                logger.debug("PythonQARunner: tach check stderr: %s", proc.stderr)
-        except subprocess.TimeoutExpired:
+
+        result = self._executor.execute(
+            ["python", "-m", "tach", "check", "--output", "json"],
+            timeout_seconds=self._DEFAULT_TIMEOUT,
+        )
+
+        if result.stderr:
+            logger.debug("PythonQARunner: tach check stderr: %s", result.stderr)
+
+        if result.timed_out:
             logger.warning("PythonQARunner: tach check timed out")
             return ArchitectureRunResult(
                 violation_count=1,
@@ -486,20 +464,8 @@ class PythonQARunner(QARunnerInterface):
                     )
                 ],
             )
-        except FileNotFoundError:
-            logger.warning("PythonQARunner: tach not found")
-            return ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(
-                        file="<validation_engine>",
-                        code="FileNotFoundError",
-                        message="Tach architectural linter is not installed or not found in paths.",
-                    )
-                ],
-            )
 
-        return self._build_architecture_result(proc.stdout)
+        return self._build_architecture_result(result.stdout)
 
     def _build_architecture_result(self, stdout: str) -> ArchitectureRunResult:
         """Build ArchitectureRunResult from tach check JSON output."""
