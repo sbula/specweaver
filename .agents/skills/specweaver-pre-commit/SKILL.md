@@ -58,17 +58,22 @@ Execute each phase by reading and following the instructions in its reference fi
 | **5** | `.agents/skills/specweaver-pre-commit/references/phase-5-code-quality.md` | Code quality checks (ruff, mypy, complexity, file size) | No |
 | **6** | `.agents/skills/specweaver-pre-commit/references/phase-6-documentation.md` | Documentation updates | No |
 | **7** | `.agents/skills/specweaver-pre-commit/references/phase-7-walkthrough.md` | Write walkthrough artifact | No |
+| **7.5** | N/A | **Red/Blue Adversarial Review of Code Changes** | ⚠️ Yes (step 7.5.2) |
 
 > [!IMPORTANT]
 > Every bug, lint error, complexity violation, or oversized file MUST be fixed
 > regardless of whether it is pre-existing or introduced by this feature.
 > No inherited problems are acceptable!
 
+## Phase 7.5: Red/Blue Cycle Check
+
+7.5.1 Execute the `specweaver-red-blue-review` skill against the code changes introduced in this commit boundary. Look for security flaws, unhandled edge cases, architecture violations, and incomplete requirements.
+7.5.2 If the cycle produces findings, **STOP** and present them to the user for review. You must resolve critical findings before proceeding to Phase 8.
+
 ## Phase 8: Commit Boundary (HITL)
 
-> [!CAUTION]
 > **HARD STOP REQUIRED:** You MUST NOT proceed past a commit boundary autonomously.
 
-8.1. After Phase 7 completes, the pre-commit gate is finished.
+8.1. After Phase 7.5 completes, the pre-commit gate is finished.
 8.2. **STOP execution**. Inform the user that the pre-commit gate is complete.
 8.3. **WAIT** for the user to perform the commit or explicitly tell you to proceed. Do absolutely nothing else.

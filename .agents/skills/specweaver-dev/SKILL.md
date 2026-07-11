@@ -79,7 +79,9 @@ d. **Pre-condition checks — HARD STOP if any fail:**
      - The source file(s) to create/modify
      - The test file(s) to create/modify
 
-2.4. Present the task list to the user for review (HITL).
+2.4. **Red/Blue Team Analysis**: Execute the `specweaver-red-blue-review` skill against the task list to look for missing edge cases, architectural gaps, or implementation flaws.
+
+2.5. Present the task list and the Red/Blue review findings to the user for review (HITL).
      Wait for approval before proceeding.
 
 ## Phase 3: TDD Cycle (repeat for each task)
@@ -178,13 +180,15 @@ For **each commit boundary** in `task.md`, in order:
 
 **Step A — Complete the task batch (autonomous):**
 - Run all TDD tasks in this batch to completion (red → green → refactor).
-- Run the full test suite after the final task in this batch hierarchically (fix failures before moving to the next level):
+- **MANDATORY EXHAUSTIVE TESTING**: After completing the final task in this batch, you MUST run the absolute FULL project test suite (unit, integration, and e2e). 
+- **DO NOT** limit the test run to the modified modules or classes. The entire project must pass.
 ```
-python run_unit_tests.py
-python run_integ_tests.py
-python run_e2e_tests.py
+python -m pytest tests/unit/ -v --tb=short -q
+python -m pytest tests/integration/ -v --tb=short -q
+python -m pytest tests/e2e/ -v --tb=short -q
 ```
-- Fix any regressions before proceeding to Step B.
+- Or run them all together: `python -m pytest -v --tb=short -q`
+- Fix any regressions anywhere in the project before proceeding to Step B.
 
 **Step B — Pre-Commit Quality Gate (autonomous, gates may fire):**
 - Execute the full pre-commit skill (all 7 phases). This is MANDATORY.
