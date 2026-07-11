@@ -1,0 +1,12 @@
+module:
+  name: sandbox.execution
+  archetype: adapter
+  purpose: >
+    Unified subprocess execution with cross-platform security boundaries.
+    Provides structured output capture, timeout escalation, environment isolation,
+    credential stripping, path validation, and telemetry logging.
+  consumes:
+    - commons.qa
+  forbids:
+    - sandbox.qa_runner.*
+    - core.flow.*
