@@ -6,11 +6,10 @@
 import logging
 import shlex
 import shutil
-import subprocess
-import time
 from pathlib import Path
 
 from specweaver.commons.enums.dal import DALLevel
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     CompileError,
@@ -30,8 +29,9 @@ logger = logging.getLogger(__name__)
 class TypeScriptRunner(QARunnerInterface):
     """Executes tests, compilation, and debugging for TypeScript projects."""
 
-    def __init__(self, cwd: Path) -> None:
-        self.cwd = cwd
+    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
+        self._cwd = cwd
+        self._executor = executor or SubprocessExecutor(cwd=cwd)
 
     @property
     def language_name(self) -> str:
@@ -87,30 +87,9 @@ class TypeScriptRunner(QARunnerInterface):
         logger.debug("Running TypeScript compiler: %s", shlex.join(cmd))
 
         try:
-            # We don't use check=True because tsc exits >0 on compilation errors
-            proc = subprocess.run(
+            result = self._executor.execute(
                 cmd,
-                cwd=self.cwd,
-                capture_output=True,
-                text=True,
-                timeout=120,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
-            logger.error("tsc process timed out after 120s")
-            return CompileRunResult(
-                error_count=1,
-                warning_count=0,
-                errors=[
-                    CompileError(
-                        file=target,
-                        line=0,
-                        column=0,
-                        message="Timeout during compilation",
-                        code="TIMEOUT",
-                        is_warning=False,
-                    )
-                ],
+                timeout_seconds=120,
             )
         except getattr(__builtins__, "FileNotFoundError", OSError):
             logger.error("TypeScript toolchain not found (tsc or npx missing)")
@@ -129,7 +108,24 @@ class TypeScriptRunner(QARunnerInterface):
                 ],
             )
 
-        errors = extract_tsc_errors(proc.stdout)
+        if result.timed_out:
+            logger.error("tsc process timed out after 120s")
+            return CompileRunResult(
+                error_count=1,
+                warning_count=0,
+                errors=[
+                    CompileError(
+                        file=target,
+                        line=0,
+                        column=0,
+                        message="Timeout during compilation",
+                        code="TIMEOUT",
+                        is_warning=False,
+                    )
+                ],
+            )
+
+        errors = extract_tsc_errors(result.stdout)
 
         return CompileRunResult(
             error_count=len(errors),
@@ -144,30 +140,15 @@ class TypeScriptRunner(QARunnerInterface):
         if entrypoint.endswith(".ts"):
             # Prefer tsx (modern, Node v22+ compatible) over ts-node
             tsx_bin = shutil.which("tsx")
-            cmd = (
-                [tsx_bin, entrypoint]
-                if tsx_bin
-                else [npx_bin, "ts-node", entrypoint]
-            )
+            cmd = [tsx_bin, entrypoint] if tsx_bin else [npx_bin, "ts-node", entrypoint]
         else:
             cmd = [node_bin, entrypoint]
         logger.debug("Running TypeScript debugger wrapper: %s", shlex.join(cmd))
 
-        start_time = time.monotonic()
         try:
-            proc = subprocess.run(
+            result = self._executor.execute(
                 cmd,
-                cwd=self.cwd,
-                capture_output=True,
-                text=True,
-                timeout=300,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
-            return DebugRunResult(
-                exit_code=124,
-                duration_seconds=300.0,
-                events=[OutputEvent(category="stderr", output="Timeout expired")],
+                timeout_seconds=300,
             )
         except getattr(__builtins__, "FileNotFoundError", OSError):
             return DebugRunResult(
@@ -180,17 +161,22 @@ class TypeScriptRunner(QARunnerInterface):
                 ],
             )
 
-        duration = time.monotonic() - start_time
+        if result.timed_out:
+            return DebugRunResult(
+                exit_code=124,
+                duration_seconds=result.duration_seconds,
+                events=[OutputEvent(category="stderr", output="Timeout expired")],
+            )
 
         events: list[OutputEvent] = []
-        for line in proc.stdout.splitlines():
+        for line in result.stdout.splitlines():
             events.append(OutputEvent(category="stdout", output=line))
-        for line in proc.stderr.splitlines():
+        for line in result.stderr.splitlines():
             events.append(OutputEvent(category="stderr", output=line))
 
         return DebugRunResult(
-            exit_code=proc.returncode,
-            duration_seconds=duration,
+            exit_code=result.exit_code,
+            duration_seconds=result.duration_seconds,
             events=events,
         )
 
@@ -209,12 +195,12 @@ class TypeScriptRunner(QARunnerInterface):
             "TypeScriptRunner.run_architecture_check: target=%s, dal=%s", target, dal_level
         )
 
-        target_path = self.cwd / target
+        target_path = self._cwd / target
         ctx_dir = target_path.parent if target_path.is_file() else target_path
 
         # Traverse up to find closest context.yaml
         while (
-            ctx_dir != self.cwd
+            ctx_dir != self._cwd
             and ctx_dir.parent != ctx_dir
             and not (ctx_dir / "context.yaml").exists()
         ):
@@ -230,7 +216,7 @@ class TypeScriptRunner(QARunnerInterface):
                 logger.warning("Failed to parse context.yaml at %s: %s", ctx_file, e)
 
         # Temporary config dropping
-        tmp_dir = self.cwd / ".tmp"
+        tmp_dir = self._cwd / ".tmp"
         tmp_dir.mkdir(parents=True, exist_ok=True)
         config_path = tmp_dir / ".eslint-specweaver-arch.json"
 
@@ -255,23 +241,22 @@ class TypeScriptRunner(QARunnerInterface):
         ]
 
         try:
-            proc = subprocess.run(
-                cmd, cwd=self.cwd, capture_output=True, text=True, timeout=60, check=False
-            )
-        except subprocess.TimeoutExpired:
+            result = self._executor.execute(cmd, timeout_seconds=60)
+        finally:
+            config_path.unlink(missing_ok=True)
+
+        if result.timed_out:
             return ArchitectureRunResult(
                 violation_count=1,
                 violations=[
                     ArchitectureViolation(file=target, code="Timeout", message="Jest timed out")
                 ],
             )
-        finally:
-            config_path.unlink(missing_ok=True)
 
         violations = []
-        if proc.stdout.strip():
+        if result.stdout.strip():
             try:
-                results = json.loads(proc.stdout)
+                results = json.loads(result.stdout)
                 for res in results:
                     file_path = res.get("filePath", "")
                     for msg in res.get("messages", []):

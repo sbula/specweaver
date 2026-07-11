@@ -9,6 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     QARunnerInterface,
@@ -32,8 +33,9 @@ logger = logging.getLogger(__name__)
 class RustRunner(QARunnerInterface):
     """Test runner bindings for Rust using cargo, cargo2junit, and clippy-sarif."""
 
-    def __init__(self, cwd: Path) -> None:
+    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
         self._cwd = cwd
+        self._executor = executor or SubprocessExecutor(cwd=cwd)
 
     @property
     def language_name(self) -> str:
@@ -49,7 +51,6 @@ class RustRunner(QARunnerInterface):
         coverage: bool = False,
         coverage_threshold: int = 70,
     ) -> TestRunResult:
-        import subprocess
         import time
 
         import junitparser
@@ -60,20 +61,11 @@ class RustRunner(QARunnerInterface):
             start_time = time.time()
             cmd = ["cargo", "test", "--format=json", "-q"]
 
-            test_process = subprocess.run(
-                cmd,
-                cwd=self._cwd,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            test_result = self._executor.execute(cmd)
 
-            junit_process = subprocess.run(
+            junit_result = self._executor.execute(
                 ["cargo2junit"],
-                input=test_process.stdout,
-                capture_output=True,
-                text=True,
-                check=False,
+                input_text=test_result.stdout,
             )
 
             passed = 0
@@ -82,7 +74,7 @@ class RustRunner(QARunnerInterface):
             skipped = 0
             failures: list[TestFailure] = []
 
-            xml_str = junit_process.stdout.strip()
+            xml_str = junit_result.stdout.strip()
             if xml_str:
                 xml = junitparser.JUnitXml.fromstring(xml_str)
                 for suite in xml:
@@ -128,8 +120,6 @@ class RustRunner(QARunnerInterface):
             )
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
-        import subprocess
-
         from specweaver.commons import json
         from specweaver.sandbox.qa_runner.core.interface import LintError, LintRunResult
 
@@ -139,26 +129,17 @@ class RustRunner(QARunnerInterface):
                 clippy_cmd.insert(2, "--fix")
                 clippy_cmd.insert(3, "--allow-staged")
 
-            clippy_process = subprocess.run(
-                clippy_cmd,
-                cwd=self._cwd,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            clippy_result = self._executor.execute(clippy_cmd)
 
-            sarif_process = subprocess.run(
+            sarif_result = self._executor.execute(
                 ["clippy-sarif"],
-                input=clippy_process.stdout,
-                capture_output=True,
-                text=True,
-                check=False,
+                input_text=clippy_result.stdout,
             )
 
             errors_list = []
-            if sarif_process.stdout.strip():
+            if sarif_result.stdout.strip():
                 try:
-                    data = json.loads(sarif_process.stdout)
+                    data = json.loads(sarif_result.stdout)
                     runs = data.get("runs", [])
                     for run in runs:
                         for result in run.get("results", []):
@@ -182,8 +163,6 @@ class RustRunner(QARunnerInterface):
             return LintRunResult(error_count=1, fixable_count=0, fixed_count=0, errors=[])
 
     def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
-        import subprocess
-
         from specweaver.commons import json
         from specweaver.sandbox.qa_runner.core.interface import ComplexityRunResult
 
@@ -197,26 +176,17 @@ class RustRunner(QARunnerInterface):
                 "clippy::cognitive_complexity",
             ]
 
-            clippy_process = subprocess.run(
-                clippy_cmd,
-                cwd=self._cwd,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            clippy_result = self._executor.execute(clippy_cmd)
 
-            sarif_process = subprocess.run(
+            sarif_result = self._executor.execute(
                 ["clippy-sarif"],
-                input=clippy_process.stdout,
-                capture_output=True,
-                text=True,
-                check=False,
+                input_text=clippy_result.stdout,
             )
 
             violations = []
-            if sarif_process.stdout.strip():
+            if sarif_result.stdout.strip():
                 try:
-                    data = json.loads(sarif_process.stdout)
+                    data = json.loads(sarif_result.stdout)
                     violations.extend(parse_clippy_complexity(data, max_complexity))
                 except json.JSONDecodeError:
                     pass
@@ -230,8 +200,6 @@ class RustRunner(QARunnerInterface):
             return ComplexityRunResult(violation_count=1, max_complexity=10, violations=[])
 
     def run_compiler(self, target: str) -> CompileRunResult:
-        import subprocess
-
         from specweaver.sandbox.qa_runner.core.interface import CompileError, CompileRunResult
 
         try:
@@ -239,13 +207,7 @@ class RustRunner(QARunnerInterface):
             if target != "src/":
                 cmd.extend(["--bin", target.strip("/")])
 
-            subprocess.run(
-                cmd,
-                cwd=self._cwd,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            self._executor.execute(cmd)
             return CompileRunResult(error_count=0, warning_count=0, errors=[])
         except Exception as e:
             return CompileRunResult(
@@ -259,24 +221,16 @@ class RustRunner(QARunnerInterface):
             )
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
-        import subprocess
-
         from specweaver.sandbox.qa_runner.core.interface import DebugRunResult, OutputEvent
 
         try:
             cmd = ["cargo", "run"]
-            process = subprocess.run(
-                cmd,
-                cwd=self._cwd,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            result = self._executor.execute(cmd)
             return DebugRunResult(
-                exit_code=process.returncode,
-                duration_seconds=0.0,
-                events=[OutputEvent(category="stdout", output=process.stdout)]
-                if process.stdout
+                exit_code=result.exit_code,
+                duration_seconds=result.duration_seconds,
+                events=[OutputEvent(category="stdout", output=result.stdout)]
+                if result.stdout
                 else [],
             )
         except Exception:
