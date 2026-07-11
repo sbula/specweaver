@@ -99,20 +99,28 @@ class UnixLimiter(PlatformLimiter):
     """
 
     def make_preexec_fn(self, limits: ResourceLimits) -> Callable[[], None] | None:
-        """Return a callable that sets RLIMIT_AS, RLIMIT_NPROC, and RLIMIT_FSIZE.
+        """Return a callable that sets PR_SET_PDEATHSIG and resource limits.
 
-        Returns ``None`` if no limits are specified (all ``None``).
+        Sets PR_SET_PDEATHSIG to SIGKILL on Linux to prevent zombie processes.
         """
-        if not limits.max_memory_bytes and not limits.max_processes and not limits.max_file_size_bytes:
-            return None
-
         # Capture limits in closure — will be called in the child process
         mem = limits.max_memory_bytes
         nproc = limits.max_processes
         fsize = limits.max_file_size_bytes
 
         def _apply_limits() -> None:
+            import sys
             import resource
+
+            if sys.platform.startswith("linux"):
+                try:
+                    import ctypes
+                    import signal
+
+                    libc = ctypes.CDLL("libc.so.6")
+                    libc.prctl(1, signal.SIGKILL)
+                except Exception:
+                    pass
 
             if mem is not None:
                 resource.setrlimit(resource.RLIMIT_AS, (mem, mem))
@@ -174,6 +182,7 @@ class WindowsLimiter(PlatformLimiter):
         # 2. Set memory limit via JOBOBJECT_EXTENDED_LIMIT_INFORMATION
         #    LimitFlags: JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x00000100
         job_object_limit_process_memory = 0x00000100
+        job_object_limit_kill_on_job_close = 0x00002000
         jobobjectextendedlimitinformation = 9
 
         # The JOBOBJECT_EXTENDED_LIMIT_INFORMATION structure is complex.
@@ -214,7 +223,7 @@ class WindowsLimiter(PlatformLimiter):
             ]
 
         ext_info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
-        ext_info.BasicLimitInformation.LimitFlags = job_object_limit_process_memory
+        ext_info.BasicLimitInformation.LimitFlags = job_object_limit_process_memory | job_object_limit_kill_on_job_close
         ext_info.ProcessMemoryLimit = limits.max_memory_bytes
 
         result = kernel32.SetInformationJobObject(

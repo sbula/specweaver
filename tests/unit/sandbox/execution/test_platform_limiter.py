@@ -151,8 +151,12 @@ class TestUnixLimiter:
         limiter = UnixLimiter()
         limits = ResourceLimits()  # All None
         fn = limiter.make_preexec_fn(limits)
-        # Should return None when no limits are specified
-        assert fn is None
+        assert fn is not None
+
+        mock_resource = MagicMock()
+        with patch.dict("sys.modules", {"resource": mock_resource}):
+            fn()
+            mock_resource.setrlimit.assert_not_called()
 
     def test_apply_post_start_is_noop(self) -> None:
         """apply_post_start does nothing on Unix (limits pre-applied)."""
@@ -297,9 +301,8 @@ class TestWindowsLimiter:
         mock_ctypes = MagicMock()
         mock_ctypes.windll.kernel32.CreateJobObjectW.return_value = 0  # Fail
 
-        with patch.dict("sys.modules", {"ctypes": mock_ctypes}):
-            with caplog.at_level(logging.WARNING):
-                limiter.apply_post_start(MagicMock(), limits)
+        with patch.dict("sys.modules", {"ctypes": mock_ctypes}), caplog.at_level(logging.WARNING):
+            limiter.apply_post_start(MagicMock(), limits)
 
         assert "CreateJobObjectW failed" in caplog.text
 
@@ -314,9 +317,8 @@ class TestWindowsLimiter:
         mock_ctypes.windll.kernel32.CreateJobObjectW.return_value = 42
         mock_ctypes.windll.kernel32.SetInformationJobObject.return_value = 0  # Fail
 
-        with patch.dict("sys.modules", {"ctypes": mock_ctypes}):
-            with caplog.at_level(logging.WARNING):
-                limiter.apply_post_start(MagicMock(), limits)
+        with patch.dict("sys.modules", {"ctypes": mock_ctypes}), caplog.at_level(logging.WARNING):
+            limiter.apply_post_start(MagicMock(), limits)
 
         assert "SetInformationJobObject failed" in caplog.text
         mock_ctypes.windll.kernel32.CloseHandle.assert_called_with(42)
@@ -333,9 +335,8 @@ class TestWindowsLimiter:
         mock_ctypes.windll.kernel32.SetInformationJobObject.return_value = 1
         mock_ctypes.windll.kernel32.OpenProcess.return_value = 0  # Fail
 
-        with patch.dict("sys.modules", {"ctypes": mock_ctypes}):
-            with caplog.at_level(logging.WARNING):
-                limiter.apply_post_start(MagicMock(), limits)
+        with patch.dict("sys.modules", {"ctypes": mock_ctypes}), caplog.at_level(logging.WARNING):
+            limiter.apply_post_start(MagicMock(), limits)
 
         assert "OpenProcess failed" in caplog.text
         mock_ctypes.windll.kernel32.CloseHandle.assert_called_with(42)
