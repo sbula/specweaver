@@ -1,12 +1,15 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Java test runner using Maven and Gradle."""
+"""Java test runner using Maven and Gradle.
+
+Implements QARunnerInterface for Java projects.
+Delegates subprocess execution to SubprocessExecutor.
+"""
 
 from __future__ import annotations
 
 import logging
-import subprocess
 from typing import TYPE_CHECKING
 
 from specweaver.commons import json
@@ -26,6 +29,8 @@ from specweaver.workspace.ast.parsers.java.parsers import parse_pmd_complexity
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.sandbox.execution.executor import SubprocessExecutor
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +38,15 @@ logger = logging.getLogger(__name__)
 class JavaRunner(QARunnerInterface):
     """Java compilation, testing, and linting pipeline."""
 
-    def __init__(self, cwd: Path) -> None:
+    _DEFAULT_TIMEOUT: int = 120
+    _BUILD_TIMEOUT: int = 300
+
+    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
+        from specweaver.sandbox.execution.executor import SubprocessExecutor as _Executor
+
         self._cwd = cwd
         self._build_tool: str | None = None
+        self._executor = executor or _Executor(cwd=cwd)
 
     @property
     def language_name(self) -> str:
@@ -87,7 +98,7 @@ class JavaRunner(QARunnerInterface):
                 stale_xml.unlink(missing_ok=True)
             search_path = self._cwd / "target" / "surefire-reports"
 
-        subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
+        self._executor.execute(cmd, timeout_seconds=timeout)
 
         import junitparser
 
@@ -127,7 +138,7 @@ class JavaRunner(QARunnerInterface):
                 cmd[0] = "mvn"
             sarif_path = self._cwd / "target" / "pmd.sarif"
 
-        subprocess.run(cmd, cwd=self._cwd, capture_output=True, check=False)
+        self._executor.execute(cmd)
 
         if sarif_path.exists():
             try:
@@ -176,7 +187,7 @@ class JavaRunner(QARunnerInterface):
                 cmd[0] = "mvn"
             sarif_path = self._cwd / "target" / "pmd.sarif"
 
-        subprocess.run(cmd, cwd=self._cwd, capture_output=True, check=False)
+        self._executor.execute(cmd)
 
         if sarif_path.exists():
             try:
@@ -203,10 +214,10 @@ class JavaRunner(QARunnerInterface):
             if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
                 cmd[0] = "mvn"
 
-        proc = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
+        result = self._executor.execute(cmd)
 
         return CompileRunResult(
-            error_count=1 if proc.returncode != 0 else 0,
+            error_count=1 if result.exit_code != 0 else 0,
             warning_count=0,
             errors=[],
         )
@@ -222,14 +233,14 @@ class JavaRunner(QARunnerInterface):
             if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
                 cmd[0] = "mvn"
 
-        proc = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
+        result = self._executor.execute(cmd, timeout_seconds=self._BUILD_TIMEOUT)
 
         from specweaver.sandbox.qa_runner.core.interface import OutputEvent
 
         return DebugRunResult(
-            exit_code=proc.returncode,
-            duration_seconds=0.0,
-            events=[OutputEvent(category="stdout", output=x) for x in proc.stdout.splitlines()],
+            exit_code=result.exit_code,
+            duration_seconds=result.duration_seconds,
+            events=[OutputEvent(category="stdout", output=x) for x in result.stdout.splitlines()],
         )
 
     def run_architecture_check(
@@ -320,11 +331,19 @@ public class SpecweaverArchUnitTest {{
 
         violations = []
         try:
-            proc = subprocess.run(
-                cmd, cwd=self._cwd, capture_output=True, text=True, timeout=60, check=False
-            )
+            result = self._executor.execute(cmd, timeout_seconds=60)
 
-            for line in proc.stdout.splitlines():
+            if result.timed_out:
+                return ArchitectureRunResult(
+                    violation_count=1,
+                    violations=[
+                        ArchitectureViolation(
+                            file=target, code="Timeout", message="Maven timed out"
+                        )
+                    ],
+                )
+
+            for line in result.stdout.splitlines():
                 if line.startswith("ARCH_VIOLATION|"):
                     parts = line.split("|")
                     if len(parts) == 3:
@@ -335,13 +354,6 @@ public class SpecweaverArchUnitTest {{
                                 message=f"Restricted import violated: {parts[2]}",
                             )
                         )
-        except subprocess.TimeoutExpired:
-            return ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(file=target, code="Timeout", message="Maven timed out")
-                ],
-            )
         finally:
             test_file.unlink(missing_ok=True)
             # clear empty directories if possible

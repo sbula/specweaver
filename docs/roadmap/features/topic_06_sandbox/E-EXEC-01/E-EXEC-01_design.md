@@ -190,11 +190,11 @@ Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/fi
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | SubprocessExecutor Core | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Language Runner Migration | SF-1 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Language Runner Migration | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-2 Impl Plan APPROVED (2026-07-11).
-**Next step**: Implement SF-2 using:
-`please implement E-EXEC-01 SF-2`
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.
+**Current status**: E-EXEC-01 COMPLETE (2026-07-12). Both SF-1 and SF-2 fully implemented, tested, reviewed (Red/Blue), and committed.
+**Regression**: Unit 4482 passed / Integration 424 passed / E2e 139 passed. All clean.
+**Follow-up**: TECH-008 (git/filesystem subprocess migration) remains open.
+

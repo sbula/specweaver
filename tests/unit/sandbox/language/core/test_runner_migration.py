@@ -90,3 +90,55 @@ class TestRustRunnerMigration:
 
         runner = RustRunner(cwd=tmp_path)
         assert runner._cwd == tmp_path
+
+
+class TestJavaRunnerMigration:
+    """Verify JavaRunner accepts and uses SubprocessExecutor."""
+
+    def test_accepts_executor(self, tmp_path: Path) -> None:
+        """JavaRunner(cwd, executor=mock) stores the provided executor."""
+        from specweaver.sandbox.language.core.java.runner import JavaRunner
+
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
+        assert runner._executor is mock_executor
+
+    def test_creates_default_executor(self, tmp_path: Path) -> None:
+        """JavaRunner(cwd) auto-creates a SubprocessExecutor."""
+        from specweaver.sandbox.language.core.java.runner import JavaRunner
+
+        runner = JavaRunner(cwd=tmp_path)
+        assert isinstance(runner._executor, SubprocessExecutor)
+
+    def test_has_private_cwd(self, tmp_path: Path) -> None:
+        """JavaRunner uses _cwd (private) attribute."""
+        from specweaver.sandbox.language.core.java.runner import JavaRunner
+
+        runner = JavaRunner(cwd=tmp_path)
+        assert runner._cwd == tmp_path
+
+
+class TestKotlinRunnerMigration:
+    """Verify KotlinRunner accepts and uses SubprocessExecutor."""
+
+    def test_accepts_executor(self, tmp_path: Path) -> None:
+        """KotlinRunner(cwd, executor=mock) stores the provided executor."""
+        from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
+
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
+        assert runner._executor is mock_executor
+
+    def test_creates_default_executor(self, tmp_path: Path) -> None:
+        """KotlinRunner(cwd) auto-creates a SubprocessExecutor."""
+        from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
+
+        runner = KotlinRunner(cwd=tmp_path)
+        assert isinstance(runner._executor, SubprocessExecutor)
+
+    def test_has_private_cwd(self, tmp_path: Path) -> None:
+        """KotlinRunner uses _cwd (private) attribute."""
+        from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
+
+        runner = KotlinRunner(cwd=tmp_path)
+        assert runner._cwd == tmp_path

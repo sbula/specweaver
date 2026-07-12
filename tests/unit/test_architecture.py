@@ -65,6 +65,9 @@ def test_tach_interfaces_map_to_valid_namespaces() -> None:
                         if current.with_suffix(".py").exists():
                             path_exists = True
                             break
+                        if current.is_dir() and (current / "__init__.py").exists():
+                            path_exists = True
+                            break
                         current = current.parent
 
                 assert path_exists, (

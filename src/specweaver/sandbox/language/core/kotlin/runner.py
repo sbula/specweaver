@@ -1,12 +1,15 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Kotlin test runner using Maven and Gradle."""
+"""Kotlin test runner using Maven and Gradle.
+
+Implements QARunnerInterface for Kotlin projects.
+Delegates subprocess execution to SubprocessExecutor.
+"""
 
 from __future__ import annotations
 
 import logging
-import subprocess
 from typing import TYPE_CHECKING
 
 from specweaver.commons import json
@@ -29,14 +32,19 @@ from specweaver.workspace.ast.parsers.kotlin.parsers import parse_detekt_complex
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.sandbox.execution.executor import SubprocessExecutor
+
 logger = logging.getLogger(__name__)
 
 
 class KotlinRunner(QARunnerInterface):
     """Kotlin compilation, testing, and linting pipeline."""
 
-    def __init__(self, cwd: Path) -> None:
+    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
+        from specweaver.sandbox.execution.executor import SubprocessExecutor as _Executor
+
         self._cwd = cwd
+        self._executor = executor or _Executor(cwd=cwd)
 
     @property
     def language_name(self) -> str:
@@ -80,7 +88,7 @@ class KotlinRunner(QARunnerInterface):
                 for stale_xml in search_path.rglob("*.xml"):
                     stale_xml.unlink(missing_ok=True)
 
-        subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
+        self._executor.execute(cmd, timeout_seconds=timeout)
 
         passed, failed = self._parse_junit_results(search_path)
 
@@ -126,7 +134,7 @@ class KotlinRunner(QARunnerInterface):
                 cmd[0] = "mvn"
             sarif_path = self._cwd / "target" / "detekt.sarif"
 
-        subprocess.run(cmd, cwd=self._cwd, capture_output=True, check=False)
+        self._executor.execute(cmd)
 
         if sarif_path.exists():
             try:
@@ -175,7 +183,7 @@ class KotlinRunner(QARunnerInterface):
                 cmd[0] = "mvn"
             sarif_path = self._cwd / "target" / "detekt.sarif"
 
-        subprocess.run(cmd, cwd=self._cwd, capture_output=True, check=False)
+        self._executor.execute(cmd)
 
         if sarif_path.exists():
             try:
@@ -202,12 +210,14 @@ class KotlinRunner(QARunnerInterface):
             if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
                 cmd[0] = "mvn"
 
-        proc = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
+        result = self._executor.execute(cmd)
 
         errors: list[CompileError] = []
-        if proc.returncode != 0:
+        if result.exit_code != 0:
             errors.append(
-                CompileError(file="", line=0, column=0, code="COMPILE_ERROR", message=proc.stderr)
+                CompileError(
+                    file="", line=0, column=0, code="COMPILE_ERROR", message=result.stderr
+                )
             )
 
         return CompileRunResult(
@@ -228,14 +238,14 @@ class KotlinRunner(QARunnerInterface):
             if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
                 cmd[0] = "mvn"
 
-        proc = subprocess.run(cmd, cwd=self._cwd, capture_output=True, text=True, check=False)
+        result = self._executor.execute(cmd, timeout_seconds=300)
 
         return DebugRunResult(
-            exit_code=proc.returncode,
-            duration_seconds=0.0,
+            exit_code=result.exit_code,
+            duration_seconds=result.duration_seconds,
             events=[
                 OutputEvent(category="stdout", output=f"Starting Kotlin debugger on {entrypoint}"),
-                OutputEvent(category="stderr", output=proc.stderr[:200]),
+                OutputEvent(category="stderr", output=result.stderr[:200]),
             ],
         )
 

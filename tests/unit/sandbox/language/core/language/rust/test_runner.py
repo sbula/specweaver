@@ -188,6 +188,34 @@ class TestRustRunner:
         assert result.exit_code == 0
         assert result.events[0].output == "DEBUG OK"
 
+    def test_run_compiler_failure(self, tmp_path: Path) -> None:
+        """G-1: run_compiler with exit_code != 0 returns error count > 0."""
+        (tmp_path / "Cargo.toml").write_text("")
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.side_effect = Exception("cargo build failed")
+        runner = RustRunner(cwd=tmp_path, executor=mock_executor)
+
+        result = runner.run_compiler(target="src/")
+
+        mock_executor.execute.assert_called_once()
+        assert result.error_count == 1
+        assert len(result.errors) == 1
+        assert "cargo build failed" in result.errors[0].message
+
+    def test_run_debugger_exception(self, tmp_path: Path) -> None:
+        """G-2: run_debugger exception returns exit_code=1 with empty events."""
+        (tmp_path / "Cargo.toml").write_text("")
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.side_effect = Exception("process crashed")
+        runner = RustRunner(cwd=tmp_path, executor=mock_executor)
+
+        result = runner.run_debugger(target="src/", entrypoint="src/main.rs")
+
+        assert result.exit_code == 1
+        assert result.duration_seconds == 0.0
+        assert result.events == []
+
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = RustRunner(cwd=tmp_path)
         assert runner.language_name == "rust"
+

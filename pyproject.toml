@@ -102,12 +102,20 @@ select = [
     "B",   # flake8-bugbear
     "SIM", # flake8-simplify
     "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
     "RUF", # ruff-specific rules
     "C90", # mccabe complexity
 ]
 ignore = [
     "E501",  # line length handled by formatter
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"src/specweaver/sandbox/execution/*.py" = ["TID251"]
+"tests/**" = ["TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"subprocess".msg = "Use SubprocessExecutor from specweaver.sandbox.execution.executor instead."
 
 [tool.ruff.lint.isort]
 known-first-party = ["specweaver"]

@@ -2,14 +2,15 @@
 
 This guide explains how to safely execute external processes using SpecWeaver's unified `SubprocessExecutor`.
 
-**WARNING:** Direct usage of `subprocess.run()` is forbidden in the codebase to prevent resource exhaustion, credential leakage, and unbounded execution times. You MUST use `SubprocessExecutor`.
+**WARNING:** Direct usage of `subprocess.run()` is **banned** via ruff rule TID251. All runner modules MUST use `SubprocessExecutor`. The only exemption is `src/specweaver/sandbox/execution/` (the executor itself) and test files.
 
 ## Core Features
 
-- **Timeout Enforcement:** Kills runaway processes using a SIGTERM \u2192 SIGKILL escalation.
-- **Resource Limits:** Automatically caps memory usage and process count (OS dependent).
+- **Timeout Enforcement:** Kills runaway processes using a SIGTERM → SIGKILL escalation.
+- **Resource Limits:** Automatically caps memory usage and process count (OS dependent). Configured at constructor time via `ResourceLimits`.
 - **Environment Stripping:** Automatically removes sensitive credentials (e.g. `GEMINI_API_KEY`) from the child process.
 - **Path Validation:** Prevents directory traversal attacks by ensuring the target directory is inside the workspace boundary.
+- **Structured Results:** Returns `SubprocessResult` with `.exit_code`, `.stdout`, `.stderr`, `.timed_out`, `.duration_seconds`.
 
 ## Basic Usage
 
@@ -19,16 +20,19 @@ from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.execution.models import ResourceLimits
 
 # 1. Initialize with the absolute path to the permitted working directory
-executor = SubprocessExecutor(cwd=Path("/path/to/workspace"))
+#    Resource limits are set at construction time, not per-call.
+executor = SubprocessExecutor(
+    cwd=Path("/path/to/workspace"),
+    resource_limits=ResourceLimits(
+        max_memory_bytes=512 * 1024 * 1024,  # 512 MB
+        max_processes=50,
+    ),
+)
 
 # 2. Execute a command safely
 result = executor.execute(
-    command=["pytest", "tests/"],
+    cmd=["pytest", "tests/"],
     timeout_seconds=120,
-    limits=ResourceLimits(
-        max_memory_bytes=512 * 1024 * 1024, # 512 MB
-        max_processes=50
-    )
 )
 
 # 3. Handle the structured result
@@ -37,10 +41,40 @@ if result.exit_code == 0:
     print(result.stdout)
 else:
     print(f"Failed. Error: {result.stderr}")
-    
+
 # Did it time out?
 if result.timed_out:
     print("Process exceeded the 120s timeout and was killed.")
+```
+
+## Piping Input to a Process
+
+Use `input_text` to send data to a process via stdin (e.g., piping cargo test output through a formatter):
+
+```python
+# Run cargo test, capture its output
+cargo_result = executor.execute(cmd=["cargo", "test", "--", "-Z", "unstable-options", "--format=json"])
+
+# Pipe cargo's stdout into cargo2junit via input_text
+junit_result = executor.execute(
+    cmd=["cargo2junit"],
+    input_text=cargo_result.stdout,
+)
+```
+
+## Dependency Injection in Language Runners
+
+All language runners accept an optional `executor` parameter for testability:
+
+```python
+from specweaver.sandbox.language.core.python.runner import PythonQARunner
+
+# Production: auto-creates a default executor
+runner = PythonQARunner(cwd=workspace_path)
+
+# Testing: inject a mock executor
+mock_executor = MagicMock(spec=SubprocessExecutor)
+runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 ```
 
 ## Security Boundaries
@@ -49,7 +83,7 @@ if result.timed_out:
 The executor forwards a clean baseline of environment variables (like `PATH` and `HOME`) and **strips all known LLM credentials** (e.g., `OPENAI_API_KEY`, `GEMINI_API_KEY`).
 If you need to inject custom environment variables safely, use `extra_env`:
 ```python
-executor.execute(["echo", "hello"], extra_env={"MY_CUSTOM_VAR": "value"})
+executor.execute(cmd=["echo", "hello"], extra_env={"MY_CUSTOM_VAR": "value"})
 ```
 *Note: You cannot use `extra_env` to re-inject stripped credentials. The stripping happens after injection.*
 
