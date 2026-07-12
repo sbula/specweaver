@@ -28,7 +28,7 @@ async def test_handover_persistence_e2e(tmp_path: Path):
     # Create a dummy project because of foreign key constraint
     with sync_engine.begin() as conn:
         conn.execute(
-            Base.metadata.tables["projects"]
+            Base.metadata.tables["workspace_projects"]
             .insert()
             .values(
                 name="integration",
@@ -102,7 +102,7 @@ async def test_handover_persisted_on_failure(tmp_path: Path):
     Base.metadata.create_all(sync_engine)
     with sync_engine.begin() as conn:
         conn.execute(
-            Base.metadata.tables["projects"]
+            Base.metadata.tables["workspace_projects"]
             .insert()
             .values(
                 name="integration",

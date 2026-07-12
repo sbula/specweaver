@@ -146,7 +146,7 @@ async def test_lineage_tracking_flow_database(
     with sqlite3.connect(tmp_path / "specweaver.db") as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
-            "SELECT artifact_id, parent_id, event_type FROM artifact_events ORDER BY timestamp ASC"
+            "SELECT artifact_id, parent_id, event_type FROM flow_artifact_events ORDER BY timestamp ASC"
         ).fetchall()
 
         # We expect two hits: draft, then code gen
@@ -232,7 +232,7 @@ async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Data
     with sqlite3.connect(tmp_path / "specweaver.db") as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
-            "SELECT artifact_id, parent_id, event_type FROM artifact_events WHERE event_type='generated_code' ORDER BY timestamp ASC"
+            "SELECT artifact_id, parent_id, event_type FROM flow_artifact_events WHERE event_type='generated_code' ORDER BY timestamp ASC"
         ).fetchall()
 
         assert len(rows) == 2

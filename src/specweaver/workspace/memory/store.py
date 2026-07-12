@@ -83,7 +83,7 @@ class Epic(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     project_name: Mapped[str] = mapped_column(
         String,
-        ForeignKey("projects.name", onupdate="CASCADE", ondelete="CASCADE"),
+        ForeignKey("workspace_projects.name", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
@@ -101,7 +101,7 @@ class Task(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     project_name: Mapped[str] = mapped_column(
         String,
-        ForeignKey("projects.name", onupdate="CASCADE", ondelete="CASCADE"),
+        ForeignKey("workspace_projects.name", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
     )
     epic_id: Mapped[uuid.UUID | None] = mapped_column(

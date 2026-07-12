@@ -297,7 +297,7 @@ def _resolve_plan_by_lineage(
             with db.connect() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT parent_id FROM artifact_events WHERE artifact_id = ?", (uuid,)
+                    "SELECT parent_id FROM flow_artifact_events WHERE artifact_id = ?", (uuid,)
                 )
                 row = cursor.fetchone()
                 if row and row[0]:

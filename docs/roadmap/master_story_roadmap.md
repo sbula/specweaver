@@ -595,24 +595,26 @@ These stories do not add new user-facing features, but are critical epics requir
 ### 🟢 TECH-002: BaseTool Meta-Class Registry
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.*
 *   **Core Required (MVS):**
-    *   `[x]` **TECH-002:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-002_base_tool_registry.md)
+    *   `[x]` **TECH-002:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
 *   **Verifiable Proof:**
     *   `tests/integration/sandbox/test_dispatcher_sf3_integration.py`
 
 ### 🟢 TECH-003: Structural Refactoring of Workspace AST Module
 **Benefit:** *Crystal clear boundary separation between mechanical Tree-Sitter extraction and semantic ontology mapping.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-003:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-003/TECH-003_ast_restructuring.md)
+    *   `✅` **TECH-003:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-003/TECH-003_design.md)
 
 ### 🟢 TECH-004: Architectural Analysis & Refactoring of `sw graph build` CLI
 **Benefit:** *Strips hardcoded logic from the CLI, enabling pure headless execution of the Graph Builder from any background Atom.*
 *   **Core Required (MVS):**
-    *   `[x]` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_graph_cli_analysis.md)
+    *   `[x]` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
 
-### 🔴 TECH-005: Database Table Prefix Harmonization
+### 🟡 TECH-005: Database Table Prefix Harmonization
 **Benefit:** *All database tables use a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows.*
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
+        *   `[x]` SF-1: Model Refactoring
+        *   `[ ]` SF-2: Alembic Migration
 
 ### 🟢 TECH-006: Context Loading Pipeline Refactoring
 **Benefit:** *Eliminates business logic from CLI layers, kills the cross-interface spider web of private helper imports, and reduces RunContext from a 23-field God Object to a lean execution context.*

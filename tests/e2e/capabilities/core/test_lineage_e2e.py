@@ -98,7 +98,7 @@ class TestLineageE2EFlow:
         # Verify DB got the event with correct model_id
         conn = sqlite3.connect(_isolate_env / "specweaver.db")
         rows = conn.execute(
-            "SELECT artifact_id, parent_id, event_type, model_id FROM artifact_events WHERE event_type='generated_code'"
+            "SELECT artifact_id, parent_id, event_type, model_id FROM flow_artifact_events WHERE event_type='generated_code'"
         ).fetchall()
         assert len(rows) == 1
         assert (
@@ -109,7 +109,7 @@ class TestLineageE2EFlow:
         )  # model_id properly flowed from context through flow layers to DB
 
         test_rows = conn.execute(
-            "SELECT model_id FROM artifact_events WHERE event_type='generated_tests'"
+            "SELECT model_id FROM flow_artifact_events WHERE event_type='generated_tests'"
         ).fetchall()
         if test_rows:
             assert test_rows[0][0] == "gemini-3-flash-preview"
@@ -165,7 +165,7 @@ class TestLineageE2EFlow:
 
         conn = sqlite3.connect(_isolate_env / "specweaver.db")
         rows = conn.execute(
-            "SELECT artifact_id, event_type, model_id FROM artifact_events WHERE event_type='drafted_spec'"
+            "SELECT artifact_id, event_type, model_id FROM flow_artifact_events WHERE event_type='drafted_spec'"
         ).fetchall()
         assert len(rows) == 1
         assert rows[0][0] == spec_uuid
@@ -236,7 +236,7 @@ class TestLineageE2EFlow:
 
         conn = sqlite3.connect(db_path)
         rows = conn.execute(
-            "SELECT artifact_id, parent_id, event_type, model_id FROM artifact_events WHERE event_type='generated_plan'"
+            "SELECT artifact_id, parent_id, event_type, model_id FROM flow_artifact_events WHERE event_type='generated_plan'"
         ).fetchall()
         assert len(rows) == 1
         assert rows[0][1] == "55555555-4444-3333-2222-111111111111"
@@ -368,7 +368,7 @@ class TestASTFixSurvivability:
         # Verify db logged lint_fixed with correct model_id
         conn = sqlite3.connect(_isolate_env / "specweaver.db")
         rows = conn.execute(
-            "SELECT artifact_id, event_type, model_id FROM artifact_events WHERE event_type='lint_fixed'"
+            "SELECT artifact_id, event_type, model_id FROM flow_artifact_events WHERE event_type='lint_fixed'"
         ).fetchall()
         assert len(rows) == 1
         assert rows[0][0] == "99999999-2222-3333-4444-555555555555"

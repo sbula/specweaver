@@ -30,7 +30,7 @@ class LlmProfile(Base):
 
 
 class ProjectLlmLink(Base):
-    __tablename__ = "project_llm_links"
+    __tablename__ = "llm_project_links"
 
     project_name: Mapped[str] = mapped_column(String, primary_key=True)
     role: Mapped[str] = mapped_column(String, primary_key=True)

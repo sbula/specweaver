@@ -29,8 +29,8 @@ def test_bootstrap_database_happy_path(tmp_path: Path) -> None:
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
     tables = [row[0] for row in cursor.fetchall()]
     assert "llm_profiles" in tables
-    assert "projects" in tables
-    assert "active_state" in tables
+    assert "workspace_projects" in tables
+    assert "workspace_active_state" in tables
     conn.close()
 
 

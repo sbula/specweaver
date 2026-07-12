@@ -29,7 +29,7 @@ class Base(DeclarativeBase):
 
 
 class Project(Base):
-    __tablename__ = "projects"
+    __tablename__ = "workspace_projects"
 
     name: Mapped[str] = mapped_column(String, primary_key=True)
     root_path: Mapped[str] = mapped_column(String, unique=True, nullable=False)
@@ -46,17 +46,17 @@ class Project(Base):
 
 
 class ActiveState(Base):
-    __tablename__ = "active_state"
+    __tablename__ = "workspace_active_state"
 
     key: Mapped[str] = mapped_column(String, primary_key=True)
     value: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class ProjectStandard(Base):
-    __tablename__ = "project_standards"
+    __tablename__ = "workspace_project_standards"
 
     project_name: Mapped[str] = mapped_column(
-        String, ForeignKey("projects.name", ondelete="CASCADE"), primary_key=True
+        String, ForeignKey("workspace_projects.name", ondelete="CASCADE"), primary_key=True
     )
     scope: Mapped[str] = mapped_column(String, primary_key=True)
     language: Mapped[str] = mapped_column(String, primary_key=True)

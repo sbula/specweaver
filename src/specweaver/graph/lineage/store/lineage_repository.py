@@ -47,7 +47,7 @@ class LineageRepository:
         with self._get_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO artifact_events (artifact_id, parent_id, run_id, event_type, model_id, timestamp)
+                INSERT INTO flow_artifact_events (artifact_id, parent_id, run_id, event_type, model_id, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (artifact_id, parent_id, run_id, event_type, model_id, _now_iso()),
@@ -60,7 +60,7 @@ class LineageRepository:
             cursor = conn.execute(
                 """
                 SELECT id, artifact_id, parent_id, run_id, event_type, model_id, timestamp
-                FROM artifact_events
+                FROM flow_artifact_events
                 WHERE artifact_id = ?
                 ORDER BY id ASC
                 """,
@@ -74,7 +74,7 @@ class LineageRepository:
             cursor = conn.execute(
                 """
                 SELECT id, artifact_id, parent_id, run_id, event_type, model_id, timestamp
-                FROM artifact_events
+                FROM flow_artifact_events
                 WHERE parent_id = ?
                 ORDER BY id ASC
                 """,

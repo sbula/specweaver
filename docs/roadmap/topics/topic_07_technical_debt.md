@@ -4,18 +4,18 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 
 ## Domain-Driven Design (DDD)
 * **`TECH-001` 🔜: Domain-Driven Design Unification**
-  > [Description](../features/topic_07_technical_debt/TECH-001/TECH-001_ddd_refactor.md) | SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales. The massive refactoring effort to align the legacy `config/`, `cli/`, and `loom/` layers with the pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad.
+  > [Description](../features/topic_07_technical_debt/TECH-001/TECH-001_design.md) | SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales. The massive refactoring effort to align the legacy `config/`, `cli/`, and `loom/` layers with the pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad.
 * **`TECH-002` 🟡: BaseTool Meta-Class Registry**
-  > [Description](../features/topic_07_technical_debt/TECH-002/TECH-002_base_tool_registry.md) | Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.
+  > [Description](../features/topic_07_technical_debt/TECH-002/TECH-002_design.md) | Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.
 
 ## Architecture & Restructuring
 * **`TECH-003` 🟢: Structural Refactoring of Workspace AST Module**
-  > [Description](../features/topic_07_technical_debt/TECH-003/TECH-003_ast_restructuring.md) | To make the bounded context crystal clear, we want to introduce a dedicated `ast` boundary inside the workspace module. This separates mechanical Tree-Sitter extraction (`parsers`) from output mapping (`adapters`).
+  > [Description](../features/topic_07_technical_debt/TECH-003/TECH-003_design.md) | To make the bounded context crystal clear, we want to introduce a dedicated `ast` boundary inside the workspace module. This separates mechanical Tree-Sitter extraction (`parsers`) from output mapping (`adapters`).
 * **`TECH-004` 🟢: Architectural Analysis & Refactoring of `sw graph build` CLI**
-  > [Description](../features/topic_07_technical_debt/TECH-004/TECH-004_graph_cli_analysis.md) | Analyzing whether a standalone CLI command for graph building is an architectural violation (leaky abstraction/duplicated orchestration). Proposes either migrating the orchestration logic into a centralized `GraphBuildAtom` or deprecating the CLI entirely in favor of an autonomous `spinUp` workflow.
+  > [Description](../features/topic_07_technical_debt/TECH-004/TECH-004_design.md) | Analyzing whether a standalone CLI command for graph building is an architectural violation (leaky abstraction/duplicated orchestration). Proposes either migrating the orchestration logic into a centralized `GraphBuildAtom` or deprecating the CLI entirely in favor of an autonomous `spinUp` workflow.
 
 ## Schema & Data Layer
-* **`TECH-005` 🔴: Database Table Prefix Harmonization**
+* **`TECH-005` 🟡: Database Table Prefix Harmonization**
   > [Description](../features/topic_07_technical_debt/TECH-005/TECH-005_design.md) | Refactor all existing database tables to use a strict domain-prefix naming convention (e.g., `workspace_projects`, `flow_artifact_events`). Established during B-INTL-09 with the `memory_` prefix pattern. Prevents naming collisions as domain count grows.
 
 ## Context Loading & RunContext Anti-Patterns

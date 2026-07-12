@@ -478,7 +478,7 @@ class TestLoadSettingsNoSystemDefault:
 
         # Delete ALL profiles so no fallback exists (links first to avoid FK)
         with db.connect() as conn:
-            conn.execute("DELETE FROM project_llm_links")
+            conn.execute("DELETE FROM llm_project_links")
             conn.execute("DELETE FROM llm_profiles")
 
         with pytest.raises(ValueError, match=r"[Ss]ystem default"):

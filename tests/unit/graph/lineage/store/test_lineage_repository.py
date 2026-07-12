@@ -87,7 +87,7 @@ class TestLineageRepository:
             assert timeout == 5000
 
     def test_log_artifact_event_sql_injection(self, repo: LineageRepository) -> None:
-        dangerous_id = "artifact'; DROP TABLE artifact_events; --"
+        dangerous_id = "artifact'; DROP TABLE flow_artifact_events; --"
         repo.log_artifact_event(dangerous_id, None, "run-1", "CREATED", "model-1")
         history = repo.get_artifact_history(dangerous_id)
         assert len(history) == 1

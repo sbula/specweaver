@@ -69,7 +69,7 @@ class TestPipelineHydrationE2E:
             async with db.async_session_scope() as session:
                 from sqlalchemy import text
 
-                res = await session.execute(text("SELECT * FROM projects"))
+                res = await session.execute(text("SELECT * FROM workspace_projects"))
                 print("PROJECTS IN DB:", res.fetchall())
 
                 repo = MemoryRepository(session)
@@ -121,7 +121,7 @@ class TestPipelineHydrationE2E:
             async with _mock_db.async_session_scope() as session:
                 from sqlalchemy import text
 
-                res = await session.execute(text("SELECT * FROM projects"))
+                res = await session.execute(text("SELECT * FROM workspace_projects"))
                 print("PROJECTS IN DB:", res.fetchall())
 
         import asyncio
@@ -155,7 +155,7 @@ class TestPipelineHydrationE2E:
             async with db.async_session_scope() as session:
                 from sqlalchemy import text
 
-                res = await session.execute(text("SELECT * FROM projects"))
+                res = await session.execute(text("SELECT * FROM workspace_projects"))
                 print("PROJECTS IN DB CORRUPTED:", res.fetchall())
 
                 # The project already exists from `init`. We just need an Epic and a corrupted Task.

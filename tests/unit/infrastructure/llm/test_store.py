@@ -30,7 +30,7 @@ async def engine():
 async def setup_test_db(engine):
     """Create all tables for the LLM domain store."""
     # Define dummy projects table to satisfy the cross-module ForeignKey during create_all
-    Table("projects", Base.metadata, Column("name", String, primary_key=True), extend_existing=True)
+    Table("workspace_projects", Base.metadata, Column("name", String, primary_key=True), extend_existing=True)
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

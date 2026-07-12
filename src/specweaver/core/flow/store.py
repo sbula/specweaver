@@ -12,7 +12,7 @@ class Base(DeclarativeBase):
 
 
 class ArtifactEvent(Base):
-    __tablename__ = "artifact_events"
+    __tablename__ = "flow_artifact_events"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     artifact_id: Mapped[str] = mapped_column(String, index=True, nullable=False)

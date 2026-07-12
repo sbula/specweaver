@@ -57,7 +57,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
     conn.close()
 
     assert "llm_profiles" in tables
-    assert "projects" in tables
+    assert "workspace_projects" in tables
 
 
 def test_cli_bootstrap_e2e_idempotency(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
