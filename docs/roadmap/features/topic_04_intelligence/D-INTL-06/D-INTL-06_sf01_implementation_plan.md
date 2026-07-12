@@ -67,8 +67,8 @@ Reuse: `engine` (in-memory SQLite + FK pragmas), `session`, `base_project` fixtu
 ### RN-8: tach.toml registration verified in code
 `workflows.review.interfaces` and `workflows.implementation.interfaces` already consume `workspace.project` — establishing the `workflows → workspace` precedent. Import is legal. SF-01 registers `workspace.memory` as the producer; SF-02 adds `depends_on` as the consumer.
 
-### RN-9: PromptBuilder escaping gap — TECH-06
-The `_prompt_render.py` rendering functions use raw f-strings with no escaping. Currently safe (all inputs are internal). Must be documented as TECH-06 tech debt. D-INTL-06 sidesteps it by using `json.dumps()`.
+### RN-9: PromptBuilder escaping gap — TECH-007
+The `_prompt_render.py` rendering functions use raw f-strings with no escaping. Currently safe (all inputs are internal). Must be documented as TECH-007 tech debt. D-INTL-06 sidesteps it by using `json.dumps()`.
 
 ---
 
@@ -86,11 +86,11 @@ All findings reviewed and approved by HITL on 2026-05-08.
 | 6 | DONE task recency field | MEDIUM | **`updated_at`** — semantically correct per FR-3 |
 | 7 | Defect batch | MEDIUM | **Absorbed** into `MemoryQueryService.get_open_defects_for_tasks()` |
 | 8 | tach scope | MEDIUM | **Yes** — producer declares API in SF-01 |
-| 9 | Documentation | MEDIUM | 3 must-update, 2 should-update, TECH-06 backlog |
+| 9 | Documentation | MEDIUM | 3 must-update, 2 should-update, TECH-007 backlog |
 | 10 | Import chains | LOW | ✅ Clean — no circular imports |
 
 > [!WARNING]
-> **TECH-06 (NEW)**: PromptBuilder input escaping gap documented as tech debt. `_prompt_render.py` uses raw f-strings with no escaping. Currently safe but must be hardened before any feature injects user-generated content directly into `add_context()` labels.
+> **TECH-007 (NEW)**: PromptBuilder input escaping gap documented as tech debt. `_prompt_render.py` uses raw f-strings with no escaping. Currently safe but must be hardened before any feature injects user-generated content directly into `add_context()` labels.
 
 > [!NOTE]
 > **LLM-Optimized Format (Backlog)**: Investigate LLM-optimized handover format (token-efficient notation, prompt-compression) that works across providers. Research item for future feature (C-INTL-04 or A-INTL-04).
@@ -409,7 +409,7 @@ Uses mocked `MemoryQueryService` (DI makes this clean — no async session mocki
 | 3 | `D-INTL-06_design.md` Progress Tracker | Mark SF-01 `Impl Plan ✅` |
 | 4 | `docs/dev_guides/agent_memory_state_tracking.md` | Mention QueryService and CQRS separation |
 | 5 | `docs/dev_guides/special_patterns_and_adaptations.md` | Document CQRS pattern note |
-| 6 | `docs/roadmap/topics/topic_07_technical_debt.md` | Add TECH-06: PromptBuilder input escaping |
+| 6 | `docs/roadmap/topics/topic_07_technical_debt.md` | Add TECH-007: PromptBuilder input escaping |
 
 ---
 
@@ -435,7 +435,7 @@ ruff check src/specweaver/workspace/memory/
 
 1. **Prompt factory (FR-6, FR-7)** → SF-02
 2. **Handover save/bootstrap (FR-8, FR-9)** → SF-03
-3. **TECH-06: PromptBuilder input escaping** → Cross-cutting tech debt
+3. **TECH-007: PromptBuilder input escaping** → Cross-cutting tech debt
 4. **LLM-optimized handover format** → Research item for C-INTL-04 or A-INTL-04
 5. **Dev guide full update (Guide-1)** → Pre-commit
 6. **System instruction framing around memory block** → SF-02 (PromptFactory)

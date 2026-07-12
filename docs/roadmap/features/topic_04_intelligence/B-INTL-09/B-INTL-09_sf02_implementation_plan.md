@@ -93,7 +93,7 @@ All 10 findings from the Phase 2/3 audit were reviewed and approved by HITL on 2
 | 10 | Architecture verification | ✅ PASS | No violations found. |
 
 > [!WARNING]
-> **HITL Action Item (Finding #1)**: User approved but flagged that `FlowRepository` coexisting with its schema in `core/flow/store.py` should be refactored to follow the same separation pattern. **Tech Debt: TECH-05** added to Backlog.
+> **HITL Action Item (Finding #1)**: User approved but flagged that `FlowRepository` coexisting with its schema in `core/flow/store.py` should be refactored to follow the same separation pattern. **Tech Debt: TECH-006** added to Backlog.
 
 > [!WARNING]
 > **HITL Action Item (Finding #4)**: The pre-validation pattern (SELECT before INSERT to produce clean `ValueError` instead of opaque `IntegrityError`) MUST be documented in `docs/dev_guides/special_patterns_and_adaptations.md` during `/pre-commit` Phase 6. This is a DB-portability concern: if SpecWeaver ever migrates from SQLite to PostgreSQL, this pattern may need revisiting since Postgres provides richer error codes.
@@ -396,6 +396,6 @@ ruff check src/specweaver/workspace/memory/
 3. **`WITH RECURSIVE` cycle detection on dependency insert** → Deferred to SF-03.
 4. **Zombie recovery + circuit breaker + upstream propagation** → Deferred to SF-04.
 5. **`tach.toml` registration for `workspace.memory`** → Only if `tach check` requires it. Currently `workspace` covers it.
-6. **TECH-05: FlowRepository separation** → Refactor `core/flow/store.py` to separate `FlowRepository` into its own `core/flow/repository.py`, matching the `workspace/memory/` separation pattern. Low priority, no functional impact.
+6. **TECH-006: FlowRepository separation** → Refactor `core/flow/store.py` to separate `FlowRepository` into its own `core/flow/repository.py`, matching the `workspace/memory/` separation pattern. Low priority, no functional impact.
 7. **MVP Decision Register** → Create `docs/roadmap/mvp_decision_register.md` during `/pre-commit` to track MVP-acceptable decisions that should be revisited for production.
 8. **Pre-validation pattern documentation** → Document the SELECT-before-INSERT pattern in `docs/dev_guides/special_patterns_and_adaptations.md` as a DB-portability concern.

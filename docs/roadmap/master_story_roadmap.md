@@ -255,7 +255,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md)
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
-    *   `[ ]` **E-EXEC-01:** Standard Local Execution
+    *   `✅` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
     *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   🟡 **Containerized Isolation:**
@@ -582,53 +582,61 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 These stories do not add new user-facing features, but are critical epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels.
 
-### 🟢 TECH-01: Domain-Driven Design Unification
+### 🟢 TECH-001: Domain-Driven Design Unification
 **Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-01:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-01/TECH-01_design.md)
+    *   `✅` **TECH-001:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-001/TECH-001_design.md)
         *   `✅` SF-01: Deconstruct Config Monolith
         *   `✅` SF-02: Decentralize CLI Layer
         *   `✅` SF-03: Consolidate Sandbox
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
 
-### 🟢 TECH-01b: BaseTool Meta-Class Registry
+### 🟢 TECH-002: BaseTool Meta-Class Registry
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.*
 *   **Core Required (MVS):**
-    *   `[x]` **TECH-01b:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-01b_base_tool_registry.md)
+    *   `[x]` **TECH-002:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-002_base_tool_registry.md)
 *   **Verifiable Proof:**
     *   `tests/integration/sandbox/test_dispatcher_sf3_integration.py`
 
-### 🟢 TECH-02: Structural Refactoring of Workspace AST Module
+### 🟢 TECH-003: Structural Refactoring of Workspace AST Module
 **Benefit:** *Crystal clear boundary separation between mechanical Tree-Sitter extraction and semantic ontology mapping.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-02:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-02/TECH-02_ast_restructuring.md)
+    *   `✅` **TECH-003:** [Structural Refactoring of Workspace AST Module](features/topic_07_technical_debt/TECH-003/TECH-003_ast_restructuring.md)
 
-### 🟢 TECH-03: Architectural Analysis & Refactoring of `sw graph build` CLI
+### 🟢 TECH-004: Architectural Analysis & Refactoring of `sw graph build` CLI
 **Benefit:** *Strips hardcoded logic from the CLI, enabling pure headless execution of the Graph Builder from any background Atom.*
 *   **Core Required (MVS):**
-    *   `[x]` **TECH-03:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-03/TECH-03_graph_cli_analysis.md)
+    *   `[x]` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_graph_cli_analysis.md)
 
-### 🔴 TECH-04: Database Table Prefix Harmonization
+### 🔴 TECH-005: Database Table Prefix Harmonization
 **Benefit:** *All database tables use a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-04:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-04/TECH-04_design.md)
+    *   `[ ]` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
 
-### 🟢 TECH-05: Context Loading Pipeline Refactoring
+### 🟢 TECH-006: Context Loading Pipeline Refactoring
 **Benefit:** *Eliminates business logic from CLI layers, kills the cross-interface spider web of private helper imports, and reduces RunContext from a 23-field God Object to a lean execution context.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-05:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-05/TECH-05_design.md)
+    *   `✅` **TECH-006:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-006/TECH-006_design.md)
 *   **Dependency:** D-INTL-06 SF-02 (Prompt Factory) — the highest-ROI refactoring (moving constitution/standards loading inside the factory) requires the factory to exist first.
 *   **Discovered during:** D-INTL-06 Red Team Cycle 4 pattern analysis.
 
-### 🟢 TECH-06: PromptBuilder Input Escaping
+### 🟢 TECH-007: PromptBuilder Input Escaping
 **Benefit:** *Hardens the prompt assembly layer against prompt injection by ensuring all string rendering uses proper escaping.*
 *   **Core Required (MVS):**
-    *   `[x]` **TECH-06:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-06/TECH-06_design.md) (Tracked as cross-cutting tech debt)
+    *   `[x]` **TECH-007:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-007/TECH-007_design.md) (Tracked as cross-cutting tech debt)
 *   **Discovered during:** D-INTL-06 Red Team Cycle 1 pattern analysis.
 
-### 🟢 TECH-07: Architectural Documentation Modularization
+### 🟢 TECH-008: Architectural Documentation Modularization
 **Benefit:** *Transforms the impenetrable 46KB `architecture_reference.md` monolith into a visually-rich, GitHub-publishable static site structure perfectly aligned with Domain-Driven Design.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-07:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-07/TECH-07_design.md)
+    *   `✅` **TECH-008:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-008/TECH-008_design.md)
+
+### 🔴 TECH-009: Git & Filesystem Subprocess Migration
+**Benefit:** *Eliminates the last raw `subprocess.run()` calls from the sandbox by migrating GitExecutor and ripgrep search to SubprocessExecutor, gaining env isolation, credential stripping, telemetry, and timeout escalation for free.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-009:** [Git & Filesystem Subprocess Migration](features/topic_07_technical_debt/TECH-009/TECH-009_design.md)
+        *   `[ ]` SF-01: GitExecutor Subprocess Migration
+        *   `[ ]` SF-02: Filesystem Search (ripgrep) Subprocess Migration
+*   **Origin:** E-EXEC-01 backlog (follow-up ticket)
 

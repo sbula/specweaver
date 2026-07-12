@@ -6,8 +6,8 @@ This document outlines the architectural brainstorm for building a local, SQLite
 
 To keep context windows small and execution focused, we must break work down hierarchically.
 
-*   **Epic / Feature**: High-level business or technical goal (e.g., `TECH-01`). Managed by the Human or a Manager Agent.
-*   **Sub-Feature (SF)**: A logical grouping of work (e.g., `TECH-01 SF-3`).
+*   **Epic / Feature**: High-level business or technical goal (e.g., `TECH-001`). Managed by the Human or a Manager Agent.
+*   **Sub-Feature (SF)**: A logical grouping of work (e.g., `TECH-001 SF-3`).
 *   **Task**: The atomic unit of work designed for a *single agent session*.
 *   **Defect / Bug**: An unexpected blocker found during execution. Can be linked to a Task or Epic.
 *   **Handover Note**: A required payload generated when an agent finishes a session or switches contexts, preserving state for the next agent.

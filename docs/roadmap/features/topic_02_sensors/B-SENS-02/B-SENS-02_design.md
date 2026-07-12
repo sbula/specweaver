@@ -404,8 +404,8 @@ The Update Cycle will purge it from `auth.py` and re-ingest it into `utils.py`. 
 - **Depends on**: [SF-01, SF-02]
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/B-SENS-02/B-SENS-02_sf03_implementation_plan.md
 - **Technical Debt Spawns**:
-  - `TECH-02`: Structural Refactoring of Workspace AST Module (Extracting `workspace.parsers` to `workspace.ast.parsers`).
-  - `TECH-03`: Architectural Analysis & Refactoring of `sw graph build` CLI (Moving orchestration to `GraphBuildAtom`).
+  - `TECH-003`: Structural Refactoring of Workspace AST Module (Extracting `workspace.parsers` to `workspace.ast.parsers`).
+  - `TECH-004`: Architectural Analysis & Refactoring of `sw graph build` CLI (Moving orchestration to `GraphBuildAtom`).
 
 ## Execution Order
 

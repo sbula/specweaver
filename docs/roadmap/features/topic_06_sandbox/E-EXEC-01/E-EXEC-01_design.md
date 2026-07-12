@@ -35,7 +35,7 @@ Feature E-EXEC-01 introduces a **unified, standardized subprocess execution laye
 **What can be reused:**
 - `QARunnerInterface` ABC (6 methods) — stable, well-tested with 4900+ tests
 - `QARunnerAtom` intent dispatch pattern — clean, proven
-- `BaseTool`/`ToolRegistry` from TECH-01b — solid
+- `BaseTool`/`ToolRegistry` from TECH-002 — solid
 - The structured result types (`TestRunResult`, `LintRunResult`, etc.) in `commons/qa.py`
 - The DAP `OutputEvent` pattern already in `run_debugger` methods
 
@@ -153,8 +153,8 @@ No direct blueprint references in `ORIGINS.md`. Industry research (2025-2026) st
 | Platform-specific resource limiter edge cases | Low | Low | PlatformLimiter tested on all 3 OS targets; graceful degradation if unsupported |
 | Performance regression from extra abstraction layer | Very Low | Low | Benchmarked at < 5ms overhead |
 
-### Follow-Up: TECH-008
-Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/filesystem/core/search.py`) subprocess migration is out of scope for E-EXEC-01. A separate ticket **TECH-008** will be created to consolidate these subprocess users under `SubprocessExecutor`.
+### Follow-Up: TECH-009
+Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/filesystem/core/search.py`) subprocess migration is out of scope for E-EXEC-01. A separate ticket **TECH-009** will be created to consolidate these subprocess users under `SubprocessExecutor`.
 
 ## Developer Guides Required
 
@@ -196,5 +196,5 @@ Git executor (`sandbox/git/core/executor.py`) and filesystem search (`sandbox/fi
 
 **Current status**: E-EXEC-01 COMPLETE (2026-07-12). Both SF-1 and SF-2 fully implemented, tested, reviewed (Red/Blue), and committed.
 **Regression**: Unit 4482 passed / Integration 424 passed / E2e 139 passed. All clean.
-**Follow-up**: TECH-008 (git/filesystem subprocess migration) remains open.
+**Follow-up**: TECH-009 (git/filesystem subprocess migration) remains open.
 

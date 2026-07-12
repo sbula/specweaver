@@ -2,7 +2,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests for TECH-01b SF-2 Sandbox Domain Alignment edge cases."""
+"""Integration tests for TECH-002 SF-2 Sandbox Domain Alignment edge cases."""
 
 from __future__ import annotations
 

@@ -367,4 +367,4 @@ Verify the generated file produces exactly 5 tables with `memory_` prefixes.
 
 1. **`register_fk_pragma_listener()` integration with `Database.async_session_scope()`** → Deferred to SF-02. SF-01 provides the function; SF-02's `MemoryRepository` will call it when creating sessions.
 2. **`tach.toml` registration for `workspace.memory`** → Addressed only if `tach check` fails natively.
-3. **TECH-04 Database Prefix Harmonization** → Created a dedicated tech debt feature document to retroactively align all existing monolithic tables to the `memory_` prefix pattern established here.
+3. **TECH-005 Database Prefix Harmonization** → Created a dedicated tech debt feature document to retroactively align all existing monolithic tables to the `memory_` prefix pattern established here.

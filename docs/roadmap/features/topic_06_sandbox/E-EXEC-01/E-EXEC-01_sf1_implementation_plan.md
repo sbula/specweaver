@@ -51,7 +51,7 @@ Create the `SubprocessExecutor` class with `execute()` method, `SubprocessResult
 |---|----------|-------------|
 | H-1 | Windows timeout escalation | Use `proc.terminate()` — TerminateProcess is the Windows equivalent of SIGKILL. 2s grace applies only on Unix. |
 | H-2 | Win32 Job Object handle access | Use `OpenProcess(PROCESS_ALL_ACCESS, False, proc.pid)` via ctypes (public `.pid`, not `proc._handle`). Close handle via `CloseHandle` after assignment. |
-| H-3 | Environment allowlist scope | Include `GIT_EXEC_PATH, GIT_DIR` in default allowlist now (forward-compatible with TECH-008). |
+| H-3 | Environment allowlist scope | Include `GIT_EXEC_PATH, GIT_DIR` in default allowlist now (forward-compatible with TECH-009). |
 | H-4 | `context.yaml` forbids | Add explicit `forbids: [sandbox/qa_runner, core/flow]` entries to `sandbox/execution/context.yaml`. |
 | H-5 | Signal propagation | Use `os.setpgrp()` on Unix/macOS. Executor manages child lifecycle explicitly. |
 
@@ -149,7 +149,7 @@ class SubprocessExecutor:
     QWEN_API_KEY, AWS_SECRET_ACCESS_KEY, AZURE_*`
 
 > [!NOTE]
-> Per H-3: `GIT_EXEC_PATH` and `GIT_DIR` are included in the default allowlist now for forward-compatibility with TECH-008 git executor migration.
+> Per H-3: `GIT_EXEC_PATH` and `GIT_DIR` are included in the default allowlist now for forward-compatibility with TECH-009 git executor migration.
 
 2. **`_validate_cwd()`**: Ensures `cwd` resolves to an existing directory and does not escape a parent boundary (if provided).
 
@@ -382,4 +382,4 @@ ruff check src/specweaver/sandbox/execution/
 - Verify on macOS that `UnixLimiter` applies resource limits identically to Linux
 
 ## Backlog
-- TECH-008: Migrate `git/core/executor.py` and `filesystem/core/search.py` to `SubprocessExecutor`
+- TECH-009: Migrate `git/core/executor.py` and `filesystem/core/search.py` to `SubprocessExecutor`

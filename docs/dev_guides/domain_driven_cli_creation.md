@@ -1,6 +1,6 @@
 # Domain-Driven CLI Creation Guide
 
-With the completion of **TECH-01 (Domain-Driven Design Unification)**, SpecWeaver has moved away from a monolithic `interfaces/cli/` layer. All CLI commands are now strictly bound to their respective domains using Hexagonal Architecture principles.
+With the completion of **TECH-001 (Domain-Driven Design Unification)**, SpecWeaver has moved away from a monolithic `interfaces/cli/` layer. All CLI commands are now strictly bound to their respective domains using Hexagonal Architecture principles.
 
 This guide explains how to properly create, register, and test a new CLI command.
 

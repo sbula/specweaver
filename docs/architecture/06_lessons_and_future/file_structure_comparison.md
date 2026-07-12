@@ -1,6 +1,6 @@
-# File Structure Impact: Before vs. After (TECH-01)
+# File Structure Impact: Before vs. After (TECH-001)
 
-To make the Domain-Driven Design (DDD) refactoring concrete, here is exactly what the file structure looks like **before** and **after** TECH-01.
+To make the Domain-Driven Design (DDD) refactoring concrete, here is exactly what the file structure looks like **before** and **after** TECH-001.
 
 > [!IMPORTANT]
 > **Timeline & Validity Context:** 
@@ -39,7 +39,7 @@ src/specweaver/
 ---
 
 ## The Solution: "Package by Feature" (AFTER)
-After TECH-01, everything related to a specific feature is housed in **one single folder** (the Bounded Context). The monoliths are destroyed.
+After TECH-001, everything related to a specific feature is housed in **one single folder** (the Bounded Context). The monoliths are destroyed.
 
 ```text
 src/specweaver/

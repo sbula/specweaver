@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** May 16, 2026
-**Context:** TECH-05 Refactoring of Context Loading Pipeline
+**Context:** TECH-006 Refactoring of Context Loading Pipeline
 
 ## Context and Problem Statement
 
@@ -44,10 +44,10 @@ In Hexagonal Architecture, the outermost layer (the Delivery Mechanism) is legal
 The Engine must remain a universal orchestrator. We will not weld the specific "SpecWeaver Rules" into the universal "CD Player."
 
 ### Mitigation of the "Fat CLI" Anti-Pattern
-To resolve the DRY violation without breaking the Composition Root pattern, we will execute **TECH-05**:
+To resolve the DRY violation without breaking the Composition Root pattern, we will execute **TECH-006**:
 1. We will NOT move the hydration into the Engine.
 2. Instead, we will replace the 20-line private helper functions (`_load_constitution_content`, `_load_standards_content`) in the CLI with clean, 1-line public Domain APIs (`find_constitution` and `load_standards_content_async`).
 3. This slims the CLI down to a pure declarative injector, maintaining Dependency Inversion while resolving the code smell.
 
-## Future Adaptations (TECH-08 — CANCELLED)
-This section originally proposed extracting an explicit `ApplicationService` layer (TECH-08). After two rounds of adversarial Red Team / Blue Team analysis, this was proven to be an empty indirection wrapper with zero ROI. The constraints required (no typer, no db, no file I/O, no if/else, must be async) stripped it down to a single-line delegation to `PipelineRunner`. The real fix is TECH-05: expose the misplaced private CLI helpers as public Domain APIs.
+## Future Adaptations (TECH-009 — CANCELLED)
+This section originally proposed extracting an explicit `ApplicationService` layer (TECH-009). After two rounds of adversarial Red Team / Blue Team analysis, this was proven to be an empty indirection wrapper with zero ROI. The constraints required (no typer, no db, no file I/O, no if/else, must be async) stripped it down to a single-line delegation to `PipelineRunner`. The real fix is TECH-006: expose the misplaced private CLI helpers as public Domain APIs.
