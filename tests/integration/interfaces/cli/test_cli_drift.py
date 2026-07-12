@@ -9,9 +9,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from specweaver.interfaces.cli._core import get_db
 from specweaver.interfaces.cli.main import app
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
-from specweaver.interfaces.cli._core import get_db
 
 runner = CliRunner()
 
@@ -20,11 +20,11 @@ runner = CliRunner()
 def dummy_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     proj = tmp_path / "dummy_proj"
     proj.mkdir()
-    
+
     data_dir = proj / ".specweaver"
     data_dir.mkdir()
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
-    
+
     db = get_db()
     register_test_project(db, "dummy_proj", str(proj))
     set_test_active_project(db, "dummy_proj")

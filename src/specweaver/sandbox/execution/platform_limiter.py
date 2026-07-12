@@ -109,8 +109,8 @@ class UnixLimiter(PlatformLimiter):
         fsize = limits.max_file_size_bytes
 
         def _apply_limits() -> None:
-            import sys
             import resource
+            import sys
 
             if sys.platform.startswith("linux"):
                 try:

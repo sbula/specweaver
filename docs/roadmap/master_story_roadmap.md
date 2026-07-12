@@ -609,12 +609,14 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[x]` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
 
-### 🟡 TECH-005: Database Table Prefix Harmonization
+### 🟢 TECH-005: Database Table Prefix Harmonization
 **Benefit:** *All database tables use a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
-        *   `[x]` SF-1: Model Refactoring
-        *   `[ ]` SF-2: Alembic Migration
+    *   `✅` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
+        *   `✅` SF-1: Model Refactoring
+        *   `✅` SF-2: Alembic Migration
+*   **Verifiable Proof:**
+    *   `tests/unit/alembic/test_af60fd3509a2_tech_005_rename_tables.py`
 
 ### 🟢 TECH-006: Context Loading Pipeline Refactoring
 **Benefit:** *Eliminates business logic from CLI layers, kills the cross-interface spider web of private helper imports, and reduces RunContext from a 23-field God Object to a lean execution context.*

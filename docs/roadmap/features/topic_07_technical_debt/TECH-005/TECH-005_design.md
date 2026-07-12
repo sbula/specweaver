@@ -120,14 +120,12 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Model Refactoring | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-2 | Alembic Migration | SF-1 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-2 | Alembic Migration | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-1 Implementation Plan APPROVED.
-**Next step**: Trigger the `specweaver-dev` skill for SF-1.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
-in any row and resume from there using the appropriate skill.
+**Current status**: TECH-005 is 100% COMPLETE.
+**Next step**: Move to the next active epic on the master roadmap (e.g. TECH-009).
 
 ---
 # Red/Blue Team Review Report
