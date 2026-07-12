@@ -1,0 +1,43 @@
+---
+description: "Phase 6: Update documentation — test matrix, README, quickstart, roadmap, architecture reference, dev guides, user guides."
+---
+
+# Phase 6: Documentation Updates
+
+6.1. Evaluate if the README's Mermaid flowchart, Architectural diagrams, or top-level GitHub Badges (e.g. Coverage %) require updating to reflect the new feature bounds. Ensure future LLMs actively maintain graphical Mermaid mappings during pre-commit.
+
+6.3. **MANDATORY**: You MUST explicitly open, read, and update ALL of the following documents if they exist. DO NOT skip any of them under the assumption that they don't need updates:
+     - `README.md` — updating features list, CLI commands table, project structure, test counts
+     - `docs/quickstart.md` — new workflows or commands
+     - `docs/testing_guide.md` — new test patterns or quality gates
+     - `docs/roadmap/master_story_roadmap.md and docs/roadmap/capability_matrix.md` — updating the feature's completion status and timeline
+     - `docs/developer_guide.html` - add diagrams and short descriptions for new/updated feature
+     - `docs/roadmap/topics/topic_*.md` — mark milestone tracking and tables
+     - `docs/roadmap/master_story_roadmap.md`
+     - `docs/roadmap/features/[Topic]/[ID]/[ID]_implementation_plan.md` — The specific plan for this feature MUST be updated to reflect what was actually implemented (e.g. check off boxes, add notes on deviations).
+
+6.3.1. **[🚨 MANDATORY STATE SYNC]** You MUST physically update the `master_story_roadmap.md` to reflect the correct state:
+     - Update colors (`🟢`, `🟡`, `🔴`) and check off boxes (`[x]`) for the User Story and any Add-Ons you implemented.
+     - **[🚨 PROOF MANDATE]**: If you change a status to `🟢 Completed` or check an `[x]` box, you **MUST** paste the exact filepath of the passing E2E integration test into the `Verifiable Proof:` field for that Story or Add-On. Do not check the box if no E2E test exists.
+     - Evaluate and rotate the **Active Routing Queue** based on the Selection Matrix if a story was finished.
+
+6.3. **MANDATORY: Update the architecture reference and developer guide** if this feature
+     changed any module placement, dependency direction, layer boundaries, security
+     patterns, or dispatch mechanisms. You MUST explicitly open, read, and update these:
+     - `docs/architecture/architecture_reference.md`
+     - `docs/developer_guide.html`
+     
+     Add new anti-patterns discovered during this feature. Update the sub-layer
+     structure diagram if new modules were added or moved.
+
+6.4. **MANDATORY: Keep Developer & User Guides Up to Date (`docs/dev_guides/` & `docs/user_guides/`)**:
+     - Review the existing guides in `docs/dev_guides/` (e.g., `pipeline_engine_guide.md`, `adding_tools_and_atoms.md`, etc.).
+     - Review the existing guides in `docs/user_guides/` (e.g., `2_drafting_effective_specs.md`, `4_interactive_hitl_gates.md`, etc.).
+     - If this feature modified the systems or processes described in those guides, you MUST update them to reflect the current truth.
+     - **SPECIAL PATTERNS**: If this feature invents a new non-standard workaround, unique architecture pattern, or custom adaptation, you MUST append it to `docs/dev_guides/special_patterns_and_adaptations.md`.
+     - **CREATING NEW GUIDES**: Evaluate if this feature introduced a significant new topic or extension point (e.g., a new subsystem or end-user workflow) that needs its own guide. If so, create one in the appropriate folder.
+
+> [!IMPORTANT]
+> Every bug, lint error, complexity violation, or oversized file MUST be fixed
+> regardless of whether it is pre-existing or introduced by this feature.
+> No inherited problems are acceptable!

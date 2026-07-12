@@ -1,0 +1,88 @@
+{
+  "model": "sonnet",
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest *)",
+      "Bash(ruff check *)",
+      "Bash(ruff format *)",
+      "Bash(mypy *)",
+      "Bash(tach check *)",
+      "Bash(tach show *)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git branch *)",
+      "Bash(git stash *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(ls *)",
+      "Bash(tree *)",
+      "Bash(sw *)",
+      "Bash(uv run *)",
+      "Bash(uv pip *)",
+      "Read(src/*)",
+      "Read(tests/*)",
+      "Read(docs/*)",
+      "Read(specs/*)",
+      "Read(.agents/*)",
+      "Read(.claude/*)",
+      "Read(alembic/*)",
+      "Read(scripts/*)",
+      "Read(pyproject.toml)",
+      "Read(tach.toml)",
+      "Read(CLAUDE.md)",
+      "Read(CONSTITUTION.md)",
+      "Read(CONTRIBUTING.md)",
+      "Read(README.md)",
+      "Read(.gitignore)",
+      "Read(context.yaml)",
+      "Read(compose.yaml)",
+      "Read(pyrightconfig.json)",
+      "Write(src/*)",
+      "Write(tests/*)",
+      "Write(docs/*)",
+      "Write(.tmp/*)"
+    ],
+    "deny": [
+      "Bash(git push *)",
+      "Bash(git rebase *)",
+      "Bash(git reset --hard *)",
+      "Bash(git force *)",
+      "Bash(rm -rf *)",
+      "Bash(del /s *)",
+      "Bash(pip install *)",
+      "Bash(npm install *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(Invoke-WebRequest *)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Write(pyproject.toml)",
+      "Write(uv.lock)",
+      "Write(alembic.ini)",
+      "Write(.claude/settings.json)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff check --fix --quiet \"$CLAUDE_TOOL_INPUT_FILE_PATH\" || exit 0",
+            "statusMessage": "Auto-fixing lint issues..."
+          }
+        ]
+      }
+    ]
+  }
+}
