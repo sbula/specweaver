@@ -595,7 +595,7 @@ These stories do not add new user-facing features, but are critical epics requir
 ### 🟢 TECH-002: BaseTool Meta-Class Registry
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.*
 *   **Core Required (MVS):**
-    *   `[x]` **TECH-002:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
+    *   `✅` **TECH-002:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
 *   **Verifiable Proof:**
     *   `tests/integration/sandbox/test_dispatcher_sf3_integration.py`
 
@@ -607,7 +607,7 @@ These stories do not add new user-facing features, but are critical epics requir
 ### 🟢 TECH-004: Architectural Analysis & Refactoring of `sw graph build` CLI
 **Benefit:** *Strips hardcoded logic from the CLI, enabling pure headless execution of the Graph Builder from any background Atom.*
 *   **Core Required (MVS):**
-    *   `[x]` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
+    *   `✅` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
 
 ### 🟢 TECH-005: Database Table Prefix Harmonization
 **Benefit:** *All database tables use a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows.*
@@ -628,7 +628,7 @@ These stories do not add new user-facing features, but are critical epics requir
 ### 🟢 TECH-007: PromptBuilder Input Escaping
 **Benefit:** *Hardens the prompt assembly layer against prompt injection by ensuring all string rendering uses proper escaping.*
 *   **Core Required (MVS):**
-    *   `[x]` **TECH-007:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-007/TECH-007_design.md) (Tracked as cross-cutting tech debt)
+    *   `✅` **TECH-007:** [PromptBuilder Input Escaping](features/topic_07_technical_debt/TECH-007/TECH-007_design.md) (Tracked as cross-cutting tech debt)
 *   **Discovered during:** D-INTL-06 Red Team Cycle 1 pattern analysis.
 
 ### 🟢 TECH-008: Architectural Documentation Modularization
