@@ -341,3 +341,17 @@ When integrating the Agent Memory Bank (Feature B-INTL-09) with SQLite and `sqla
 
 ### Why we do it:
 Unlike PostgreSQL or MySQL, SQLite explicitly defaults `foreign_keys=OFF` on every single new connection. `aiosqlite` creates new pooled connections asynchronously, completely bypassing any connection string parameters like `?foreign_keys=1`. If the PRAGMA is not hooked at the engine connection pool layer, deleting an `Epic` will leave thousands of orphaned `Task` records polluting the database forever instead of executing the `ON DELETE CASCADE`. The greenlet fix mathematically eliminates ORM synchronization race conditions without dropping to raw SQL.
+
+---
+
+## 22. Resolved-Path Interpreter Invocation (The Windows `System32` Shadowing Bug)
+
+When building `BashActionAtom` (C-EXEC-02 SF-1) to run `.specweaver/scripts/` shell scripts via `SubprocessExecutor`, TDD surfaced a genuine Windows-only bug: invoking `bash` by its bare command name silently ran the wrong interpreter.
+
+### How it works:
+On a Windows machine with both Git for Windows and WSL installed, `shutil.which("bash")` correctly resolves Git's `bash.exe` (it searches `%PATH%` in listed order). But `subprocess.Popen(["bash", ...])` (a list argv, `shell=False`) does **not** go through the same resolution — Windows' `CreateProcess` API, when given a bare command name with no directory, applies its own fixed search order that checks `C:\Windows\System32` (which contains a WSL launcher stub, if the "Windows Subsystem for Linux" feature is enabled) **before** it ever consults `%PATH%`. This silently invokes WSL's `bash` instead of Git's, regardless of `PATH` order, and regardless of an earlier `shutil.which("bash")` check having already found the right one — unless that resolved path is actually *used* as `argv[0]`.
+
+The fix: resolve `shutil.which("bash")` once, and pass the **returned absolute path** as `argv[0]` — never the bare string `"bash"`. Once resolved, path *format* (`C:\...` vs `C:/...`) doesn't matter; both work identically once the correct binary is targeted.
+
+### Why we do it:
+This is a general lesson for any code that spawns a named interpreter/tool via `subprocess`/`SubprocessExecutor` on Windows with `shell=False`: a `shutil.which()` check that discards its own resolved path and re-passes the bare command name to `Popen` is not actually verifying what will run — it's two independent, potentially-divergent resolutions. Any future Atom/Tool invoking an external interpreter by name should resolve once and reuse that resolved path, not just check-then-trust.

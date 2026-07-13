@@ -77,6 +77,15 @@ mock_executor = MagicMock(spec=SubprocessExecutor)
 runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 ```
 
+## Engine-Internal Script Execution (BashActionAtom)
+
+`sandbox/execution/core/atom.py`'s `BashActionAtom` is the sanctioned way for the flow engine to run a script from `.specweaver/scripts/` (C-EXEC-02's "Native CLI Action Node" primitive). It wraps `SubprocessExecutor` with the additional constraints a script-running Atom needs: canonical-path containment (the script must resolve inside `.specweaver/scripts/`, checked immediately before every execution — see `WorkspaceBoundary`), default `ResourceLimits`, explicit-opt-in `env` (never an implicit passthrough), and a resolved absolute `bash` path (never the bare string `"bash"` — see the note below). It never raises; every failure mode returns a `FAILED` `AtomResult`.
+
+> [!NOTE]
+> **`bash` must be resolved to an absolute path, never invoked as the bare string `"bash"`.** On Windows, `Popen(["bash", ...])` goes through `CreateProcess`'s default search order, which checks `C:\Windows\System32` (containing the WSL launcher stub, if WSL is installed) *before* consulting `%PATH%` — regardless of where Git Bash appears in `PATH`. This silently invokes the wrong interpreter. Always resolve via `shutil.which("bash")` first and use the returned path as `argv[0]`.
+
+As of this writing, `BashActionAtom` is only invoked directly (e.g. by tests) — pipeline-level `action: bash` steps are C-EXEC-02 SF-2's scope, not yet implemented.
+
 ## Security Boundaries
 
 ### Environment Stripping
