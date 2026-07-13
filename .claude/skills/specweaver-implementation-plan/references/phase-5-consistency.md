@@ -58,6 +58,14 @@ checks explicitly. Do NOT just assert "yes" — provide evidence.
      - Every new function/class mentioned in code snippets appears in the verification plan
      - Test names match the code they claim to test
 
+5.3a. **Code detail limit**: Re-read every code block in the plan. For each one, confirm
+      it is pseudocode, a short illustrative snippet, or an exact signature quoted from
+      *existing* code (a research finding) — NOT a full-fledged, ready-to-paste class body
+      or fully worked algorithm for *new* code. If any new-code block is complete enough
+      that a developer could paste it straight into the source file with no implementation
+      work of their own, collapse it back down to pseudocode/an ordered check-list before
+      proceeding — writing the real implementation is the `dev` skill's job, test-first.
+
 ---
 
 ## HITL Gate (Mandatory — Always Fires)

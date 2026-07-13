@@ -47,6 +47,32 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > Execute research, audit, and architecture verification autonomously.
 > STOP only at the defined HITL gates (Phases 4 and 5). Never bypass them.
 
+> [!CAUTION]
+> **CODE DETAIL LIMIT: pseudocode and short snippets only — NEVER a full-fledged class or algorithm.**
+>
+> An implementation plan may include:
+> - Short illustrative snippets (a few lines) showing a signature, a call shape, or one
+>   tricky bit of logic worth pinning down (e.g. "reject PATH case-insensitively: `key.upper() == \"PATH\"`").
+> - Pseudocode describing the sequence of steps/checks an implementation must perform,
+>   and in what order, with the reasoning for that order.
+> - Exact signatures pulled from *existing* code being called or subclassed (these are
+>   research findings, not authored code — quoting `SubprocessExecutor.execute()`'s real
+>   signature is fine; writing out `BashActionAtom`'s entire `run()` body is not).
+>
+> An implementation plan must NEVER include a complete, ready-to-paste class body,
+> a fully worked algorithm, or anything a developer could copy verbatim into the
+> source file without doing any of their own implementation work. Writing the real
+> code is the **`dev` skill's** job — driven test-first (red → green → refactor) from
+> the FRs and test plan this document specifies. A plan that pre-writes the
+> implementation defeats TDD (tests get written to match code that already exists in
+> the plan, not the other way around) and produces two competing sources of truth that
+> drift the moment the `dev` skill's tests force a different shape.
+>
+> If you catch yourself writing a full method body with every branch fleshed out,
+> STOP — collapse it back down to an ordered list of checks/steps (pseudocode) and
+> move any signature-level detail into the Research Notes as a cited fact, not
+> authored code.
+
 ## MCP Tool Guidance
 
 When available, prefer these MCP tools over grep/file-reading:

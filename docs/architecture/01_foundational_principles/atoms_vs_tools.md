@@ -74,3 +74,24 @@ class Atom(ABC):
 Returns `AtomResult(status=SUCCESS|FAILED|RETRY, message, exports)`.
 The engine reads `exports` and writes them to the flow context for
 downstream atoms.
+
+### Atom ≠ single operation
+
+"Atom" describes an indivisible **unit of the flow** — one `run()` call the
+engine invokes and gets one `AtomResult` back from. It does NOT mean the
+Atom only implements one operation. Whether `run()` handles one thing or
+many is an independent implementation choice, not part of what makes
+something an Atom:
+
+- **Single-operation** (`RuleAtom`): reads its expected keys straight off
+  `context` and does the one thing it exists to do.
+- **Multi-operation** (`QARunnerAtom`, `LanguageAtom`, `ProtocolAtom`):
+  reads an `intent`/`action` key from `context` and dispatches internally
+  (e.g. `QARunnerAtom` alone handles `run_tests`, `run_linter`,
+  `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture`).
+
+Pick single vs. multi-operation the same way you'd pick it for any class —
+by how many closely-related operations the domain naturally has — not by
+any rule about what "Atom" is allowed to mean. A Tool serving the same
+domain often mirrors whichever shape its Atom counterpart uses, since both
+usually wrap the same underlying Executor operations.
