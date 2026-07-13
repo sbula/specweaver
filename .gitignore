@@ -81,6 +81,11 @@ docs/_build/
 .pybuilder/
 target/
 
+# Java / Gradle build artifacts (polyglot test fixtures — target/ above already
+# covers Maven's build dir; Gradle's own cache/output dirs need their own entry)
+tests/fixtures/**/.gradle/
+tests/fixtures/**/bin/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
