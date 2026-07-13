@@ -25,6 +25,28 @@ def test_tach_architectural_boundaries() -> None:
         )
 
 
+def _interface_path_exists(root_dir: Path, base_parts: list[str], exposed_path: str) -> bool:
+    """Check whether an exposed interface path resolves to a real file/dir,
+    walking up ancestors to account for namespace packages lacking __init__.py."""
+    parts = exposed_path.split(".")
+    relative_path = Path(*base_parts) / Path(*parts)
+    physical_dir = root_dir / relative_path
+    physical_file = physical_dir.with_suffix(".py")
+
+    if physical_dir.exists() or physical_file.exists():
+        return True
+
+    base_dir = root_dir / Path(*base_parts)
+    current = physical_dir.parent
+    while current != base_dir and current != root_dir:
+        if current.with_suffix(".py").exists():
+            return True
+        if current.is_dir() and (current / "__init__.py").exists():
+            return True
+        current = current.parent
+    return False
+
+
 def test_tach_interfaces_map_to_valid_namespaces() -> None:
     """
     Edge Case: Prevention of Silent Namespace Ignore by Tach.
@@ -52,24 +74,7 @@ def test_tach_interfaces_map_to_valid_namespaces() -> None:
             if base_parts and base_parts[0] == "specweaver":
                 base_parts.insert(0, "src")
             for exposed_path in interface.get("expose", []):
-                parts = exposed_path.split(".")
-                relative_path = Path(*base_parts) / Path(*parts)
-                physical_dir = root_dir / relative_path
-                physical_file = physical_dir.with_suffix(".py")
-
-                path_exists = physical_dir.exists() or physical_file.exists()
-                if not path_exists:
-                    base_dir = root_dir / Path(*base_parts)
-                    current = physical_dir.parent
-                    while current != base_dir and current != root_dir:
-                        if current.with_suffix(".py").exists():
-                            path_exists = True
-                            break
-                        if current.is_dir() and (current / "__init__.py").exists():
-                            path_exists = True
-                            break
-                        current = current.parent
-
+                path_exists = _interface_path_exists(root_dir, base_parts, exposed_path)
                 assert path_exists, (
                     f"Tach explicit boundary violation risk! "
                     f"The interface {exposed_path} for module {module_base} listed in tach.toml does not map "

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import subprocess
+import subprocess  # noqa: TID251 — see usage comment below; narrow CLI-only exemption
 from pathlib import Path
 from typing import Any
 
@@ -164,6 +164,13 @@ def drift_check_rot(  # noqa: C901
 
     _core.console.print("Checking AST drift for staged files")
 
+    # TID251 exemption: a narrow, one-off CLI git query against the
+    # developer's own repo — not agent-facing/untrusted input, so
+    # SubprocessExecutor's env-isolation/credential-stripping doesn't carry
+    # the same security value here it does elsewhere. Routing this through
+    # sandbox.git's GitExecutor (rather than raw subprocess OR a direct
+    # SubprocessExecutor import, both of which would newly couple
+    # assurance.validation to sandbox) is tracked as future scope on TECH-009.
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],

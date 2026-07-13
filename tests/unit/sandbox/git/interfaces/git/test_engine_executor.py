@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
+from specweaver.sandbox.execution.models import SubprocessResult
 from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 from specweaver.sandbox.git.core.executor import GitExecutor, GitExecutorError
 
@@ -47,91 +48,43 @@ class TestLiftedRestrictions:
 
     def test_push_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"push"})
-        mock_result = type(
-            "R",
-            (),
-            {
-                "returncode": 0,
-                "stdout": "ok\n",
-                "stderr": "",
-            },
-        )()
-        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
+        mock_result = SubprocessResult(exit_code=0, stdout="ok\n", stderr="", duration_seconds=0.0)
+        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute", return_value=mock_result):
             result = executor.run("push")
         assert result.status == "success"
 
     def test_merge_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"merge"})
-        mock_result = type(
-            "R",
-            (),
-            {
-                "returncode": 0,
-                "stdout": "",
-                "stderr": "",
-            },
-        )()
-        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
+        mock_result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute", return_value=mock_result):
             result = executor.run("merge", "feat/login")
         assert result.status == "success"
 
     def test_pull_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"pull"})
-        mock_result = type(
-            "R",
-            (),
-            {
-                "returncode": 0,
-                "stdout": "",
-                "stderr": "",
-            },
-        )()
-        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
+        mock_result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute", return_value=mock_result):
             result = executor.run("pull")
         assert result.status == "success"
 
     def test_fetch_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"fetch"})
-        mock_result = type(
-            "R",
-            (),
-            {
-                "returncode": 0,
-                "stdout": "",
-                "stderr": "",
-            },
-        )()
-        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
+        mock_result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute", return_value=mock_result):
             result = executor.run("fetch")
         assert result.status == "success"
 
     def test_rebase_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"rebase"})
-        mock_result = type(
-            "R",
-            (),
-            {
-                "returncode": 0,
-                "stdout": "",
-                "stderr": "",
-            },
-        )()
-        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
+        mock_result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute", return_value=mock_result):
             result = executor.run("rebase", "main")
         assert result.status == "success"
 
     def test_tag_allowed_when_whitelisted(self, tmp_path: Path) -> None:
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"tag"})
-        mock_result = type(
-            "R",
-            (),
-            {
-                "returncode": 0,
-                "stdout": "",
-                "stderr": "",
-            },
-        )()
-        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
+        mock_result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute", return_value=mock_result):
             result = executor.run("tag", "v1.0")
         assert result.status == "success"
 
@@ -161,16 +114,8 @@ class TestWhitelistStillEnforced:
     def test_blocked_in_args_not_checked(self, tmp_path: Path) -> None:
         """EngineGitExecutor should NOT block 'merge' in args."""
         executor = EngineGitExecutor(cwd=tmp_path, whitelist={"log"})
-        mock_result = type(
-            "R",
-            (),
-            {
-                "returncode": 0,
-                "stdout": "",
-                "stderr": "",
-            },
-        )()
-        with patch("specweaver.sandbox.git.core.executor.subprocess.run", return_value=mock_result):
+        mock_result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute", return_value=mock_result):
             result = executor.run("log", "merge")
         assert result.status == "success"
 

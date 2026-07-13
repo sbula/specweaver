@@ -116,5 +116,16 @@ Both SFs are independent — they can be implemented in either order. SF-1 is re
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | GitExecutor Migration | E-EXEC-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-2 | Filesystem Search Migration | E-EXEC-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-1 | GitExecutor Migration | E-EXEC-01 | ✅ | — | ✅ | ✅ (folded into C-EXEC-02 SF-1's pre-commit gate) | ⬜ |
+| SF-2 | Filesystem Search Migration | E-EXEC-01 | ✅ | — | ✅ | ✅ (folded into C-EXEC-02 SF-1's pre-commit gate) | ⬜ |
+
+**Implementation note (2026-07-13)**: SF-1/SF-2 were implemented directly (no separate implementation-plan document) during C-EXEC-02 SF-1's pre-commit quality gate, when repo-wide `ruff check` surfaced these as pre-existing TID251 violations. Both follow this design's constructor/parameter-injection approach exactly (`GitExecutor.__init__(subprocess_executor: SubprocessExecutor | None = None)`, `grep_content(..., executor: SubprocessExecutor | None = None)`), preserving full backward compatibility — no call site (`atom.py`, `facades.py`, `tool.py`) required changes. New tests were added for the ripgrep path, which previously had zero coverage. Will be committed together with C-EXEC-02 SF-1.
+
+## Backlog (found during implementation, not in original design scope)
+
+Two additional raw-`subprocess` call sites were found in the same repo-wide scan that are thematically related (git queries) but are **not** simple `SubprocessExecutor`-injection cases like SF-1/SF-2 — each requires opening a new cross-module dependency that doesn't exist today, which is an architecture decision, not a lint fix:
+
+- **`assurance/validation/interfaces/cli_drift.py`** (`git diff --cached` query) — the correct fix is routing through `sandbox.git`'s `GitExecutor` (narrower, more domain-appropriate coupling than a raw `SubprocessExecutor` import), but `assurance.validation.interfaces` isn't allowed to depend on `sandbox` in `tach.toml` today. Currently exempted via a documented `noqa: TID251`.
+- **`assurance/standards/discovery.py`** (`git ls-files` query) — same treatment. This module's `context.yaml` **explicitly forbids** `specweaver/sandbox/*` ("High-level orchestrators must never bypass the flow engine to natively execute raw processes") — the correct long-term fix is routing through the flow engine (e.g. a `GitAtom`-based pipeline step), not a direct sandbox import at all. Currently exempted via a documented `noqa: TID251`.
+
+Neither is scoped as a numbered SF here — they need their own design decision (see `master_story_roadmap.md`'s TECH-009 entry) before implementation.

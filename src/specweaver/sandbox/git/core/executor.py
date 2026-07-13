@@ -10,9 +10,10 @@ The working directory is set at construction time by the setup/config, not by th
 from __future__ import annotations
 
 import logging
-import subprocess
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,12 @@ class GitExecutor:
         }
     )
 
-    def __init__(self, cwd: Path, whitelist: set[str]) -> None:
+    def __init__(
+        self,
+        cwd: Path,
+        whitelist: set[str],
+        subprocess_executor: SubprocessExecutor | None = None,
+    ) -> None:
         # Validate no blocked commands snuck into the whitelist
         violations = self._BLOCKED_ALWAYS & whitelist
         if violations:
@@ -64,6 +70,7 @@ class GitExecutor:
 
         self._cwd = cwd
         self._whitelist = frozenset(whitelist)
+        self._executor = subprocess_executor or SubprocessExecutor(cwd=cwd)
 
     @property
     def cwd(self) -> Path:
@@ -114,30 +121,18 @@ class GitExecutor:
 
         cmd = ["git", "-C", str(self._cwd), command, *args]
 
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
+        result = self._executor.execute(cmd, timeout_seconds=timeout)
+
+        if result.timed_out:
             return ExecutorResult(
                 status="error",
                 stderr=f"Command timed out after {timeout}s",
                 exit_code=-1,
             )
-        except OSError as exc:
-            return ExecutorResult(
-                status="error",
-                stderr=f"OS error: {exc}",
-                exit_code=-1,
-            )
 
         return ExecutorResult(
-            status="success" if result.returncode == 0 else "error",
+            status="success" if result.exit_code == 0 else "error",
             stdout=result.stdout,
             stderr=result.stderr,
-            exit_code=result.returncode,
+            exit_code=result.exit_code,
         )

@@ -2,7 +2,16 @@ from __future__ import annotations
 
 import logging
 import queue
-import subprocess
+
+# TID251 exemption: MCPExecutor manages a long-lived, bidirectional JSON-RPC
+# process over stdio (background reader thread, persistent stdin/stdout pipes,
+# many call_rpc() calls across the process's lifetime). SubprocessExecutor is
+# a one-shot blocking call (proc.communicate(), waits for exit) and cannot
+# support this pattern — migrating it there would break the MCP bridge, not
+# just risk a regression. Tracked as its own design task: TECH-010 (a
+# persistent/streaming-process mode, either extending SubprocessExecutor or
+# a sibling class).
+import subprocess  # noqa: TID251
 import threading
 from typing import Any, cast
 

@@ -636,11 +636,20 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `✅` **TECH-008:** [Architectural Documentation Modularization](features/topic_07_technical_debt/TECH-008/TECH-008_design.md)
 
-### 🔴 TECH-009: Git & Filesystem Subprocess Migration
+### 🟢 TECH-009: Git & Filesystem Subprocess Migration
 **Benefit:** *Eliminates the last raw `subprocess.run()` calls from the sandbox by migrating GitExecutor and ripgrep search to SubprocessExecutor, gaining env isolation, credential stripping, telemetry, and timeout escalation for free.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-009:** [Git & Filesystem Subprocess Migration](features/topic_07_technical_debt/TECH-009/TECH-009_design.md)
-        *   `[ ]` SF-01: GitExecutor Subprocess Migration
-        *   `[ ]` SF-02: Filesystem Search (ripgrep) Subprocess Migration
+    *   `✅` **TECH-009:** [Git & Filesystem Subprocess Migration](features/topic_07_technical_debt/TECH-009/TECH-009_design.md)
+        *   `✅` SF-01: GitExecutor Subprocess Migration (constructor-injected `SubprocessExecutor`, backward-compatible default)
+        *   `✅` SF-02: Filesystem Search (ripgrep) Subprocess Migration (`grep_content`/`_grep_ripgrep` gain an optional `executor` param)
 *   **Origin:** E-EXEC-01 backlog (follow-up ticket)
+*   **Deferred future scope (found during C-EXEC-02 SF-1 pre-commit, not yet a numbered SF):**
+    *   `assurance/validation/interfaces/cli_drift.py`'s `git diff --cached` query — kept on raw `subprocess` with a documented `noqa: TID251`. Routing it through `sandbox.git`'s `GitExecutor` would be the architecturally-correct fix (narrower coupling than a direct `SubprocessExecutor` import), but requires opening a new `assurance.validation` → `sandbox` dependency in `tach.toml` that doesn't exist today — a real architecture decision, not a lint fix.
+    *   `assurance/standards/discovery.py`'s `git ls-files` query — same treatment, `noqa: TID251` with a documented reason. This module's `context.yaml` **explicitly forbids** `specweaver/sandbox/*` ("High-level orchestrators must never bypass the flow engine to natively execute raw processes") — the correct long-term fix is routing through the flow engine (e.g. a `GitAtom`-based pipeline step), not a direct sandbox import at all.
+
+### 🔴 TECH-010: MCP Persistent-Process Executor Migration
+**Benefit:** *Closes the last raw `subprocess.Popen()` call in the sandbox (`mcp/core/executor.py`) by giving `SubprocessExecutor` — or a sibling class — a long-lived, bidirectional streaming-process mode, so `MCPExecutor`'s JSON-RPC-over-stdio bridge gains the same env isolation, credential stripping, and telemetry the rest of the sandbox already has.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-010:** MCP Persistent-Process Executor Migration (design doc not yet written)
+*   **Origin:** Found during C-EXEC-02 SF-1 pre-commit gate (2026-07-13) while auditing repo-wide TID251 violations. `MCPExecutor` keeps a subprocess alive across many `call_rpc()` calls (background reader thread, persistent stdin/stdout pipes) — architecturally incompatible with `SubprocessExecutor.execute()`, which is a one-shot blocking call (`proc.communicate()`, waits for process exit). Migrating it onto the existing one-shot executor would break the MCP bridge, not just risk a regression — this needs its own design for a persistent/streaming-process abstraction. Currently exempted via a documented `noqa: TID251` in `mcp/core/executor.py`.
 
