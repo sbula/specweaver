@@ -39,6 +39,7 @@ class StepAction(enum.StrEnum):
     ORCHESTRATE = "orchestrate"
     CONVERT = "convert"
     ARBITRATE = "arbitrate"
+    BASH = "bash"
 
 
 class StepTarget(enum.StrEnum):
@@ -54,6 +55,7 @@ class StepTarget(enum.StrEnum):
     CONTRACT = "contract"
     SCENARIO = "scenario"
     VERDICT = "verdict"
+    SCRIPT = "script"
 
 
 class GateType(enum.StrEnum):
@@ -129,6 +131,8 @@ VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
         (StepAction.CONVERT, StepTarget.SCENARIO),
         # Arbiter pipeline combos (Feature 3.28 SF-C)
         (StepAction.ARBITRATE, StepTarget.VERDICT),
+        # Native CLI Action Node combos (C-EXEC-02 SF-2)
+        (StepAction.BASH, StepTarget.SCRIPT),
     }
 )
 

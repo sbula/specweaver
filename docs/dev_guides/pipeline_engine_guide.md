@@ -209,6 +209,63 @@ To strictly enforce NFR-2 (Process Isolation and Credential Security) from Featu
 - **Architectural Boundary Adherence**: The engine absolutely NEVER runs explicit `subprocess.run` OS calls from within configuration abstractions. Instead, it delegates purely to `GitAtom` to run `git ls-files --error-unmatch` via an intent (`_intent_is_tracked`). 
 - **Dictatorial Abort**: If `GitAtom` reports that the `vault.env` is tracked in the git index, the Runner violently raises a `RuntimeError` and brutally terminates the Python interpreter process. It assumes the pipeline environment has suffered an unauthorized human git commit exposing plaintext credentials to version control. No loops, no HITL gates—the orchestrator dies immediately to prevent any state writes or upstream pushes.
 
+---
+
+## 12. Native CLI Action Nodes (`action: bash`)
+
+Starting with C-EXEC-02, pipelines can run a script from `.specweaver/scripts/` directly — no LLM involvement, no handler-specific code. The `action: bash` / `target: script` combination is handled by `BashActionHandler`, a thin wrapper around `BashActionAtom` (see `docs/dev_guides/subprocess_execution.md` for the atom's containment and security rules).
+
+### YAML Example
+
+```yaml
+name: "lint_then_bash_check"
+steps:
+  - name: run_custom_check
+    action: bash
+    target: script
+    params:
+      script: check_licenses.sh   # bare filename, resolved inside .specweaver/scripts/
+      args: ["--strict"]
+      timeout_seconds: 120
+    router:
+      default_target: on_failure
+      rules:
+        - field: exit_code
+          operator: eq
+          value: 0
+          target: on_success
+```
+
+### The `params:` Nesting Requirement (footgun warning)
+
+All script inputs — `script`, `args`, `working_dir`, `timeout_seconds`, `env` — **must** be nested under `params:`. `PipelineStep` ignores unrecognized top-level YAML keys silently (`extra="ignore"`), so a step written as:
+
+```yaml
+- name: run_custom_check
+  action: bash
+  target: script
+  script: check_licenses.sh   # WRONG — silently dropped, params ends up {}
+```
+
+produces `params={}` with no parse error. The step then fails at runtime with `BashActionAtom`'s `"Missing 'script' in context."` — a confusing error far from the actual mistake. Always double-check that script fields sit under `params:`.
+
+`BashActionHandler` is deliberately a pass-through: it does not validate or default `step.params` in any way. All validation (bare-filename check, path containment, timeout ceiling, `PATH`-override rejection) happens inside `BashActionAtom.run()`. Load-time validation of `params` for all step types (not just bash) is tracked separately as future work — see `TECH-011`.
+
+### Output Shape
+
+On completion (success or failure), `StepResult.output` is `BashActionAtom`'s `exports` dict, verbatim:
+
+```python
+{
+    "exit_code": 0,
+    "stdout": "...",       # truncated to 1 MiB
+    "stderr": "...",       # truncated to 1 MiB
+    "duration_seconds": 0.42,
+}
+```
+
+A nonzero `exit_code` maps to `StepStatus.FAILED` (not an exception) — combine with `gate: {on_fail: continue}` if you need the router to branch on the exit code rather than aborting the run. `exit_code` is a top-level key in `output`, so router rules reference it directly (`field: exit_code`), no dot-notation nesting needed.
+
 
 ## Context Skeletonization Assembly
 

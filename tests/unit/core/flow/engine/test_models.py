@@ -42,7 +42,10 @@ class TestStepAction:
         assert StepAction.CONVERT == "convert"
 
     def test_action_count(self) -> None:
-        assert len(StepAction) == 12
+        assert len(StepAction) == 13
+
+    def test_bash_action_exists(self) -> None:
+        assert StepAction.BASH == "bash"
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +67,10 @@ class TestStepTarget:
         assert StepTarget.SCENARIO == "scenario"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 10
+        assert len(StepTarget) == 11
+
+    def test_script_target_exists(self) -> None:
+        assert StepTarget.SCRIPT == "script"
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +100,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 20
+        assert len(VALID_STEP_COMBINATIONS) == 21
 
     @pytest.mark.parametrize(
         ("action", "target"),
@@ -123,6 +129,8 @@ class TestValidStepCombinations:
             # Scenario pipeline combos (Feature 3.28 SF-B)
             (StepAction.GENERATE, StepTarget.SCENARIO),
             (StepAction.CONVERT, StepTarget.SCENARIO),
+            # Native CLI Action Node combo (C-EXEC-02 SF-2)
+            (StepAction.BASH, StepTarget.SCRIPT),
         ],
     )
     def test_valid_combination(self, action: StepAction, target: StepTarget) -> None:
@@ -518,6 +526,20 @@ class TestPipelineDefinition:
             PipelineStep(name="s1", action=StepAction.VALIDATE, target=StepTarget.SPEC),
         ]
         p = PipelineDefinition(name="single", steps=steps)
+        errors = p.validate_flow()
+        assert errors == []
+
+    def test_validate_flow_bash_step_is_valid(self) -> None:
+        """A bash/script step is a valid action+target combination (C-EXEC-02 SF-2)."""
+        steps = [
+            PipelineStep(
+                name="run_setup",
+                action=StepAction.BASH,
+                target=StepTarget.SCRIPT,
+                params={"script": "setup.sh"},
+            ),
+        ]
+        p = PipelineDefinition(name="bash_pipeline", steps=steps)
         errors = p.validate_flow()
         assert errors == []
 

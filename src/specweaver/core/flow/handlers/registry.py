@@ -26,6 +26,7 @@ from specweaver.core.flow.handlers.base import (  # noqa: F401
     _error_result,
     _now_iso,
 )
+from specweaver.core.flow.handlers.bash_action import BashActionHandler
 from specweaver.core.flow.handlers.decompose import (
     DecomposeFeatureHandler,
     OrchestrateComponentsHandler,
@@ -55,6 +56,7 @@ from specweaver.core.flow.handlers.validation import (
 
 __all__ = [
     "ArbitrateVerdictHandler",
+    "BashActionHandler",
     "ConvertScenarioHandler",
     "DecomposeFeatureHandler",
     "DraftSpecHandler",
@@ -109,6 +111,7 @@ class StepHandlerRegistry:
             (StepAction.GENERATE, StepTarget.SCENARIO): GenerateScenarioHandler(),
             (StepAction.CONVERT, StepTarget.SCENARIO): ConvertScenarioHandler(),
             (StepAction.ARBITRATE, StepTarget.VERDICT): ArbitrateVerdictHandler(),
+            (StepAction.BASH, StepTarget.SCRIPT): BashActionHandler(),
         }
 
     def get(

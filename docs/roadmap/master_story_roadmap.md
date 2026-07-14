@@ -17,10 +17,10 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-1. **Candidate A: US-9 Core Execution — Standard Local Execution** ← ACTIVE FOCUS
-   * **Features:** `E-EXEC-01` Standard Local Execution + `C-EXEC-02` Native CLI Action Nodes
+1. **Candidate A: US-9 Core Execution — Standard Local Execution** ← ACTIVE FOCUS, both listed features now `✅` complete
+   * **Features:** `E-EXEC-01` Standard Local Execution ✅ + `C-EXEC-02` Native CLI Action Nodes ✅
    * **Pros:** Closes `US-9` Core (Zero-Trust Sandbox), directly unblocking `US-3` (Autonomous Implementation) and all safe code execution workflows.
-   * **Cons:** None. Flow Engine integration is now complete.
+   * **Cons:** None. Flow Engine integration is now complete. **Note**: `INT-US-09` (Base Integration Contract) and the Sub-Story Add-Ons remain open, so US-9 itself is not yet fully `🟢` — but Candidate A's scoped feature set is done. Needs a team decision on the next Active Routing Queue focus.
 2. **Candidate B: Configurable Prompt Render Profiles** ← UNBLOCKED
    * **Features:** `C-INTL-05` Configurable Prompt Render Profiles + `INT-US-04-SF08`
    * **Pros:** Enhances US-4 Orchestration by allowing dynamic, context-aware templating of prompts.
@@ -256,7 +256,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md)
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
     *   `✅` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
-    *   `[ ]` **C-EXEC-02:** Native CLI Action Nodes
+    *   `✅` **C-EXEC-02:** [Native CLI Action Nodes](features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md) — SF-1/SF-2/SF-3 all complete. **Verifiable Proof:** `tests/integration/core/flow/handlers/test_bash_action_integration.py` (real `PipelineRunner` + `StepHandlerRegistry` executing a real script, end-to-end + router branching + `step_records` propagation; no e2e test — justified in the design doc's ROI section as an internal engine capability, not yet wired into a user-facing CLI pipeline)
 *   **Sub-Story Add-Ons:**
     *   🟡 **Containerized Isolation:**
         *   `[ ]` **INT-US-09-SF01:** Sub-Story Integration (Pending Design)
@@ -652,4 +652,10 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-010:** MCP Persistent-Process Executor Migration (design doc not yet written)
 *   **Origin:** Found during C-EXEC-02 SF-1 pre-commit gate (2026-07-13) while auditing repo-wide TID251 violations. `MCPExecutor` keeps a subprocess alive across many `call_rpc()` calls (background reader thread, persistent stdin/stdout pipes) — architecturally incompatible with `SubprocessExecutor.execute()`, which is a one-shot blocking call (`proc.communicate()`, waits for process exit). Migrating it onto the existing one-shot executor would break the MCP bridge, not just risk a regression — this needs its own design for a persistent/streaming-process abstraction. Currently exempted via a documented `noqa: TID251` in `mcp/core/executor.py`.
+
+### 🔴 TECH-011: Load-Time Params Validation for All Pipeline Step Types
+**Benefit:** *Gives every pipeline step type fast, load-time feedback on malformed/missing `params` — consistent with how `PipelineDefinition.validate_flow()` already fails fast on invalid `(action, target)` combinations — instead of a mistyped param (e.g. a step-level key that should be nested under `params:`) silently surfacing as a confusing runtime handler error, potentially much later in a long, HITL-gated pipeline.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md) (design doc not yet written)
+*   **Origin:** Found during C-EXEC-02 SF-2's implementation-plan Phase 4 (2026-07-14). SF-2 deliberately did NOT special-case load-time validation for `action: bash` steps' `params.script` (would have introduced the first action-specific exception to the engine's otherwise-uniform "params are opaque until a handler runs at execution time" behavior) — this ticket tracks doing it properly, for all step types uniformly, as its own design.
 
