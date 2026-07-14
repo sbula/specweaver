@@ -44,7 +44,7 @@ sw init my-app --path ./my-project
 # Or scaffold alongside an external Model Context Protocol integration
 sw init my-app --path ./my-project --mcp postgres
 ```
-This command physically scaffolds `.specweaver/` directories inside the target path, sets up the active connection, and automatically seeds starter templates for `CONSTITUTION.md` and `.specweaverignore`. Furthermore, it dynamically scaffolds native topological bounds (`src/context.yaml` targeting `pure-logic` and `tests/context.yaml` targeting `adapter`) to permanently isolate your project's architectural core from unauthorized Engine access.
+This command physically scaffolds `.specweaver/` directories inside the target path, sets up the active connection, and automatically seeds starter templates for `CONSTITUTION.md` and `.specweaverignore`. It also creates `.specweaver/scripts/` (with a placeholder `README.md`) — the directory where scripts referenced by `action: bash` pipeline steps live. Furthermore, it dynamically scaffolds native topological bounds (`src/context.yaml` targeting `pure-logic` and `tests/context.yaml` targeting `adapter`) to permanently isolate your project's architectural core from unauthorized Engine access.
 
 If you have multiple projects, you can hot-swap the active context mapping:
 ```bash

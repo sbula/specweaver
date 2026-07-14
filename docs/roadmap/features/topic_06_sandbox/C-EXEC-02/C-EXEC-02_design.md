@@ -182,15 +182,15 @@ External prior art incorporated into the FRs/NFRs below: GitHub Actions' `GITHUB
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | BashActionAtom Core Execution | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | SF-2 | Pipeline Engine Integration | SF-1, SF-3 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-3 | Scaffold, Boundary Config, and Docs | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Scaffold, Boundary Config, and Docs | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status** (2026-07-13): Design APPROVED. SF-1 (BashActionAtom Core Execution) is fully implemented, tested, and has passed its pre-commit quality gate — 28 tests (1 platform-skip), full project suite green (unit 4519 + integration 424 + e2e 139 = 5082 passed, 0 failures), ruff/mypy/tach clean. **Awaiting commit** (Phase 7.5 Red/Blue review still to run, then the HITL commit boundary).
+**Current status** (2026-07-14): Design APPROVED. SF-1 (BashActionAtom Core Execution) and SF-3 (Scaffold, Boundary Config, and Docs) are both fully implemented, tested, and committed. Only SF-2 (Pipeline Engine Integration) remains — both of its dependencies are now satisfied.
 
 **Notable finding during SF-1's TDD (Task T6)**: `SubprocessExecutor.execute(["bash", ...])` with the bare string `"bash"` resolved to WSL's `bash.exe` stub in `C:\Windows\System32` instead of Git Bash, because Windows' `CreateProcess` default search order checks `System32` before `%PATH%` regardless of PATH order. Fixed by resolving `shutil.which("bash")` once per `run()` call and using the returned absolute path as argv[0]. This is now baked into `BashActionAtom`'s implementation; SF-2/SF-3 don't need to account for it further.
 
 **Side effect of SF-1's pre-commit gate**: repo-wide `ruff check` (mandated by the pre-commit skill, "every error MUST be fixed regardless of pre-existing or newly introduced") surfaced 6 pre-existing `TID251` violations unrelated to C-EXEC-02. Resolved: `git/core/executor.py` and `filesystem/core/search.py` were migrated to `SubprocessExecutor` via constructor/parameter DI, implementing the already-designed **TECH-009** (previously design-complete but unimplemented) — see `docs/roadmap/features/topic_07_technical_debt/TECH-009/TECH-009_design.md`. `cli_drift.py` and `assurance/standards/discovery.py` kept raw `subprocess` with documented `noqa: TID251` exemptions (routing them through `sandbox` would cross a bounded-context line that doesn't exist today — a real architecture decision, deferred to TECH-009's backlog). `mcp/core/executor.py` also kept a documented exemption — its persistent, bidirectional subprocess pattern is architecturally incompatible with `SubprocessExecutor.execute()`'s one-shot design; tracked as new ticket **TECH-010**. A `C901` complexity violation in `tests/unit/test_architecture.py` (unrelated) was also fixed. None of this touched C-EXEC-02's own scope.
 
-**Next step**: Run Phase 7.5 (Red/Blue review of SF-1's code changes), then the HITL commit boundary. After commit: plan/implement SF-3 (parallel, no dependency on SF-1), then SF-2 (depends on both).
+**Next step**: Plan and implement SF-2 (Pipeline Engine Integration) — its dependencies (SF-1, SF-3) are both committed.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate skill.

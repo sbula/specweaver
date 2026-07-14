@@ -81,6 +81,12 @@ class TestCLIInitDB:
         runner.invoke(app, ["init", "my-app", "--path", str(project_dir)])
         assert (project_dir / ".specweaver" / "templates" / "component_spec.md").is_file()
 
+    def test_init_creates_scripts_dir(self, tmp_path: Path):
+        project_dir = tmp_path / "my-project"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "my-app", "--path", str(project_dir)])
+        assert (project_dir / ".specweaver" / "scripts" / "README.md").is_file()
+
     def test_init_creates_specweaverignore(self, tmp_path: Path):
         project_dir = tmp_path / "my-project"
         project_dir.mkdir()

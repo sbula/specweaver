@@ -9,7 +9,7 @@
 | `config` | pure-logic | *(leaf)* | sandbox/* |
 | `context` | contract | *(leaf)* | sandbox/* |
 | `drafting` | orchestrator | llm, config, context | sandbox/* |
-| `flow` | orchestrator | config, llm, review, implementation, planning, validation, sandbox/qa_runner, sandbox/dispatcher, sandbox/security, workspace/memory | sandbox/* (except dispatcher/qa_runner/security), drafting, context |
+| `flow` | orchestrator | config, llm, review, implementation, planning, validation, sandbox/git, sandbox/qa_runner, sandbox/code_structure, sandbox/mcp, sandbox/execution, sandbox/dispatcher, sandbox/security, workspace/memory | sandbox/* (except git/qa_runner/code_structure/mcp/execution/dispatcher/security), drafting, context |
 | `graph` | pure-logic | context | sandbox/*, llm, drafting, implementation |
 | `implementation` | orchestrator | llm, config, validation | *(none)* |
 | `llm` | adapter | config | sandbox/* |

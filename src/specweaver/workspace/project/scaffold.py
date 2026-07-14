@@ -161,6 +161,18 @@ _What this component does NOT do._
 """
 
 
+_DEFAULT_SCRIPTS_README = """\
+# `.specweaver/scripts/`
+
+Scripts referenced by `action: bash` pipeline steps (C-EXEC-02) live here.
+
+Reference a script by **bare filename only** — `script: setup.sh`, never a
+path. It is resolved as `.specweaver/scripts/<name>` and canonically
+validated to stay inside this directory before every execution; anything
+that would resolve outside it (traversal, symlink escape, absolute path)
+is rejected.
+"""
+
 _DEFAULT_VAULT_ENV = """\
 # Secure Vault - Explicitly excluded from source control tracking.
 # MCP Target: Postgres
@@ -266,6 +278,18 @@ def _scaffold_templates(sw_dir: Path, created: list[str]) -> None:
         created.append(".specweaver/templates/component_spec.md")
 
 
+def _scaffold_scripts_dir(sw_dir: Path, created: list[str]) -> None:
+    scripts_dir = sw_dir / "scripts"
+    if not scripts_dir.exists():
+        scripts_dir.mkdir(parents=True)
+        created.append(".specweaver/scripts/")
+
+    readme_file = scripts_dir / "README.md"
+    if not readme_file.exists():
+        readme_file.write_text(_DEFAULT_SCRIPTS_README, encoding="utf-8")
+        created.append(".specweaver/scripts/README.md")
+
+
 def _scaffold_constitution(project_path: Path, created: list[str]) -> Path:
     from specweaver.workspace.project.constitution import generate_constitution
 
@@ -357,6 +381,7 @@ def scaffold_project(project_path: Path, mcp_target: str | None = None) -> Scaff
     sw_dir = _scaffold_specweaver_dir(project_path, created)
     specs_dir = _scaffold_specs_dir(project_path, created)
     _scaffold_templates(sw_dir, created)
+    _scaffold_scripts_dir(sw_dir, created)
     constitution_file = _scaffold_constitution(project_path, created)
     _scaffold_specweaverignore(project_path, created)
 

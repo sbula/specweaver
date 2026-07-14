@@ -45,6 +45,15 @@ class TestScaffoldProject:
         assert "Contract" in content
         assert "Protocol" in content
 
+    def test_creates_scripts_dir_with_readme(self, tmp_path: Path) -> None:
+        """scaffold_project creates .specweaver/scripts/ with a README (C-EXEC-02 FR-10)."""
+        scaffold_project(tmp_path)
+        readme = tmp_path / ".specweaver" / "scripts" / "README.md"
+        assert readme.is_file()
+        content = readme.read_text()
+        assert "bare filename" in content
+        assert ".specweaver/scripts/" in content
+
     def test_creates_root_context_yaml(self, tmp_path: Path) -> None:
         """scaffold_project creates a root context.yaml boundary manifest."""
         scaffold_project(tmp_path)
@@ -197,6 +206,30 @@ class TestScaffoldIdempotency:
         scaffold_project(tmp_path)
 
         assert tmpl.read_text() == "# My custom template\n"
+
+    def test_does_not_overwrite_existing_scripts_readme(self, tmp_path: Path) -> None:
+        """If scripts/README.md exists with custom content, don't overwrite it."""
+        scripts_dir = tmp_path / ".specweaver" / "scripts"
+        scripts_dir.mkdir(parents=True)
+        readme = scripts_dir / "README.md"
+        readme.write_text("# My custom scripts README\n")
+
+        scaffold_project(tmp_path)
+
+        assert readme.read_text() == "# My custom scripts README\n"
+
+    def test_creates_readme_when_scripts_dir_already_exists(self, tmp_path: Path) -> None:
+        """If scripts/ already exists (e.g. user added their own scripts) but README.md
+        doesn't, create just the missing README without erroring on the existing dir."""
+        scripts_dir = tmp_path / ".specweaver" / "scripts"
+        scripts_dir.mkdir(parents=True)
+        (scripts_dir / "my_script.sh").write_text("#!/usr/bin/env bash\necho hi\n")
+
+        scaffold_project(tmp_path)
+
+        readme = scripts_dir / "README.md"
+        assert readme.is_file()
+        assert (scripts_dir / "my_script.sh").is_file()  # untouched
 
     def test_does_not_overwrite_existing_specweaverignore_patterns(self, tmp_path: Path) -> None:
         """Existing .specweaverignore files should gracefully append missing defaults without erasing user rules."""

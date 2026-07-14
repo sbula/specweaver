@@ -86,6 +86,8 @@ runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
 As of this writing, `BashActionAtom` is only invoked directly (e.g. by tests) — pipeline-level `action: bash` steps are C-EXEC-02 SF-2's scope, not yet implemented.
 
+`.specweaver/scripts/` is created automatically by project scaffolding (`sw init`, C-EXEC-02 SF-3) with a placeholder `README.md` explaining the containment rule above — you don't need to create it by hand.
+
 ## Security Boundaries
 
 ### Environment Stripping

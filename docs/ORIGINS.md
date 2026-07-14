@@ -173,7 +173,7 @@ Blueprint references (study before implementing 3.19):
 
 Patterns adopted for SpecWeaver:
 - **Deterministic Collision Routing** → Assigning deterministic hash-based port offsets to temporary git worktree sandboxes, avoiding OS resource collisions (`EADDRINUSE` or SQLite locking) during parallel test execution. (Phase 3.27)
-- **Native CLI Action Nodes** → Supporting `action: bash` deterministic steps in pipeline definitions to cleanly trigger pre-test scaffolding without involving the LLM. Enforces strict `FolderGrant` protection by physically restricting hooks to `.specweaver/scripts/`. (Phase 3.40b)
+- **Bash/Script DAG Nodes** → Inspired by Archon's `bash:`/`script:` node fields (e.g. `script: analyze-metrics` resolved to `.archon/scripts/analyze-metrics.py`), SpecWeaver's `action: bash` deterministic pipeline steps trigger pre-test scaffolding without involving the LLM, resolving bare script names against `.specweaver/scripts/`. "Native CLI Action Nodes" and "FolderGrant" are SpecWeaver's own coinages, not Archon terminology. (Phase 3.40b)
 - **Interactive Gate Variables** → Elevating Human-In-The-Loop feedback loops (`GateType.HITL`) into explicitly mapped, strictly weighted `<dictator-overrides>` prompt variables to ensure definitive agent compliance during fallback iterations. (Phase 3.26c)
 
 Blueprint references:

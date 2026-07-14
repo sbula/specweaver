@@ -27,6 +27,7 @@ consumes:
   - specweaver/sandbox/qa_runner/core
   - specweaver/sandbox/code_structure/core
   - specweaver/sandbox/mcp/core
+  - specweaver/sandbox/execution/core
   - specweaver/sandbox/dispatcher
   - specweaver/sandbox/security
 

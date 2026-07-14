@@ -1,44 +1,32 @@
-# Task List: C-EXEC-02 SF-1 — BashActionAtom Core Execution
+# Task List: C-EXEC-02 SF-3 — Scaffold, Boundary Config, and Docs
 
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf1_implementation_plan.md
-- **Commit boundaries**: 1 (small, cohesive single-class feature — 5 new files, no existing files touched)
+- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf3_implementation_plan.md
+- **Commit boundaries**: 1 (small, low-risk sub-feature — 9 modified files, no new source files, clones an existing scaffold pattern exactly)
 
 ## Adversarial Test Matrix
 
 | Bucket | Covered by |
 |--------|-----------|
-| **Happy Path** | `test_successful_script_execution`, `test_args_passed_through`, `test_working_dir_resolved_relative_to_project`, `test_env_map_passed_through` |
-| **Boundary/Edge Cases** | `test_stdout_truncated_over_1mib`, `test_timeout_over_ceiling_rejected`, `test_timeout_override_applied`, `test_nonzero_exit_maps_to_failed` |
-| **Graceful Degradation** | `test_bash_not_on_path_fails_cleanly`, `test_crashing_executor_never_propagates`, `test_missing_script_file_fails` |
-| **Hostile/Wrong Input** | `test_script_name_with_separator_rejected`, `test_script_outside_scripts_dir_via_symlink_rejected`, `test_working_dir_escaping_project_rejected`, `test_env_path_override_rejected_case_insensitive`, `test_missing_script_key_fails` |
+| **Happy Path** | `test_creates_scripts_dir_with_readme`, `test_init_creates_scripts_dir` |
+| **Boundary/Edge Cases** | N/A — no numeric/size boundaries in this SF (pure filesystem scaffolding, fixed content) |
+| **Graceful Degradation** | `test_does_not_overwrite_existing_scripts_readme` (idempotency — scaffold re-run against an already-scaffolded/user-modified project must not clobber it) |
+| **Hostile/Wrong Input** | N/A — no user-controlled input reaches this code path (`scaffold_project(project_path)` takes a trusted CLI-resolved path, not YAML/agent-controlled content) |
 
-All 4 buckets covered — no bucket is empty, no justification needed.
+Two buckets justified as N/A: this SF has no numeric thresholds to probe (Boundary/Edge Cases) and no externally-controlled input surface (Hostile/Wrong Input) — it's fixed-content filesystem scaffolding, unlike SF-1's `BashActionAtom` which processes YAML-sourced script names/args. Consistent with the design doc's own scope note.
 
 ## Tasks (single commit boundary)
 
-- [x] **T1 — Scaffolding**: Create `src/specweaver/sandbox/execution/core/__init__.py` (empty), `src/specweaver/sandbox/execution/core/context.yaml` (`archetype: adapter`), `tests/unit/sandbox/execution/core/execution/__init__.py` (empty). No TDD cycle — no behavior to test.
-- [x] **T2 — `_truncate()` helper** (FR-8): Red → Green → Refactor. Tests: under-limit passthrough, exactly-at-limit, over-limit truncation + marker, multi-byte UTF-8 char at the boundary doesn't raise.
-- [x] **T3 — Construction + cheap input validation** (FR-2 part 1, FR-12, NFR-4): `BashActionAtom.__init__`, then `run()`'s in-memory checks only (missing `script`, separator/`..` rejection, timeout ceiling, case-insensitive `PATH` rejection in `env`). Tests: `test_atom_is_atom_subclass`, `test_missing_script_key_fails`, `test_script_name_with_separator_rejected`, `test_timeout_over_ceiling_rejected`, `test_env_path_override_rejected_case_insensitive`.
-- [x] **T4 — Containment + existence** (FR-2 part 2, AD-2, AD-3): `WorkspaceBoundary` integration, `.is_file()` check. Tests: `test_script_outside_scripts_dir_via_symlink_rejected`, `test_missing_script_file_fails`.
-- [x] **T5 — `bash` availability check** (NFR-9): `shutil.which("bash")` pre-check. Test: `test_bash_not_on_path_fails_cleanly`.
-- [x] **T6 — Happy-path execution** (FR-3, FR-4, FR-5, FR-11): argv construction, `working_dir` → `cwd_override`, `SubprocessExecutor` construction with default `ResourceLimits`, exit-code → `AtomStatus` mapping. Tests: `test_successful_script_execution`, `test_nonzero_exit_maps_to_failed`, `test_args_passed_through`, `test_working_dir_resolved_relative_to_project`, `test_working_dir_escaping_project_rejected`, `test_resource_limits_applied_by_default`.
-  - **Real bug found + fixed during TDD**: `SubprocessExecutor.execute(["bash", ...])` with the bare string `"bash"` resolved to WSL's `bash.exe` stub in `C:\Windows\System32` instead of Git Bash, because Windows' `CreateProcess` default search order checks `System32` before `%PATH%` regardless of PATH order. Fixed by resolving `shutil.which("bash")` once and using the returned absolute path as argv[0] instead of the literal string `"bash"`. See design/impl-plan correction note below.
-- [x] **T7 — Output truncation + env passthrough integration** (FR-8, FR-12): wire `_truncate()` into `exports`, confirm `env` reaches the child, confirm no implicit `RunContext`-style leakage. Tests: `test_stdout_truncated_over_1mib`, `test_env_map_passed_through`, `test_env_does_not_leak_run_context_vars`.
-- [x] **T8 — Timeout override + exception containment** (FR-9, FR-13): `timeout_seconds` passthrough; multi-except structure (`WorkspaceBoundaryError`, `(ValueError, FileNotFoundError)`, generic `Exception`) — never propagate. Tests: `test_timeout_override_applied`, `test_crashing_executor_never_propagates`.
+- [x] **T1 — Scaffold `.specweaver/scripts/`** (FR-10): Red → Green → Refactor. Added `_DEFAULT_SCRIPTS_README` constant + `_scaffold_scripts_dir(sw_dir, created)` helper to `scaffold.py`, cloning `_scaffold_templates()`'s exact structure; wired into `scaffold_project()` right after `_scaffold_templates(sw_dir, created)`. Tests: `test_creates_scripts_dir_with_readme`, `test_does_not_overwrite_existing_scripts_readme`, `test_creates_readme_when_scripts_dir_already_exists` (all in `test_scaffold.py`), `test_init_creates_scripts_dir` (`test_cli_projects.py`). All 82 tests in both files pass (0 regressions), ruff + mypy clean.
+- [x] **T2 — `tach.toml` boundary config**: Added `"execution.core"` + `"execution.core.atom.BashActionAtom"` to the `specweaver.sandbox` interface's `expose` array.
+- [x] **T3 — `core/flow/context.yaml` boundary config**: Added `- specweaver/sandbox/execution/core` to `consumes:`, grouped with the other `sandbox/*` entries. `tach check` → `[OK] All modules validated!` (verified after T2+T3 together).
+- [x] **T4 — `hard_dependency_rules.md` correction**: Replaced the stale `flow` row (Consumes/Forbids columns) with the corrected version.
+- [x] **T5 — `ORIGINS.md` correction**: Replaced line 176's Archon-attribution bullet with the corrected text.
+- [x] **T6 — `subprocess_execution.md` addition**: One sentence appended to the existing "Engine-Internal Script Execution (BashActionAtom)" section noting the scaffold origin of `.specweaver/scripts/`.
+- [x] **T7 — `1_installation_and_setup.md` addition**: One clause appended to §4's scaffolding-artifact list.
 
-**Refactor**: extracted `_validate_cheap()` helper to bring `run()` under the C901 complexity limit (was 11, limit 10). Ruff + mypy clean.
+## Commit Boundary 1 (after T1–T7)
 
-## Commit Boundary 1 (after T1–T8)
-
-- [x] Run full project test suite (unit + integration + e2e) — zero regressions (4511 unit + 424 integration + 139 e2e, all passed).
-- [/] Pre-commit quality gate (`.agents/skills/specweaver-pre-commit/SKILL.md`):
-  - [x] Phase 1 — Architecture verification: no violations, `tach check` clean.
-  - [x] Phase 2 — Test gap analysis: 2 genuine gaps + 2 hardening stories found, presented via artifact, user approved "Option A" (implement all 4).
-  - [x] Phase 3 — Implemented all 4 gap-closing tests (`test_workspace_boundary_error_handled_without_symlink`, `test_working_dir_escaping_project_rejected` re-scoped + new `test_working_dir_nonexistent_rejected`, `test_shell_metacharacter_arg_treated_as_literal`, `test_non_string_arg_does_not_propagate_raw_exception`). 28 passed, 1 skipped (symlink/admin), ruff clean.
-  - [ ] Phase 4 — Re-run full test suite.
-  - [ ] Phase 5 — Code quality checks (ruff, mypy, complexity, file size).
-  - [ ] Phase 6 — Documentation updates.
-  - [ ] Phase 7 — Walkthrough artifact.
-  - [ ] Phase 7.5 — Red/Blue adversarial review of code changes.
+- [ ] Run full project test suite (unit + integration + e2e) — zero regressions.
+- [ ] Pre-commit quality gate (`.agents/skills/specweaver-pre-commit/SKILL.md`, all 7 phases + 7.5).
 - [ ] **STOP — HITL commit gate.** Wait for explicit user commit/proceed.
-- [ ] After commit: update Design Doc Progress Tracker (`Dev ✅`, `Pre-Commit ✅`, `Committed ✅` for SF-1) and Session Handoff.
+- [ ] After commit: update Design Doc Progress Tracker (`Dev ✅`, `Pre-Commit ✅`, `Committed ✅` for SF-3) and Session Handoff.
