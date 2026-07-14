@@ -182,17 +182,17 @@ External prior art incorporated into the FRs/NFRs below: GitHub Actions' `GITHUB
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-1 | BashActionAtom Core Execution | — | ✅ | ✅ | ✅ | ✅ | ⬜ |
-| SF-2 | Pipeline Engine Integration | SF-1, SF-3 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-1 | BashActionAtom Core Execution | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-2 | Pipeline Engine Integration | SF-1, SF-3 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-3 | Scaffold, Boundary Config, and Docs | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status** (2026-07-14): Design APPROVED. SF-1 and SF-3 are fully implemented, tested, and committed. SF-2 (Pipeline Engine Integration)'s implementation plan is APPROVED; SF-2 TDD development in progress via the `dev` skill.
+**Current status** (2026-07-14): **C-EXEC-02 is feature-complete.** SF-1, SF-2, and SF-3 are all designed, implemented, tested, pre-commit-gated, and committed. SF-2 (Pipeline Engine Integration) landed in commit `0b9a5b29` — `StepAction.BASH`/`StepTarget.SCRIPT`, `BashActionHandler`, and integration tests proving routing/gating/`step_records` propagation work end-to-end with zero pipeline-engine changes. (Note: SF-1's "Committed" column was previously left `⬜` in error — it was committed earlier in this same session; corrected here.)
 
 **Notable finding during SF-1's TDD (Task T6)**: `SubprocessExecutor.execute(["bash", ...])` with the bare string `"bash"` resolved to WSL's `bash.exe` stub in `C:\Windows\System32` instead of Git Bash, because Windows' `CreateProcess` default search order checks `System32` before `%PATH%` regardless of PATH order. Fixed by resolving `shutil.which("bash")` once per `run()` call and using the returned absolute path as argv[0]. This is now baked into `BashActionAtom`'s implementation; SF-2/SF-3 don't need to account for it further.
 
 **Side effect of SF-1's pre-commit gate**: repo-wide `ruff check` (mandated by the pre-commit skill, "every error MUST be fixed regardless of pre-existing or newly introduced") surfaced 6 pre-existing `TID251` violations unrelated to C-EXEC-02. Resolved: `git/core/executor.py` and `filesystem/core/search.py` were migrated to `SubprocessExecutor` via constructor/parameter DI, implementing the already-designed **TECH-009** (previously design-complete but unimplemented) — see `docs/roadmap/features/topic_07_technical_debt/TECH-009/TECH-009_design.md`. `cli_drift.py` and `assurance/standards/discovery.py` kept raw `subprocess` with documented `noqa: TID251` exemptions (routing them through `sandbox` would cross a bounded-context line that doesn't exist today — a real architecture decision, deferred to TECH-009's backlog). `mcp/core/executor.py` also kept a documented exemption — its persistent, bidirectional subprocess pattern is architecturally incompatible with `SubprocessExecutor.execute()`'s one-shot design; tracked as new ticket **TECH-010**. A `C901` complexity violation in `tests/unit/test_architecture.py` (unrelated) was also fixed. None of this touched C-EXEC-02's own scope.
 
-**Next step**: Complete SF-2 dev + pre-commit + commit. Once done, C-EXEC-02 is feature-complete.
+**Next step**: None — C-EXEC-02 is done. Two follow-on tickets were spun off during this work and remain open, tracked separately: **TECH-010** (MCP persistent-process executor migration, stub only) and **TECH-011** (load-time `params` validation for all pipeline step types, stub only, created per SF-2's Q1 resolution).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate skill.
