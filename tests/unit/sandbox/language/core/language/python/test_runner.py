@@ -186,3 +186,139 @@ class TestPythonQARunner:
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = PythonQARunner(cwd=tmp_path)
         assert runner.language_name == "python"
+
+
+# ---------------------------------------------------------------------------
+# INT-US-09 SF-01 T9: container-mode integration
+# ---------------------------------------------------------------------------
+
+
+class TestContainerModeIntegration:
+    """Tach pre-check skip + ContainerEngineUnavailableError handling."""
+
+    def test_tach_precheck_skipped_in_container_mode(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
+
+        mock_executor = MagicMock(spec=ContainerSubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        with patch("shutil.which") as mock_which:
+            result = runner.run_architecture_check(target=".")
+
+        mock_which.assert_not_called()
+        assert result.violation_count == 0
+
+    def test_tach_precheck_still_runs_in_host_mode(self, tmp_path: Path) -> None:
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(stdout="[]")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        with patch("shutil.which", return_value=None) as mock_which:
+            result = runner.run_architecture_check(target=".")
+
+        mock_which.assert_called_once_with("tach")
+        assert result.violation_count == 1
+        assert result.violations[0].code == "FileNotFoundError"
+
+    def test_run_tests_engine_unavailable_becomes_synthetic_failure(
+        self, tmp_path: Path
+    ) -> None:
+        from specweaver.sandbox.execution.container_executor import ContainerEngineUnavailableError
+
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.side_effect = ContainerEngineUnavailableError("no engine")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        result = runner.run_tests(target="tests/")
+
+        assert result.errors == 1
+        assert result.failures[0].nodeid == "<sandbox>"
+        assert "no engine" in result.failures[0].message
+
+    def test_run_linter_engine_unavailable_becomes_synthetic_failure(
+        self, tmp_path: Path
+    ) -> None:
+        from specweaver.sandbox.execution.container_executor import ContainerEngineUnavailableError
+
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.side_effect = ContainerEngineUnavailableError("no engine")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        result = runner.run_linter(target="src/")
+
+        assert result.error_count == 0
+        assert result.errors == []
+
+    def test_run_complexity_engine_unavailable_becomes_synthetic_failure(
+        self, tmp_path: Path
+    ) -> None:
+        from specweaver.sandbox.execution.container_executor import ContainerEngineUnavailableError
+
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.side_effect = ContainerEngineUnavailableError("no engine")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        result = runner.run_complexity(target="src/")
+
+        assert result.violation_count == 0
+
+    def test_run_debugger_engine_unavailable_becomes_synthetic_failure(
+        self, tmp_path: Path
+    ) -> None:
+        from specweaver.sandbox.execution.container_executor import ContainerEngineUnavailableError
+
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.side_effect = ContainerEngineUnavailableError("no engine")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        result = runner.run_debugger(target=".", entrypoint="main.py")
+
+        assert result.exit_code == 124
+        assert "no engine" in result.events[0].output
+
+    def test_run_architecture_check_engine_unavailable_becomes_synthetic_failure(
+        self, tmp_path: Path
+    ) -> None:
+        from specweaver.sandbox.execution.container_executor import (
+            ContainerEngineUnavailableError,
+            ContainerSubprocessExecutor,
+        )
+
+        mock_executor = MagicMock(spec=ContainerSubprocessExecutor)
+        mock_executor.execute.side_effect = ContainerEngineUnavailableError("no engine")
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        result = runner.run_architecture_check(target=".")
+
+        assert result.violation_count == 1
+        assert result.violations[0].code == "ContainerEngineUnavailableError"
+
+
+class TestRunDebuggerInterpreterResolution:
+    """INT-US-09 SF-01 Red/Blue fix: sys.executable is the HOST interpreter path,
+    meaningless inside a container — discovered via the real-engine integration test."""
+
+    def test_uses_sys_executable_in_host_mode(self, tmp_path: Path) -> None:
+        import sys
+
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=0)
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        runner.run_debugger(target=".", entrypoint="main.py")
+
+        called_cmd = mock_executor.execute.call_args.args[0]
+        assert called_cmd == [sys.executable, "main.py"]
+
+    def test_uses_bare_python_in_container_mode(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
+
+        mock_executor = MagicMock(spec=ContainerSubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=0)
+        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
+
+        runner.run_debugger(target=".", entrypoint="main.py")
+
+        called_cmd = mock_executor.execute.call_args.args[0]
+        assert called_cmd == ["python", "main.py"]

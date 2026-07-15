@@ -8,7 +8,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
+from specweaver.core.config.settings import SandboxSettings
 from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 from specweaver.sandbox.qa_runner.core.interface import (
     ComplexityRunResult,
@@ -652,3 +655,35 @@ def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Pat
         runner = resolve_runner(tmp_path)
         assert runner is not None
         (tmp_path / marker).unlink()
+
+
+# ---------------------------------------------------------------------------
+# INT-US-09 SF-01 T8: sandbox_settings -> executor selection
+# ---------------------------------------------------------------------------
+
+
+class TestSandboxSettingsExecutorSelection:
+    def test_no_sandbox_settings_defaults_to_host_executor(self, tmp_path: Path) -> None:
+        atom = QARunnerAtom(cwd=tmp_path)
+        assert isinstance(atom._runner._executor, SubprocessExecutor)
+        assert not isinstance(atom._runner._executor, ContainerSubprocessExecutor)
+
+    def test_explicit_host_mode_uses_host_executor(self, tmp_path: Path) -> None:
+        atom = QARunnerAtom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="host"))
+        assert isinstance(atom._runner._executor, SubprocessExecutor)
+        assert not isinstance(atom._runner._executor, ContainerSubprocessExecutor)
+
+    def test_container_mode_builds_container_executor(self, tmp_path: Path) -> None:
+        atom = QARunnerAtom(
+            cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container")
+        )
+        assert isinstance(atom._runner._executor, ContainerSubprocessExecutor)
+
+    def test_container_mode_derives_mounts_from_cwd(self, tmp_path: Path) -> None:
+        atom = QARunnerAtom(
+            cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container")
+        )
+        mounts = atom._runner._executor._mounts
+        assert mounts.source_root == tmp_path
+        assert mounts.scratch_root == tmp_path / ".specweaver" / ".sandbox" / "scratch"
+        assert mounts.cache_root == tmp_path / ".specweaver" / ".sandbox" / "cache"

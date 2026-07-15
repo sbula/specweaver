@@ -1,9 +1,36 @@
 # mypy: ignore-errors
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from specweaver.core.config.database import Database
+from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
 from specweaver.core.config.settings_loader import load_settings
 from tests.fixtures.db_utils import register_test_project
+
+
+class TestSandboxSettingsModel:
+    """Bare-model tests for SandboxSettings (INT-US-09 SF-01 T10).
+
+    Loader-level (specweaver.toml -> SandboxSettings) tests land in T11.
+    """
+
+    def test_defaults_to_host_mode(self):
+        settings = SandboxSettings()
+        assert settings.execution_mode == "host"
+
+    def test_accepts_container_mode(self):
+        settings = SandboxSettings(execution_mode="container")
+        assert settings.execution_mode == "container"
+
+    def test_rejects_invalid_execution_mode(self):
+        with pytest.raises(ValidationError):
+            SandboxSettings(execution_mode="not-a-real-mode")
+
+    def test_spec_weaver_settings_defaults_sandbox_to_host(self):
+        settings = SpecWeaverSettings(llm={"model": "gemini-2.0-flash"})
+        assert settings.sandbox.execution_mode == "host"
 
 
 def test_load_settings_toml_overrides_defaults(tmp_path: Path):

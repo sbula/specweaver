@@ -18,6 +18,10 @@ from typing import TYPE_CHECKING, TypedDict
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.sandbox.execution.container_executor import (
+    ContainerEngineUnavailableError,
+    ContainerSubprocessExecutor,
+)
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
@@ -171,7 +175,21 @@ class PythonQARunner(QARunnerInterface):
         if coverage:
             cmd.extend(["--cov", target, "--cov-report", "term"])
 
-        result = self._executor.execute(cmd, timeout_seconds=timeout)
+        try:
+            result = self._executor.execute(cmd, timeout_seconds=timeout)
+        except ContainerEngineUnavailableError as exc:
+            logger.warning(
+                "PythonQARunner: container engine unavailable (target=%s): %s", target, exc
+            )
+            return TestRunResult(
+                passed=0,
+                failed=0,
+                errors=1,
+                skipped=0,
+                total=1,
+                failures=[TestFailure(nodeid="<sandbox>", message=str(exc))],
+                duration_seconds=0.0,
+            )
 
         if result.timed_out:
             logger.warning(
@@ -222,27 +240,34 @@ class PythonQARunner(QARunnerInterface):
         logger.debug("PythonQARunner.run_linter: target=%s fix=%s", target, fix)
         fixed_count = 0
 
-        # If fix=True, run ruff format first, then ruff check --fix
-        if fix:
-            self._executor.execute(
-                ["python", "-m", "ruff", "format", target],
+        try:
+            # If fix=True, run ruff format first, then ruff check --fix
+            if fix:
+                self._executor.execute(
+                    ["python", "-m", "ruff", "format", target],
+                    timeout_seconds=self._DEFAULT_TIMEOUT,
+                )
+                # Ignore timeout on format — best-effort
+
+                fix_result = self._executor.execute(
+                    ["python", "-m", "ruff", "check", target, "--fix", "--output-format=json"],
+                    timeout_seconds=self._DEFAULT_TIMEOUT,
+                )
+                if not fix_result.timed_out:
+                    fix_data = self._parse_ruff_json(fix_result.stdout)
+                    fixed_count = len(fix_data.get("fixed", []))
+
+            # Run final check to get current state
+            result = self._executor.execute(
+                ["python", "-m", "ruff", "check", target, "--output-format=json"],
                 timeout_seconds=self._DEFAULT_TIMEOUT,
             )
-            # Ignore timeout on format — best-effort
-
-            fix_result = self._executor.execute(
-                ["python", "-m", "ruff", "check", target, "--fix", "--output-format=json"],
-                timeout_seconds=self._DEFAULT_TIMEOUT,
+        except ContainerEngineUnavailableError as exc:
+            logger.warning(
+                "PythonQARunner: container engine unavailable (target=%s): %s", target, exc
             )
-            if not fix_result.timed_out:
-                fix_data = self._parse_ruff_json(fix_result.stdout)
-                fixed_count = len(fix_data.get("fixed", []))
+            return LintRunResult(error_count=0, fixable_count=0, fixed_count=0, errors=[])
 
-        # Run final check to get current state
-        result = self._executor.execute(
-            ["python", "-m", "ruff", "check", target, "--output-format=json"],
-            timeout_seconds=self._DEFAULT_TIMEOUT,
-        )
         if result.timed_out:
             logger.warning("PythonQARunner: ruff linting timed out (target=%s)", target)
             return LintRunResult(error_count=0, fixable_count=0, fixed_count=0, errors=[])
@@ -295,20 +320,27 @@ class PythonQARunner(QARunnerInterface):
 
         Uses the ruff C901 rule with a configurable threshold.
         """
-        result = self._executor.execute(
-            [
-                "python",
-                "-m",
-                "ruff",
-                "check",
-                target,
-                "--select",
-                "C90",
-                f"--config=lint.mccabe.max-complexity={max_complexity}",
-                "--output-format=json",
-            ],
-            timeout_seconds=self._DEFAULT_TIMEOUT,
-        )
+        try:
+            result = self._executor.execute(
+                [
+                    "python",
+                    "-m",
+                    "ruff",
+                    "check",
+                    target,
+                    "--select",
+                    "C90",
+                    f"--config=lint.mccabe.max-complexity={max_complexity}",
+                    "--output-format=json",
+                ],
+                timeout_seconds=self._DEFAULT_TIMEOUT,
+            )
+        except ContainerEngineUnavailableError as exc:
+            logger.warning(
+                "PythonQARunner: container engine unavailable (target=%s): %s", target, exc
+            )
+            return ComplexityRunResult(violation_count=0, max_complexity=max_complexity)
+
         if result.timed_out:
             logger.warning("PythonQARunner: complexity check timed out (target=%s)", target)
             return ComplexityRunResult(
@@ -372,10 +404,27 @@ class PythonQARunner(QARunnerInterface):
         entrypoint: str,
     ) -> DebugRunResult:
         """Execute a process and stream runtime outputs using DAP OutputEvents."""
-        cmd = [sys.executable, entrypoint]
+        # INT-US-09 SF-01 Red/Blue fix: sys.executable is the HOST interpreter path
+        # (e.g. a Windows .exe path), meaningless inside a Linux container — use the
+        # bare "python" name there instead, resolved fresh inside whatever env runs it
+        # (matches run_tests/run_linter/run_complexity, which already use "python").
+        python_bin = "python" if isinstance(self._executor, ContainerSubprocessExecutor) else sys.executable
+        cmd = [python_bin, entrypoint]
         logger.debug("Running Python debugger wrapper: %s", shlex.join(cmd))
 
-        result = self._executor.execute(cmd, timeout_seconds=self._BUILD_TIMEOUT)
+        try:
+            result = self._executor.execute(cmd, timeout_seconds=self._BUILD_TIMEOUT)
+        except ContainerEngineUnavailableError as exc:
+            logger.warning(
+                "PythonQARunner: container engine unavailable (entrypoint=%s): %s",
+                entrypoint,
+                exc,
+            )
+            return DebugRunResult(
+                exit_code=124,
+                duration_seconds=0.0,
+                events=[OutputEvent(category="stderr", output=str(exc))],
+            )
 
         if result.timed_out:
             return DebugRunResult(
@@ -430,8 +479,11 @@ class PythonQARunner(QARunnerInterface):
 
     def _run_tach_check(self) -> ArchitectureRunResult:
         """Run global tach boundary check (extracted from original method)."""
-        # H-1 / RED-1.2: Pre-check tool existence before calling executor
-        if not shutil.which("tach"):
+        # H-1 / RED-1.2: Pre-check tool existence before calling executor.
+        # INT-US-09 SF-01 Finding #1: skipped in container mode — this checks HOST
+        # tooling presence, which is irrelevant when tach runs inside the sandbox image.
+        is_container = isinstance(self._executor, ContainerSubprocessExecutor)
+        if not is_container and not shutil.which("tach"):
             logger.warning("PythonQARunner: tach not found")
             return ArchitectureRunResult(
                 violation_count=1,
@@ -444,10 +496,23 @@ class PythonQARunner(QARunnerInterface):
                 ],
             )
 
-        result = self._executor.execute(
-            ["python", "-m", "tach", "check", "--output", "json"],
-            timeout_seconds=self._DEFAULT_TIMEOUT,
-        )
+        try:
+            result = self._executor.execute(
+                ["python", "-m", "tach", "check", "--output", "json"],
+                timeout_seconds=self._DEFAULT_TIMEOUT,
+            )
+        except ContainerEngineUnavailableError as exc:
+            logger.warning("PythonQARunner: container engine unavailable: %s", exc)
+            return ArchitectureRunResult(
+                violation_count=1,
+                violations=[
+                    ArchitectureViolation(
+                        file="<validation_engine>",
+                        code="ContainerEngineUnavailableError",
+                        message=str(exc),
+                    )
+                ],
+            )
 
         if result.stderr:
             logger.debug("PythonQARunner: tach check stderr: %s", result.stderr)

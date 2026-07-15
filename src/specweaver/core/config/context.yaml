@@ -19,6 +19,7 @@ exposes:
   - SpecWeaverSettings
   - ValidationSettings
   - LLMSettings
+  - SandboxSettings
   - Database
   - load_settings
   - DALResolver

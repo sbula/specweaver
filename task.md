@@ -37,19 +37,34 @@ Refactor: `_resolve_image` now derives its supported-version bounds from `_SUPPO
 - [x] Phase 7 — Walkthrough: [artifact](https://claude.ai/code/artifact/9ef64121-605a-4662-b3fd-a78c54d08248).
 - [x] Phase 7.5 — Red/Blue adversarial review (2 cycles). Cycle 1 found 2 real HIGH findings in the actual code (not caught at design/impl-plan stage): (1) the prepare-phase container lacked the same cap-drop/resource/user hardening as the execute-phase container, despite `uv sync` being able to execute arbitrary sdist build code from PyPI; (2) the prepare-phase container relied on `--rm` alone with no deterministic name or pre/post cleanup — the exact anti-pattern AD-8 exists to prevent, and its 300s timeout is long enough for a host-side kill to orphan one. Both fixed: extracted a shared `_baseline_flags()` used by both phases, and gave the prepare phase the same name+cleanup treatment as the execute phase. 3 new tests added (45 unit total for this commit), all suites + quality checks re-run clean after the fix. Cycle 2: two LOW items surfaced and accepted as-is (Windows double-logs the non-root warning since `_baseline_flags()` is now called twice per `execute()` — accepted, matches the project's existing "don't over-build Windows shims" stance; no real-engine integration test for `_ensure_prepared()` itself — accepted, already-documented AD-7 scope boundary pending the sandbox image's own Backlog item). Converged, no further findings.
 
-**→ Commit boundary: full test suite ✅ + pre-commit gate complete ✅ + HITL stop (awaiting commit).**
+**→ Commit boundary: full test suite ✅ + pre-commit gate complete ✅ + committed as `68c34359`.**
 
 ## Commit Boundary 2 — QA runner DI wiring
 
-- [ ] T7. Widen `resolve_runner(cwd, executor=None)` in `qa_runner/core/factory.py` + centralized non-Python warning.
-- [ ] T8. `QARunnerAtom.__init__` gains `sandbox_settings`; builds `ContainerSubprocessExecutor` when enabled.
-- [ ] T9. `PythonQARunner` — conditional tach pre-check skip; catch `ContainerEngineUnavailableError` in all 6 methods.
+**Sequencing correction found mid-implementation**: T8's `sandbox_settings: SandboxSettings | None` parameter needs `SandboxSettings` to exist, but that type was originally slotted in Commit Boundary 3 (T10). Rather than loosely type it `Any`, pulled just the `SandboxSettings` **model definition** (in `core/config/settings.py` + `context.yaml` exposes) forward into this commit — the TOML-loading wiring (`_load_toml_sandbox`, threading into `load_settings_async()`) stays in Commit Boundary 3 as planned. 4 new tests for the bare model.
 
-**→ Commit boundary: full test suite + pre-commit gate + HITL stop.**
+- [x] T7. Widened `resolve_runner(cwd, executor=None)` in `qa_runner/core/factory.py`; centralized non-Python + container-mode `logger.warning` in `_warn_if_container_non_python()`. 11 tests (5 auto-discovery unchanged-behavior + 3 executor-passthrough + 3 warning-scoping).
+- [x] T8 (+ partial T10). `SandboxSettings` model added to `core/config/settings.py` (4 tests). `QARunnerAtom.__init__` gains `sandbox_settings: SandboxSettings | None = None`; builds a `ContainerSubprocessExecutor` (mounts derived from `cwd/.specweaver/.sandbox/{scratch,cache}`) via a new `_build_container_executor()` helper when `execution_mode == "container"`. 4 tests.
+- [x] T9. `PythonQARunner._run_tach_check()` skips the host-side `shutil.which("tach")` pre-check when `isinstance(self._executor, ContainerSubprocessExecutor)` (Finding #1). All 6 methods (`run_tests`, `run_linter`, `run_complexity`, `run_debugger`, `_run_tach_check`; `run_compiler` is a no-op, N/A) catch `ContainerEngineUnavailableError` and return the same kind of synthetic-failure result each already builds for its `<timeout>` case. 7 tests.
+
+**Commit Boundary 2 results**: 26 new tests, all green (173 language-runner tests + 439 qa_runner/language/config tests overall, zero regressions). `ruff`/`mypy`/`tach check` clean.
+
+### Pre-commit gate
+
+- [x] Phase 1 — Architecture verification: clean, zero violations.
+- [x] Phase 2 — Test gap analysis: [artifact](https://claude.ai/code/artifact/6fade480-75e9-46ae-930d-850ea1f5a59b). One real gap found — nothing tested the assembled chain end-to-end. User approved the proposed integration test.
+- [x] Phase 3 — Implemented `test_container_atom_integration.py` (real Podman, full `factory` → `PythonQARunner` → `ContainerSubprocessExecutor` chain). **First run failed for real** — caught a genuine bug: `run_debugger()` used `sys.executable` (host Windows path), meaningless inside the Linux container. Fixed (bare `"python"` in container mode, matching the other 3 methods), 2 new unit tests, integration test now passes for real. 27 new tests total for this commit.
+- [x] Phase 4 — Full suite re-run: unit 4605 passed/15 skipped, integration 434 passed/5 skipped/15 deselected, e2e 139 passed/1 skipped. Zero regressions.
+- [x] Phase 5 — Code quality (full repo): `ruff check src/ tests/` clean, `mypy src/` clean (303 files), `ruff --select C901` clean, file-size 0 errors/33 warnings (3 new, all soft-threshold YELLOW from this commit's legitimate growth — not refactored, several sandbox files already sit further into this band), `tach check` OK.
+- [x] Phase 6 — Documentation: `subprocess_execution.md` (new "Opt-In via QARunnerAtom" section + the `sys.executable` gotcha note), `special_patterns_and_adaptations.md` (§23 addendum — host-specific-path corollary lesson), impl plan Commit Boundary 2 progress note. `README.md`/roadmap status flips still deliberately deferred (same Proof Mandate reasoning as Commit 1).
+- [x] Phase 7 — Walkthrough: [artifact](https://claude.ai/code/artifact/c65abb21-48c1-4f84-a3ec-7384308b7e21).
+- [x] Phase 7.5 — Red/Blue adversarial review (2 cycles). One LOW finding accepted as-is (container `run_id` is random, not threaded from `RunContext.run_id` yet — flagged as a Commit 3/4 fast-follow, not a defect). No f-string-logger violations, no new race conditions beyond what the design doc's review already accepted. Converged.
+
+**→ Commit boundary: full test suite ✅ + pre-commit gate complete ✅ + HITL stop (awaiting commit).**
 
 ## Commit Boundary 3 — `[sandbox]` config plumbing
 
-- [ ] T10. `SandboxSettings` + `SpecWeaverSettings.sandbox` field; `context.yaml` exposes update.
+- [x] T10 (model only — landed early in Commit Boundary 2). Remaining: `_load_toml_sandbox()` loader wiring.
 - [ ] T11. `_load_toml_sandbox()` in `settings_loader.py`, threaded into `load_settings_async()`.
 
 **→ Commit boundary: full test suite + pre-commit gate + HITL stop.**

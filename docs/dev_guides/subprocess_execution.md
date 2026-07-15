@@ -112,7 +112,26 @@ Engine detection (`podman` preferred, `docker` fallback) is lazy and memoized pe
 > [!NOTE]
 > **Why a subclass, not composition.** `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` is typed to the concrete class, not a protocol. A composition-only wrapper couldn't satisfy that type hint under strict mypy without widening a stable, existing signature. Subclassing is a legitimate Liskov-substitutable specialization here — same result contract, different physical spawn target — and delegates to, rather than duplicates, the parent's logic. See `docs/dev_guides/special_patterns_and_adaptations.md` §23 for the general pattern.
 
-As of this commit, `ContainerSubprocessExecutor` exists and is independently tested (unit + real-engine integration), but is not yet wired into `QARunnerAtom`/pipeline handlers — that lands in a later commit of INT-US-09 SF-01. See `docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md`.
+### Opt-In via `QARunnerAtom`
+
+`QARunnerAtom` builds a `ContainerSubprocessExecutor` for you when given a `SandboxSettings` with `execution_mode="container"` — you don't construct one by hand for QA-runner use:
+
+```python
+from specweaver.core.config.settings import SandboxSettings
+from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+
+atom = QARunnerAtom(cwd=project_root, sandbox_settings=SandboxSettings(execution_mode="container"))
+result = atom.run({"intent": "run_tests", "target": "tests/"})  # runs inside a container
+```
+
+Mounts are derived automatically from `cwd` (`.specweaver/.sandbox/{scratch,cache}`). Passing no `sandbox_settings` (or `execution_mode="host"`) preserves today's unsandboxed behavior byte-for-byte (NFR-7) — this is still opt-in, not a default. `factory.resolve_runner()`'s DI seam is widened generically to all 5 language runners, but only `PythonQARunner` has real container behavior validated end-to-end (mounts, artifact redirection, the `sys.executable`→bare-`"python"` fix below); a non-Python project passed a container executor gets a logged warning, not a silent no-op.
+
+> [!NOTE]
+> **`PythonQARunner.run_debugger()` uses a bare `"python"` in container mode, not `sys.executable`.** `sys.executable` is the *host's* interpreter path (e.g. a Windows `.exe` path) — meaningless inside a Linux container, where it fails with `exec: ...: executable file not found in $PATH`. This was caught by a real-engine integration test, not a mock — `run_tests`/`run_linter`/`run_complexity` were already using the bare string `"python"` and were unaffected; only `run_debugger` needed the fix (`isinstance(self._executor, ContainerSubprocessExecutor)` selects between the two, same pattern as the tach pre-check skip below).
+
+Once inside a container, `PythonQARunner._run_tach_check()` also skips its host-side `shutil.which("tach")` pre-check (it would otherwise check the *host's* tooling, not the container image's) — the containerized `tach` invocation's own exit code/stderr signals absence instead, same as every other intent already behaves. And every QA-runner method catches `ContainerEngineUnavailableError` and returns the same kind of synthetic-failure result each already builds for its `<timeout>` case, rather than letting the exception propagate raw.
+
+See `docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md` for the full SF-01 plan — pipeline-handler wiring (`ValidateTestsHandler`/`LintFixHandler`) and the `[sandbox]` TOML config surface land in later commits.
 
 ## Security Boundaries
 

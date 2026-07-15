@@ -111,6 +111,17 @@ class StandardsSettings(BaseModel):
     mode: Literal["mimicry", "best_practice"] = "mimicry"
 
 
+class SandboxSettings(BaseModel):
+    """Execution sandbox configuration (INT-US-09).
+
+    Opt-in only: ``execution_mode`` defaults to ``"host"`` so existing
+    installs and CI keep today's unsandboxed QA-runner behavior unmodified
+    (NFR-7) until an operator explicitly enables container mode.
+    """
+
+    execution_mode: Literal["host", "container"] = "host"
+
+
 class SpecWeaverSettings(BaseModel):
     """Root configuration object spanning all domains."""
 
@@ -119,3 +130,4 @@ class SpecWeaverSettings(BaseModel):
     validation: ValidationSettings = ValidationSettings()
     dal_matrix: DALImpactMatrix = DALImpactMatrix()
     standards: StandardsSettings = StandardsSettings()
+    sandbox: SandboxSettings = SandboxSettings()

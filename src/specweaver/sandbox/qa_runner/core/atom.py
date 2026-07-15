@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
+    from specweaver.core.config.settings import SandboxSettings
+    from specweaver.sandbox.execution.executor import SubprocessExecutor
     from specweaver.sandbox.qa_runner.core.interface import QARunnerInterface
 
 
@@ -34,14 +36,31 @@ if TYPE_CHECKING:
 _LANGUAGE_RUNNERS: dict[str, type] = {}
 
 
-def _resolve_runner(language: str, cwd: Any) -> QARunnerInterface:
+def _resolve_runner(
+    language: str, cwd: Any, executor: SubprocessExecutor | None = None
+) -> QARunnerInterface:
     """Create a runner for the target.
 
     Forwards resolution to the auto-discovery factory, ignoring the legacy language string.
     """
     from specweaver.sandbox.qa_runner.core.factory import resolve_runner
 
-    return resolve_runner(cwd)
+    return resolve_runner(cwd, executor=executor)
+
+
+def _build_container_executor(cwd: Path) -> SubprocessExecutor:
+    """Derive the RO-source / RW-scratch-cache mount layout under `.specweaver/.sandbox/`
+    and build a ContainerSubprocessExecutor from it (INT-US-09 SF-01, AD-2)."""
+    from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
+    from specweaver.sandbox.execution.models import ContainerMounts
+
+    sandbox_dir = cwd / ".specweaver" / ".sandbox"
+    mounts = ContainerMounts(
+        source_root=cwd,
+        scratch_root=sandbox_dir / "scratch",
+        cache_root=sandbox_dir / "cache",
+    )
+    return ContainerSubprocessExecutor(cwd=cwd, mounts=mounts)
 
 
 # ---------------------------------------------------------------------------
@@ -57,12 +76,25 @@ class QARunnerAtom(Atom):
     Args:
         cwd: Project root directory.
         language: Programming language (default: "python").
+        sandbox_settings: Optional opt-in container sandboxing config
+            (INT-US-09). `None` or `execution_mode="host"` preserves today's
+            unsandboxed behavior exactly (NFR-7); `execution_mode="container"`
+            routes execution through a ContainerSubprocessExecutor.
     """
 
     __test__ = False
 
-    def __init__(self, cwd: Path, language: str = "python") -> None:
-        self._runner = _resolve_runner(language, cwd)
+    def __init__(
+        self,
+        cwd: Path,
+        language: str = "python",
+        sandbox_settings: SandboxSettings | None = None,
+    ) -> None:
+        executor: SubprocessExecutor | None = None
+        if sandbox_settings is not None and sandbox_settings.execution_mode == "container":
+            executor = _build_container_executor(cwd)
+
+        self._runner = _resolve_runner(language, cwd, executor)
         self._cwd = cwd
 
     def run(self, context: dict[str, Any]) -> AtomResult:
