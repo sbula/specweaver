@@ -60,12 +60,27 @@ Refactor: `_resolve_image` now derives its supported-version bounds from `_SUPPO
 - [x] Phase 7 — Walkthrough: [artifact](https://claude.ai/code/artifact/c65abb21-48c1-4f84-a3ec-7384308b7e21).
 - [x] Phase 7.5 — Red/Blue adversarial review (2 cycles). One LOW finding accepted as-is (container `run_id` is random, not threaded from `RunContext.run_id` yet — flagged as a Commit 3/4 fast-follow, not a defect). No f-string-logger violations, no new race conditions beyond what the design doc's review already accepted. Converged.
 
-**→ Commit boundary: full test suite ✅ + pre-commit gate complete ✅ + HITL stop (awaiting commit).**
+**→ Commit boundary: full test suite ✅ + pre-commit gate complete ✅ + committed as `7e31ea9b`.**
 
 ## Commit Boundary 3 — `[sandbox]` config plumbing
 
-- [x] T10 (model only — landed early in Commit Boundary 2). Remaining: `_load_toml_sandbox()` loader wiring.
-- [ ] T11. `_load_toml_sandbox()` in `settings_loader.py`, threaded into `load_settings_async()`.
+- [x] T10 (model only — landed early in Commit Boundary 2).
+- [x] T11. `_load_toml_sandbox()` in `settings_loader.py`, mirroring `_load_toml_standards` exactly; threaded into `load_settings_async()`'s final `SpecWeaverSettings(...)` construction. 3 new tests (container-mode TOML override, absent-section default, malformed-TOML graceful fallback).
+
+**CB-3 results**: 3 new tests, all green (165 `core/config` tests overall, zero regressions). `ruff` clean, `tach check` OK. (One single-file `mypy` false-positive on pre-existing, untouched code — not reproducible in the authoritative full-repo `mypy src/` run, which stays clean at 303 files.)
+
+### Pre-commit gate
+
+- [x] Phase 1 — Architecture verification: clean, zero violations (pure `core.config`-internal, no cross-module imports).
+- [x] Phase 2 — Test gap analysis: [artifact](https://claude.ai/code/artifact/8cf5b546-a584-4a7b-89d1-3b7e2fa3f392). Zero gaps found — coverage already exceeds the sibling `_load_toml_standards()` this mirrors.
+- [x] Phase 3 — No-op (no gaps to implement).
+- [x] Phase 4 — Full suite re-run: unit 4608 passed/15 skipped, integration 434 passed/5 skipped/15 deselected, e2e 139 passed/1 skipped. Zero regressions (one unrelated `graph/lineage` flake observed and confirmed non-reproducible).
+- [x] Phase 5 — Code quality (full repo): `ruff check src/ tests/` clean, `mypy src/` clean (303 files), `ruff --select C901` clean, file-size 0 errors/33 warnings (unchanged from CB-2), `tach check` OK.
+- [x] Phase 6 — Documentation: `subprocess_execution.md`'s "Opt-In via QARunnerAtom" section extended with "Enabling It From specweaver.toml", impl plan CB-3 progress note.
+- [x] Phase 7 — Walkthrough: [artifact](https://claude.ai/code/artifact/31183bbe-a88d-4597-8a4b-a599b7885340).
+- [x] Phase 7.5 — Red/Blue adversarial review (2 cycles). One LOW observation accepted as consistent with existing precedent (typo'd TOML keys silently ignored by Pydantic, same as `[standards]` already behaves — not a new gap). Converged.
+
+**→ Commit boundary: full test suite ✅ + pre-commit gate complete ✅ + HITL stop (awaiting commit).**
 
 **→ Commit boundary: full test suite + pre-commit gate + HITL stop.**
 

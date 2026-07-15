@@ -10,6 +10,7 @@ import anyio
 from specweaver.core.config.settings import (
     DALImpactMatrix,
     LLMSettings,
+    SandboxSettings,
     SpecWeaverSettings,
     StandardsSettings,
     StitchSettings,
@@ -67,6 +68,27 @@ def _load_toml_standards(root_path: str | None) -> StandardsSettings:
             except Exception:
                 logger.exception("Failed to parse specweaver.toml at %s", toml_file)
     return standards
+
+
+def _load_toml_sandbox(root_path: str | None) -> SandboxSettings:
+    """INT-US-09 SF-01 T11: load the opt-in [sandbox] TOML section, mirroring
+    _load_toml_standards exactly. Defaults to SandboxSettings() (execution_mode="host")
+    on any absence or parse failure — NFR-7 backward compatibility."""
+    import tomllib
+
+    sandbox = SandboxSettings()
+    if root_path:
+        toml_file = Path(root_path) / "specweaver.toml"
+        if toml_file.exists():
+            try:
+                with open(toml_file, "rb") as f:
+                    toml_data = tomllib.load(f)
+                sandbox_data = toml_data.get("sandbox", {})
+                if sandbox_data:
+                    sandbox = SandboxSettings(**sandbox_data)
+            except Exception:
+                logger.exception("Failed to parse specweaver.toml at %s", toml_file)
+    return sandbox
 
 
 def load_settings(
@@ -146,6 +168,7 @@ async def load_settings_async(
 
     root_path = proj.get("root_path")
     standards = _load_toml_standards(str(root_path) if root_path else None)
+    sandbox = _load_toml_sandbox(str(root_path) if root_path else None)
 
     dal_matrix = DALImpactMatrix()
     if root_path:
@@ -162,7 +185,9 @@ async def load_settings_async(
             except Exception:
                 logger.exception("Failed to parse dal_definitions.yaml at %s", dal_file)
 
-    return SpecWeaverSettings(llm=llm, stitch=stitch, dal_matrix=dal_matrix, standards=standards)
+    return SpecWeaverSettings(
+        llm=llm, stitch=stitch, dal_matrix=dal_matrix, standards=standards, sandbox=sandbox
+    )
 
 
 def load_settings_for_active(db: Database, *, llm_role: str = "review") -> SpecWeaverSettings:

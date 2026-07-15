@@ -126,6 +126,18 @@ result = atom.run({"intent": "run_tests", "target": "tests/"})  # runs inside a 
 
 Mounts are derived automatically from `cwd` (`.specweaver/.sandbox/{scratch,cache}`). Passing no `sandbox_settings` (or `execution_mode="host"`) preserves today's unsandboxed behavior byte-for-byte (NFR-7) — this is still opt-in, not a default. `factory.resolve_runner()`'s DI seam is widened generically to all 5 language runners, but only `PythonQARunner` has real container behavior validated end-to-end (mounts, artifact redirection, the `sys.executable`→bare-`"python"` fix below); a non-Python project passed a container executor gets a logged warning, not a silent no-op.
 
+### Enabling It From `specweaver.toml`
+
+`SandboxSettings` doesn't have to be constructed by hand — `load_settings()`/`load_settings_async()` (`core/config/settings_loader.py`) read an opt-in `[sandbox]` table from the target project's `specweaver.toml`, mirroring the existing `[standards]` section exactly:
+
+```toml
+# specweaver.toml
+[sandbox]
+execution_mode = "container"
+```
+
+Absent, empty, or malformed `[sandbox]` sections all fall back to `SandboxSettings()` (`execution_mode="host"`) — the same fail-safe-to-default behavior `[standards]` already has. This is how an operator opts in without touching Python: whatever loads `SpecWeaverSettings` for a project (currently `load_settings`/`load_settings_async`; pipeline-handler wiring that reads `context.config.sandbox` and passes it to `QARunnerAtom` lands in a later commit of INT-US-09 SF-01) gets `execution_mode="container"` for free once this line is in the project's `specweaver.toml`.
+
 > [!NOTE]
 > **`PythonQARunner.run_debugger()` uses a bare `"python"` in container mode, not `sys.executable`.** `sys.executable` is the *host's* interpreter path (e.g. a Windows `.exe` path) — meaningless inside a Linux container, where it fails with `exec: ...: executable file not found in $PATH`. This was caught by a real-engine integration test, not a mock — `run_tests`/`run_linter`/`run_complexity` were already using the bare string `"python"` and were unaffected; only `run_debugger` needed the fix (`isinstance(self._executor, ContainerSubprocessExecutor)` selects between the two, same pattern as the tach pre-check skip below).
 

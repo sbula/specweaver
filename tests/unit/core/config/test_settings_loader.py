@@ -67,3 +67,54 @@ def test_load_settings_toml_absent_keeps_defaults(tmp_path: Path):
     settings = load_settings(db, "my_project", llm_role="review")
     assert hasattr(settings, "standards")
     assert settings.standards.mode == "mimicry"
+
+
+def test_load_settings_toml_sandbox_container_mode(tmp_path: Path):
+    """INT-US-09 SF-01 T11: [sandbox] TOML section loaded via _load_toml_sandbox."""
+    from specweaver.core.config.db_bootstrap import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "specweaver.db"))
+    db = Database(tmp_path / "specweaver.db")
+    project_path = tmp_path / "my_project"
+    project_path.mkdir()
+    register_test_project(db, "my_project", str(project_path))
+
+    toml_path = project_path / "specweaver.toml"
+    toml_path.write_text('[sandbox]\nexecution_mode = "container"\n', encoding="utf-8")
+
+    settings = load_settings(db, "my_project", llm_role="review")
+
+    assert hasattr(settings, "sandbox")
+    assert settings.sandbox.execution_mode == "container"
+
+
+def test_load_settings_toml_sandbox_absent_keeps_host_default(tmp_path: Path):
+    from specweaver.core.config.db_bootstrap import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "specweaver.db"))
+    db = Database(tmp_path / "specweaver.db")
+    project_path = tmp_path / "my_project"
+    project_path.mkdir()
+    register_test_project(db, "my_project", str(project_path))
+
+    settings = load_settings(db, "my_project", llm_role="review")
+
+    assert settings.sandbox.execution_mode == "host"
+
+
+def test_load_settings_toml_sandbox_malformed_falls_back_to_default(tmp_path: Path, caplog):
+    from specweaver.core.config.db_bootstrap import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "specweaver.db"))
+    db = Database(tmp_path / "specweaver.db")
+    project_path = tmp_path / "my_project"
+    project_path.mkdir()
+    register_test_project(db, "my_project", str(project_path))
+
+    toml_path = project_path / "specweaver.toml"
+    toml_path.write_text("not valid toml [[[", encoding="utf-8")
+
+    with caplog.at_level("ERROR"):
+        settings = load_settings(db, "my_project", llm_role="review")
+
+    assert settings.sandbox.execution_mode == "host"
