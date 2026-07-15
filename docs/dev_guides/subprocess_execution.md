@@ -88,6 +88,32 @@ Pipeline-level `action: bash` / `target: script` steps (C-EXEC-02 SF-2) invoke `
 
 `.specweaver/scripts/` is created automatically by project scaffolding (`sw init`, C-EXEC-02 SF-3) with a placeholder `README.md` explaining the containment rule above — you don't need to create it by hand.
 
+## Containerized QA Execution (`ContainerSubprocessExecutor`)
+
+`sandbox/execution/container_executor.py`'s `ContainerSubprocessExecutor` is a `SubprocessExecutor` **subclass** (not a composition wrapper — see the note below) that routes `execute()` through an ephemeral Podman/Docker container instead of the host, for INT-US-09's Zero-Trust Sandbox contract. It overrides only `execute()`: wraps the incoming `cmd` into a `<podman|docker> run` invocation (RO source mount at `/workspace`, RW scratch mount at `/scratch`, `--network none`, `--cap-drop ALL`, non-root `--user` on Linux/macOS, resource limits matching `BashActionAtom`'s), then delegates the actual spawn, timeout handling, env stripping, and `SubprocessResult` construction to `super().execute()` — the parent's contract is untouched, only the physical execution target changes.
+
+```python
+from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
+from specweaver.sandbox.execution.models import ContainerMounts
+
+executor = ContainerSubprocessExecutor(
+    cwd=project_root,
+    mounts=ContainerMounts(
+        source_root=project_root,
+        scratch_root=project_root / ".specweaver" / ".sandbox" / "scratch",
+        cache_root=project_root / ".specweaver" / ".sandbox" / "cache",
+    ),
+)
+result = executor.execute(["python", "-m", "pytest", "tests/"])  # same SubprocessResult shape as host mode
+```
+
+Engine detection (`podman` preferred, `docker` fallback) is lazy and memoized per instance — the first `execute()` call resolves and liveness-probes (`<engine> info`) whichever engine is live, raising `ContainerEngineUnavailableError` if neither is. A network-enabled "prepare phase" (`uv sync` into a persistent, lockfile-hash-gated cache) runs before the actual (always `--network none`) execution — untrusted code never shares a container invocation with network access.
+
+> [!NOTE]
+> **Why a subclass, not composition.** `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` is typed to the concrete class, not a protocol. A composition-only wrapper couldn't satisfy that type hint under strict mypy without widening a stable, existing signature. Subclassing is a legitimate Liskov-substitutable specialization here — same result contract, different physical spawn target — and delegates to, rather than duplicates, the parent's logic. See `docs/dev_guides/special_patterns_and_adaptations.md` §23 for the general pattern.
+
+As of this commit, `ContainerSubprocessExecutor` exists and is independently tested (unit + real-engine integration), but is not yet wired into `QARunnerAtom`/pipeline handlers — that lands in a later commit of INT-US-09 SF-01. See `docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md`.
+
 ## Security Boundaries
 
 ### Environment Stripping

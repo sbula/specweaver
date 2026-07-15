@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.commons.qa import OutputEvent
 
 
@@ -55,3 +57,21 @@ class SubprocessResult:
 
     events: list[OutputEvent] = field(default_factory=list)
     """Structured output events (stdout/stderr lines as OutputEvent)."""
+
+
+@dataclass(frozen=True)
+class ContainerMounts:
+    """Host paths mounted into an ephemeral QA-runner container (INT-US-09 SF-01).
+
+    ``source_root`` is mounted read-only; ``scratch_root``/``cache_root`` are
+    mounted read-write and isolated from the source mount.
+    """
+
+    source_root: Path
+    """Project source tree — mounted read-only at ``/workspace``."""
+
+    scratch_root: Path
+    """Test-artifact scratch directory — mounted read-write at ``/scratch``."""
+
+    cache_root: Path
+    """Persistent ``uv sync`` package-cache directory — mounted read-write during the prepare phase only."""

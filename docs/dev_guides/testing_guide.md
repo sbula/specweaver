@@ -227,6 +227,10 @@ These tests pass on Linux/macOS. No action needed.
 
 `TestImplementerMethodVisibility::test_missing_method` — the implementer role has **all** filesystem methods (`_ALL_METHODS == _IMPLEMENTER_METHODS`), so `_ALL_METHODS - _IMPLEMENTER_METHODS` is empty. Pytest skips parameterized tests with no parameters. This is correct by design — there are no methods the implementer should lack.
 
+### External-Tool Skips (`tests/integration/sandbox/execution/test_container_executor_integration.py`)
+
+All 5 tests in this file are module-wide `skipif`'d when neither a live `podman` nor `docker` engine is detected on the host (`shutil.which()` + an `<engine> info` liveness probe run once at collection time, not per-test). Unlike the `@pytest.mark.live` tier (real LLM API keys — always excluded by default), this file has no exclusion marker: if a container engine is present, the tests run for real against it (no mocking) and are included in a normal `pytest tests/integration/` run. This is intentional — see `docs/dev_guides/subprocess_execution.md`'s "Containerized QA Execution" section for the `ContainerSubprocessExecutor` this file validates.
+
 ## 13. Impact-Aware Validation Testing
 
 SpecWeaver implements an advanced "Pristine Topology Bypass" during CI. If a module's AST hash has not changed (i.e. it is not in the `stale_nodes` set), the testing and linting atom execution skips immediately, returning a mathematically pure `SUCCESS` intent to save latency.

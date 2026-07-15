@@ -355,3 +355,17 @@ The fix: resolve `shutil.which("bash")` once, and pass the **returned absolute p
 
 ### Why we do it:
 This is a general lesson for any code that spawns a named interpreter/tool via `subprocess`/`SubprocessExecutor` on Windows with `shell=False`: a `shutil.which()` check that discards its own resolved path and re-passes the bare command name to `Popen` is not actually verifying what will run — it's two independent, potentially-divergent resolutions. Any future Atom/Tool invoking an external interpreter by name should resolve once and reuse that resolved path, not just check-then-trust.
+
+---
+
+## 23. Executor Subclassing for Physical-Target Swaps (The Container Injection Pattern)
+
+When building `ContainerSubprocessExecutor` (INT-US-09 SF-01) to route QA-runner execution into an ephemeral Podman/Docker container instead of the host, we needed to change *where* a command physically runs without changing *anything* about the result contract every existing caller already depends on.
+
+### How it works:
+`PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` — and every other language runner's constructor — is typed to the concrete `SubprocessExecutor` class, not a protocol or ABC. A composition-only wrapper (a new class that merely *holds* a `SubprocessExecutor` instance internally) cannot satisfy that type hint under strict mypy without widening a stable, existing signature across 5 language runners. Instead, `ContainerSubprocessExecutor(SubprocessExecutor)` **subclasses** the parent and overrides only `execute()`: it transforms the incoming `cmd` into a `<podman|docker> run ...` argv wrapping the original command, then calls `super().execute(wrapped_cmd, ...)` — reusing the parent's timeout escalation, credential stripping, and `SubprocessResult` construction verbatim, rather than reimplementing any of it.
+
+### Why we do it:
+1. **Zero call-site changes**: Any code already holding a `SubprocessExecutor | None` type hint accepts a `ContainerSubprocessExecutor` instance transparently — Liskov substitution, not a parallel interface.
+2. **Not the "parallel security class" anti-pattern**: because the subclass *delegates to* the parent's execution machinery instead of duplicating it, it doesn't trip the same anti-pattern that forbids reimplementing `WorkspaceBoundary`-style primitives.
+3. **General applicability**: any future feature needing to swap a component's physical execution target (a different sandbox tier, a remote executor, a dry-run recorder) while preserving an existing, stable, concretely-typed constructor signature should reach for this pattern before reaching for a new abstraction layer.

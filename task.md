@@ -1,36 +1,65 @@
-# Task List: C-EXEC-02 SF-2 — Pipeline Engine Integration
+# Task List: INT-US-09 SF-01 — Core QA Runner Containerized Injection
 
-- **Implementation Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_sf2_implementation_plan.md
-- **Commit boundaries**: 1 (3 new files, 3 modified — confirmed zero engine changes needed for FR-6/FR-7, just tests proving it)
+- **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md
+- **Design Document**: docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_design.md
+- **Commit boundaries**: 4 (grouped by the plan's natural dependency layers — executor core, QA-runner DI wiring, config plumbing, pipeline/scaffold wiring)
 
 ## Adversarial Test Matrix
 
 | Bucket | Covered by |
 |--------|-----------|
-| **Happy Path** | `test_success_maps_to_passed`, `test_bash_step_runs_end_to_end`, `test_downstream_step_reads_step_records` |
-| **Boundary/Edge Cases** | `test_missing_params_key_not_defaulted_by_handler` (empty `params`, handler doesn't paper over it) |
-| **Graceful Degradation** | `test_failure_maps_to_failed` (nonzero exit → `StepStatus.FAILED`, not a crash) |
-| **Hostile/Wrong Input** | N/A — justified: `BashActionAtom` (SF-1) already owns all hostile-input handling (path traversal, symlink escape, shell metacharacters, non-string args — all tested there). `BashActionHandler` is a thin, pass-through translation layer with no independent input-validation surface; duplicating those tests here would test the same code path twice, not find new bugs. |
+| **Happy Path** | `test_result_contract_unchanged_shape`, `test_resolve_runner_threads_executor_to_python`, `test_qa_runner_atom_container_mode_builds_container_executor`, `test_load_toml_sandbox_parses_execution_mode`, `test_validate_tests_handler_passes_sandbox_settings` |
+| **Boundary/Edge Cases** | `test_image_defaults_from_requires_python` (absent/unparseable `requires-python`), `test_prepare_phase_skipped_when_lockfile_hash_unchanged` vs. `..._reruns_on_lockfile_change`, `test_deterministic_name_includes_run_id_and_uuid_suffix` (name collision avoidance), `test_user_flag_omitted_on_windows_with_warning` (platform boundary) |
+| **Graceful Degradation** | `test_engine_unavailable_raises_typed_error`, `test_engine_on_path_but_not_live_raises`, `test_container_engine_unavailable_becomes_synthetic_failure`, `test_cleanup_runs_on_super_execute_exception`, `test_load_toml_sandbox_defaults_on_parse_error`, `test_qa_runner_atom_host_mode_default_unchanged` (NFR-7 zero-behavior-change fallback) |
+| **Hostile/Wrong Input** | `test_extra_env_becomes_dash_e_flags_not_host_env` (env injection isolated to container, not host CLI process), `test_cwd_override_ignored_with_warning` (rejects a param that has no valid meaning for container mode rather than silently misusing it) — mount/path containment itself is NOT re-tested here: `ReadOnlyWorkspaceBoundary`/`WorkspaceBoundary`'s own traversal-hostility tests already exist and are being reused, not reimplemented (AD-3); duplicating them here would test the same code path twice. |
 
-## Tasks (single commit boundary)
+## Commit Boundary 1 — `ContainerSubprocessExecutor` core (foundational, self-contained)
 
-- [x] **T1 — `StepAction.BASH`/`StepTarget.SCRIPT`/`VALID_STEP_COMBINATIONS`** (FR-1): Added the two enum values and the combination tuple to `core/flow/engine/models.py`. Also fixed 3 hardcoded count assertions in `test_models.py` (`test_action_count` 12→13, `test_target_count` 10→11, `test_combination_count` 20→21) that would have regressed. 75 tests pass.
-- [x] **T2 — `BashActionHandler`** (FR-5): Red → Green → Refactor. New `core/flow/handlers/bash_action.py`, cloning `ValidateTestsHandler`'s exact shape (lazy `_get_atom`, `AtomStatus` → `StepStatus.PASSED`/`FAILED` mapping, `output=result.exports`). Registered in `handlers/registry.py`. 4 tests pass, ruff + mypy clean.
-- [x] **T3 — Integration: end-to-end + `step_records` propagation** (FR-1, FR-6): New `tests/integration/core/flow/handlers/test_bash_action_integration.py`, real `PipelineRunner` + real `StepHandlerRegistry` + real script in `tmp_path/.specweaver/scripts/` (inline creation, matching SF-1's own test style — no separate fixture needed). Confirms zero engine changes were required. `test_bash_step_runs_end_to_end`, `test_downstream_step_reads_step_records` pass, ruff + mypy clean.
-- [x] **T4 — Integration: router branching** (FR-7): Same test file. Bash step with a `router:` block keyed on `exit_code`, `gate=GateDefinition(on_fail=CONTINUE)` so a FAILED (nonzero exit) step still reaches the router. Each test places its target branch last in the pipeline so the router jump provably *skips* the other branch rather than both running sequentially. `test_router_branches_on_exit_code`, `test_router_branches_on_nonzero_exit` pass, ruff + mypy clean.
-- [x] **T5 — Dev guide**: Added `## 12. Native CLI Action Nodes (action: bash)` to `pipeline_engine_guide.md` — YAML example, `params:`-nesting footgun warning, output shape, router `field: exit_code` note, cross-reference to `subprocess_execution.md`. Also updated `subprocess_execution.md`'s now-stale "not yet implemented" note to point at the new section. Doc-only, no TDD cycle.
+- [x] T1. `ContainerMounts` frozen dataclass in `src/specweaver/sandbox/execution/models.py`. 2 tests.
+- [x] T2. `ContainerEngineUnavailableError` + `_ensure_engine()` in `src/specweaver/sandbox/execution/container_executor.py`. 5 tests (prefers podman, falls back to docker, cached, unavailable raises, on-path-but-dead raises).
+- [x] T3. `ContainerSubprocessExecutor.__init__` — lazy scratch/cache dir creation, image-tag resolution from `requires-python` (defaults `3.13`, clamps below `3.11`). 5 tests.
+- [x] T4. `_build_container_cmd()` — RO/RW mounts, `--network none`, `--cap-drop ALL`/`no-new-privileges`, `--memory`/`--pids-limit` (2 GiB/128, matches `BashActionAtom`), `--user` on non-Windows (omitted+warned on Windows), `-e` flags from `extra_env`. 9 tests.
+- [x] T5. `execute()` override — deterministic `specweaver-qa-{run_id}-{uuid8}` name, pre+post idempotent `rm -f` (incl. on exception via `finally`), `cwd_override` ignored+warned, unchanged `SubprocessResult` passthrough, engine-unavailable propagates before any run. 7 tests.
+- [x] T6. `_ensure_prepared()` — lockfile-hash stamp file (sibling of `cache_root`, not inside it — Red/Blue fix), network-enabled `uv sync` prepare container, skips when no lockfile/pyproject, skips on unchanged hash, reruns on change, execute-phase stays `--network none`. 7 tests.
 
-## Commit Boundary 1 (after T1–T5)
+Refactor: `_resolve_image` now derives its supported-version bounds from `_SUPPORTED_TAGS` instead of duplicating `11`/`13` as separate magic numbers.
 
-- [x] Run full project test suite (unit + integration + e2e) — 5098 passed, 21 skipped, zero regressions.
-- [x] Pre-commit quality gate (`.agents/skills/specweaver-pre-commit/SKILL.md`, all 7 phases + 7.5) — complete.
-  - [x] Phase 1 — Architecture verification (clean, zero violations, tach check OK)
-  - [x] Phase 2 — Test gap analysis (1 gap found, approved)
-  - [x] Phase 3 — Implement missing tests (`test_registry_resolves_bash_script_to_handler`, ruff clean, HITL approved)
-  - [x] Phase 4 — Full test suite re-run (unit 4532, integration 428, e2e 139 — 5099 total passed, 0 failed)
-  - [x] Phase 5 — Code quality (ruff clean, mypy clean/302 files, C901 clean, file-size 0 errors/30 pre-existing warnings, tach OK)
-  - [x] Phase 6 — Documentation (master_story_roadmap.md + capability_matrix.md + topic_06_sandbox.md flipped to ✅/complete; SF-2 impl plan Post-Implementation Notes added; design doc FR-5 `COMPLETED`→`PASSED` wording fixed with footnote; README/user_guides checked, no changes needed; quickstart.md/testing_guide.md/developer_guide.html/architecture_reference.md don't exist in this repo)
-  - [x] Phase 7 — Walkthrough artifact (published: https://claude.ai/code/artifact/72f98302-8b4f-4ce9-bac1-8c28acf5df75)
-  - [x] Phase 7.5 — Red/Blue adversarial review (2 cycles; 1 HIGH finding — missing `skipif` bash-availability guard on integration tests, fixed matching SF-1's exact precedent; cycle 2 zero new findings, converged)
-- [ ] **STOP — HITL commit gate.** Wait for explicit user commit/proceed.
-- [ ] After commit: update Design Doc Progress Tracker (`Dev ✅`, `Pre-Commit ✅`, `Committed ✅` for SF-2) and Session Handoff — this completes C-EXEC-02.
+**Commit Boundary 1 results**: 33 new tests, all green. Full suite: unit 4565 passed/15 skipped, integration 428 passed/5 skipped/15 deselected, e2e 139 passed/1 skipped — zero regressions. `ruff check` clean, `mypy --ignore-missing-imports` clean (2 files), `tach check` OK (no boundary changes needed, confirmed).
+
+### Pre-commit gate
+
+- [x] Phase 1 — Architecture verification: clean, zero violations (adapter archetype, no new deps, no parallel security mechanism, no cycles, `tach check` OK).
+- [x] Phase 2 — Test gap analysis: [artifact](https://claude.ai/code/artifact/23d1a5ae-74ca-4899-91cc-3b2ea49e7d43), 9 gaps found, user approved all 9 + requested real-engine integration tests.
+- [x] Phase 3 — Implemented all 9 gap-fill unit tests (`_resolve_image` boundary/hostile branches ×4, `_ensure_engine` partial-fallback, `_ensure_prepared` failure-path + pyproject-only-fallback ×2, `execute()` `input_text`/`timeout_seconds` forwarding ×2) plus 5 new real-engine integration tests (`tests/integration/sandbox/execution/test_container_executor_integration.py`, live Podman detected on this host — RO-mount-blocks-write, RW-scratch-allows-write, network-none-blocks-egress, container-removed-after, result-contract — all 5 actually ran and passed against real Podman, not just skipped). 47 total tests for this commit boundary, all green. `ruff`/`mypy` clean.
+- [x] Phase 4 — Full suite re-run: unit 4574 passed/15 skipped, integration 433 passed/5 skipped/15 deselected, e2e 139 passed/1 skipped. Zero regressions.
+- [x] Phase 5 — Code quality (full repo): `ruff check src/ tests/` clean, `mypy src/` clean (303 files), `ruff --select C901` clean, file-size 0 errors/30 pre-existing warnings (none in touched files), `tach check` OK.
+- [x] Phase 6 — Documentation: `docs/dev_guides/subprocess_execution.md` (new "Containerized QA Execution" section), `docs/dev_guides/special_patterns_and_adaptations.md` (§23, executor-subclassing pattern), `docs/dev_guides/testing_guide.md` (external-tool-skip entry), impl plan Commit Boundary 1 progress note. Deliberately deferred: `README.md`, `master_story_roadmap.md`/`capability_matrix.md` (Proof Mandate blocks any ✅ flip without an e2e test; SF-01 isn't done — 3 more commit boundaries).
+- [x] Phase 7 — Walkthrough: [artifact](https://claude.ai/code/artifact/9ef64121-605a-4662-b3fd-a78c54d08248).
+- [x] Phase 7.5 — Red/Blue adversarial review (2 cycles). Cycle 1 found 2 real HIGH findings in the actual code (not caught at design/impl-plan stage): (1) the prepare-phase container lacked the same cap-drop/resource/user hardening as the execute-phase container, despite `uv sync` being able to execute arbitrary sdist build code from PyPI; (2) the prepare-phase container relied on `--rm` alone with no deterministic name or pre/post cleanup — the exact anti-pattern AD-8 exists to prevent, and its 300s timeout is long enough for a host-side kill to orphan one. Both fixed: extracted a shared `_baseline_flags()` used by both phases, and gave the prepare phase the same name+cleanup treatment as the execute phase. 3 new tests added (45 unit total for this commit), all suites + quality checks re-run clean after the fix. Cycle 2: two LOW items surfaced and accepted as-is (Windows double-logs the non-root warning since `_baseline_flags()` is now called twice per `execute()` — accepted, matches the project's existing "don't over-build Windows shims" stance; no real-engine integration test for `_ensure_prepared()` itself — accepted, already-documented AD-7 scope boundary pending the sandbox image's own Backlog item). Converged, no further findings.
+
+**→ Commit boundary: full test suite ✅ + pre-commit gate complete ✅ + HITL stop (awaiting commit).**
+
+## Commit Boundary 2 — QA runner DI wiring
+
+- [ ] T7. Widen `resolve_runner(cwd, executor=None)` in `qa_runner/core/factory.py` + centralized non-Python warning.
+- [ ] T8. `QARunnerAtom.__init__` gains `sandbox_settings`; builds `ContainerSubprocessExecutor` when enabled.
+- [ ] T9. `PythonQARunner` — conditional tach pre-check skip; catch `ContainerEngineUnavailableError` in all 6 methods.
+
+**→ Commit boundary: full test suite + pre-commit gate + HITL stop.**
+
+## Commit Boundary 3 — `[sandbox]` config plumbing
+
+- [ ] T10. `SandboxSettings` + `SpecWeaverSettings.sandbox` field; `context.yaml` exposes update.
+- [ ] T11. `_load_toml_sandbox()` in `settings_loader.py`, threaded into `load_settings_async()`.
+
+**→ Commit boundary: full test suite + pre-commit gate + HITL stop.**
+
+## Commit Boundary 4 — Pipeline wiring, scaffolding, sandbox image spec
+
+- [ ] T12. `ValidateTestsHandler._get_atom` passes `sandbox_settings`.
+- [ ] T13. `LintFixHandler._get_atom` passes `sandbox_settings`.
+- [ ] T14. `_scaffold_gitignore_sandbox()` in `scaffold.py`, called from `scaffold_project()`.
+- [ ] T15. `Containerfile.sandbox` (repo root) — declarative, not TDD.
+- [ ] T16. Integration test: `tests/integration/sandbox/execution/test_container_executor_integration.py` — real engine, `skipif` if unavailable.
+
+**→ Commit boundary: full test suite + pre-commit gate + HITL stop.**
