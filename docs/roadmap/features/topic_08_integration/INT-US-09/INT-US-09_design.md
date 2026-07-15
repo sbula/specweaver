@@ -253,15 +253,16 @@ contract.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Core QA Runner Containerized Injection | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Core QA Runner Containerized Injection | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Security Defenses Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Extreme Execution Paranoia Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Mathematical Speed & Security (Rust) Integration | SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED (2026-07-14). SF-01's implementation plan is APPROVED (2026-07-14) — `docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md`.
+**Current status**: SF-01 (Core QA Runner Containerized Injection) is COMPLETE — Design, Impl Plan, Dev, Pre-Commit, and Committed all ✅ across 4 commit boundaries (`68c34359`, `7e31ea9b`, `8046f12c`, `a2143124`). `B-EXEC-01` (Ephemeral Podman Sub-Containers) is delivered.
 **Decisions confirmed with user**: Container execution is opt-in (`execution_mode` defaults to `"host"`); once explicitly enabled, missing engines fail closed rather than silently falling back to host execution. Non-root `--user` mapping (NFR-4) is in SF-01's scope, not deferred.
-**Next step**: Trigger the `specweaver-dev` skill for SF-01's TDD implementation.
+**Known gaps carried forward (see `INT-US-09_sf01_implementation_plan.md`'s Backlog and CB-4 progress notes)**: no literal e2e-tier (CLI-invocation) test exists yet, so `master_story_roadmap.md`/`capability_matrix.md` status flips are still pending — an open decision for the user, not resolved. A capstone integration test (real pipeline handler → real container → real `pytest`, exercising the `uv sync` prepare phase for the first time) was proposed and declined for SF-01; worth revisiting. `validation_hydrator.py`/`facades.py` remain on host-mode `QARunnerAtom` construction (deliberate scope cut). CI provisioning of a real engine and the `Containerfile.sandbox` GHCR publish pipeline are both unimplemented Backlog items — `execution_mode: "container"` requires an operator to build the image locally today.
+**Next step**: SF-02 (Security Defenses Integration / `E-EXEC-02` Air-Gapped Network Egress Control) has no design yet — trigger the `specweaver-design` skill for it when ready, not `dev`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
