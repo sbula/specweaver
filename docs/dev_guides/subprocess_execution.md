@@ -136,14 +136,14 @@ Mounts are derived automatically from `cwd` (`.specweaver/.sandbox/{scratch,cach
 execution_mode = "container"
 ```
 
-Absent, empty, or malformed `[sandbox]` sections all fall back to `SandboxSettings()` (`execution_mode="host"`) — the same fail-safe-to-default behavior `[standards]` already has. This is how an operator opts in without touching Python: whatever loads `SpecWeaverSettings` for a project (currently `load_settings`/`load_settings_async`; pipeline-handler wiring that reads `context.config.sandbox` and passes it to `QARunnerAtom` lands in a later commit of INT-US-09 SF-01) gets `execution_mode="container"` for free once this line is in the project's `specweaver.toml`.
+Absent, empty, or malformed `[sandbox]` sections all fall back to `SandboxSettings()` (`execution_mode="host"`) — the same fail-safe-to-default behavior `[standards]` already has. This is how an operator opts in without touching Python: `ValidateTestsHandler`/`LintFixHandler` (the `validate+test`/lint-fix-reflection pipeline steps) read `context.config.sandbox` and pass it straight to `QARunnerAtom`, so setting this one line in a project's `specweaver.toml` is enough — no code changes needed anywhere in the calling pipeline.
 
 > [!NOTE]
 > **`PythonQARunner.run_debugger()` uses a bare `"python"` in container mode, not `sys.executable`.** `sys.executable` is the *host's* interpreter path (e.g. a Windows `.exe` path) — meaningless inside a Linux container, where it fails with `exec: ...: executable file not found in $PATH`. This was caught by a real-engine integration test, not a mock — `run_tests`/`run_linter`/`run_complexity` were already using the bare string `"python"` and were unaffected; only `run_debugger` needed the fix (`isinstance(self._executor, ContainerSubprocessExecutor)` selects between the two, same pattern as the tach pre-check skip below).
 
 Once inside a container, `PythonQARunner._run_tach_check()` also skips its host-side `shutil.which("tach")` pre-check (it would otherwise check the *host's* tooling, not the container image's) — the containerized `tach` invocation's own exit code/stderr signals absence instead, same as every other intent already behaves. And every QA-runner method catches `ContainerEngineUnavailableError` and returns the same kind of synthetic-failure result each already builds for its `<timeout>` case, rather than letting the exception propagate raw.
 
-See `docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md` for the full SF-01 plan — pipeline-handler wiring (`ValidateTestsHandler`/`LintFixHandler`) and the `[sandbox]` TOML config surface land in later commits.
+See `docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md` for the full SF-01 plan and its per-commit-boundary progress notes. As of SF-01's completion, `validation_hydrator.py` (C03/C04 rule hydration) and the agent-facing `facades.py` tool interface remain on host-mode `QARunnerAtom` construction — a deliberate scope cut (see the plan's Backlog), not an oversight.
 
 ## Security Boundaries
 

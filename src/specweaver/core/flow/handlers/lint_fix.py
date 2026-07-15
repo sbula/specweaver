@@ -212,7 +212,8 @@ class LintFixHandler:
         """Lazily create a QARunnerAtom for the project."""
         from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
-        return QARunnerAtom(cwd=context.project_path)
+        sandbox_settings = context.config.sandbox if context.config else None
+        return QARunnerAtom(cwd=context.project_path, sandbox_settings=sandbox_settings)
 
     def _find_code_files(self, context: RunContext) -> list[Path]:
         """Find Python files in the output directory."""

@@ -394,3 +394,35 @@ class TestLintFixArtifactLineage:
             event_type="lint_fixed",
             model_id="gemini-3-flash-preview",
         )
+
+
+# ---------------------------------------------------------------------------
+# INT-US-09 SF-01 T13: sandbox_settings passthrough
+# ---------------------------------------------------------------------------
+
+
+class TestGetAtomSandboxSettings:
+    def test_passes_none_when_context_config_is_none(self, tmp_path: Path) -> None:
+        handler = LintFixHandler()
+        context = _make_context(tmp_path)
+        assert context.config is None
+
+        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+            handler._get_atom(context)
+
+        mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=None)
+
+    def test_passes_sandbox_settings_from_context_config(self, tmp_path: Path) -> None:
+        from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
+
+        handler = LintFixHandler()
+        config = SpecWeaverSettings(
+            llm={"model": "test-model"}, sandbox=SandboxSettings(execution_mode="container")
+        )
+        context = _make_context(tmp_path)
+        context.config = config
+
+        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+            handler._get_atom(context)
+
+        mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=config.sandbox)

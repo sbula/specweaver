@@ -354,6 +354,23 @@ def _scaffold_gitignore_vault(project_path: Path) -> None:
         io_handler.append_lines([".specweaver/vault.env"])
 
 
+def _scaffold_gitignore_sandbox(project_path: Path) -> None:
+    """INT-US-09 SF-01 T14: keep the opt-in container-sandbox scratch/cache dirs
+    out of version control. Mirrors _scaffold_gitignore_vault exactly, but runs
+    unconditionally (unlike vault.env, [sandbox] isn't tied to an mcp_target)."""
+    gitignore = project_path / ".gitignore"
+    io_handler = NativeIgnoreIOHandler(gitignore)
+
+    needs_ignore = True
+    if io_handler.exists():
+        content = io_handler.read_text()
+        if ".specweaver/.sandbox/" in content:
+            needs_ignore = False
+
+    if needs_ignore:
+        io_handler.append_lines([".specweaver/.sandbox/"])
+
+
 def scaffold_project(project_path: Path, mcp_target: str | None = None) -> ScaffoldResult:
     """Create the .specweaver/ directory structure in a target project.
 
@@ -384,6 +401,7 @@ def scaffold_project(project_path: Path, mcp_target: str | None = None) -> Scaff
     _scaffold_scripts_dir(sw_dir, created)
     constitution_file = _scaffold_constitution(project_path, created)
     _scaffold_specweaverignore(project_path, created)
+    _scaffold_gitignore_sandbox(project_path)
 
     if mcp_target:
         if mcp_target == "postgres":

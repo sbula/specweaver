@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+
+# SpecWeaver QA-runner sandbox image — the toolchain base for INT-US-09 SF-01's
+# ContainerSubprocessExecutor. This is NOT the sw serve deployment image
+# (see the root Containerfile for that) — it never runs SpecWeaver itself,
+# only the target project's own test/lint tools, installed fresh into a
+# per-project cache by ContainerSubprocessExecutor's prepare phase (uv sync).
+#
+# No ENTRYPOINT/CMD: the wrapped `podman run ... <image> <cmd>` invocation
+# supplies the command on every run — this is a toolchain base, not a service.
+#
+# Build: podman build -f Containerfile.sandbox -t specweaver-sandbox-python:3.13 --build-arg PY_VERSION=3.13 .
+#
+# CI build+publish automation to GHCR (mirroring the root Containerfile's
+# pipeline) is a documented Backlog follow-up, not part of this image spec —
+# see docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md.
+
+ARG PY_VERSION=3.13
+FROM python:${PY_VERSION}-slim
+
+# Install uv (fast Python package manager) — same mechanism as the root Containerfile.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Non-root default user (ContainerSubprocessExecutor overrides this at runtime via
+# --user $(id -u):$(id -g) on Linux/macOS — NFR-4 — this USER is the fallback for
+# any invocation that doesn't pass --user, e.g. today's Windows best-effort path).
+RUN groupadd -g 1000 sandbox && useradd -u 1000 -g sandbox -m sandbox
+USER 1000:1000
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1

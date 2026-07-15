@@ -80,16 +80,32 @@ Refactor: `_resolve_image` now derives its supported-version bounds from `_SUPPO
 - [x] Phase 7 — Walkthrough: [artifact](https://claude.ai/code/artifact/31183bbe-a88d-4597-8a4b-a599b7885340).
 - [x] Phase 7.5 — Red/Blue adversarial review (2 cycles). One LOW observation accepted as consistent with existing precedent (typo'd TOML keys silently ignored by Pydantic, same as `[standards]` already behaves — not a new gap). Converged.
 
-**→ Commit boundary: full test suite ✅ + pre-commit gate complete ✅ + HITL stop (awaiting commit).**
+**→ SF-01 CB-3: full test suite ✅ + pre-commit gate complete ✅ + committed as `8046f12c`.**
 
-**→ Commit boundary: full test suite + pre-commit gate + HITL stop.**
+## SF-01 CB-4 (final) — Pipeline wiring, scaffolding, sandbox image spec
 
-## Commit Boundary 4 — Pipeline wiring, scaffolding, sandbox image spec
+~~T16~~ superseded — its real-engine integration test was pulled forward into CB-1 (`tests/integration/sandbox/execution/test_container_executor_integration.py`) at the user's request; no duplicate added here.
 
-- [ ] T12. `ValidateTestsHandler._get_atom` passes `sandbox_settings`.
-- [ ] T13. `LintFixHandler._get_atom` passes `sandbox_settings`.
-- [ ] T14. `_scaffold_gitignore_sandbox()` in `scaffold.py`, called from `scaffold_project()`.
-- [ ] T15. `Containerfile.sandbox` (repo root) — declarative, not TDD.
-- [ ] T16. Integration test: `tests/integration/sandbox/execution/test_container_executor_integration.py` — real engine, `skipif` if unavailable.
+- [x] T12. `ValidateTestsHandler._get_atom` passes `sandbox_settings=context.config.sandbox if context.config else None`. 2 tests.
+- [x] T13. `LintFixHandler._get_atom` — same wiring. 2 tests.
+- [x] T14. `_scaffold_gitignore_sandbox()` in `scaffold.py`, mirroring `_scaffold_gitignore_vault` — but called **unconditionally** from `scaffold_project()` (not gated behind `mcp_target`, since `[sandbox]` isn't MCP-specific). 3 tests.
+- [x] T15. `Containerfile.sandbox` (repo root) — declarative Python+uv toolchain base, non-root user, no `ENTRYPOINT`/`CMD`. Not TDD.
 
-**→ Commit boundary: full test suite + pre-commit gate + HITL stop.**
+**SF-01 CB-4 results**: 7 new tests, all green (485 `core/flow/handlers` + `workspace/project` tests overall, zero regressions). `ruff`/`mypy`/`tach check` clean.
+
+### Pre-commit gate
+
+- [x] Phase 1 — Architecture verification: clean, zero violations (no new imports anywhere).
+- [x] Phase 2 — Test gap analysis: [artifact](https://claude.ai/code/artifact/079b6624-123e-4bc5-ab46-660e2e0c76c5). Unit coverage complete; one capstone integration test proposed (full `ValidateTestsHandler.execute()` → real container → real `pytest`, exercising the never-yet-tested `uv sync` prepare phase). User replied "please commit" without approving — treated as declined, flagged explicitly in the impl plan's progress notes, not silently dropped.
+- [x] Phase 3 — N/A (test declined).
+- [x] Phase 4 — Full suite: unit 4615 passed/15 skipped, integration 434 passed/5 skipped/15 deselected, e2e 139 passed/1 skipped. Zero regressions.
+- [x] Phase 5 — Code quality (full repo): `ruff check src/ tests/` clean, `mypy src/` clean (303 files), `ruff --select C901` clean, file-size 0 errors/33 warnings (unchanged), `tach check` OK.
+- [x] Phase 6 — Documentation: `subprocess_execution.md`'s two remaining forward-references corrected now that pipeline wiring is real; impl plan CB-4 progress note (including the SF-01-complete summary and the explicit note that roadmap/capability-matrix status flips are an open follow-up, not resolved here — Proof Mandate needs a literal e2e-tier test, everything built is unit/integration-tier).
+- [x] Phase 7 — Walkthrough: [artifact](https://claude.ai/code/artifact/7e7ea8ef-2d44-4704-b5fc-d6d32465f0cf).
+- [x] Phase 7.5 — Red/Blue adversarial review (2 cycles). No new findings beyond the already-flagged roadmap/e2e-proof gap. Converged.
+
+**→ SF-01 CB-4 (FINAL): full test suite ✅ + pre-commit gate complete ✅ + HITL stop (awaiting commit).**
+
+# SF-01 COMPLETE (pending this final commit) — 4/4 commit boundaries done.
+
+**→ SF-01 CB-4: full test suite (next) + pre-commit gate + HITL stop.**

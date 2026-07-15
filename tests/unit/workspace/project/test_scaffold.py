@@ -354,3 +354,36 @@ class TestScaffoldConstitution:
 
         assert constitution.read_text() == "# My custom constitution\n"
         assert "CONSTITUTION.md" not in result.created
+
+
+# ---------------------------------------------------------------------------
+# INT-US-09 SF-01 T14: .gitignore sandbox entry
+# ---------------------------------------------------------------------------
+
+
+class TestScaffoldGitignoreSandbox:
+    """scaffold_project appends .specweaver/.sandbox/ to .gitignore (mirrors vault.env)."""
+
+    def test_scaffolds_gitignore_with_sandbox_entry(self, tmp_path: Path) -> None:
+        scaffold_project(tmp_path)
+
+        gitignore = tmp_path / ".gitignore"
+        assert gitignore.is_file()
+        assert ".specweaver/.sandbox/" in gitignore.read_text()
+
+    def test_gitignore_sandbox_entry_not_duplicated_on_rerun(self, tmp_path: Path) -> None:
+        scaffold_project(tmp_path)
+        scaffold_project(tmp_path)
+
+        content = (tmp_path / ".gitignore").read_text()
+        assert content.count(".specweaver/.sandbox/") == 1
+
+    def test_gitignore_sandbox_entry_appended_to_existing_gitignore(self, tmp_path: Path) -> None:
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("node_modules/\n", encoding="utf-8")
+
+        scaffold_project(tmp_path)
+
+        content = gitignore.read_text()
+        assert "node_modules/" in content
+        assert ".specweaver/.sandbox/" in content
