@@ -220,6 +220,166 @@ class TestRunPipelineMocked:
         assert "write" in result.output
 
 
+# ── INT-US-09 T2: composition-root wires config into RunContext ──────────
+
+
+class TestRunContextConfigWiring:
+    """INT-US-09 T2: the `sw run`/`resume` composition roots must populate
+    `RunContext.config` so `context.config.sandbox` (the isolation policy) is
+    readable at pipeline runtime — previously it was left None on these paths."""
+
+    def _run_and_capture_context(self, tmp_path: Path):
+        from unittest.mock import AsyncMock
+
+        from specweaver.core.flow.engine.state import RunStatus
+
+        # Register the project under its directory basename so load_settings
+        # (keyed on project_path.name) resolves it — mirrors real usage where
+        # the run's --project resolves to the registered project.
+        project_dir = tmp_path / "cfg-proj"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "cfg-proj", "--path", str(project_dir)])
+        spec = project_dir / "specs" / "test_spec.md"
+        spec.parent.mkdir(exist_ok=True)
+        spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
+
+        with (
+            patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
+            patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+        ):
+            mock_runner = mock_runner_class.return_value
+
+            class DummyRun:
+                status = RunStatus.COMPLETED
+
+            mock_runner.run = AsyncMock(return_value=DummyRun())
+            result = runner.invoke(
+                app, ["run", "validate_only", str(spec), "--project", str(project_dir)]
+            )
+            assert result.exit_code == 0, result.stdout
+            # context is positional arg index 1 to PipelineRunner(pipeline_def, context, ...)
+            return mock_runner_class.call_args.args[1]
+
+    def test_run_resolves_isolation_policy_default_off(self, tmp_path: Path) -> None:
+        context = self._run_and_capture_context(tmp_path)
+        # Policy resolved onto a dedicated flag; default off (backward-compatible).
+        assert context.enforce_isolation is False
+
+    def test_run_stays_container_neutral(self, tmp_path: Path) -> None:
+        # Guard (user decision): we do NOT populate context.config on sw run, so
+        # B-EXEC-01 container QA stays dormant on this path — INT-US-09 is
+        # strictly container-free. The isolation policy rides on its own flag.
+        context = self._run_and_capture_context(tmp_path)
+        assert context.config is None
+
+    def test_run_settings_failure_leaves_config_none_and_does_not_crash(
+        self, tmp_path: Path
+    ) -> None:
+        """[Graceful Degradation] a settings-resolution failure must not crash a run —
+        config stays None and the sandbox policy falls back to its default (off)."""
+        from unittest.mock import AsyncMock
+
+        from specweaver.core.flow.engine.state import RunStatus
+
+        project_dir = tmp_path / "cfg-proj"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "cfg-proj", "--path", str(project_dir)])
+        spec = project_dir / "specs" / "test_spec.md"
+        spec.parent.mkdir(exist_ok=True)
+        spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
+
+        with (
+            patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
+            patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+            patch(
+                "specweaver.core.config.settings_loader.load_settings",
+                side_effect=RuntimeError("settings boom"),
+            ),
+        ):
+            mock_runner = mock_runner_class.return_value
+
+            class DummyRun:
+                status = RunStatus.COMPLETED
+
+            mock_runner.run = AsyncMock(return_value=DummyRun())
+            result = runner.invoke(
+                app, ["run", "validate_only", str(spec), "--project", str(project_dir)]
+            )
+
+        assert result.exit_code == 0, result.stdout  # run did NOT crash
+        context = mock_runner_class.call_args.args[1]
+        assert context.enforce_isolation is False  # graceful fallback to default (off)
+        assert context.config is None
+
+
+class TestResumeContextConfigWiring:
+    """INT-US-09 T2: the `sw resume` composition root must also populate
+    `RunContext.config` (mirrors the run path)."""
+
+    def _resume_and_capture_context(self, tmp_path: Path, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+
+        _state_path = tmp_path / "pipe_state.db"
+        monkeypatch.setattr(
+            "specweaver.core.config.paths.state_db_path", lambda: _state_path
+        )
+        # dir basename == registered name so load_settings resolves it.
+        project_dir = tmp_path / "res-proj"
+        project_dir.mkdir()
+        runner.invoke(app, ["init", "res-proj", "--path", str(project_dir)])
+        spec = project_dir / "specs" / "test_spec.md"
+        spec.parent.mkdir(exist_ok=True)
+        spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
+
+        mock_run_state = PipelineRun(
+            run_id="abc1234567890",
+            pipeline_name="validate_only",
+            project_name="res-proj",
+            spec_path=str(spec),
+            status=RunStatus.PARKED,
+            started_at="",
+            updated_at="",
+        )
+
+        from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
+
+        sentinel = SpecWeaverSettings(
+            llm={"model": "gemini-2.0-flash"},
+            sandbox=SandboxSettings(enforce_worktree_isolation=True),
+        )
+
+        with (
+            patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
+            patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
+            patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+            # Patch the loader to a sentinel so we assert the *wiring* (resume assigns
+            # load_settings' result to context.config) independent of project resolution.
+            patch(
+                "specweaver.core.config.settings_loader.load_settings", return_value=sentinel
+            ),
+        ):
+            mock_get_store.return_value.load_run.return_value = mock_run_state
+            mock_runner = mock_runner_class.return_value
+
+            class DummyRun:
+                status = RunStatus.COMPLETED
+
+            mock_runner.resume = AsyncMock(return_value=DummyRun())
+            # resume resolves the active project (no --project flag); init set it active.
+            result = runner.invoke(app, ["resume", "abc1234567890"])
+            assert result.exit_code == 0, result.stdout
+            return mock_runner_class.call_args.args[1]
+
+    def test_resume_resolves_isolation_policy(self, tmp_path: Path, monkeypatch) -> None:
+        context = self._resume_and_capture_context(tmp_path, monkeypatch)
+        # sentinel settings enable the policy → resume wires it onto the flag,
+        # while keeping context.config None (container-neutral).
+        assert context.enforce_isolation is True
+        assert context.config is None
+
+
 # ── sw resume — unit tests ───────────────────────────────────────────────
 
 

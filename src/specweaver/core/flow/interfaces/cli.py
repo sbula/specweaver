@@ -260,6 +260,23 @@ def _execute_run(  # noqa: C901
 
     from specweaver.core.config.settings_loader import load_settings
 
+    # INT-US-09: resolve ONLY the US-9 worktree-isolation policy at the composition
+    # root (ADR-002) into a dedicated context flag. We deliberately do NOT populate
+    # context.config here: doing so would also expose [sandbox] execution_mode and
+    # incidentally activate B-EXEC-01 container QA on this path, which is out of
+    # INT-US-09's container-free scope. Graceful: a settings-resolution failure must
+    # never crash a run — the policy falls back to its default (off).
+    try:
+        context.enforce_isolation = load_settings(
+            db, project_path.name
+        ).sandbox.enforce_worktree_isolation
+    except Exception:  # settings resolution is best-effort here — never crash a run
+        logger.debug(
+            "Could not resolve settings for project '%s'; worktree isolation "
+            "policy will use its default (off).",
+            project_path.name,
+        )
+
     context.llm_router = ModelRouter(
         settings_provider=lambda role: load_settings(
             _core.get_db(), project_path.name, llm_role=role
@@ -443,6 +460,23 @@ def resume(  # noqa: C901
     )
 
     from specweaver.core.config.settings_loader import load_settings
+
+    # INT-US-09: resolve ONLY the US-9 worktree-isolation policy at the composition
+    # root (ADR-002) into a dedicated context flag. We deliberately do NOT populate
+    # context.config here: doing so would also expose [sandbox] execution_mode and
+    # incidentally activate B-EXEC-01 container QA on this path, which is out of
+    # INT-US-09's container-free scope. Graceful: a settings-resolution failure must
+    # never crash a run — the policy falls back to its default (off).
+    try:
+        context.enforce_isolation = load_settings(
+            db, project_path.name
+        ).sandbox.enforce_worktree_isolation
+    except Exception:  # settings resolution is best-effort here — never crash a run
+        logger.debug(
+            "Could not resolve settings for project '%s'; worktree isolation "
+            "policy will use its default (off).",
+            project_path.name,
+        )
 
     context.llm_router = ModelRouter(
         settings_provider=lambda role: load_settings(

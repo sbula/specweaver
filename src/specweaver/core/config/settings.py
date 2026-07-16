@@ -112,14 +112,20 @@ class StandardsSettings(BaseModel):
 
 
 class SandboxSettings(BaseModel):
-    """Execution sandbox configuration (B-EXEC-01).
+    """Execution sandbox configuration.
 
-    Opt-in only: ``execution_mode`` defaults to ``"host"`` so existing
-    installs and CI keep today's unsandboxed QA-runner behavior unmodified
-    (NFR-7) until an operator explicitly enables container mode.
+    Opt-in only: both knobs default off so existing installs and CI keep
+    today's behavior unmodified until an operator explicitly enables them.
+
+    - ``execution_mode`` (B-EXEC-01): ``"host"`` vs container QA execution.
+    - ``enforce_worktree_isolation`` (INT-US-09): when ``True``, worktree
+      isolation becomes the default for pipeline steps so untrusted execution
+      (``action: bash``, ``run_tests``) runs bounded to an ephemeral git
+      worktree. Container-free; orthogonal to ``execution_mode``.
     """
 
     execution_mode: Literal["host", "container"] = "host"
+    enforce_worktree_isolation: bool = False
 
 
 class SpecWeaverSettings(BaseModel):

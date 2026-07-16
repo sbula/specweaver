@@ -88,13 +88,25 @@ Exact current signatures/locations (research findings — quoted, not authored):
 ## Implementation Sequence (by commit boundary — pseudocode)
 
 ### CB-1 — Config surface + composition-root wiring (foundational)
-*Rationale: nothing downstream can read the policy until `context.config.sandbox` is populated on the real run path.*
-1. Add the field to `SandboxSettings` (one line; mirrors `execution_mode`).
-2. **CLI (must-do, the primary `sw run` surface):** at `cli.py:251` and `:435`, resolve settings
-   once (composition root, ADR-002) and pass `config=`:
+*Rationale: nothing downstream can read the policy until the composition root resolves it onto the run context.*
+
+> [!IMPORTANT]
+> **Container-neutrality guard (user decision, Red/Blue finding).** The composition root does NOT
+> populate `context.config` with the full settings — that would expose `[sandbox] execution_mode`
+> and incidentally activate B-EXEC-01 container QA on `sw run` (out of INT-US-09's container-free
+> scope; it also broke `test_lint_fix_retains_tag`). Instead it resolves **only** the isolation
+> policy into a dedicated `RunContext.enforce_isolation: bool` flag. `context.config` stays `None`
+> on `sw run` exactly as before (byte-identical; container opt-in stays dormant on this path).
+
+1. Add `enforce_worktree_isolation: bool = False` to `SandboxSettings` (mirrors `execution_mode`).
+2. Add `enforce_isolation: bool = False` to `RunContext` (`handlers/base.py`).
+3. **CLI (must-do, the primary `sw run` surface):** at `cli.py` run + resume sites, resolve the
+   policy at the composition root (ADR-002), graceful (never crash a run):
    ```
-   settings = load_settings(db, project)      # already imported at cli.py:261/273/276
-   context = RunContext(..., db=db, config=settings)   # add config=
+   try:
+       context.enforce_isolation = load_settings(db, project_path.name).sandbox.enforce_worktree_isolation
+   except Exception:
+       logger.debug(...)   # policy falls back to default (off)
    ```
 3. **API:** wire `config=` at the 3 `pipelines.py` sites **iff** settings are readily resolvable
    there (check what the API already loads). If it would require a non-trivial API refactor, do NOT
@@ -108,12 +120,12 @@ Exact current signatures/locations (research findings — quoted, not authored):
 1. `RunContext`: add `execution_root: Path | None = None` (semantics: the root untrusted processes
    bind their `cwd` to; `None` ⇒ callers fall back to `project_path`).
 2. `PipelineStep.use_worktree`: `bool` → `bool | None`, default `None`.
-3. Runner gate (`runner.py:320`) — replace the plain `getattr` with an ordered resolver:
+3. Runner gate (`runner.py:320`) — replace the plain `getattr` with an ordered resolver that reads
+   the **dedicated `context.enforce_isolation` flag** (set by the composition root in CB-1), NOT
+   `context.config.sandbox` — see the CB-1 container-neutrality guard note:
    ```
    step_val = step_def.use_worktree                 # True | False | None
-   policy_on = bool(context.config and context.config.sandbox
-                    and context.config.sandbox.enforce_worktree_isolation)
-   should_isolate = step_val if step_val is not None else policy_on
+   should_isolate = step_val if step_val is not None else context.enforce_isolation
    if should_isolate: result = await execute_in_sandbox(...)
    else:              result = await handler.execute(step_def, self._context)
    ```
@@ -206,6 +218,12 @@ Exact current signatures/locations (research findings — quoted, not authored):
 
 ## Backlog (deferred, out of scope)
 
+- **API-launched runs do not yet honor `enforce_worktree_isolation`** (CB-1 T3): the API run
+  sites `interfaces/api/v1/pipelines.py:84` (`start_pipeline_run`), `:225` (`resume_run`), `:312`
+  (`submit_gate_decision`) do not set `config=`. Settings are resolvable there via `db` +
+  `body.project`/`run.project_name` using `await load_settings_async(db, <proj>)` (graceful
+  try/except); the follow-up is small but needs an API background-run test harness. The CLI
+  `sw run`/`resume` paths DO wire the policy. A NOTE marks the primary site.
 - Rebind the remaining process-spawning handlers (`generation`/`scenario` LanguageAtom,
   `context_assembler`, `validation_hydrator`, `facades`) to execution-root — incremental adoption.
 - `run_tests`-in-worktree dependency/venv resolution robustness (M2) — if pytest can't resolve the

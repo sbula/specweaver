@@ -53,6 +53,7 @@ class RunContext(BaseModel):
     config: Any = None  # SpecWeaverSettings | None — LLM config for adapters
     analyzer_factory: Any = None  # AnalyzerFactoryProtocol | None
     output_dir: Path | None = None
+    enforce_isolation: bool = False  # INT-US-09: US-9 worktree-isolation policy (composition root)
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
