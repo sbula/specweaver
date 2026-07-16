@@ -11,7 +11,7 @@ from tests.fixtures.db_utils import register_test_project
 
 
 class TestSandboxSettingsModel:
-    """Bare-model tests for SandboxSettings (INT-US-09 SF-01 T10).
+    """Bare-model tests for SandboxSettings (B-EXEC-01).
 
     Loader-level (specweaver.toml -> SandboxSettings) tests land in T11.
     """
@@ -70,7 +70,7 @@ def test_load_settings_toml_absent_keeps_defaults(tmp_path: Path):
 
 
 def test_load_settings_toml_sandbox_container_mode(tmp_path: Path):
-    """INT-US-09 SF-01 T11: [sandbox] TOML section loaded via _load_toml_sandbox."""
+    """B-EXEC-01: [sandbox] TOML section loaded via _load_toml_sandbox."""
     from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(tmp_path / "specweaver.db"))

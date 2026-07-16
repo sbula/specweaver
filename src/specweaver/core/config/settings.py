@@ -112,7 +112,7 @@ class StandardsSettings(BaseModel):
 
 
 class SandboxSettings(BaseModel):
-    """Execution sandbox configuration (INT-US-09).
+    """Execution sandbox configuration (B-EXEC-01).
 
     Opt-in only: ``execution_mode`` defaults to ``"host"`` so existing
     installs and CI keep today's unsandboxed QA-runner behavior unmodified

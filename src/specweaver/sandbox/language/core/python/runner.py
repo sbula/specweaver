@@ -404,7 +404,7 @@ class PythonQARunner(QARunnerInterface):
         entrypoint: str,
     ) -> DebugRunResult:
         """Execute a process and stream runtime outputs using DAP OutputEvents."""
-        # INT-US-09 SF-01 Red/Blue fix: sys.executable is the HOST interpreter path
+        # B-EXEC-01 Red/Blue fix: sys.executable is the HOST interpreter path
         # (e.g. a Windows .exe path), meaningless inside a Linux container — use the
         # bare "python" name there instead, resolved fresh inside whatever env runs it
         # (matches run_tests/run_linter/run_complexity, which already use "python").
@@ -480,7 +480,7 @@ class PythonQARunner(QARunnerInterface):
     def _run_tach_check(self) -> ArchitectureRunResult:
         """Run global tach boundary check (extracted from original method)."""
         # H-1 / RED-1.2: Pre-check tool existence before calling executor.
-        # INT-US-09 SF-01 Finding #1: skipped in container mode — this checks HOST
+        # B-EXEC-01 Finding #1: skipped in container mode — this checks HOST
         # tooling presence, which is irrelevant when tach runs inside the sandbox image.
         is_container = isinstance(self._executor, ContainerSubprocessExecutor)
         if not is_container and not shutil.which("tach"):

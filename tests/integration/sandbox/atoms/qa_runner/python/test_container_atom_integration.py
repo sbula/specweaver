@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """Real-engine integration test for the container-mode QA-runner chain
-(INT-US-09 SF-01 Commit Boundary 2).
+(B-EXEC-01).
 
 Exercises factory.resolve_runner() -> PythonQARunner -> ContainerSubprocessExecutor
 -> a real, live Podman/Docker engine, end-to-end. Uses run_debugger (a bare

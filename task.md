@@ -1,8 +1,18 @@
-# Task List: INT-US-09 SF-01 — Core QA Runner Containerized Injection
+# Task List: B-EXEC-01 — Ephemeral Podman Sub-Containers
 
-- **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md
-- **Design Document**: docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_design.md
+- **Implementation Plans**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf01_implementation_plan.md through `_sf04_` (one per sub-feature)
+- **Design Document**: docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_design.md
 - **Commit boundaries**: 4 (grouped by the plan's natural dependency layers — executor core, QA-runner DI wiring, config plumbing, pipeline/scaffold wiring)
+
+> [!NOTE]
+> **Re-homing correction**: this work was originally built and committed under a mis-scoped
+> `INT-US-09 SF-01` label (an "integration contract" folder is the wrong home for a from-scratch
+> capability build — `INT-US-09` should only *integrate* already-built capabilities, not invent
+> new ones). The code and tests below are unchanged; only the documentation/roadmap homing was
+> corrected, to `B-EXEC-01` under `topic_06_sandbox`. Everywhere below that says "Commit Boundary
+> N" / "CB-N" corresponds to `B-EXEC-01`'s own `SF-0N` (see the design doc's Sub-Feature
+> Breakdown) — kept as originally written rather than retroactively relabeled line-by-line, since
+> this file is a historical dev log, not a living spec.
 
 ## Adversarial Test Matrix
 

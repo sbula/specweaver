@@ -355,7 +355,7 @@ def _scaffold_gitignore_vault(project_path: Path) -> None:
 
 
 def _scaffold_gitignore_sandbox(project_path: Path) -> None:
-    """INT-US-09 SF-01 T14: keep the opt-in container-sandbox scratch/cache dirs
+    """B-EXEC-01: keep the opt-in container-sandbox scratch/cache dirs
     out of version control. Mirrors _scaffold_gitignore_vault exactly, but runs
     unconditionally (unlike vault.env, [sandbox] isn't tied to an mcp_target)."""
     gitignore = project_path / ".gitignore"

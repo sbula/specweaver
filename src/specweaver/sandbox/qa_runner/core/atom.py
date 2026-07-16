@@ -50,7 +50,7 @@ def _resolve_runner(
 
 def _build_container_executor(cwd: Path) -> SubprocessExecutor:
     """Derive the RO-source / RW-scratch-cache mount layout under `.specweaver/.sandbox/`
-    and build a ContainerSubprocessExecutor from it (INT-US-09 SF-01, AD-2)."""
+    and build a ContainerSubprocessExecutor from it (B-EXEC-01, AD-2)."""
     from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
     from specweaver.sandbox.execution.models import ContainerMounts
 
@@ -77,7 +77,7 @@ class QARunnerAtom(Atom):
         cwd: Project root directory.
         language: Programming language (default: "python").
         sandbox_settings: Optional opt-in container sandboxing config
-            (INT-US-09). `None` or `execution_mode="host"` preserves today's
+            (B-EXEC-01). `None` or `execution_mode="host"` preserves today's
             unsandboxed behavior exactly (NFR-7); `execution_mode="container"`
             routes execution through a ContainerSubprocessExecutor.
     """

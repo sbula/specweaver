@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# SpecWeaver QA-runner sandbox image — the toolchain base for INT-US-09 SF-01's
+# SpecWeaver QA-runner sandbox image — the toolchain base for B-EXEC-01's
 # ContainerSubprocessExecutor. This is NOT the sw serve deployment image
 # (see the root Containerfile for that) — it never runs SpecWeaver itself,
 # only the target project's own test/lint tools, installed fresh into a
@@ -13,7 +13,7 @@
 #
 # CI build+publish automation to GHCR (mirroring the root Containerfile's
 # pipeline) is a documented Backlog follow-up, not part of this image spec —
-# see docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md.
+# see docs/roadmap/features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_sf04_implementation_plan.md.
 
 ARG PY_VERSION=3.13
 FROM python:${PY_VERSION}-slim

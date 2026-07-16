@@ -261,7 +261,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟡 **Containerized Isolation:**
         *   `[ ]` **INT-US-09-SF01:** Sub-Story Integration (Pending Design)
         *   `✅` **D-EXEC-01:** Podman/Docker Integration
-        *   `[ ]` **B-EXEC-01:** Containerized deployment (Podman/Docker)
+        *   `✅` **B-EXEC-01:** [Ephemeral Podman Sub-Containers](features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_design.md) — **Verifiable Proof:** `tests/integration/sandbox/execution/test_container_executor_integration.py` + `tests/integration/sandbox/atoms/qa_runner/python/test_container_atom_integration.py` (real Podman engine: RO-mount write-blocking, RW-scratch write-allowance, `--network none` egress-blocking, guaranteed cleanup, full `factory→atom→executor` chain). Integration-tier, not literal e2e-tier (CLI-invocation) — noted transparently, not silently resolved; see the design doc's Session Handoff.
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-09-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **E-EXEC-02:** Air-Gapped Network Egress Control

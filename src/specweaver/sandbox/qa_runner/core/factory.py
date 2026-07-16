@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _warn_if_container_non_python(executor: SubprocessExecutor | None, language_name: str) -> None:
-    """INT-US-09 SF-01 Finding #9: container sandboxing is only validated for Python
+    """B-EXEC-01 Finding #9: container sandboxing is only validated for Python
     projects — warn (don't silently no-op) when a container executor is threaded
     into a non-Python runner, whose toolchain may not exist in the sandbox image."""
     from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor

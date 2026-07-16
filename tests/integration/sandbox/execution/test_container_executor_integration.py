@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Real-engine integration tests for ContainerSubprocessExecutor (INT-US-09 SF-01).
+"""Real-engine integration tests for ContainerSubprocessExecutor (B-EXEC-01).
 
 Requires a live Podman or Docker engine on the host. Skips cleanly (per NFR-10)
 when neither is detected, so this file is safe to run in environments without

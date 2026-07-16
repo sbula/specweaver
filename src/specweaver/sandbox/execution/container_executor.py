@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """ContainerSubprocessExecutor — routes QA-runner execution into an ephemeral
-Podman/Docker container instead of the host (INT-US-09 SF-01).
+Podman/Docker container instead of the host (B-EXEC-01).
 
 A ``SubprocessExecutor`` subclass: overrides ``execute()`` to wrap the incoming
 ``cmd`` into a ``podman``/``docker run`` invocation and delegates the actual

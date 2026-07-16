@@ -106,7 +106,7 @@ class TestValidateTestsHandler:
 
 
 # ---------------------------------------------------------------------------
-# INT-US-09 SF-01 T12: sandbox_settings passthrough
+# B-EXEC-01: sandbox_settings passthrough
 # ---------------------------------------------------------------------------
 
 

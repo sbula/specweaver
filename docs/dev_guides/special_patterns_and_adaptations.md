@@ -360,7 +360,7 @@ This is a general lesson for any code that spawns a named interpreter/tool via `
 
 ## 23. Executor Subclassing for Physical-Target Swaps (The Container Injection Pattern)
 
-When building `ContainerSubprocessExecutor` (INT-US-09 SF-01) to route QA-runner execution into an ephemeral Podman/Docker container instead of the host, we needed to change *where* a command physically runs without changing *anything* about the result contract every existing caller already depends on.
+When building `ContainerSubprocessExecutor` (B-EXEC-01) to route QA-runner execution into an ephemeral Podman/Docker container instead of the host, we needed to change *where* a command physically runs without changing *anything* about the result contract every existing caller already depends on.
 
 ### How it works:
 `PythonQARunner.__init__(cwd, executor: SubprocessExecutor | None = None)` — and every other language runner's constructor — is typed to the concrete `SubprocessExecutor` class, not a protocol or ABC. A composition-only wrapper (a new class that merely *holds* a `SubprocessExecutor` instance internally) cannot satisfy that type hint under strict mypy without widening a stable, existing signature across 5 language runners. Instead, `ContainerSubprocessExecutor(SubprocessExecutor)` **subclasses** the parent and overrides only `execute()`: it transforms the incoming `cmd` into a `<podman|docker> run ...` argv wrapping the original command, then calls `super().execute(wrapped_cmd, ...)` — reusing the parent's timeout escalation, credential stripping, and `SubprocessResult` construction verbatim, rather than reimplementing any of it.

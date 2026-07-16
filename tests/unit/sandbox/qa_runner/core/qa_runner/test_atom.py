@@ -658,7 +658,7 @@ def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Pat
 
 
 # ---------------------------------------------------------------------------
-# INT-US-09 SF-01 T8: sandbox_settings -> executor selection
+# B-EXEC-01: sandbox_settings -> executor selection
 # ---------------------------------------------------------------------------
 
 

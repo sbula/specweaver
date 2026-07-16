@@ -189,7 +189,7 @@ class TestPythonQARunner:
 
 
 # ---------------------------------------------------------------------------
-# INT-US-09 SF-01 T9: container-mode integration
+# B-EXEC-01: container-mode integration
 # ---------------------------------------------------------------------------
 
 
@@ -296,7 +296,7 @@ class TestContainerModeIntegration:
 
 
 class TestRunDebuggerInterpreterResolution:
-    """INT-US-09 SF-01 Red/Blue fix: sys.executable is the HOST interpreter path,
+    """B-EXEC-01 Red/Blue fix: sys.executable is the HOST interpreter path,
     meaningless inside a container — discovered via the real-engine integration test."""
 
     def test_uses_sys_executable_in_host_mode(self, tmp_path: Path) -> None:

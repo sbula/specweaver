@@ -25,8 +25,8 @@ This document tracks all capabilities related to process isolation, execution bo
 
 
 ## DAL-B: High-Assurance
-* **`B-EXEC-01` 🔜: Ephemeral Podman Sub-Containers** (Legacy: 3.45)<br>
-  > _(new)_ | Resolves Agent RCE vulnerabilities. When `QARunner` executes LLM-generated tests (`pytest`), execution routes natively into ephemeral, headless Podman/Docker sub-containers instead of the host machine.
+* **`B-EXEC-01` ✅: Ephemeral Podman Sub-Containers** (Legacy: 3.45)<br>
+  > [B-EXEC-01_design.md](../features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_design.md) | Resolves Agent RCE vulnerabilities. `QARunnerAtom`/`PythonQARunner` can route test/lint/complexity/compile/architecture-check execution through a new `ContainerSubprocessExecutor` — an opt-in (`[sandbox] execution_mode = "container"`), fail-closed Podman/Docker sandbox with a read-only source mount, a separate read-write scratch mount for test artifacts, `--network none` egress, non-root `--user`, and guaranteed container cleanup. Defaults to today's unsandboxed host execution until explicitly enabled.
 * **`B-EXEC-02` 🔜: Tiered Access Rights** (Legacy: 4.4)<br>
   > `future_capabilities_reference.md` §1 | Tiered access rights (zero-trust knowledge)
 * **`B-EXEC-03` 🔜: Blast Radius Enforcement** (Legacy: 4.8)<br>

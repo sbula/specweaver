@@ -90,7 +90,7 @@ Pipeline-level `action: bash` / `target: script` steps (C-EXEC-02 SF-2) invoke `
 
 ## Containerized QA Execution (`ContainerSubprocessExecutor`)
 
-`sandbox/execution/container_executor.py`'s `ContainerSubprocessExecutor` is a `SubprocessExecutor` **subclass** (not a composition wrapper — see the note below) that routes `execute()` through an ephemeral Podman/Docker container instead of the host, for INT-US-09's Zero-Trust Sandbox contract. It overrides only `execute()`: wraps the incoming `cmd` into a `<podman|docker> run` invocation (RO source mount at `/workspace`, RW scratch mount at `/scratch`, `--network none`, `--cap-drop ALL`, non-root `--user` on Linux/macOS, resource limits matching `BashActionAtom`'s), then delegates the actual spawn, timeout handling, env stripping, and `SubprocessResult` construction to `super().execute()` — the parent's contract is untouched, only the physical execution target changes.
+`sandbox/execution/container_executor.py`'s `ContainerSubprocessExecutor` is a `SubprocessExecutor` **subclass** (not a composition wrapper — see the note below) that routes `execute()` through an ephemeral Podman/Docker container instead of the host — this is `B-EXEC-01` (Ephemeral Podman Sub-Containers), part of US-9's Zero-Trust Sandbox. It overrides only `execute()`: wraps the incoming `cmd` into a `<podman|docker> run` invocation (RO source mount at `/workspace`, RW scratch mount at `/scratch`, `--network none`, `--cap-drop ALL`, non-root `--user` on Linux/macOS, resource limits matching `BashActionAtom`'s), then delegates the actual spawn, timeout handling, env stripping, and `SubprocessResult` construction to `super().execute()` — the parent's contract is untouched, only the physical execution target changes.
 
 ```python
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
@@ -143,7 +143,7 @@ Absent, empty, or malformed `[sandbox]` sections all fall back to `SandboxSettin
 
 Once inside a container, `PythonQARunner._run_tach_check()` also skips its host-side `shutil.which("tach")` pre-check (it would otherwise check the *host's* tooling, not the container image's) — the containerized `tach` invocation's own exit code/stderr signals absence instead, same as every other intent already behaves. And every QA-runner method catches `ContainerEngineUnavailableError` and returns the same kind of synthetic-failure result each already builds for its `<timeout>` case, rather than letting the exception propagate raw.
 
-See `docs/roadmap/features/topic_08_integration/INT-US-09/INT-US-09_sf01_implementation_plan.md` for the full SF-01 plan and its per-commit-boundary progress notes. As of SF-01's completion, `validation_hydrator.py` (C03/C04 rule hydration) and the agent-facing `facades.py` tool interface remain on host-mode `QARunnerAtom` construction — a deliberate scope cut (see the plan's Backlog), not an oversight.
+See `docs/roadmap/features/topic_06_sandbox/B-EXEC-01/` for the full per-sub-feature plans (`B-EXEC-01_sf01_implementation_plan.md` through `_sf04_`) and their progress notes. As of `B-EXEC-01`'s completion, `validation_hydrator.py` (C03/C04 rule hydration) and the agent-facing `facades.py` tool interface remain on host-mode `QARunnerAtom` construction — a deliberate scope cut (see SF-02/SF-04's Backlog sections), not an oversight.
 
 ## Security Boundaries
 

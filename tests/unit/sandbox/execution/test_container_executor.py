@@ -2,7 +2,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for ContainerMounts and ContainerSubprocessExecutor (INT-US-09 SF-01)."""
+"""Tests for ContainerMounts and ContainerSubprocessExecutor (B-EXEC-01)."""
 
 from __future__ import annotations
 
