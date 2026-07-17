@@ -91,7 +91,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **B-VAL-02:** Spec Rot Interceptor
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **INT-US-01-SF04:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **D-VAL-04:** High-Performance Rust Validation Core
+        *   `[ ]` **A-VAL-04:** High-Performance Rust Validation Core
 
 ### 🟡 US-2: The Interactive Drafter
 *   **User Benefit:** I can have the LLM co-author a spec with me section-by-section.
@@ -300,7 +300,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **A-SENS-03:** Event-driven knowledge graph updates
     *   🔴 **Static Code Flow Analysis:**
         *   `[ ]` **INT-US-11-SF02:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-SENS-06:** Static Control Flow Graph (CFG)
+        *   `[ ]` **B-SENS-04:** Static Control Flow Graph (CFG)
         *   `[ ]` **B-SENS-05:** Static Dataflow Solver
     *   🔴 **Infinite Scale Management:**
         *   `[ ]` **INT-US-11-SF03:** Sub-Story Integration (Pending Design)
@@ -309,7 +309,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **A-INTL-04:** Memory consolidation
     *   🔴 **Microservice Federation:**
         *   `[ ]` **INT-US-11-SF04:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **A-SENS-05:** Federated Microservice Linkage (Cross-Repo API Graphing via strict ID prefixes)
+        *   `[ ]` **A-SENS-04:** Federated Microservice Linkage (Cross-Repo API Graphing via strict ID prefixes)
 
 ### 🟡 US-12: Legacy Spec Extraction (Reverse-Weaving)
 **Benefit:** *SpecWeaver automatically reverse-engineers and drafts Spec.md contracts by reading my old undocumented Java/C++ code.*
