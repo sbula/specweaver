@@ -1,10 +1,10 @@
 # US-09 Integration - Integration Contracts
 
 ## Base Story Contract (`INT-US-09`)
-* **Status:** ⬜ Pending
+* **Status:** ✅ Done (2026-07-17) — implemented across 4 commit boundaries (`85d02be4`, `f4077870`, `bd6913c6`, `474490ae`). **Backlog (deferred, documented):** API-run policy wiring (`interfaces/api/v1/pipelines.py`); `run_tests`-in-worktree dependency-resolution robustness; container add-on = `INT-US-09-SF01`.
 * **Design:** [INT-US-09_design.md](../../features/topic_08_integration/INT-US-09/INT-US-09_design.md)
 * **Integration Description:** The three already-built Core-Required (MVS) capabilities — **US-5 Core** (Git Worktree Bouncer / `D-EXEC-02`), **E-EXEC-01** (Standard Local Execution / `SubprocessExecutor`), and **C-EXEC-02** (Native CLI Action Nodes / `BashActionAtom`) — must be wired into one enforceable, **container-free** host-execution flow. Untrusted execution runs inside an ephemeral git-worktree sandbox with the `SubprocessExecutor` security boundary (credential stripping, resource limits, `cwd` containment) rebound to the worktree path — so bash actions and QA execution operate worktree-bounded rather than against the real source root — and source changes are reconciled back via the existing "Main-Branch Wins" strip-merge (out-of-bounds hunks stripped per `context.yaml`). Isolation is enabled by an opt-in US-9 policy (`SandboxSettings`, resolved at the composition root); default-off preserves today's behavior exactly.
-* **Verifiable Proof:** A real-worktree, unmocked end-to-end test under `tests/e2e/sandbox/` exercising a real pipeline step running a bash action (and QA execution) inside a git worktree, asserting artifacts land in the worktree and the project source root is not directly mutated.
+* **Verifiable Proof:** `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` — a real-worktree, unmocked e2e suite (5 scenarios): a real `action: bash` step and a real `run_tests`/pytest step each run bounded to an ephemeral git worktree under the opt-in US-9 policy (process `pwd`/`cwd` inside `.worktrees/`, real source root not mutated), with un-isolated controls proving the rebind is gated.
 
 > [!NOTE]
 > **Container-free scope.** This Base Contract is **strictly the non-container host-execution

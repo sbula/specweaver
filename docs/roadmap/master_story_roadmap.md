@@ -253,7 +253,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ### 🟡 US-9: The Zero-Trust Sandbox
 *   **User Benefit:** The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.
 *   **Core Required (MVS):**
-    *   `[ ]` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md)
+    *   `✅` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md) — **Verifiable Proof:** `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` (real git worktree, unmocked: `action: bash` + `run_tests`/pytest run worktree-bounded under the opt-in US-9 policy, source root unmutated). Container-free (US-5 + E-EXEC-01 + C-EXEC-02). **Backlog:** API-run policy wiring (`pipelines.py`) and `run_tests`-in-worktree dep-resolution robustness deferred; containerization is the separate `INT-US-09-SF01` add-on.
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
     *   `✅` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
     *   `✅` **C-EXEC-02:** [Native CLI Action Nodes](features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md) — SF-1/SF-2/SF-3 all complete. **Verifiable Proof:** `tests/integration/core/flow/handlers/test_bash_action_integration.py` (real `PipelineRunner` + `StepHandlerRegistry` executing a real script, end-to-end + router branching + `step_records` propagation; no e2e test — justified in the design doc's ROI section as an internal engine capability, not yet wired into a user-facing CLI pipeline)
