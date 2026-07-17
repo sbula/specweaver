@@ -88,6 +88,16 @@ Pipeline-level `action: bash` / `target: script` steps (C-EXEC-02 SF-2) invoke `
 
 `.specweaver/scripts/` is created automatically by project scaffolding (`sw init`, C-EXEC-02 SF-3) with a placeholder `README.md` explaining the containment rule above — you don't need to create it by hand.
 
+> [!NOTE]
+> **Execution-root convention under worktree isolation (INT-US-09).** The `SubprocessExecutor`
+> boundary is its constructor `cwd`, fixed at construction. When a step runs under the US-9 worktree
+> sandbox, the runner sets `RunContext.execution_root` to the worktree source tree, and the
+> untrusted-execution handlers (`BashActionHandler`, `ValidateTestsHandler`/`run_tests`) construct
+> their atom `cwd` as `context.execution_root or context.project_path`. So the executor binds inside
+> the worktree, and `.specweaver/scripts/` containment resolves relative to that worktree cwd. When
+> `execution_root` is `None` (no isolation), `cwd` falls back to `project_path` — byte-identical to
+> pre-INT-US-09 behavior. This is container-free host execution; see `pipeline_engine_guide.md` §7.
+
 ## Containerized QA Execution (`ContainerSubprocessExecutor`)
 
 `sandbox/execution/container_executor.py`'s `ContainerSubprocessExecutor` is a `SubprocessExecutor` **subclass** (not a composition wrapper — see the note below) that routes `execute()` through an ephemeral Podman/Docker container instead of the host — this is `B-EXEC-01` (Ephemeral Podman Sub-Containers), part of US-9's Zero-Trust Sandbox. It overrides only `execute()`: wraps the incoming `cmd` into a `<podman|docker> run` invocation (RO source mount at `/workspace`, RW scratch mount at `/scratch`, `--network none`, `--cap-drop ALL`, non-root `--user` on Linux/macOS, resource limits matching `BashActionAtom`'s), then delegates the actual spawn, timeout handling, env stripping, and `SubprocessResult` construction to `super().execute()` — the parent's contract is untouched, only the physical execution target changes.

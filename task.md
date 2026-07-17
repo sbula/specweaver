@@ -45,11 +45,11 @@
 
 - [x] **T9** — `bash_action.py`: `BashActionAtom(cwd=context.execution_root or context.project_path)`. src: `src/specweaver/core/flow/handlers/bash_action.py`. test: isolated → worktree cwd; non-isolated → project_path.
 - [x] **T10** — `validation.py` (ValidateTests): `QARunnerAtom(cwd=context.execution_root or context.project_path, sandbox_settings=...)`. src: `src/specweaver/core/flow/handlers/validation.py`. test: isolated → worktree cwd; non-isolated unchanged. (Do NOT touch lint_fix / static QA.)
-- **→ Commit boundary CB-3: full suite + pre-commit + HITL stop.**
+- **→ Commit boundary CB-3: full suite ✅ (5238 passed) + pre-commit ✅ + committed as `bd6913c6`.**
 
 ## CB-4 — Verifiable proof (e2e) + fail-closed + docs
 
-- [ ] **T11** — Fail-closed: improve `execute_in_sandbox` `worktree_add` failure message using GitAtom's actual `add_res.message` + actionable git-repo hint (no raw `.git` probe). src: `runner_utils.py`. test: integration — policy-on non-git project raises actionable error.
-- [ ] **T12** — Real-worktree unmocked e2e proof. test: `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` — real `git init`, `action: bash` writes sentinel to a source-tree path, assert lands in `.worktrees/...` and real root unmutated; git/bash skip guard.
-- [ ] **T13** — Docs: `pipeline_engine_guide.md` §7, `subprocess_execution.md` (during pre-commit).
-- **→ Commit boundary CB-4 (final): full suite + pre-commit + HITL stop; then update design Progress Tracker Dev/Pre-Commit/Committed ✅.**
+- [x] **T11** — Fail-closed: improve `execute_in_sandbox` `worktree_add` failure message using GitAtom's actual `add_res.message` + actionable git-repo hint (no raw `.git` probe). src: `runner_utils.py`. test: integration — policy-on non-git project raises actionable error.
+- [x] **T12** — Real-worktree unmocked e2e proof (`tests/e2e/sandbox/test_int_us_09_isolation_e2e.py`, **5 scenarios**): bash isolated via explicit `use_worktree=True` AND via the policy (`enforce_isolation`), each proving `pwd` inside `.worktrees` + **real source root NOT mutated** (FR-6 blast-radius); bash control (`use_worktree=False`) → real root. **`run_tests`/pytest surface** (user-requested #3): isolated → probe pytest asserts its own cwd is in the worktree (`passed==1`), paired with a non-isolated control (`failed==1`) — the count guards defeat a 0-collected false pass (caught during dev: the QA runner's `-m unit` filter excluded an unmarked probe → `kind=""`). Committed-script approach so it runs cross-platform (Windows too). git/bash skip guard.
+- [x] **T13** — Docs: `pipeline_engine_guide.md` §7, `subprocess_execution.md` (during pre-commit).
+- **→ Commit boundary CB-4 (final): full suite ✅ (5245 passed) + pre-commit ✅ + committed. Design Progress Tracker flipped Dev/Pre-Commit/Committed ✅. INT-US-09 COMPLETE.**

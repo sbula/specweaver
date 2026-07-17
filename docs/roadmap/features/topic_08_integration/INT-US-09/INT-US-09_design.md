@@ -234,11 +234,15 @@ immediately after design approval. Internal commit boundaries are defined in the
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Core Zero-Trust Host-Execution Integration (single feature) | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| — | Core Zero-Trust Host-Execution Integration (single feature) | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED + Implementation Plan APPROVED (2026-07-16). Ready for development.
+**Current status**: COMPLETE (2026-07-17). Implemented across 4 commit boundaries: CB-1 config
+surface + composition-root policy wiring (`85d02be4`), CB-2 execution-root + tri-state gate
+(`f4077870`), CB-3 boundary hand-off in the untrusted handlers (`bd6913c6`), CB-4 real-worktree
+e2e proof + fail-closed + docs (this commit). Container-neutrality guard applied (does not activate
+B-EXEC-01 container QA on `sw run`). API-run policy wiring deferred to Backlog (documented).
 **Scope reminder**: STRICTLY CONTAINER-FREE. Integrates US-5 + E-EXEC-01 + C-EXEC-02 only. Excludes
 B-EXEC-01, D-EXEC-01, Podman/Docker, and the INT-US-09-SF01..SF04 add-on sub-stories.
 **Next step**: Trigger the `dev` skill for the single feature, starting at Commit Boundary CB-1

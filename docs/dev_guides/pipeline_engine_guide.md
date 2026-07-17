@@ -172,6 +172,28 @@ Starting in Feature 3.26, the Orchestrator supports executing dangerous steps in
 - **Mathematical Diff Striping (FR-4)**: When the step concludes, the `runner` compares the temporary sandbox diff against the explicit architecture bounds defined in `context.yaml`. It performs surgical `git apply` exclusions to reject AI modifications affecting un-allowed paths natively before pulling back to the trunk.
 - **Main-Branch Resilience**: Rebase operations (`_intent_worktree_sync`) execute constantly to merge in the latest trunk changes. Cleanup (`_intent_worktree_teardown`) leverages a resilient 5-iteration progressive backoff timer to override aggressive OS-level file lock injections (such as Windows Defender).
 
+### INT-US-09: Zero-Trust host-execution integration
+
+The US-9 Base Integration Contract (`INT-US-09`, container-free) extends this Bouncer so that
+untrusted *execution* — not just file writes — is bounded to the worktree:
+
+- **Execution-boundary hand-off**: `execute_in_sandbox` now also sets `RunContext.execution_root`
+  to the worktree source tree (previously only `output_dir` was rebound). The two untrusted-execution
+  handlers — `BashActionHandler` (`action: bash`) and `ValidateTestsHandler` (`run_tests`/pytest) —
+  build their atom/`SubprocessExecutor` `cwd` from `context.execution_root or context.project_path`,
+  so an LLM-authored script or test runs with its working directory *inside* the worktree, not the
+  real project root. Static-analysis QA (`lint_fix`/ruff, complexity, `tach`) parses but never
+  executes the code, so it is intentionally left project-root-bound.
+- **Tri-state `use_worktree`**: the flag is now `bool | None`. `True` forces isolation on, `False`
+  forces it off, and **`None` (the default) defers to the US-9 isolation policy**.
+- **Enforcement policy**: set `[sandbox] enforce_worktree_isolation = true` in `specweaver.toml`.
+  The composition root (`sw run`/`sw resume`) resolves it onto `RunContext.enforce_isolation`; the
+  runner gate then isolates any step whose `use_worktree` is unset. Default off ⇒ behavior is
+  byte-identical to before. (Note: this is **container-free**; container QA is a separate opt-in —
+  see `execution_mode` — and is *not* activated by this path.)
+- **Fail-closed**: when isolation is engaged but `git worktree add` fails (e.g. the project is not a
+  git repository), the run raises an actionable error surfacing GitAtom's real failure message.
+
 ---
 
 ## 8. Topological JOIN Barriers (Synchronized Flow)

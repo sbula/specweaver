@@ -318,3 +318,71 @@ async def test_execute_in_sandbox_rebinds_execution_root(mock_release, tmp_path:
     assert ".worktrees" in str(seen["execution_root"])
     # The ORIGINAL context is untouched (non-isolated steps keep project_path fallback).
     assert context.execution_root is None
+
+
+# ---------------------------------------------------------------------------
+# INT-US-09 T11: fail-closed worktree-add error is actionable + surfaces cause
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_worktree_add_failure_raises_actionable_error(tmp_path: Path):
+    """[Graceful Degradation] when isolation is engaged but worktree_add fails
+    (e.g. the project is not a git repo), the error surfaces GitAtom's actual
+    message AND gives an actionable hint (git-repo requirement + how to disable)."""
+    import logging
+    from types import SimpleNamespace
+
+    from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
+
+    context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
+    context.pipeline_name = "p"
+    runner = SimpleNamespace(_context=context)
+
+    def fake_run(self, ctx_dict):
+        if ctx_dict.get("intent") == "worktree_add":
+            return AtomResult(status=AtomStatus.FAILED, message="fatal: not a git repository")
+        return AtomResult(status=AtomStatus.SUCCESS, message="")
+
+    with (
+        patch("specweaver.sandbox.git.core.atom.GitAtom.run", autospec=True, side_effect=fake_run),
+        pytest.raises(RuntimeError) as exc,
+    ):
+        await execute_in_sandbox(
+            runner, MagicMock(), MagicMock(), MagicMock(), logging.getLogger("t")
+        )
+
+    msg = str(exc.value)
+    assert "fatal: not a git repository" in msg  # GitAtom's ACTUAL message surfaced
+    assert "git repositor" in msg.lower()  # actionable: git-repo requirement
+    assert "enforce_worktree_isolation" in msg  # actionable: how to disable
+    assert str(tmp_path) in msg  # names the offending project
+
+
+@pytest.mark.asyncio
+async def test_worktree_add_failure_does_not_assume_non_git_cause(tmp_path: Path):
+    """[Hostile/Wrong Input] the message must NOT hard-assume 'not a git repo' — a
+    different failure (e.g. a stale worktree) must be surfaced verbatim."""
+    import logging
+    from types import SimpleNamespace
+
+    from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
+
+    context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
+    context.pipeline_name = "p"
+    runner = SimpleNamespace(_context=context)
+
+    def fake_run(self, ctx_dict):
+        if ctx_dict.get("intent") == "worktree_add":
+            return AtomResult(status=AtomStatus.FAILED, message="fatal: worktree already exists")
+        return AtomResult(status=AtomStatus.SUCCESS, message="")
+
+    with (
+        patch("specweaver.sandbox.git.core.atom.GitAtom.run", autospec=True, side_effect=fake_run),
+        pytest.raises(RuntimeError) as exc,
+    ):
+        await execute_in_sandbox(
+            runner, MagicMock(), MagicMock(), MagicMock(), logging.getLogger("t")
+        )
+
+    assert "worktree already exists" in str(exc.value)  # actual cause, not assumed

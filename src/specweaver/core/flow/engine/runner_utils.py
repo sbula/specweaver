@@ -153,7 +153,14 @@ async def execute_in_sandbox(
     # 1. Add worktree
     add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
     if add_res.status != AtomStatus.SUCCESS:
-        raise RuntimeError(f"Failed to create sandbox worktree: {add_res.message}")
+        # INT-US-09 fail-closed: isolation was requested (per-step or policy) but the
+        # worktree could not be created. Surface GitAtom's ACTUAL failure (do not assume
+        # the cause) plus an actionable hint — the most common cause is a non-git project.
+        raise RuntimeError(
+            f"US-9 worktree isolation could not start ({add_res.message}). "
+            f"Ensure {context.project_path} is a git repository, or disable "
+            f"[sandbox].enforce_worktree_isolation (and any per-step use_worktree)."
+        )
 
     setup_sandbox_caches(context, wt_path, logger)
 
