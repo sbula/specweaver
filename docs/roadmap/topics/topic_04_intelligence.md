@@ -7,6 +7,8 @@ This document tracks all capabilities related to LLM integration, specification 
   > _(new)_ | LLM adapter works. The 2 LLM-dependent spec rules (S03, S07) are implemented. The dependency-direction rule (S04) is wired.
 * **`E-INTL-02` ✅: Spec Drafting** (Legacy: Step 4)<br>
   > Spec Drafting (`sw draft`) & HITL Provider
+* **`E-INTL-03` ✅: Spec Review Engine** (Legacy: Step 4)<br>
+  > LLM-based spec/code review engine (`workflows/review/reviewer.py`); the interactive drafting loop (`E-INTL-02`) hands generated context off to it (see `US-02_integration.md`). Split from `E-INTL-02` during capability-ID normalization — both were the legacy "Step 4".
 
 ## DAL-D: Internal Tooling
 * **`D-INTL-01` ✅: Implementation Generator** (Legacy: Step 5)<br>

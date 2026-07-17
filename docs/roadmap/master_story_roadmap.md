@@ -30,7 +30,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
    * **Pros:** Single remaining blocker for `US-2` Core. Closes the Interactive Drafter and unlocks `US-21` (Autonomous Decomposition).
    * **Cons:** Moderate effort.
 4. **Candidate D: Token-Burn Circuit Breakers (EDoS Prevention)** ← UNBLOCKED
-   * **Features:** `B-FLOW-03` Token-Burn Circuit Breakers + `INT-US-04-SF02`
+   * **Features:** `B-FLOW-05` Token-Burn Circuit Breakers + `INT-US-04-SF02`
    * **Pros:** High financial security ROI. Prevents massive LLM cost overruns natively within the Flow Engine.
    * **Cons:** Hardening measure; does not unblock downstream epics.
 5. **Candidate E: AST Prompt Injection Sanitization** ← UNBLOCKED
@@ -87,7 +87,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟡 **Configurable Multi-Stage Reviews:**
         *   `[ ]` **INT-US-01-SF03:** Sub-Story Integration (Pending Design)
         *   `✅` **E-VAL-02:** Auto-discover Standards
-        *   `[ ]` **E-VAL-02:** Multi-stage Reviews
+        *   `[ ]` **E-VAL-04:** Multi-stage Reviews
         *   `[ ]` **B-VAL-02:** Spec Rot Interceptor
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **INT-US-01-SF04:** Sub-Story Integration (Pending Design)
@@ -101,7 +101,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-SENS-01:** Loom Filesystem Tools
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
     *   `✅` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
-    *   `✅` **E-INTL-02:** Spec Review Engine
+    *   `✅` **E-INTL-03:** Spec Review Engine
     *   `[ ]` **D-INTL-05:** Project Metadata Injection
 *   **Sub-Story Add-Ons:**
     *   🔴 **Surgical Spec Refactoring:**
@@ -119,7 +119,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-9 Core** *(provides Zero-Trust Sandbox)*
     *   `✅` **US-28 Core** *(provides Agent State Ledger)*
     *   `✅` **D-INTL-01:** Implementation Generator
-    *   `✅` **D-INTL-01:** Code Validation Rules (C01-C08, Type hints, Coverage)
+    *   `✅` **D-VAL-05:** Code Validation Rules (C01-C08, Type hints, Coverage)
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   🔴 **Multi-Language Test Support:**
@@ -146,7 +146,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-04-SF02:** Sub-Story Integration defined in [SF-02: Security Defenses](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-02-security-defenses-integration-pending-design)
-        *   `[ ]` **B-FLOW-03:** Token-Burn Circuit Breakers (EDoS Prevention)
+        *   `[ ]` **B-FLOW-05:** Token-Burn Circuit Breakers (EDoS Prevention)
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **INT-US-04-SF03:** Sub-Story Integration defined in [SF-03: Parallel Multi-Spec Execution](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-03-parallel-multi-spec-execution-integration-pending-design)
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out

@@ -49,6 +49,8 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > _(split from original 3.12)_ — When downstream agent modifies >20% of upstream scaffolding (measured by `git diff`), flag "friction event" and attribute to upstream model. No LLM needed — pure diff math. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`B-FLOW-04` 🔜: Hybrid RAG Orchestration** (Legacy: 5.4)<br>
   > Phase C + D. _(Enhanced with CrewAI's scoring formula: `semantic × similarity + recency × decay + importance × weight`, configurable half-life profiles per knowledge type — ORIGINS.md § CrewAI)_
+* **`B-FLOW-05` 🔜: Token-Burn Circuit Breakers (EDoS Prevention)**<br>
+  > _(new)_ | Cost/token circuit breakers that halt runaway LLM spend (Economic Denial-of-Service prevention); the `INT-US-04-SF02` "Security Defenses" integration target. Split from `B-FLOW-03` (Friction Detection) during capability-ID normalization.
 
 ## DAL-A: Mission-Critical
 * **`A-FLOW-01` 🔜: Data-Driven Routing** (Legacy: 4.5d)<br>
