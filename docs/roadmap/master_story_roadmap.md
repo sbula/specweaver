@@ -17,26 +17,31 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-1. **Candidate A: US-9 Core Execution — Standard Local Execution** ← ACTIVE FOCUS, both listed features now `✅` complete
-   * **Features:** `E-EXEC-01` Standard Local Execution ✅ + `C-EXEC-02` Native CLI Action Nodes ✅
-   * **Pros:** Closes `US-9` Core (Zero-Trust Sandbox), directly unblocking `US-3` (Autonomous Implementation) and all safe code execution workflows.
-   * **Cons:** None. **Update (2026-07-17)**: `INT-US-09` (Base Integration Contract) is now `✅`, so US-9's **Core MVS is 100% delivered** (INT-US-09 + US-5 Core + E-EXEC-01 + C-EXEC-02) → US-9 Core is `🟢`. Only the *optional* Sub-Story Add-Ons (`INT-US-09-SF01..SF04`: Containerized Isolation, Security Defenses, Extreme Paranoia, Rust) remain open. Needs a team decision on the next Active Routing Queue focus.
-2. **Candidate B: Configurable Prompt Render Profiles** ← UNBLOCKED
-   * **Features:** `C-INTL-05` Configurable Prompt Render Profiles + `INT-US-04-SF08`
-   * **Pros:** Enhances US-4 Orchestration by allowing dynamic, context-aware templating of prompts.
-   * **Cons:** Sub-story level enhancement; does not unlock new epics directly.
-3. **Candidate C: US-2 Completion — Project Metadata Injection** ← UNBLOCKED
-   * **Features:** `D-INTL-05` Project Metadata Injection
-   * **Pros:** Single remaining blocker for `US-2` Core. Closes the Interactive Drafter and unlocks `US-21` (Autonomous Decomposition).
-   * **Cons:** Moderate effort.
-4. **Candidate D: Token-Burn Circuit Breakers (EDoS Prevention)** ← UNBLOCKED
-   * **Features:** `B-FLOW-05` Token-Burn Circuit Breakers + `INT-US-04-SF02`
-   * **Pros:** High financial security ROI. Prevents massive LLM cost overruns natively within the Flow Engine.
-   * **Cons:** Hardening measure; does not unblock downstream epics.
-5. **Candidate E: AST Prompt Injection Sanitization** ← UNBLOCKED
-   * **Features:** `E-VAL-03` AST Prompt Injection Sanitization
-   * **Pros:** High security ROI. Protects the Validation Engine from prompt injection attacks embedded in source code.
-   * **Cons:** Purely a hardening measure.
+> **Refreshed 2026-07-17.** Previous Candidate A (US-9 Core) and Candidate C (US-2 / `D-INTL-05`)
+> are now **✅ COMPLETE** and removed. US-9's completion unblocked `INT-US-03`, making the two
+> flagship epics (US-2, US-3) *integration-only* — their entire capability sets are already built &
+> tested. Ranked best-ROI first.
+
+1. **Candidate 1: Close US-3 — Autonomous Implementation (`INT-US-03`)** ← TOP ROI
+   * **Features:** `INT-US-03` Base Integration Contract. All capability deps are `✅`: US-1 Core, US-9 Core (just completed), US-28 Core, `D-INTL-01`, `D-VAL-05`, `D-VAL-01`.
+   * **Pros:** **Highest leverage.** Integration-only work (no new capabilities) that closes the flagship epic — "hand an approved spec, get code + tests + auto-fixed lint." Cascades to unblock the epics built on autonomous implementation (US-17 SWE-Bench, US-19 Fleet, US-22 Contracts, US-24 Scenarios).
+   * **Cons:** `INT-US-03` contract not yet designed (design + plan + dev — but no capability build).
+2. **Candidate 2: Close US-2 — Interactive Drafter (`INT-US-02`)** ← HIGH ROI
+   * **Features:** `INT-US-02` Base Integration Contract. All deps `✅`: `E-UI-01`, `E-SENS-01`, `E-INTL-01/02/03`, `D-INTL-05`.
+   * **Pros:** Integration-only; closes the Interactive Drafter and unblocks US-21 (Autonomous Decomposition). Every capability (incl. Spec Review Engine `E-INTL-03`, Metadata Injection `D-INTL-05`) is built & tested.
+   * **Cons:** `INT-US-02` contract not yet designed.
+3. **Candidate 3: AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE
+   * **Features:** `E-VAL-03`.
+   * **Pros:** Protects the validation/LLM pipeline from injected instructions embedded in source — increasingly critical now that US-3/US-9 execute more autonomous, code-context-driven flows. (Security Mandate can bump this above 1–2 if threat mitigation outranks feature completion.)
+   * **Cons:** Hardening; no epic unlock.
+4. **Candidate 4: Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
+   * **Features:** `B-FLOW-05` + `INT-US-04-SF02`.
+   * **Pros:** Prevents runaway LLM cost (EDoS) natively in the Flow Engine — timely as autonomous multi-step flows scale token usage.
+   * **Cons:** Hardening; no epic unlock.
+5. **Candidate 5: Configurable Prompt Render Profiles (`C-INTL-05` + `INT-US-04-SF08`)** ← ORCHESTRATION QUALITY
+   * **Features:** `C-INTL-05` + `INT-US-04-SF08`.
+   * **Pros:** Dynamic, context-aware prompt templating lifts output quality across all LLM-driven stories (US-2, US-3). Ready to build.
+   * **Cons:** Sub-story enhancement; no epic unlock.
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -102,7 +107,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
     *   `✅` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
     *   `✅` **E-INTL-03:** Spec Review Engine
-    *   `[ ]` **D-INTL-05:** Project Metadata Injection
+    *   `✅` **D-INTL-05:** Project Metadata Injection
 *   **Sub-Story Add-Ons:**
     *   🔴 **Surgical Spec Refactoring:**
         *   `[ ]` **INT-US-02-SF01:** Sub-Story Integration (Pending Design)
