@@ -218,7 +218,8 @@ class TestPipelineStep:
         assert step.params == {}
         assert step.gate is None
         assert step.description == ""
-        assert step.use_worktree is False
+        # INT-US-09 T6: tri-state — default is None ("policy decides"), not False.
+        assert step.use_worktree is None
 
     def test_step_with_params(self) -> None:
         step = PipelineStep(
@@ -261,6 +262,18 @@ class TestPipelineStep:
             use_worktree=True,
         )
         assert step.use_worktree is True
+
+    @pytest.mark.parametrize("value", [True, False, None])
+    def test_use_worktree_is_tristate(self, value) -> None:
+        """INT-US-09 T6: use_worktree accepts True (force on), False (force opt-out),
+        or None (defer to the US-9 isolation policy)."""
+        step = PipelineStep(
+            name="s",
+            action=StepAction.GENERATE,
+            target=StepTarget.CODE,
+            use_worktree=value,
+        )
+        assert step.use_worktree is value
 
 
 # ---------------------------------------------------------------------------

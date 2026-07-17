@@ -218,7 +218,9 @@ class PipelineStep(BaseModel):
     gate: GateDefinition | None = None
     router: RouterDefinition | None = None
     description: str = ""
-    use_worktree: bool = False
+    # INT-US-09: tri-state — None = defer to the US-9 isolation policy
+    # (context.enforce_isolation); True = force isolation on; False = force opt-out.
+    use_worktree: bool | None = None
 
 
 # ---------------------------------------------------------------------------

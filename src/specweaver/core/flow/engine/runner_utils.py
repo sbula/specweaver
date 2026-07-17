@@ -159,6 +159,10 @@ async def execute_in_sandbox(
 
     isolated_context = copy.copy(context)
     isolated_context.output_dir = context.project_path / wt_path
+    # INT-US-09: rebind the execution root to the worktree source tree so untrusted-
+    # execution handlers (bash actions, run_tests) construct their SubprocessExecutor
+    # cwd inside the worktree rather than against the real project root.
+    isolated_context.execution_root = context.project_path / wt_path
     isolated_context.env_vars = context.env_vars.copy()
 
     try:

@@ -223,3 +223,98 @@ async def test_symlink_cache_folders(tmp_path: Path):
             ],
             any_order=True,
         )
+
+
+# ---------------------------------------------------------------------------
+# INT-US-09 T7/T8: policy-aware isolation gate + execution_root propagation
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("use_worktree", "enforce_isolation", "expect_isolated"),
+    [
+        (None, False, False),  # [Happy] unset + policy off -> host (backward compat)
+        (None, True, True),  # [Happy] unset + policy on -> isolate
+        (True, False, True),  # [Boundary] explicit on overrides policy off
+        (False, True, False),  # [Boundary] explicit opt-out overrides policy on
+        (True, True, True),  # [Boundary] both on
+    ],
+)
+@patch("specweaver.core.flow.engine.reservation.SQLiteReservationSystem.release")
+async def test_isolation_gate_resolution(
+    mock_release, tmp_path: Path, use_worktree, enforce_isolation, expect_isolated
+):
+    """The gate resolves `step.use_worktree if not None else context.enforce_isolation`."""
+    from unittest.mock import AsyncMock
+
+    step = PipelineStep(
+        name="s", action=StepAction.GENERATE, target=StepTarget.CODE, use_worktree=use_worktree
+    )
+    pipeline = PipelineDefinition(name="p", steps=[step])
+    context = RunContext(
+        project_path=tmp_path,
+        output_dir=tmp_path,
+        spec_path=tmp_path / "Spec.md",
+        enforce_isolation=enforce_isolation,
+    )
+    context.pipeline_name = "p"
+    passed = StepResult(status=StepStatus.PASSED, started_at="", completed_at="")
+
+    with (
+        patch(
+            "specweaver.core.flow.engine.runner_utils.execute_in_sandbox",
+            new=AsyncMock(return_value=passed),
+        ) as mock_sandbox,
+        patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get_handler,
+    ):
+        mock_handler = MagicMock()
+        mock_handler.execute = AsyncMock(return_value=passed)
+        mock_get_handler.return_value = mock_handler
+
+        await PipelineRunner(pipeline, context).run()
+
+        assert mock_sandbox.called is expect_isolated
+        assert mock_handler.execute.called is (not expect_isolated)
+
+
+@pytest.mark.asyncio
+@patch("specweaver.core.flow.engine.reservation.SQLiteReservationSystem.release")
+async def test_execute_in_sandbox_rebinds_execution_root(mock_release, tmp_path: Path):
+    """T8: execute_in_sandbox sets the isolated context's execution_root to the worktree
+    source-tree path (so untrusted-execution handlers bind their cwd there, not project_path)."""
+    step = PipelineStep(
+        name="s", action=StepAction.GENERATE, target=StepTarget.CODE, use_worktree=True
+    )
+    pipeline = PipelineDefinition(name="p", steps=[step])
+    context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
+    context.pipeline_name = "p"
+
+    def fake_atom_run(self, ctx_dict):
+        if ctx_dict.get("intent") == "worktree_add":
+            return AtomResult(status=AtomStatus.SUCCESS, message="", exports={})
+        return AtomResult(status=AtomStatus.SUCCESS, message="")
+
+    seen = {}
+
+    async def fake_execute(step_def, ctx):
+        seen["execution_root"] = ctx.execution_root
+        return StepResult(status=StepStatus.PASSED, started_at="", completed_at="")
+
+    with (
+        patch(
+            "specweaver.sandbox.git.core.atom.GitAtom.run", autospec=True, side_effect=fake_atom_run
+        ),
+        patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get_handler,
+    ):
+        mock_handler = MagicMock()
+        mock_handler.execute.side_effect = fake_execute
+        mock_get_handler.return_value = mock_handler
+
+        await PipelineRunner(pipeline, context).run()
+
+    # The isolated context handed to the handler points execution_root inside the worktree.
+    assert seen["execution_root"] is not None
+    assert ".worktrees" in str(seen["execution_root"])
+    # The ORIGINAL context is untouched (non-isolated steps keep project_path fallback).
+    assert context.execution_root is None

@@ -73,3 +73,16 @@ def test_run_context_env_vars(tmp_path: Path) -> None:
     context_default = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
     assert context_default.env_vars == {}
     assert context_default.pipeline_name is None
+
+
+def test_run_context_isolation_fields_default(tmp_path: Path) -> None:
+    """INT-US-09 T5: execution_root defaults to None (callers fall back to project_path);
+    enforce_isolation defaults to False (opt-in policy off)."""
+    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+    assert context.execution_root is None
+    assert context.enforce_isolation is False
+
+    # execution_root can carry the worktree path.
+    wt = tmp_path / ".worktrees" / "task-1"
+    ctx2 = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", execution_root=wt)
+    assert ctx2.execution_root == wt

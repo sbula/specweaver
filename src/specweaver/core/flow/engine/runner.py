@@ -45,6 +45,21 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def resolve_should_isolate(step_def: Any, context: Any) -> bool:
+    """INT-US-09 tri-state worktree-isolation gate resolution.
+
+    An explicit per-step ``use_worktree`` (``True``/``False``) wins; ``None`` — or a
+    missing attribute — defers to the US-9 isolation policy (``context.enforce_isolation``,
+    resolved at the composition root). Both reads are defensive (``getattr`` with a default)
+    so a partially-populated step or context never crashes the runner, and the result is a
+    strict ``bool``.
+    """
+    step_val = getattr(step_def, "use_worktree", None)
+    if step_val is not None:
+        return bool(step_val)
+    return bool(getattr(context, "enforce_isolation", False))
+
+
 class PipelineRunner:
     """Executes a pipeline definition step by step.
 
@@ -317,7 +332,8 @@ class PipelineRunner:
                 self._context.step_records = [r.model_dump() for r in run.step_records]
                 self._context.pipeline_runner = self
 
-                if getattr(step_def, "use_worktree", False):
+                # INT-US-09: tri-state isolation gate (see resolve_should_isolate).
+                if resolve_should_isolate(step_def, self._context):
                     from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
 
                     result = await execute_in_sandbox(self, handler, step_def, run, logger)

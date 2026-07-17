@@ -30,15 +30,15 @@
 - [x] Phase 6 — Documentation: CB-1 is internal plumbing; dev-guide updates land in CB-2/CB-4 pre-commit per plan. Impl plan + task.md synced to the guard decision.
 - [x] Phase 7 — Walkthrough: presented at the commit gate.
 
-- **→ Commit boundary CB-1: full suite + pre-commit + HITL stop.**
+- **→ Commit boundary CB-1: full suite ✅ + pre-commit ✅ + committed as `85d02be4`.**
 
 ## CB-2 — Execution-root field + tri-state flag + policy gate
 
-- [ ] **T5** — Add `execution_root: Path | None = None` to `RunContext`. src: `src/specweaver/core/flow/handlers/base.py`. test: model default None. (Note: sibling `enforce_isolation` field already landed early in CB-1.)
-- [ ] **T6** — `PipelineStep.use_worktree: bool = False` → `bool | None = None`. src: `src/specweaver/core/flow/engine/models.py:221`. test: 3-state model test.
-- [ ] **T6b** — Audit/update existing readers/tests of `use_worktree` for tri-state (`tests/integration/core/flow/engine/test_runner_sandbox.py`, `tests/unit/core/flow/engine/test_models.py`).
-- [ ] **T7** — Policy-aware runner gate at `runner.py:320`: `should_isolate = step_val if step_val is not None else context.enforce_isolation` (reads the dedicated flag set in CB-1 — NOT `context.config.sandbox`, per the container-neutrality guard). src: `src/specweaver/core/flow/engine/runner.py`. test: gate truth table (unit).
-- [ ] **T8** — `execute_in_sandbox` sets `isolated_context.execution_root = project_path / wt_path`. src: `src/specweaver/core/flow/engine/runner_utils.py`. test: assert set (GitAtom.run patch pattern).
+- [x] **T5** — Add `execution_root: Path | None = None` to `RunContext`. src: `src/specweaver/core/flow/handlers/base.py`. test: model default None. (Note: sibling `enforce_isolation` field already landed early in CB-1.)
+- [x] **T6** — `PipelineStep.use_worktree: bool = False` → `bool | None = None`. src: `src/specweaver/core/flow/engine/models.py:221`. test: 3-state model test.
+- [x] **T6b** — Audit/update existing readers/tests of `use_worktree` for tri-state (`tests/integration/core/flow/engine/test_runner_sandbox.py`, `tests/unit/core/flow/engine/test_models.py`).
+- [x] **T7** — Policy-aware runner gate at `runner.py`: extracted a pure `resolve_should_isolate(step_def, context)` helper (`step.use_worktree if not None else getattr(context, "enforce_isolation", False)`, strict-bool, defensive on both reads) so it's DIRECTLY unit-testable (not transitively). tests: runner truth table (integration) + NEW `test_isolation_gate.py` (**20 cases**: happy tri-state×policy; boundary `is not None`-not-truthiness (`0`/`""`→False, `1`→True); hostile non-bool coercion + present-but-None; graceful degradation — missing fields either/both, whole `None` objects either/both, explicit short-circuit; strict-bool return). Reads the flag from CB-1 — NOT `context.config.sandbox` (container-neutrality guard).
+- [x] **T8** — `execute_in_sandbox` sets `isolated_context.execution_root = project_path / wt_path`. src: `src/specweaver/core/flow/engine/runner_utils.py`. test: assert set (GitAtom.run patch pattern).
 - **→ Commit boundary CB-2: full suite + pre-commit + HITL stop.**
 
 ## CB-3 — Boundary hand-off in the two untrusted handlers

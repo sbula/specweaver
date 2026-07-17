@@ -54,6 +54,7 @@ class RunContext(BaseModel):
     analyzer_factory: Any = None  # AnalyzerFactoryProtocol | None
     output_dir: Path | None = None
     enforce_isolation: bool = False  # INT-US-09: US-9 worktree-isolation policy (composition root)
+    execution_root: Path | None = None  # INT-US-09: where untrusted processes bind cwd (worktree); None -> project_path
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
