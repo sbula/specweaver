@@ -20,7 +20,7 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 1. **Candidate A: US-9 Core Execution — Standard Local Execution** ← ACTIVE FOCUS, both listed features now `✅` complete
    * **Features:** `E-EXEC-01` Standard Local Execution ✅ + `C-EXEC-02` Native CLI Action Nodes ✅
    * **Pros:** Closes `US-9` Core (Zero-Trust Sandbox), directly unblocking `US-3` (Autonomous Implementation) and all safe code execution workflows.
-   * **Cons:** None. Flow Engine integration is now complete. **Note**: `INT-US-09` (Base Integration Contract) and the Sub-Story Add-Ons remain open, so US-9 itself is not yet fully `🟢` — but Candidate A's scoped feature set is done. Needs a team decision on the next Active Routing Queue focus.
+   * **Cons:** None. **Update (2026-07-17)**: `INT-US-09` (Base Integration Contract) is now `✅`, so US-9's **Core MVS is 100% delivered** (INT-US-09 + US-5 Core + E-EXEC-01 + C-EXEC-02) → US-9 Core is `🟢`. Only the *optional* Sub-Story Add-Ons (`INT-US-09-SF01..SF04`: Containerized Isolation, Security Defenses, Extreme Paranoia, Rust) remain open. Needs a team decision on the next Active Routing Queue focus.
 2. **Candidate B: Configurable Prompt Render Profiles** ← UNBLOCKED
    * **Features:** `C-INTL-05` Configurable Prompt Render Profiles + `INT-US-04-SF08`
    * **Pros:** Enhances US-4 Orchestration by allowing dynamic, context-aware templating of prompts.
@@ -116,7 +116,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-03:** Base Integration Contract defined in [US-03_integration.md](topics/topic_08_integration/US-03_integration.md)
     *   `✅` **US-1 Core** *(provides Validation Engine)*
-    *   `[ ]` **US-9 Core** *(provides Zero-Trust Sandbox)*
+    *   `✅` **US-9 Core** *(provides Zero-Trust Sandbox)*
     *   `✅` **US-28 Core** *(provides Agent State Ledger)*
     *   `✅` **D-INTL-01:** Implementation Generator
     *   `✅` **D-INTL-01:** Code Validation Rules (C01-C08, Type hints, Coverage)
@@ -250,7 +250,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **INT-US-08-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-INTL-03:** Synthetic Commons Extraction
 
-### 🟡 US-9: The Zero-Trust Sandbox
+### 🟢 US-9: The Zero-Trust Sandbox
 *   **User Benefit:** The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.
 *   **Core Required (MVS):**
     *   `✅` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md) — **Verifiable Proof:** `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` (real git worktree, unmocked: `action: bash` + `run_tests`/pytest run worktree-bounded under the opt-in US-9 policy, source root unmutated). Container-free (US-5 + E-EXEC-01 + C-EXEC-02). **Backlog:** API-run policy wiring (`pipelines.py`) and `run_tests`-in-worktree dep-resolution robustness deferred; containerization is the separate `INT-US-09-SF01` add-on.
