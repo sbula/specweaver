@@ -39,6 +39,8 @@ This document tracks all capabilities related to the pipeline runner, routing, s
   > _(new)_ | Allows the runner to dispatch authenticated webhooks or trigger remote Jenkins/GitHub Actions upon successful validation.
 * **`C-FLOW-09` 🔜: DAL CI/CD Risk Evaluation**
   > _(new)_ | Auto-rejects PRs if changes cause architectural degradation (e.g., DAL-C attempting to import DAL-A).
+* **`C-FLOW-10` 🔜: Deferred Router Mapping (Advanced Routing & Conditional Flows)** (Legacy: 3.25)<br>
+  > _(new)_ | Advanced routing beyond basic `C-FLOW-02` Router-Based Control: deferred/suspended routing with `GATE_PENDING` state persistence and resume (the `INT-US-04-SF05` "Advanced Routing & Conditional Flows" integration target). Split from `C-FLOW-02` during capability-ID normalization — both were the legacy "3.25".
 
 ## DAL-B: High-Assurance
 * **`B-FLOW-01` ✅: Scenario Testing Pipeline** (Legacy: 3.28)<br>

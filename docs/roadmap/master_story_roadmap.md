@@ -160,7 +160,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **C-SENS-01:** Auto Spec-Mention Detection
     *   🟡 **Advanced Routing & Conditional Flows:**
         *   `[ ]` **INT-US-04-SF05:** Sub-Story Integration defined in [SF-05: Advanced Routing & Conditional Flows](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-05-advanced-routing--conditional-flows-integration-pending-design)
-        *   `[ ]` **C-FLOW-02:** Deferred Router Mapping Capabilities
+        *   `[ ]` **C-FLOW-10:** Deferred Router Mapping Capabilities
         *   `✅` **C-FLOW-05:** Interactive Gate Variables (HITL)
     *   🔴 **Infinite Memory Management:**
         *   `[ ]` **INT-US-04-SF06:** Sub-Story Integration defined in [SF-06: Infinite Memory Management](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-06-infinite-memory-management-integration-pending-design)
@@ -469,7 +469,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **D-SENS-01:** Topology Graph (Dependency mapping)
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
-    *   `[ ]` **C-EXEC-01:** Internal Layer Enforcement (Validating dependency direction)
+    *   `✅` **C-EXEC-01:** Internal Layer Enforcement (Validating dependency direction)
     *   `[ ]` **B-VAL-05:** DAL Architecture Gate (Dependency tier validation)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Test Intensity Gating:**
@@ -525,7 +525,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-24:** Base Integration Contract defined in [US-24_integration.md](topics/topic_08_integration/US-24_integration.md)
     *   `[ ]` **US-3 Core** *(provides QA Runner)*
     *   `✅` **B-FLOW-01:** Scenario Testing Pipeline
-    *   `[ ]` **D-VAL-01:** QA Runner Tool
+    *   `✅` **D-VAL-01:** QA Runner Tool
 *   **Sub-Story Add-Ons:**
     *   🔴 **Intelligent Resolution:**
         *   `[ ]` **INT-US-24-SF01:** Sub-Story Integration (Pending Design)
