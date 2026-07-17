@@ -62,7 +62,13 @@ class BashActionHandler:
         )
 
     def _get_atom(self, context: RunContext) -> BashActionAtom:
-        """Lazily create a BashActionAtom for the project."""
+        """Lazily create a BashActionAtom for the project.
+
+        INT-US-09: under worktree isolation the runner sets ``execution_root`` to the
+        worktree source tree; bind the bash cwd there so an untrusted script's writes
+        (and its ``.specweaver/scripts`` resolution) are worktree-bounded, not against
+        the real project root. Falls back to ``project_path`` when not isolated.
+        """
         from specweaver.sandbox.execution.core.atom import BashActionAtom
 
-        return BashActionAtom(cwd=context.project_path)
+        return BashActionAtom(cwd=context.execution_root or context.project_path)

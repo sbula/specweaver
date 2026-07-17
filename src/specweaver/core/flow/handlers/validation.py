@@ -401,11 +401,18 @@ class ValidateTestsHandler:
         )
 
     def _get_atom(self, context: RunContext) -> QARunnerAtom:
-        """Lazily create a QARunnerAtom for the project."""
+        """Lazily create a QARunnerAtom for the project.
+
+        INT-US-09: ``run_tests`` (pytest) executes LLM-authored test code, so under
+        worktree isolation the runner sets ``execution_root`` to the worktree source
+        tree; bind the QA-runner cwd there so tests run worktree-bounded. Falls back to
+        ``project_path`` when not isolated. ``sandbox_settings`` is threaded unchanged.
+        """
         from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
         sandbox_settings = context.config.sandbox if context.config else None
-        return QARunnerAtom(cwd=context.project_path, sandbox_settings=sandbox_settings)
+        cwd = context.execution_root or context.project_path
+        return QARunnerAtom(cwd=cwd, sandbox_settings=sandbox_settings)
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:
         """Resolve precise test directories from TopologyGraph stale nodes."""

@@ -110,3 +110,42 @@ class TestBashActionRegistration:
     def test_registry_resolves_bash_script_to_handler(self) -> None:
         handler = StepHandlerRegistry().get(StepAction.BASH, StepTarget.SCRIPT)
         assert isinstance(handler, BashActionHandler)
+
+
+# ---------------------------------------------------------------------------
+# INT-US-09 CB-3 (T9): bash execution binds cwd to the worktree (execution_root)
+# ---------------------------------------------------------------------------
+
+
+class TestGetAtomExecutionRoot:
+    """When a step runs under worktree isolation, execution_root is set; the bash
+    atom must bind its cwd there (so scripts + writes are worktree-bounded). When
+    it is None, cwd falls back to project_path (backward-compatible)."""
+
+    def test_binds_cwd_to_execution_root_when_set(self, tmp_path: Path) -> None:
+        # [Happy] isolated step → cwd is the worktree, NOT the real project root.
+        handler = BashActionHandler()
+        wt = tmp_path / ".worktrees" / "task-1"
+        context = _ctx(tmp_path)
+        context.execution_root = wt
+        with patch("specweaver.sandbox.execution.core.atom.BashActionAtom") as mock_atom_cls:
+            handler._get_atom(context)
+        mock_atom_cls.assert_called_once_with(cwd=wt)
+
+    def test_falls_back_to_project_path_when_execution_root_none(self, tmp_path: Path) -> None:
+        # [Boundary/backward-compat] non-isolated step → cwd unchanged (project_path).
+        handler = BashActionHandler()
+        context = _ctx(tmp_path)
+        assert context.execution_root is None
+        with patch("specweaver.sandbox.execution.core.atom.BashActionAtom") as mock_atom_cls:
+            handler._get_atom(context)
+        mock_atom_cls.assert_called_once_with(cwd=tmp_path)
+
+    def test_execution_root_equal_project_path_is_harmless(self, tmp_path: Path) -> None:
+        # [Edge] execution_root explicitly set to project_path → cwd == project_path.
+        handler = BashActionHandler()
+        context = _ctx(tmp_path)
+        context.execution_root = tmp_path
+        with patch("specweaver.sandbox.execution.core.atom.BashActionAtom") as mock_atom_cls:
+            handler._get_atom(context)
+        mock_atom_cls.assert_called_once_with(cwd=tmp_path)

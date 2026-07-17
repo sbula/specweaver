@@ -39,12 +39,12 @@
 - [x] **T6b** — Audit/update existing readers/tests of `use_worktree` for tri-state (`tests/integration/core/flow/engine/test_runner_sandbox.py`, `tests/unit/core/flow/engine/test_models.py`).
 - [x] **T7** — Policy-aware runner gate at `runner.py`: extracted a pure `resolve_should_isolate(step_def, context)` helper (`step.use_worktree if not None else getattr(context, "enforce_isolation", False)`, strict-bool, defensive on both reads) so it's DIRECTLY unit-testable (not transitively). tests: runner truth table (integration) + NEW `test_isolation_gate.py` (**20 cases**: happy tri-state×policy; boundary `is not None`-not-truthiness (`0`/`""`→False, `1`→True); hostile non-bool coercion + present-but-None; graceful degradation — missing fields either/both, whole `None` objects either/both, explicit short-circuit; strict-bool return). Reads the flag from CB-1 — NOT `context.config.sandbox` (container-neutrality guard).
 - [x] **T8** — `execute_in_sandbox` sets `isolated_context.execution_root = project_path / wt_path`. src: `src/specweaver/core/flow/engine/runner_utils.py`. test: assert set (GitAtom.run patch pattern).
-- **→ Commit boundary CB-2: full suite + pre-commit + HITL stop.**
+- **→ Commit boundary CB-2: full suite ✅ (5222 passed) + pre-commit ✅ + committed as `f4077870`.**
 
 ## CB-3 — Boundary hand-off in the two untrusted handlers
 
-- [ ] **T9** — `bash_action.py:68`: `BashActionAtom(cwd=context.execution_root or context.project_path)`. src: `src/specweaver/core/flow/handlers/bash_action.py`. test: isolated → worktree cwd; non-isolated → project_path.
-- [ ] **T10** — `validation.py:408` (ValidateTests): `QARunnerAtom(cwd=context.execution_root or context.project_path, sandbox_settings=...)`. src: `src/specweaver/core/flow/handlers/validation.py`. test: isolated → worktree cwd; non-isolated unchanged. (Do NOT touch lint_fix / static QA.)
+- [x] **T9** — `bash_action.py`: `BashActionAtom(cwd=context.execution_root or context.project_path)`. src: `src/specweaver/core/flow/handlers/bash_action.py`. test: isolated → worktree cwd; non-isolated → project_path.
+- [x] **T10** — `validation.py` (ValidateTests): `QARunnerAtom(cwd=context.execution_root or context.project_path, sandbox_settings=...)`. src: `src/specweaver/core/flow/handlers/validation.py`. test: isolated → worktree cwd; non-isolated unchanged. (Do NOT touch lint_fix / static QA.)
 - **→ Commit boundary CB-3: full suite + pre-commit + HITL stop.**
 
 ## CB-4 — Verifiable proof (e2e) + fail-closed + docs

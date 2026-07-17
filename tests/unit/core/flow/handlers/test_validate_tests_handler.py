@@ -135,3 +135,50 @@ class TestGetAtomSandboxSettings:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=config.sandbox)
+
+
+# ---------------------------------------------------------------------------
+# INT-US-09 CB-3 (T10): run_tests execution binds cwd to the worktree
+# ---------------------------------------------------------------------------
+
+
+class TestGetAtomExecutionRoot:
+    """ValidateTests (run_tests/pytest) is an untrusted-execution surface: under
+    isolation its QARunnerAtom cwd must bind to the worktree (execution_root)."""
+
+    def test_binds_cwd_to_execution_root_when_set(self, tmp_path: Path) -> None:
+        # [Happy] isolated step → cwd is the worktree; sandbox_settings stay None
+        # (container-neutral — context.config is not populated on this path).
+        handler = ValidateTestsHandler()
+        wt = tmp_path / ".worktrees" / "task-1"
+        context = _ctx(tmp_path)
+        context.execution_root = wt
+        assert context.config is None
+        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+            handler._get_atom(context)
+        mock_atom_cls.assert_called_once_with(cwd=wt, sandbox_settings=None)
+
+    def test_falls_back_to_project_path_when_execution_root_none(self, tmp_path: Path) -> None:
+        # [Boundary/backward-compat] non-isolated step → cwd unchanged.
+        handler = ValidateTestsHandler()
+        context = _ctx(tmp_path)
+        assert context.execution_root is None
+        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+            handler._get_atom(context)
+        mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=None)
+
+    def test_rebind_preserves_sandbox_settings_from_config(self, tmp_path: Path) -> None:
+        # [Edge] if context.config IS populated (e.g. workflow CLIs), the rebind must
+        # still pass through sandbox_settings unchanged alongside the new cwd.
+        from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
+
+        handler = ValidateTestsHandler()
+        wt = tmp_path / ".worktrees" / "task-1"
+        context = _ctx(tmp_path)
+        context.execution_root = wt
+        context.config = SpecWeaverSettings(
+            llm={"model": "test-model"}, sandbox=SandboxSettings(enforce_worktree_isolation=True)
+        )
+        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+            handler._get_atom(context)
+        mock_atom_cls.assert_called_once_with(cwd=wt, sandbox_settings=context.config.sandbox)
