@@ -48,7 +48,9 @@ def _make_llm(responses: list[str]) -> object:
 class TestLineageE2EFlow:
     """E2E verification of new_feature artifact tagging."""
 
-    def test_new_feature_outputs_lineage_tags(self, tmp_path: Path, _isolate_env) -> None:
+    def test_new_feature_outputs_lineage_tags(
+        self, tmp_path: Path, _isolate_env, stub_implement_qa
+    ) -> None:
         """Pipeline generation writes physical # sw-artifact tags and pushes lineage to DB."""
         _isolate_env / "specweaver.db"
 

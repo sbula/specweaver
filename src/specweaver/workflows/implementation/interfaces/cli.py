@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 
@@ -18,10 +19,114 @@ from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.constitution import find_constitution
 from specweaver.workspace.project.discovery import resolve_project_path
 
+if TYPE_CHECKING:
+    from specweaver.core.flow.engine.models import PipelineDefinition
+
 logger = logging.getLogger(__name__)
 
 
 implement_cli = typer.Typer(no_args_is_help=True)
+
+
+def _build_implement_pipeline(stem: str) -> PipelineDefinition:
+    """Build the autonomous ``implement_spec`` pipeline (INT-US-03 SF-01).
+
+    Generate code + tests, then run the tests and validate the code in one loop.
+    The QA steps target this run's freshly generated files (``tests/test_<stem>.py``,
+    ``src/<stem>.py``); ``run_tests`` loops back to regenerate on failure (bounded),
+    and ``validate_code`` is report-only (a C01-C08 miss never aborts the run). QA
+    steps leave ``use_worktree`` unset so SF-03 can thread the US-9 isolation policy
+    without touching this builder.
+    """
+    from specweaver.core.flow.engine.models import (
+        GateCondition,
+        GateDefinition,
+        GateType,
+        OnFailAction,
+        PipelineDefinition,
+        PipelineStep,
+        StepAction,
+        StepTarget,
+    )
+
+    return PipelineDefinition(
+        name="implement_spec",
+        description=f"Implement + QA for {stem}",
+        steps=[
+            PipelineStep(
+                name="generate_code",
+                action=StepAction.GENERATE,
+                target=StepTarget.CODE,
+            ),
+            PipelineStep(
+                name="generate_tests",
+                action=StepAction.GENERATE,
+                target=StepTarget.TESTS,
+            ),
+            PipelineStep(
+                name="run_tests",
+                action=StepAction.VALIDATE,
+                target=StepTarget.TESTS,
+                params={"target": f"tests/test_{stem}.py", "kind": "unit", "coverage": True},
+                gate=GateDefinition(
+                    type=GateType.AUTO,
+                    condition=GateCondition.ALL_PASSED,
+                    on_fail=OnFailAction.LOOP_BACK,
+                    loop_target="generate_code",
+                    max_retries=2,
+                ),
+            ),
+            PipelineStep(
+                name="validate_code",
+                action=StepAction.VALIDATE,
+                target=StepTarget.CODE,
+                params={"target": f"src/{stem}.py"},
+                gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
+            ),
+        ],
+    )
+
+
+def _report_implementation(run_state: object) -> None:
+    """Print per-step results of the implement loop (INT-US-03 SF-01, FR-7).
+
+    Surfaces generated paths, test pass/fail + coverage, and code-validation
+    rule outcomes inline so ``sw implement`` conveys the full autonomous result.
+    """
+    from specweaver.core.flow.engine.state import StepStatus
+
+    for record in run_state.step_records:  # type: ignore[attr-defined]
+        out = record.result.output if record.result else {}
+        passed = record.status == StepStatus.PASSED
+        mark = "[green]✓[/green]" if passed else "[red]✗[/red]"
+        name = record.step_name
+
+        if name in ("generate_code", "generate_tests"):
+            generated_path = out.get("generated_path")
+            if generated_path:
+                _core.console.print(f"  {mark} {name}: {generated_path}")
+        elif name == "run_tests":
+            line = f"  {mark} tests: {out.get('passed', 0)} passed, {out.get('failed', 0)} failed"
+            coverage = out.get("coverage_pct")
+            if coverage is not None:
+                line += f", coverage {coverage}%"
+            _core.console.print(line)
+        elif name == "validate_code":
+            _core.console.print(
+                f"  {mark} code validation: {out.get('passed', 0)}/{out.get('total', 0)} "
+                "rules passed"
+            )
+            failed_rules = [
+                r.get("rule_id")
+                for r in out.get("results", [])
+                if str(r.get("status", "")).lower().startswith("fail")
+            ]
+            if failed_rules:
+                _core.console.print(
+                    f"      [yellow]failed rules:[/yellow] {', '.join(failed_rules)}"
+                )
+        elif not passed:
+            _core.console.print(f"  {mark} {name}: {record.error_message or 'failed'}")
 
 
 @implement_cli.command(name="implement")
@@ -60,14 +165,7 @@ def implement(
         raise typer.Exit(code=1) from exc
 
     from specweaver.core.config.settings_loader import load_settings
-    from specweaver.core.flow.engine.models import (
-        PipelineDefinition,
-        PipelineStep,
-        StepAction,
-        StepTarget,
-    )
     from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.engine.state import StepStatus
     from specweaver.core.flow.handlers.base import RunContext
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
@@ -117,22 +215,7 @@ def implement(
         load_standards_content(db, active, project_path, target_path=spec_path) if active else None
     )
 
-    pipeline = PipelineDefinition(
-        name="implement_spec",
-        description=f"Implement spec {spec_path.name}",
-        steps=[
-            PipelineStep(
-                name="generate_code",
-                action=StepAction.GENERATE,
-                target=StepTarget.CODE,
-            ),
-            PipelineStep(
-                name="generate_tests",
-                action=StepAction.GENERATE,
-                target=StepTarget.TESTS,
-            ),
-        ],
-    )
+    pipeline = _build_implement_pipeline(stem)
 
     context = RunContext(
         analyzer_factory=AnalyzerFactory,
@@ -150,21 +233,13 @@ def implement(
     runner = PipelineRunner(pipeline, context)
     run_state = asyncio.run(runner.run())
 
+    _report_implementation(run_state)
+
+    # INT-US-03 SF-01: exit reflects QA outcome. A failed run_tests exhausts its
+    # loop-back and leaves the run non-completed \u2192 exit 1. A failed validate_code
+    # is report-only (CONTINUE gate) and does not, on its own, fail the command.
     if run_state.status != "completed":
-        _core.console.print("[red]Pipeline failed or parked.[/red]")
+        _core.console.print("\n[red]Implementation failed:[/red] tests did not pass.")
         raise typer.Exit(code=1)
 
-    for record in run_state.step_records:
-        if record.status == StepStatus.PASSED and record.result:
-            generated_path = record.result.output.get("generated_path")
-            if generated_path:
-                _core.console.print(f"  [green]\u2713[/green] {generated_path}")
-        else:
-            _core.console.print(f"  [red]\u2717[/red] Failed step: {record.step_name}")
-
-    _core.console.print(
-        "\n[green]Implementation complete![/green]\n"
-        "[dim]Next steps:\n"
-        "  sw check --level=code <generated_file>\n"
-        "  sw review <generated_file> --spec <spec_file>[/dim]",
-    )
+    _core.console.print("\n[green]Implementation complete![/green]")

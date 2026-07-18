@@ -256,7 +256,7 @@ class TestHighPriorityEdgeCases:
         assert (dir1 / "src" / "context.yaml").exists()
         assert (dir1 / "tests" / "context.yaml").exists()
 
-    def test_spec_to_code_data_integrity(self, tmp_path: Path) -> None:
+    def test_spec_to_code_data_integrity(self, tmp_path: Path, stub_implement_qa) -> None:
         """Generated code should contain concepts from the spec."""
         spec_path = self._init_and_create_spec(tmp_path)
 
@@ -353,7 +353,7 @@ class TestMediumPriorityEdgeCases:
                             str(specs_dir),
                         ), f"Spec file escaped specs dir: {full}"
 
-    def test_implement_after_denied_review(self, tmp_path: Path) -> None:
+    def test_implement_after_denied_review(self, tmp_path: Path, stub_implement_qa) -> None:
         """User ignores DENIED review and implements anyway → should work."""
         self._init_project(tmp_path)
 

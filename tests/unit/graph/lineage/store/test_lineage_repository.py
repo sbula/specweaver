@@ -84,7 +84,7 @@ class TestLineageRepository:
         with repo._get_connection() as conn:
             cursor = conn.execute("PRAGMA busy_timeout;")
             timeout = cursor.fetchone()[0]
-            assert timeout == 5000
+            assert timeout == 30000
 
     def test_log_artifact_event_sql_injection(self, repo: LineageRepository) -> None:
         dangerous_id = "artifact'; DROP TABLE flow_artifact_events; --"

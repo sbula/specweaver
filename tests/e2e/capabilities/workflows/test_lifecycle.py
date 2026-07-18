@@ -212,7 +212,7 @@ class TestFullLifecycle:
         assert (tmp_path / "src" / "context.yaml").is_file()
         assert (tmp_path / "tests" / "context.yaml").is_file()
 
-    def test_full_pipeline(self, tmp_path: Path) -> None:
+    def test_full_pipeline(self, tmp_path: Path, stub_implement_qa) -> None:
         """Full lifecycle: init → draft → check → review → implement → check → review."""
         # -- Step 1: Init --------------------------------------------------
         result = runner.invoke(app, ["init", "fullpipe", "--path", str(tmp_path)])

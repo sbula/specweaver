@@ -62,6 +62,131 @@ def _scaffold_project(tmp_path: object) -> object:
 
 
 # ---------------------------------------------------------------------------
+# QA stubbing — INT-US-03 SF-01 appended run_tests + validate_code steps to the
+# implement pipeline. CLI-tier tests stub the QA handlers' execute() (the real
+# pytest/rule execution is proven by the SF-03 e2e). This keeps these tests
+# deterministic and fast, and is the correct mocking boundary for a CLI test.
+# ---------------------------------------------------------------------------
+
+
+def _qa_result(*, passed: bool, output: dict) -> object:
+    from specweaver.core.flow.engine.state import StepResult, StepStatus
+
+    return StepResult(
+        status=StepStatus.PASSED if passed else StepStatus.FAILED,
+        output=output,
+        error_message="" if passed else "stubbed QA failure",
+        started_at="t0",
+        completed_at="t1",
+    )
+
+
+def _patch_qa(*, tests_pass: bool = True, code_pass: bool = True):
+    """Context managers patching both QA handlers' execute()."""
+    tests_out = (
+        {"passed": 2, "failed": 0, "total": 2, "coverage_pct": 95}
+        if tests_pass
+        else {"passed": 0, "failed": 1, "total": 1, "coverage_pct": 0}
+    )
+    code_out = (
+        {"passed": 8, "failed": 0, "total": 8, "results": []}
+        if code_pass
+        else {
+            "passed": 6,
+            "failed": 2,
+            "total": 8,
+            "results": [
+                {"rule_id": "C04", "status": "FAIL", "message": "coverage"},
+                {"rule_id": "C05", "status": "FAIL", "message": "type hints"},
+            ],
+        }
+    )
+    tests_patch = patch(
+        "specweaver.core.flow.handlers.validation.ValidateTestsHandler.execute",
+        new=AsyncMock(return_value=_qa_result(passed=tests_pass, output=tests_out)),
+    )
+    code_patch = patch(
+        "specweaver.core.flow.handlers.validation.ValidateCodeHandler.execute",
+        new=AsyncMock(return_value=_qa_result(passed=code_pass, output=code_out)),
+    )
+    return tests_patch, code_patch
+
+
+# ---------------------------------------------------------------------------
+# INT-US-03 SF-01: generation → QA loop
+# ---------------------------------------------------------------------------
+
+
+class TestImplementQALoop:
+    """sw implement runs tests + code validation in-pipeline and reports outcomes."""
+
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
+    def test_qa_pass_reports_and_exits_zero(self, mock_require, tmp_path) -> None:
+        project = _scaffold_project(tmp_path)
+        spec = project / "specs" / "greeter_spec.md"
+        spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "test-model"
+        mock_require.return_value = (
+            mock_settings,
+            _make_mock_adapter("def greet(n):\n    return n\n"),
+            MagicMock(temperature=0.2),
+        )
+
+        tp, cp = _patch_qa(tests_pass=True, code_pass=True)
+        with tp, cp:
+            result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
+
+        assert result.exit_code == 0, result.output
+        assert "Implementation complete" in result.output
+        assert "2 passed" in result.output
+        assert "95" in result.output  # coverage surfaced
+
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
+    def test_failing_tests_exit_nonzero(self, mock_require, tmp_path) -> None:
+        project = _scaffold_project(tmp_path)
+        spec = project / "specs" / "greeter_spec.md"
+        spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "test-model"
+        mock_require.return_value = (
+            mock_settings,
+            _make_mock_adapter("def greet(n):\n    return n\n"),
+            MagicMock(temperature=0.2),
+        )
+
+        tp, cp = _patch_qa(tests_pass=False, code_pass=True)
+        with tp, cp:
+            result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
+
+        # run_tests fails → loop-back exhausts → run not completed → exit 1
+        assert result.exit_code == 1, result.output
+        assert "fail" in result.output.lower()
+
+    @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
+    def test_validate_code_failure_is_report_only(self, mock_require, tmp_path) -> None:
+        project = _scaffold_project(tmp_path)
+        spec = project / "specs" / "greeter_spec.md"
+        spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
+        mock_settings = MagicMock()
+        mock_settings.llm.model = "test-model"
+        mock_require.return_value = (
+            mock_settings,
+            _make_mock_adapter("def greet(n):\n    return n\n"),
+            MagicMock(temperature=0.2),
+        )
+
+        tp, cp = _patch_qa(tests_pass=True, code_pass=False)
+        with tp, cp:
+            result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])
+
+        # validate_code gate is CONTINUE → run completes → exit 0, failure reported
+        assert result.exit_code == 0, result.output
+        assert "Implementation complete" in result.output
+        assert "C04" in result.output  # failed rule surfaced
+
+
+# ---------------------------------------------------------------------------
 # sw implement flow
 # ---------------------------------------------------------------------------
 
@@ -94,10 +219,12 @@ class TestImplementFlow:
             MagicMock(temperature=0.7),
         )
 
-        result = runner.invoke(
-            app,
-            ["implement", str(spec), "--project", str(project)],
-        )
+        tp, cp = _patch_qa()  # SF-01: stub the appended QA steps (real exec = SF-03 e2e)
+        with tp, cp:
+            result = runner.invoke(
+                app,
+                ["implement", str(spec), "--project", str(project)],
+            )
 
         assert result.exit_code == 0
         assert "Implementation complete" in result.output
@@ -130,10 +257,12 @@ class TestImplementFlow:
             MagicMock(temperature=0.7),
         )
 
-        result = runner.invoke(
-            app,
-            ["implement", str(spec), "--project", str(project)],
-        )
+        tp, cp = _patch_qa()  # SF-01: stub the appended QA steps
+        with tp, cp:
+            result = runner.invoke(
+                app,
+                ["implement", str(spec), "--project", str(project)],
+            )
 
         assert result.exit_code == 0
         # Should be auth_service.py, not auth_service_spec.py
@@ -215,10 +344,12 @@ class TestFullPipeline:
             MagicMock(temperature=0.7),
         )
 
-        result = runner.invoke(
-            app,
-            ["implement", str(spec), "--project", str(tmp_path)],
-        )
+        tp, cp = _patch_qa()  # SF-01: stub the appended QA steps (real exec = SF-03 e2e)
+        with tp, cp:
+            result = runner.invoke(
+                app,
+                ["implement", str(spec), "--project", str(tmp_path)],
+            )
         assert result.exit_code == 0
         assert "Implementation complete" in result.output
 

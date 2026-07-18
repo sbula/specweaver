@@ -286,6 +286,7 @@ class TestConstitutionE2E:
     def test_implement_includes_constitution_in_prompt(
         self,
         tmp_path: Path,
+        stub_implement_qa,
     ) -> None:
         """sw implement sends constitution to both code and test gen prompts."""
         self._init_project_with_constitution(

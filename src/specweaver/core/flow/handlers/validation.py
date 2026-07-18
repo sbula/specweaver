@@ -253,7 +253,24 @@ class ValidateCodeHandler:
             return _error_result(str(exc), started)
 
     def _find_code_path(self, step: PipelineStep, context: RunContext) -> Path | None:
-        """Find the code file to validate."""
+        """Find the code file to validate.
+
+        INT-US-03 SF-01: an explicit ``params["target"]`` is authoritative — it points
+        validation at a specific generated file (``src/<stem>.py``) instead of the
+        ``output_dir`` glob (which returns an arbitrary first match). The target is
+        resolved against ``project_path`` and must stay inside it (no traversal). When
+        no target is set, the legacy ``output_dir`` glob behavior is preserved.
+        """
+        target = step.params.get("target")
+        if target and context.project_path:
+            base = context.project_path.resolve()
+            candidate = (context.project_path / target).resolve()
+            try:
+                candidate.relative_to(base)
+            except ValueError:
+                return None  # target escapes the project root — reject
+            return candidate if candidate.is_file() else None
+
         if context.output_dir and context.output_dir.exists():
             py_files = list(context.output_dir.glob("*.py"))
             if py_files:

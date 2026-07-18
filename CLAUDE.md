@@ -76,6 +76,9 @@ tach check
 
 ## Commit Convention
 
+**Branching:** Commit **directly to `main` (master)**. Do NOT create feature branches for this repo
+(overrides the default "branch first on the default branch" behavior).
+
 Format: `<type>(<scope>): <description>`
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`
 Scope: module name (e.g., `flow`, `sandbox`, `graph`, `config`)

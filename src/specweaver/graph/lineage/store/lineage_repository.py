@@ -15,13 +15,34 @@ class LineageRepository:
 
     def __init__(self, db_path: str):
         self.db_path = db_path
+        self._ensure_wal()
+
+    def _ensure_wal(self) -> None:
+        """Switch the DB to WAL journal mode ONCE, single-threaded, at construction.
+
+        Switching *to* WAL requires an exclusive lock, and SQLite does not reliably invoke
+        the busy handler for that mode-switch — so doing it per-connection lets 20 concurrent
+        writers race and raise "database is locked". WAL is persistent in the DB header, so
+        setting it once here means every later ``_get_connection`` finds the DB already in
+        WAL (no mode switch, no exclusive lock) and only contends on the INSERT, which
+        ``busy_timeout`` handles cleanly. Best-effort: an unavailable path surfaces later.
+        """
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            try:
+                conn.execute("PRAGMA journal_mode=WAL;")
+                conn.commit()
+            finally:
+                conn.close()
+        except sqlite3.OperationalError:
+            pass  # e.g. db_path is a directory — the error re-surfaces on real use
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        # WAL mode to prevent Lock Contention
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA busy_timeout=5000;")
-        # Enable Foreign Keys
+        # ``timeout`` installs SQLite's busy handler from connection creation; combined with
+        # busy_timeout, concurrent writers wait for the write lock instead of failing fast.
+        # Journal mode is NOT switched here — WAL is set once in _ensure_wal (see above).
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        conn.execute("PRAGMA busy_timeout=30000;")
         conn.execute("PRAGMA foreign_keys=ON;")
         conn.row_factory = sqlite3.Row
         return conn
