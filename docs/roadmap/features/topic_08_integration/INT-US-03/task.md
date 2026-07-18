@@ -1,60 +1,52 @@
-# Task List — INT-US-03 SF-01: Generation → QA Test Loop
+# Task List — INT-US-03 SF-02: Lint-Fix Reflection Loop Integration
 
-- **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-03/INT-US-03_sf01_implementation_plan.md
-- **FRs**: FR-1 (run_tests), FR-3 (validate_code), FR-4 (targets), FR-6 (loop-back), FR-7 (report+exit)
-- **Commit boundaries**: single boundary **CB-1** (cohesive integration; T1 is a backward-compatible prerequisite for T2). Tasks ordered foundation-first.
+- **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-03/INT-US-03_sf02_implementation_plan.md
+- **FR**: FR-2 (lint_fix step: ruff auto-fix + LLM reflection loop, inline report)
+- **Commit boundary**: single **CB-1**. Foundation-first (T1 enables T2's LLM-reflection path).
+- **(SF-01 task record preserved in git history + walkthrough.)**
 
 ## Tasks
 
-- [x] **T1 — `ValidateCodeHandler` honors `params["target"]`** (FR-3, FR-4)
-  - src: `src/specweaver/core/flow/handlers/validation.py` (`ValidateCodeHandler._find_code_path`)
-  - test: `tests/unit/core/flow/handlers/test_validate_code_find_path.py`
-  - Behavior: if `step.params.get("target")` → resolve vs `context.project_path`, return if `.exists()`; else fall back to existing `output_dir.glob("*.py")[0]`. No signature change.
+- [x] **T1 — `LintFixHandler._find_code_files` honors an explicit target** (FR-2, Audit Q1)
+  - src: `src/specweaver/core/flow/handlers/lint_fix.py` (`_find_code_files`, + caller in `execute`)
+  - test: `tests/unit/core/flow/handlers/test_lint_fix_handler.py`
+  - Behavior: `_find_code_files(context, target=None)` → if `target` resolves (vs `project_path`, inside it) to an existing file → `[file]`; else existing `output_dir.glob("*.py")`. Traversal-guarded. Caller in `execute` passes the resolved `target`.
 
-- [x] **T2 — Extract + build the extended `implement_spec` pipeline** (FR-1, FR-3, FR-4, FR-6) — coverage_threshold uses handler default (70); `ValidationSettings` has no direct field (Q4 refinement, documented).
-  - src: `src/specweaver/workflows/implementation/interfaces/cli.py` — extract a private helper `_build_implement_pipeline(stem, settings)` returning the 4-step pipeline (generate_code, generate_tests, run_tests, validate_code) with gates/params; call it from `implement()`.
-  - test: `tests/unit/workflows/implementation/test_implement_pipeline.py` — assert step names/order, `run_tests` loop-back gate (`loop_target="generate_code"`, `max_retries=2`, `condition=ALL_PASSED`), `validate_code` gate `on_fail=CONTINUE`, targets `tests/test_<stem>.py` / `src/<stem>.py`, `coverage=True` + threshold from settings (fallback 70).
+- [x] **T2 — Insert `lint_fix` step before `run_tests`** (FR-2, Audit Q2/Q3)
+  - src: `cli.py` `_build_implement_pipeline` → `[generate_code, generate_tests, lint_fix, run_tests, validate_code]`; `lint_fix` params `{target: src/<stem>.py, max_reflections: 3}`, gate `CONTINUE`.
+  - test: `tests/unit/workflows/implementation/test_implement_pipeline.py` — step order/position, params, gate.
 
-- [x] **T3 — Inline QA reporting + QA-aware exit code** (FR-7)
-  - src: `cli.py` — rewrite the post-run `step_records` loop; print run_tests (pass/fail/coverage) + validate_code (pass/fail + failed rule_ids); exit 1 iff final status != completed OR run_tests failed after retries; validate_code failure is report-only (never forces exit 1).
-  - test: `tests/integration/interfaces/cli/test_cli_implement.py` — new cases with `QARunnerAtom` stubbed (patch `specweaver.sandbox.qa_runner.core.atom.QARunnerAtom`; also stub `ValidateCodeHandler` execution to avoid the heavy validation sub-pipeline): (happy) tests pass → exit 0 + report; (degradation) run_tests fails after retries → exit 1; (report-only) validate_code fails but run passes → exit 0, failure reported.
-  - ⚠️ **Red/Blue mechanic to verify in-test:** confirm `OnFailAction.CONTINUE` on `validate_code` leaves the run status `completed` even when that step FAILED. If the runner marks the run failed anyway, the exit-code logic must explicitly key off `run_tests`' result, not just `run_state.status`.
+- [x] **T3 — Report `lint_fix` outcome** (extends FR-7)
+  - src: `cli.py` `_report_implementation` → add `name == "lint_fix"` branch: auto_fixed / reflections_used / lint_errors_remaining (green when 0 remain, yellow otherwise; report-only).
+  - test: `tests/unit/workflows/implementation/test_implement_reporting.py`.
 
-- [x] **T4 — Update existing implement tests to the QA-aware world** (backward-compat, NFR-2)
-  - test: `test_cli_implement.py` — `test_implement_generates_files`, `test_implement_spec_suffix_removal`, `test_full_pipeline`: stub `QARunnerAtom` (and `validate_code`) so they assert files created + "Implementation complete" without running real pytest. **`test_full_pipeline` is mandatory** (its mock returns identical text for code+tests → generated "test" collects 0 → would fail QA).
+- [x] **T4 — Integration + e2e fixtures: stub lint_fix in the loop** (FR-2)
+  - test: `tests/integration/interfaces/cli/test_cli_implement.py` — extend `_patch_qa` to also stub `LintFixHandler.execute`; new cases: (happy) lint clean → reported, exit 0; (graceful) lint_fix FAILED (errors remain) → report-only, exit still governed by run_tests.
+  - ⚠️ **e2e fixture (Red/Blue):** `tests/e2e/conftest.py` `stub_implement_qa` MUST also stub `LintFixHandler.execute` (else the 5 `sw implement` e2e tests break the same way SF-01's did — real lint on mock code + mock-LLM reflection). Verify in T5.
 
 - [ ] **T5 — Full suite + pre-commit gate (CB-1)**
-  - Run full `tests/unit`, `tests/integration`, `tests/e2e`; fix any regression project-wide.
-  - Run the pre-commit skill (all phases). Then HITL commit stop.
+  - Full unit/integration/e2e; fix any regression project-wide. Run pre-commit skill. HITL commit stop (direct to master).
 
 ## Adversarial Test Matrix (per task — 4 buckets)
 
 | Task | Happy | Boundary/Edge | Graceful Degradation | Hostile/Wrong Input |
 |------|-------|---------------|----------------------|---------------------|
-| T1 | `target` set & file exists → returns it | `target` missing → falls back to glob; empty `output_dir` | `target` points at nonexistent file → None (→ "no code file" path) | `../` path-traversal string → not resolved outside project |
-| T2 | 4 steps built w/ correct gates/params | odd/nested stem → correct relative targets | settings without `validation.coverage_threshold` → fallback 70 | `None`/empty stem guarded |
-| T3 | pass → exit 0 + report | validate_code fail only → exit 0, reported | run_tests fail ×N → loop-back exhausted → exit 1 | malformed/empty QA `output` dict → report degrades, no crash |
-| T4 | existing asserts still pass w/ stub | suffix-strip case | — (stubbed) | — (stubbed) |
+| T1 | target file exists → `[file]` | no target → output_dir glob (existing behavior kept) | target missing + no output_dir → `[]` (→ "no code files" FAIL path) | `../` traversal target → not resolved outside project |
+| T2 | lint_fix present, correct position/params/gate | position: lint_fix index < run_tests index | — (pure builder) | odd/empty stem interpolation |
+| T3 | auto_fixed clean → "0 remaining" | reflections used, N remaining → yellow | malformed/empty lint output → defaults, no crash | — |
+| T4 | lint clean in loop → exit 0 | lint_fix FAILED → report-only, run continues | run_tests still governs exit | — |
 
 ## Progress
-- T1–T4 complete (TDD red→green→refactor, lint clean).
-- mypy (changed files): ✅  ·  tach: ✅
-- Full unit suite: ✅ 4669 passed, 15 skipped
-- Full integration suite: ✅ 449 passed, 5 skipped
-- Full e2e suite: 5 regressions found & fixed (implement now runs real QA → mock-generated tests collect 0 → exit 1). Added opt-in `stub_implement_qa` fixture in `tests/e2e/conftest.py`; applied to 5 `sw implement`-based tests (lineage, lifecycle×3, constitution). Re-running full e2e to confirm green.
-- Full e2e suite (after fix): ✅ 144 passed, 1 skipped
+- T1–T4 complete (TDD, lint clean). mypy + tach clean on changed src (lint_fix.py, cli.py).
+- Full suite: unit 4688 · integration 451 · e2e 144 (5283 passed, 0 failures).
 - Pre-commit skill: _running_
-  - Phase 1 (architecture): ✅ no violations (tach ✅, mypy ✅)
-  - Phase 2 (test gap): ✅ combined findings presented; 4 unit gaps approved
-  - Phase 3 (implement tests): ✅ 8 new unit edge-case tests (coverage-None, coverage-0, malformed/None output, failed-rule listing, elif-not-passed fallback, unknown-passed skip, target+no-project_path, empty-target) — 15 pass, lint clean
-  - Phase 4 (full suite): ✅ unit 4677, integration 449, e2e 144 (grand total 5270). 1 pre-existing SQLite-lock flake in graph/lineage (`test_log_artifact_event_concurrent_writes`) — passes in isolation, untouched module, NOT caused by SF-01.
-  - Phase 5 (code quality): ✅ ruff, C901, tach, mypy (303 files) all clean; changed files within size limits. Pre-existing RED: `core/flow/engine/runner.py` (606>600) — untouched by SF-01, flagged for user (risky out-of-scope split).
-  - Phase 6 (docs): ✅ impl plan Implementation Notes added; master_story_roadmap noted (US-3 stays 🟡, box `[ ]` until SF-03 e2e proof). No arch/guide/README change (CLI surface unchanged, no new pattern).
-  - Phase 7 (walkthrough): ✅ `INT-US-03_sf01_walkthrough.md` written
-  - Phase 7.5 (Red/Blue on code): ✅ no critical findings (2 minor unreachable/internal notes)
-  - **Inherited fixes (per user directive):**
-    - runner.py 606→592 (moved `resolve_should_isolate` to runner_utils, re-exported) — file-size gate 0 errors; 750 flow tests pass.
-    - lineage SQLite flake fixed (WAL set once at construction + busy_timeout 30s) — 0/20 stress failures; `test_busy_timeout_set` updated.
-    - CLAUDE.md convention: commit direct to master, no feature branches.
-    - Re-running full suite to confirm project-wide green.
+  - Phase 1 (architecture): ✅ no violations (tach ✅)
+  - Phase 2 (test gap): ✅ combined findings presented
+  - Phase 3 (implement tests): ✅ 4 edge cases incl. graceful failure (project_path-falsy, missing-target glob fallback, lint_fix ERROR absorbed by CONTINUE gate, lint+tests both fail → exit 1) — 18 pass, lint clean
+  - Phase 4 (full suite): ✅ unit 4690 · integration 453 · e2e 144 (5287 passed, 0 failures)
+  - Phase 5 (code quality): ruff ✅ · C901 ✅ · size 0 errors (cli.py 263) · tach ✅ · mypy _running_
+  - Phase 5 (code quality): ✅ ruff, C901, size (0 err), tach, mypy (303) all clean
+  - Phase 6 (docs): ✅ SF-02 as-built notes + roadmap (US-3 stays 🟡)
+  - Phase 7 (walkthrough): ✅ INT-US-03_sf02_walkthrough.md
+  - Phase 7.5 (Red/Blue): ✅ no critical findings
   - Phase 8 (commit boundary): ⏸ HITL — awaiting user commit (direct to master)

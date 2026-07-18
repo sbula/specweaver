@@ -131,3 +131,40 @@ def test_report_skips_unknown_passed_step_silently() -> None:
     """[Boundary] An unknown step that PASSED matches no branch and prints nothing."""
     out = _capture_report([_rec("mystery_step", StepStatus.PASSED, {})])
     assert out.strip() == ""
+
+
+# --- lint_fix reporting (SF-02, FR-2) -------------------------------------
+
+
+def test_report_lint_fix_auto_fixed_clean() -> None:
+    out = _capture_report(
+        [
+            _rec(
+                "lint_fix",
+                StepStatus.PASSED,
+                {"auto_fixed": True, "reflections_used": 0, "lint_errors_remaining": 0},
+            )
+        ]
+    )
+    assert "lint" in out.lower()
+    assert "auto-fixed" in out
+    assert "0 errors remaining" in out
+
+
+def test_report_lint_fix_errors_remaining_after_reflections() -> None:
+    out = _capture_report(
+        [
+            _rec(
+                "lint_fix",
+                StepStatus.FAILED,
+                {"reflections_used": 2, "lint_errors_remaining": 3},
+            )
+        ]
+    )
+    assert "3 errors remaining" in out
+    assert "2 reflection" in out
+
+
+def test_report_lint_fix_tolerates_empty_output() -> None:
+    out = _capture_report([_rec("lint_fix", StepStatus.PASSED, {})])  # must not raise
+    assert "0 errors remaining" in out

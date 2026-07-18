@@ -129,7 +129,7 @@ class LintFixHandler:
                 )
 
             # Find code to fix
-            code_files = self._find_code_files(context)
+            code_files = self._find_code_files(context, target)
             if not code_files:
                 return StepResult(
                     status=StepStatus.FAILED,
@@ -215,8 +215,25 @@ class LintFixHandler:
         sandbox_settings = context.config.sandbox if context.config else None
         return QARunnerAtom(cwd=context.project_path, sandbox_settings=sandbox_settings)
 
-    def _find_code_files(self, context: RunContext) -> list[Path]:
-        """Find Python files in the output directory."""
+    def _find_code_files(self, context: RunContext, target: str | None = None) -> list[Path]:
+        """Find the Python file(s) to fix.
+
+        INT-US-03 SF-02: an explicit ``target`` (the generated ``src/<stem>.py``) is
+        authoritative — resolved against ``project_path`` and required to stay inside it
+        (no traversal) — so the LLM reflection loop can locate the file when ``output_dir``
+        is unset. A non-file target (e.g. the default ``"src/"`` directory) or no target
+        falls back to the legacy ``output_dir`` glob.
+        """
+        if target and getattr(context, "project_path", None):
+            base = context.project_path.resolve()
+            candidate = (context.project_path / target).resolve()
+            try:
+                candidate.relative_to(base)
+            except ValueError:
+                return []  # target escapes the project root — reject
+            if candidate.is_file():
+                return [candidate]
+
         if context.output_dir and context.output_dir.exists():
             return list(context.output_dir.glob("*.py"))
         return []

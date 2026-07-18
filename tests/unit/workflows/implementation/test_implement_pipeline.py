@@ -24,14 +24,32 @@ from specweaver.workflows.implementation.interfaces.cli import _build_implement_
 # --- Happy path -----------------------------------------------------------
 
 
-def test_pipeline_has_four_steps_in_order() -> None:
+def test_pipeline_has_five_steps_in_order() -> None:
     pipe = _build_implement_pipeline("greeter")
     assert [s.name for s in pipe.steps] == [
         "generate_code",
         "generate_tests",
+        "lint_fix",
         "run_tests",
         "validate_code",
     ]
+
+
+def test_lint_fix_runs_before_run_tests() -> None:
+    """SF-02 (Q2): lint_fix precedes run_tests so tests + C01-C08 validate the fixed code."""
+    pipe = _build_implement_pipeline("greeter")
+    names = [s.name for s in pipe.steps]
+    assert names.index("lint_fix") < names.index("run_tests")
+
+
+def test_lint_fix_targets_generated_code_report_only() -> None:
+    pipe = _build_implement_pipeline("greeter")
+    lf = pipe.get_step("lint_fix")
+    assert (lf.action, lf.target) == (StepAction.LINT_FIX, StepTarget.CODE)
+    assert lf.params["target"] == "src/greeter.py"
+    assert lf.params["max_reflections"] == 3
+    assert lf.gate is not None
+    assert lf.gate.on_fail == OnFailAction.CONTINUE
 
 
 def test_generate_steps_unchanged() -> None:

@@ -234,14 +234,14 @@ Linear DAG (SF-01 → SF-02 → SF-03); no parallelism (all three edit the same 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Generation → QA Test Loop | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Lint-Fix Reflection Loop Integration | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Lint-Fix Reflection Loop Integration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Zero-Trust Isolation + Verifiable Proof | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Current status**: Design **APPROVED**. **SF-01 committed to `main` (`cc1cec22`, 2026-07-18)** — the
 generation→QA loop is live (host mode); full suite green (5271 passed).
-**Next step**: SF-02 (Lint-Fix Reflection Loop) — `specweaver-implementation-plan INT-US-03 SF-02`.
-Then SF-03 (Zero-Trust Isolation + verifiable-proof e2e), which flips the US-3 base-contract box to done.
+**SF-02 committed to `main` (2026-07-18)** — the lint-fix reflection loop is live (host mode).
+**Next step**: SF-03 (Zero-Trust Isolation + verifiable-proof e2e), which flips the US-3 base-contract box to done.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

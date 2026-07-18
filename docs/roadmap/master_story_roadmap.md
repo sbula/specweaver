@@ -119,7 +119,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ### 🟡 US-3: Autonomous Implementation
 *   **User Benefit:** I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.
 *   **Core Required (MVS):**
-    *   `[ ]` **INT-US-03:** Base Integration Contract defined in [US-03_integration.md](topics/topic_08_integration/US-03_integration.md) — 🟡 [design APPROVED](features/topic_08_integration/INT-US-03/INT-US-03_design.md); **SF-01** (generation→QA loop) implemented (unit+integration green); SF-02 (lint-fix) + SF-03 (zero-trust isolation + e2e proof) pending. Box stays `[ ]` until SF-03 delivers the e2e verifiable proof.
+    *   `[ ]` **INT-US-03:** Base Integration Contract defined in [US-03_integration.md](topics/topic_08_integration/US-03_integration.md) — 🟡 [design APPROVED](features/topic_08_integration/INT-US-03/INT-US-03_design.md); **SF-01** (generation→QA loop) + **SF-02** (lint-fix reflection loop) implemented (unit+integration green); SF-03 (zero-trust isolation + e2e proof) pending. Box stays `[ ]` until SF-03 delivers the e2e verifiable proof.
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **US-9 Core** *(provides Zero-Trust Sandbox)*
     *   `✅` **US-28 Core** *(provides Agent State Ledger)*

@@ -63,6 +63,16 @@ def _build_implement_pipeline(stem: str) -> PipelineDefinition:
                 action=StepAction.GENERATE,
                 target=StepTarget.TESTS,
             ),
+            # INT-US-03 SF-02: auto-fix lint BEFORE running tests, so run_tests and
+            # validate_code exercise the lint-fixed code. Report-only (CONTINUE):
+            # remaining lint errors after reflections never abort the run.
+            PipelineStep(
+                name="lint_fix",
+                action=StepAction.LINT_FIX,
+                target=StepTarget.CODE,
+                params={"target": f"src/{stem}.py", "max_reflections": 3},
+                gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
+            ),
             PipelineStep(
                 name="run_tests",
                 action=StepAction.VALIDATE,
@@ -111,6 +121,14 @@ def _report_implementation(run_state: object) -> None:
             if coverage is not None:
                 line += f", coverage {coverage}%"
             _core.console.print(line)
+        elif name == "lint_fix":
+            remaining = out.get("lint_errors_remaining", 0)
+            detail = (
+                "auto-fixed"
+                if out.get("auto_fixed")
+                else f"{out.get('reflections_used', 0)} reflection(s)"
+            )
+            _core.console.print(f"  {mark} lint: {detail}, {remaining} errors remaining")
         elif name == "validate_code":
             _core.console.print(
                 f"  {mark} code validation: {out.get('passed', 0)}/{out.get('total', 0)} "

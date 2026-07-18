@@ -62,6 +62,14 @@ def stub_implement_qa():
 
     with (
         patch(
+            "specweaver.core.flow.handlers.lint_fix.LintFixHandler.execute",
+            new=AsyncMock(
+                return_value=_ok(
+                    {"auto_fixed": True, "reflections_used": 0, "lint_errors_remaining": 0}
+                )
+            ),
+        ),
+        patch(
             "specweaver.core.flow.handlers.validation.ValidateTestsHandler.execute",
             new=AsyncMock(
                 return_value=_ok({"passed": 1, "failed": 0, "total": 1, "coverage_pct": 100})
