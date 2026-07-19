@@ -25,6 +25,7 @@ from specweaver.core.flow.engine.gates import GateEvaluator
 from specweaver.core.flow.engine.runner_utils import (
     RunnerEventCallback,
     _now_iso,
+    execute_run,
     resolve_should_isolate,
     setup_sandbox_caches,
     verify_vault_security,
@@ -129,7 +130,7 @@ class PipelineRunner:
 
         try:
             async with cqrs_context():
-                return await self._execute_loop(run)
+                return await execute_run(self, run, logger)
         finally:
             await self._save_handover(run)
             self._flush_telemetry()
@@ -175,7 +176,7 @@ class PipelineRunner:
 
         try:
             async with cqrs_context():
-                return await self._execute_loop(run)
+                return await execute_run(self, run, logger)
         finally:
             await self._save_handover(run)
             self._flush_telemetry()
@@ -319,7 +320,12 @@ class PipelineRunner:
                 self._context.pipeline_runner = self
 
                 # INT-US-09: tri-state isolation gate (see resolve_should_isolate).
-                if resolve_should_isolate(step_def, self._context):
+                # C-EXEC-06: inside an active session, ALL steps already run in the one session
+                # worktree — unconditionally bypass per-step isolation (even explicit
+                # use_worktree=True) so no nested worktree is created.
+                if not getattr(self, "_session_active", False) and resolve_should_isolate(
+                    step_def, self._context
+                ):
                     from specweaver.core.flow.engine.runner_utils import execute_in_sandbox
 
                     result = await execute_in_sandbox(self, handler, step_def, run, logger)

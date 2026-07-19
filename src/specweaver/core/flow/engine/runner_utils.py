@@ -27,6 +27,63 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     return bool(getattr(context, "enforce_isolation", False))
 
 
+async def execute_run(runner: Any, run: Any, logger: logging.Logger) -> PipelineRun:
+    """C-EXEC-06: run the loop, wrapping it in ONE session worktree when session isolation is on.
+
+    The whole run executes in a single ephemeral worktree (generated code persists across steps),
+    reconciled once at the end (reconcile lands in SF-02) and torn down once (worktree + branch).
+    Fail-closed: a non-git project raises. Default-off: the path is byte-identical to before.
+    """
+    context = runner._context
+    if not getattr(context, "session_isolation", False):
+        return cast("PipelineRun", await runner._execute_loop(run))
+
+    import copy
+
+    from specweaver.core.flow.engine.state import RunStatus
+    from specweaver.sandbox.base import AtomStatus
+    from specweaver.sandbox.git.core.atom import GitAtom
+
+    original = context
+    atom = GitAtom(cwd=original.project_path)
+    wt_path = f".worktrees/session-{run.run_id}"
+    branch = f"sf-session-{run.run_id}"
+
+    # Idempotent create: prune a stale same-named worktree+branch left by a hard crash that
+    # skipped a prior teardown, so worktree_add doesn't collide (Q3).
+    atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+    add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
+    if add_res.status != AtomStatus.SUCCESS:
+        raise RuntimeError(
+            f"C-EXEC-06 session isolation could not start ({add_res.message}). "
+            f"Ensure {original.project_path} is a git repository, or disable session isolation."
+        )
+    setup_sandbox_caches(original, wt_path, logger)
+
+    isolated = copy.copy(original)
+    isolated.project_path = original.project_path / wt_path
+    isolated.execution_root = isolated.project_path
+    isolated.output_dir = None
+    isolated.enforce_isolation = False  # no per-step isolation nested inside the session
+    runner._context = isolated
+    runner._session_active = True
+    try:
+        result = cast("PipelineRun", await runner._execute_loop(run))
+        # AD-4 (v1): a park inside a session is unsupported — the worktree is torn down in
+        # finally, so parked state cannot survive a resume. Fail clearly.
+        if run.status == RunStatus.PARKED:
+            raise RuntimeError(
+                "C-EXEC-06 session isolation does not support HITL parking (v1): the ephemeral "
+                "worktree cannot persist across resume. Disable session isolation for HITL pipelines."
+            )
+        # SF-02: commit-before-reconcile + authorized strip-merge go HERE (before teardown).
+        return result
+    finally:
+        runner._session_active = False
+        runner._context = original
+        atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+
+
 @runtime_checkable
 class RunnerEventCallback(Protocol):
     """Protocol for runner event callbacks."""

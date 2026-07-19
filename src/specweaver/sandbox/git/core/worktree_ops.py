@@ -31,6 +31,7 @@ def handle_worktree_teardown(
     # Primary vector
     result = executor.run("worktree", "remove", "--force", str(path))
     if result.exit_code == 0:
+        _delete_branch_if_present(executor, context)
         return AtomResult(
             status=AtomStatus.SUCCESS,
             message=f"Removed worktree cleanly: {path}",
@@ -57,11 +58,31 @@ def handle_worktree_teardown(
 
     # Cleanup Git index
     executor.run("worktree", "prune")
+    _delete_branch_if_present(executor, context)
 
     return AtomResult(
         status=AtomStatus.SUCCESS,
         message=f"Fallback: Removed worktree {path} via rmtree.",
     )
+
+
+def _delete_branch_if_present(executor: "EngineGitExecutor", context: dict[str, Any]) -> None:
+    """C-EXEC-06: delete the session branch after its worktree is removed.
+
+    Best-effort — the per-run session owns a unique branch and must not leak it (fixing the
+    INT-US-09 orphan-branch defect). No ``branch`` key → no-op (per-step teardown unchanged).
+    """
+    branch = context.get("branch")
+    if not branch:
+        return
+    try:
+        res = executor.run("branch", "-D", branch)
+        if getattr(res, "exit_code", 0) != 0:
+            logger.warning(
+                "Could not delete session branch '%s': %s", branch, getattr(res, "stderr", "")
+            )
+    except Exception as exc:  # best-effort: never let branch cleanup break teardown
+        logger.warning("Branch delete raised for '%s': %s", branch, exc)
 
 
 def handle_strip_merge(executor: "EngineGitExecutor", context: dict[str, Any]) -> AtomResult:

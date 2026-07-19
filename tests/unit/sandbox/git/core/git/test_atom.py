@@ -498,6 +498,7 @@ class TestEdgeCases:
             "tag",
             "worktree",
             "ls-files",
+            "branch",  # C-EXEC-06: session-branch deletion at teardown
         }
         assert expected == GitAtom._ENGINE_WHITELIST
 

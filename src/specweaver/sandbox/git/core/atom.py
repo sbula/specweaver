@@ -57,6 +57,7 @@ class GitAtom(Atom):
             "tag",  # tag
             "worktree",
             "ls-files",  # is_tracked
+            "branch",  # C-EXEC-06: delete the session branch at teardown
         }
     )
 

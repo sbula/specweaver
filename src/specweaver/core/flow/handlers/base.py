@@ -53,8 +53,10 @@ class RunContext(BaseModel):
     config: Any = None  # SpecWeaverSettings | None — LLM config for adapters
     analyzer_factory: Any = None  # AnalyzerFactoryProtocol | None
     output_dir: Path | None = None
-    enforce_isolation: bool = False  # INT-US-09: US-9 worktree-isolation policy (composition root)
+    enforce_isolation: bool = False  # INT-US-09: US-9 per-step worktree-isolation policy (composition root)
     execution_root: Path | None = None  # INT-US-09: where untrusted processes bind cwd (worktree); None -> project_path
+    session_isolation: bool = False  # C-EXEC-06: per-run (session) worktree isolation — the whole run in ONE worktree
+    allowed_paths: list[str] = Field(default_factory=list)  # C-EXEC-06: repo-relative paths the reconcile may write back
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
