@@ -17,19 +17,30 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-> **Refreshed 2026-07-17.** Previous Candidate A (US-9 Core) and Candidate C (US-2 / `D-INTL-05`)
-> are now **✅ COMPLETE** and removed. US-9's completion unblocked `INT-US-03`, making the two
-> flagship epics (US-2, US-3) *integration-only* — their entire capability sets are already built &
-> tested. Ranked best-ROI first.
+> **Refreshed 2026-07-19.** `INT-US-03` **SF-01** (generation→QA loop) and **SF-02** (lint-fix reflection
+> loop) are now **✅ committed** (host mode). But SF-03's Phase-0 spike discovered that US-3's "run
+> generated code worktree-bounded" **cannot** be delivered on the current isolation machinery: `INT-US-09`
+> Core is broken for **multi-step** isolated pipelines (`TECH-012`). So closing US-3 now **requires** a new
+> capability first — **`INT-US-09-SF05`** (per-run worktree). `INT-US-03 SF-03` is **blocked** on it.
+> Re-ranked accordingly.
 
-1. **Candidate 1: Close US-3 — Autonomous Implementation (`INT-US-03`)** ← TOP ROI
-   * **Features:** `INT-US-03` Base Integration Contract. All capability deps are `✅`: US-1 Core, US-9 Core (just completed), US-28 Core, `D-INTL-01`, `D-VAL-05`, `D-VAL-01`.
-   * **Pros:** **Highest leverage.** Integration-only work (no new capabilities) that closes the flagship epic — "hand an approved spec, get code + tests + auto-fixed lint." Cascades to unblock the epics built on autonomous implementation (US-17 SWE-Bench, US-19 Fleet, US-22 Contracts, US-24 Scenarios).
-   * **Cons:** `INT-US-03` contract not yet designed (design + plan + dev — but no capability build).
-2. **Candidate 2: Close US-2 — Interactive Drafter (`INT-US-02`)** ← HIGH ROI
+1. **Candidate 1: `C-EXEC-06` + `INT-US-09-SF05` — Per-Run (Session) Worktree Isolation** ← CRITICAL PATH to close US-3
+   * **Features:** the **capability** `C-EXEC-06` (DAL-C; per-run worktree mode; `allowed_paths` + commit-before-reconcile;
+     resolves `TECH-012`) **built first**, then the **integration** `INT-US-09-SF05` (wire it into the US-9 policy +
+     multi-step generated-file e2e proof).
+   * **Pros:** The ONE blocker between us and closing the US-3 flagship epic (SF-01/SF-02 already shipped
+     value). Also fixes a real latent defect: any multi-step isolated pipeline crashes today. Unblocks the
+     epics built on autonomous implementation (US-17 SWE-Bench, US-19 Fleet, US-22 Contracts, US-24 Scenarios).
+   * **Cons:** A genuine **DAL-C capability build** (not integration-only) — `C-EXEC-06` needs design + plan + dev +
+     an architectural sign-off (new per-run isolation mode). Both land before `INT-US-03 SF-03` can proceed.
+2. **Candidate 2: Close US-2 — Interactive Drafter (`INT-US-02`)** ← HIGH ROI, truly integration-only NOW
    * **Features:** `INT-US-02` Base Integration Contract. All deps `✅`: `E-UI-01`, `E-SENS-01`, `E-INTL-01/02/03`, `D-INTL-05`.
-   * **Pros:** Integration-only; closes the Interactive Drafter and unblocks US-21 (Autonomous Decomposition). Every capability (incl. Spec Review Engine `E-INTL-03`, Metadata Injection `D-INTL-05`) is built & tested.
+   * **Pros:** Genuinely integration-only (no capability build, no isolation dependency) — closes the
+     Interactive Drafter and unblocks US-21. Good candidate to run **while `INT-US-09-SF05` is being designed**
+     if you want a parallel epic-closer with no blocker.
    * **Cons:** `INT-US-02` contract not yet designed.
+   * **Note:** `INT-US-03 SF-03` (finish US-3) is intentionally NOT a selectable candidate — it is blocked on
+     Candidate 1 (`INT-US-09-SF05`).
 3. **Candidate 3: AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE
    * **Features:** `E-VAL-03`.
    * **Pros:** Protects the validation/LLM pipeline from injected instructions embedded in source — increasingly critical now that US-3/US-9 execute more autonomous, code-context-driven flows. (Security Mandate can bump this above 1–2 if threat mitigation outranks feature completion.)
@@ -258,7 +269,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ### 🟢 US-9: The Zero-Trust Sandbox
 *   **User Benefit:** The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.
 *   **Core Required (MVS):**
-    *   `✅` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md) — **Verifiable Proof:** `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` (real git worktree, unmocked: `action: bash` + `run_tests`/pytest run worktree-bounded under the opt-in US-9 policy, source root unmutated). Container-free (US-5 + E-EXEC-01 + C-EXEC-02). **Backlog:** API-run policy wiring (`pipelines.py`) and `run_tests`-in-worktree dep-resolution robustness deferred; containerization is the separate `INT-US-09-SF01` add-on.
+    *   `✅` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md) — **Verifiable Proof:** `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` (real git worktree, unmocked: `action: bash` + `run_tests`/pytest run worktree-bounded under the opt-in US-9 policy, source root unmutated). Container-free (US-5 + E-EXEC-01 + C-EXEC-02). ⚠️ **Done for single-step only** — `TECH-012` defect: multi-step isolated pipelines crash (2nd-step branch collision) and generated files never survive between steps; fixed by `INT-US-09-SF05`. **Backlog:** API-run policy wiring (`pipelines.py`); containerization is the separate `INT-US-09-SF01` add-on.
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
     *   `✅` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
     *   `✅` **C-EXEC-02:** [Native CLI Action Nodes](features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md) — SF-1/SF-2/SF-3 all complete. **Verifiable Proof:** `tests/integration/core/flow/handlers/test_bash_action_integration.py` (real `PipelineRunner` + `StepHandlerRegistry` executing a real script, end-to-end + router branching + `step_records` propagation; no e2e test — justified in the design doc's ROI section as an internal engine capability, not yet wired into a user-facing CLI pipeline)
@@ -276,6 +287,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **INT-US-09-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-EXEC-03:** Git Worktree Bouncer C-Bindings (Rust PyO3)
+    *   🟡 **Per-Run (Session) Worktree Isolation:** ← unblocks closing US-3
+        *   `[ ]` **INT-US-09-SF05:** Sub-Story Integration (Pending Design) — wires `C-EXEC-06` into the US-9 policy + delivers the multi-step, freshly-generated-file e2e proof. **`INT-US-03 SF-03` consumes this.**
+        *   `[ ]` **C-EXEC-06:** Per-Run (Session) Worktree Isolation (DAL-C) — one worktree per untrusted span, single end-of-run reconcile (vs. today's per-step create/reconcile/teardown). Adds `RunContext.allowed_paths` + commit-before-reconcile; resolves the `TECH-012` defect. *The capability build. DAL-C because the single reconcile is the sole write-back authorization gate over the user's real repo.*
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
 **Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*

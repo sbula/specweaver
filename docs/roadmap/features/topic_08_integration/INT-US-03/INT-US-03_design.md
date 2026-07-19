@@ -235,13 +235,17 @@ Linear DAG (SF-01 → SF-02 → SF-03); no parallelism (all three edit the same 
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Generation → QA Test Loop | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Lint-Fix Reflection Loop Integration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Zero-Trust Isolation + Verifiable Proof | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Zero-Trust Isolation + Verifiable Proof | SF-01, SF-02, **INT-US-09-SF05** ⛔ | ✅ | ⛔ blocked | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Current status**: Design **APPROVED**. **SF-01 committed to `main` (`cc1cec22`, 2026-07-18)** — the
 generation→QA loop is live (host mode); full suite green (5271 passed).
-**SF-02 committed to `main` (2026-07-18)** — the lint-fix reflection loop is live (host mode).
-**Next step**: SF-03 (Zero-Trust Isolation + verifiable-proof e2e), which flips the US-3 base-contract box to done.
+**SF-01 + SF-02 committed to `main`** — the autonomous generation→QA→lint loop is live (host mode).
+**SF-03 is BLOCKED** (2026-07-19): its Phase-0 spike found `INT-US-09` Core is broken for multi-step
+isolated pipelines (`TECH-012`). SF-03 now depends on the new **`INT-US-09-SF05`** (Per-Run Worktree
+Isolation), which must be built first.
+**Next step**: Design + build **`INT-US-09-SF05`** (now Candidate 1 in the Active Routing Queue). Once it's
+committed, SF-03 re-scopes to consume it + deliver the FR-8 e2e proof, closing the US-3 base contract.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
