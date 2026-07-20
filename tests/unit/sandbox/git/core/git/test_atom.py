@@ -68,6 +68,7 @@ class TestDispatch:
             "worktree_add",
             "worktree_teardown",
             "worktree_sync",
+            "worktree_commit",  # C-EXEC-06 SF-02
             "strip_merge",
             "is_tracked",
         }
@@ -739,6 +740,8 @@ class TestStripMerge:
                 # loops for src/bad.py
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
+                # post-strip diff --cached --quiet: exit 1 = survivors remain → commit
+                SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),
                 # git commit
                 SubprocessResult(exit_code=0, stdout="committed strips", stderr="", duration_seconds=0.0),
             ]
@@ -769,6 +772,8 @@ class TestStripMerge:
                 # loops for src/bad.py ONLY (doc_updates is skipped)
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
+                # post-strip diff --cached --quiet: exit 1 = survivors remain → commit
+                SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),
                 # git commit
                 SubprocessResult(exit_code=0, stdout="committed strips", stderr="", duration_seconds=0.0),
             ]

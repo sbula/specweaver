@@ -189,12 +189,12 @@ Linear DAG (SF-01 → SF-02 → SF-03); acyclic.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Session Worktree Lifecycle + Context Rebind | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Commit-Before-Reconcile + Authorized Strip-Merge | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Commit-Before-Reconcile + Authorized Strip-Merge | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Composition-Root Policy + Allow-List + Verifiable Proof | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
-**Current status**: Design **APPROVED** (2026-07-19). **SF-01 committed to `main`** (session lifecycle live,
-no reconcile yet).
-**Next step**: SF-02 (Commit-Before-Reconcile + Authorized Strip-Merge) — the reconcile that lands generated
-code back in the real repo via `allowed_paths`. Then SF-03 (policy + verifiable proof).
+**Current status**: Design **APPROVED** (2026-07-19). **SF-01 + SF-02 committed to `main`** — the session
+lifecycle AND the authorized reconcile are live (generated code lands back via `allowed_paths`).
+**Next step**: SF-03 (composition-root policy + `allowed_paths` population + the multi-step generated-file
+e2e proof) — completes `C-EXEC-06`, then `INT-US-09-SF05` → `INT-US-03 SF-03` → US-3 closes.
 **If resuming mid-feature**: Read the Progress Tracker; resume at the first ⬜.

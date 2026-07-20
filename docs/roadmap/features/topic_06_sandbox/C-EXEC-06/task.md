@@ -1,49 +1,45 @@
-# Task List — C-EXEC-06 SF-01: Session Worktree Lifecycle + Context Rebind
+# Task List — C-EXEC-06 SF-02: Commit-Before-Reconcile + Authorized Strip-Merge
 
-- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-06/C-EXEC-06_sf01_implementation_plan.md
-- **FRs**: FR-1 (lifecycle+teardown+branch), FR-2 (rebind), FR-5-field, FR-6 (fail-closed), FR-7 (park-guard)
-- **Commit boundary**: single **CB-1**. Foundation-first (fields → teardown primitive → wrapper → bypass/guards).
-- **No reconcile in SF-01** — worktree changes discarded at teardown (SF-02 adds commit+reconcile).
+- **Impl Plan**: docs/roadmap/features/topic_06_sandbox/C-EXEC-06/C-EXEC-06_sf02_implementation_plan.md
+- **FRs**: FR-3 (worktree_commit), FR-4 (authorized strip-merge + surface failures)
+- **Commit boundary**: single **CB-1**. Foundation-first (primitive → reconcile → dirty-tree hardening).
+- **(SF-01 task record preserved in git history + walkthrough.)**
 
 ## Tasks
 
-- [x] **T1 — `RunContext` fields** (FR-5 field, FR-7)
-  - src: `src/specweaver/core/flow/handlers/base.py` — add `allowed_paths: list[str] = Field(default_factory=list)` and `session_isolation: bool = False`.
-  - test: `tests/unit/core/flow/handlers/test_run_context_session_fields.py` — defaults.
+- [x] **T1 — `worktree_commit` primitive** (FR-3, Q3)
+  - src: `sandbox/git/core/worktree_ops.py` (`handle_worktree_commit`) + `atom.py` (`_intent_worktree_commit`).
+  - Behavior: bind `EngineGitExecutor(cwd=worktree)`; `git add -A`; if `git diff --cached --quiet` → SUCCESS "nothing to commit" (skip empty commit); else `git commit -m "chore(sandbox): session snapshot"`; surface a commit failure as FAILED.
+  - test: `tests/unit/sandbox/git/core/git/test_worktree_commit.py` — dirty→commit; clean→skip; commit-fail→FAILED; unknown-intent still lists it.
 
-- [x] **T2 — Branch-aware teardown** (FR-1)
-  - src: `src/specweaver/sandbox/git/core/worktree_ops.py` — `handle_worktree_teardown` deletes the branch (`git branch -D <branch>`) when `context["branch"]` is set; best-effort, logged; no `branch` → unchanged.
-  - test: `tests/unit/sandbox/git/...` (or extend existing worktree_ops test) — branch deleted when passed; untouched when absent; delete-failure logged not raised.
+- [x] **T2 — Reconcile orchestration in `execute_run`** (FR-3, FR-4, Q1)
+  - src: `runner_utils.py` — at the SF-02 seam, ONLY when `run.status == COMPLETED`: `worktree_commit` → `strip_merge(branch, allowed_paths=original.allowed_paths)`; raise `RuntimeError` on either FAILED (surface, never swallow). Skip reconcile on failed/parked runs.
+  - test: `tests/integration/core/flow/engine/test_session_reconcile.py` (real git) — [Happy] session generates `src/foo.py` (in allowed_paths) → committed to real repo after run; [Hostile] also writes `secret.py` (not allowed) → absent from real repo; [Degradation] a failed run (loop not COMPLETED) → no reconcile, real repo unmutated; [Degradation] strip_merge FAILED → RuntimeError surfaced.
 
-- [x] **T3 — Session lifecycle wrapper** (FR-1, FR-2, FR-6)
-  - src: `runner.py` (+ helper in `runner_utils.py`) — `run()`/`resume()` call `_execute_maybe_session(run)`: if `context.session_isolation` → create worktree `.worktrees/session-{run_id}` / branch `sf-session-{run_id}` (**idempotent: prune a stale same-named worktree+branch before add**, Q3); rebind `copy.copy(context)` (`project_path`/`execution_root`→worktree, `output_dir=None`); `setup_sandbox_caches`; run `_execute_loop` against it (swap+restore `self._context`, Q1); teardown worktree+branch in `finally`; **fail-closed** RuntimeError on create failure. Else → `_execute_loop` unchanged.
-  - test: `tests/integration/sandbox/...test_session_isolation.py` (real git, skip-clean) — 2-step pipeline: step1 writes a file, step2 reads it → persists across steps in ONE worktree; real source root unmutated; `.worktrees/` + branch gone after; non-git project → fail-closed; `session_isolation=False` → per-step path unchanged (control).
+- [x] **T3 — Dirty-real-tree hardening** (FR-4, Q2/Q5)
+  - src: `runner_utils.py` (reconcile) — detect a dirty real working tree that the merge would clobber → fail loud with an actionable "commit/stash first" error; on any strip_merge failure, `git merge --abort` so the real repo is left clean.
+  - test: integration — real repo has an uncommitted change to a path the reconcile touches → RuntimeError (clear message), merge aborted, real repo clean, the user's uncommitted change intact.
 
-- [x] **T4 — Session-active per-step bypass + park-guard** (FR-7, Red/Blue)
-  - src: `runner.py` — when a session is active, **unconditionally bypass** the per-step `execute_in_sandbox` dispatch (`:321-327`) even for `use_worktree=True` steps (no nested isolation); raise a clear error if a step PARKS under session isolation (v1 unsupported).
-  - test: integration — a `use_worktree=True` step inside a session runs in the SESSION worktree (not nested); a parking step under session → clear error.
-
-- [ ] **T5 — Full suite + pre-commit gate (CB-1)**
+- [x] **T4 — Full suite + pre-commit gate (CB-1)**
   - Full unit/integration/e2e; fix any regression project-wide. Run pre-commit skill. HITL commit stop (direct to master).
 
 ## Adversarial Test Matrix (per task — 4 buckets)
 | Task | Happy | Boundary/Edge | Graceful Degradation | Hostile/Wrong Input |
 |------|-------|---------------|----------------------|---------------------|
-| T1 | fields present | defaults empty/False | — (pure model) | wrong type rejected by Pydantic |
-| T2 | branch passed → deleted | no branch → untouched | branch-delete fails → logged, not raised | non-existent branch → best-effort no crash |
-| T3 | 2-step file persists in one worktree; real root unmutated | cleanup removes worktree+branch; crash-orphan pruned before re-add | non-git project → fail-closed RuntimeError | `session_isolation` on a run with no steps → clean no-op |
-| T4 | `use_worktree=True` step runs in session worktree | session-off → per-step path unchanged | — | parking step under session → clear error |
+| T1 | dirty worktree → commit | clean → skip (nothing to commit) | commit fails → FAILED surfaced | missing `path` → FAILED |
+| T2 | allowed file lands in real repo | empty allowed_paths → nothing merged | failed run → no reconcile; strip_merge FAILED → raise | non-allowed / README / docs stripped |
+| T3 | clean real tree → reconcile proceeds | non-conflicting dirty file left untouched | dirty-clobber → fail loud + merge-abort + repo clean | traversal allow-list entry doesn't authorize out-of-tree |
 
 ## Progress
-- T1–T4 complete (TDD red→green→refactor, lint clean). mypy clean on 4 changed src files. tach ✅.
-- Full suite: unit 4698 · integration 459 (+6 session) · e2e 144 — 0 failures (fixed 1 whitelist-pin test after adding `branch`).
+- T1–T3 complete (TDD, lint clean). Fixed a strip_merge new-file gap (stripped new files now deleted from disk) + merge-failure surfacing. mypy + tach ✅.
+- Full suite: unit 4703 · integration 465 (+4 reconcile) · e2e 144 (5312 passed, 0 failures).
 - Pre-commit skill: _running_
   - Phase 1 (architecture): ✅ no violations (tach ✅)
-  - Phase 2 (test gap): ✅ combined findings presented; 3 gaps approved
-  - Phase 3 (implement tests): ✅ crash-orphan recovery (Q3), context-restore-on-exception, fallback-path branch-delete — 12 pass, lint clean
-  - Phase 4 (full suite): ✅ unit 4699 · integration 461 · e2e 144 (5304 passed, 0 failures)
-  - Phase 5 (code quality): ✅ ruff, C901, tach, mypy (303); file-size fixed (runner.py 658→598 via execute_run extraction)
-  - Phase 6 (docs): ✅ as-built notes; C-EXEC-06 → 🟡 in matrix + topic_06
-  - Phase 7 (walkthrough): ✅ C-EXEC-06_sf01_walkthrough.md
-  - Phase 7.5 (Red/Blue): ✅ no critical findings (v1 limitations documented)
-  - Phase 8 (commit boundary): ⏸ HITL — awaiting user commit (direct to master)
+  - Phase 2 (test gap): ✅ combined findings; user pushed on corner/teardown cases → 7 gaps approved
+  - Phase 3 (implement tests): ✅ G1–G7 (empty-allowed, hard-block, commit-fail-raise, graceful-teardown-on-failure, all-stripped, empty-session, doc_updates-survives). Found+fixed a latent noise-commit bug (all-stripped created an empty merge commit). 66 pass, lint+mypy clean.
+  - Phase 4 (full suite): ✅ unit 4703 · integration 472 · e2e 144 (5319 passed, 0 failures)
+  - Phase 5 (code quality): ✅ ruff, C901, tach, mypy (303), file-size all clean
+  - Phase 6 (docs): ✅ SF-02 as-built notes (C-EXEC-06 stays 🟡)
+  - Phase 7 (walkthrough): ✅ C-EXEC-06_sf02_walkthrough.md
+  - Phase 7.5 (Red/Blue): ✅ no critical findings (SF-03/production notes recorded)
+  - Phase 8 (commit boundary): ✅ committed to master (CB-1). Re-verified post-reboot: 70 SF-02 tests pass, ruff/mypy/tach clean.

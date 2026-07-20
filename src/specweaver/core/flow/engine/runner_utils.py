@@ -76,7 +76,22 @@ async def execute_run(runner: Any, run: Any, logger: logging.Logger) -> Pipeline
                 "C-EXEC-06 session isolation does not support HITL parking (v1): the ephemeral "
                 "worktree cannot persist across resume. Disable session isolation for HITL pipelines."
             )
-        # SF-02: commit-before-reconcile + authorized strip-merge go HERE (before teardown).
+        # SF-02: reconcile ONLY on successful completion — never write back the generated
+        # code of a failed/parked run. Commit the worktree, then a single authorized
+        # strip-merge lands only allowed_paths in the real repo. Failures are surfaced.
+        if run.status == RunStatus.COMPLETED:
+            commit_res = atom.run({"intent": "worktree_commit", "path": wt_path})
+            if commit_res.status != AtomStatus.SUCCESS:
+                raise RuntimeError(
+                    f"C-EXEC-06 reconcile: worktree commit failed: {commit_res.message}"
+                )
+            merge_res = atom.run(
+                {"intent": "strip_merge", "branch": branch, "allowed_paths": original.allowed_paths}
+            )
+            if merge_res.status != AtomStatus.SUCCESS:
+                raise RuntimeError(
+                    f"C-EXEC-06 reconcile: authorized strip-merge failed: {merge_res.message}"
+                )
         return result
     finally:
         runner._session_active = False

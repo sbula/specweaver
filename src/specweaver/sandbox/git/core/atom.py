@@ -489,7 +489,28 @@ class GitAtom(Atom):
         """
         from specweaver.sandbox.git.core.worktree_ops import handle_strip_merge
 
-        return handle_strip_merge(self._executor, context)
+        return handle_strip_merge(self._executor, self._cwd, context)
+
+    def _intent_worktree_commit(self, context: dict[str, Any]) -> AtomResult:
+        """C-EXEC-06: commit the session worktree's changes onto its branch (before reconcile).
+
+        Context keys:
+            path: str - relative path of the session worktree.
+        """
+        path = context.get("path")
+        if not path:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message="Missing 'path' in context for worktree_commit intent.",
+            )
+
+        from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
+        from specweaver.sandbox.git.core.worktree_ops import handle_worktree_commit
+
+        wt_executor = EngineGitExecutor(
+            cwd=self._cwd / path, whitelist=set(self._ENGINE_WHITELIST)
+        )
+        return handle_worktree_commit(wt_executor)
 
     def _intent_is_tracked(self, context: dict[str, Any]) -> AtomResult:
         """Check if a file path is explicitly tracked in the git index.
