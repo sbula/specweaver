@@ -110,7 +110,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **INT-US-01-SF03:** Sub-Story Integration (Pending Design)
         *   `✅` **E-VAL-02:** Auto-discover Standards
         *   `[ ]` **E-VAL-04:** Multi-stage Reviews — *(2026-07-21) to be designed rubric-first on the `C-VAL-05` substrate*
-        *   `[ ]` **B-VAL-02:** Spec Rot Interceptor
+        *   `✅` **B-VAL-02:** Spec Rot Interceptor
     *   🔴 **Rubrics-as-Content (the "middle way" for judgment):**
         *   `[ ]` **C-VAL-05:** [Rubrics-as-Content Validation](features/topic_05_validation/C-VAL-05/C-VAL-05_design.md) (STUB — design doc not yet run) — battery engine stays hardcoded; semantic judgment content (`S03` stranger-test, `S07` test-first, review criteria) externalizes to versioned, per-project-overridable, DAL-gated markdown rubric files (checksums recorded for audit). Recommended first bite of the middle-way direction.
     *   🔴 **Mathematical Speed & Security (Rust):**
@@ -148,7 +148,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Multi-Language Test Support:**
         *   `[ ]` **INT-US-03-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **D-VAL-03:** Polyglot QA Runner
+        *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **INT-US-03-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
@@ -234,7 +234,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `✅` **C-FLOW-02:** Router-based flow control
     *   `[ ]` **D-UI-01:** `sw serve` Core Orchestration API
-    *   `[ ]` **E-UI-02:** Web dashboard
+    *   `✅` **E-UI-02:** Web dashboard
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict UI Data Contracts:**
         *   `[ ]` **INT-US-06-SF01:** Sub-Story Integration (Pending Design)
@@ -313,7 +313,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Code-to-Spec Drift Checking:**
         *   `[ ]` **INT-US-10-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-VAL-01:** AST Drift Detection
+        *   `✅` **B-VAL-01:** AST Drift Detection
 
 ### 🟡 US-11: GraphRAG for Brownfield Scale
 **Benefit:** *The agent can instantly recall exact context from 20 interacting microservices without blowing up the context window.*
@@ -335,7 +335,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **B-SENS-05:** Static Dataflow Solver
     *   🔴 **Infinite Scale Management:**
         *   `[ ]` **INT-US-11-SF03:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
+        *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
         *   `[ ]` **A-FLOW-02:** Hash-based garbage collection
         *   `[ ]` **A-INTL-04:** Memory consolidation
     *   🔴 **Microservice Federation:**
@@ -404,7 +404,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Enterprise Compliance Protocols:**
         *   `[ ]` **INT-US-15-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-SENS-01:** Artifact lineage graph
+        *   `✅` **B-SENS-01:** Artifact lineage graph
         *   `[ ]` **A-UI-01:** 'Dark Factory' Compliance Logging
     *   🔴 **Zero-Trust ACL:**
         *   `[ ]` **INT-US-15-SF02:** Sub-Story Integration (Pending Design)
@@ -416,8 +416,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-16:** Base Integration Contract defined in [US-16_integration.md](topics/topic_08_integration/US-16_integration.md)
     *   `✅` **US-4 Core** *(provides Config DB)*
     *   `✅` **Step 9a:** Token Tracking
-    *   `[ ]` **C-FLOW-01:** Telemetry DB
-    *   `[ ]` **D-FLOW-03:** Static Routing
+    *   `✅` **C-FLOW-01:** Telemetry DB
+    *   `✅` **D-FLOW-03:** Static Routing
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Data-Driven Routing:**
         *   `[ ]` **INT-US-16-SF01:** Sub-Story Integration (Pending Design)
@@ -454,7 +454,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
     *   `✅` **US-5 Core** *(provides Worktree Bouncer & AST extractors)*
     *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out
-    *   `[ ]` **US-9 Core** *(provides Containerized deployment)*
+    *   `✅` **US-9 Core** *(provides Containerized deployment)*
     *   `[ ]` **US-13 Core** *(provides Math Validation)*
     *   `[ ]` **US-14 Core** *(provides Adversarial Review)*
     *   `[ ]` **B-UI-02:** External Proprietary Validation
@@ -486,7 +486,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Distributed Topology Scaling:**
         *   `[ ]` **INT-US-19-SF03:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
-        *   `[ ]` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
+        *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
 
 ### 🟡 US-20: Enterprise Architecture Enforcement
 **Benefit:** *SpecWeaver mathematically prevents my project from degrading by enforcing strict test intensities (e.g., DAL-A requires mutation tests) and blocking forbidden dependencies across the DAG.*
@@ -528,7 +528,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-22:** Base Integration Contract defined in [US-22_integration.md](topics/topic_08_integration/US-22_integration.md)
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **A-VAL-01:** Protocol/Schema Analyzers (.proto, openapi)
-    *   `[ ]` **C-VAL-04:** Traceability Matrix Check
+    *   `✅` **C-VAL-04:** Traceability Matrix Check
 *   **Sub-Story Add-Ons:**
     *   🔴 **Mathematical Speed & Security:**
         *   `[ ]` **INT-US-22-SF01:** Sub-Story Integration (Pending Design)
@@ -566,9 +566,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Risk Controls:**
         *   `[ ]` **INT-US-25-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **D-VAL-02:** Custom Rule Paths
-        *   `[ ]` **D-VAL-04:** Adaptive Assurance Standards
-        *   `[ ]` **C-VAL-03:** Dynamic Risk Rulesets
+        *   `✅` **D-VAL-02:** Custom Rule Paths
+        *   `✅` **D-VAL-04:** Adaptive Assurance Standards
+        *   `✅` **C-VAL-03:** Dynamic Risk Rulesets
 
 ---
 
