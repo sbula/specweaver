@@ -17,9 +17,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
+from specweaver.commons.enums.dal import DALLevel
 
 logger = logging.getLogger(__name__)
 
@@ -130,12 +130,34 @@ class SandboxSettings(BaseModel):
     - ``session_allowed_paths`` (C-EXEC-06): the reconcile's write-back allow
       list (repo-relative). **Empty ⇒ derive** from the pipeline's generation
       targets at the composition root; **non-empty ⇒ used verbatim**.
+    - ``auto_isolate_min_dal`` (INT-US-03 SF-03): the DAL-driven auto-escalation
+      threshold. A ``DALLevel`` name (default ``"DAL_B"``): callers that opt into
+      escalation (e.g. ``sw implement``) turn per-run session isolation ON when the
+      touched code's resolved DAL is this strict or stricter — so high-assurance
+      (DAL_A/B) code auto-sandboxes while small/low-DAL projects stay on host.
+      The sentinel ``"off"`` disables escalation entirely (pure opt-in).
     """
 
     execution_mode: Literal["host", "container"] = "host"
     enforce_worktree_isolation: bool = False
     enforce_session_isolation: bool = False
     session_allowed_paths: list[str] = Field(default_factory=list)
+    auto_isolate_min_dal: str = "DAL_B"
+
+    @field_validator("auto_isolate_min_dal")
+    @classmethod
+    def _validate_auto_isolate_min_dal(cls, v: str) -> str:
+        """Accept a valid DALLevel name or the ``"off"`` sentinel (case-insensitive)."""
+        if v.lower() == "off":
+            return "off"
+        try:
+            DALLevel(v)
+        except ValueError as exc:
+            valid = ", ".join(level.value for level in DALLevel)
+            raise ValueError(
+                f"auto_isolate_min_dal must be one of [{valid}] or 'off', got {v!r}"
+            ) from exc
+        return v
 
 
 class SpecWeaverSettings(BaseModel):

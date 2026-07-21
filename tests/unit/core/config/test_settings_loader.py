@@ -103,6 +103,26 @@ class TestSandboxSettingsModel:
         assert settings.sandbox.enforce_session_isolation is False
         assert settings.sandbox.session_allowed_paths == []
 
+    # --- INT-US-03 SF-03 T2: auto_isolate_min_dal (DAL-driven escalation threshold) ---
+
+    def test_auto_isolate_min_dal_defaults_to_dal_b(self):
+        # Happy: high-assurance (DAL_A/B) code auto-sandboxes out of the box.
+        assert SandboxSettings().auto_isolate_min_dal == "DAL_B"
+
+    def test_auto_isolate_min_dal_accepts_other_levels(self):
+        assert SandboxSettings(auto_isolate_min_dal="DAL_A").auto_isolate_min_dal == "DAL_A"
+        assert SandboxSettings(auto_isolate_min_dal="DAL_C").auto_isolate_min_dal == "DAL_C"
+
+    def test_auto_isolate_min_dal_accepts_off_sentinel_case_insensitive(self):
+        # Boundary: "off" disables escalation entirely (pure opt-in); case-insensitive.
+        assert SandboxSettings(auto_isolate_min_dal="off").auto_isolate_min_dal == "off"
+        assert SandboxSettings(auto_isolate_min_dal="OFF").auto_isolate_min_dal == "off"
+
+    def test_auto_isolate_min_dal_rejects_invalid_value(self):
+        # Hostile: a non-DALLevel, non-"off" value is rejected.
+        with pytest.raises(ValidationError):
+            SandboxSettings(auto_isolate_min_dal="DAL_Z")
+
 
 def test_load_settings_toml_overrides_defaults(tmp_path: Path):
     # Setup mock db and project
@@ -229,6 +249,38 @@ def test_load_settings_toml_sandbox_session_isolation_absent_defaults_false(tmp_
 
     assert settings.sandbox.enforce_session_isolation is False
     assert settings.sandbox.session_allowed_paths == []
+
+
+def test_load_settings_toml_sandbox_auto_isolate_min_dal(tmp_path: Path):
+    """INT-US-03 SF-03 T2: [sandbox] auto_isolate_min_dal loaded via the TOML splat."""
+    from specweaver.core.config.db_bootstrap import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "specweaver.db"))
+    db = Database(tmp_path / "specweaver.db")
+    project_path = tmp_path / "my_project"
+    project_path.mkdir()
+    register_test_project(db, "my_project", str(project_path))
+
+    toml_path = project_path / "specweaver.toml"
+    toml_path.write_text('[sandbox]\nauto_isolate_min_dal = "DAL_A"\n', encoding="utf-8")
+
+    settings = load_settings(db, "my_project", llm_role="review")
+
+    assert settings.sandbox.auto_isolate_min_dal == "DAL_A"
+
+
+def test_load_settings_toml_sandbox_auto_isolate_min_dal_absent_defaults(tmp_path: Path):
+    from specweaver.core.config.db_bootstrap import bootstrap_database
+
+    bootstrap_database(str(tmp_path / "specweaver.db"))
+    db = Database(tmp_path / "specweaver.db")
+    project_path = tmp_path / "my_project"
+    project_path.mkdir()
+    register_test_project(db, "my_project", str(project_path))
+
+    settings = load_settings(db, "my_project", llm_role="review")
+
+    assert settings.sandbox.auto_isolate_min_dal == "DAL_B"
 
 
 def test_load_settings_toml_sandbox_absent_keeps_host_default(tmp_path: Path):

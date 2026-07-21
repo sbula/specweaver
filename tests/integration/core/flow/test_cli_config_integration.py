@@ -168,6 +168,21 @@ def test_toml_malformed_sandbox_keeps_session_isolation_off(tmp_path: Path) -> N
     assert context.allowed_paths == []
 
 
+def test_high_dal_project_does_not_auto_isolate_on_sw_run(tmp_path: Path) -> None:
+    """[Boundary/NFR — INT-US-03 SF-03 G2] DAL-driven auto-escalation is opt-in PER CALLER:
+    `sw implement` opts in, but `sw run` must NOT. A DAL_B project run via `sw run` therefore
+    stays on host (session off), proving the shared `apply_session_policy` escalation never
+    leaked into the generic run path."""
+    project_dir = _init_project(tmp_path, "cexec06-daljrun", None)
+    # Mark the project DAL_B (would auto-escalate IF sw run opted into DAL escalation).
+    (project_dir / "context.yaml").write_text(
+        "operational:\n  dal_level: DAL_B\n", encoding="utf-8"
+    )
+    context = _run_and_capture(project_dir)
+    assert context.session_isolation is False
+    assert context.allowed_paths == []
+
+
 def test_toml_isolation_policy_true_flows_onto_resume_context(
     tmp_path: Path, monkeypatch
 ) -> None:

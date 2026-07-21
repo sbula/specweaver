@@ -16,6 +16,7 @@ import pytest
 from typer.testing import CliRunner
 
 # Force import to test decentralized location (Red Phase)
+from specweaver.core.config.settings import SandboxSettings
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
 
@@ -83,6 +84,7 @@ class TestImplementOutputPaths:
 
         mock_settings = MagicMock()
         mock_settings.llm.model = "gemini-2.5-pro"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
 
         mock_load.return_value = mock_settings
         mock_create.return_value = (
@@ -118,6 +120,7 @@ class TestImplementOutputPaths:
 
         mock_settings = MagicMock()
         mock_settings.llm.model = "gemini-2.5-pro"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
 
         mock_load.return_value = mock_settings
         mock_create.return_value = (

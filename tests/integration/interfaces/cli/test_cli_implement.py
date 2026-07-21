@@ -16,6 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
+from specweaver.core.config.settings import SandboxSettings
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
 
@@ -141,6 +142,7 @@ class TestImplementQALoop:
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             _make_mock_adapter("def greet(n):\n    return n\n"),
@@ -162,6 +164,7 @@ class TestImplementQALoop:
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             _make_mock_adapter("def greet(n):\n    return n\n"),
@@ -182,6 +185,7 @@ class TestImplementQALoop:
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             _make_mock_adapter("def greet(n):\n    return n\n"),
@@ -203,6 +207,7 @@ class TestImplementQALoop:
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             _make_mock_adapter("def greet(n):\n    return n\n"),
@@ -223,6 +228,7 @@ class TestImplementQALoop:
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             _make_mock_adapter("def greet(n):\n    return n\n"),
@@ -249,6 +255,7 @@ class TestImplementQALoop:
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             _make_mock_adapter("def greet(n):\n    return n\n"),
@@ -291,6 +298,7 @@ class TestImplementQALoop:
         spec.write_text("# Greeter\n## 1. Purpose\nGreets.", encoding="utf-8")
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             _make_mock_adapter("def greet(n):\n    return n\n"),
@@ -331,6 +339,7 @@ class TestImplementFlow:
         )
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             mock_adapter,
@@ -368,6 +377,7 @@ class TestImplementFlow:
         mock_adapter = _make_mock_adapter("pass\n")
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             mock_adapter,
@@ -454,6 +464,7 @@ class TestFullPipeline:
         mock_adapter = _make_mock_adapter(generated_code)
         mock_settings = MagicMock()
         mock_settings.llm.model = "test-model"
+        mock_settings.sandbox = SandboxSettings()  # real sandbox: isolation off by default
         mock_require.return_value = (
             mock_settings,
             mock_adapter,

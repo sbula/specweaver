@@ -50,12 +50,25 @@ def _derive_allowed_paths(spec_path: Path) -> list[str]:
     return [f"src/{stem}.py", f"tests/test_{stem}.py"]
 
 
-def apply_session_policy(context: RunContext, settings: Any, logger: logging.Logger) -> None:
+def apply_session_policy(
+    context: RunContext,
+    settings: Any,
+    logger: logging.Logger,
+    *,
+    dal_auto_escalate: bool = False,
+) -> None:
     """C-EXEC-06 SF-03 (FR-5, FR-7): freeze per-run isolation policy onto the context.
 
     Called at the composition root (ADR-002). Reads the opt-in ``[sandbox]`` knobs and,
     **only when per-run isolation is on**, populates ``allowed_paths`` (the configured
     override, else the derived generation targets).
+
+    ``dal_auto_escalate`` (INT-US-03 SF-03, AD-8): when True and the explicit
+    ``enforce_session_isolation`` flag is off, the policy auto-enables session isolation if
+    the touched code's resolved DAL is at/above the ``auto_isolate_min_dal`` threshold
+    (default ``DAL_B``). This is **opt-in per caller** — ``sw implement`` passes True;
+    ``sw run``/``sw resume`` leave it False, so their behavior is byte-identical (escalation
+    never even resolves a DAL for them).
 
     NFR-2 guard: when the policy is OFF, ``allowed_paths`` is left EMPTY — the per-step
     INT-US-09 path (``execute_in_sandbox``) also reads ``allowed_paths``, so populating it
@@ -68,7 +81,10 @@ def apply_session_policy(context: RunContext, settings: Any, logger: logging.Log
     """
     try:
         sandbox = getattr(settings, "sandbox", None)
-        if not bool(getattr(sandbox, "enforce_session_isolation", False)):
+        session_on = bool(getattr(sandbox, "enforce_session_isolation", False))
+        if not session_on and dal_auto_escalate:
+            session_on = _dal_requires_isolation(context, sandbox, logger)
+        if not session_on:
             context.session_isolation = False
             return
         override = list(getattr(sandbox, "session_allowed_paths", None) or [])
@@ -80,6 +96,46 @@ def apply_session_policy(context: RunContext, settings: Any, logger: logging.Log
             "Could not apply per-run session-isolation policy; leaving it off.",
             exc_info=True,
         )
+
+
+def _dal_requires_isolation(context: RunContext, sandbox: Any, logger: logging.Logger) -> bool:
+    """INT-US-03 SF-03 (AD-8): does the touched code's DAL meet the escalation threshold?
+
+    Reads ``auto_isolate_min_dal`` (a ``DALLevel`` name, or ``"off"`` to disable). Resolves
+    the run's DAL the same way ``PipelineRunner`` does (``spec_path`` if it exists, else
+    ``project_path``), reusing ``context.dal_level`` when already set and caching the result
+    back onto it so the runner does not re-resolve. Returns True iff the resolved DAL is at
+    or above the threshold in strictness. Any failure ⇒ False (the caller stays on host).
+    """
+    from specweaver.commons.enums.dal import DALLevel
+    from specweaver.core.config.dal_resolver import DALResolver
+
+    threshold_raw = getattr(sandbox, "auto_isolate_min_dal", "DAL_B")
+    if not threshold_raw or str(threshold_raw).lower() == "off":
+        return False
+    threshold = DALLevel(threshold_raw)
+
+    dal = getattr(context, "dal_level", None)
+    if dal is None:
+        target = context.spec_path if context.spec_path.exists() else context.project_path
+        dal = DALResolver(context.project_path).resolve(target)
+        context.dal_level = dal  # cache — the runner skips its own resolution
+    if dal is None or dal.rank < threshold.rank:
+        return False
+
+    # Q3: auto-escalation must NEVER break the command. If the project cannot host a git
+    # worktree (not a git repo), degrade to host mode with a warning instead of failing.
+    # (An explicit ``enforce_session_isolation`` still fails-closed at ``execute_run``.)
+    if not (context.project_path / ".git").exists():
+        logger.warning(
+            "DAL %s meets the auto-isolation threshold %s but %s is not a git repository; "
+            "running the loop on host (unsandboxed). `git init` to enable worktree isolation.",
+            dal.value,
+            threshold.value,
+            context.project_path,
+        )
+        return False
+    return True
 
 
 async def execute_run(runner: Any, run: Any, logger: logging.Logger) -> PipelineRun:

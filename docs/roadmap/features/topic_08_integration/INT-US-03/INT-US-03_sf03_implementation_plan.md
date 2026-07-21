@@ -145,6 +145,33 @@ non-git under escalation → degrades to host (Q3).
   switch** (the switch was `C-EXEC-06`). `tach`/`ruff`/`mypy --strict` stay green. The DAL escalation is a
   policy-layer behavior in the shared helper — no parallel isolation logic. **Verdict:** no CRITICAL violation.
 
+## Implementation Notes (as-built, 2026-07-21)
+
+Delivered as planned, plus one dev finding. Source:
+- `commons/enums/dal.py` — `DALLevel.rank` (A=5…E=1) beside `is_strict`.
+- `core/config/settings.py` — `SandboxSettings.auto_isolate_min_dal: str = "DAL_B"` + a validator (valid
+  `DALLevel` name or `"off"`).
+- `core/flow/engine/runner_utils.py` — `apply_session_policy` gained keyword `dal_auto_escalate=False`;
+  new `_dal_requires_isolation` resolves the run DAL (reusing/caching `context.dal_level`) and returns True
+  iff `dal.rank >= threshold.rank`.
+- `workflows/implementation/interfaces/cli.py` — one `apply_session_policy(..., dal_auto_escalate=True)` call
+  after the `RunContext` build.
+
+**Dev finding (Q3, implemented):** DAL auto-escalation now **git-repo-checks** the project and **degrades to
+host** (with a warning) on a non-git project — auto-escalation must never break `sw implement`. An explicit
+`enforce_session_isolation=true` still fails-closed at `execute_run`. This also surfaced + fixed inherited
+`MagicMock()`-settings failures in `test_cli_implement.py`, `workflows/implementation test_cli.py`, and
+`test_cli_telemetry_flush.py` (a loose MagicMock made `enforce_session_isolation` read truthy) — they now use
+a real `SandboxSettings`.
+
+Tests: `test_dal.py` (7 unit), `test_settings_loader.py` (+6), `test_session_policy.py` (+13 escalation incl.
+G1/G4), `test_cli_implement_isolation.py` (6 integration), `test_cli_config_integration.py` (+1 G2 NFR guard),
+`test_int_us_03_isolation_e2e.py` (2 e2e). Full suite green: unit 4750 · integration 487 · e2e 150
+(5387 passed, 0 failures). ruff/mypy(303)/C901/tach/file-size clean.
+
+**Verifiable Proof (FR-8):** `tests/e2e/sandbox/test_int_us_03_isolation_e2e.py` +
+`tests/integration/interfaces/cli/test_cli_implement_isolation.py`.
+
 ## Session Handoff
-**Current status**: DRAFT re-scoped to Option C (2026-07-21), UNBLOCKED, all audit questions resolved. Ready
-for Phase 5 finalization → `/specweaver-dev`. Closing SF-03 closes the US-3 base contract.
+**Current status**: DEV COMPLETE (2026-07-21) — pre-commit gate in progress. Ready for commit boundary CB-1.
+Closing SF-03 closes the US-3 base contract.

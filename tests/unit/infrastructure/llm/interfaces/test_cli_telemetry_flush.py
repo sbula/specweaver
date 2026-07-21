@@ -15,6 +15,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.core.config.settings import SandboxSettings
+
 
 @pytest.fixture(autouse=True)
 def _patch_ensure_schema():
@@ -50,6 +52,7 @@ class TestReviewCommandFlush:
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_settings = MagicMock()
         mock_settings.llm.model = "gemini-2.5-pro"
+        mock_settings.sandbox = SandboxSettings()
 
         with (
             patch(
@@ -96,6 +99,7 @@ class TestImplementCommandFlush:
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_settings = MagicMock()
         mock_settings.llm.model = "gemini-2.5-pro"
+        mock_settings.sandbox = SandboxSettings()
 
         with (
             patch(
@@ -148,6 +152,7 @@ class TestDraftCommandFlush:
         mock_collector = MagicMock(spec=TelemetryCollector)
         mock_settings = MagicMock()
         mock_settings.llm.model = "gemini-2.5-pro"
+        mock_settings.sandbox = SandboxSettings()
 
         with (
             patch(

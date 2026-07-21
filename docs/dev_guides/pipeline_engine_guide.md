@@ -217,9 +217,19 @@ run executes in **one** ephemeral worktree with a **single** end-of-run authoriz
   (`runner_utils.py`) from the pipeline's generation targets — `src/<stem>.py` + `tests/test_<stem>.py`
   where `<stem> = spec_path.stem.replace("_spec","")` (byte-matched to `generation.py`) — or from the
   `[sandbox] session_allowed_paths` override (non-empty ⇒ verbatim). **Empty ⇒ derive.**
-- **Enforcement policy**: set `[sandbox] enforce_session_isolation = true` in `specweaver.toml`.
-  Default off ⇒ byte-identical behavior. **NFR-2 guard**: when the per-run policy is off,
-  `allowed_paths` is left empty so the per-step (INT-US-09) `strip_merge` above is unaffected.
+- **Enforcement policy**: set `[sandbox] enforce_session_isolation = true` in `specweaver.toml` to force
+  per-run isolation ON for a composition root. Default off ⇒ byte-identical behavior. **NFR-2 guard**: when
+  the per-run policy is off, `allowed_paths` is left empty so the per-step (INT-US-09) `strip_merge` above is
+  unaffected.
+- **DAL-driven auto-escalation (INT-US-03 SF-03)**: `apply_session_policy` takes an opt-in
+  `dal_auto_escalate` flag. When set (only **`sw implement`** passes it today), and the explicit force-flag is
+  off, per-run isolation auto-enables if the touched code's resolved DAL is **at or above
+  `[sandbox] auto_isolate_min_dal`** (default `DAL_B`; `"off"` disables). So autonomous, untrusted generated
+  code for high-assurance (DAL_A/B) modules is sandboxed automatically, while small/low-DAL projects stay on
+  friction-free host mode — the worktree/reconcile cost lands only where the assurance level justifies it.
+  `sw run`/`sw resume` do **not** opt in, so they are unaffected. **Q3 degrade**: if auto-escalation wants
+  isolation but the project is not a git repo, it logs a warning and stays on host (never breaks the command);
+  an explicit `enforce_session_isolation=true` still fails-closed.
 - **v1 scope**: non-parking spans — a HITL park inside a session errors clearly (the ephemeral
   worktree cannot survive a resume). API composition roots don't yet resolve the policy (`TECH-013`).
 

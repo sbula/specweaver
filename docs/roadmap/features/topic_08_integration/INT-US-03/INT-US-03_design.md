@@ -236,7 +236,7 @@ Linear DAG (SF-01 → SF-02 → SF-03); no parallelism (all three edit the same 
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Generation → QA Test Loop | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Lint-Fix Reflection Loop Integration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Zero-Trust Isolation + Verifiable Proof | SF-01, SF-02, **INT-US-09-SF05** ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Zero-Trust Isolation + Verifiable Proof | SF-01, SF-02, **INT-US-09-SF05** ✅ | ✅ | ✅ | ✅ | 🟡 | ⬜ |
 
 ## Session Handoff
 

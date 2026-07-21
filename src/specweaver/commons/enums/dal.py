@@ -27,6 +27,21 @@ class DALLevel(enum.StrEnum):
         return self in (DALLevel.DAL_A, DALLevel.DAL_B)
 
     @property
+    def rank(self) -> int:
+        """Strictness rank for threshold comparisons: DAL_A (5, strictest) … DAL_E (1, least).
+
+        Lets callers express "is this DAL at least as strict as <threshold>?" as
+        ``dal.rank >= threshold.rank`` (e.g. the C-EXEC-06 DAL-driven isolation escalation).
+        """
+        return {
+            DALLevel.DAL_A: 5,
+            DALLevel.DAL_B: 4,
+            DALLevel.DAL_C: 3,
+            DALLevel.DAL_D: 2,
+            DALLevel.DAL_E: 1,
+        }[self]
+
+    @property
     def confidence_threshold(self) -> float:
         """Return the minimum required confidence for auto-discovered standards."""
         return {
