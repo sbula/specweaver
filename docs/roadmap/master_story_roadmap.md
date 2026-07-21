@@ -103,8 +103,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟡 **Configurable Multi-Stage Reviews:**
         *   `[ ]` **INT-US-01-SF03:** Sub-Story Integration (Pending Design)
         *   `✅` **E-VAL-02:** Auto-discover Standards
-        *   `[ ]` **E-VAL-04:** Multi-stage Reviews
+        *   `[ ]` **E-VAL-04:** Multi-stage Reviews — *(2026-07-21) to be designed rubric-first on the `C-VAL-05` substrate*
         *   `[ ]` **B-VAL-02:** Spec Rot Interceptor
+    *   🔴 **Rubrics-as-Content (the "middle way" for judgment):**
+        *   `[ ]` **C-VAL-05:** [Rubrics-as-Content Validation](features/topic_05_validation/C-VAL-05/C-VAL-05_design.md) (STUB — design doc not yet run) — battery engine stays hardcoded; semantic judgment content (`S03` stranger-test, `S07` test-first, review criteria) externalizes to versioned, per-project-overridable, DAL-gated markdown rubric files (checksums recorded for audit). Recommended first bite of the middle-way direction.
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **INT-US-01-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-04:** High-Performance Rust Validation Core
@@ -144,6 +146,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **INT-US-03-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
+    *   🔴 **Graduated Autonomy (the "middle way" dial):**
+        *   `[ ]` **C-FLOW-11:** [Graduated Autonomy — DAL-Driven Execution-Mode Dial](features/topic_03_flow_engine/C-FLOW-11/C-FLOW-11_design.md) (STUB — design doc not yet run) — work steps gain `mode: oneshot | agentic`; the agentic mode runs a budget-capped, skill-mounted work unit inside `C-EXEC-06` session isolation, with mode selection resolved from DAL policy (mirrors the shipped AD-8 escalation pattern). Pilot consumer: the `sw implement` inner loop.
 
 ### 🟢 US-4: Context-Aware Flow Orchestration
 *   **User Benefit:** I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.

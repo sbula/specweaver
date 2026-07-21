@@ -33,6 +33,8 @@ This document tracks all capabilities related to static analysis, linting, rules
   > _(split from 3.20)_ | Injects strict constraints or relaxed defaults into the fixed 10-test battery based on the target module's domain risk (DAL) via "Fractal Resolution," outsourcing FFI boundary checks to native tools (Tach, ArchUnit, ESLint). Replaced legacy Database Validation Overrides with Pipeline YAML Inheritance. **Complete**: 3684 tests.
 * **`C-VAL-04` ✅: Traceability Matrix Check** (Legacy: 3.21)<br>
   > _(new)_ | Mathematically counts FRs/NFRs in the L3 spec and asserts exact matching `@traces(req_id)` tags in the AST of generated test files. Hard-fails pipeline if coverage is incomplete, preventing "Correlated Hallucinations."
+* **`C-VAL-05` 🔜: Rubrics-as-Content Validation**<br>
+  > [Description](../features/topic_05_validation/C-VAL-05/C-VAL-05_design.md) | _(new, 2026-07-21)_ | "Rules as code, rubrics as content": the battery engine (rule IDs, aggregation, DAL thresholds, strict mode) stays hardcoded, but the **semantic** judgment content — `S03` stranger-test, `S07` test-first, review criteria — externalizes to versioned markdown **rubric files** (shipped defaults + per-project `.specweaver/rubrics/` overrides, DAL-gated variants, checksums recorded in reports for auditability). Mechanical rules (21 of 23) stay code. The rubric substrate future semantic checks (`B-VAL-03`, `E-VAL-04`, `B-INTL-08`) should build on. Complements `C-FLOW-11` (the "middle way" pair).
 
 ## DAL-B: High-Assurance
 * **`B-VAL-01` ✅: AST Drift Detection** (Legacy: 3.18)<br>
