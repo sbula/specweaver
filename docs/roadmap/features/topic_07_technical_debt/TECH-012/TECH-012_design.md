@@ -2,7 +2,11 @@
 
 - **Feature ID**: TECH-012
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: ✅ RESOLVED (2026-07-21) by building `C-EXEC-06` (per-run/session worktree isolation,
+  SF-01/02/03 committed) + its integration `INT-US-09-SF05` (delivered by `C-EXEC-06` SF-03). Multi-step
+  untrusted spans now run in one worktree with a single authorized reconcile. The legacy per-step model stays
+  single-step-only (multi-step per-step isolation = documented limitation; use session mode). Proof:
+  `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py`.
 - **Origin**: Found during `INT-US-03 SF-03`'s implementation-plan Phase 0 spike (2026-07-19). The spike
   proved `sw implement` cannot run its multi-step loop under US-9 worktree isolation.
 - **Severity**: HIGH — `INT-US-09` Core is marked 🟢 Done but is non-functional for any **multi-step**

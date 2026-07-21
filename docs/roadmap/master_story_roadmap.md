@@ -287,8 +287,8 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **INT-US-09-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-EXEC-03:** Git Worktree Bouncer C-Bindings (Rust PyO3)
-    *   🟡 **Per-Run (Session) Worktree Isolation:** ← unblocks closing US-3
-        *   `[ ]` **INT-US-09-SF05:** Sub-Story Integration (Pending Design) — wires `C-EXEC-06` into the US-9 policy + delivers the multi-step, freshly-generated-file e2e proof. **`INT-US-03 SF-03` consumes this.**
+    *   🟢 **Per-Run (Session) Worktree Isolation:** ← unblocks closing US-3
+        *   `✅` **INT-US-09-SF05:** Sub-Story Integration — **delivered by `C-EXEC-06`** (no separate design required; the composition-root policy wiring, `allowed_paths` threading, and multi-step freshly-generated-file e2e proof were all shipped by `C-EXEC-06` SF-03). `TECH-012` resolved. See [US-09_integration.md → INT-US-09-SF05](topics/topic_08_integration/US-09_integration.md) for the full rationale. **`INT-US-03 SF-03` consumes this** (its remaining job: the one-line `sw implement` wiring + implement e2e).
         *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation (DAL-C) — one worktree per untrusted span, single end-of-run reconcile (vs. today's per-step create/reconcile/teardown). Adds `RunContext.allowed_paths` + commit-before-reconcile + composition-root policy/allow-list; resolves the `TECH-012` defect. *The capability build (SF-01/02/03 all committed). DAL-C because the single reconcile is the sole write-back authorization gate over the user's real repo.* **Verifiable Proof:** `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py` + `tests/integration/core/flow/engine/test_session_policy_fullchain.py`. API composition-root wiring tracked as `TECH-013`.
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
