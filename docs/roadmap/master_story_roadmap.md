@@ -56,9 +56,13 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
      this substrate.
    * **Cons:** Hardening; no epic unlock.
 
-> **Not queue-eligible this refresh:** `US-17` (blocked on unbuilt `B-VAL-04` — Hard Blocker Rule), `US-19`/`US-22`
-> (contracts + dep review pending; `US-22`'s `C-VAL-04` dep box looks stale — capability is ✅ in the matrix),
-> `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013` (too small; fold into the next API-touching story).
+> **Integration-only reserve (updated 2026-07-21, post registry-sync):** the sync sweep + code verification
+> revealed **five** integration-only epic-closers — Candidates 1–2 (`US-2`, `US-24`) **plus `US-16`** (AI Ops &
+> Cost Routing), **`US-22`** (Polyglot Contracts — its `C-VAL-04` dep was a stale box, now synced), and
+> **`US-23`** (MCP Tool Extension). Each needs only its INT contract; they backfill the top slots as those close.
+> **Not queue-eligible:** `US-17` (blocked on unbuilt `B-VAL-04`), `US-19` (dep review resolved — blocked on
+> unbuilt `C-FLOW-04` Work Packet Bundling), `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013`
+> (too small; fold into the next API-touching story).
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
