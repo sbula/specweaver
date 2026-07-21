@@ -259,17 +259,19 @@ def _execute_run(  # noqa: C901
     )
 
     from specweaver.core.config.settings_loader import load_settings
+    from specweaver.core.flow.engine.runner_utils import apply_session_policy
 
-    # INT-US-09: resolve ONLY the US-9 worktree-isolation policy at the composition
-    # root (ADR-002) into a dedicated context flag. We deliberately do NOT populate
-    # context.config here: doing so would also expose [sandbox] execution_mode and
-    # incidentally activate B-EXEC-01 container QA on this path, which is out of
-    # INT-US-09's container-free scope. Graceful: a settings-resolution failure must
-    # never crash a run — the policy falls back to its default (off).
+    # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
+    # root (ADR-002) into dedicated context flags — the per-step US-9 policy
+    # (``enforce_isolation``) and the per-run C-EXEC-06 policy (``session_isolation`` +
+    # ``allowed_paths``). We deliberately do NOT populate context.config here: doing so
+    # would also expose [sandbox] execution_mode and incidentally activate B-EXEC-01
+    # container QA on this path, which is out of scope. Graceful: a settings-resolution
+    # failure must never crash a run — the policies fall back to their defaults (off).
     try:
-        context.enforce_isolation = load_settings(
-            db, project_path.name
-        ).sandbox.enforce_worktree_isolation
+        _settings = load_settings(db, project_path.name)
+        context.enforce_isolation = _settings.sandbox.enforce_worktree_isolation
+        apply_session_policy(context, _settings, logger)
     except Exception:  # settings resolution is best-effort here — never crash a run
         logger.debug(
             "Could not resolve settings for project '%s'; worktree isolation "
@@ -460,17 +462,19 @@ def resume(  # noqa: C901
     )
 
     from specweaver.core.config.settings_loader import load_settings
+    from specweaver.core.flow.engine.runner_utils import apply_session_policy
 
-    # INT-US-09: resolve ONLY the US-9 worktree-isolation policy at the composition
-    # root (ADR-002) into a dedicated context flag. We deliberately do NOT populate
-    # context.config here: doing so would also expose [sandbox] execution_mode and
-    # incidentally activate B-EXEC-01 container QA on this path, which is out of
-    # INT-US-09's container-free scope. Graceful: a settings-resolution failure must
-    # never crash a run — the policy falls back to its default (off).
+    # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
+    # root (ADR-002) into dedicated context flags — the per-step US-9 policy
+    # (``enforce_isolation``) and the per-run C-EXEC-06 policy (``session_isolation`` +
+    # ``allowed_paths``). We deliberately do NOT populate context.config here: doing so
+    # would also expose [sandbox] execution_mode and incidentally activate B-EXEC-01
+    # container QA on this path, which is out of scope. Graceful: a settings-resolution
+    # failure must never crash a run — the policies fall back to their defaults (off).
     try:
-        context.enforce_isolation = load_settings(
-            db, project_path.name
-        ).sandbox.enforce_worktree_isolation
+        _settings = load_settings(db, project_path.name)
+        context.enforce_isolation = _settings.sandbox.enforce_worktree_isolation
+        apply_session_policy(context, _settings, logger)
     except Exception:  # settings resolution is best-effort here — never crash a run
         logger.debug(
             "Could not resolve settings for project '%s'; worktree isolation "

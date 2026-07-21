@@ -678,3 +678,9 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md) (design doc not yet written)
 *   **Origin:** Found during C-EXEC-02 SF-2's implementation-plan Phase 4 (2026-07-14). SF-2 deliberately did NOT special-case load-time validation for `action: bash` steps' `params.script` (would have introduced the first action-specific exception to the engine's otherwise-uniform "params are opaque until a handler runs at execution time" behavior) — this ticket tracks doing it properly, for all step types uniformly, as its own design.
 
+### 🔴 TECH-013: API Composition Roots Do Not Resolve Worktree-Isolation Policy
+**Benefit:** *Makes REST-triggered pipeline runs honor the operator's `[sandbox]` worktree-isolation policy (per-step `enforce_worktree_isolation` AND per-run `enforce_session_isolation`), instead of silently running with isolation off regardless of settings — closing a blast-radius gap for any deployment that starts autonomous/untrusted runs via the API.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md) (STUB — design doc not yet written)
+*   **Origin:** Recorded during `C-EXEC-06 SF-03`'s implementation-plan Phase 4 (2026-07-20). SF-03 wired per-run isolation policy at the CLI composition roots only (matching where `enforce_isolation` already lives) and deferred the API run sites (`start_pipeline_run`/`resume_run`/`submit_gate_decision`, a pre-existing INT-US-09 gap) to this ticket. The shared `apply_session_policy` helper SF-03 introduces is meant to be reused verbatim at the API sites.
+

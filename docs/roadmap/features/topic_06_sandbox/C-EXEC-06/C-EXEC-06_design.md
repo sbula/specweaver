@@ -190,11 +190,12 @@ Linear DAG (SF-01 → SF-02 → SF-03); acyclic.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Session Worktree Lifecycle + Context Rebind | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Commit-Before-Reconcile + Authorized Strip-Merge | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Composition-Root Policy + Allow-List + Verifiable Proof | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Composition-Root Policy + Allow-List + Verifiable Proof | SF-01, SF-02 | ✅ | ✅ | ✅ | 🟡 | ⬜ |
 
 ## Session Handoff
 **Current status**: Design **APPROVED** (2026-07-19). **SF-01 + SF-02 committed to `main`** — the session
-lifecycle AND the authorized reconcile are live (generated code lands back via `allowed_paths`).
-**Next step**: SF-03 (composition-root policy + `allowed_paths` population + the multi-step generated-file
-e2e proof) — completes `C-EXEC-06`, then `INT-US-09-SF05` → `INT-US-03 SF-03` → US-3 closes.
+lifecycle AND the authorized reconcile are live. **SF-03 impl plan APPROVED (2026-07-20)** — ready for dev
+(single CB-1). API composition-root wiring deferred to **TECH-013** (minted 2026-07-20).
+**Next step**: `/specweaver-dev` for SF-03 (settings knob + composition-root policy/allow-list population +
+multi-step e2e proof) — completes `C-EXEC-06`, then `INT-US-09-SF05` → `INT-US-03 SF-03` → US-3 closes.
 **If resuming mid-feature**: Read the Progress Tracker; resume at the first ⬜.

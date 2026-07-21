@@ -194,6 +194,35 @@ untrusted *execution* — not just file writes — is bounded to the worktree:
 - **Fail-closed**: when isolation is engaged but `git worktree add` fails (e.g. the project is not a
   git repository), the run raises an actionable error surfacing GitAtom's real failure message.
 
+### C-EXEC-06: Per-Run (Session) Worktree Isolation
+
+INT-US-09's Bouncer above is **per-step** (create → reconcile → teardown around *each* isolated
+step). That model is non-functional for a **multi-step untrusted span** (e.g. `sw implement`'s
+generate → lint-fix → run-tests loop): the reconcile never commits the generated file, and step 2
+collides on the branch name (`TECH-012`). `C-EXEC-06` adds a **per-run (session) mode** — the *whole*
+run executes in **one** ephemeral worktree with a **single** end-of-run authorized reconcile.
+
+- **One worktree per run**: `execute_run` (`core/flow/engine/runner_utils.py`) wraps the loop. When
+  `RunContext.session_isolation` is set it creates ONE worktree (`.worktrees/session-<run_id>`, branch
+  `sf-session-<run_id>`), rebinds the session workspace root (`project_path` + `execution_root`, with
+  `output_dir=None`) to it, runs **all** steps there (generated code persists across steps), and tears
+  it down once — worktree **and** branch — in a guaranteed `finally`. Per-step isolation is suppressed
+  inside the span (`enforce_isolation=False`), so per-run wins when both policies are on.
+- **Authorized reconcile (DAL-C gate)**: only on `RunStatus.COMPLETED`, `worktree_commit` snapshots the
+  worktree onto the session branch, then a **single** `strip_merge` writes back to the real repo **only**
+  paths in `RunContext.allowed_paths` (plus the `README.md`/`docs/` hard-block, which wins even over an
+  allow-listed path). Any commit/merge failure is **surfaced** (never swallowed); a dirty real tree
+  fails loud + `git merge --abort`s. A failed/parked run does **not** reconcile.
+- **`allowed_paths` (the allow-list)**: populated at the composition root by `apply_session_policy`
+  (`runner_utils.py`) from the pipeline's generation targets — `src/<stem>.py` + `tests/test_<stem>.py`
+  where `<stem> = spec_path.stem.replace("_spec","")` (byte-matched to `generation.py`) — or from the
+  `[sandbox] session_allowed_paths` override (non-empty ⇒ verbatim). **Empty ⇒ derive.**
+- **Enforcement policy**: set `[sandbox] enforce_session_isolation = true` in `specweaver.toml`.
+  Default off ⇒ byte-identical behavior. **NFR-2 guard**: when the per-run policy is off,
+  `allowed_paths` is left empty so the per-step (INT-US-09) `strip_merge` above is unaffected.
+- **v1 scope**: non-parking spans — a HITL park inside a session errors clearly (the ephemeral
+  worktree cannot survive a resume). API composition roots don't yet resolve the policy (`TECH-013`).
+
 ---
 
 ## 8. Topological JOIN Barriers (Synchronized Flow)

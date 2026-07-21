@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 
@@ -122,10 +122,20 @@ class SandboxSettings(BaseModel):
       isolation becomes the default for pipeline steps so untrusted execution
       (``action: bash``, ``run_tests``) runs bounded to an ephemeral git
       worktree. Container-free; orthogonal to ``execution_mode``.
+    - ``enforce_session_isolation`` (C-EXEC-06): when ``True``, the WHOLE run
+      executes in ONE ephemeral worktree (per-run mode) with a single
+      end-of-run authorized reconcile, instead of the per-step create/reconcile
+      of ``enforce_worktree_isolation``. When both are on, per-run wins (the
+      per-step gate is suppressed inside the session). Container-free.
+    - ``session_allowed_paths`` (C-EXEC-06): the reconcile's write-back allow
+      list (repo-relative). **Empty ⇒ derive** from the pipeline's generation
+      targets at the composition root; **non-empty ⇒ used verbatim**.
     """
 
     execution_mode: Literal["host", "container"] = "host"
     enforce_worktree_isolation: bool = False
+    enforce_session_isolation: bool = False
+    session_allowed_paths: list[str] = Field(default_factory=list)
 
 
 class SpecWeaverSettings(BaseModel):

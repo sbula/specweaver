@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
     from specweaver.core.flow.engine.state import PipelineRun, StepResult
     from specweaver.core.flow.handlers.base import RunContext
@@ -25,6 +27,59 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     if step_val is not None:
         return bool(step_val)
     return bool(getattr(context, "enforce_isolation", False))
+
+
+def _derive_allowed_paths(spec_path: Path) -> list[str]:
+    """C-EXEC-06 SF-03 (FR-5, AD-2): the reconcile allow-list from the spec stem.
+
+    Mirrors the pipeline's generation targets so the single end-of-run strip-merge
+    authorizes exactly the files the run actually generates. Inside a session,
+    ``execute_run`` nulls ``output_dir``, so the generation handlers fall back to their
+    defaults (``src/<stem>.py`` / ``tests/test_<stem>.py``) — hence the ``src/``/``tests/``
+    prefixes here, not the composition-root ``output_dir``.
+
+    The stem transform MUST stay byte-identical to the generation handlers
+    (``generation.py``: ``spec_path.stem.replace("_spec", "")`` — note ``.replace``, NOT
+    ``.removesuffix``: it removes every ``_spec`` substring). If it drifts, the derived
+    allow-list stops matching the generated path and the real file gets stripped.
+
+    Paths are repo-relative with forward slashes (git ``--name-only`` form on every
+    platform, including Windows) — never ``os.sep``.
+    """
+    stem = spec_path.stem.replace("_spec", "")
+    return [f"src/{stem}.py", f"tests/test_{stem}.py"]
+
+
+def apply_session_policy(context: RunContext, settings: Any, logger: logging.Logger) -> None:
+    """C-EXEC-06 SF-03 (FR-5, FR-7): freeze per-run isolation policy onto the context.
+
+    Called at the composition root (ADR-002). Reads the opt-in ``[sandbox]`` knobs and,
+    **only when per-run isolation is on**, populates ``allowed_paths`` (the configured
+    override, else the derived generation targets).
+
+    NFR-2 guard: when the policy is OFF, ``allowed_paths`` is left EMPTY — the per-step
+    INT-US-09 path (``execute_in_sandbox``) also reads ``allowed_paths``, so populating it
+    here would silently change per-step ``strip_merge`` behavior.
+
+    C2 (no half-apply): the allow-list is computed BEFORE either field is mutated, so a
+    derivation failure leaves the context fully default (session off) rather than the
+    dangerous "session on, empty allow-list" state that would drop all generated code.
+    Best-effort: never raises (the composition root also wraps this call defensively).
+    """
+    try:
+        sandbox = getattr(settings, "sandbox", None)
+        if not bool(getattr(sandbox, "enforce_session_isolation", False)):
+            context.session_isolation = False
+            return
+        override = list(getattr(sandbox, "session_allowed_paths", None) or [])
+        allowed = override or _derive_allowed_paths(context.spec_path)
+        context.session_isolation = True
+        context.allowed_paths = allowed
+    except Exception:  # best-effort — a policy-resolution failure must never crash a run
+        logger.debug(
+            "Could not apply per-run session-isolation policy; leaving it off.",
+            exc_info=True,
+        )
 
 
 async def execute_run(runner: Any, run: Any, logger: logging.Logger) -> PipelineRun:
