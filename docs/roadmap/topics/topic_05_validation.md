@@ -14,7 +14,7 @@ This document tracks all capabilities related to static analysis, linting, rules
 
 ## DAL-D: Internal Tooling
 * **`D-VAL-01` ✅: QA Runner Tool** (Legacy: Step 12)<br>
-  > QA Runner Tool & Lint-Fix Reflection Loop
+  > QA Runner Tool & Lint-Fix Reflection Loop _(2026-07-21: remains ✅ — under `C-FLOW-11` the reflection loop is the `oneshot`-mode mechanism only; inside agentic work units the agent fixes lint natively and the loop is superseded (the lint **gate** remains in both modes). Change tracked by `C-FLOW-11`, not a reopen.)_
 * **`D-VAL-02` ✅: Custom Rule Paths** (Legacy: 3.4)<br>
   > _(deferred from Step 8b)_ | Validation sub-pipeline: `ValidationPipeline` / `ValidationStep` models, YAML-defined pipelines with inheritance (extends/override/remove/add), circular-extends guard, `sw list-rules`, `--pipeline` override, custom D-prefix rule loader, `RuleAtom` adapter, profile-specific pipelines, project-local pipeline overrides, `apply_settings_to_pipeline()`. **Complete**: 10 components, 2181 tests. See [implementation plan](features/topic_05_validation/D-VAL-02/D-VAL-02_implementation_plan.md).
 * **`D-VAL-03` ✅: Polyglot QARunner** (Legacy: 3.19)<br>
@@ -42,7 +42,7 @@ This document tracks all capabilities related to static analysis, linting, rules
 * **`B-VAL-02` ✅: Spec Rot Interceptor** (Legacy: 3.23)<br>
   > _(new)_ | The "2nd-Day Problem" solver. Blocks builds/commits if the implementation AST diverges from the `Spec.md` markdown, forcing developers to reconcile documentation with hot-fixes. **Complete:** SF-01 and SF-02 integrated into Flow engine and CLI. Tests passing.
 * **`B-VAL-03` 🔜: Semantic Completeness Review** (Legacy: 3.42)<br>
-  > _(new)_ | An LLM-backed Code Validation Rule (`C10_test_completeness.py`) that analyzes the agent's generated test suite against the target spec to assert whether all unhappy paths, error bounds, and expected outcomes are semantically verified. Emits ERRORs for missing branch coverage to ensure thorough completeness.
+  > _(new)_ | An LLM-backed Code Validation Rule (`C10_test_completeness.py`) that analyzes the agent's generated test suite against the target spec to assert whether all unhappy paths, error bounds, and expected outcomes are semantically verified. Emits ERRORs for missing branch coverage to ensure thorough completeness. _(2026-07-21: design **rubric-first** on the `C-VAL-05` substrate — the C10 rule class is a thin engine shim; the completeness criteria live in a versioned, DAL-gated rubric file, not in Python.)_
 * **`B-VAL-04` 🔜: SWE-Bench QA Gates** (Legacy: 3.47)<br>
   > _(new)_ | Built-in command to run SpecWeaver's internal pipelines against a deterministic suite of synthetic SWE-bench bugs to mathematically prove that platform extensions haven't degraded the internal token costs or success rate.
 * **`B-VAL-05` 🔜: DAL Architecture Gate**<br>

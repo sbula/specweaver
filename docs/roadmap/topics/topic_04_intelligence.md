@@ -12,13 +12,13 @@ This document tracks all capabilities related to LLM integration, specification 
 
 ## DAL-D: Internal Tooling
 * **`D-INTL-01` ✅: Implementation Generator** (Legacy: Step 5)<br>
-  > _(new)_ | The full loop works. Spec -> code -> tests -> validation -> review.
+  > _(new)_ | The full loop works. Spec -> code -> tests -> validation -> review. _(2026-07-21: remains ✅ — under `C-FLOW-11` it becomes the `oneshot` (deterministic) position of the execution-mode dial; no reopen needed.)_
 * **`D-INTL-02` ✅: Feature Decomposition** (Legacy: 3.1)<br>
   > `lifecycle_layers.md` | `SpecKind` enum (feature/component), kind-aware rule presets, `DecomposeHandler`, confidence-based review scoring, `feature_decomposition.yaml` pipeline. **Complete**: 8 components, 1886 tests. See [implementation plan](features/topic_04_intelligence/D-INTL-02/D-INTL-02_implementation_plan.md).
 * **`D-INTL-03` ✅: Explicit Plan Phase** (Legacy: 3.6)<br>
   > _(new)_ | New `PLAN+SPEC` handler between validate and implement. Captures architecture decisions, tech stack choices, constraint reasoning in a structured Plan artifact before code generation. Includes [Google Stitch](https://stitch.withgoogle.com/) via its SDK to auto-generate interactive UI mockups from the spec's Contract section.
 * **`D-INTL-04` 🔜: Design Questionnaire** (Legacy: 3.52)<br>
-  > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Eliminates "Blank Canvas" LLM hallucinations during greenfield bootstrap. Injects an interactive CLI wizard (persistence, authentication, archetype choices) bounding the LLM's solution space securely into a localized `context.yaml` before `sw plan` or `sw draft` engages.
+  > [Arch Doc](../architecture/synthetic_commons_and_questionnaire_design.md) | Eliminates "Blank Canvas" LLM hallucinations during greenfield bootstrap. Injects an interactive CLI wizard (persistence, authentication, archetype choices) bounding the LLM's solution space securely into a localized `context.yaml` before `sw plan` or `sw draft` engages. _(2026-07-21 design direction: build as a **rhythm-harness + rubric content** (the grill-me pattern — one question at a time, facts self-served, decisions to the user, question content as `C-VAL-05`-style rubric), NOT hardcoded question trees.)_
 * **`D-INTL-05` ✅: Project Metadata Injection** (Legacy: 3.15)<br>
   > _(new)_ | Inject project name, archetype, language target, date, active config into system prompt; similar to Aider's `get_platform_info()`. **Complete**: 3587 tests.
 * **`D-INTL-06` ✅: Context Hydration & Handover Engine**
@@ -34,7 +34,9 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`C-INTL-04` 🔜: Conversation Summarization** (Legacy: 4.6)<br>
   > _(inspired by Aider)_ — Compress old multi-turn drafting/review messages when context fills up; keep recent turns + summary of history. _(Blueprint: [`aider/history.py`](https://github.com/Aider-AI/aider/blob/main/aider/history.py) `summarize_end()` — ORIGINS.md § Aider)_
 * **`C-INTL-05` ✅: Configurable Prompt Render Profiles**<br>
-  > _(new)_ | Replaces the hardcoded prompt block rendering sequence with a configurable, profile-based pipeline. This eliminates the maintenance bottleneck in `_prompt_render.py` when adding new context sources and formally implements the 2-Tier Handover standard natively in the PromptBuilder layer. See [Design](../features/topic_04_intelligence/C-INTL-05/C-INTL-05_design.md).
+  > _(new)_ | Replaces the hardcoded prompt block rendering sequence with a configurable, profile-based pipeline. This eliminates the maintenance bottleneck in `_prompt_render.py` when adding new context sources and formally implements the 2-Tier Handover standard natively in the PromptBuilder layer. See [Design](../features/topic_04_intelligence/C-INTL-05/C-INTL-05_design.md). _(2026-07-21: remains ✅ as delivered — its evolution under the "middle way" (profiles narrow to the deterministic **envelope**; content externalizes) is tracked as the NEW story `C-INTL-06`, not a reopen.)_
+* **`C-INTL-06` 🔜: Envelope-vs-Content Prompt Externalization**<br>
+  > [Description](../features/topic_04_intelligence/C-INTL-06/C-INTL-06_design.md) | _(new, 2026-07-21)_ | Narrow `PromptBuilder` to the deterministic **envelope** (structure, `TECH-007` escaping, metadata, profiles); externalize the **content** (constitution, standards, agent memory) to mounted files / pull-access that `C-FLOW-11` work units read directly — `oneshot` slots reference the same files (single source of truth, zero behavior change to shipped `C-INTL-05`). Redirects `TECH-006`'s factory-centralization destination. Part of the "middle way" trio with `C-FLOW-11` + `C-VAL-05`.
 
 ## DAL-B: High-Assurance
 * **`B-INTL-01` ✅: Archetype Rule Sets** (Legacy: 3.29)<br>
@@ -46,17 +48,17 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`B-INTL-04` 🔮: Dynamic AI Arbiter** (Legacy: 5.8)<br>
   > _(split from original 3.12)_ — Automatic model selection using Attributed Lifecycle Score (ALS). AI-powered fault attribution across multi-model, cross-lifecycle pipelines. **Science fiction today** — depends on persistent knowledge graph (5.1-5.5), labeled training data (5.5a), and solving the credit assignment problem. See [LLM routing & cost analysis](../../analysis/llm_routing_and_cost_analysis.md).
 * **`B-INTL-05` 🔜: Dynamic Tool Gating via Archetypes** (Legacy: 3.30a)<br>
-  > _(new)_ | Branch off from 3.30. Intercepts the `context.yaml` active archetype to mathematically remove or inject specific JSON Schema Tool Definitions (`list_symbols`) to the Agent at generation runtime, strictly enforcing framework-specific capabilities.
+  > _(new)_ | Branch off from 3.30. Intercepts the `context.yaml` active archetype to mathematically remove or inject specific JSON Schema Tool Definitions (`list_symbols`) to the Agent at generation runtime, strictly enforcing framework-specific capabilities. _(2026-07-21: design **jointly with `C-FLOW-11`'s role model** — this is the tool-allowlist half of "role = tools + mounted skills + DAL-scoped gates"; skill-mounting is the other half.)_
 * **`B-INTL-06` 🔜: Multi-Agent Isolation Patterns** (Legacy: 4.5)<br>
-  > _(new)_ | Agent isolation patterns (multi-agent review). Ensures that multiple agents reviewing the same architecture operate in secure, independent sandboxes to prevent contextual contamination or collective hallucinations.
+  > _(new)_ | Agent isolation patterns (multi-agent review). Ensures that multiple agents reviewing the same architecture operate in secure, independent sandboxes to prevent contextual contamination or collective hallucinations. _(2026-07-21: depends on `C-FLOW-11` (single-agent work units) + `C-EXEC-06` (session isolation) — multi-agent is N work units, not a separate execution substrate.)_
 * **`B-INTL-07` 🔜: Error Attribution Arbiter**<br>
   > _(new)_ | A specialized LLM reviewer that sits at the JOIN gate of the Scenario Testing Pipeline. It reads the test failure, the code, and the YAML scenario, and mathematically determines whether the code failed the scenario, or if the scenario was written incorrectly.
 * **`B-INTL-08` 🔮: Semantic Code Review**<br>
-  > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system.
+  > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system. _(2026-07-21: the LLM-judgment half should be designed **rubric-first** on the `C-VAL-05` substrate — graph-diff mechanics stay code, review criteria become rubric content.)_
 * **`B-INTL-09` 🟡: Agent Memory Bank**
-  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). **Complete:** SF-01 (Schema & DB Migration). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_
+  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). **Complete:** SF-01 (Schema & DB Migration). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_ _(2026-07-21: delivered slot-hydration path unchanged; the **pull-based** memory access for `C-FLOW-11` work units is tracked in the NEW story `C-INTL-06`.)_
 * **`B-INTL-10` 🔮: Declarative Prompt Optimization**
-  > _(new)_ | DSPy-style declarative routing and dynamic prompt generation. Persists profiles in the Config DB (SQLite). The PipelineRunner dynamically fetches and compiles the optimized prompt profile based on runtime execution routing, telemetry, and active models, enabling AI-driven A/B testing of prompt structures.
+  > _(new)_ | DSPy-style declarative routing and dynamic prompt generation. Persists profiles in the Config DB (SQLite). The PipelineRunner dynamically fetches and compiles the optimized prompt profile based on runtime execution routing, telemetry, and active models, enabling AI-driven A/B testing of prompt structures. _(2026-07-21: **may be superseded** — premised on owning slot-prompt assembly, the layer `C-INTL-06`/`C-FLOW-11` shrink. At design time either re-scope the optimization target to rubric/skill content (`C-VAL-05` artifacts) or retire.)_
 
 ## DAL-A: Mission-Critical
 * **`A-INTL-01` 🔜: Adversarial Spec Review** (Legacy: 3.50)<br>

@@ -37,6 +37,11 @@ Make execution mode a **DAL-driven dial**, mirroring the approved AD-8 pattern f
 ## Relationship
 - **Consumes**: `C-EXEC-06` (session isolation = the work-unit sandbox), `INT-US-03` (the implement loop is
   the pilot), DAL machinery (`DALLevel.rank`, `DALResolver`, AD-8 precedent).
+- **Supersedes in agentic mode (without reopening the ✅ stories)**: the `D-VAL-01` lint-fix reflection loop
+  (the agent fixes lint natively inside its work unit; the lint *gate* remains in both modes) and the
+  one-shot internals of `D-INTL-01` (which becomes the dial's `oneshot` position, unchanged).
+- **Context mounting**: work units read constitution/standards/rubrics as files and pull memory — the
+  externalization contract is `C-INTL-06`.
 - **Complements**: `C-VAL-05` (rubrics-as-content — softens validation *content* while this softens
   execution *mode*; together they are the "middle way").
 - **Future**: role = tool allowlist + mounted skill set + DAL-scoped gates ("assurance-graded skill

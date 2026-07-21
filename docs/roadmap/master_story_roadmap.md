@@ -185,10 +185,12 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **D-UI-05:** REST API - Enterprise Configuration
     *   🟢 **Configurable Prompt Render Profiles:**
         *   `✅` **INT-US-04-SF08:** Sub-Story Integration defined in [SF-08: Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
-        *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles
+        *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles — *(2026-07-21) remains ✅; its middle-way evolution (profiles narrow to the deterministic envelope) is the NEW story `C-INTL-06` below*
+    *   🔴 **Envelope-vs-Content Prompt Externalization (the "middle way" for context):**
+        *   `[ ]` **C-INTL-06:** [Envelope-vs-Content Prompt Externalization](features/topic_04_intelligence/C-INTL-06/C-INTL-06_design.md) (STUB — design doc not yet run) — `PromptBuilder` narrows to the deterministic envelope (structure, `TECH-007` escaping, metadata, profiles); constitution/standards/agent-memory content externalizes to mounted files / pull-access shared by `oneshot` slots and `C-FLOW-11` work units. Carries the evolution of the delivered `C-INTL-05`/`B-INTL-09` paths without reopening them; redirects `TECH-006`'s factory-centralization destination.
     *   🔴 **Declarative Dynamic Prompt Routing:**
         *   `[ ]` **INT-US-04-SF09:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-INTL-10:** Declarative Prompt Optimization (DSPy-style routing)
+        *   `[ ]` **B-INTL-10:** Declarative Prompt Optimization (DSPy-style routing) — *(2026-07-21) may be superseded: premised on owning slot-prompt assembly, the layer `C-INTL-06`/`C-FLOW-11` shrink; at design time re-scope the optimization target to rubric/skill content (`C-VAL-05`) or retire*
 
 ### 🟢 US-5: Polyglot Code Understanding
 *   **User Benefit:** SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.
@@ -261,7 +263,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   `[ ]` **INT-US-08:** Base Integration Contract defined in [US-08_integration.md](topics/topic_08_integration/US-08_integration.md)
     *   `[ ]` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-SENS-01:** Topology Graph
-    *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire
+    *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire — *(2026-07-21) design as rhythm-harness + rubric content (grill-me pattern), not hardcoded question trees*
 *   **Sub-Story Add-Ons:**
     *   🔴 **Socratic Context Gathering:**
         *   `[ ]` **INT-US-08-SF01:** Sub-Story Integration (Pending Design)
@@ -376,14 +378,14 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Mathematical Mutation Checks:**
         *   `[ ]` **INT-US-14-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-VAL-03:** Semantic Test Completeness
+        *   `[ ]` **B-VAL-03:** Semantic Test Completeness — *(2026-07-21) design rubric-first on the `C-VAL-05` substrate*
         *   `[ ]` **A-VAL-03:** Mutation testing
     *   🔴 **Architectural Sandboxing:**
         *   `[ ]` **INT-US-14-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-EXEC-03:** Blast radius / locality enforcement
     *   🔴 **Agent Independence Protocols:**
         *   `[ ]` **INT-US-14-SF03:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns
+        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — *(2026-07-21) depends on `C-FLOW-11` work units + `C-EXEC-06` session isolation (multi-agent = N work units)*
 
 ### 🟡 US-15: Enterprise Audit & Traceability
 **Benefit:** *I can hand a compliance auditor a ledger that proves exactly which LLM generated which line of code based on which business requirement.*
@@ -453,7 +455,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Secure Sandboxed Operations:**
         *   `[ ]` **INT-US-18-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire
+        *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire — *(2026-07-21) design as rhythm-harness + rubric content (grill-me pattern), not hardcoded question trees*
     *   🔴 **CI/CD Pipeline Integration:**
         *   `[ ]` **INT-US-18-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **C-FLOW-08:** Pluggable Webhook & CI Invocation
@@ -492,7 +494,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Test Intensity Gating:**
         *   `[ ]` **INT-US-20-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-VAL-03:** Semantic Test Completeness (Required for DAL-B)
+        *   `[ ]` **B-VAL-03:** Semantic Test Completeness (Required for DAL-B) — *(2026-07-21) design rubric-first on the `C-VAL-05` substrate*
         *   `[ ]` **A-VAL-03:** Mutation Testing Gates (Required for DAL-A)
     *   🔴 **Automated Degradation Prevention:**
         *   `[ ]` **INT-US-20-SF02:** Sub-Story Integration (Pending Design)
@@ -535,7 +537,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict Security Gating:**
         *   `[ ]` **INT-US-23-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-INTL-05:** Dynamic Tool Gating via Archetypes
+        *   `[ ]` **B-INTL-05:** Dynamic Tool Gating via Archetypes — *(2026-07-21) design jointly with `C-FLOW-11`'s role model: the tool-allowlist half of "role = tools + mounted skills + DAL-scoped gates"*
 
 ### 🟡 US-24: Behavioral Scenario Verification
 **Benefit:** *SpecWeaver runs parallel behavioral verification pipelines to prove the generated code actually solves the business scenario, not just syntax tests.*

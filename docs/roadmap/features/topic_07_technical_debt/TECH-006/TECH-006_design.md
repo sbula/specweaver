@@ -5,6 +5,14 @@
 - **Status**: APPROVED
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-006/TECH-006_design.md
 
+> [!IMPORTANT]
+> **Direction update (2026-07-21, middle-way review):** the core of this design (delete misplaced CLI-layer
+> helpers, call public Domain APIs, untangle the cross-interface spider-web) remains fully valid and
+> compatible. However, any follow-up that would centralize constitution/standards **content loading inside
+> the prompt factory** (the topic-doc "Highest-ROI" row) is **redirected**: under `C-INTL-06`
+> (Envelope-vs-Content) + `C-FLOW-11` (agentic work units read mounted files), the destination is **domain
+> loaders + canonical on-disk files** shared by both execution modes — not deeper factory centralization.
+
 ## Feature Overview
 
 Feature TECH-006 eliminates **5 misplaced private helper functions** (in 2 copies = 6 total) from the CLI interface layer. These functions contain domain logic, infrastructure wiring, or string-dispatched repository calls that have nothing to do with the CLI. Because they are in the wrong layer, the REST API and 10+ CLI modules import them cross-interface, creating a massive spider web of forbidden boundary violations — including the REST API depending on the CLI. The fix: delete all 6 function definitions and replace them with direct calls to existing public Domain APIs. Key constraints: full backward compatibility, zero new modules, `tach check` compliance.
