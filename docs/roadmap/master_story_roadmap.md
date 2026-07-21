@@ -185,7 +185,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **D-UI-05:** REST API - Enterprise Configuration
     *   🟢 **Configurable Prompt Render Profiles:**
         *   `✅` **INT-US-04-SF08:** Sub-Story Integration defined in [SF-08: Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
-        *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles — *(2026-07-21) remains ✅; its middle-way evolution (profiles narrow to the deterministic envelope) is the NEW story `C-INTL-06` below*
+        *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles
     *   🔴 **Envelope-vs-Content Prompt Externalization (the "middle way" for context):**
         *   `[ ]` **C-INTL-06:** [Envelope-vs-Content Prompt Externalization](features/topic_04_intelligence/C-INTL-06/C-INTL-06_design.md) (STUB — design doc not yet run) — `PromptBuilder` narrows to the deterministic envelope (structure, `TECH-007` escaping, metadata, profiles); constitution/standards/agent-memory content externalizes to mounted files / pull-access shared by `oneshot` slots and `C-FLOW-11` work units. Carries the evolution of the delivered `C-INTL-05`/`B-INTL-09` paths without reopening them; redirects `TECH-006`'s factory-centralization destination.
     *   🔴 **Declarative Dynamic Prompt Routing:**

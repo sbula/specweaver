@@ -12,7 +12,7 @@ This document tracks all capabilities related to LLM integration, specification 
 
 ## DAL-D: Internal Tooling
 * **`D-INTL-01` ✅: Implementation Generator** (Legacy: Step 5)<br>
-  > _(new)_ | The full loop works. Spec -> code -> tests -> validation -> review. _(2026-07-21: remains ✅ — under `C-FLOW-11` it becomes the `oneshot` (deterministic) position of the execution-mode dial; no reopen needed.)_
+  > _(new)_ | The full loop works. Spec -> code -> tests -> validation -> review.
 * **`D-INTL-02` ✅: Feature Decomposition** (Legacy: 3.1)<br>
   > `lifecycle_layers.md` | `SpecKind` enum (feature/component), kind-aware rule presets, `DecomposeHandler`, confidence-based review scoring, `feature_decomposition.yaml` pipeline. **Complete**: 8 components, 1886 tests. See [implementation plan](features/topic_04_intelligence/D-INTL-02/D-INTL-02_implementation_plan.md).
 * **`D-INTL-03` ✅: Explicit Plan Phase** (Legacy: 3.6)<br>
@@ -34,7 +34,7 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`C-INTL-04` 🔜: Conversation Summarization** (Legacy: 4.6)<br>
   > _(inspired by Aider)_ — Compress old multi-turn drafting/review messages when context fills up; keep recent turns + summary of history. _(Blueprint: [`aider/history.py`](https://github.com/Aider-AI/aider/blob/main/aider/history.py) `summarize_end()` — ORIGINS.md § Aider)_
 * **`C-INTL-05` ✅: Configurable Prompt Render Profiles**<br>
-  > _(new)_ | Replaces the hardcoded prompt block rendering sequence with a configurable, profile-based pipeline. This eliminates the maintenance bottleneck in `_prompt_render.py` when adding new context sources and formally implements the 2-Tier Handover standard natively in the PromptBuilder layer. See [Design](../features/topic_04_intelligence/C-INTL-05/C-INTL-05_design.md). _(2026-07-21: remains ✅ as delivered — its evolution under the "middle way" (profiles narrow to the deterministic **envelope**; content externalizes) is tracked as the NEW story `C-INTL-06`, not a reopen.)_
+  > _(new)_ | Replaces the hardcoded prompt block rendering sequence with a configurable, profile-based pipeline. This eliminates the maintenance bottleneck in `_prompt_render.py` when adding new context sources and formally implements the 2-Tier Handover standard natively in the PromptBuilder layer. See [Design](../features/topic_04_intelligence/C-INTL-05/C-INTL-05_design.md).
 * **`C-INTL-06` 🔜: Envelope-vs-Content Prompt Externalization**<br>
   > [Description](../features/topic_04_intelligence/C-INTL-06/C-INTL-06_design.md) | _(new, 2026-07-21)_ | Narrow `PromptBuilder` to the deterministic **envelope** (structure, `TECH-007` escaping, metadata, profiles); externalize the **content** (constitution, standards, agent memory) to mounted files / pull-access that `C-FLOW-11` work units read directly — `oneshot` slots reference the same files (single source of truth, zero behavior change to shipped `C-INTL-05`). Redirects `TECH-006`'s factory-centralization destination. Part of the "middle way" trio with `C-FLOW-11` + `C-VAL-05`.
 
@@ -56,7 +56,7 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`B-INTL-08` 🔮: Semantic Code Review**<br>
   > _(new)_ | Replaces text-based PR diffs with mathematical Graph Diffs. Explains exactly how a pull request alters dataflow chains across the system. _(2026-07-21: the LLM-judgment half should be designed **rubric-first** on the `C-VAL-05` substrate — graph-diff mechanics stay code, review criteria become rubric content.)_
 * **`B-INTL-09` 🟡: Agent Memory Bank**
-  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). **Complete:** SF-01 (Schema & DB Migration). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_ _(2026-07-21: delivered slot-hydration path unchanged; the **pull-based** memory access for `C-FLOW-11` work units is tracked in the NEW story `C-INTL-06`.)_
+  > _(new)_ | Persistent SQLite backend for the Agent Memory Bank (US-28). Defines Task, Epic, TaskDependency (DAG), StateTransition, and Defect entities with a resilient MemoryRepository (OCC, state machine, circuit breakers, zombie recovery, upstream DAG propagation). **Complete:** SF-01 (Schema & DB Migration). See [Design](../features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md). _(Absorbs former C-EXEC-05 and B-INTL-10.)_
 * **`B-INTL-10` 🔮: Declarative Prompt Optimization**
   > _(new)_ | DSPy-style declarative routing and dynamic prompt generation. Persists profiles in the Config DB (SQLite). The PipelineRunner dynamically fetches and compiles the optimized prompt profile based on runtime execution routing, telemetry, and active models, enabling AI-driven A/B testing of prompt structures. _(2026-07-21: **may be superseded** — premised on owning slot-prompt assembly, the layer `C-INTL-06`/`C-FLOW-11` shrink. At design time either re-scope the optimization target to rubric/skill content (`C-VAL-05` artifacts) or retire.)_
 

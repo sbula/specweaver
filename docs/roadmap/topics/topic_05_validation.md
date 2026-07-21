@@ -14,7 +14,7 @@ This document tracks all capabilities related to static analysis, linting, rules
 
 ## DAL-D: Internal Tooling
 * **`D-VAL-01` ✅: QA Runner Tool** (Legacy: Step 12)<br>
-  > QA Runner Tool & Lint-Fix Reflection Loop _(2026-07-21: remains ✅ — under `C-FLOW-11` the reflection loop is the `oneshot`-mode mechanism only; inside agentic work units the agent fixes lint natively and the loop is superseded (the lint **gate** remains in both modes). Change tracked by `C-FLOW-11`, not a reopen.)_
+  > QA Runner Tool & Lint-Fix Reflection Loop
 * **`D-VAL-02` ✅: Custom Rule Paths** (Legacy: 3.4)<br>
   > _(deferred from Step 8b)_ | Validation sub-pipeline: `ValidationPipeline` / `ValidationStep` models, YAML-defined pipelines with inheritance (extends/override/remove/add), circular-extends guard, `sw list-rules`, `--pipeline` override, custom D-prefix rule loader, `RuleAtom` adapter, profile-specific pipelines, project-local pipeline overrides, `apply_settings_to_pipeline()`. **Complete**: 10 components, 2181 tests. See [implementation plan](features/topic_05_validation/D-VAL-02/D-VAL-02_implementation_plan.md).
 * **`D-VAL-03` ✅: Polyglot QARunner** (Legacy: 3.19)<br>
