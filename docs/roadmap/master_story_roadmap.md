@@ -17,42 +17,48 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-> **Refreshed 2026-07-19.** `INT-US-03` **SF-01** (generation→QA loop) and **SF-02** (lint-fix reflection
-> loop) are now **✅ committed** (host mode). But SF-03's Phase-0 spike discovered that US-3's "run
-> generated code worktree-bounded" **cannot** be delivered on the current isolation machinery: `INT-US-09`
-> Core is broken for **multi-step** isolated pipelines (`TECH-012`). So closing US-3 now **requires** a new
-> capability first — **`INT-US-09-SF05`** (per-run worktree). `INT-US-03 SF-03` is **blocked** on it.
-> Re-ranked accordingly.
+> **Refreshed 2026-07-21.** The 2026-07-19 critical path is **fully delivered**: `C-EXEC-06` (per-run
+> worktree isolation) → `INT-US-09-SF05` → `INT-US-03 SF-03` (DAL-driven implement isolation) — **US-3 is
+> 🟢 closed** and `TECH-012` resolved. The former Candidate 5 (`C-INTL-05` + `INT-US-04-SF08` prompt
+> profiles) is also ✅ complete. New since last refresh: the **"middle way" direction** was minted
+> (`C-VAL-05` rubrics-as-content, `C-FLOW-11` graduated-autonomy dial, `C-INTL-06` envelope-vs-content),
+> and US-3's closure unblocks the autonomous-implementation epics (US-17/19/22/24 — dep boxes synced;
+> US-24 is now integration-only, US-17 still needs `B-VAL-04`). Re-ranked accordingly.
 
-1. **Candidate 1: `C-EXEC-06` + `INT-US-09-SF05` — Per-Run (Session) Worktree Isolation** ← CRITICAL PATH to close US-3
-   * **Features:** the **capability** `C-EXEC-06` (DAL-C; per-run worktree mode; `allowed_paths` + commit-before-reconcile;
-     resolves `TECH-012`) **built first**, then the **integration** `INT-US-09-SF05` (wire it into the US-9 policy +
-     multi-step generated-file e2e proof).
-   * **Pros:** The ONE blocker between us and closing the US-3 flagship epic (SF-01/SF-02 already shipped
-     value). Also fixes a real latent defect: any multi-step isolated pipeline crashes today. Unblocks the
-     epics built on autonomous implementation (US-17 SWE-Bench, US-19 Fleet, US-22 Contracts, US-24 Scenarios).
-   * **Cons:** A genuine **DAL-C capability build** (not integration-only) — `C-EXEC-06` needs design + plan + dev +
-     an architectural sign-off (new per-run isolation mode). Both land before `INT-US-03 SF-03` can proceed.
-2. **Candidate 2: Close US-2 — Interactive Drafter (`INT-US-02`)** ← HIGH ROI, truly integration-only NOW
+1. **Candidate 1: Close US-2 — Interactive Drafter (`INT-US-02`)** ← HIGH ROI, truly integration-only
    * **Features:** `INT-US-02` Base Integration Contract. All deps `✅`: `E-UI-01`, `E-SENS-01`, `E-INTL-01/02/03`, `D-INTL-05`.
-   * **Pros:** Genuinely integration-only (no capability build, no isolation dependency) — closes the
-     Interactive Drafter and unblocks US-21. Good candidate to run **while `INT-US-09-SF05` is being designed**
-     if you want a parallel epic-closer with no blocker.
+   * **Pros:** Genuinely integration-only (no capability build) — closes the Interactive Drafter epic and
+     unblocks US-21. The longest-waiting no-blocker epic-closer in the queue.
    * **Cons:** `INT-US-02` contract not yet designed.
-   * **Note:** `INT-US-03 SF-03` (finish US-3) is intentionally NOT a selectable candidate — it is blocked on
-     Candidate 1 (`INT-US-09-SF05`).
-3. **Candidate 3: AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE
+2. **Candidate 2: Close US-24 — Behavioral Scenario Verification (`INT-US-24`)** ← NEWLY UNBLOCKED epic-closer
+   * **Features:** `INT-US-24` Base Integration Contract. Capability deps all built: `US-3 Core` ✅ (just closed),
+     `B-FLOW-01` Scenario Testing Pipeline ✅, `D-VAL-01` QA Runner ✅.
+   * **Pros:** Integration-only; proves generated code solves the **business scenario**, not just syntax tests —
+     the natural next proof on top of the freshly-shipped autonomous + sandboxed implement loop.
+   * **Cons:** `INT-US-24` contract not yet designed; scenario flows will stress token budgets (see Candidate 5).
+3. **Candidate 3: Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
+   * **Features:** `C-VAL-05` (battery engine stays code; semantic judgment content → versioned, DAL-gated rubric files).
+   * **Pros:** Low-risk (no execution-path change); establishes the "engine hard / content soft" precedent the
+     approved middle-way direction rests on; substrate for `B-VAL-03`, `E-VAL-04`, `B-INTL-08`. Small, well-bounded.
+   * **Cons:** No epic unlock. (`C-FLOW-11` + `C-INTL-06`, the larger middle-way builds, deliberately queue AFTER
+     this proves the pattern — and `C-FLOW-11` needs its runtime-binding decision at intake.)
+4. **Candidate 4: AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE
    * **Features:** `E-VAL-03`.
-   * **Pros:** Protects the validation/LLM pipeline from injected instructions embedded in source — increasingly critical now that US-3/US-9 execute more autonomous, code-context-driven flows. (Security Mandate can bump this above 1–2 if threat mitigation outranks feature completion.)
+   * **Pros:** Protects the validation/LLM pipeline from injected instructions embedded in source — urgency
+     INCREASED: since `INT-US-03 SF-03`, autonomous code-context-driven flows run by default (DAL-escalated),
+     widening the injection surface. (Security Mandate can bump this above 1–3 if threat mitigation outranks
+     feature completion.)
    * **Cons:** Hardening; no epic unlock.
-4. **Candidate 4: Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
+5. **Candidate 5: Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
    * **Features:** `B-FLOW-05` + `INT-US-04-SF02`.
-   * **Pros:** Prevents runaway LLM cost (EDoS) natively in the Flow Engine — timely as autonomous multi-step flows scale token usage.
+   * **Pros:** Prevents runaway LLM cost (EDoS) natively in the Flow Engine — elevated relevance: the autonomous
+     US-3 loop is live, and the planned `C-FLOW-11` agentic work units carry a budget-cap NFR that needs exactly
+     this substrate.
    * **Cons:** Hardening; no epic unlock.
-5. **Candidate 5: Configurable Prompt Render Profiles (`C-INTL-05` + `INT-US-04-SF08`)** ← ORCHESTRATION QUALITY
-   * **Features:** `C-INTL-05` + `INT-US-04-SF08`.
-   * **Pros:** Dynamic, context-aware prompt templating lifts output quality across all LLM-driven stories (US-2, US-3). Ready to build.
-   * **Cons:** Sub-story enhancement; no epic unlock.
+
+> **Not queue-eligible this refresh:** `US-17` (blocked on unbuilt `B-VAL-04` — Hard Blocker Rule), `US-19`/`US-22`
+> (contracts + dep review pending; `US-22`'s `C-VAL-04` dep box looks stale — capability is ✅ in the matrix),
+> `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013` (too small; fold into the next API-touching story).
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -373,7 +379,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-14:** Base Integration Contract defined in [US-14_integration.md](topics/topic_08_integration/US-14_integration.md)
     *   `[ ]` **US-2 Core** *(provides Spec Review Engine)*
-    *   `[ ]` **US-3 Core** *(provides QA Runner)*
+    *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `[ ]` **A-INTL-01:** Pre-Generation Adversarial Spec Review
 *   **Sub-Story Add-Ons:**
     *   🔴 **Mathematical Mutation Checks:**
@@ -433,7 +439,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *SpecWeaver proves it hasn't degraded by autonomously solving standardized SWE-Bench tickets before every release.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-17:** Base Integration Contract defined in [US-17_integration.md](topics/topic_08_integration/US-17_integration.md)
-    *   `[ ]` **US-3 Core** *(provides QA Runner)*
+    *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **US-4 Core** *(provides CLI & Flow Engine)*
     *   `[ ]` **B-VAL-04:** Agent Platform Benchmarking (`sw eval`)
 *   **Sub-Story Add-Ons:**
@@ -543,7 +549,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *SpecWeaver runs parallel behavioral verification pipelines to prove the generated code actually solves the business scenario, not just syntax tests.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-24:** Base Integration Contract defined in [US-24_integration.md](topics/topic_08_integration/US-24_integration.md)
-    *   `[ ]` **US-3 Core** *(provides QA Runner)*
+    *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **B-FLOW-01:** Scenario Testing Pipeline
     *   `✅` **D-VAL-01:** QA Runner Tool
 *   **Sub-Story Add-Ons:**
