@@ -7,8 +7,8 @@ This document tracks all capabilities related to the AST, knowledge graphs, and 
   > _(new)_ | Agents and Engine have secure, role-gated filesystem access. Agents see only whitelisted boundaries.
 * **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)<br>
   > `_(new)_` | LLM function-calling via provider-agnostic abstraction. 6 tools (4 filesystem + 2 web) in `sandbox/research/`. `WorkspaceBoundary` enforcement, `ToolExecutor`, `generate_with_tools()` on adapter. Wired into Reviewer + Planner. **Complete**: boundaries, executor, tool definitions, adapter integration, 3353 tests. See [implementation plan](features/topic_02_sensors/E-SENS-02/E-SENS-02_implementation_plan.md).
-* **`E-SENS-03` 🔜: Context Ledgers & Workspace Boundaries**
-  > _(new)_ | Security boundaries restricting agent filesystem visibility exclusively to the scope of their assigned task.
+* **`E-SENS-03` ✅: Context Ledgers & Workspace Boundaries**
+  > _(new)_ | Security boundaries restricting agent filesystem visibility exclusively to the scope of their assigned task. **Complete** — delivered in the legacy 3.10/3.11 era, before capability-ID normalization (registry flip missed until the 2026-07-21 sync sweep): `sandbox/security.py` (`FolderGrant` + `AccessMode` READ/WRITE/FULL hierarchy), task-scoped grant construction in `sandbox/dispatcher.py`, proven by `tests/unit/sandbox/test_security.py` + `test_security_readonly.py`; consumed by the 🟢 US-5 contract.
 
 ## DAL-D: Internal Tooling
 * **`D-SENS-01` ✅: Topology Graph** (Legacy: Step 7)<br>
