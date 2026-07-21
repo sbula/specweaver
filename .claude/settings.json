@@ -72,6 +72,19 @@
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/guard_finished_stories.py",
+            "timeout": 15,
+            "statusMessage": "Guarding finished roadmap stories..."
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
