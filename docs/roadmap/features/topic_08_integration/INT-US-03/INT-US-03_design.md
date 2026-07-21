@@ -236,19 +236,15 @@ Linear DAG (SF-01 → SF-02 → SF-03); no parallelism (all three edit the same 
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Generation → QA Test Loop | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Lint-Fix Reflection Loop Integration | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Zero-Trust Isolation + Verifiable Proof | SF-01, SF-02, **INT-US-09-SF05** ✅ | ✅ | ✅ | ✅ | 🟡 | ⬜ |
+| SF-03 | Zero-Trust Isolation + Verifiable Proof | SF-01, SF-02, **INT-US-09-SF05** ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Design **APPROVED**. **SF-01 committed to `main` (`cc1cec22`, 2026-07-18)** — the
-generation→QA loop is live (host mode); full suite green (5271 passed).
-**SF-01 + SF-02 committed to `main`** — the autonomous generation→QA→lint loop is live (host mode).
-**SF-03 is UNBLOCKED (2026-07-21):** its dependency — per-run (session) worktree isolation — is delivered
-(**`C-EXEC-06`** SF-01/02/03 committed; **`INT-US-09-SF05`** ✅; `TECH-012` resolved). AD-7's per-step crux is
-**superseded** by session mode (generated code persists in one worktree; single end-of-run reconcile). SF-03
-re-scopes to *consume* `C-EXEC-06`: thread the per-run policy into the implement `RunContext`
-(`apply_session_policy`), apply the AD-5 default-on decision, and ship the FR-8 proof.
-**Next step**: finalize the re-scoped `INT-US-03_sf03_implementation_plan.md`, then `/specweaver-dev` — closes
-the US-3 base contract.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
-from there using the appropriate skill.
+**Current status**: **INT-US-03 COMPLETE — SF-01 + SF-02 + SF-03 all committed to `main`** (SF-03:
+`64d44a71`, 2026-07-21). The autonomous `sw implement` loop generates code + tests, runs QA + lint-fix, and —
+via DAL-driven auto-escalation (AD-8) — executes untrusted high-assurance (DAL_A/B) code worktree-bounded,
+reconciled once through the authorized gate; small/low-DAL projects stay on friction-free host mode.
+**The US-3 flagship base contract is closed.**
+**Next step**: US-3 done. Downstream epics on autonomous implementation (US-17/19/22/24) are unblocked.
+Optional follow-ups: `INT-US-03-SF01/SF02` add-ons (multi-language QA, UI drift), still Pending Design.
+**If resuming mid-feature**: Read the Progress Tracker above — all rows Committed ✅.

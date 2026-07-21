@@ -127,10 +127,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **INT-US-02-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-UI-04:** REST API - Interactive Authoring
 
-### 🟡 US-3: Autonomous Implementation
+### 🟢 US-3: Autonomous Implementation
 *   **User Benefit:** I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.
 *   **Core Required (MVS):**
-    *   `[ ]` **INT-US-03:** Base Integration Contract defined in [US-03_integration.md](topics/topic_08_integration/US-03_integration.md) — 🟡 [design APPROVED](features/topic_08_integration/INT-US-03/INT-US-03_design.md); **SF-01** (generation→QA loop) + **SF-02** (lint-fix reflection loop) implemented (unit+integration green); SF-03 (zero-trust isolation + e2e proof) pending. Box stays `[ ]` until SF-03 delivers the e2e verifiable proof.
+    *   `✅` **INT-US-03:** Base Integration Contract defined in [US-03_integration.md](topics/topic_08_integration/US-03_integration.md) — ✅ [design APPROVED](features/topic_08_integration/INT-US-03/INT-US-03_design.md); **SF-01** (generation→QA loop) + **SF-02** (lint-fix reflection loop) + **SF-03** (zero-trust isolation + e2e proof) all committed. SF-03 consumes `C-EXEC-06` per-run isolation with DAL-driven auto-escalation (high-assurance code auto-sandboxes; small projects stay on host). **Verifiable Proof:** `tests/e2e/sandbox/test_int_us_03_isolation_e2e.py` + `tests/integration/interfaces/cli/test_cli_implement_isolation.py`.
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **US-9 Core** *(provides Zero-Trust Sandbox)*
     *   `✅` **US-28 Core** *(provides Agent State Ledger)*

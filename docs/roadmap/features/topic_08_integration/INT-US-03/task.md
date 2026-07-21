@@ -46,7 +46,7 @@
     [Hostile/NFR-4] stub also writes `secret.py` → stripped/absent; [Degradation] git/bash absent → skip; non-git
     under escalation → degrade to host (Q3).
 
-- [ ] **T6 — Full suite + pre-commit gate (CB-1)**
+- [x] **T6 — Full suite + pre-commit gate (CB-1)**
   - Full unit/integration/e2e; fix any regression project-wide. Run pre-commit skill. HITL commit stop (direct to master).
 
 ## Adversarial Test Matrix (per task — 4 buckets)
@@ -75,4 +75,4 @@
   - Phase 6 (docs): [x] pipeline_engine_guide §7 (DAL-escalation policy), impl-plan as-built, design tracker Dev ✅.
   - Phase 7 (walkthrough): [x] INT-US-03_sf03_walkthrough.md.
   - Phase 7.5 (Red/Blue on code): [x] no critical findings; documented dirty-tree interaction (recommend leave-as-is: fail-loud protects uncommitted edits to the target).
-  - Phase 8 (commit boundary): ⏸ HITL — awaiting user commit (direct to master).
+  - Phase 8 (commit boundary): ✅ committed `64d44a71` (direct to master, 2026-07-21). Post-commit: US-3 → 🟢; INT-US-03 SF-03 Pre-Commit ✅ + Committed ✅.
