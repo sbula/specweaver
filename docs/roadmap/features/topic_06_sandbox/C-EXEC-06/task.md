@@ -55,7 +55,7 @@
     → files at the real root + the probe FAILS (discriminator: not a 0-collected false pass); [Degradation]
     non-git `project_path` + session on → run fails loud (FR-6), composition doesn't mask it.
 
-- [ ] **T6 — Full suite + pre-commit gate (CB-1)**
+- [x] **T6 — Full suite + pre-commit gate (CB-1)**
   - Full unit/integration/e2e; fix any regression project-wide. Run pre-commit skill. Update
     `pipeline_engine_guide.md §7` (per-run model + allowed_paths). HITL commit stop (direct to master).
 
@@ -81,4 +81,6 @@
   - Phase 6 (docs): [x] pipeline_engine_guide §7 (per-run model), impl-plan as-built, design tracker Dev ✅.
   - Phase 7 (walkthrough): [x] C-EXEC-06_sf03_walkthrough.md.
   - Phase 7.5 (Red/Blue on code): [x] no critical findings (traversal-safe, NFR-2 preserved, C2/C3 fail-closed).
-  - Phase 8 (commit boundary): ⏸ HITL — awaiting user commit (direct to master).
+  - Phase 8 (commit boundary): ✅ committed `bd5cedd2` (direct to master, 2026-07-21). Post-commit: C-EXEC-06 → ✅ in capability_matrix + master_story_roadmap (Verifiable Proof recorded); design tracker Pre-Commit ✅ + Committed ✅.
+
+## SF-03 COMPLETE — C-EXEC-06 capability fully delivered (SF-01/02/03 all committed).
