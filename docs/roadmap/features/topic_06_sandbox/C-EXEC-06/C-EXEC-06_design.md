@@ -193,7 +193,7 @@ Linear DAG (SF-01 → SF-02 → SF-03); acyclic.
 | SF-03 | Composition-Root Policy + Allow-List + Verifiable Proof | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
-**Current status**: **✅ C-EXEC-06 COMPLETE — SF-01 + SF-02 + SF-03 all committed to `main`** (SF-03:
+**Current status**: **C-EXEC-06 COMPLETE — SF-01 + SF-02 + SF-03 all committed to `main`** (SF-03:
 `bd5cedd2`, 2026-07-21). Per-run session isolation is fully live: composition-root opt-in policy
 (`[sandbox] enforce_session_isolation`), `allowed_paths` population, one-worktree lifecycle, authorized
 end-of-run reconcile, and the FR-8 multi-step verifiable-proof e2e. `TECH-012` resolved. API composition-root
