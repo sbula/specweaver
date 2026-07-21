@@ -5,104 +5,146 @@
 - **Design Document**: docs/roadmap/features/topic_08_integration/INT-US-03/INT-US-03_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-03
 - **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-03/INT-US-03_sf03_implementation_plan.md
-- **Status**: BLOCKED — depends on the new capability **`C-EXEC-06`** (Per-Run Worktree Isolation) + its
-  integration **`INT-US-09-SF05`** (which also resolves `TECH-012`). Direction resolved 2026-07-19:
-  **Option B via C** — per-run worktree is a real capability build (`C-EXEC-06`), integrated by
-  `INT-US-09-SF05`; SF-03 then re-scopes to *consume* it + thread the policy + deliver the FR-8 e2e proof.
-  Do NOT `/dev` SF-03 until `INT-US-09-SF05` is committed.
-- **Depends on**: SF-01 ✅, SF-02 ✅, **`C-EXEC-06` + `INT-US-09-SF05`** ⛔ (not yet started)
+- **Status**: APPROVED — re-scoped + approved by Steve Bula 2026-07-21 (**UNBLOCKED**). Old architectural fork
+  resolved: per-run (session) worktree isolation was built as **`C-EXEC-06`** (SF-01/02/03 committed) +
+  integrated by **`INT-US-09-SF05`** (✅). Isolation policy for `sw implement` = **Option C — opt-in default +
+  DAL-driven auto-escalation** at threshold **`DAL_B`**, opt-in per caller (implement only). AD-5's blanket
+  default-on is **superseded** by AD-8. All audit questions resolved.
+- **Depends on**: SF-01 ✅, SF-02 ✅, **`C-EXEC-06` + `INT-US-09-SF05`** ✅.
 
 ## Scope (from the Design Document)
-Thread the US-9 worktree-isolation policy into the `implement` `RunContext`, carry the generated files
-into the `run_tests` worktree (**AD-7 crux**), and deliver the e2e proof that freshly **generated** code runs
-QA worktree-bounded + a paired un-isolated control. **FRs owned: FR-5, FR-8.** Depends on SF-01, SF-02
-(both committed).
+Make the autonomous `sw implement` loop run **worktree-bounded** so untrusted, freshly-generated code is
+executed inside a git-worktree sandbox and reconciled back through the single authorized gate — **but only
+when the risk warrants it**, so small/low-assurance projects keep today's friction-free host behavior.
 
-> [!CAUTION]
-> **The design (AD-7) flagged this as "may require a short spike." The spike is done, and it found that
-> SF-03 as scoped is NOT achievable within the existing INT-US-09 per-step isolation model.** Three
-> independent defects in that machinery block the generated→run_tests round-trip; one of them (Gap 3)
-> breaks *any* multi-step isolated pipeline regardless of this feature. This plan documents the findings and
-> presents the architectural fork; the direction is a HITL decision (Audit Q1) before any code is written.
+**Isolation policy (AD-8 — Option C): opt-in default + DAL-driven auto-escalation.** Per-run session
+isolation stays **off by default** (no worktree/reconcile friction for small projects), and the shared session
+policy **auto-escalates to session isolation when the touched code's resolved DAL is `DAL_B` or stricter**
+(`is_strict` — severe/critical). Operators can still force always-on (`[sandbox] enforce_session_isolation`)
+or change/disable the threshold (`[sandbox] auto_isolate_min_dal`). Because the friction (ephemeral worktree +
+`chore(sandbox)` reconcile commit + clean-tree requirement) then appears **only** on high-assurance code, it
+lands exactly where it is justified and never on small projects. **FRs owned: FR-5, FR-8.**
 
-## Research Notes (Phase 0) — the spike
+**AD-7 superseded.** Session mode runs the whole loop in ONE worktree, so generated code persists in-tree
+across steps with a single end-of-run reconcile — no per-step `allowed_paths` carry, no pipeline-step changes.
 
-**The one part that is trivial integration** (mirrors `core/flow/interfaces/cli.py:270-272`): thread the
-policy into the implement `RunContext` — `context.enforce_isolation =
-load_settings(...).sandbox.enforce_worktree_isolation`. This works today.
+## Research Notes (Phase 0)
 
-**The isolation round-trip is broken.** INT-US-09's `execute_in_sandbox` (`runner_utils.py:151-221`) wraps
-**each step** in: `worktree_add` → rebind `output_dir`/`execution_root` to the worktree → `handler.execute`
-→ `worktree_sync` → `strip_merge` → `worktree_teardown` (finally). For the implement loop
-(`generate_code → generate_tests → lint_fix → run_tests → validate_code`), the generated `src/<stem>.py`
-must travel from generate_code's worktree to run_tests' worktree via the real repo. It does not. Three gaps:
+1. **Session mechanism is built and already reachable from `sw implement`.** `sw implement`
+   (`workflows/implementation/interfaces/cli.py`) loads `settings` (`:193`), builds a `RunContext`
+   (`:238-248`), runs via `PipelineRunner(pipeline, context).run()` (`:251-252`); `PipelineRunner.run()`
+   → `execute_run` (`runner.py:133`) dispatches on `context.session_isolation` (`runner_utils.py:38`).
+   Missing piece: `sw implement` never sets the session policy.
+2. **The policy helper exists** — `apply_session_policy(context, settings, logger)` (`runner_utils.py`) sets
+   `session_isolation` from `[sandbox] enforce_session_isolation` and, when on, populates `allowed_paths` via
+   `_derive_allowed_paths(spec_path)` → `src/<stem>.py` + `tests/test_<stem>.py`. SF-03 adds the DAL escalation
+   as an **opt-in parameter** (`dal_auto_escalate=False` default): **`sw implement` passes `True`;
+   `sw run`/`sw resume` keep `False` (unchanged).** This is deliberate — escalation must fire only where
+   untrusted code is generated. A blanket escalation in the shared helper would wrongly isolate benign
+   `sw run` pipelines (e.g. `validate_only`) on high-DAL projects — pointless worktree overhead + a reconcile
+   commit for a read-only run. Scoping it to implement avoids that.
+3. **DAL machinery is ready.** `DALResolver(project_root).resolve(target_path) -> DALLevel | None`
+   (`core/config/dal_resolver.py`) walks up `context.yaml` files reading `operational.dal_level`; missing/none
+   ⇒ `None` (small projects). `DALLevel` (`commons/enums/dal.py`) has `is_strict` (True for `DAL_A`/`DAL_B`) but
+   **no ordering** — a configurable threshold needs a strictness rank (A>B>C>D>E).
+4. **Timing:** `PipelineRunner.__init__` resolves `context.dal_level` (`runner.py:84-91`, from
+   `spec_path if exists else project_path`) — but that runs **after** the composition root calls
+   `apply_session_policy`. So the policy must resolve DAL **itself** (via `DALResolver`), and should **cache it
+   onto `context.dal_level`** (the runner then skips its re-resolution — one resolution, consistent target).
+5. **`sw implement` generates exactly the two allow-listed files** (`src/<stem>.py`, `tests/test_<stem>.py`;
+   lint-fix edits src in place; run_tests/validate create nothing) — so the tight `allowed_paths` never strips
+   a legitimately-generated file. No stripping surprise.
+6. **Backward-compat (NFR-2, NFR-4):** off ⇒ host loop exactly as SF-01/SF-02. Non-git project when isolation
+   engages ⇒ degrade to host + warn (Q3), never break `sw implement`.
 
-- **Gap 1 — nothing commits the worktree's new file onto the `sf-*` branch.** Handlers never commit (grep
-  of `core/flow/handlers/` for commit/add: none). `worktree_sync` (`atom.py:427-475`) runs `git fetch` +
-  `git rebase main` inside the worktree — which **refuses on a dirty tree** (the uncommitted generated file)
-  → `rebase --abort` → returns FAILED, and that result is **discarded** (`runner_utils.py:195`). So the
-  generated file is never committed; `strip_merge`'s `git merge sf-*` is a no-op ("No changes to strip",
-  `worktree_ops.py:92-98`). The uncommitted file is then destroyed at teardown.
-- **Gap 2 — `allowed_paths` does not exist.** `execute_in_sandbox` reads `getattr(context, "allowed_paths",
-  [])` (`runner_utils.py:202`), but `RunContext` (`base.py:30-75`) has **no such field** and nothing in
-  `src/` ever sets it → always `[]`. In `strip_merge`, `file not in allowed_paths` is then true for every
-  file (`worktree_ops.py:107`) → everything is stripped, nothing survives to commit. (Format is a list of
-  repo-relative path strings, per `test_atom.py:749`.)
-- **Gap 3 — the per-step branch/worktree name is constant per run, and teardown does not delete the
-  branch.** Branch `sf-{pipeline}-{task_id}`, path `.worktrees/{task_id}` (`runner_utils.py:163-166`);
-  `task_id` is constant across the run. `worktree_add` runs `git worktree add -b <branch> …`
-  (`atom.py:402-403`); teardown removes the worktree but **not** the branch (`test_worktree_atoms.py:99`).
-  So the **second** isolated step in one run runs `git worktree add -b <existing-branch>` → "branch already
-  exists" → fail-closed `RuntimeError` (`runner_utils.py:170-178`). **Any multi-step isolated pipeline
-  crashes at step 2 today** — INT-US-09 was only ever exercised with single-step pipelines
-  (`test_int_us_09_isolation_e2e.py`, which also commits its probe files up front, `:64-65`, `:134-135`).
+### External deps: git + bash (existing, proof only). No new tool, no pipeline-step change.
 
-**No existing test** proves the generate→commit→run_tests round-trip for uncommitted files, because the
-model never commits them.
+## Implementation Approach
+> Pseudocode / ordered steps only.
 
-### External deps: git worktree (existing). No new tool.
+### Change 1 — DAL strictness ordering (FR-5) · `commons/enums/dal.py`
+Add a strictness rank to `DALLevel` beside `is_strict` (natural home) so thresholds are comparable —
+e.g. a `rank` property: `DAL_A=5, DAL_B=4, DAL_C=3, DAL_D=2, DAL_E=1`. "≥ threshold in strictness" ⇒
+`dal.rank >= threshold.rank`.
 
-## Functional Requirements (this SF)
-- **FR-5** — the implement QA loop runs worktree-bounded under the US-9 policy (generated code never
-  executed against the real source root).
-- **FR-8** — verifiable-proof e2e: freshly **generated** code runs pytest worktree-bounded + un-isolated
-  control.
+### Change 2 — settings knob (FR-5) · `core/config/settings.py`
+Add to `SandboxSettings`: `auto_isolate_min_dal: str = "DAL_B"` — a `DALLevel` name (touched-code DAL at this
+strictness or stricter auto-enables session isolation), or a disable sentinel (`"off"`, case-insensitive) for
+pure opt-in. Validate it is a valid `DALLevel` name or `"off"`. Parsed by the existing `[sandbox]` TOML splat.
 
-## The architectural fork (Audit Q1 — must be decided before /dev)
+### Change 3 — DAL auto-escalation in `apply_session_policy` (FR-5) · `core/flow/engine/runner_utils.py`
+Add a keyword-only `dal_auto_escalate: bool = False` param; keep the helper's C2 compute-then-assign + NFR-2 gating:
+1. `session_on = enforce_session_isolation` (existing force-on).
+2. **If not on AND `dal_auto_escalate`**, escalate: `session_on = _dal_requires_isolation(context, sandbox, logger)`.
+3. `_dal_requires_isolation`: read `auto_isolate_min_dal`; if `"off"`/empty → `False`. Else resolve
+   `dal = context.dal_level or DALResolver(context.project_path).resolve(<spec_path if exists else project_path>)`,
+   cache it onto `context.dal_level`, and return `dal is not None and dal.rank >= DALLevel(threshold).rank`.
+4. When `session_on`, populate `allowed_paths` as today. Whole thing stays inside the best-effort `try`
+   (a DAL-resolution failure ⇒ falls back to off, run never crashes).
+Default `dal_auto_escalate=False` ⇒ **`sw run`/`sw resume` behavior is byte-identical** (they don't pass it).
 
-| Option | What it means | Pros | Cons |
-|--------|---------------|------|------|
-| **A — Fix the per-step model in place** | Commit the worktree working-tree onto `sf-*` before sync (Gap 1); add + populate `RunContext.allowed_paths` (Gap 2); make the branch/worktree unique per step or delete the branch at teardown (Gap 3). | Keeps the existing per-step design. | Pollutes the user's git history with an intermediate commit **per step**; complex 3-part change to core isolation machinery; run_tests worktree must re-checkout committed code each step. |
-| **B — Per-run (session) worktree mode** *(recommended)* | Add an isolation mode where the **whole** implement loop runs in ONE worktree: create once, all 5 steps operate in it (generated code persists in-tree, lint fixes it in place, pytest runs on it in place), reconcile once at the end via `strip_merge`. | Natural model for one untrusted unit of work; sidesteps Gap 1 (files persist in-tree) and Gap 3 (one worktree); single reconcile ⇒ `allowed_paths` handled once. | New isolation execution mode in the flow engine = **architectural switch** (needs sign-off); larger than "integration"; still needs `allowed_paths` (Gap 2) for the final reconcile. |
-| **C — Re-scope: spin the machinery into an INT-US-09 enhancement first** | Gaps 1 & 3 are INT-US-09 **defects** (multi-step isolation is simply broken). Fix them under a new `INT-US-09-SFxx`; INT-US-03 SF-03 then only threads the policy + consumes the fixed mode + ships the e2e proof. | Correct ownership (isolation bugs belong to US-9, not US-3); keeps SF-03 truly integration-scoped. | US-3 base contract stays `[ ]` longer (depends on the new US-9 work landing first). |
-| **D — Scope SF-03 down** | Thread the policy + prove only the guarantee that works today (e.g. an isolated single-step `run_tests` over **pre-committed** code, matching the INT-US-09 e2e). | Small, ships now. | Does **not** prove "freshly generated code runs worktree-bounded" (FR-8's real intent) ⇒ the contract's proof is weak/misleading. Not recommended. |
+### Change 4 — wire the policy into `sw implement` (FR-5) · `workflows/implementation/interfaces/cli.py`
+After the `RunContext(...)` build (`:238-248`): `apply_session_policy(context, settings, logger, dal_auto_escalate=True)`
+(import from `core.flow.engine.runner_utils`; `workflows/implementation` already `consumes core.flow`). Implement
+opts into DAL escalation; `sw run`/`sw resume` do not.
 
-**Recommendation: B (per-run worktree mode), most likely delivered as an INT-US-09 enhancement per C.**
-It is the only option that cleanly models "the autonomous implement loop is one unit of untrusted work,"
-avoids per-step history pollution, and fixes the latent multi-step defect. Because it adds a new isolation
-execution mode to the flow engine, it is an **Architectural Switch requiring explicit approval**, and its
-natural home is the US-9 isolation machinery (so pairing B with C — do it as `INT-US-09-SFxx`, then have
-INT-US-03 SF-03 consume it — is the cleanest ownership).
+### Change 5 — verifiable proof (FR-8) · new test
+Prove the implement loop runs QA on freshly-generated code worktree-bounded under isolation, with an
+un-isolated control (NFR-6). Generation handler stubbed to emit deterministic files; `run_tests` runs for real.
+
+### Files to modify
+| File | Change | FR |
+|------|--------|----|
+| `src/specweaver/commons/enums/dal.py` | `DALLevel.rank` strictness ordering | FR-5 |
+| `src/specweaver/core/config/settings.py` | `SandboxSettings.auto_isolate_min_dal` (default `"DAL_B"`) | FR-5 |
+| `src/specweaver/core/flow/engine/runner_utils.py` | DAL auto-escalation in `apply_session_policy` (+ `_dal_requires_isolation`) | FR-5 |
+| `src/specweaver/workflows/implementation/interfaces/cli.py` | call `apply_session_policy` in the implement `RunContext` | FR-5 |
+| `tests/...` | see Test Plan | FR-5, FR-8 |
+No pipeline-YAML / step changes. No new module.
+
+## Test Plan (4 Adversarial Buckets)
+
+**Unit — `DALLevel.rank`:** [Happy] `DAL_A.rank > DAL_B.rank > … > DAL_E.rank`; [Boundary] threshold-equality
+(`DAL_B.rank >= DAL_B.rank`).
+
+**Unit — settings knob:** [Happy] default `"DAL_B"`; round-trips a valid level + `"off"`; [Hostile] an invalid
+value (`"DAL_Z"`) rejected.
+
+**Unit — `apply_session_policy` DAL escalation (direct):** [Happy] `dal_auto_escalate=True` + force-off +
+`auto_isolate_min_dal="DAL_B"` + touched DAL `DAL_A` → `session_isolation=True` + derived `allowed_paths`;
+[Happy] DAL `DAL_B` → on (equality); [Boundary] DAL `DAL_C` → **off** (below threshold), `allowed_paths == []`
+(NFR-2); [Boundary] DAL `None` (small project) → off; **[Boundary] `dal_auto_escalate=False` (the `sw run`
+default) + DAL `DAL_A` → off** (escalation is caller-opt-in — proves `sw run`/`sw resume` are unaffected);
+[Boundary] `auto_isolate_min_dal="off"` + escalate + DAL `DAL_A` → off (threshold disabled); [Boundary]
+`enforce_session_isolation=true` → on regardless of DAL (force wins); [Degradation] `DALResolver` raises →
+best-effort off, no crash; caches resolved DAL onto `context.dal_level`.
+
+**Integration — implement composition (real):** [Happy] a project whose `context.yaml` marks `DAL_B` →
+`sw implement` context gets `session_isolation=True` + derived allow-list; [Boundary] no DAL marker (small
+project) → session off, host mode; [Boundary] `[sandbox] auto_isolate_min_dal="off"` → session off even at DAL_B.
+
+**E2E — verifiable proof (FR-8, real git+bash):** [Happy] implement loop under session isolation (generation
+stub writes `src/<stem>.py`+`tests/test_<stem>.py`): `run_tests` pytest runs **worktree-bounded** (probe: cwd ∈
+`.worktrees` AND the generated file present in-tree), reconcile lands only allow-listed files; [Control]
+isolation off → loop on host, probe FAILS at real root (no 0-collected false pass); [Hostile/NFR-4] a stub that
+also writes `secret.py` → stripped, absent from real repo; [Degradation/NFR-4] git/bash absent → skips clean;
+non-git under escalation → degrades to host (Q3).
+
+## Audit (Phase 2) — resolved
+| # | Question | Resolution |
+|---|----------|-----------|
+| Q1 | Default-on vs opt-in for `sw implement`. | **Option C (AD-8, approved 2026-07-21):** opt-in default **+ DAL-driven auto-escalation** at threshold **`DAL_B`**. Small/low-DAL projects stay host; high-assurance (A/B) code auto-sandboxes. Folded into SF-03 as a shared enhancement to `apply_session_policy`. |
+| Q2 | Stem transform `.removesuffix` (implement CLI) vs `.replace` (`_derive_allowed_paths`). | Accept — identical for real `<name>_spec.md` inputs; unifying is a separate low-value refactor (C-EXEC-06 backlog). |
+| Q3 | Escalation on a **non-git** project — hard-fail or degrade? | **Degrade to host + warn** — an isolation mode we auto-enabled must never break `sw implement`. (Explicit `enforce_session_isolation=true` may still fail-closed, matching `execute_run`.) |
 
 ## Architecture Verification (Phase 3)
-- **CRITICAL — Architectural Switch (unapproved):** every viable option changes core INT-US-09 isolation
-  machinery (`runner_utils.execute_in_sandbox`, `worktree_ops`, `git/atom`, and `RunContext`), not just
-  `workflows/implementation`. Option B additionally introduces a **new isolation execution mode**. Per the
-  design/plan rules this is a hard stop for HITL sign-off (Audit Q1). It also touches `core/config` /
-  `core/flow` (relatively stable modules), so the change must be deliberate.
-- The only non-switch change is the 1-line `enforce_isolation` threading in the implement CLI — inert on its
-  own (default policy off) and safe, but useless until the chosen option lands.
-
-## Audit (Phase 2) — open questions for HITL
-| # | Question | Proposal | Severity |
-|---|----------|----------|----------|
-| Q1 | **Which option (A/B/C/D) for the isolated implement loop?** The per-step model can't carry generated code and breaks on multi-step pipelines (Gaps 1-3). | **B via C** — add a per-run worktree mode as an `INT-US-09` enhancement, then SF-03 consumes it. Requires arch sign-off. | **CRITICAL** |
-| Q2 | Should Gap 3 (multi-step isolation crash) be filed/fixed as an INT-US-09 defect regardless of this feature? | Yes — it's a latent bug; any multi-step isolated pipeline hits it. | HIGH |
-| Q3 | Add + populate `RunContext.allowed_paths` (Gap 2) — where do the generated paths come from? | From the implement stem (`src/<stem>.py`, `tests/test_<stem>.py`); populated at the composition root or the per-run reconcile. | MEDIUM |
-| Q4 | Should `sw implement` default `enforce_isolation` ON (design AD-5, approved) once the mode works? | Yes (AD-5) — but gate it on the chosen option landing so it isn't turned on over a broken path. | MEDIUM |
+- Changes: `commons/enums/dal.py` (additive property, lowest layer), `core/config/settings.py` (additive field),
+  `core/flow/engine/runner_utils.py` (extend existing helper — new runtime use of `DALResolver`, already in
+  `core.config`, which `core.flow` consumes), `workflows/implementation/interfaces/cli.py` (one call; module
+  already `consumes core.flow`), `tests/`. **No new cross-layer edge, no boundary change, no architectural
+  switch** (the switch was `C-EXEC-06`). `tach`/`ruff`/`mypy --strict` stay green. The DAL escalation is a
+  policy-layer behavior in the shared helper — no parallel isolation logic. **Verdict:** no CRITICAL violation.
 
 ## Session Handoff
-**Current status**: Impl Plan DRAFT — **blocked on Audit Q1 (architectural fork)**. The AD-7 spike proved the
-per-step model can't carry generated code (3 gaps documented). No `/dev` until the direction is chosen.
-**Next step**: Resolve Q1 at the Phase 4 HITL. If B/C: this likely spawns an `INT-US-09-SFxx` (per-run
-worktree) that SF-03 then consumes.
+**Current status**: DRAFT re-scoped to Option C (2026-07-21), UNBLOCKED, all audit questions resolved. Ready
+for Phase 5 finalization → `/specweaver-dev`. Closing SF-03 closes the US-3 base contract.
