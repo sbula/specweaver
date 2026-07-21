@@ -35,5 +35,23 @@ description: "Phase 5: Code quality checks — ruff, mypy, complexity, and file 
      ```
      Every violation MUST be fixed by explicitly removing or circumventing the illegal dependencies!
 
+5.6. Run **roadmap registry sync** check (dependency checkboxes vs capability matrix):
+     ```
+     python scripts/check_roadmap_sync.py
+     ```
+     STALE errors (an unchecked dep box whose capability/story is done in the registry)
+     MUST be fixed by syncing the box. OVERCLAIM warnings (a checked box not done in the
+     matrix) MUST be surfaced to the user — never silently "fixed" in either direction,
+     since resolving them touches finished-registry content (HITL + guard hook apply).
+
+5.6. Run **roadmap registry sync** check (dependency checkboxes vs capability matrix):
+     ```
+     python scripts/check_roadmap_sync.py
+     ```
+     STALE errors (an unchecked dep box whose capability/story is done in the registry)
+     MUST be fixed by syncing the box. OVERCLAIM warnings (a checked box not done in the
+     matrix) MUST be surfaced to the user — never silently "fixed" in either direction,
+     since resolving them touches finished-registry content (HITL + guard hook apply).
+
 > [!IMPORTANT]
 > **NO HITL GATE HERE:** If all checks in Phase 5 pass successfully, update `task.md` and PROCEED IMMEDIATELY to Phase 6. Do NOT stop to ask the user for permission to continue.
