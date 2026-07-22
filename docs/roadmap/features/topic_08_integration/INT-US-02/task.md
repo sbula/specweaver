@@ -72,4 +72,4 @@
   - Phase 7 (walkthrough): [x] INT-US-02_sf01_walkthrough.md.
   - Phase 7.5 (Red/Blue on code): [x] no criticals (feedback-key consistency ✓; human-gated park/resume
     cycle accepted; findings-injection within TECH-007 posture).
-  - Phase 8 (commit boundary): ⏸ HITL — awaiting user commit (direct to master).
+  - Phase 8 (commit boundary): ✅ committed (direct to master, 2026-07-22). SF-01 tracker Pre-Commit ✅ + Committed ✅.
