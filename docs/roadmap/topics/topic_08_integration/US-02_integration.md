@@ -15,6 +15,9 @@
   add-on, the SF is **integration only** — the engine build lives in the capability. The base contract's
   gates (S-battery → semantic review → bounded loop, provider wiring, proof) are reused verbatim: they gate
   whatever engine produced the spec. Whether `D-INTL-07` **replaces** the `E-INTL-02` engine or leaves it as
-  the oneshot/headless fallback mode is decided at `D-INTL-07`'s design intake (the finished `E-INTL-02`
-  spec remains an immutable record either way). **Blocked on `C-FLOW-11`** (hard) + `C-VAL-05` (soft);
-  deliberately sequenced AFTER the base contract closes US-2 (timeline decision Option A, 2026-07-22).
+  the oneshot/headless fallback mode is decided at `D-INTL-07`'s design intake. **If "replace": the
+  decommission duties are part of this SF's definition of done** — delete the superseded `E-INTL-02` code
+  AND remove its entries from the living registry (matrix/topic/roadmap), leaving only the unchanged spec
+  file in git as the historical record (see `D-INTL-07` §Mandatory Decommission Duties). **Blocked on
+  `C-FLOW-11`** (hard) + `C-VAL-05` (soft); deliberately sequenced AFTER the base contract closes US-2
+  (timeline decision Option A, 2026-07-22).

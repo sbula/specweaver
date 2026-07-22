@@ -40,11 +40,19 @@ A grill-style **agentic drafting engine** for the draft step:
   middle-way direction). **Do not design before `C-FLOW-11` is committed.**
 - **Depends on (soft):** `C-VAL-05` — the rubric-artifact substrate the interview/synthesis content should
   ship as (versioned, DAL-gated, per-project overridable).
-- **Supersession target:** `E-INTL-02` (fixed-questionnaire Drafter). Per the spec-vs-software rule: this
-  capability's spec may **replace** the old engine outright (delete the questionnaire, swap `sw draft`
-  internals) or keep it as a deterministic/headless fallback mode of the dial — **decided on engineering
-  merit at design intake**, not preordained. `E-INTL-02`'s finished spec remains an immutable record either
-  way; any retirement is recorded here (tombstone precedent: `C-EXEC-05`).
+- **Supersession target:** `E-INTL-02` (fixed-questionnaire Drafter). Replace outright vs. keep as a
+  deterministic/headless fallback mode — **decided on engineering merit at design intake**, not preordained.
+- **MANDATORY DECOMMISSION DUTIES (if the design decides "replace")** — this story is NOT done until:
+  1. The superseded code is **deleted** (`Drafter` questionnaire path, dead `SPEC_SECTIONS` machinery,
+     anything no longer reachable) — no dead engines left in the tree.
+  2. `E-INTL-02` is **removed from the living registry** — capability-matrix cell, topic_04 DAL-E entry,
+     and every roadmap dep line — replaced by pointers to `D-INTL-07` (tombstone precedent: `C-EXEC-05`,
+     "retired: absorbed into B-INTL-09"). The living docs MUST describe the current code, not history.
+  3. `E-INTL-02`'s spec **text** is never edited — the finished document remains, unchanged, in
+     `features/topic_04_intelligence/E-INTL-02/` + git history as the archival record of what was true.
+  4. The supersession is narrated HERE (this doc's as-built notes): what was removed, what replaced it, why.
+  (Registry removals touch ✅-marked lines → done deliberately via the guard hatch at this story's
+  commit boundary, with HITL sign-off — that is the designed legitimate use of the hatch.)
 - **Consumed by:** `INT-US-02-SF03` (the US-2 sub-story wiring this engine into `sw draft` /
   `new_feature`). The `INT-US-02` base contract's gates (validate→review chain, bounded loop, provider
   wiring, proof) are reused verbatim — they gate whatever engine produced the spec.

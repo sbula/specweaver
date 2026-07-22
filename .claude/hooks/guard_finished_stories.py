@@ -79,10 +79,14 @@ def main() -> int:
             return _block(
                 f"BLOCKED by guard_finished_stories: this Edit to docs/roadmap/{rel} modifies "
                 "text containing a finished-story marker (checkmark / completed-story header). "
-                "Finished stories are IMMUTABLE - no edits, not even annotations. Mint a NEW "
-                "story (C-XXX capability or TECH-XXX) and put all cross-references there "
-                "instead. If the user has explicitly approved a correction to a finished "
-                "entry, retry with SW_ALLOW_FINISHED_EDIT=1."
+                "A finished story's TEXT is immutable - never rewrite or annotate it; mint a "
+                "NEW story (C-XXX capability or TECH-XXX) and document changes there. "
+                "LEGITIMATE exceptions (deliberate, HITL-approved, via the hatch): (1) REMOVING "
+                "or tombstoning a superseded entry at DECOMMISSION time, executed by the "
+                "replacing story - the living registry must describe current code, retired "
+                "stories leave the map (their spec files stay in git as the archive); "
+                "(2) a user-ordered correction. Hatch: SW_ALLOW_FINISHED_EDIT=1 or the "
+                "single-use flag file .claude/hooks/.allow-finished-edit."
             )
         return 0
 
