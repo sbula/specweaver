@@ -49,9 +49,10 @@ knowledge-shaped content; future rubric externalization is `C-VAL-05`, out of sc
   `verdict == "accepted"`, outputs `{verdict, findings…}` — gate condition `accepted` already used by
   `new_feature.yaml`.
 - **`new_feature.yaml`** — `draft_spec (hitl gate) → validate_spec (auto, on_fail abort) → review_spec
-  (auto, `on_fail: loop_back → draft_spec`)` → generation steps. **Defect found: the `review_spec`
-  `loop_back` has NO `max_retries`** → a stubbornly-rejected draft loops the LLM unbounded (contrast
-  `INT-US-03`'s bounded `max_retries: 2`, NFR-5 there).
+  (auto, `on_fail: loop_back → draft_spec`)` → generation steps. **Defect claim corrected (2026-07-22,
+  SF-01 Phase 0):** the gate omits `max_retries`, but `GateDefinition.max_retries` defaults to **3**
+  (`models.py:160`) — the loop was bounded-but-DEAD (see next bullet), not unbounded. FR-7 shrinks to
+  making the bound explicit (`max_retries: 2`, `INT-US-03` parity).
 - **Composition-root gap (the crux):** `flow/interfaces/cli.py` `_execute_run` (`:251-259`) and `resume`
   (`:452-460`) build `RunContext` **without** `context_provider` — the only `HITLProvider` wiring in the
   entire codebase is the `sw draft` command. `DraftSpecHandler`'s park path is therefore the ONLY behavior
@@ -99,7 +100,7 @@ control-test pattern (`test_int_us_09_isolation_e2e.py`).
 | FR-4 | Composition-root provider wiring | `sw run` / `sw resume` | SHALL wire the interactive `HITLProvider` into `RunContext.context_provider` **when attached to an interactive terminal (TTY)**, injected without a core→delivery import (AD-2). | `sw run new_feature <name>` co-authors instead of parking; layering stays legal. |
 | FR-5 | Headless behavior preserved | `sw run` / `sw resume` | SHALL keep the park-for-user-input behavior byte-identical when no TTY (CI, scripts, API) or when the spec already exists. | Zero regression for autonomous/headless flows; parking remains the headless contract. |
 | FR-6 | Inline outcome reporting | `sw draft` command | SHALL report validation + review outcomes inline (rules passed/failed, verdict, findings count, retries used) and REMOVE the stale "Run 'sw check'…" message. | One command shows the whole result; no manual follow-up implied. |
-| FR-7 | Bound the existing pipeline | `new_feature.yaml` | SHALL add `max_retries: 2` to the `review_spec` loop_back gate (defect fix). | The shipped pipeline can no longer loop the LLM unbounded. |
+| FR-7 | Explicit loop bound | `new_feature.yaml` | SHALL add an explicit `max_retries: 2` to the `review_spec` loop_back gate *(corrected 2026-07-22: the default bound is 3, not unbounded — this is parity/self-documentation, not a fix; the real defect is the dead loop, fixed by FR-3/AD-6)*. | The shipped pipeline's loop bound is explicit and consistent with `INT-US-03`. |
 | FR-8 | Verifiable proof | test suite | SHALL provide an e2e driving draft→validate→review through the real `PipelineRunner` with a **scripted ContextProvider** (deterministic answers) + mocked LLM verdicts: [accept path], [reject→loop_back→re-draft→accept], [retries exhausted → non-zero + findings], and a **headless control** proving `sw run` without TTY still parks. | The contract's Verifiable Proof is a real, unmocked-runner, CI-runnable test; the park control guards FR-5. |
 
 ## Non-Functional Requirements
@@ -202,7 +203,7 @@ Linear DAG; acyclic.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Draft → Validate → Review Inline Chain | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Draft → Validate → Review Inline Chain | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Composition-Root Provider Wiring | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Verifiable Proof | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
