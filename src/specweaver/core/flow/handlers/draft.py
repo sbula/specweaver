@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext, _error_result, _now_iso
@@ -23,6 +23,38 @@ class DraftSpecHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
+
+        # INT-US-02 SF-01 (AD-6a): consume loop_back reviewer feedback FIRST. Without this,
+        # the exists-skip below fires on re-entry and the review rejection loop is dead
+        # (validate→review→fail→skip→…). Mirrors generation.py's _extract_prompt_feedback:
+        # popped exactly once so it never sticks across attempts.
+        findings = self._pop_feedback(step, context)
+        if findings is not None:
+            if context.context_provider is not None and context.llm is not None:
+                logger.info(
+                    "DraftSpecHandler: reviewer feedback received — re-drafting '%s'",
+                    context.spec_path,
+                )
+                return await self._execute_drafting(step, context, started, findings=findings)
+            # Headless rejection: park, carrying the findings so the resuming human sees them.
+            logger.info(
+                "DraftSpecHandler: reviewer feedback received but no interactive provider — "
+                "parking '%s' for user input",
+                context.spec_path,
+            )
+            return StepResult(
+                status=StepStatus.WAITING_FOR_INPUT,
+                output={
+                    "message": (
+                        f"Spec review rejected: {context.spec_path}. Revise it (interactively "
+                        "via 'sw draft' in a terminal, or by editing the file) and resume "
+                        "with 'sw run --resume'."
+                    ),
+                    "reviewer_findings": findings,
+                },
+                started_at=started,
+                completed_at=_now_iso(),
+            )
 
         # If spec already exists, consider the draft step pre-completed
         if context.spec_path.exists():
@@ -60,8 +92,28 @@ class DraftSpecHandler:
             completed_at=_now_iso(),
         )
 
+    @staticmethod
+    def _pop_feedback(step: PipelineStep, context: RunContext) -> dict[str, Any] | None:
+        """Pop this step's loop_back feedback (reviewer findings) — consumed exactly once.
+
+        Returns the findings dict, or None when feedback is absent or malformed (a
+        malformed entry is still popped, then treated as absent — never crashes).
+        """
+        if hasattr(context, "feedback") and context.feedback:
+            fb = context.feedback.pop(step.name, None)
+            if isinstance(fb, dict):
+                findings = fb.get("findings")
+                if isinstance(findings, dict):
+                    return findings
+        return None
+
     async def _execute_drafting(
-        self, step: PipelineStep, context: RunContext, started: str
+        self,
+        step: PipelineStep,
+        context: RunContext,
+        started: str,
+        *,
+        findings: dict[str, Any] | None = None,
     ) -> StepResult:
         """Execute the actual interactive Drafter."""
         from specweaver.core.flow.handlers.base import _build_base_prompt
@@ -89,6 +141,16 @@ class DraftSpecHandler:
             instructions="",
             profile=profile,
         )
+
+        # INT-US-02 SF-01 (AD-6a): surface reviewer findings to the re-draft. Deliberately
+        # minimal (one JSON context block) — the drafting engine is a D-INTL-07 supersession
+        # target; do not invest in prompt shaping here.
+        if findings is not None:
+            import json
+
+            base_prompt.add_context(
+                json.dumps(findings, ensure_ascii=False), "reviewer_findings"
+            )
 
         drafter = Drafter(
             llm=context.llm,

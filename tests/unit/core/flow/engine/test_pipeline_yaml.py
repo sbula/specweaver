@@ -77,3 +77,19 @@ class TestExistingPipelines:
         pipeline = PipelineDefinition.model_validate(data)
         errors = pipeline.validate_flow()
         assert errors == [], f"{filename} validation errors: {errors}"
+
+
+class TestNewFeatureReviewGateBound:
+    """INT-US-02 SF-01 (FR-7): the review_spec loop bound is explicit."""
+
+    def test_review_spec_gate_has_explicit_max_retries_2(self) -> None:
+        yaml = YAML(typ="safe")
+        data = yaml.load(PIPELINES_DIR / "new_feature.yaml")
+        review = next(s for s in data["steps"] if s["name"] == "review_spec")
+        assert review["gate"]["max_retries"] == 2
+
+    def test_new_feature_still_parses_into_valid_definition(self) -> None:
+        yaml = YAML(typ="safe")
+        pipeline = PipelineDefinition.model_validate(yaml.load(PIPELINES_DIR / "new_feature.yaml"))
+        review = next(s for s in pipeline.steps if s.name == "review_spec")
+        assert review.gate.max_retries == 2

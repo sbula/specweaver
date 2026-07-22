@@ -189,3 +189,163 @@ class TestDraftErrors:
             ["draft", "greeter", "--project", str(tmp_path / "nonexistent")],
         )
         assert result.exit_code == 1
+
+
+# ---------------------------------------------------------------------------
+# INT-US-02 SF-01: draft -> validate -> review inline chain + report
+# ---------------------------------------------------------------------------
+
+
+def _rec(name: str, status, output: dict):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(step_name=name, status=status, result=SimpleNamespace(output=output))
+
+
+def _chain_run_state(status, records):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(status=status, step_records=records)
+
+
+def _invoke_draft_with(run_state, tmp_path):
+    """Invoke sw draft with adapter + runner mocked; return (result, captured pipeline)."""
+    project_dir = _init_project(tmp_path, "chain-proj")
+    with (
+        patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_create,
+        patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
+    ):
+        from unittest.mock import MagicMock
+
+        settings = MagicMock()
+        settings.llm.model = "test-model"
+        mock_create.return_value = (settings, MagicMock(), MagicMock())
+        mock_runner_class.return_value.run = AsyncMock(return_value=run_state)
+        result = runner.invoke(app, ["draft", "greeter", "--project", str(project_dir)])
+        pipeline = (
+            mock_runner_class.call_args.args[0] if mock_runner_class.call_args else None
+        )
+    return result, pipeline
+
+
+class TestDraftChain:
+    """The inline chain: pipeline shape, inline report, exit codes (FR-1/2/3/6)."""
+
+    def _happy_records(self):
+        from specweaver.core.flow.engine.state import StepStatus
+
+        return [
+            _rec("draft_spec", StepStatus.PASSED, {"path": "specs/greeter_spec.md"}),
+            _rec("validate_spec", StepStatus.PASSED, {"total": 12, "passed": 12, "results": []}),
+            _rec(
+                "review_spec",
+                StepStatus.PASSED,
+                {"verdict": "accepted", "findings": []},
+            ),
+        ]
+
+    def test_pipeline_has_three_steps_with_exact_gates(self, tmp_path: Path) -> None:
+        """[Happy] the built PipelineDefinition chains draft -> validate -> review with the
+        approved gates (all_passed/abort; accepted/loop_back->draft_spec/max_retries=2)."""
+        from specweaver.core.flow.engine.models import GateCondition, GateType, OnFailAction
+        from specweaver.core.flow.engine.state import RunStatus
+
+        run_state = _chain_run_state(RunStatus.COMPLETED, self._happy_records())
+        result, pipeline = _invoke_draft_with(run_state, tmp_path)
+
+        assert pipeline is not None, result.output
+        names = [s.name for s in pipeline.steps]
+        assert names == ["draft_spec", "validate_spec", "review_spec"]
+        v_gate = pipeline.steps[1].gate
+        assert v_gate.type == GateType.AUTO
+        assert v_gate.condition == GateCondition.ALL_PASSED
+        assert v_gate.on_fail == OnFailAction.ABORT
+        r_gate = pipeline.steps[2].gate
+        assert r_gate.type == GateType.AUTO
+        assert r_gate.condition == GateCondition.ACCEPTED
+        assert r_gate.on_fail == OnFailAction.LOOP_BACK
+        assert r_gate.loop_target == "draft_spec"
+        assert r_gate.max_retries == 2
+
+    def test_happy_report_shows_all_outcomes_and_drops_stale_message(
+        self, tmp_path: Path
+    ) -> None:
+        """[Happy/FR-6] accept path: spec path + validation + verdict inline; the stale
+        'sw check' handoff line is GONE; exit 0."""
+        from specweaver.core.flow.engine.state import RunStatus
+
+        run_state = _chain_run_state(RunStatus.COMPLETED, self._happy_records())
+        result, _ = _invoke_draft_with(run_state, tmp_path)
+
+        assert result.exit_code == 0, result.output
+        assert "greeter_spec.md" in result.output
+        assert "12" in result.output  # validation rules surfaced
+        assert "accepted" in result.output.lower()
+        assert "sw check" not in result.output  # stale manual handoff removed (FR-6)
+
+    def test_review_rejected_exhausted_exits_nonzero_with_findings(
+        self, tmp_path: Path
+    ) -> None:
+        """[Degradation] review rejected until retries exhausted -> non-zero exit and the
+        findings are surfaced."""
+        from specweaver.core.flow.engine.state import RunStatus, StepStatus
+
+        records = self._happy_records()
+        records[2] = _rec(
+            "review_spec",
+            StepStatus.FAILED,
+            {"verdict": "rejected", "findings": ["Purpose section vague"]},
+        )
+        run_state = _chain_run_state(RunStatus.FAILED, records)
+        result, _ = _invoke_draft_with(run_state, tmp_path)
+
+        assert result.exit_code != 0
+        assert "rejected" in result.output.lower()
+        assert "Purpose section vague" in result.output
+
+    def test_validation_abort_reports_rule_failures(self, tmp_path: Path) -> None:
+        """[Boundary] validate_spec fails -> abort; rule failures reported; non-zero."""
+        from specweaver.core.flow.engine.state import RunStatus, StepStatus
+
+        records = [
+            self._happy_records()[0],
+            _rec(
+                "validate_spec",
+                StepStatus.FAILED,
+                {
+                    "total": 12,
+                    "passed": 10,
+                    "results": [
+                        {"rule_id": "S03", "status": "FAIL", "message": "stranger test failed"}
+                    ],
+                },
+            ),
+        ]
+        run_state = _chain_run_state(RunStatus.FAILED, records)
+        result, _ = _invoke_draft_with(run_state, tmp_path)
+
+        assert result.exit_code != 0
+        assert "S03" in result.output
+
+    def test_missing_outputs_degrade_gracefully(self, tmp_path: Path) -> None:
+        """[Hostile] records with None results / missing keys -> report degrades, no crash."""
+        from types import SimpleNamespace
+
+        from specweaver.core.flow.engine.state import RunStatus, StepStatus
+
+        records = [
+            SimpleNamespace(step_name="draft_spec", status=StepStatus.PASSED, result=None),
+        ]
+        run_state = _chain_run_state(RunStatus.FAILED, records)
+        result, _ = _invoke_draft_with(run_state, tmp_path)
+        assert result.exit_code != 0  # not completed
+        # no traceback in output
+        assert "Traceback" not in result.output
+
+    def test_built_pipeline_passes_validate_flow(self, tmp_path: Path) -> None:
+        """[G4/Boundary] the inline chain satisfies the engine's own flow validation
+        (backward loop_target, gate coherence) — a direct tripwire against reordering."""
+        from specweaver.workflows.review.interfaces.cli import _build_draft_pipeline
+
+        pipeline = _build_draft_pipeline("greeter")
+        pipeline.validate_flow()  # must not raise

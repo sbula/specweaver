@@ -121,6 +121,33 @@ control = SF-03.)
   consider extracting a tiny shared helper if identical (dev-time call); no parallel mechanisms introduced.
 - **Verdict:** no CRITICAL violation.
 
+## Implementation Notes (as-built, 2026-07-22)
+
+Delivered as planned under the execution discipline (minimal AD-6a depth, engine freeze, seam-first tests):
+- `core/flow/handlers/draft.py` — `_pop_feedback` (popped exactly once; malformed → treated absent) +
+  feedback branches in `execute` (re-draft via `_execute_drafting(findings=…)`, one JSON
+  `reviewer_findings` context block; headless → park WITH findings) — no-feedback paths byte-identical.
+- `workflows/review/interfaces/cli.py` — `_build_draft_pipeline` (3 steps, exact gates) +
+  `_report_draft_chain` (inline report; stale "Run 'sw check'…" removed; non-zero exits) — extracted as
+  helpers for C901.
+- `workflows/pipelines/new_feature.yaml` — review gate bound 3 → 2.
+
+**Corrections & findings during dev:** (1) the review gate had an EXPLICIT `max_retries: 3` (Research
+Note 5's "omitted key / default 3" was wrong — value right, mechanism wrong; my grep window cut the line);
+FR-7 = tighten 3→2 as approved. (2) Fixed two inherited tests exposed by the chain:
+`test_cli_telemetry_flush` (its `suppress(SystemExit)` never caught `typer.Exit`) and the lineage e2e
+(now stubs validate/review — its intent is lineage only; the chain is proven in
+`test_draft_chain_integration.py`). (3) Pre-commit HITL added the **C-B corner**: a re-drafted spec
+failing re-validation aborts mid-loop (proven).
+
+Tests: handler unit +8 (feedback branches + G2 direct), cli integration +6 (shape/report/G4),
+`test_draft_chain_integration.py` (5 real-runner scenarios incl. C-B), yaml +2. Full suite:
+unit 4760 · integration 498 · e2e 150 (5408 passed, 0 failures). ruff/mypy(303)/C901/tach/file-size/
+roadmap-sync all clean.
+
+**The headline proof:** the shipped-dead rejection loop is ALIVE — reject → loop_back → real re-draft
+(v2) → accept, bounded at exactly 3 drafts, through the real runner + gates + feedback plumbing.
+
 ## Session Handoff
-**Current status**: APPROVED (2026-07-22) — ready for `/specweaver-dev`, single CB-1.
-**Next step**: dev SF-01, then SF-02 (provider wiring) → SF-03 (proof) closes the contract.
+**Current status**: DEV COMPLETE (2026-07-22) — pre-commit phases 1–5 green; walkthrough + commit boundary next.
+**Next step**: CB-1 commit, then SF-02 (provider wiring) → SF-03 (proof) closes the contract.

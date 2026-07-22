@@ -136,10 +136,33 @@ class TestLineageE2EFlow:
 
         mock_settings = SpecWeaverSettings(llm=LLMSettings(model="mock"))
 
+        # INT-US-02 SF-01: `sw draft` now chains validate+review after drafting. This test's
+        # intent is LINEAGE ONLY (tag injection + drafted_spec event), so the downstream
+        # handlers are stubbed to pass — the trivial mock spec content would legitimately
+        # fail real S-rules (the chain itself is proven in test_draft_chain_integration.py).
+        from specweaver.core.flow.engine.state import StepResult, StepStatus
+        from specweaver.core.flow.handlers.base import _now_iso
+
+        async def _step_ok(self, step, context):
+            return StepResult(
+                status=StepStatus.PASSED,
+                output={"total": 12, "passed": 12, "results": [], "verdict": "accepted"},
+                started_at=_now_iso(),
+                completed_at=_now_iso(),
+            )
+
         with (
             patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_req,
             patch(
                 "specweaver.infrastructure.llm.router.ModelRouter.get_for_task", return_value=None
+            ),
+            patch(
+                "specweaver.core.flow.handlers.validation.ValidateSpecHandler.execute",
+                new=_step_ok,
+            ),
+            patch(
+                "specweaver.core.flow.handlers.review.ReviewSpecHandler.execute",
+                new=_step_ok,
             ),
         ):
             mock_req.return_value = (mock_settings, mock_llm, GenerationConfig(model="mock"))

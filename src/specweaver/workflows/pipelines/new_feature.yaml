@@ -35,7 +35,7 @@ steps:
       condition: accepted
       on_fail: loop_back
       loop_target: draft_spec
-      max_retries: 3
+      max_retries: 2  # INT-US-02 FR-7: was 3; tightened for parity with INT-US-03's QA loop
 
   - name: generate_code
     action: generate

@@ -175,9 +175,13 @@ class TestDraftCommandFlush:
             (tmp_path / "specs").mkdir(exist_ok=True)
             (tmp_path / "result.md").write_text("# content", encoding="utf-8")
 
+            import click.exceptions
+
             from specweaver.workflows.review.interfaces.cli import draft
 
-            with contextlib.suppress(SystemExit):
+            # INT-US-02 SF-01: the chained pipeline exits non-zero in this mocked env
+            # (validate/review can't pass) — the intent here is only that flush happened.
+            with contextlib.suppress(SystemExit, click.exceptions.Exit):
                 draft(
                     name="test_component",
                     project=str(tmp_path),

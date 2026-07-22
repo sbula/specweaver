@@ -19,6 +19,13 @@ sw draft greet_service --project ./my-app
 ```
 The agent will recursively ask you contextualizing questions about inputs to fill out the 6-sections safely.
 
+**One command, whole loop (INT-US-02):** after co-authoring, `sw draft` now runs the full quality chain
+in the same command — the S-rule validation battery and the LLM semantic review — with zero manual
+handoff. If the reviewer rejects the draft, SpecWeaver **re-drafts with the reviewer's findings injected**
+(bounded at 2 retries) before surfacing the findings and exiting non-zero. The outcome report shows the
+spec path, rules passed, and the review verdict inline. Running `sw check` manually afterwards is no
+longer needed for freshly drafted specs (it remains available for re-validating edited specs, below).
+
 ## 3. Strict Quality Control Pipeline (`sw check`)
 Before an Implementation pipeline can run, SpecWeaver will execute rigorous tests against your `.md` file.
 
