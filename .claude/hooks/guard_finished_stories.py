@@ -24,6 +24,7 @@ exit 0 = allow, exit 2 + stderr = block (message is shown to the model).
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import sys
@@ -55,10 +56,8 @@ def main() -> int:
     # Single-use flag file: consumed (deleted) on first use so approval never lingers.
     flag = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".allow-finished-edit")
     if os.path.exists(flag):
-        try:
+        with contextlib.suppress(OSError):
             os.remove(flag)
-        except OSError:
-            pass
         return 0
     try:
         # Read bytes and decode UTF-8 explicitly — Claude Code sends UTF-8 JSON, but
