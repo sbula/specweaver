@@ -138,6 +138,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Remote UI Integration:**
         *   `[ ]` **INT-US-02-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-UI-04:** REST API - Interactive Authoring
+    *   🔴 **Grill-Style Agentic Drafting** *(blocked on `C-FLOW-11`; sequenced after the base contract closes)*:
+        *   `[ ]` **INT-US-02-SF03:** Sub-Story Integration (Pending Design) — wires `D-INTL-07` into `sw draft`/`new_feature` via the `C-FLOW-11` draft-step dial; reuses the base contract's gates (S-battery → review → bounded loop) verbatim. May **replace** the `E-INTL-02` engine or keep it as the oneshot/headless fallback — decided at `D-INTL-07` design intake (spec-immutable / software-evolves rule).
+        *   `[ ]` **D-INTL-07:** [Agentic Interview Drafting (Grill-Style)](features/topic_04_intelligence/D-INTL-07/D-INTL-07_design.md) (STUB) — adaptive grilling interview + `/to-spec`-style synthesis as rubric content. **Depends on: `C-FLOW-11` (hard), `C-VAL-05` (soft).**
 
 ### 🟢 US-3: Autonomous Implementation
 *   **User Benefit:** I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.

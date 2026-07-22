@@ -53,6 +53,9 @@ Make execution mode a **DAL-driven dial**, mirroring the approved AD-8 pattern f
    adapter (mirroring the LLM-adapter pattern one level up). **Open strategic decision.**
 3. Pilot: `sw implement` generate→fix inner loop as ONE agentic work unit, gated by the existing
    run_tests/validate_code/strip_merge chain.
+4. **Second pilot candidate (2026-07-22): the DRAFT step** — `D-INTL-07` (Agentic Interview Drafting)
+   runs a grill-style interview + synthesis work unit in agentic mode, gated by the `INT-US-02` chain
+   (S-battery → review → bounded loop). `D-INTL-07`/`INT-US-02-SF03` are hard-blocked on this capability.
 
 ## Non-Goals (proposed, pending design)
 - Removing/rewriting the one-shot handlers (they are the deterministic mode of the dial).

@@ -24,6 +24,9 @@ This document tracks all capabilities related to LLM integration, specification 
 * **`D-INTL-06` ✅: Context Hydration & Handover Engine**
   > _(new)_ | Specialized retrieval layer that fetches the active Task state, blockers, and handover notes from the Memory Bank, validates them via Pydantic (8KB token limit), and injects structured context into the agent's prompt. Includes handover protocols for safely passing accumulated context between agents without hallucination transfer. See [Design](features/topic_04_intelligence/D-INTL-06/D-INTL-06_design.md).
 
+* **`D-INTL-07` 🔴: Agentic Interview Drafting (Grill-Style)**<br>
+  > [Description](../features/topic_04_intelligence/D-INTL-07/D-INTL-07_design.md) | _(new, 2026-07-22)_ | Replaces-or-parallels the `E-INTL-02` fixed-questionnaire drafting engine with an **adaptive grill-style interview** (one question at a time with recommended answers, facts self-served from the repo, decisions resolved dependency-first) + a separate `/to-spec`-style **synthesis** pass emitting SpecWeaver's spec contract — verified by the unchanged `INT-US-02` gates (S-battery → review → bounded loop). Interview/synthesis guidance ships as `C-VAL-05`-class rubric content, not code. **BLOCKED on `C-FLOW-11`** (work units are the execution substrate; soft dep: `C-VAL-05`). Consumed by `INT-US-02-SF03`. Supersession of `E-INTL-02` (replace vs. fallback-mode) decided at design intake per the spec-immutable/software-evolves rule. _(Inspired by aihero.dev `grilling` → `/to-spec`.)_
+
 ## DAL-C: Enterprise Standard
 * **`C-INTL-01` ✅: Iterative Decomposition** (Legacy: 3.24)<br>
   > `future_capabilities_reference.md` §18 | Builds on basic foundation: DMZ-style iterative loop, automated quality gates, recursive decomposition (feature → sub-features → components).
