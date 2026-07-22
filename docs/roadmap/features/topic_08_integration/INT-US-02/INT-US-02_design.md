@@ -209,5 +209,12 @@ Linear DAG; acyclic.
 
 ## Session Handoff
 **Current status**: Design **APPROVED** (2026-07-22) — AD-6 = (a) feedback-aware re-draft.
+**Execution discipline (2026-07-22, post `D-INTL-07` minting — scope UNCHANGED):** the drafting engine is a
+supersession target (`D-INTL-07`/`INT-US-02-SF03`, blocked on `C-FLOW-11`). Therefore: (1) engine-coupled
+internals (AD-6a findings-injection plumbing) at **minimal depth** — smallest working version, no prompt
+polish; (2) **investment freeze** on the `E-INTL-02` engine — no `SPEC_SECTIONS` tuning or Drafter refactors;
+(3) **seam-first tests** — assert the feedback/re-draft/park contract, not Drafter internals; (4) SF-02
+planning: prefer the AD-2 mechanism shape (provider factory) that stays engine-neutral. The gates/wiring this
+contract builds are the permanent harness the replacement engine will be verified by.
 **Next step**: On approval → `/specweaver-implementation-plan INT-US-02 SF-01`.
 **If resuming mid-feature**: Read the Progress Tracker; resume at the first ⬜.
