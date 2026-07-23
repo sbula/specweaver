@@ -17,25 +17,26 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-> **Refreshed 2026-07-21.** The 2026-07-19 critical path is **fully delivered**: `C-EXEC-06` (per-run
-> worktree isolation) → `INT-US-09-SF05` → `INT-US-03 SF-03` (DAL-driven implement isolation) — **US-3 is
-> 🟢 closed** and `TECH-012` resolved. The former Candidate 5 (`C-INTL-05` + `INT-US-04-SF08` prompt
-> profiles) is also ✅ complete. New since last refresh: the **"middle way" direction** was minted
-> (`C-VAL-05` rubrics-as-content, `C-FLOW-11` graduated-autonomy dial, `C-INTL-06` envelope-vs-content),
-> and US-3's closure unblocks the autonomous-implementation epics (US-17/19/22/24 — dep boxes synced;
-> US-24 is now integration-only, US-17 still needs `B-VAL-04`). Re-ranked accordingly.
+> **Refreshed 2026-07-23.** Former Candidate 1 is **delivered**: `INT-US-02` closed → **US-2 is 🟢**
+> (SF-01 revived rejection loop · SF-02 provider seam · SF-03 e2e proof, which flushed 5 inherited
+> defects incl. both dead D-VAL-02 flow-handler paths). US-21 is now integration-only (all dep boxes
+> synced). Prior deliveries stand: US-3 🟢 (`C-EXEC-06` → `INT-US-09-SF05` → `INT-US-03 SF-03`),
+> `TECH-012` resolved, middle-way direction minted (`C-VAL-05`/`C-FLOW-11`/`C-INTL-06`). Remaining
+> candidates promote one rank each; `US-21` enters from the reserve.
 
-1. **Candidate 1: Close US-2 — Interactive Drafter (`INT-US-02`)** ← HIGH ROI, truly integration-only
-   * **Features:** `INT-US-02` Base Integration Contract. All deps `✅`: `E-UI-01`, `E-SENS-01`, `E-INTL-01/02/03`, `D-INTL-05`.
-   * **Pros:** Genuinely integration-only (no capability build) — closes the Interactive Drafter epic and
-     unblocks US-21. The longest-waiting no-blocker epic-closer in the queue.
-   * **Cons:** `INT-US-02` contract not yet designed.
-2. **Candidate 2: Close US-24 — Behavioral Scenario Verification (`INT-US-24`)** ← NEWLY UNBLOCKED epic-closer
+1. **Candidate 1: Close US-24 — Behavioral Scenario Verification (`INT-US-24`)** ← NEWLY UNBLOCKED epic-closer
    * **Features:** `INT-US-24` Base Integration Contract. Capability deps all built: `US-3 Core` ✅ (just closed),
      `B-FLOW-01` Scenario Testing Pipeline ✅, `D-VAL-01` QA Runner ✅.
    * **Pros:** Integration-only; proves generated code solves the **business scenario**, not just syntax tests —
      the natural next proof on top of the freshly-shipped autonomous + sandboxed implement loop.
    * **Cons:** `INT-US-24` contract not yet designed; scenario flows will stress token budgets (see Candidate 5).
+2. **Candidate 2: Close US-21 — Autonomous Feature Decomposition (`INT-US-21`)** ← NEWLY UNBLOCKED by US-2
+   * **Features:** `INT-US-21` Base Integration Contract. Capability deps all built: `US-2 Core` ✅ (just
+     closed — was the last gate), `D-INTL-02` Feature Decomposition ✅, `D-INTL-03` Explicit Plan Phase ✅;
+     the Recursive Planning add-on (`INT-US-21-SF01` + `C-INTL-01`) is even already 🟢.
+   * **Pros:** Integration-only epic-closer; rides directly on the freshly-proven drafter chain + provider
+     seam (the SF-03 e2e harness is reusable as its proof scaffold).
+   * **Cons:** `INT-US-21` contract not yet designed.
 3. **Candidate 3: Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
    * **Features:** `C-VAL-05` (battery engine stays code; semantic judgment content → versioned, DAL-gated rubric files).
    * **Pros:** Low-risk (no execution-path change); establishes the "engine hard / content soft" precedent the
@@ -56,10 +57,11 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
      this substrate.
    * **Cons:** Hardening; no epic unlock.
 
-> **Integration-only reserve (updated 2026-07-21, post registry-sync):** the sync sweep + code verification
-> revealed **five** integration-only epic-closers — Candidates 1–2 (`US-2`, `US-24`) **plus `US-16`** (AI Ops &
-> Cost Routing), **`US-22`** (Polyglot Contracts — its `C-VAL-04` dep was a stale box, now synced), and
-> **`US-23`** (MCP Tool Extension). Each needs only its INT contract; they backfill the top slots as those close.
+> **Integration-only reserve (updated 2026-07-23, post US-2 closure):** integration-only epic-closers now
+> in the queue: Candidates 1–2 (`US-24`, `US-21` — the latter unlocked by US-2). In reserve: **`US-16`**
+> (AI Ops & Cost Routing), **`US-22`** (Polyglot Contracts — its `C-VAL-04` dep was a stale box, now
+> synced), and **`US-23`** (MCP Tool Extension). Each needs only its INT contract; they backfill the top
+> slots as those close. (`US-2` delivered 2026-07-23 and left the queue.)
 > **Not queue-eligible:** `US-17` (blocked on unbuilt `B-VAL-04`), `US-19` (dep review resolved — blocked on
 > unbuilt `C-FLOW-04` Work Packet Bundling), `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013`
 > (too small; fold into the next API-touching story).
@@ -121,10 +123,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **INT-US-01-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-04:** High-Performance Rust Validation Core
 
-### 🟡 US-2: The Interactive Drafter
+### 🟢 US-2: The Interactive Drafter
 *   **User Benefit:** I can have the LLM co-author a spec with me section-by-section.
 *   **Core Required (MVS):**
-    *   `[ ]` **INT-US-02:** Base Integration Contract defined in [US-02_integration.md](topics/topic_08_integration/US-02_integration.md)
+    *   `✅` **INT-US-02:** Base Integration Contract defined in [US-02_integration.md](topics/topic_08_integration/US-02_integration.md) — ✅ [design APPROVED](features/topic_08_integration/INT-US-02/INT-US-02_design.md); **SF-01** (feedback-aware draft→validate→review inline chain, the revived rejection loop) + **SF-02** (composition-root provider seam, TTY-gated; headless parks exit 0) + **SF-03** (verifiable proof; flushed 5 inherited defects incl. both dead D-VAL-02 flow-handler paths) all committed. **Verifiable Proof:** `tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py` (7 scenarios: accept, reject→re-draft→accept, headless park, retries exhausted, provider crash, both cross-session park→resume journeys).
     *   `✅` **E-UI-01:** CLI Scaffold
     *   `✅` **E-SENS-01:** Loom Filesystem Tools
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
@@ -274,7 +276,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *When starting a new project, an interactive wizard bounds the LLM's architecture choices so it doesn't hallucinate invalid tech stacks.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-08:** Base Integration Contract defined in [US-08_integration.md](topics/topic_08_integration/US-08_integration.md)
-    *   `[ ]` **US-2 Core** *(provides Interactive Drafter)*
+    *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-SENS-01:** Topology Graph
     *   `[ ]` **D-INTL-04:** Interactive Design Questionnaire — *(2026-07-21) design as rhythm-harness + rubric content (grill-me pattern), not hardcoded question trees*
 *   **Sub-Story Add-Ons:**
@@ -353,7 +355,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *SpecWeaver automatically reverse-engineers and drafts Spec.md contracts by reading my old undocumented Java/C++ code.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-12:** Base Integration Contract defined in [US-12_integration.md](topics/topic_08_integration/US-12_integration.md)
-    *   `[ ]` **US-2 Core** *(provides Spec Drafting)*
+    *   `✅` **US-2 Core** *(provides Spec Drafting)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
     *   `[ ]` **C-INTL-03:** Reverse-Weaving (`sw capture`)
@@ -385,7 +387,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *An adversarial AI attacks my spec to find logic holes and edge-cases before I waste money generating bad code.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-14:** Base Integration Contract defined in [US-14_integration.md](topics/topic_08_integration/US-14_integration.md)
-    *   `[ ]` **US-2 Core** *(provides Spec Review Engine)*
+    *   `✅` **US-2 Core** *(provides Spec Review Engine)*
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `[ ]` **A-INTL-01:** Pre-Generation Adversarial Spec Review
 *   **Sub-Story Add-Ons:**
@@ -521,7 +523,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 **Benefit:** *I can give the agent a massive, epic-level Spec, and it will automatically break it down into a DAG of small, testable sub-components before writing any code.*
 *   **Core Required (MVS):**
     *   `[ ]` **INT-US-21:** Base Integration Contract defined in [US-21_integration.md](topics/topic_08_integration/US-21_integration.md)
-    *   `[ ]` **US-2 Core** *(provides Interactive Drafter)*
+    *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-INTL-02:** Feature Decomposition
     *   `✅` **D-INTL-03:** Explicit Plan Phase
 *   **Sub-Story Add-Ons:**

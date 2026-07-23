@@ -50,7 +50,7 @@
   `project_dir` fallback now fails LOUD on a malformed local override (correct — D-VAL-02 precedence),
   state-DB dumps bounded/JSON-safe, e2e fixtures isolated. Full suite re-run after the fix:
   **unit 4778 · integration 502 · e2e 157 — 5437 passed, 0 failures**; ruff/mypy/tach re-verified.
-- [ ] Phase 8 — CB-1 HITL commit stop.
+- [x] Phase 8 — CB-1 committed `e6645a57` (direct to main, 2026-07-23). **INT-US-02 COMPLETE.**
 
 ## Post-commit (after CB-1)
 - Design tracker: SF-03 Committed ✅ → INT-US-02 done.

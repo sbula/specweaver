@@ -205,10 +205,16 @@ Linear DAG; acyclic.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Draft → Validate → Review Inline Chain | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Composition-Root Provider Wiring | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Verifiable Proof | SF-01, SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Verifiable Proof | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
-**Current status**: Design **APPROVED** (2026-07-22) — AD-6 = (a) feedback-aware re-draft.
+**Current status**: **FEATURE COMPLETE** — SF-03 committed `e6645a57` (2026-07-23); INT-US-02 closed →
+**US-2 epic 🟢** (US-21 now integration-only). Verifiable Proof:
+`tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py` (7 scenarios). The proof + pre-commit
+sweeps flushed **5 inherited defects**, all fixed in-boundary (see `INT-US-02_sf03_walkthrough.md`).
+Documented semantics: resume-in-TTY after a rejection-park skips the re-draft (findings consumed at
+park time) and self-heals on the next rejection.
+**Original design status**: Design **APPROVED** (2026-07-22) — AD-6 = (a) feedback-aware re-draft.
 **Execution discipline (2026-07-22, post `D-INTL-07` minting — scope UNCHANGED):** the drafting engine is a
 supersession target (`D-INTL-07`/`INT-US-02-SF03`, blocked on `C-FLOW-11`). Therefore: (1) engine-coupled
 internals (AD-6a findings-injection plumbing) at **minimal depth** — smallest working version, no prompt
