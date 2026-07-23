@@ -263,3 +263,87 @@ def test_toml_session_isolation_true_flows_onto_resume_context(
 
     assert context.session_isolation is True
     assert context.allowed_paths == ["src/test.py", "tests/test_test.py"]
+
+
+def test_tty_run_gets_interactive_context_provider(tmp_path: Path) -> None:
+    """[Happy — INT-US-02 SF-02] with an interactive stdin, the sw run composition root
+    attaches the delivery-registered HITLProvider via the generic channel seam."""
+    from specweaver.interfaces.cli.hitl_provider import HITLProvider
+
+    project_dir = _init_project(tmp_path, "sf02-tty", None)
+    with patch("specweaver.interfaces.cli.main._stdin_isatty", return_value=True):
+        context = _run_and_capture(project_dir)
+    assert isinstance(context.context_provider, HITLProvider)
+
+
+def test_headless_run_keeps_provider_none(tmp_path: Path) -> None:
+    """[Boundary/FR-5] no TTY (CliRunner default) -> provider stays None; the draft park
+    contract is byte-identical."""
+    project_dir = _init_project(tmp_path, "sf02-headless", None)
+    context = _run_and_capture(project_dir)
+    assert context.context_provider is None
+
+
+def test_tty_resume_gets_interactive_context_provider(tmp_path: Path, monkeypatch) -> None:
+    """[Happy] the resume composition root attaches the provider too."""
+    from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+    from specweaver.interfaces.cli.hitl_provider import HITLProvider
+
+    monkeypatch.setattr(
+        "specweaver.core.config.paths.state_db_path", lambda: tmp_path / "pipe_state.db"
+    )
+    project_dir = _init_project(tmp_path, "sf02-resume", None)
+    monkeypatch.setenv("SW_PROJECT", str(project_dir))
+
+    parked = PipelineRun(
+        run_id="fff7890123456",
+        pipeline_name="validate_only",
+        project_name="sf02-resume",
+        spec_path=str(project_dir / "specs" / "test_spec.md"),
+        status=RunStatus.PARKED,
+        started_at="",
+        updated_at="",
+    )
+    with (
+        patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
+        patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
+        patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+        patch("specweaver.interfaces.cli.main._stdin_isatty", return_value=True),
+    ):
+        mock_get_store.return_value.load_run.return_value = parked
+        mock_runner_class.return_value.resume = AsyncMock(
+            return_value=type("R", (), {"status": RunStatus.COMPLETED})()
+        )
+        result = runner.invoke(app, ["resume", "fff7890123456"])
+        assert result.exit_code == 0, result.stdout
+        context = mock_runner_class.call_args.args[1]
+
+    assert isinstance(context.context_provider, HITLProvider)
+
+
+def test_headless_new_feature_run_parks_at_draft(tmp_path: Path) -> None:
+    """[Boundary/FR-5 — G1] `sw run new_feature` headless (no TTY -> no provider) with a
+    missing spec PARKS at the draft step through the REAL runner — the behavior-level
+    proof that SF-02's wiring left the headless park contract byte-identical."""
+    from unittest.mock import MagicMock
+
+    project_dir = _init_project(tmp_path, "sf02-park", None)
+    # new_feature derives the spec path from the module name — ensure it does NOT exist.
+    spec = project_dir / "specs" / "greeter_spec.md"
+    assert not spec.exists()
+
+    with (
+        patch("specweaver.infrastructure.llm.factory.create_llm_adapter") as mock_create,
+        patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+    ):
+        settings = MagicMock()
+        settings.llm.model = "test-model"
+        mock_create.return_value = (settings, MagicMock(), MagicMock())
+        result = runner.invoke(
+            app, ["run", "new_feature", "greeter", "--project", str(project_dir)]
+        )
+
+    # Parked is NOT an error (exit 0) and the run tells the user how to continue.
+    assert result.exit_code == 0, result.output
+    assert "Resume with" in result.output
+    assert not spec.exists()  # nothing drafted headless — parking, not co-authoring

@@ -117,9 +117,34 @@ try:
 except ImportError as e:
     console.print(f"[bold red]Failed to load workspace project plugin:[/bold red] {e}")
 
-try:
-    from specweaver.core.flow.interfaces.cli import flow_cli
+def _stdin_isatty() -> bool:
+    """Patchable indirection for the interactivity check (the TTY knowledge lives here,
+    in the delivery layer — core's channel seam is terminal-agnostic)."""
+    import sys
 
+    try:
+        return sys.stdin.isatty()
+    except Exception:
+        return False
+
+
+def _interactive_context_provider() -> object | None:
+    """INT-US-02 SF-02 (FR-4/FR-5): the delivery-layer interaction-channel factory.
+
+    Returns an HITLProvider only on an interactive stdin; None otherwise, so headless
+    runs keep the draft-parking contract byte-identical.
+    """
+    if not _stdin_isatty():
+        return None
+    from specweaver.interfaces.cli.hitl_provider import HITLProvider
+
+    return HITLProvider(console=console)
+
+
+try:
+    from specweaver.core.flow.interfaces.cli import flow_cli, set_context_provider_factory
+
+    set_context_provider_factory(_interactive_context_provider)
     app.add_typer(flow_cli)
 except ImportError as e:
     console.print(f"[bold red]Failed to load flow pipelines plugin:[/bold red] {e}")

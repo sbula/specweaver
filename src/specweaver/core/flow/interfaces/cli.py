@@ -25,10 +25,51 @@ logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
+
     from specweaver.core.flow.engine.display import JsonPipelineDisplay, RichPipelineDisplay
     from specweaver.core.flow.engine.store import StateStore
 
     PipelineDisplay = JsonPipelineDisplay | RichPipelineDisplay
+
+
+# ---------------------------------------------------------------------------
+# INT-US-02 SF-02: the generic context-provider channel seam (post-TECH-006 shape).
+# The delivery layer registers a factory here; core stays terminal-agnostic — the
+# factory owns the interactivity decision and may return None (e.g. no TTY). Future
+# channels (D-INTL-07 interview engine, C-FLOW-11 work-unit channels) register through
+# this same seam. Core adds NO delivery-layer imports for this.
+# ---------------------------------------------------------------------------
+
+_context_provider_factory: Callable[[], Any] | None = None
+
+
+def set_context_provider_factory(factory: Callable[[], Any] | None) -> None:
+    """Register (or clear, with None) the interaction-channel factory.
+
+    Called by the delivery layer at composition time. The factory is invoked per run
+    and may return None to signal "not interactive right now".
+    """
+    global _context_provider_factory
+    _context_provider_factory = factory
+
+
+def _maybe_attach_provider(context: RunContext) -> None:
+    """Attach a context provider from the registered factory — best-effort, never breaks a run.
+
+    A caller-supplied provider always wins (the factory is not consulted); a factory
+    failure or a None return leaves the context untouched (headless park semantics, FR-5).
+    """
+    if _context_provider_factory is None or context.context_provider is not None:
+        return
+    try:
+        provider = _context_provider_factory()
+    except Exception:  # a channel failure must never break a run
+        logger.debug("context-provider factory failed; continuing without one", exc_info=True)
+        return
+    if provider is not None:
+        context.context_provider = provider
 
 
 def _get_state_store() -> StateStore:
@@ -174,6 +215,12 @@ def run_pipeline(
             "[dim]Run state saved. Resume with: sw run --resume[/dim]",
         )
         raise typer.Exit(code=130) from None
+    except typer.Exit:
+        # INT-US-02 SF-02 (inherited fix): intentional exits (e.g. PARKED -> Exit(code=0),
+        # "not an error, just parked") must pass through untouched — click's Exit is a
+        # RuntimeError subclass, so the generic handler below used to swallow it and
+        # convert every parked run into a bogus "Error: Exit:" with exit code 1.
+        raise
     except FileNotFoundError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         if verbose:
@@ -257,6 +304,11 @@ def _execute_run(  # noqa: C901
         standards=standards_content,
         db=db,
     )
+
+    # INT-US-02 SF-02 (FR-4/FR-5): attach the registered interaction channel, if any —
+    # the delivery-layer factory decides interactivity (returns None when headless, so
+    # DraftSpecHandler's parking contract is untouched without a TTY).
+    _maybe_attach_provider(context)
 
     from specweaver.core.config.settings_loader import load_settings
     from specweaver.core.flow.engine.runner_utils import apply_session_policy
@@ -460,6 +512,11 @@ def resume(  # noqa: C901
         standards=standards_content,
         db=db,
     )
+
+    # INT-US-02 SF-02 (FR-4/FR-5): attach the registered interaction channel, if any —
+    # the delivery-layer factory decides interactivity (returns None when headless, so
+    # DraftSpecHandler's parking contract is untouched without a TTY).
+    _maybe_attach_provider(context)
 
     from specweaver.core.config.settings_loader import load_settings
     from specweaver.core.flow.engine.runner_utils import apply_session_policy

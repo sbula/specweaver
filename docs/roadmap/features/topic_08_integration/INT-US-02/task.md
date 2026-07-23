@@ -1,4 +1,4 @@
-# Task List — INT-US-02 SF-01: Draft → Validate → Review Inline Chain
+# Task List — INT-US-02 SF-02: Composition-Root Provider Wiring (SF-01 record: git history + walkthrough)
 
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-02/INT-US-02_sf01_implementation_plan.md
 - **FRs**: FR-1 (validate in-pipeline), FR-2 (review in-pipeline), FR-3 (bounded REAL loop), FR-6 (report), FR-7 (explicit bound)

@@ -195,7 +195,7 @@ expose = [ "cli", "cli.workspace_cli",]
 
 [[interfaces]]
 from = [ "specweaver.core.flow.interfaces",]
-expose = [ "cli", "cli.flow_cli",]
+expose = [ "cli", "cli.flow_cli", "cli.set_context_provider_factory",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.memory",]

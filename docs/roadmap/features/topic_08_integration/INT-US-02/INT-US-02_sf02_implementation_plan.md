@@ -100,6 +100,26 @@ headless control.
 - Engine-neutral per the execution-discipline note: `D-INTL-07`'s future channel registers via the same setter.
 - **Verdict:** no CRITICAL violation.
 
+## Implementation Notes (as-built, 2026-07-23)
+
+Delivered per the sharpened Q1 (post-TECH-006 orientation):
+- `core/flow/interfaces/cli.py` — `set_context_provider_factory` (the generic channel seam; declared in
+  tach.toml's `[[interfaces]]` expose list — tach's interface enforcement caught the undeclared symbol,
+  exactly as designed) + `_maybe_attach_provider` at BOTH composition sites. Core is terminal-agnostic;
+  zero new delivery imports.
+- `interfaces/cli/main.py` — `_stdin_isatty()` (patchable indirection) + `_interactive_context_provider()`
+  (TTY → `HITLProvider`, else None) registered next to the `flow_cli` add_typer.
+
+**Inherited defect found & fixed (via the G1 behavior test):** the `sw run` command's broad
+`except Exception` swallowed `typer.Exit` (click's Exit is a RuntimeError subclass) — every PARKED run
+exited 1 with a bogus "Error: Exit:" despite the code's explicit `Exit(code=0)  # not an error, just
+parked`. Fixed with an `except typer.Exit: raise` passthrough; parked runs now exit 0 as intended.
+
+Tests: 5 direct seam units (R1 reset fixture), 3 delivery-factory units (incl. R4 registration proof),
+3 composition integrations (TTY run/resume attach + headless None), G1 behavior test (headless
+`new_feature` parks through the REAL runner, exit 0, nothing drafted). Full suite: unit 4768 ·
+integration 502 · e2e 150 (5420 passed, 0 failures). ruff/mypy(303)/C901/tach/file-size/roadmap-sync clean.
+
 ## Session Handoff
-**Current status**: APPROVED (2026-07-22) — ready for `/specweaver-dev`, single CB-1.
+**Current status**: DEV COMPLETE (2026-07-23) — pre-commit phases 1–5 green; walkthrough + CB-1 next.
 **Next step**: on approval → `/specweaver-dev` SF-02, then SF-03 (proof) closes the contract.

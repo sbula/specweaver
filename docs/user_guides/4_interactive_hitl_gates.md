@@ -10,6 +10,13 @@ Path: src/controller.py >> Reason: Lacking domain schema boundaries
 ```
 You can leave the terminal running safely. The workflow is formally **Parked**.
 
+**Interactive vs. headless drafting (INT-US-02):** when a pipeline reaches a `draft_spec` step and the
+spec doesn't exist yet, the behavior depends on where you run it. In an **interactive terminal**,
+`sw run new_feature <name>` (and `sw resume`) now co-author the spec with you directly — the interactive
+provider is attached automatically. **Headless** (CI, scripts, piped input), the run **parks** exactly as
+before and tells you how to continue; a parked run exits with code `0` (parking is a normal outcome, not
+an error).
+
 ## 2. Using `<dictator-overrides>` 
 If a SpecWeaver Agent insists on altering an architectural decision incorrectly during a feedback loop, you have the authority to bypass its logical deduction context entirely.
 

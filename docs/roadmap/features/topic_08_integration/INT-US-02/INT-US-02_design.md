@@ -204,7 +204,7 @@ Linear DAG; acyclic.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Draft → Validate → Review Inline Chain | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Composition-Root Provider Wiring | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Composition-Root Provider Wiring | SF-01 | ✅ | ✅ | ✅ | 🟡 | ⬜ |
 | SF-03 | Verifiable Proof | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
