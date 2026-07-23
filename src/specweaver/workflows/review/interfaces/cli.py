@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import typer
+from rich.markup import escape
 
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
@@ -108,9 +109,13 @@ def _report_draft_chain(run_state: Any, spec_path: Path) -> None:
             "rules passed"
         )
         for rule in validate_out.get("results", []) or []:
-            if isinstance(rule, dict) and rule.get("status") == "FAIL":
+            # RuleStatus.value is lowercase ("fail") — compare case-insensitively.
+            if isinstance(rule, dict) and str(rule.get("status", "")).upper() == "FAIL":
+                # escape(): rule messages can embed spec content — stray [/tags] would
+                # raise rich.errors.MarkupError and crash the report.
                 _core.console.print(
-                    f"  [red]{rule.get('rule_id', '?')}[/red]: {rule.get('message', '')}"
+                    f"  [red]{escape(str(rule.get('rule_id', '?')))}[/red]: "
+                    f"{escape(str(rule.get('message', '')))}"
                 )
 
     review_out = _output("review_spec")
@@ -121,7 +126,8 @@ def _report_draft_chain(run_state: Any, spec_path: Path) -> None:
         if verdict != "accepted":
             _core.console.print("[red]Review rejected (re-draft retries exhausted).[/red]")
             for finding in findings:
-                _core.console.print(f"  [red]-[/red] {finding}")
+                text = finding.get("message", finding) if isinstance(finding, dict) else finding
+                _core.console.print(f"  [red]-[/red] {escape(str(text))}")
 
 
 @review_cli.command(name="draft")
@@ -369,12 +375,13 @@ def _display_review_result(result: ReviewResult) -> None:
     _core.console.print(verdict_style.get(result.verdict, str(result.verdict)))
 
     if result.summary:
-        _core.console.print(f"\n{result.summary}")
+        # escape(): LLM-authored text — stray [/tags] would raise MarkupError.
+        _core.console.print(f"\n{escape(result.summary)}")
 
     if result.findings:
         _core.console.print(f"\n[bold]Findings ({len(result.findings)}):[/bold]")
         for f in result.findings:
-            _core.console.print(f"  - {f.message}")
+            _core.console.print(f"  - {escape(f.message)}")
 
     if result.verdict in (ReviewVerdict.DENIED, ReviewVerdict.ERROR):
         raise typer.Exit(code=1)

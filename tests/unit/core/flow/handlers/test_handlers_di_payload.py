@@ -87,7 +87,7 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
 
         # Assert
         # 1. Pipeline loaded correctly
-        mock_load.assert_called_once_with("validation_code_spring-boot")
+        mock_load.assert_called_once_with("validation_code_spring-boot", project_dir=project_root)
 
         # 2. Rule step was injected
         assert mock_step.params["ast_payload"] == {
@@ -143,7 +143,9 @@ async def test_validate_spec_handler_loads_archetype(tmp_path: Path) -> None:
 
         await handler.execute(step, context)
 
-        mock_load.assert_called_once_with("validation_spec_default_spring-boot")
+        mock_load.assert_called_once_with(
+            "validation_spec_default_spring-boot", project_dir=project_root
+        )
 
 
 @pytest.mark.asyncio
@@ -208,7 +210,7 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
 
         await handler.execute(step, context)
 
-        mock_load.assert_called_once_with("validation_code_default")
+        mock_load.assert_called_once_with("validation_code_default", project_dir=project_root)
         assert mock_atom.run.call_count == 2
         mock_atom.run.assert_any_call({"intent": "read_file_structure", "path": str(code_file)})
         mock_atom.run.assert_any_call(
@@ -256,7 +258,7 @@ async def test_validate_spec_handler_falls_back_when_no_archetype(tmp_path: Path
 
         await handler.execute(step, context)
 
-        mock_load.assert_called_once_with("validation_spec_default")
+        mock_load.assert_called_once_with("validation_spec_default", project_dir=project_root)
 
 
 @pytest.mark.asyncio
@@ -380,7 +382,7 @@ async def test_validate_spec_handler_load_pipeline_fails_fallback(tmp_path: Path
         mock_resolver.resolve.return_value = "unrecognized_archetype"
         mock_resolver_cls.return_value = mock_resolver
 
-        def mock_load_side_effect(name):
+        def mock_load_side_effect(name, **kwargs):
             if name == "validation_spec_default_unrecognized_archetype":
                 raise ValueError("File not found")
             mock_pipeline = MagicMock()
@@ -393,7 +395,7 @@ async def test_validate_spec_handler_load_pipeline_fails_fallback(tmp_path: Path
         await handler.execute(step, context)
         # Should have called loading twice
         assert mock_load.call_count == 2
-        mock_load.assert_any_call("validation_spec_default")
+        mock_load.assert_any_call("validation_spec_default", project_dir=project_root)
 
 
 @pytest.mark.asyncio
@@ -436,7 +438,7 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
         mock_atom.run.side_effect = run_side_effect
         mock_atom_cls.return_value = mock_atom
 
-        def mock_load_side_effect(name):
+        def mock_load_side_effect(name, **kwargs):
             if name == "validation_code_unrecognized_archetype":
                 raise ValueError("File not found")
             mock_pipeline = MagicMock()
@@ -451,7 +453,7 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
         await handler.execute(step, context)
 
         assert mock_load.call_count == 2
-        mock_load.assert_any_call("validation_code_default")
+        mock_load.assert_any_call("validation_code_default", project_dir=project_root)
 
 
 @pytest.mark.asyncio

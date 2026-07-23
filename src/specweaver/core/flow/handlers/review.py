@@ -168,6 +168,10 @@ class ReviewSpecHandler:
                     "verdict": result.verdict.value,
                     "summary": result.summary,
                     "findings_count": len(result.findings),
+                    # INT-US-02 SF-03 (found by the FR-8 e2e): the finding TEXTS were never
+                    # exported — the inline report (FR-6) and the loop_back feedback to the
+                    # re-draft (FR-3) need them, not just a count.
+                    "findings": [f.model_dump() for f in result.findings],
                 },
                 started_at=started,
                 completed_at=_now_iso(),
@@ -313,6 +317,10 @@ class ReviewCodeHandler:
                     "verdict": result.verdict.value,
                     "summary": result.summary,
                     "findings_count": len(result.findings),
+                    # INT-US-02 SF-03 (found by the FR-8 e2e): the finding TEXTS were never
+                    # exported — the inline report (FR-6) and the loop_back feedback to the
+                    # re-draft (FR-3) need them, not just a count.
+                    "findings": [f.model_dump() for f in result.findings],
                 },
                 started_at=started,
                 completed_at=_now_iso(),

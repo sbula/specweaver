@@ -59,6 +59,83 @@ class TestReviewSpecHandler:
         assert call_kwargs.get("environment_context") == "mcp://mock:\n  |\n    mock"
 
 
+class TestReviewSpecOutputContract:
+    """INT-US-02 SF-03 (G-a): the handler MUST export finding dicts, not just a count.
+
+    The inline report (FR-6) prints `finding["message"]` and `sw review` rehydrates
+    a full ReviewResult from this output — both break silently if the shape drifts.
+    """
+
+    @pytest.mark.asyncio
+    @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec")
+    @patch("specweaver.core.flow.handlers.review.evaluate_and_fetch_mcp_context")
+    async def test_denied_spec_review_exports_findings_as_model_dumps(
+        self, mock_fetch_mcp, mock_review_spec, tmp_path: Path
+    ) -> None:
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(project_path=tmp_path, spec_path=spec, llm=MagicMock())
+        ctx.run_id = "test-run"
+        step = PipelineStep(name="rev", action=StepAction.REVIEW, target=StepTarget.SPEC)
+
+        from specweaver.workflows.review.reviewer import (
+            ReviewFinding,
+            ReviewResult,
+            ReviewVerdict,
+        )
+
+        findings = [
+            ReviewFinding(category="clarity", message="Section 2 is ambiguous", severity="major"),
+            ReviewFinding(category="scope", message="Missing error handling", severity="minor"),
+        ]
+        mock_review_spec.return_value = ReviewResult(
+            verdict=ReviewVerdict.DENIED, summary="needs work", findings=findings
+        )
+        mock_fetch_mcp.return_value = None
+
+        result = await ReviewSpecHandler().execute(step, ctx)
+
+        assert result.status == StepStatus.FAILED
+        assert result.output["findings_count"] == 2
+        # Full model_dump dicts — `sw review` rehydrates ReviewResult from these.
+        assert result.output["findings"] == [f.model_dump() for f in findings]
+        assert result.output["findings"][0]["message"] == "Section 2 is ambiguous"
+
+    @pytest.mark.asyncio
+    @patch("specweaver.workflows.review.reviewer.Reviewer.review_code")
+    @patch("specweaver.core.flow.handlers.review.evaluate_and_fetch_mcp_context")
+    async def test_denied_code_review_exports_findings_as_model_dumps(
+        self, mock_fetch_mcp, mock_review_code, tmp_path: Path
+    ) -> None:
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(
+            project_path=tmp_path, spec_path=spec, llm=MagicMock(), output_dir=tmp_path
+        )
+        ctx.run_id = "test-run"
+        (tmp_path / "test.py").write_text("x = 1")
+        step = PipelineStep(name="rev_code", action=StepAction.REVIEW, target=StepTarget.CODE)
+
+        from specweaver.workflows.review.reviewer import (
+            ReviewFinding,
+            ReviewResult,
+            ReviewVerdict,
+        )
+
+        findings = [ReviewFinding(category="bug", message="Off-by-one in loop", severity="major")]
+        mock_review_code.return_value = ReviewResult(
+            verdict=ReviewVerdict.DENIED, summary="broken", findings=findings
+        )
+        mock_fetch_mcp.return_value = None
+
+        result = await ReviewCodeHandler().execute(step, ctx)
+
+        assert result.status == StepStatus.FAILED
+        assert result.output["findings_count"] == 1
+        assert result.output["findings"] == [f.model_dump() for f in findings]
+        assert result.output["findings"][0]["message"] == "Off-by-one in loop"
+
+
 class TestReviewCodeHandler:
     """Tests for the review+code handler."""
 

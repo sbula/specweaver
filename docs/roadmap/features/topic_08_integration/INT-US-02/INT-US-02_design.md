@@ -205,7 +205,7 @@ Linear DAG; acyclic.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Draft → Validate → Review Inline Chain | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Composition-Root Provider Wiring | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Verifiable Proof | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Verifiable Proof | SF-01, SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 **Current status**: Design **APPROVED** (2026-07-22) — AD-6 = (a) feedback-aware re-draft.

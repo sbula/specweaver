@@ -155,13 +155,18 @@ class ValidateSpecHandler:
         if kind_str == "feature":
             pipeline_name = "validation_spec_feature"
 
+        # INT-US-02 SF-03 (inherited fix): pass project_dir so D-VAL-02's documented
+        # project-local override ({project}/.specweaver/pipelines/) actually applies on
+        # the flow-handler path — it was silently ignored (loader searched packaged only).
         if archetype:
             try:
-                pipeline = load_pipeline_yaml(f"{pipeline_name}_{archetype}")
+                pipeline = load_pipeline_yaml(
+                    f"{pipeline_name}_{archetype}", project_dir=project_path
+                )
             except Exception:
-                pipeline = load_pipeline_yaml(pipeline_name)
+                pipeline = load_pipeline_yaml(pipeline_name, project_dir=project_path)
         else:
-            pipeline = load_pipeline_yaml(pipeline_name)
+            pipeline = load_pipeline_yaml(pipeline_name, project_dir=project_path)
 
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
@@ -306,10 +311,12 @@ class ValidateCodeHandler:
             archetype = resolver.resolve(code_path)
 
         pipeline_name = f"validation_code_{archetype}" if archetype else "validation_code_default"
+        # D-VAL-02: pass project_dir so project-local pipeline overrides resolve (same
+        # fix as the spec-validation path above — was silently loading packaged defaults).
         try:
-            pipeline = load_pipeline_yaml(pipeline_name)
+            pipeline = load_pipeline_yaml(pipeline_name, project_dir=project_path)
         except Exception:
-            pipeline = load_pipeline_yaml("validation_code_default")
+            pipeline = load_pipeline_yaml("validation_code_default", project_dir=project_path)
 
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
