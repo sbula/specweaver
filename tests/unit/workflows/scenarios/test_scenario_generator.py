@@ -317,3 +317,22 @@ class TestFeedbackParam:
         assert len(result.scenarios) == 1
         prompt = mock_llm.generate.call_args[0][0]
         assert hostile in prompt
+
+
+class TestAdapterContract:
+    async def test_llmresponse_objects_are_normalized(self) -> None:
+        # [Graceful degradation / inherited defect #9] real adapters return
+        # LLMResponse objects (see reviewer.py: `response.text`), not strings —
+        # the generator was only ever tested against string mocks and crashed
+        # on `.strip()` in production.
+        from specweaver.infrastructure.llm.models import LLMResponse
+
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = LLMResponse(
+            text=json.dumps(_VALID_SCENARIO_SET), model="m"
+        )
+        gen = ScenarioGenerator(llm=mock_llm)
+        result = await gen.generate_scenarios(
+            spec_content=_SPEC, contract_content="", req_ids=["FR-1"]
+        )
+        assert len(result.scenarios) == 1

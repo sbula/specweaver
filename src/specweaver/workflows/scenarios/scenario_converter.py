@@ -5,11 +5,19 @@
 
 Pure-logic transformer. No LLM involvement (NFR-2).
 Produces executable pytest files with # @trace(FR-X) tags for C09 compatibility.
+
+INT-US-24 SF-03 (inherited defect #6): the emitted tests are REAL — they load
+the target module through a file-anchored importlib loader, call the function
+under test with the scenario inputs, and assert the expected output. Stub
+bodies (``...``) shipped originally and made every scenario run vacuously
+green. Every interpolated name/value goes through ``repr()`` or an identifier
+check: LLM-authored content can never inject statements into the emitted file.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -23,18 +31,25 @@ class ScenarioConverter:
     """
 
     @staticmethod
-    def convert(scenario_set: ScenarioSet) -> str:
+    def convert(scenario_set: ScenarioSet, stem: str | None = None) -> str:
         """Convert a ScenarioSet to a parametrized pytest file string.
 
-        Groups scenarios by ``function_under_test`` and generates one
-        parametrized test function per group. Each test function has
-        ``# @trace(FR-X)`` tags for C09 compatibility.
+        Groups scenarios by ``(function_under_test, category)`` — error-category
+        scenarios assert a raise, the others assert equality, so they cannot
+        share one parametrized body.
 
         Args:
             scenario_set: The scenarios to convert.
+            stem: The target-module stem (``src/{stem}.py``) as known by the
+                calling handler. Trusted over the LLM-authored
+                ``scenario_set.spec_path``, which is only a validated fallback.
 
         Returns:
             A valid Python test file string.
+
+        Raises:
+            ValueError: If no usable stem can be resolved, or a
+                ``function_under_test`` is not a plain Python identifier.
         """
         lines: list[str] = [
             '"""Auto-generated scenario tests from spec scenarios."""',
@@ -44,24 +59,80 @@ class ScenarioConverter:
         if not scenario_set.scenarios:
             return "\n".join(lines) + "\n"
 
-        lines.append("import pytest")
-        lines.append("")
-        lines.append("")
+        resolved_stem = stem or ScenarioConverter._stem_from_spec_path(scenario_set.spec_path)
+        if not resolved_stem:
+            msg = (
+                "Cannot resolve the target-module stem: no handler-provided stem and "
+                f"an unusable spec_path ({scenario_set.spec_path!r})."
+            )
+            raise ValueError(msg)
 
-        # Group scenarios by function_under_test
-        groups: dict[str, list[ScenarioDefinition]] = defaultdict(list)
         for scenario in scenario_set.scenarios:
-            groups[scenario.function_under_test].append(scenario)
+            if not scenario.function_under_test.isidentifier():
+                msg = (
+                    "function_under_test must be a plain Python identifier "
+                    f"(got {scenario.function_under_test!r}) — dotted/qualified or "
+                    "hostile names are rejected to keep the emitted file injection-free."
+                )
+                raise ValueError(msg)
 
-        for func_name, scenarios in groups.items():
-            lines.extend(ScenarioConverter._render_test_group(func_name, scenarios))
+        lines.extend(ScenarioConverter._render_header(resolved_stem))
+
+        # Group by (function, category): raise-asserting and equality-asserting
+        # scenarios need different bodies.
+        groups: dict[tuple[str, str], list[ScenarioDefinition]] = defaultdict(list)
+        for scenario in scenario_set.scenarios:
+            groups[(scenario.function_under_test, scenario.category)].append(scenario)
+
+        for (func_name, category), scenarios in groups.items():
+            lines.extend(ScenarioConverter._render_test_group(func_name, category, scenarios))
             lines.append("")
 
         return "\n".join(lines) + "\n"
 
     @staticmethod
+    def _stem_from_spec_path(spec_path: str) -> str | None:
+        """Validated fallback stem from the (LLM-authored) spec_path."""
+        if not spec_path or not str(spec_path).strip():
+            return None
+        candidate = Path(str(spec_path)).stem.replace("_spec", "")
+        return candidate or None
+
+    @staticmethod
+    def _render_header(stem: str) -> list[str]:
+        """Emit imports + the file-anchored target loader.
+
+        The anchor is relative to the emitted file's own location
+        (``scenarios/generated/`` → two parents up → project root → ``src/``),
+        so it needs no packaging, no sys.path edits, and tolerates
+        non-identifier stems. The filename is emitted via ``repr()``.
+        """
+        filename = f"{stem}.py"
+        return [
+            "import importlib.util",
+            "from pathlib import Path",
+            "",
+            "import pytest  # noqa: F401 — used by raise-asserting groups",
+            "",
+            f"_TARGET_PATH = Path(__file__).resolve().parents[2] / 'src' / {filename!r}",
+            "",
+            "",
+            "def _load_target():",
+            "    spec = importlib.util.spec_from_file_location('_scenario_target', _TARGET_PATH)",
+            "    module = importlib.util.module_from_spec(spec)",
+            "    spec.loader.exec_module(module)",
+            "    return module",
+            "",
+            "",
+            "_target = _load_target()",
+            "",
+            "",
+        ]
+
+    @staticmethod
     def _render_test_group(
         func_name: str,
+        category: str,
         scenarios: list[ScenarioDefinition],
     ) -> list[str]:
         """Render a test function (possibly parametrized) for a group of scenarios."""
@@ -73,11 +144,40 @@ class ScenarioConverter:
             lines.append(f"# @trace({req_id})")
 
         if len(scenarios) > 1:
-            lines.extend(ScenarioConverter._render_parametrize_data(func_name, scenarios))
+            lines.extend(
+                ScenarioConverter._render_parametrize_data(func_name, category, scenarios)
+            )
         else:
             lines.extend(ScenarioConverter._render_single_test(func_name, scenarios[0]))
 
         return lines
+
+    @staticmethod
+    def _render_call_body(
+        func_name: str,
+        inputs_expr: str,
+        expected_expr: str | None,
+        category: str,
+        indent: str = "    ",
+    ) -> list[str]:
+        """Render the REAL body: call the target; assert per category.
+
+        - ``error`` category → the call must raise (mechanical v1: Exception).
+        - expected expression present → equality assertion.
+        - otherwise → smoke call (must not raise).
+        """
+        call = f"_target.{func_name}(**{inputs_expr})"
+        if category == "error":
+            return [
+                f"{indent}with pytest.raises(Exception):",
+                f"{indent}    {call}",
+            ]
+        if expected_expr is not None:
+            return [
+                f"{indent}result = {call}",
+                f"{indent}assert result == {expected_expr}",
+            ]
+        return [f"{indent}{call}"]
 
     @staticmethod
     def _render_single_test(
@@ -94,22 +194,30 @@ class ScenarioConverter:
             lines.append(f"    # Preconditions: {', '.join(scenario.preconditions)}")
         lines.append(f"    # Input: {scenario.input_summary or repr(scenario.inputs)}")
         lines.append(f"    # Expected: {scenario.expected_behavior}")
-        lines.append("    ...")
+        expected_expr = (
+            repr(scenario.expected_output) if scenario.expected_output is not None else None
+        )
+        lines.extend(
+            ScenarioConverter._render_call_body(
+                func_name, repr(scenario.inputs), expected_expr, scenario.category
+            )
+        )
         return lines
 
     @staticmethod
     def _render_parametrize_data(
         func_name: str,
+        category: str,
         scenarios: list[ScenarioDefinition],
     ) -> list[str]:
         """Render a @pytest.mark.parametrize test for multiple scenarios."""
         lines: list[str] = []
 
-        # Build parametrize data
+        # Build parametrize data (ids via repr — hostile names stay inert text)
         param_entries: list[str] = []
         for s in scenarios:
             param_entries.append(
-                f'    pytest.param({s.inputs!r}, {s.expected_output!r}, id="{s.name}")'
+                f"    pytest.param({s.inputs!r}, {s.expected_output!r}, id={s.name!r})"
             )
 
         lines.append('@pytest.mark.parametrize("inputs,expected", [')
@@ -120,13 +228,19 @@ class ScenarioConverter:
         req_ids = sorted({s.req_id for s in scenarios})
         trace_str = "  # " + " ".join(f"@trace({rid})" for rid in req_ids)
 
-        lines.append(f"def test_{func_name}_scenarios(inputs, expected):{trace_str}")
+        lines.append(f"def test_{func_name}_{category}_scenarios(inputs, expected):{trace_str}")
 
         # Use first scenario's description as docstring
         first = scenarios[0]
         lines.append(f'    """Scenario group: {func_name} — {first.description}."""')
-        lines.append("    ...")
-
+        if category == "error":
+            lines.extend(ScenarioConverter._render_call_body(func_name, "inputs", None, "error"))
+        else:
+            # Rows with expected=None smoke-call; the assert tolerates them by
+            # comparing only when an expectation exists.
+            lines.append(f"    result = _target.{func_name}(**inputs)")
+            lines.append("    if expected is not None:")
+            lines.append("        assert result == expected")
         return lines
 
     @staticmethod

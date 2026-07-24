@@ -1,6 +1,34 @@
 # Scenario Pipelines Developer Guide
 
-This guide explains the Scenario Testing framework introduced in Feature 3.28, which builds on top of the parallel engine (Feature 3.27) to provide an independent, LLM-driven verification loop separate from the main implementation pipeline.
+This guide explains the Scenario Testing framework introduced in Feature 3.28 (`B-FLOW-01`), which builds on top of the parallel engine (Feature 3.27) to provide an independent, LLM-driven verification loop separate from the main implementation pipeline.
+
+> [!IMPORTANT]
+> **Updated for `INT-US-24` (2026-07-24)** — the base integration contract made this chain real:
+>
+> - **CLI journey**: `sw run scenario_integration <spec>` runs the whole chain (contract →
+>   dual fan-out → scenario tests → arbiter loop). Exit codes: COMPLETED → 0; FAILED/retries
+>   exhausted → non-zero; `spec_ambiguity` HITL park → 0 + resume hint. `sw resume` re-runs a
+>   fresh verification round (scenario evidence is NOT persisted across sessions — the honest
+>   arbiter error trips the loop_back and the round re-executes; verified by proof scenario E7).
+> - **Evidence contract**: for scenario runs `ValidateTestsHandler` publishes the raw QA export
+>   under `context.feedback["scenario_test_failures"]`; the arbiter consumes it on verdict —
+>   green (`total>0, failed==0, errors==0`) short-circuits with ZERO LLM cost; `total==0`
+>   fails loud; absent/malformed evidence is a loud error.
+> - **Scenario-kind semantics**: `kind: scenario` is a flow-level category, NOT a pytest
+>   marker; a scenario run collecting 0 tests FAILS (never a silent green).
+> - **REAL test bodies**: the mechanical converter emits genuine tests — a file-anchored
+>   importlib loader (stem chosen by the handler, never by LLM data), `target(**inputs)`
+>   calls, equality asserts on `expected_output`, `pytest.raises` for error-category. Groups
+>   are `(function, category)`-keyed. Emitted names/values go through identifier validation
+>   and `repr()` — LLM content cannot inject statements.
+> - **Verifiable proof**: `tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py`
+>   (E1–E8 on the real CLI).
+>
+> **Host-posture facts (until `C-EXEC-07` contains runs in worktrees):** scenario artifacts
+> (`contracts/`, `scenarios/definitions/`, `scenarios/generated/`) persist in your repo on
+> failed/aborted runs, and `scenarios/generated/test_*.py` is collectable by a bare `pytest`
+> at repo root — exclude that directory in your pytest config if you don't want verification
+> artifacts in your own test runs.
 
 ## Overview
 

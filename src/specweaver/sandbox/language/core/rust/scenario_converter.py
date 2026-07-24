@@ -34,7 +34,9 @@ def _to_snake_case(name: str) -> str:
 class RustScenarioConverter(ScenarioConverterInterface):
     """Converts a ``ScenarioSet`` to Rust integration tests (one per scenario)."""
 
-    def convert(self, scenario_set: ScenarioSet) -> str:  # type: ignore[override]
+    def convert(self, scenario_set: ScenarioSet, stem: str | None = None) -> str:  # type: ignore[override]
+        # INT-US-24 SF-03: `stem` is consumed by the python converter's real-body
+        # emission; accepted (and unused) here for interface parity.
         stem = Path(scenario_set.spec_path).stem.replace("_spec", "")
         mod_name = _to_snake_case(stem) + "_scenarios"
 

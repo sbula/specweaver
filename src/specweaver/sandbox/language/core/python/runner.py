@@ -14,7 +14,7 @@ import re
 import shlex
 import shutil
 import sys
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING
 
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
@@ -46,72 +46,13 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Parsing helpers
+# Parsing helpers — extracted to pytest_output.py (INT-US-24 SF-03, with the
+# inherited defect #7 order-independence fix). Re-exported for existing pins.
 # ---------------------------------------------------------------------------
 
-# Matches pytest summary lines like "5 passed in 0.50s" or "3 passed, 2 failed in 1.20s"
-_SUMMARY_RE = re.compile(
-    r"(?:(\d+)\s+passed)?"
-    r"(?:,?\s*(\d+)\s+failed)?"
-    r"(?:,?\s*(\d+)\s+error)?"
-    r"(?:,?\s*(\d+)\s+skipped)?"
-    r"\s+in\s+([\d.]+)s",
+from specweaver.sandbox.language.core.python.pytest_output import (  # noqa: E402
+    _parse_pytest_output,
 )
-
-# Matches "FAILED tests/test_foo.py::test_bar - <message>"
-_FAILURE_RE = re.compile(r"FAILED\s+(\S+)\s*-\s*(.*)")
-
-# Matches "TOTAL  100  15  85%"
-_COVERAGE_RE = re.compile(r"TOTAL\s+\d+\s+\d+\s+(\d+)%")
-
-
-class _ParsedOutput(TypedDict):
-    passed: int
-    failed: int
-    errors: int
-    skipped: int
-    total: int
-    duration: float
-    failures: list[TestFailure]
-    coverage_pct: float | None
-
-
-def _parse_pytest_output(stdout: str) -> _ParsedOutput:
-    """Parse pytest --tb=short -q output into structured data."""
-    result: _ParsedOutput = {
-        "passed": 0,
-        "failed": 0,
-        "errors": 0,
-        "skipped": 0,
-        "total": 0,
-        "duration": 0.0,
-        "failures": [],
-        "coverage_pct": None,
-    }
-
-    # Parse summary line
-    for match in _SUMMARY_RE.finditer(stdout):
-        result["passed"] = int(match.group(1) or 0)
-        result["failed"] = int(match.group(2) or 0)
-        result["errors"] = int(match.group(3) or 0)
-        result["skipped"] = int(match.group(4) or 0)
-        result["duration"] = float(match.group(5))
-
-    result["total"] = result["passed"] + result["failed"] + result["errors"] + result["skipped"]
-
-    # Parse failure lines
-    for match in _FAILURE_RE.finditer(stdout):
-        result["failures"].append(
-            TestFailure(nodeid=match.group(1), message=match.group(2).strip()),
-        )
-
-    # Parse coverage
-    cov_match = _COVERAGE_RE.search(stdout)
-    if cov_match:
-        result["coverage_pct"] = float(cov_match.group(1))
-
-    return result
-
 
 # ---------------------------------------------------------------------------
 # PythonQARunner

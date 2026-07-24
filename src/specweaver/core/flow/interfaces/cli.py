@@ -79,6 +79,25 @@ def _get_state_store() -> StateStore:
     return StateStore(state_db_path())
 
 
+def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> None:
+    """Wire context.llm for non-validate-only pipelines — shared by run AND
+    resume (INT-US-24 defect #10: resume historically skipped this, silently
+    degrading every resumed LLM step to "LLM not configured" errors)."""
+    if pipeline_name == "validate_only":
+        return
+    try:
+        from specweaver.core.config.settings_loader import load_settings
+        from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
+
+        settings = load_settings(_core.get_db(), project_path.name)
+        _, adapter, _gen_config = create_llm_adapter(settings, telemetry_project=project_path.name)
+        context.llm = adapter
+    except (LLMAdapterError, ValueError):
+        _core.console.print(
+            "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
+        )
+
+
 def _resolve_spec_path(
     pipeline_name: str,
     spec_or_module: str,
@@ -338,21 +357,7 @@ def _execute_run(  # noqa: C901
         telemetry_project=project_path.name,
     )
 
-    # Wire up LLM if needed (non-validate-only pipelines)
-    if pipeline_def.name != "validate_only":
-        try:
-            from specweaver.core.config.settings_loader import load_settings
-            from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
-
-            settings = load_settings(_core.get_db(), project_path.name)
-            _, adapter, _gen_config = create_llm_adapter(
-                settings, telemetry_project=project_path.name
-            )
-            context.llm = adapter
-        except (LLMAdapterError, ValueError):
-            _core.console.print(
-                "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
-            )
+    _wire_llm(context, pipeline_def.name, project_path)
 
     # Load topology
     topo_graph = load_topology(project_path)
@@ -545,6 +550,8 @@ def resume(  # noqa: C901
         ),
         telemetry_project=project_path.name,
     )
+
+    _wire_llm(context, pipeline_def.name, project_path)
 
     display = _create_display(use_json=json_output, verbose=verbose)
 

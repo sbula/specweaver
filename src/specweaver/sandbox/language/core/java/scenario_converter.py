@@ -34,7 +34,9 @@ def _to_pascal_case(stem: str) -> str:
 class JavaScenarioConverter(ScenarioConverterInterface):
     """Converts a ``ScenarioSet`` to a JUnit 5 parametrized Java test file."""
 
-    def convert(self, scenario_set: ScenarioSet) -> str:  # type: ignore[override]
+    def convert(self, scenario_set: ScenarioSet, stem: str | None = None) -> str:  # type: ignore[override]
+        # INT-US-24 SF-03: `stem` is consumed by the python converter's real-body
+        # emission; accepted (and unused) here for interface parity.
         """Return JUnit 5 test class content (string)."""
         from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition  # noqa: F401
 

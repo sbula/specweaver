@@ -100,6 +100,14 @@ class ArbitrateDualPipelineHandler:
             if "params" not in step_dict:
                 step_dict["params"] = {}
             step_dict["params"]["component"] = component
+            # INT-US-24 SF-03 (inherited defect #8): the fan-out is autonomous
+            # by definition (FR-5b: no human channel inside it) and the parent
+            # CLI enforces spec-must-exist — HITL gates (e.g. new_feature.yaml's
+            # draft_spec gate, added by INT-US-02) would park the sub-pipeline
+            # on every first pass and deadlock the dual step. Downgrade to auto.
+            gate_def = step_dict.get("gate")
+            if isinstance(gate_def, dict) and gate_def.get("type") == "hitl":
+                gate_def["type"] = "auto"
             valid_steps.append(step_dict)
 
         pipe_data["steps"] = valid_steps

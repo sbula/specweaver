@@ -33,7 +33,9 @@ def _to_pascal_case(stem: str) -> str:
 class KotlinScenarioConverter(ScenarioConverterInterface):
     """Converts a ``ScenarioSet`` to a JUnit 5 Kotlin parametrized test file."""
 
-    def convert(self, scenario_set: ScenarioSet) -> str:  # type: ignore[override]
+    def convert(self, scenario_set: ScenarioSet, stem: str | None = None) -> str:  # type: ignore[override]
+        # INT-US-24 SF-03: `stem` is consumed by the python converter's real-body
+        # emission; accepted (and unused) here for interface parity.
         stem = Path(scenario_set.spec_path).stem.replace("_spec", "")
         class_name = _to_pascal_case(stem)
 

@@ -104,5 +104,7 @@ class TestLanguageAtom:
         assert str(result.exports["output_path"]).endswith("test_c01.rs")
 
         mock_create.assert_called_once_with(tmp_path)
-        mock_converter.convert.assert_called_once_with(mock_scenario_set)
+        # INT-US-24 SF-03 (R/B RED-2): the handler-known stem anchors the emitted
+        # target-loader — pinned as part of the call contract.
+        mock_converter.convert.assert_called_once_with(mock_scenario_set, stem="c01")
         mock_converter.output_path.assert_called_once_with("c01", tmp_path)

@@ -107,7 +107,11 @@ class ScenarioGenerator:
                 retry_prompt = prompt
 
             raw = await self._llm.generate(retry_prompt, config=self._config)
-            cleaned = self._clean_json(raw)
+            # INT-US-24 SF-03 (inherited defect #9): real adapters return
+            # LLMResponse objects (reviewer.py precedent: `response.text`) —
+            # string returns are the unit-mock convention only.
+            raw_text = raw.text if hasattr(raw, "text") else raw
+            cleaned = self._clean_json(raw_text)
 
             try:
                 data = json.loads(cleaned)

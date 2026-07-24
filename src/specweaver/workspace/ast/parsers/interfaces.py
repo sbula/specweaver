@@ -185,7 +185,7 @@ class ScenarioConverterInterface(ABC):
     """
 
     @abstractmethod
-    def convert(self, scenario_set: object) -> str:
+    def convert(self, scenario_set: object, stem: str | None = None) -> str:
         """Convert a ``ScenarioSet`` to test file content.
 
         Args:

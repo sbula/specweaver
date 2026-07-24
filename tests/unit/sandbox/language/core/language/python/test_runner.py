@@ -322,3 +322,60 @@ class TestRunDebuggerInterpreterResolution:
 
         called_cmd = mock_executor.execute.call_args.args[0]
         assert called_cmd == ["python", "main.py"]
+
+
+# ---------------------------------------------------------------------------
+# INT-US-24 SF-03 (inherited defect #7): the pytest summary parser must handle
+# pytest's REAL summary orderings. "2 failed, 1 passed in 0.03s" (failed
+# FIRST — pytest's actual order for mixed outcomes) previously parsed as
+# passed=1/failed=0 → a failing run reported SUCCESS. Failed-only lines
+# parsed fine, which is how the bug survived the US-3 loop.
+# ---------------------------------------------------------------------------
+
+
+class TestParsePytestSummaryOrderings:
+    def _parse(self, stdout: str):
+        from specweaver.sandbox.language.core.python.runner import _parse_pytest_output
+
+        return _parse_pytest_output(stdout)
+
+    def test_mixed_failed_first_real_pytest_order(self) -> None:
+        # [Hostile→Happy] the shape that false-greened.
+        out = self._parse("FF.\n2 failed, 1 passed in 0.03s\n")
+        assert out["failed"] == 2
+        assert out["passed"] == 1
+        assert out["total"] == 3
+
+    def test_passed_first_still_parses(self) -> None:
+        out = self._parse("3 passed, 2 failed in 1.20s\n")
+        assert out["passed"] == 3
+        assert out["failed"] == 2
+
+    def test_failed_only(self) -> None:
+        out = self._parse("1 failed in 0.5s\n")
+        assert out["failed"] == 1
+        assert out["passed"] == 0
+
+    def test_errors_and_skipped_any_order(self) -> None:
+        out = self._parse("1 error, 2 skipped, 3 passed in 0.9s\n")
+        assert out["errors"] == 1
+        assert out["skipped"] == 2
+        assert out["passed"] == 3
+
+    def test_warnings_ignored(self) -> None:
+        # [Boundary] "5 passed, 2 warnings in 0.4s" — warnings are not a count bucket.
+        out = self._parse("5 passed, 2 warnings in 0.40s\n")
+        assert out["passed"] == 5
+        assert out["failed"] == 0
+        assert out["total"] == 5
+
+    def test_failure_line_without_message_suffix(self) -> None:
+        # [Boundary] -q short summaries may lack the " - msg" suffix.
+        out = self._parse(
+            "FAILED scenarios/generated/test_x.py::test_a[row1]\n"
+            "FAILED tests/test_y.py::test_b - AssertionError: boom\n"
+            "2 failed in 0.1s\n"
+        )
+        assert len(out["failures"]) == 2
+        assert out["failures"][0].nodeid.endswith("test_a[row1]")
+        assert out["failures"][1].message == "AssertionError: boom"

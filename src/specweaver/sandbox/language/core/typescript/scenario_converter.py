@@ -28,7 +28,9 @@ if TYPE_CHECKING:
 class TypeScriptScenarioConverter(ScenarioConverterInterface):
     """Converts a ``ScenarioSet`` to a Jest ``test.each`` test file."""
 
-    def convert(self, scenario_set: ScenarioSet) -> str:  # type: ignore[override]
+    def convert(self, scenario_set: ScenarioSet, stem: str | None = None) -> str:  # type: ignore[override]
+        # INT-US-24 SF-03: `stem` is consumed by the python converter's real-body
+        # emission; accepted (and unused) here for interface parity.
         Path(scenario_set.spec_path).stem.replace("_spec", "")
 
         all_req_ids = sorted({s.req_id for s in scenario_set.scenarios})

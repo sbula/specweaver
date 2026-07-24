@@ -196,6 +196,10 @@ class TestArbitrateEvidenceContract:
         assert result.status == StepStatus.ERROR
         assert "scenario" in result.error_message.lower()
         assert "evidence" in result.error_message.lower()
+        # SF-03 E7: absence has TWO honest causes — broken wiring, or a
+        # cross-session resume (feedback is not persisted). The message must
+        # name both so a resumed ambiguity park doesn't read as an engine bug.
+        assert "resumed" in result.error_message.lower()
         run_context.llm.generate.assert_not_called()
 
     @pytest.mark.asyncio
@@ -298,3 +302,25 @@ class TestArbitrateEvidenceContract:
         assert result.status == StepStatus.ERROR
         assert "malformed" in result.error_message.lower()
         run_context.llm.generate.assert_not_called()
+
+
+class TestAdapterContract:
+    @pytest.mark.asyncio
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
+    async def test_llmresponse_objects_are_normalized(self, mock_create_filter, run_context):
+        # [Graceful degradation / inherited defect #9] real adapters return
+        # LLMResponse — the arbiter regex-searched the OBJECT and ERRORed on
+        # every production arbitration.
+        from specweaver.infrastructure.llm.models import LLMResponse
+
+        mock_create_filter.return_value.filter.return_value = "Filtered"
+        run_context.llm.generate.return_value = LLMResponse(
+            text='{"verdict": "code_bug", "coding_feedback": "Check FR-1"}', model="m"
+        )
+        result = await ArbitrateVerdictHandler().execute(_arb_step(), run_context)
+
+        assert result.status == StepStatus.FAILED
+        assert (
+            run_context.feedback["generate_code"]["findings"]["results"][0]["message"]
+            == "Check FR-1"
+        )

@@ -117,7 +117,9 @@ class ArbitrateVerdictHandler(StepHandler):
         if "scenario_test_failures" not in context.feedback:
             return _error_result(
                 "scenario evidence missing — feedback['scenario_test_failures'] was never "
-                "published (wiring defect between run_scenario_tests and the arbiter)",
+                "published (wiring defect between run_scenario_tests and the arbiter), or the "
+                "run was resumed across sessions (scenario evidence is not persisted — re-run "
+                "the pipeline)",
                 started,
             )
         evidence = context.feedback["scenario_test_failures"]
@@ -207,7 +209,10 @@ class ArbitrateVerdictHandler(StepHandler):
             base_prompt.add_context(filtered_trace, label="Failures")
 
             prompt = base_prompt.build()
-            raw_response = await context.llm.generate(prompt)
+            response = await context.llm.generate(prompt)
+            # INT-US-24 SF-03 (inherited defect #9): normalize the adapter's
+            # LLMResponse (string returns are the unit-mock convention only).
+            raw_response = response.text if hasattr(response, "text") else response
 
             try:
                 # Naive JSON extract

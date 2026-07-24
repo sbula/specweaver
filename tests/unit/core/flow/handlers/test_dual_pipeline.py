@@ -128,6 +128,34 @@ class TestArbitrateDualPipelineHandler:
         assert result.status == StepStatus.FAILED
         assert "LLM Error" in result.error_message
 
+    def test_build_runner_downgrades_hitl_gates_to_auto(self, run_context):
+        # INT-US-24 SF-03 (inherited defect #8): the dual fan-out reuses
+        # new_feature.yaml VERBATIM — including the HITL gate INT-US-02 put on
+        # draft_spec — so the coding sub-pipeline parked on every first pass
+        # and the dual step could never complete. The fan-out is autonomous by
+        # definition (FR-5b total opacity: no human channel inside it) and the
+        # parent CLI already enforces spec-must-exist, so HITL gates downgrade
+        # to auto in the sub-pipeline definitions.
+        handler = ArbitrateDualPipelineHandler()
+        with (
+            patch("importlib.resources.files") as mock_files,
+            patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
+        ):
+            mock_resource = MagicMock()
+            mock_resource.joinpath.return_value.read_text.return_value = (
+                "name: mock_pipe\nsteps:\n"
+                "  - name: draft_spec\n    action: draft\n    target: spec\n"
+                "    gate:\n      type: hitl\n      condition: completed\n"
+            )
+            mock_files.return_value = mock_resource
+
+            handler._build_runner("mock_pipe.yaml", "auth", run_context)
+            _, kwargs = mock_runner_cls.call_args
+            pipeline = kwargs["pipeline"]
+
+            assert pipeline.steps[0].gate.type.value == "auto"
+            assert pipeline.steps[0].gate.condition.value == "completed"
+
     def test_build_runner_injects_component_parameter(self, run_context):
         handler = ArbitrateDualPipelineHandler()
         with (

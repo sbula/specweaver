@@ -34,14 +34,14 @@ class PythonScenarioConverter(ScenarioConverterInterface):
     Delegates to the existing ``ScenarioConverter`` static methods (unchanged logic).
     """
 
-    def convert(self, scenario_set: ScenarioSet) -> str:  # type: ignore[override]
+    def convert(self, scenario_set: ScenarioSet, stem: str | None = None) -> str:  # type: ignore[override]
         """Return pytest file content (string)."""
         # Deferred import to break circular dependency with scenario_converter.py alias
         from specweaver.workflows.scenarios.scenario_converter import (
             ScenarioConverter,
         )
 
-        return ScenarioConverter.convert(scenario_set)
+        return ScenarioConverter.convert(scenario_set, stem=stem)
 
     def output_path(self, stem: str, project_root: Path) -> Path:
         """Return ``project_root/scenarios/generated/test_{stem}_scenarios.py``."""
