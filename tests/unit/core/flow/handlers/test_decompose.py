@@ -35,6 +35,83 @@ def mock_step() -> PipelineStep:
     )
 
 
+# ---------------------------------------------------------------------------
+# INT-US-24 SF-01 T2 (FR-1): mode=="dual_pipeline" delegates to the dual
+# handler BEFORE the DecompositionPlan guard; anything else is byte-identical.
+# ---------------------------------------------------------------------------
+
+
+class TestDualPipelineDispatch:
+    @pytest.mark.asyncio
+    async def test_dual_mode_delegates_before_plan_guard(
+        self, mock_context: RunContext
+    ) -> None:
+        # [Happy] context.plan is None — the old code failed here with
+        # "No DecompositionPlan"; dual mode must never hit that guard.
+        from specweaver.core.flow.engine.state import StepResult
+
+        sentinel = StepResult(
+            status=StepStatus.PASSED,
+            output={"status": "dual_completed"},
+            started_at="",
+            completed_at="",
+        )
+        step = PipelineStep(
+            name="run_dual_pipelines",
+            action=StepAction.ORCHESTRATE,
+            target=StepTarget.COMPONENTS,
+            params={"mode": "dual_pipeline"},
+        )
+        assert mock_context.plan is None
+        with patch(
+            "specweaver.core.flow.handlers.dual_pipeline.ArbitrateDualPipelineHandler.execute",
+            new=AsyncMock(return_value=sentinel),
+        ) as mock_exec:
+            result = await OrchestrateComponentsHandler().execute(step, mock_context)
+
+        mock_exec.assert_awaited_once()
+        assert result is sentinel
+
+    @pytest.mark.asyncio
+    async def test_unrecognized_mode_warns_and_keeps_plan_path(
+        self, mock_context: RunContext, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # [Hostile] a typo'd mode must not silently die with the misleading
+        # "No DecompositionPlan" alone — WARNING names the bad mode, behavior
+        # stays byte-identical (plan path → its usual failure).
+        step = PipelineStep(
+            name="run_dual_pipelines",
+            action=StepAction.ORCHESTRATE,
+            target=StepTarget.COMPONENTS,
+            params={"mode": "Dual_Pipeline"},
+        )
+        with caplog.at_level("WARNING"):
+            result = await OrchestrateComponentsHandler().execute(step, mock_context)
+
+        assert result.status == StepStatus.FAILED
+        assert "No DecompositionPlan" in str(result.error_message)
+        assert any("Dual_Pipeline" in r.message for r in caplog.records)
+
+    @pytest.mark.asyncio
+    async def test_dual_mode_without_pipeline_runner_fails_clean(
+        self, mock_context: RunContext
+    ) -> None:
+        # [Graceful degradation] delegation with context.pipeline_runner=None
+        # must yield a clean, named failure — not an AttributeError artifact
+        # ("'NoneType' object has no attribute '_context'").
+        step = PipelineStep(
+            name="run_dual_pipelines",
+            action=StepAction.ORCHESTRATE,
+            target=StepTarget.COMPONENTS,
+            params={"mode": "dual_pipeline"},
+        )
+        assert mock_context.pipeline_runner is None
+        result = await OrchestrateComponentsHandler().execute(step, mock_context)
+
+        assert result.status in (StepStatus.FAILED, StepStatus.ERROR)
+        assert "pipeline_runner" in str(result.error_message)
+
+
 @pytest.mark.asyncio
 async def test_decompose_feature_handler_success(
     mock_context: RunContext, mock_step: PipelineStep, tmp_path: Path

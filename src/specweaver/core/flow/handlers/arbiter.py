@@ -109,18 +109,83 @@ class ArbitrateVerdictHandler(StepHandler):
         started = _now_iso()
         logger.info("Executing ARBITRATE VERDICT for %s", context.run_id)
 
+        # INT-US-24 FR-2: the evidence contract. run_scenario_tests ALWAYS publishes
+        # the raw QA export under this reserved key for scenario runs — its absence
+        # means the wire is broken and must fail LOUD, never green. The key is
+        # consumed ON VERDICT (popped only on terminal branches) so a spec_ambiguity
+        # park can resume and re-arbitrate, and an ERROR retry re-reads it.
+        if "scenario_test_failures" not in context.feedback:
+            return _error_result(
+                "scenario evidence missing — feedback['scenario_test_failures'] was never "
+                "published (wiring defect between run_scenario_tests and the arbiter)",
+                started,
+            )
+        evidence = context.feedback["scenario_test_failures"]
+        counts_ok = isinstance(evidence, dict) and all(
+            isinstance(evidence.get(k, 0), int) for k in ("total", "failed", "errors")
+        )
+        failures = evidence.get("failures", []) if isinstance(evidence, dict) else None
+        if (
+            not counts_ok
+            or not isinstance(failures, list)
+            or any(not isinstance(f, dict) for f in failures)
+        ):
+            return _error_result(
+                "malformed scenario evidence under feedback['scenario_test_failures'] — "
+                "expected the QA export shape (total/failed/errors ints, failures list of dicts)",
+                started,
+            )
+
+        total = evidence.get("total", 0)
+        failed = evidence.get("failed", 0)
+        errors = evidence.get("errors", 0)
+
+        if total == 0:
+            # A zero-collected run leaked through the continue-gate — there is
+            # nothing to arbitrate and nothing was verified. Evidence retained
+            # (not a terminal verdict); a loop-back re-publishes fresh evidence.
+            return StepResult(
+                status=StepStatus.FAILED,
+                error_message=(
+                    "No scenario tests executed — nothing to arbitrate; the behavioral "
+                    "verification cannot pass on an empty run."
+                ),
+                started_at=started,
+                completed_at=_now_iso(),
+            )
+
+        if failed == 0 and errors == 0:
+            # Verification green: no arbitration needed, no LLM call spent.
+            logger.info("ArbitrateVerdictHandler: %d/%d scenario tests green — no arbitration", total, total)
+            context.feedback.pop("scenario_test_failures", None)
+            return StepResult(
+                status=StepStatus.PASSED,
+                output={
+                    "verdict": "no_failures",
+                    "passed": evidence.get("passed", total),
+                    "total": total,
+                },
+                started_at=started,
+                completed_at=_now_iso(),
+            )
+
         if not context.llm:
             return _error_result("LLM not configured in context", started)
 
         try:
-            # Safely recover test failures (which contain the unfiltered exception traces)
-            test_results = (
-                context.feedback.get("run_scenario_tests", {}).get("output", {}).get("results", [])
-            )
+            # Compose the raw evidence text from the real TestFailure payloads.
             raw_tracing = ""
-            for res in test_results:
-                if res.get("status") == "FAIL" or res.get("status") == "ERROR":
-                    raw_tracing += f"{res.get('message', '')}\n\n"
+            for f in failures:
+                raw_tracing += (
+                    f"{f.get('nodeid', '')}: {f.get('message', '')}\n{f.get('stacktrace', '')}\n\n"
+                )
+            if not raw_tracing.strip():
+                # errors-only runs (e.g. collection/import crash) carry no per-test
+                # failure entries — arbitrate on the aggregate signal instead.
+                raw_tracing = (
+                    f"{errors} collection/execution error(s) out of {total} scenario tests; "
+                    "no per-test failure details available."
+                )
 
             # Dynamically filter framework trace lines using the unified Filter Interface
             from specweaver.sandbox.language.core.stack_trace_filter_factory import (
@@ -129,9 +194,6 @@ class ArbitrateVerdictHandler(StepHandler):
 
             filter_impl = create_stack_trace_filter(context.project_path)
             filtered_trace = filter_impl.filter(raw_tracing)
-
-            if context.spec_path.exists():
-                pass
 
             from specweaver.core.flow.handlers._profiles import ARBITER, resolve_profile
             from specweaver.core.flow.handlers.base import _build_base_prompt
@@ -164,6 +226,7 @@ class ArbitrateVerdictHandler(StepHandler):
 
             if result.verdict == ArbitrateVerdict.CODE_BUG:
                 logger.info("Arbitrate Verdict: CODE_BUG (%s)", result.spec_clause)
+                context.feedback.pop("scenario_test_failures", None)  # terminal verdict
                 context.feedback["generate_code"] = {
                     "from_step": "arbitrate_verdict",
                     "findings": {
@@ -186,6 +249,7 @@ class ArbitrateVerdictHandler(StepHandler):
 
             elif result.verdict == ArbitrateVerdict.SCENARIO_ERROR:
                 logger.info("Arbitrate Verdict: SCENARIO_ERROR (%s)", result.spec_clause)
+                context.feedback.pop("scenario_test_failures", None)  # terminal verdict
                 context.feedback["generate_scenarios"] = {
                     "from_step": "arbitrate_verdict",
                     "findings": {

@@ -35,6 +35,7 @@ from specweaver.core.flow.handlers.decompose import (
 # Re-export all handler implementations
 from specweaver.core.flow.handlers.draft import DraftSpecHandler
 from specweaver.core.flow.handlers.drift import DriftCheckHandler
+from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.generation import (
     GenerateCodeHandler,
     GenerateContractHandler,
@@ -55,6 +56,7 @@ from specweaver.core.flow.handlers.validation import (
 )
 
 __all__ = [
+    "ArbitrateDualPipelineHandler",
     "ArbitrateVerdictHandler",
     "BashActionHandler",
     "ConvertScenarioHandler",

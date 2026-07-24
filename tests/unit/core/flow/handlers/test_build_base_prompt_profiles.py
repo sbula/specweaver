@@ -31,7 +31,7 @@ def run_context(mock_db):
         date_iso="2026-05-09",
         safe_config=PromptSafeConfig(llm_provider="fake", llm_model="fake"),
     )
-    return RunContext(
+    ctx = RunContext(
         project_path=Path("/tmp/fake_project"),
         spec_path=Path("/tmp/fake_project/spec.yaml"),
         constitution="Always be honest",
@@ -40,6 +40,18 @@ def run_context(mock_db):
         project_metadata=metadata,
         parsers={},
     )
+    # INT-US-24 FR-2: ArbitrateVerdictHandler now requires failure evidence to
+    # reach _build_base_prompt (green/absent evidence short-circuits before any
+    # prompt is built). Harmless for every other handler — the reserved key
+    # matches no step name.
+    ctx.feedback["scenario_test_failures"] = {
+        "passed": 0,
+        "failed": 1,
+        "errors": 0,
+        "total": 1,
+        "failures": [{"nodeid": "t.py::t", "message": "boom", "stacktrace": "tb"}],
+    }
+    return ctx
 
 
 @pytest.mark.asyncio

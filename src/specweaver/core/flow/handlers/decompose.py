@@ -100,6 +100,21 @@ class OrchestrateComponentsHandler(StepHandler):
         from specweaver.commons import json
         from specweaver.core.flow.engine.models import PipelineDefinition
 
+        # INT-US-24 FR-1 (AD-1): "dual_pipeline" mode is a plan-less orchestration —
+        # it must branch BEFORE the DecompositionPlan guard below.
+        mode = step.params.get("mode")
+        if mode == "dual_pipeline":
+            from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
+
+            logger.info("OrchestrateComponentsHandler: delegating to dual-pipeline mode")
+            return await ArbitrateDualPipelineHandler().execute(step, context)
+        if mode is not None:
+            logger.warning(
+                "OrchestrateComponentsHandler: unrecognized orchestrate mode %r — "
+                "falling back to decomposition-plan orchestration",
+                mode,
+            )
+
         try:
             if not context.plan:
                 return StepResult(

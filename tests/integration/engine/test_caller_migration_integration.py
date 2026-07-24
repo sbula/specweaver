@@ -41,6 +41,15 @@ async def test_integration_arbitrate_verdict_full_path(mock_build, mock_run_cont
 
     mock_run_context.llm.generate.return_value = '{"verdict": "code_bug", "spec_clause": "test", "coding_feedback": "test", "scenario_feedback": "test"}'
 
+    # INT-US-24 FR-2: failure evidence required to reach the prompt-building path.
+    mock_run_context.feedback["scenario_test_failures"] = {
+        "passed": 0,
+        "failed": 1,
+        "errors": 0,
+        "total": 1,
+        "failures": [{"nodeid": "t.py::t", "message": "boom", "stacktrace": "tb"}],
+    }
+
     handler = ArbitrateVerdictHandler()
     step = PipelineStep(
         name="arb",

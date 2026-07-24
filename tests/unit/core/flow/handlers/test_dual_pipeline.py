@@ -171,3 +171,37 @@ class TestArbitrateDualPipelineHandler:
         result = await handler.execute(step, run_context)
         assert result.status == StepStatus.ERROR
         assert "Simulated runner crash" in result.error_message
+
+
+# ---------------------------------------------------------------------------
+# INT-US-24 SF-01 T2 (FR-1): the dual handler is a first-class export, and
+# the reserved evidence key can never collide with a bundled step name.
+# ---------------------------------------------------------------------------
+
+
+class TestDualPipelineWiring:
+    def test_handler_exported_from_registry_module(self):
+        # [Happy] dead-code no more: importable from the handlers registry
+        # module and listed in __all__.
+        from specweaver.core.flow.handlers import registry
+
+        assert hasattr(registry, "ArbitrateDualPipelineHandler")
+        assert "ArbitrateDualPipelineHandler" in registry.__all__
+
+    def test_reserved_evidence_key_collides_with_no_bundled_step(self):
+        # [Boundary] `_extract_prompt_feedback` pops feedback by STEP name;
+        # the reserved key is safe only while no bundled pipeline names a step
+        # "scenario_test_failures".
+        import importlib.resources
+
+        import yaml
+
+        pkg = importlib.resources.files("specweaver.workflows.pipelines")
+        for item in pkg.iterdir():
+            if not item.name.endswith(".yaml"):
+                continue
+            data = yaml.safe_load(item.read_text(encoding="utf-8"))
+            for step_def in data.get("steps", []):
+                assert step_def.get("name") != "scenario_test_failures", (
+                    f"{item.name} defines a step named after the reserved evidence key"
+                )

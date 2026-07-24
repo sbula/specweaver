@@ -31,9 +31,21 @@ def run_context():
     ctx.run_id = "test_run"
     ctx.step_records = []
 
+    # INT-US-24 FR-2: the arbiter consumes the reserved evidence key published
+    # by ValidateTestsHandler (raw QA export shape).
     ctx.feedback = {
-        "run_scenario_tests": {
-            "output": {"results": [{"status": "FAIL", "message": "AssertionError: 1 != 2"}]}
+        "scenario_test_failures": {
+            "passed": 1,
+            "failed": 1,
+            "errors": 0,
+            "total": 2,
+            "failures": [
+                {
+                    "nodeid": "test_auth_scenarios.py::test_login",
+                    "message": "AssertionError: 1 != 2",
+                    "stacktrace": "tb-frames",
+                }
+            ],
         }
     }
 

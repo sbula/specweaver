@@ -232,6 +232,14 @@ async def test_arbitrate_verdict_uses_arbiter_profile(mock_build, run_context, t
     handler = ArbitrateVerdictHandler()
     run_context.llm = AsyncMock()
     run_context.llm.generate.return_value = '{"verdict": "CODE_BUG", "spec_clause": "test", "coding_feedback": "test", "scenario_feedback": "test"}'
+    # INT-US-24 FR-2: failure evidence required to reach prompt building.
+    run_context.feedback["scenario_test_failures"] = {
+        "passed": 0,
+        "failed": 1,
+        "errors": 0,
+        "total": 1,
+        "failures": [{"nodeid": "t.py::t", "message": "boom", "stacktrace": "tb"}],
+    }
 
     step = PipelineStep(
         name="arb",

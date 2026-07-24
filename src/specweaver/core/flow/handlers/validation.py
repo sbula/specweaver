@@ -387,19 +387,50 @@ class ValidateTestsHandler:
 
         targets = self._resolve_targets(context, target, kind)
 
+        # INT-US-24 FR-3: "scenario" is a flow-level category, not a pytest marker —
+        # the generated scenario file carries no such marker, so a `-m scenario` filter
+        # would deselect every test and false-green the verification. Suppress the
+        # marker at the atom-call site only (_resolve_targets above keeps the original
+        # kind for its tests/<kind> fallback paths).
+        atom_kind = "" if kind == "scenario" else kind
+
         atom = self._get_atom(context)
         result = atom.run(
             {
                 "intent": "run_tests",
                 "target": target,
                 "targets": targets,
-                "kind": kind,
+                "kind": atom_kind,
                 "scope": step.params.get("scope", ""),
                 "timeout": step.params.get("timeout", 120),
                 "coverage": step.params.get("coverage", False),
                 "coverage_threshold": step.params.get("coverage_threshold", 70),
             }
         )
+
+        # INT-US-24 FR-2: scenario runs ALWAYS publish the raw QA export under the
+        # reserved key — pass, fail, and zero-collected alike. The arbiter consumes
+        # it on verdict; for it, an ABSENT key is a wiring defect (loud ERROR), so
+        # publication must be unconditional for this kind.
+        if kind == "scenario":
+            context.feedback["scenario_test_failures"] = result.exports
+
+        # INT-US-24 FR-3: a scenario verification that executed zero tests proves
+        # nothing — the atom's total==0 SUCCESS is legitimate only for the pristine
+        # incremental paths of the other kinds.
+        if kind == "scenario" and result.exports.get("total", 0) == 0:
+            msg = (
+                f"No scenario tests executed (target={target}) — nothing was collected; "
+                "the behavioral verification cannot pass on an empty run."
+            )
+            logger.warning("ValidateTestsHandler: %s", msg)
+            return StepResult(
+                status=StepStatus.FAILED,
+                output=result.exports,
+                error_message=msg,
+                started_at=started,
+                completed_at=_now_iso(),
+            )
 
         if result.status.value == "SUCCESS":
             logger.info("ValidateTestsHandler: tests PASSED (kind=%s, target=%s)", kind, target)

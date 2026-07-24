@@ -32,6 +32,11 @@ class ArbitrateDualPipelineHandler:
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
+        if context.pipeline_runner is None:
+            return _error_result(
+                "pipeline_runner not available in context — cannot fan out dual pipelines",
+                started,
+            )
         stem = context.spec_path.stem.replace("_spec", "")
         logger.info("ArbitrateDualPipelineHandler: Starting dual pipeline for component '%s'", stem)
 
