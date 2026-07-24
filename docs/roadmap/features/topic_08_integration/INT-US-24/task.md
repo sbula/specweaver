@@ -67,4 +67,4 @@
 - [x] Phase 6 — task.md record + impl-plan handoff updated; dev-guide currency update deferred to SF-03 (per design)
 - [x] Phase 7 — INT-US-24_sf01_walkthrough.md written
 - [x] Phase 7.5 — no fix-required findings; prompt-injection class = pre-existing E-VAL-03 scope; bool/int + passed-count LOW cosmetic; non-python runners verified kind-agnostic
-- [ ] Phase 8 — commit boundary (HITL hard stop)
+- [x] Phase 8 — CB-1 committed `3fece855` (direct to main, 2026-07-24). **SF-01 COMPLETE.**

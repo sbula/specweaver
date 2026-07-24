@@ -241,14 +241,17 @@ Strictly linear — no parallel sessions.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Make the Chain Executable | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Make the Chain Executable | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Close the Feedback Loop | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | CLI Journey + Verifiable Proof | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED; SF-01 Impl Plan APPROVED (2026-07-23; FR-2 refined during
-planning — consume-on-verdict + `total>0 ∧ failed==0 ∧ errors==0` short-circuit).
-**Next step**: `/specweaver-dev` for SF-01 (tasks T1→T5, single CB-1).
+**Current status**: **SF-01 COMMITTED `3fece855`** (2026-07-24, direct to main) — the
+scenario_integration chain is executable end-to-end (dual dispatch + arbiter evidence contract +
+false-green fix); full suite 5466 passed / 0 failures. As-built: arbiter dead code removed
+(was SF-02 scope); non-python runners verified kind-agnostic.
+**Next step**: Implementation plan for **SF-02 — Close the Feedback Loop** (FR-4 feedback-aware
+scenario regeneration + FR-6 opacity pins) via the implementation-plan skill.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.
