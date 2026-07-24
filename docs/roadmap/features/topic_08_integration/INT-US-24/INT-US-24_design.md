@@ -253,16 +253,18 @@ Strictly linear — no parallel sessions.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Make the Chain Executable | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Close the Feedback Loop | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Close the Feedback Loop | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | CLI Journey + Verifiable Proof | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: **SF-01 COMMITTED `3fece855`** (2026-07-24, direct to main) — the
-scenario_integration chain is executable end-to-end (dual dispatch + arbiter evidence contract +
-false-green fix); full suite 5466 passed / 0 failures. As-built: arbiter dead code removed
-(was SF-02 scope); non-python runners verified kind-agnostic.
-**Next step**: Implementation plan for **SF-02 — Close the Feedback Loop** (FR-4 feedback-aware
-scenario regeneration + FR-6 opacity pins) via the implementation-plan skill.
+**Current status**: **SF-02 COMMITTED `7e3cb13c`** (2026-07-24, direct to main; SF-01 was
+`3fece855`) — the feedback loop is closed on both verdict branches (FR-4 regeneration-with-delta,
+FR-6 opacity pinned on the real seam); full suite 5479 passed / 0 failures. The SF-03 DAL intake
+decision is RESOLVED to (a): posture documented, escalation delegated to `C-EXEC-07` /
+`INT-US-09-SF06` (minted `37cf5fb9`).
+**Next step**: Implementation plan for **SF-03 — CLI Journey + Verifiable Proof** (FR-5 exit-code/
+display/park contract + FR-7 six-scenario e2e on the real CLI) via the implementation-plan skill.
+Closing SF-03 closes INT-US-24 → **US-24 epic 🟢**.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.
