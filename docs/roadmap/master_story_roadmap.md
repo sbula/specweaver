@@ -17,57 +17,16 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-> **Refreshed 2026-07-24.** Former Candidate 1 is **delivered**: `INT-US-24` closed → **US-24 is 🟢**
-> (SF-01 dual dispatch + arbiter evidence · SF-02 feedback loop · SF-03 CLI journey + 9-scenario
-> proof). The proof flushed **5 more inherited defects** — headline: the converter emitted STUB test
-> bodies (behavioral verification was vacuously green by construction) and the pytest summary parser
-> false-greened mixed "failed, passed" outcomes in D-VAL-01's core. Also minted en route: `C-EXEC-07`
-> + `INT-US-09-SF06` (DAL-escalated isolation for pipeline runs — the PO-perspective DAL question),
-> now queue-eligible. Remaining candidates promote; `C-EXEC-07` enters at rank 5.
+> **Refreshed 2026-07-24** (US-24 delivered → left the queue; `C-EXEC-07` minted and enters at 5).
 
-1. **Candidate 1: Close US-21 — Autonomous Feature Decomposition (`INT-US-21`)** ← epic-closer
-   * **Features:** `INT-US-21` Base Integration Contract. Capability deps all built: `US-2 Core` ✅,
-     `D-INTL-02` Feature Decomposition ✅, `D-INTL-03` Explicit Plan Phase ✅; the Recursive Planning
-     add-on (`INT-US-21-SF01` + `C-INTL-01`) is even already 🟢.
-   * **Pros:** Integration-only epic-closer; rides on the proven drafter chain + provider seam. Its design
-     intake inherits a documented gap: `context.plan` is populated NOWHERE in `src/` (recorded in the
-     INT-US-24 design research), so plan-driven orchestration wiring is exactly its integration scope.
-   * **Cons:** `INT-US-21` contract not yet designed.
-2. **Candidate 2: Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
-   * **Features:** `C-VAL-05` (battery engine stays code; semantic judgment content → versioned, DAL-gated rubric files).
-   * **Pros:** Low-risk (no execution-path change); establishes the "engine hard / content soft" precedent the
-     approved middle-way direction rests on; substrate for `B-VAL-03`, `E-VAL-04`, `B-INTL-08`. Small, well-bounded.
-   * **Cons:** No epic unlock. (`C-FLOW-11` + `C-INTL-06`, the larger middle-way builds, deliberately queue AFTER
-     this proves the pattern — and `C-FLOW-11` needs its runtime-binding decision at intake.)
-3. **Candidate 3: AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE
-   * **Features:** `E-VAL-03`.
-   * **Pros:** Protects the validation/LLM pipeline from injected instructions embedded in source — urgency
-     INCREASED AGAIN: `INT-US-24` put LLM-authored failure traces and verdict feedback into arbitration and
-     regeneration prompts (flagged at every SF's Red/Blue as exactly this class), on top of the autonomous
-     DAL-escalated US-3 flows. (Security Mandate can bump this above 1–2.)
-   * **Cons:** Hardening; no epic unlock.
-4. **Candidate 4: Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
-   * **Features:** `B-FLOW-05` + `INT-US-04-SF02`.
-   * **Pros:** Prevents runaway LLM cost (EDoS) natively in the Flow Engine — elevated relevance: the autonomous
-     US-3 loop AND the US-24 dual-pipeline loop (which re-runs whole verification rounds on loop_back) are live;
-     `C-FLOW-11`'s budget-cap NFR needs exactly this substrate.
-   * **Cons:** Hardening; no epic unlock.
-5. **Candidate 5: DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07` + `INT-US-09-SF06`)** ← DAL PARITY (minted 2026-07-24)
-   * **Features:** `C-EXEC-07` (pipeline-aware allow-list derivation + dual-fan-out-in-worktree + `sw run`/`sw resume`
-     escalation wiring) integrated by `INT-US-09-SF06`.
-   * **Pros:** Closes the asymmetry the PO question exposed: the tool's most untrusted execution surface
-     (LLM-derived scenario tests over LLM-generated code, now LIVE via `sw run scenario_integration`) has the
-     weakest default; also contains scenario artifact droppings + the bare-pytest collection hazard documented
-     in the dev guide.
-   * **Cons:** Engine/capability work (not integration-only); no epic unlock.
+1. **Close US-21 (`INT-US-21`)** — epic-closer, integration-only. Prereqs all ✅: `US-2 Core`, `D-INTL-02`, `D-INTL-03`.
+2. **Rubrics-as-Content (`C-VAL-05`)** — middle-way first bite. Prereqs: none. Details: [topic_05](topics/topic_05_validation.md).
+3. **AST Prompt Injection Sanitization (`E-VAL-03`)** — security mandate (may preempt 1–2). Prereqs: none.
+4. **Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** — financial safety. Prereqs: none. Details: [topic_03](topics/topic_03_flow_engine.md).
+5. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07` + `INT-US-09-SF06`)** — DAL parity for `sw run`/`sw resume`. Prereqs: `C-EXEC-06` ✅. Details: [topic_06](topics/topic_06_sandbox.md) / [US-09_integration.md](topics/topic_08_integration/US-09_integration.md).
 
-> **Integration-only reserve (updated 2026-07-24, post US-24 closure):** in the queue: Candidate 1
-> (`US-21`). In reserve: **`US-16`** (AI Ops & Cost Routing), **`US-22`** (Polyglot Contracts), and
-> **`US-23`** (MCP Tool Extension). Each needs only its INT contract; they backfill the top slots as
-> those close. (`US-2` delivered 2026-07-23; `US-24` delivered 2026-07-24 — both left the queue.)
-> **Not queue-eligible:** `US-17` (blocked on unbuilt `B-VAL-04`), `US-19` (dep review resolved — blocked on
-> unbuilt `C-FLOW-04` Work Packet Bundling), `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013`
-> (too small; fold into the next API-touching story).
+> **Reserve** (integration-only epic-closers; backfill as slots free): `US-16`, `US-22`, `US-23`.
+> **Not queue-eligible:** `US-17` (needs `B-VAL-04`), `US-19` (needs `C-FLOW-04`), `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013` (fold into next API-touching story).
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -118,11 +77,11 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟡 **Configurable Multi-Stage Reviews:**
         *   `[ ]` **INT-US-01-SF03:** Sub-Story Integration (Pending Design)
         *   `✅` **E-VAL-02:** Auto-discover Standards
-        *   `[ ]` **E-VAL-04:** Multi-stage Reviews — *(2026-07-21) to be designed rubric-first on the `C-VAL-05` substrate*
+        *   `[ ]` **E-VAL-04:** Multi-stage Reviews
         *   `✅` **B-VAL-02:** Spec Rot Interceptor
-    *   🔴 **Rubrics-as-Content (the "middle way" for judgment):**
-        *   `[ ]` **INT-US-01-SF05:** Sub-Story Integration (Pending Design) — *(2026-07-24 audit: every add-on group carries its own integration story)*
-        *   `[ ]` **C-VAL-05:** [Rubrics-as-Content Validation](features/topic_05_validation/C-VAL-05/C-VAL-05_design.md) (STUB — design doc not yet run) — battery engine stays hardcoded; semantic judgment content (`S03` stranger-test, `S07` test-first, review criteria) externalizes to versioned, per-project-overridable, DAL-gated markdown rubric files (checksums recorded for audit). Recommended first bite of the middle-way direction.
+    *   🔴 **Rubrics-as-Content:**
+        *   `[ ]` **INT-US-01-SF05:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **C-VAL-05:** Rubrics-as-Content Validation
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **INT-US-01-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-04:** High-Performance Rust Validation Core
@@ -130,7 +89,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ### 🟢 US-2: The Interactive Drafter
 *   **User Benefit:** I can have the LLM co-author a spec with me section-by-section.
 *   **Core Required (MVS):**
-    *   `✅` **INT-US-02:** Base Integration Contract defined in [US-02_integration.md](topics/topic_08_integration/US-02_integration.md) — ✅ [design APPROVED](features/topic_08_integration/INT-US-02/INT-US-02_design.md); **SF-01** (feedback-aware draft→validate→review inline chain, the revived rejection loop) + **SF-02** (composition-root provider seam, TTY-gated; headless parks exit 0) + **SF-03** (verifiable proof; flushed 5 inherited defects incl. both dead D-VAL-02 flow-handler paths) all committed. **Verifiable Proof:** `tests/e2e/capabilities/workflows/test_int_us_02_drafter_e2e.py` (7 scenarios: accept, reject→re-draft→accept, headless park, retries exhausted, provider crash, both cross-session park→resume journeys).
+    *   `✅` **INT-US-02:** Base Integration Contract defined in [US-02_integration.md](topics/topic_08_integration/US-02_integration.md) (Complete)
     *   `✅` **E-UI-01:** CLI Scaffold
     *   `✅` **E-SENS-01:** Loom Filesystem Tools
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
@@ -144,14 +103,14 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Remote UI Integration:**
         *   `[ ]` **INT-US-02-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **D-UI-04:** REST API - Interactive Authoring
-    *   🔴 **Grill-Style Agentic Drafting** *(blocked on `C-FLOW-11`; sequenced after the base contract closes)*:
-        *   `[ ]` **INT-US-02-SF03:** Sub-Story Integration (Pending Design) — wires `D-INTL-07` into `sw draft`/`new_feature` via the `C-FLOW-11` draft-step dial; reuses the base contract's gates (S-battery → review → bounded loop) verbatim. May **replace** the `E-INTL-02` engine or keep it as the oneshot/headless fallback — decided at `D-INTL-07` design intake (spec-immutable / software-evolves rule).
-        *   `[ ]` **D-INTL-07:** [Agentic Interview Drafting (Grill-Style)](features/topic_04_intelligence/D-INTL-07/D-INTL-07_design.md) (STUB) — adaptive grilling interview + `/to-spec`-style synthesis as rubric content. **Depends on: `C-FLOW-11` (hard), `C-VAL-05` (soft).**
+    *   🔴 **Grill-Style Agentic Drafting** *(blocked on `C-FLOW-11`)*:
+        *   `[ ]` **INT-US-02-SF03:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **D-INTL-07:** Agentic Interview Drafting (Grill-Style) — needs `C-FLOW-11` (hard), `C-VAL-05` (soft)
 
 ### 🟢 US-3: Autonomous Implementation
 *   **User Benefit:** I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.
 *   **Core Required (MVS):**
-    *   `✅` **INT-US-03:** Base Integration Contract defined in [US-03_integration.md](topics/topic_08_integration/US-03_integration.md) — ✅ [design APPROVED](features/topic_08_integration/INT-US-03/INT-US-03_design.md); **SF-01** (generation→QA loop) + **SF-02** (lint-fix reflection loop) + **SF-03** (zero-trust isolation + e2e proof) all committed. SF-03 consumes `C-EXEC-06` per-run isolation with DAL-driven auto-escalation (high-assurance code auto-sandboxes; small projects stay on host). **Verifiable Proof:** `tests/e2e/sandbox/test_int_us_03_isolation_e2e.py` + `tests/integration/interfaces/cli/test_cli_implement_isolation.py`.
+    *   `✅` **INT-US-03:** Base Integration Contract defined in [US-03_integration.md](topics/topic_08_integration/US-03_integration.md) (Complete)
     *   `✅` **US-1 Core** *(provides Validation Engine)*
     *   `✅` **US-9 Core** *(provides Zero-Trust Sandbox)*
     *   `✅` **US-28 Core** *(provides Agent State Ledger)*
@@ -165,9 +124,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **INT-US-03-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
-    *   🔴 **Graduated Autonomy (the "middle way" dial):**
-        *   `[ ]` **INT-US-03-SF03:** Sub-Story Integration (Pending Design) — *(2026-07-24 audit; add-on ID — distinct from the base contract's internal "INT-US-03 SF-03" sub-feature, which is committed)*
-        *   `[ ]` **C-FLOW-11:** [Graduated Autonomy — DAL-Driven Execution-Mode Dial](features/topic_03_flow_engine/C-FLOW-11/C-FLOW-11_design.md) (STUB — design doc not yet run) — work steps gain `mode: oneshot | agentic`; the agentic mode runs a budget-capped, skill-mounted work unit inside `C-EXEC-06` session isolation, with mode selection resolved from DAL policy (mirrors the shipped AD-8 escalation pattern). Pilot consumer: the `sw implement` inner loop.
+    *   🔴 **Graduated Autonomy:**
+        *   `[ ]` **INT-US-03-SF03:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial) — needs `C-EXEC-06` ✅; sequenced behind `C-VAL-05`
 
 ### 🟢 US-4: Context-Aware Flow Orchestration
 *   **User Benefit:** I can define complex multi-step workflows (draft → review → code → test) and run them autonomously with the agent aware of cross-file dependencies.
@@ -206,12 +165,12 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟢 **Configurable Prompt Render Profiles:**
         *   `✅` **INT-US-04-SF08:** Sub-Story Integration defined in [SF-08: Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
         *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles
-    *   🔴 **Envelope-vs-Content Prompt Externalization (the "middle way" for context):**
-        *   `[ ]` **INT-US-04-SF10:** Sub-Story Integration (Pending Design) — *(2026-07-24 audit: every add-on group carries its own integration story)*
-        *   `[ ]` **C-INTL-06:** [Envelope-vs-Content Prompt Externalization](features/topic_04_intelligence/C-INTL-06/C-INTL-06_design.md) (STUB — design doc not yet run) — `PromptBuilder` narrows to the deterministic envelope (structure, `TECH-007` escaping, metadata, profiles); constitution/standards/agent-memory content externalizes to mounted files / pull-access shared by `oneshot` slots and `C-FLOW-11` work units. Carries the evolution of the delivered `C-INTL-05`/`B-INTL-09` paths without reopening them; redirects `TECH-006`'s factory-centralization destination.
+    *   🔴 **Envelope-vs-Content Prompt Externalization:**
+        *   `[ ]` **INT-US-04-SF10:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **C-INTL-06:** Envelope-vs-Content Prompt Externalization — sequenced behind `C-VAL-05`
     *   🔴 **Declarative Dynamic Prompt Routing:**
         *   `[ ]` **INT-US-04-SF09:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-INTL-10:** Declarative Prompt Optimization (DSPy-style routing) — *(2026-07-21) may be superseded: premised on owning slot-prompt assembly, the layer `C-INTL-06`/`C-FLOW-11` shrink; at design time re-scope the optimization target to rubric/skill content (`C-VAL-05`) or retire*
+        *   `[ ]` **B-INTL-10:** Declarative Prompt Optimization
 
 ### 🟢 US-5: Polyglot Code Understanding
 *   **User Benefit:** SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.
@@ -296,15 +255,15 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 ### 🟢 US-9: The Zero-Trust Sandbox
 *   **User Benefit:** The agent is physically incapable of destroying my host machine, and its execution memory is perfectly deterministic.
 *   **Core Required (MVS):**
-    *   `✅` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md) — **Verifiable Proof:** `tests/e2e/sandbox/test_int_us_09_isolation_e2e.py` (real git worktree, unmocked: `action: bash` + `run_tests`/pytest run worktree-bounded under the opt-in US-9 policy, source root unmutated). Container-free (US-5 + E-EXEC-01 + C-EXEC-02). ⚠️ **Done for single-step only** — `TECH-012` defect: multi-step isolated pipelines crash (2nd-step branch collision) and generated files never survive between steps; fixed by `INT-US-09-SF05`. **Backlog:** API-run policy wiring (`pipelines.py`); containerization is the separate `INT-US-09-SF01` add-on.
+    *   `✅` **INT-US-09:** Base Integration Contract defined in [US-09_integration.md](topics/topic_08_integration/US-09_integration.md) (Complete)
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
     *   `✅` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
-    *   `✅` **C-EXEC-02:** [Native CLI Action Nodes](features/topic_06_sandbox/C-EXEC-02/C-EXEC-02_design.md) — SF-1/SF-2/SF-3 all complete. **Verifiable Proof:** `tests/integration/core/flow/handlers/test_bash_action_integration.py` (real `PipelineRunner` + `StepHandlerRegistry` executing a real script, end-to-end + router branching + `step_records` propagation; no e2e test — justified in the design doc's ROI section as an internal engine capability, not yet wired into a user-facing CLI pipeline)
+    *   `✅` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   🟡 **Containerized Isolation:**
         *   `[ ]` **INT-US-09-SF01:** Sub-Story Integration (Pending Design)
         *   `✅` **D-EXEC-01:** Podman/Docker Integration
-        *   `✅` **B-EXEC-01:** [Ephemeral Podman Sub-Containers](features/topic_06_sandbox/B-EXEC-01/B-EXEC-01_design.md) — **Verifiable Proof:** `tests/integration/sandbox/execution/test_container_executor_integration.py` + `tests/integration/sandbox/atoms/qa_runner/python/test_container_atom_integration.py` (real Podman engine: RO-mount write-blocking, RW-scratch write-allowance, `--network none` egress-blocking, guaranteed cleanup, full `factory→atom→executor` chain). Integration-tier, not literal e2e-tier (CLI-invocation) — noted transparently, not silently resolved; see the design doc's Session Handoff.
+        *   `✅` **B-EXEC-01:** Ephemeral Podman Sub-Containers
     *   🔴 **Security Defenses:**
         *   `[ ]` **INT-US-09-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **E-EXEC-02:** Air-Gapped Network Egress Control
@@ -314,12 +273,12 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **INT-US-09-SF04:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-EXEC-03:** Git Worktree Bouncer C-Bindings (Rust PyO3)
-    *   🟢 **Per-Run (Session) Worktree Isolation:** ← unblocks closing US-3
-        *   `✅` **INT-US-09-SF05:** Sub-Story Integration — **delivered by `C-EXEC-06`** (no separate design required; the composition-root policy wiring, `allowed_paths` threading, and multi-step freshly-generated-file e2e proof were all shipped by `C-EXEC-06` SF-03). `TECH-012` resolved. See [US-09_integration.md → INT-US-09-SF05](topics/topic_08_integration/US-09_integration.md) for the full rationale. **`INT-US-03 SF-03` consumes this** (its remaining job: the one-line `sw implement` wiring + implement e2e).
-        *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation (DAL-C) — one worktree per untrusted span, single end-of-run reconcile (vs. today's per-step create/reconcile/teardown). Adds `RunContext.allowed_paths` + commit-before-reconcile + composition-root policy/allow-list; resolves the `TECH-012` defect. *The capability build (SF-01/02/03 all committed). DAL-C because the single reconcile is the sole write-back authorization gate over the user's real repo.* **Verifiable Proof:** `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py` + `tests/integration/core/flow/engine/test_session_policy_fullchain.py`. API composition-root wiring tracked as `TECH-013`.
-    *   🔴 **DAL-Escalated Isolation for Pipeline Runs:** *(minted 2026-07-24; origin: INT-US-24 SF-03 intake — the DAL question)*
+    *   🟢 **Per-Run (Session) Worktree Isolation:**
+        *   `✅` **INT-US-09-SF05:** Sub-Story Integration — delivered by `C-EXEC-06`; see [US-09_integration.md](topics/topic_08_integration/US-09_integration.md)
+        *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
+    *   🔴 **DAL-Escalated Isolation for Pipeline Runs:**
         *   `[ ]` **INT-US-09-SF06:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — extend the INT-US-03 AD-8 escalation (`dal_auto_escalate`) to the `sw run`/`sw resume` composition roots so ANY journey executing generated code (scenario_integration, new_feature) auto-sandboxes at/above `auto_isolate_min_dal`, matching `sw implement`. Requires **pipeline-aware allow-list derivation** (`_derive_allowed_paths` is implement-shaped `[src/{stem}.py, tests/test_{stem}.py]` — scenario artifacts `contracts/`, `scenarios/definitions/`, `scenarios/generated/` would be silently dropped at reconcile today) + dual-fan-out-in-worktree semantics + proof incl. a `scenario_integration` run. Supersedes AD-8's per-caller opt-out by a NEW decision (INT-US-03's finished docs untouched).
+        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — needs `C-EXEC-06` ✅
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
 **Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*
@@ -409,7 +368,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **B-EXEC-03:** Blast radius / locality enforcement
     *   🔴 **Agent Independence Protocols:**
         *   `[ ]` **INT-US-14-SF03:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — *(2026-07-21) depends on `C-FLOW-11` work units + `C-EXEC-06` session isolation (multi-agent = N work units)*
+        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — needs `C-FLOW-11` + `C-EXEC-06` ✅
 
 ### 🟡 US-15: Enterprise Audit & Traceability
 **Benefit:** *I can hand a compliance auditor a ledger that proves exactly which LLM generated which line of code based on which business requirement.*
@@ -561,12 +520,12 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict Security Gating:**
         *   `[ ]` **INT-US-23-SF01:** Sub-Story Integration (Pending Design)
-        *   `[ ]` **B-INTL-05:** Dynamic Tool Gating via Archetypes — *(2026-07-21) design jointly with `C-FLOW-11`'s role model: the tool-allowlist half of "role = tools + mounted skills + DAL-scoped gates"*
+        *   `[ ]` **B-INTL-05:** Dynamic Tool Gating via Archetypes — design jointly with `C-FLOW-11`
 
 ### 🟢 US-24: Behavioral Scenario Verification
 **Benefit:** *SpecWeaver runs parallel behavioral verification pipelines to prove the generated code actually solves the business scenario, not just syntax tests.*
 *   **Core Required (MVS):**
-    *   `✅` **INT-US-24:** Base Integration Contract defined in [US-24_integration.md](topics/topic_08_integration/US-24_integration.md) — ✅ [design APPROVED](features/topic_08_integration/INT-US-24/INT-US-24_design.md); **SF-01** (`3fece855` dual dispatch + arbiter evidence + false-green fix) + **SF-02** (`7e3cb13c` feedback loop closed both verdict branches, opacity seam-pinned) + **SF-03** (`08cffe0d` CLI journey + proof; flushed 5 MORE inherited defects incl. the stub converter bodies and the pytest-parser mixed-summary false-green) all committed. **Verifiable Proof:** `tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py` (9 scenarios on the real CLI: happy · code_bug buggy→fixed · scenario_error regeneration · ambiguity park · exhaustion · zero-collected · park-heals-through-the-loop resume · resume-degraded · generator exhaustion) + `tests/integration/workflows/scenarios/test_converter_execution.py`.
+    *   `✅` **INT-US-24:** Base Integration Contract defined in [US-24_integration.md](topics/topic_08_integration/US-24_integration.md) (Complete)
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **B-FLOW-01:** Scenario Testing Pipeline
     *   `✅` **D-VAL-01:** QA Runner Tool
@@ -691,26 +650,20 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-009:** [Git & Filesystem Subprocess Migration](features/topic_07_technical_debt/TECH-009/TECH-009_design.md)
         *   `✅` SF-01: GitExecutor Subprocess Migration (constructor-injected `SubprocessExecutor`, backward-compatible default)
         *   `✅` SF-02: Filesystem Search (ripgrep) Subprocess Migration (`grep_content`/`_grep_ripgrep` gain an optional `executor` param)
-*   **Origin:** E-EXEC-01 backlog (follow-up ticket)
-*   **Deferred future scope (found during C-EXEC-02 SF-1 pre-commit, not yet a numbered SF):**
-    *   `assurance/validation/interfaces/cli_drift.py`'s `git diff --cached` query — kept on raw `subprocess` with a documented `noqa: TID251`. Routing it through `sandbox.git`'s `GitExecutor` would be the architecturally-correct fix (narrower coupling than a direct `SubprocessExecutor` import), but requires opening a new `assurance.validation` → `sandbox` dependency in `tach.toml` that doesn't exist today — a real architecture decision, not a lint fix.
-    *   `assurance/standards/discovery.py`'s `git ls-files` query — same treatment, `noqa: TID251` with a documented reason. This module's `context.yaml` **explicitly forbids** `specweaver/sandbox/*` ("High-level orchestrators must never bypass the flow engine to natively execute raw processes") — the correct long-term fix is routing through the flow engine (e.g. a `GitAtom`-based pipeline step), not a direct sandbox import at all.
+*   **Deferred future scope:** see [TECH-009_design.md](features/topic_07_technical_debt/TECH-009/TECH-009_design.md) (two documented `noqa: TID251` git queries in `assurance/`).
 
 ### 🔴 TECH-010: MCP Persistent-Process Executor Migration
-**Benefit:** *Closes the last raw `subprocess.Popen()` call in the sandbox (`mcp/core/executor.py`) by giving `SubprocessExecutor` — or a sibling class — a long-lived, bidirectional streaming-process mode, so `MCPExecutor`'s JSON-RPC-over-stdio bridge gains the same env isolation, credential stripping, and telemetry the rest of the sandbox already has.*
+**Benefit:** *Closes the last raw `subprocess.Popen()` in the sandbox via a persistent/streaming-process executor mode for the MCP bridge.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-010:** MCP Persistent-Process Executor Migration (design doc not yet written)
-*   **Origin:** Found during C-EXEC-02 SF-1 pre-commit gate (2026-07-13) while auditing repo-wide TID251 violations. `MCPExecutor` keeps a subprocess alive across many `call_rpc()` calls (background reader thread, persistent stdin/stdout pipes) — architecturally incompatible with `SubprocessExecutor.execute()`, which is a one-shot blocking call (`proc.communicate()`, waits for process exit). Migrating it onto the existing one-shot executor would break the MCP bridge, not just risk a regression — this needs its own design for a persistent/streaming-process abstraction. Currently exempted via a documented `noqa: TID251` in `mcp/core/executor.py`.
+    *   `[ ]` **TECH-010:** [MCP Persistent-Process Executor Migration](features/topic_07_technical_debt/TECH-010/TECH-010_design.md)
 
 ### 🔴 TECH-011: Load-Time Params Validation for All Pipeline Step Types
-**Benefit:** *Gives every pipeline step type fast, load-time feedback on malformed/missing `params` — consistent with how `PipelineDefinition.validate_flow()` already fails fast on invalid `(action, target)` combinations — instead of a mistyped param (e.g. a step-level key that should be nested under `params:`) silently surfacing as a confusing runtime handler error, potentially much later in a long, HITL-gated pipeline.*
+**Benefit:** *Fast, load-time validation of every step type's `params` instead of confusing runtime handler errors.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md) (design doc not yet written)
-*   **Origin:** Found during C-EXEC-02 SF-2's implementation-plan Phase 4 (2026-07-14). SF-2 deliberately did NOT special-case load-time validation for `action: bash` steps' `params.script` (would have introduced the first action-specific exception to the engine's otherwise-uniform "params are opaque until a handler runs at execution time" behavior) — this ticket tracks doing it properly, for all step types uniformly, as its own design.
+    *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md)
 
 ### 🔴 TECH-013: API Composition Roots Do Not Resolve Worktree-Isolation Policy
-**Benefit:** *Makes REST-triggered pipeline runs honor the operator's `[sandbox]` worktree-isolation policy (per-step `enforce_worktree_isolation` AND per-run `enforce_session_isolation`), instead of silently running with isolation off regardless of settings — closing a blast-radius gap for any deployment that starts autonomous/untrusted runs via the API.*
+**Benefit:** *REST-triggered pipeline runs honor the operator's `[sandbox]` worktree-isolation policy.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md) (STUB — design doc not yet written)
-*   **Origin:** Recorded during `C-EXEC-06 SF-03`'s implementation-plan Phase 4 (2026-07-20). SF-03 wired per-run isolation policy at the CLI composition roots only (matching where `enforce_isolation` already lives) and deferred the API run sites (`start_pipeline_run`/`resume_run`/`submit_gate_decision`, a pre-existing INT-US-09 gap) to this ticket. The shared `apply_session_policy` helper SF-03 introduces is meant to be reused verbatim at the API sites.
+    *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
 
