@@ -17,51 +17,54 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-> **Refreshed 2026-07-23.** Former Candidate 1 is **delivered**: `INT-US-02` closed → **US-2 is 🟢**
-> (SF-01 revived rejection loop · SF-02 provider seam · SF-03 e2e proof, which flushed 5 inherited
-> defects incl. both dead D-VAL-02 flow-handler paths). US-21 is now integration-only (all dep boxes
-> synced). Prior deliveries stand: US-3 🟢 (`C-EXEC-06` → `INT-US-09-SF05` → `INT-US-03 SF-03`),
-> `TECH-012` resolved, middle-way direction minted (`C-VAL-05`/`C-FLOW-11`/`C-INTL-06`). Remaining
-> candidates promote one rank each; `US-21` enters from the reserve.
+> **Refreshed 2026-07-24.** Former Candidate 1 is **delivered**: `INT-US-24` closed → **US-24 is 🟢**
+> (SF-01 dual dispatch + arbiter evidence · SF-02 feedback loop · SF-03 CLI journey + 9-scenario
+> proof). The proof flushed **5 more inherited defects** — headline: the converter emitted STUB test
+> bodies (behavioral verification was vacuously green by construction) and the pytest summary parser
+> false-greened mixed "failed, passed" outcomes in D-VAL-01's core. Also minted en route: `C-EXEC-07`
+> + `INT-US-09-SF06` (DAL-escalated isolation for pipeline runs — the PO-perspective DAL question),
+> now queue-eligible. Remaining candidates promote; `C-EXEC-07` enters at rank 5.
 
-1. **Candidate 1: Close US-24 — Behavioral Scenario Verification (`INT-US-24`)** ← NEWLY UNBLOCKED epic-closer
-   * **Features:** `INT-US-24` Base Integration Contract. Capability deps all built: `US-3 Core` ✅ (just closed),
-     `B-FLOW-01` Scenario Testing Pipeline ✅, `D-VAL-01` QA Runner ✅.
-   * **Pros:** Integration-only; proves generated code solves the **business scenario**, not just syntax tests —
-     the natural next proof on top of the freshly-shipped autonomous + sandboxed implement loop.
-   * **Cons:** `INT-US-24` contract not yet designed; scenario flows will stress token budgets (see Candidate 5).
-2. **Candidate 2: Close US-21 — Autonomous Feature Decomposition (`INT-US-21`)** ← NEWLY UNBLOCKED by US-2
-   * **Features:** `INT-US-21` Base Integration Contract. Capability deps all built: `US-2 Core` ✅ (just
-     closed — was the last gate), `D-INTL-02` Feature Decomposition ✅, `D-INTL-03` Explicit Plan Phase ✅;
-     the Recursive Planning add-on (`INT-US-21-SF01` + `C-INTL-01`) is even already 🟢.
-   * **Pros:** Integration-only epic-closer; rides directly on the freshly-proven drafter chain + provider
-     seam (the SF-03 e2e harness is reusable as its proof scaffold).
+1. **Candidate 1: Close US-21 — Autonomous Feature Decomposition (`INT-US-21`)** ← epic-closer
+   * **Features:** `INT-US-21` Base Integration Contract. Capability deps all built: `US-2 Core` ✅,
+     `D-INTL-02` Feature Decomposition ✅, `D-INTL-03` Explicit Plan Phase ✅; the Recursive Planning
+     add-on (`INT-US-21-SF01` + `C-INTL-01`) is even already 🟢.
+   * **Pros:** Integration-only epic-closer; rides on the proven drafter chain + provider seam. Its design
+     intake inherits a documented gap: `context.plan` is populated NOWHERE in `src/` (recorded in the
+     INT-US-24 design research), so plan-driven orchestration wiring is exactly its integration scope.
    * **Cons:** `INT-US-21` contract not yet designed.
-3. **Candidate 3: Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
+2. **Candidate 2: Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
    * **Features:** `C-VAL-05` (battery engine stays code; semantic judgment content → versioned, DAL-gated rubric files).
    * **Pros:** Low-risk (no execution-path change); establishes the "engine hard / content soft" precedent the
      approved middle-way direction rests on; substrate for `B-VAL-03`, `E-VAL-04`, `B-INTL-08`. Small, well-bounded.
    * **Cons:** No epic unlock. (`C-FLOW-11` + `C-INTL-06`, the larger middle-way builds, deliberately queue AFTER
      this proves the pattern — and `C-FLOW-11` needs its runtime-binding decision at intake.)
-4. **Candidate 4: AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE
+3. **Candidate 3: AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE
    * **Features:** `E-VAL-03`.
    * **Pros:** Protects the validation/LLM pipeline from injected instructions embedded in source — urgency
-     INCREASED: since `INT-US-03 SF-03`, autonomous code-context-driven flows run by default (DAL-escalated),
-     widening the injection surface. (Security Mandate can bump this above 1–3 if threat mitigation outranks
-     feature completion.)
+     INCREASED AGAIN: `INT-US-24` put LLM-authored failure traces and verdict feedback into arbitration and
+     regeneration prompts (flagged at every SF's Red/Blue as exactly this class), on top of the autonomous
+     DAL-escalated US-3 flows. (Security Mandate can bump this above 1–2.)
    * **Cons:** Hardening; no epic unlock.
-5. **Candidate 5: Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
+4. **Candidate 4: Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
    * **Features:** `B-FLOW-05` + `INT-US-04-SF02`.
    * **Pros:** Prevents runaway LLM cost (EDoS) natively in the Flow Engine — elevated relevance: the autonomous
-     US-3 loop is live, and the planned `C-FLOW-11` agentic work units carry a budget-cap NFR that needs exactly
-     this substrate.
+     US-3 loop AND the US-24 dual-pipeline loop (which re-runs whole verification rounds on loop_back) are live;
+     `C-FLOW-11`'s budget-cap NFR needs exactly this substrate.
    * **Cons:** Hardening; no epic unlock.
+5. **Candidate 5: DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07` + `INT-US-09-SF06`)** ← DAL PARITY (minted 2026-07-24)
+   * **Features:** `C-EXEC-07` (pipeline-aware allow-list derivation + dual-fan-out-in-worktree + `sw run`/`sw resume`
+     escalation wiring) integrated by `INT-US-09-SF06`.
+   * **Pros:** Closes the asymmetry the PO question exposed: the tool's most untrusted execution surface
+     (LLM-derived scenario tests over LLM-generated code, now LIVE via `sw run scenario_integration`) has the
+     weakest default; also contains scenario artifact droppings + the bare-pytest collection hazard documented
+     in the dev guide.
+   * **Cons:** Engine/capability work (not integration-only); no epic unlock.
 
-> **Integration-only reserve (updated 2026-07-23, post US-2 closure):** integration-only epic-closers now
-> in the queue: Candidates 1–2 (`US-24`, `US-21` — the latter unlocked by US-2). In reserve: **`US-16`**
-> (AI Ops & Cost Routing), **`US-22`** (Polyglot Contracts — its `C-VAL-04` dep was a stale box, now
-> synced), and **`US-23`** (MCP Tool Extension). Each needs only its INT contract; they backfill the top
-> slots as those close. (`US-2` delivered 2026-07-23 and left the queue.)
+> **Integration-only reserve (updated 2026-07-24, post US-24 closure):** in the queue: Candidate 1
+> (`US-21`). In reserve: **`US-16`** (AI Ops & Cost Routing), **`US-22`** (Polyglot Contracts), and
+> **`US-23`** (MCP Tool Extension). Each needs only its INT contract; they backfill the top slots as
+> those close. (`US-2` delivered 2026-07-23; `US-24` delivered 2026-07-24 — both left the queue.)
 > **Not queue-eligible:** `US-17` (blocked on unbuilt `B-VAL-04`), `US-19` (dep review resolved — blocked on
 > unbuilt `C-FLOW-04` Work Packet Bundling), `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013`
 > (too small; fold into the next API-touching story).
@@ -560,10 +563,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **INT-US-23-SF01:** Sub-Story Integration (Pending Design)
         *   `[ ]` **B-INTL-05:** Dynamic Tool Gating via Archetypes — *(2026-07-21) design jointly with `C-FLOW-11`'s role model: the tool-allowlist half of "role = tools + mounted skills + DAL-scoped gates"*
 
-### 🟡 US-24: Behavioral Scenario Verification
+### 🟢 US-24: Behavioral Scenario Verification
 **Benefit:** *SpecWeaver runs parallel behavioral verification pipelines to prove the generated code actually solves the business scenario, not just syntax tests.*
 *   **Core Required (MVS):**
-    *   `[ ]` **INT-US-24:** Base Integration Contract defined in [US-24_integration.md](topics/topic_08_integration/US-24_integration.md)
+    *   `✅` **INT-US-24:** Base Integration Contract defined in [US-24_integration.md](topics/topic_08_integration/US-24_integration.md) — ✅ [design APPROVED](features/topic_08_integration/INT-US-24/INT-US-24_design.md); **SF-01** (`3fece855` dual dispatch + arbiter evidence + false-green fix) + **SF-02** (`7e3cb13c` feedback loop closed both verdict branches, opacity seam-pinned) + **SF-03** (`08cffe0d` CLI journey + proof; flushed 5 MORE inherited defects incl. the stub converter bodies and the pytest-parser mixed-summary false-green) all committed. **Verifiable Proof:** `tests/e2e/capabilities/workflows/test_int_us_24_scenario_e2e.py` (9 scenarios on the real CLI: happy · code_bug buggy→fixed · scenario_error regeneration · ambiguity park · exhaustion · zero-collected · park-heals-through-the-loop resume · resume-degraded · generator exhaustion) + `tests/integration/workflows/scenarios/test_converter_execution.py`.
     *   `✅` **US-3 Core** *(provides QA Runner)*
     *   `✅` **B-FLOW-01:** Scenario Testing Pipeline
     *   `✅` **D-VAL-01:** QA Runner Tool

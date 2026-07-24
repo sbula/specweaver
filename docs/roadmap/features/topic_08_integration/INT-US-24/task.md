@@ -94,4 +94,4 @@
 - [x] Phase 6 — scenario_pipelines.md currency update (CLI journey, evidence contract, real bodies, host-posture facts); sequencing test retitled honestly; task.md + impl-plan records
 - [x] Phase 7 — INT-US-24_sf03_walkthrough.md written
 - [x] Phase 7.5 — emitted-test injection surface (NEW) mechanically guarded (identifier validation + repr, hostile pins); prompt-injection via LLM text = pre-existing E-VAL-03 class, unchanged; heal-through-loop cost bounded by max_retries; cross-session semantics corrected in design FR-2; no fix-required findings
-- [ ] Phase 8 — commit boundary (HITL hard stop)
+- [x] Phase 8 — CB-1 committed `08cffe0d` (direct to main, 2026-07-24). **INT-US-24 COMPLETE → US-24 epic 🟢.**

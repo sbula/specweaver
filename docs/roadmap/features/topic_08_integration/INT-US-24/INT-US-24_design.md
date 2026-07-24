@@ -254,17 +254,16 @@ Strictly linear — no parallel sessions.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Make the Chain Executable | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Close the Feedback Loop | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | CLI Journey + Verifiable Proof | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | CLI Journey + Verifiable Proof | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: **SF-02 COMMITTED `7e3cb13c`** (2026-07-24, direct to main; SF-01 was
-`3fece855`) — the feedback loop is closed on both verdict branches (FR-4 regeneration-with-delta,
-FR-6 opacity pinned on the real seam); full suite 5479 passed / 0 failures. The SF-03 DAL intake
-decision is RESOLVED to (a): posture documented, escalation delegated to `C-EXEC-07` /
-`INT-US-09-SF06` (minted `37cf5fb9`).
-**Next step**: Implementation plan for **SF-03 — CLI Journey + Verifiable Proof** (FR-5 exit-code/
-display/park contract + FR-7 six-scenario e2e on the real CLI) via the implementation-plan skill.
-Closing SF-03 closes INT-US-24 → **US-24 epic 🟢**.
+**Current status**: **FEATURE COMPLETE** — SF-03 committed `08cffe0d` (2026-07-24); INT-US-24
+closed → **US-24 epic 🟢** (registry flipped, queue refreshed: US-21 → Candidate 1, C-EXEC-07
+enters at rank 5). Ten inherited defects flushed across the three SFs; the cross-session
+evidence semantics were corrected to heal-through-the-loop (see FR-2 marker + SF-03 walkthrough).
+**Next step**: none for this feature. Add-ons (`INT-US-24-SF01` + `B-INTL-07` Intelligent
+Resolution) and `C-EXEC-07`/`INT-US-09-SF06` (DAL escalation for run journeys) are separate
+stories with their own intakes.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill.
