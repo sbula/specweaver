@@ -118,6 +118,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **E-VAL-04:** Multi-stage Reviews — *(2026-07-21) to be designed rubric-first on the `C-VAL-05` substrate*
         *   `✅` **B-VAL-02:** Spec Rot Interceptor
     *   🔴 **Rubrics-as-Content (the "middle way" for judgment):**
+        *   `[ ]` **INT-US-01-SF05:** Sub-Story Integration (Pending Design) — *(2026-07-24 audit: every add-on group carries its own integration story)*
         *   `[ ]` **C-VAL-05:** [Rubrics-as-Content Validation](features/topic_05_validation/C-VAL-05/C-VAL-05_design.md) (STUB — design doc not yet run) — battery engine stays hardcoded; semantic judgment content (`S03` stranger-test, `S07` test-first, review criteria) externalizes to versioned, per-project-overridable, DAL-gated markdown rubric files (checksums recorded for audit). Recommended first bite of the middle-way direction.
     *   🔴 **Mathematical Speed & Security (Rust):**
         *   `[ ]` **INT-US-01-SF04:** Sub-Story Integration (Pending Design)
@@ -162,6 +163,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **INT-US-03-SF02:** Sub-Story Integration (Pending Design)
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
     *   🔴 **Graduated Autonomy (the "middle way" dial):**
+        *   `[ ]` **INT-US-03-SF03:** Sub-Story Integration (Pending Design) — *(2026-07-24 audit; add-on ID — distinct from the base contract's internal "INT-US-03 SF-03" sub-feature, which is committed)*
         *   `[ ]` **C-FLOW-11:** [Graduated Autonomy — DAL-Driven Execution-Mode Dial](features/topic_03_flow_engine/C-FLOW-11/C-FLOW-11_design.md) (STUB — design doc not yet run) — work steps gain `mode: oneshot | agentic`; the agentic mode runs a budget-capped, skill-mounted work unit inside `C-EXEC-06` session isolation, with mode selection resolved from DAL policy (mirrors the shipped AD-8 escalation pattern). Pilot consumer: the `sw implement` inner loop.
 
 ### 🟢 US-4: Context-Aware Flow Orchestration
@@ -202,6 +204,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `✅` **INT-US-04-SF08:** Sub-Story Integration defined in [SF-08: Configurable Prompt Render Profiles Integration](features/topic_08_integration/INT-US-04/INT-US-04_design.md#sf-08-configurable-prompt-render-profiles-integration)
         *   `✅` **C-INTL-05:** Configurable Prompt Render Profiles
     *   🔴 **Envelope-vs-Content Prompt Externalization (the "middle way" for context):**
+        *   `[ ]` **INT-US-04-SF10:** Sub-Story Integration (Pending Design) — *(2026-07-24 audit: every add-on group carries its own integration story)*
         *   `[ ]` **C-INTL-06:** [Envelope-vs-Content Prompt Externalization](features/topic_04_intelligence/C-INTL-06/C-INTL-06_design.md) (STUB — design doc not yet run) — `PromptBuilder` narrows to the deterministic envelope (structure, `TECH-007` escaping, metadata, profiles); constitution/standards/agent-memory content externalizes to mounted files / pull-access shared by `oneshot` slots and `C-FLOW-11` work units. Carries the evolution of the delivered `C-INTL-05`/`B-INTL-09` paths without reopening them; redirects `TECH-006`'s factory-centralization destination.
     *   🔴 **Declarative Dynamic Prompt Routing:**
         *   `[ ]` **INT-US-04-SF09:** Sub-Story Integration (Pending Design)
@@ -311,6 +314,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟢 **Per-Run (Session) Worktree Isolation:** ← unblocks closing US-3
         *   `✅` **INT-US-09-SF05:** Sub-Story Integration — **delivered by `C-EXEC-06`** (no separate design required; the composition-root policy wiring, `allowed_paths` threading, and multi-step freshly-generated-file e2e proof were all shipped by `C-EXEC-06` SF-03). `TECH-012` resolved. See [US-09_integration.md → INT-US-09-SF05](topics/topic_08_integration/US-09_integration.md) for the full rationale. **`INT-US-03 SF-03` consumes this** (its remaining job: the one-line `sw implement` wiring + implement e2e).
         *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation (DAL-C) — one worktree per untrusted span, single end-of-run reconcile (vs. today's per-step create/reconcile/teardown). Adds `RunContext.allowed_paths` + commit-before-reconcile + composition-root policy/allow-list; resolves the `TECH-012` defect. *The capability build (SF-01/02/03 all committed). DAL-C because the single reconcile is the sole write-back authorization gate over the user's real repo.* **Verifiable Proof:** `tests/e2e/sandbox/test_c_exec_06_session_isolation_e2e.py` + `tests/integration/core/flow/engine/test_session_policy_fullchain.py`. API composition-root wiring tracked as `TECH-013`.
+    *   🔴 **DAL-Escalated Isolation for Pipeline Runs:** *(minted 2026-07-24; origin: INT-US-24 SF-03 intake — the DAL question)*
+        *   `[ ]` **INT-US-09-SF06:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — extend the INT-US-03 AD-8 escalation (`dal_auto_escalate`) to the `sw run`/`sw resume` composition roots so ANY journey executing generated code (scenario_integration, new_feature) auto-sandboxes at/above `auto_isolate_min_dal`, matching `sw implement`. Requires **pipeline-aware allow-list derivation** (`_derive_allowed_paths` is implement-shaped `[src/{stem}.py, tests/test_{stem}.py]` — scenario artifacts `contracts/`, `scenarios/definitions/`, `scenarios/generated/` would be silently dropped at reconcile today) + dual-fan-out-in-worktree semantics + proof incl. a `scenario_integration` run. Supersedes AD-8's per-caller opt-out by a NEW decision (INT-US-03's finished docs untouched).
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
 **Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*

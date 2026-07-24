@@ -221,6 +221,17 @@ No new external dependencies.
 ### SF-03: CLI Journey + Verifiable Proof
 - **Scope**: `sw run scenario_integration <spec>` delivers the exit-code/display/park contract,
   proven by the 6-scenario e2e suite on the real CLI; registry closure (US-24 🟢).
+- **Intake decision (DAL, raised by user 2026-07-24 — RESOLVED 2026-07-24)**: the scenario chain
+  executes LLM-derived tests over LLM-generated code, but `sw run` deliberately leaves
+  `dal_auto_escalate=False` (INT-US-03 AD-8 — `flow/interfaces/cli.py:326`), so unlike
+  `sw implement` it never DAL-escalates into worktree isolation. **Resolution: (a) — the base
+  contract keeps AD-8 and documents the posture; DAL escalation for run journeys is delivered by
+  the newly minted `C-EXEC-07` (US-9 add-on, integration `INT-US-09-SF06`)**, because the flip is
+  NOT integration glue: `_derive_allowed_paths` is implement-shaped, so escalation today would
+  silently drop scenario artifacts (`contracts/`, `scenarios/**`) at the reconcile gate, and the
+  dual fan-out has never run inside one session worktree. `C-EXEC-07`'s proof includes a real
+  `scenario_integration` run. SF-03's proof asserts the CURRENT posture (opt-in isolation honored
+  via `execution_root`, NFR-3).
 - **FRs**: [FR-5, FR-7]
 - **Inputs**: SF-01 + SF-02; INT-US-02 SF-03 harness pattern (scripted adapter); spec fixture with
   `## Contract` + `## Scenarios` sections (S07-conformant).

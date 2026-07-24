@@ -7,4 +7,8 @@
 
 ## Sub-Story Add-Ons
 
-* No explicit sub-story contracts defined yet.
+*(Mirrored from the master roadmap 2026-07-24 — every add-on group carries its own integration story.)*
+
+* **`INT-US-03-SF01` — Multi-Language Test Support:** *Pending Design.* Integrates `D-VAL-03` (Polyglot QA Runner, built ✅) into the `sw implement` loop for non-Python targets.
+* **`INT-US-03-SF02` — Visual UI Drift Detection:** *Pending Design.* Blocked on `A-VAL-05` (Multi-Modal Visual Quality Gates, unbuilt).
+* **`INT-US-03-SF03` — Graduated Autonomy (the "middle way" dial):** *Pending Design (minted 2026-07-24 audit).* Integrates `C-FLOW-11` (unbuilt): the `mode: oneshot | agentic` dial into the `sw implement` inner loop (its named pilot consumer). **Add-on ID — distinct from the base contract's internal "INT-US-03 SF-03" sub-feature, which is committed** (SF vs sub-story numbering live in different namespaces; stated per the SF/CB terminology rule).

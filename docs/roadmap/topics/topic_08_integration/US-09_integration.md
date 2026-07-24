@@ -65,3 +65,12 @@ Layered on top of the Base Contract; each is a separate integration contract (Pe
     The API-run composition roots remain a separate deferred item (`TECH-013`).
   * **Critical path:** `INT-US-03 SF-03` consumes this to run `sw implement` worktree-bounded — the last step
     before closing the US-3 flagship epic.
+* **`INT-US-09-SF06` — DAL-Escalated Isolation for Pipeline Runs:** *Pending Design (minted
+  2026-07-24; origin: `INT-US-24` SF-03 intake).* Integrates **`C-EXEC-07`** (unbuilt): extend the
+  INT-US-03 AD-8 `dal_auto_escalate` policy from the `sw implement` composition root to the
+  `sw run`/`sw resume` roots, so any journey executing generated code (`scenario_integration`,
+  `new_feature`) auto-escalates into `C-EXEC-06` session isolation at/above the
+  `auto_isolate_min_dal` threshold. Blocked on `C-EXEC-07`'s pipeline-aware allow-list derivation
+  (today's `_derive_allowed_paths` is implement-shaped — scenario artifacts would be dropped at
+  reconcile) and dual-fan-out-in-worktree semantics. Supersedes AD-8's per-caller opt-out by a new
+  decision; `INT-US-03`'s finished record stays untouched.
