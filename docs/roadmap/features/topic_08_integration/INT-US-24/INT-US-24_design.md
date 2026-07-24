@@ -253,7 +253,7 @@ Strictly linear — no parallel sessions.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Make the Chain Executable | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Close the Feedback Loop | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Close the Feedback Loop | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | CLI Journey + Verifiable Proof | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff

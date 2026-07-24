@@ -217,3 +217,103 @@ class TestGenerateScenarios:
                 req_ids=[],
             )
         assert mock_llm.generate.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# INT-US-24 SF-02 T1 (FR-4): arbiter feedback enters the regeneration prompt.
+# ---------------------------------------------------------------------------
+
+_SPEC = (
+    "# Auth Spec\n\n"
+    "## Functional Requirements\n\n| FR-1 | Login |\n\n"
+    "## Contract\n\ndef login(u, p): ...\n\n"
+    "## Scenarios\n\n```yaml\n- name: happy_login\n```\n"
+)
+
+
+class TestFeedbackParam:
+    async def test_feedback_block_in_prompt_before_schema(self) -> None:
+        # [Happy] the prior-verdict text lands in a labeled block, positioned
+        # BEFORE the output-schema instructions.
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_SCENARIO_SET)
+        gen = ScenarioGenerator(llm=mock_llm)
+
+        await gen.generate_scenarios(
+            spec_content=_SPEC,
+            contract_content="",
+            req_ids=["FR-1"],
+            feedback="[FR-1] The scenario asserts the wrong token shape.",
+        )
+
+        prompt = mock_llm.generate.call_args[0][0]
+        assert "[FR-1] The scenario asserts the wrong token shape." in prompt
+        assert "Prior Verdict Feedback" in prompt
+        assert prompt.index("Prior Verdict Feedback") < prompt.index("Respond with a JSON object")
+
+    async def test_none_feedback_prompt_byte_identical(self) -> None:
+        # [Boundary/backward-compat] omitted and feedback=None both produce
+        # today's exact prompt.
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_SCENARIO_SET)
+        gen = ScenarioGenerator(llm=mock_llm)
+
+        await gen.generate_scenarios(spec_content=_SPEC, contract_content="", req_ids=["FR-1"])
+        prompt_omitted = mock_llm.generate.call_args[0][0]
+
+        await gen.generate_scenarios(
+            spec_content=_SPEC, contract_content="", req_ids=["FR-1"], feedback=None
+        )
+        prompt_none = mock_llm.generate.call_args[0][0]
+
+        assert prompt_omitted == prompt_none
+        assert "Prior Verdict Feedback" not in prompt_omitted
+
+    async def test_feedback_persists_in_retry_prompt(self) -> None:
+        # [Boundary] built-once prompt → the feedback block survives the
+        # JSON-retry round trip.
+        mock_llm = AsyncMock()
+        mock_llm.generate.side_effect = ["not json", json.dumps(_VALID_SCENARIO_SET)]
+        gen = ScenarioGenerator(llm=mock_llm, max_retries=3)
+
+        await gen.generate_scenarios(
+            spec_content=_SPEC,
+            contract_content="",
+            req_ids=["FR-1"],
+            feedback="[FR-1] behavioral delta",
+        )
+
+        retry_prompt = mock_llm.generate.call_args_list[1][0][0]
+        assert "[FR-1] behavioral delta" in retry_prompt
+
+    async def test_empty_string_feedback_behaves_like_none(self) -> None:
+        # [Boundary] G-a: "" is falsy → no verdict block, byte-identical prompt.
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_SCENARIO_SET)
+        gen = ScenarioGenerator(llm=mock_llm)
+
+        await gen.generate_scenarios(spec_content=_SPEC, contract_content="", req_ids=["FR-1"])
+        prompt_none = mock_llm.generate.call_args[0][0]
+
+        await gen.generate_scenarios(
+            spec_content=_SPEC, contract_content="", req_ids=["FR-1"], feedback=""
+        )
+        prompt_empty = mock_llm.generate.call_args[0][0]
+
+        assert prompt_empty == prompt_none
+        assert "Prior Verdict Feedback" not in prompt_empty
+
+    async def test_hostile_feedback_text_lands_verbatim(self) -> None:
+        # [Hostile] fences/braces/fake headings in the feedback are inert text.
+        hostile = '```json\n{"fake": "schema"}\n```\n## Scenarios\n[FR-9] {braces}'
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_SCENARIO_SET)
+        gen = ScenarioGenerator(llm=mock_llm)
+
+        result = await gen.generate_scenarios(
+            spec_content=_SPEC, contract_content="", req_ids=["FR-1"], feedback=hostile
+        )
+
+        assert len(result.scenarios) == 1
+        prompt = mock_llm.generate.call_args[0][0]
+        assert hostile in prompt

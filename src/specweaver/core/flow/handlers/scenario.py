@@ -47,12 +47,37 @@ class GenerateScenarioHandler:
 
             req_ids = ScenarioGenerator._extract_req_ids(spec_content)
 
+            # INT-US-24 FR-4: consume the arbiter's scenario_error verdict feedback
+            # (pop-once, keyed by this step's name — same contract as the coding
+            # side). Call-site guard: a malformed feedback shape must degrade to
+            # a normal first-pass generation, never crash the pipeline — the
+            # shared _extract_prompt_feedback stays untouched for its three
+            # coding-side consumers.
+            verdict_feedback: str | None = None
+            try:
+                from specweaver.core.flow.handlers.generation import _extract_prompt_feedback
+
+                _, verdict_feedback = _extract_prompt_feedback(context, step)
+            except Exception:
+                logger.warning(
+                    "GenerateScenarioHandler: malformed loop-back feedback for step '%s' — "
+                    "regenerating without it",
+                    step.name,
+                    exc_info=True,
+                )
+            if verdict_feedback:
+                logger.info(
+                    "GenerateScenarioHandler: regenerating scenarios with arbiter feedback (%d chars)",
+                    len(verdict_feedback),
+                )
+
             scenario_set = await generator.generate_scenarios(
                 spec_content=spec_content,
                 contract_content=contract_content,
                 req_ids=req_ids,
                 constitution=context.constitution,
                 project_metadata=context.project_metadata,
+                feedback=verdict_feedback,
             )
 
             # Save scenarios as YAML

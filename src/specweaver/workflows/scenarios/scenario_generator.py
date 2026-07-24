@@ -52,6 +52,7 @@ class ScenarioGenerator:
         *,
         constitution: str | None = None,
         project_metadata: Any = None,
+        feedback: str | None = None,
     ) -> ScenarioSet:
         """Generate scenarios from spec + contract via LLM.
 
@@ -61,6 +62,9 @@ class ScenarioGenerator:
             req_ids: Extracted requirement IDs from spec.
             constitution: Optional project constitution.
             project_metadata: Optional project metadata.
+            feedback: Optional prior-verdict findings (INT-US-24 FR-4 — the
+                arbiter's behavioral delta on a regeneration loop). None ⇒
+                the prompt is byte-identical to a first-pass generation.
 
         Returns:
             ScenarioSet with validated scenario definitions.
@@ -82,6 +86,7 @@ class ScenarioGenerator:
             contract_content=contract_content,
             req_ids=req_ids,
             constitution=constitution,
+            feedback=feedback,
         )
 
         last_error: str | None = None
@@ -189,6 +194,7 @@ class ScenarioGenerator:
         contract_content: str,
         req_ids: list[str],
         constitution: str | None = None,
+        feedback: str | None = None,
     ) -> str:
         """Build the LLM prompt for scenario generation."""
         parts = [
@@ -213,6 +219,17 @@ class ScenarioGenerator:
             parts.extend(["## API Contract (Protocol class)", contract_content, ""])
         if constitution:
             parts.extend(["## Project Constitution", constitution, ""])
+        if feedback:
+            # INT-US-24 FR-4: the arbiter's spec-clause-anchored behavioral delta
+            # from the previous verification round — placed before the schema
+            # instructions so the fix intent frames the regeneration.
+            parts.extend(
+                [
+                    "## Prior Verdict Feedback (your previous scenarios were judged incorrect — fix these)",
+                    feedback,
+                    "",
+                ]
+            )
 
         parts.extend(
             [

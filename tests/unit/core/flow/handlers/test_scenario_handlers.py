@@ -147,6 +147,118 @@ class TestGenerateScenarioHandler:
         assert "Spec file not found" in result.error_message
 
 
+# ---------------------------------------------------------------------------
+# INT-US-24 SF-02 T2 (FR-4): the handler consumes the arbiter's verdict
+# feedback pop-once and threads it into the regeneration prompt.
+# ---------------------------------------------------------------------------
+
+
+def _feedback_step() -> PipelineStep:
+    # The bundled scenario_validation.yaml step name — the key the arbiter writes.
+    return PipelineStep(name="generate_scenarios", action="generate", target="scenario")
+
+
+def _arbiter_feedback() -> dict:
+    return {
+        "from_step": "arbitrate_verdict",
+        "findings": {
+            "verdict": "scenario_error",
+            "results": [
+                {"status": "FAIL", "rule_id": "FR-1", "message": "asserts the wrong token shape"}
+            ],
+        },
+    }
+
+
+class TestGenerateScenarioFeedback:
+    async def test_consumes_feedback_into_prompt_and_pops(self, tmp_path: Path, caplog) -> None:
+        # [Happy] arbiter-shaped feedback → extracted "[FR-1] ..." text reaches
+        # the regeneration prompt; key popped (consume-once); INFO logged.
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
+        ctx = _make_context(tmp_path, llm=mock_llm)
+        ctx.feedback = {"generate_scenarios": _arbiter_feedback()}
+
+        with caplog.at_level("INFO"):
+            result = await GenerateScenarioHandler().execute(_feedback_step(), ctx)
+
+        assert result.status == StepStatus.PASSED
+        prompt = mock_llm.generate.call_args[0][0]
+        assert "[FR-1] asserts the wrong token shape" in prompt
+        assert "Prior Verdict Feedback" in prompt
+        assert "generate_scenarios" not in ctx.feedback
+        assert any("feedback" in r.message.lower() for r in caplog.records)
+
+    async def test_no_feedback_byte_identical(self, tmp_path: Path) -> None:
+        # [Boundary/backward-compat] no feedback → no verdict block, feedback
+        # dict untouched.
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
+        ctx = _make_context(tmp_path, llm=mock_llm)
+
+        result = await GenerateScenarioHandler().execute(_feedback_step(), ctx)
+
+        assert result.status == StepStatus.PASSED
+        assert "Prior Verdict Feedback" not in mock_llm.generate.call_args[0][0]
+        assert ctx.feedback == {}
+
+    async def test_unrelated_feedback_keys_survive(self, tmp_path: Path) -> None:
+        # [Boundary] only the handler's own key is popped.
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
+        ctx = _make_context(tmp_path, llm=mock_llm)
+        ctx.feedback = {
+            "generate_scenarios": _arbiter_feedback(),
+            "generate_code": {"findings": {"results": []}},
+            "scenario_test_failures": {"total": 1, "failed": 1, "errors": 0, "failures": []},
+        }
+
+        await GenerateScenarioHandler().execute(_feedback_step(), ctx)
+
+        assert "generate_scenarios" not in ctx.feedback
+        assert "generate_code" in ctx.feedback
+        assert "scenario_test_failures" in ctx.feedback
+
+    async def test_dictator_shaped_feedback_tolerated_remarks_dropped(
+        self, tmp_path: Path
+    ) -> None:
+        # [Boundary] G-b: HITL-reject-shaped feedback (remarks, no FAIL results)
+        # is the Q2 "knowingly ignored" path — no crash, no verdict block, key
+        # still consumed. If scenario steps ever gain HITL gates, this pin
+        # trips instead of user remarks vanishing silently.
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
+        ctx = _make_context(tmp_path, llm=mock_llm)
+        ctx.feedback = {
+            "generate_scenarios": {
+                "findings": {"hitl_verdict": "reject", "remarks": "please add boundary cases"}
+            }
+        }
+
+        result = await GenerateScenarioHandler().execute(_feedback_step(), ctx)
+
+        assert result.status == StepStatus.PASSED
+        assert "Prior Verdict Feedback" not in mock_llm.generate.call_args[0][0]
+        assert "generate_scenarios" not in ctx.feedback
+
+    async def test_malformed_findings_treated_as_no_feedback(
+        self, tmp_path: Path, caplog
+    ) -> None:
+        # [Graceful degradation] a malformed findings value must not crash the
+        # regeneration — call-site guard treats it as no-feedback + WARNING.
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
+        ctx = _make_context(tmp_path, llm=mock_llm)
+        ctx.feedback = {"generate_scenarios": {"findings": "notadict"}}
+
+        with caplog.at_level("WARNING"):
+            result = await GenerateScenarioHandler().execute(_feedback_step(), ctx)
+
+        assert result.status == StepStatus.PASSED
+        assert "Prior Verdict Feedback" not in mock_llm.generate.call_args[0][0]
+        assert any("feedback" in r.message.lower() for r in caplog.records)
+
+
 class TestConvertScenarioHandler:
     """Tests for ConvertScenarioHandler."""
 
