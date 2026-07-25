@@ -84,6 +84,38 @@ The `PipelineRunner` walks through steps sequentially:
 
 State is persisted so interrupted runs can `resume(run_id)`.
 
+### HITL Approve-on-Resume (`engine/approval.py`)
+
+`GateEvaluator` parks HITL gates unconditionally and `resume()` only flipped the status back to
+RUNNING — so the loop re-executed the step, the gate re-parked, and the run could never advance.
+Resuming a reviewed gate-park now *is* the approval.
+
+The discriminator is entirely in already-persisted state, so there is no schema change and no
+approval store:
+
+| park flavour | `record.status` | `result.status` | verdict |
+|---|---|---|---|
+| gate-park (HITL) | `WAITING_FOR_INPUT` | `PASSED` | **approve** |
+| gate-park on failure | `WAITING_FOR_INPUT` | `FAILED` / `ERROR` | re-execute |
+| handler-park | `WAITING_FOR_INPUT` | `WAITING_FOR_INPUT` | re-execute |
+| RESERVE-park | `WAITING_FOR_INPUT` | `PENDING` | re-execute |
+
+Requiring `PASSED` explicitly makes misclassification structurally impossible — every other
+flavour re-executes, which is the safe direction, since a step that never produced a verdict must
+never be skipped. Approval additionally requires the record's `step_name` to match the pipeline
+step at that index, so a YAML edited between sessions cannot let one step's result approve another.
+
+> [!CAUTION]
+> The check sits at the **very top of the loop body**, ahead of both the staleness-bypass block
+> (which would otherwise complete the step as `SKIPPED` and discard the approval) and
+> `mark_step_running()` (which overwrites the `WAITING_FOR_INPUT` status the decision reads).
+> It also bypasses **gate evaluation**, not just handler execution — the HITL gate parks
+> unconditionally, so re-evaluating it would simply re-park.
+
+The signal is an explicit `approve_parked` keyword threaded `resume() → execute_run →
+_execute_loop`, consumed on the first iteration whether or not it approves. `run()` never sets it,
+so a fresh run can never auto-approve, and one resume approves at most one gate.
+
 ### Plan Context Hydration (`engine/hydration.py`)
 
 Two distinct plan concepts flow between steps, on **two distinct `RunContext` fields**
@@ -114,7 +146,7 @@ Two distinct plan concepts flow between steps, on **two distinct `RunContext` fi
 > [!CAUTION]
 > `RunContext` is **shared** across concurrent fan-out sub-runners
 > (`handlers/decompose.py`), and the runner writes `run_id`/`step_records` onto it every step.
-> Concurrent sub-runs therefore race on this state — tracked as **`TECH-009`**.
+> Concurrent sub-runs therefore race on this state — tracked as **`TECH-014`**.
 
 #### Cross-session rehydration
 

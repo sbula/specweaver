@@ -148,33 +148,50 @@ class TestStoreRoundTripSeam:
 class TestCrossSessionJourney:
     """Two runner instances, two contexts, one store — the real resume path."""
 
-    def test_second_session_sees_the_plan_before_its_first_handler_runs(
-        self, tmp_path: Path
-    ) -> None:
+    def test_second_session_sees_the_plan_rehydrated_from_records(self, tmp_path: Path) -> None:
+        """The plan must come from PERSISTED RECORDS, not from re-running the producer.
+
+        The pipeline parks at a gate on a step that produces no plan, so the only way the
+        observer can see `decomposition` is if the *previous* session's decompose record was
+        rehydrated. FR-4 approves the parked step without executing it, which is precisely why
+        the observation point must sit after it.
+        """
         store = StateStore(tmp_path / "state.db")
-        decompose = _hitl(_step(StepAction.DECOMPOSE, StepTarget.FEATURE, "decompose"))
-        pipeline = PipelineDefinition(name="p", steps=[decompose])
+        pipeline = PipelineDefinition(
+            name="p",
+            steps=[
+                _step(StepAction.DECOMPOSE, StepTarget.FEATURE, "decompose"),
+                _hitl(_step(StepAction.VALIDATE, StepTarget.FEATURE, "review_gate")),
+                _step(StepAction.VALIDATE, StepTarget.SPEC, "observer"),
+            ],
+        )
 
         reg1 = StepHandlerRegistry()
         reg1.register(
             StepAction.DECOMPOSE, StepTarget.FEATURE, _Stub(components=[{"name": "auth"}])
         )
+        reg1.register(StepAction.VALIDATE, StepTarget.FEATURE, _Stub(ok=True))
+        reg1.register(StepAction.VALIDATE, StepTarget.SPEC, _Stub())
         run1 = asyncio.run(
             PipelineRunner(pipeline, _ctx(tmp_path), registry=reg1, store=store).run()
         )
         assert run1.status == RunStatus.PARKED
+        assert run1.current_step == 1  # parked at the review gate
 
         seen: dict[str, object] = {}
         reg2 = StepHandlerRegistry()
-        reg2.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _CaptureOnEntry(seen))
+        reg2.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _Stub(components=[]))
+        reg2.register(StepAction.VALIDATE, StepTarget.FEATURE, _Stub(ok=True))
+        reg2.register(StepAction.VALIDATE, StepTarget.SPEC, _CaptureOnEntry(seen))
         ctx2 = _ctx(tmp_path)
         assert ctx2.decomposition is None
 
-        asyncio.run(
+        run2 = asyncio.run(
             PipelineRunner(pipeline, ctx2, registry=reg2, store=store).resume(run1.run_id)
         )
 
-        assert seen["decomposition"] is not None, "resumed handler ran before rehydration"
+        assert run2.status == RunStatus.COMPLETED
+        assert seen["decomposition"] is not None, "plan was not rehydrated from records"
         assert json.loads(seen["decomposition"])["components"][0]["name"] == "auth"
 
     def test_plan_artifact_rehydrates_from_the_real_file_across_sessions(
@@ -185,13 +202,19 @@ class TestCrossSessionJourney:
         plan_file = tmp_path / "x_feature_spec_plan.yaml"
         plan_file.write_text(PLAN_BODY, encoding="utf-8")
 
-        plan_step = _step(StepAction.PLAN, StepTarget.SPEC, "plan_spec")
-        parked = _hitl(_step(StepAction.DECOMPOSE, StepTarget.FEATURE, "decompose"))
-        pipeline = PipelineDefinition(name="p", steps=[plan_step, parked])
+        pipeline = PipelineDefinition(
+            name="p",
+            steps=[
+                _step(StepAction.PLAN, StepTarget.SPEC, "plan_spec"),
+                _hitl(_step(StepAction.DECOMPOSE, StepTarget.FEATURE, "decompose")),
+                _step(StepAction.VALIDATE, StepTarget.SPEC, "observer"),
+            ],
+        )
 
         reg1 = StepHandlerRegistry()
         reg1.register(StepAction.PLAN, StepTarget.SPEC, _Stub(plan_path=str(plan_file)))
         reg1.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _Stub(components=[]))
+        reg1.register(StepAction.VALIDATE, StepTarget.SPEC, _Stub())
         run1 = asyncio.run(
             PipelineRunner(pipeline, _ctx(tmp_path), registry=reg1, store=store).run()
         )
@@ -200,7 +223,8 @@ class TestCrossSessionJourney:
         seen: dict[str, object] = {}
         reg2 = StepHandlerRegistry()
         reg2.register(StepAction.PLAN, StepTarget.SPEC, _Stub(plan_path=str(plan_file)))
-        reg2.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _CaptureOnEntry(seen))
+        reg2.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _Stub(components=[]))
+        reg2.register(StepAction.VALIDATE, StepTarget.SPEC, _CaptureOnEntry(seen))
         asyncio.run(
             PipelineRunner(pipeline, _ctx(tmp_path), registry=reg2, store=store).resume(
                 run1.run_id
@@ -217,13 +241,19 @@ class TestCrossSessionJourney:
         plan_file = tmp_path / "x_feature_spec_plan.yaml"
         plan_file.write_text(PLAN_BODY, encoding="utf-8")
 
-        plan_step = _step(StepAction.PLAN, StepTarget.SPEC, "plan_spec")
-        parked = _hitl(_step(StepAction.DECOMPOSE, StepTarget.FEATURE, "decompose"))
-        pipeline = PipelineDefinition(name="p", steps=[plan_step, parked])
+        pipeline = PipelineDefinition(
+            name="p",
+            steps=[
+                _step(StepAction.PLAN, StepTarget.SPEC, "plan_spec"),
+                _hitl(_step(StepAction.DECOMPOSE, StepTarget.FEATURE, "decompose")),
+                _step(StepAction.VALIDATE, StepTarget.SPEC, "observer"),
+            ],
+        )
 
         reg1 = StepHandlerRegistry()
         reg1.register(StepAction.PLAN, StepTarget.SPEC, _Stub(plan_path=str(plan_file)))
         reg1.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _Stub(components=[]))
+        reg1.register(StepAction.VALIDATE, StepTarget.SPEC, _Stub())
         run1 = asyncio.run(
             PipelineRunner(pipeline, _ctx(tmp_path), registry=reg1, store=store).run()
         )
@@ -233,7 +263,8 @@ class TestCrossSessionJourney:
         seen: dict[str, object] = {}
         reg2 = StepHandlerRegistry()
         reg2.register(StepAction.PLAN, StepTarget.SPEC, _Stub(plan_path=str(plan_file)))
-        reg2.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _CaptureOnEntry(seen))
+        reg2.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _Stub(components=[]))
+        reg2.register(StepAction.VALIDATE, StepTarget.SPEC, _CaptureOnEntry(seen))
         run2 = asyncio.run(
             PipelineRunner(pipeline, _ctx(tmp_path), registry=reg2, store=store).resume(
                 run1.run_id
@@ -272,6 +303,8 @@ class TestCrossSessionJourney:
             PipelineRunner(edited, _ctx(tmp_path), registry=reg2, store=store).resume(run1.run_id)
         )
 
+        # The name guard refuses both the rehydration AND the approval, so the step
+        # re-executes rather than being skipped on a different step's result.
         assert seen["decomposition"] is None
 
     def test_failed_rerun_recorded_in_a_previous_session_clears_on_replay(

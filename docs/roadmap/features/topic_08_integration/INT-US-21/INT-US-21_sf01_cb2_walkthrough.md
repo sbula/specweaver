@@ -24,7 +24,7 @@ concepts on one never-written field (design AD-1).
 | `core/flow/context.yaml` | Clarified a misleading comment (see A2 below) |
 | `docs/architecture/.../domain_flow_engine.md` | New "Plan Context Hydration" section documenting the contract |
 | `docs/architecture/.../known_boundary_violations.md` | **+1 row** — `specweaver/commons` unenforceable by tach |
-| `docs/roadmap/topics/topic_07_technical_debt.md` | **+`TECH-009`** — fan-out `RunContext` isolation |
+| `docs/roadmap/topics/topic_07_technical_debt.md` | **+`TECH-014`** — fan-out `RunContext` isolation |
 | tests | `test_runner_hydration.py` **NEW** (38); `test_decompose.py`, `test_orchestration_integration.py`, `test_planning_integration.py` migrated (16 call sites) |
 
 ---
@@ -58,7 +58,7 @@ CB-1 baseline was 5565 passed. Net **+38**.
 | Gate | Findings presented | User decision |
 |---|---|---|
 | **Pre-commit Phase 1+2** | Architecture: A1–A5 (incl. two doc fixes). Coverage matrix + 4 proposed stories | User challenged the analysis: *"unusual flows? edge cases? graceful failure/tear down?"* — see below |
-| **Phase 2 follow-up** | 4 new findings surfaced by that challenge (2 live bugs, 2 needing a decision) | **F3 → fix fully, as `TECH-009` (not the add-on). F4 → option (b), clear the field.** |
+| **Phase 2 follow-up** | 4 new findings surfaced by that challenge (2 live bugs, 2 needing a decision) | **F3 → fix fully, as `TECH-014` (not the add-on). F4 → option (b), clear the field.** |
 | **Phase 3** | 4 approved stories + the challenge findings implemented | *presented at this commit gate* |
 | **Phase 7.5** | Red/Blue on the diff: 3 findings, all fixed | *presented at this commit gate* |
 
@@ -77,7 +77,7 @@ My initial gap analysis was too shallow; the user's push found four things:
 2. **`UnicodeDecodeError` escaped the guard (HIGH — FIXED).** It subclasses `ValueError`, not
    `OSError`, so a corrupt/binary plan artifact propagated out of a function documented as
    never-raising — *after* the gate had already decided to advance.
-3. **Fan-out shared-context race → `TECH-009`.** `decompose.py` hands the *same* `RunContext` to
+3. **Fan-out shared-context race → `TECH-014`.** `decompose.py` hands the *same* `RunContext` to
    every concurrent sub-runner while the runner writes `run_id`/`step_records`/`pipeline_runner` to
    it every step (`runner.py:404-406`). **Lineage and telemetry are already mis-attributed today**
    in shipped `C-FLOW-03` fan-out; FR-2 widened the blast radius to the plan fields but did not

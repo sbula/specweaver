@@ -36,3 +36,28 @@ sw resume
 # OR explicit resume bounds:
 sw resume <run_id>
 ```
+
+### Resuming a review gate **is** approving it
+
+When a run is parked at a HITL gate on a step that **passed**, `sw resume` means *"I looked at
+this and I approve it."* The step is completed from its stored result and the pipeline advances —
+it is **not** re-run, so no LLM tokens are spent re-doing work you already reviewed.
+
+Everything else re-executes on resume, which is the safe direction:
+
+| Why it parked | What `sw resume` does |
+|---|---|
+| A **HITL gate** on a step that **passed** | **Approves it** — advances without re-running the step |
+| A HITL gate on a step that **failed** | Re-runs the step (you resumed a failure, so that's a retry) |
+| The step itself asked for input (e.g. a spec doesn't exist yet) | Re-runs the step, now that you've done what it asked |
+| A resource was locked by another run | Re-tries the reservation |
+
+**Practical consequence:** each distinct park costs you exactly one `sw resume`. A journey that
+parks twice — say, once to review a draft and once to review a decomposition — takes two resumes.
+If a reviewer rejects and the pipeline loops back, that adds another park to acknowledge. Parked
+runs always exit with code `0`; check the reported status, not the exit code, to tell "waiting for
+you" apart from "finished".
+
+> To inspect what you are approving before you approve it, the park message names the step and the
+> artifact involved. Nothing is auto-approved: a fresh `sw run` never consumes an approval, and one
+> `sw resume` approves at most one gate.

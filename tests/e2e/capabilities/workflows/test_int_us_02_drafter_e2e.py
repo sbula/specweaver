@@ -24,6 +24,7 @@ explicit out-of-contract boundary.
 from __future__ import annotations
 
 import contextlib
+import pathlib
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
@@ -112,15 +113,27 @@ def _ok_step(self, step, context) -> StepResult:  # placeholder; replaced below
 
 
 async def _ok_execute(self, step, context) -> StepResult:
+    # `verdict: accepted` is required, not decorative: new_feature.yaml's review_code gate uses
+    # `condition: accepted`, which reads result.output["verdict"] — a bare PASSED loop_backs to
+    # generate_code and exhausts max_retries. Before approve-on-resume (INT-US-21 FR-4) these
+    # steps were never reached from E6/E7, so the omission was invisible.
     return StepResult(
         status=StepStatus.PASSED,
-        output={"stubbed": "out-of-contract (US-3 scope)"},
+        output={"stubbed": "out-of-contract (US-3 scope)", "verdict": "accepted"},
         started_at=_now_iso(),
         completed_at=_now_iso(),
     )
 
 
 # Handlers beyond review_spec in new_feature.yaml — US-3 territory, out of this contract.
+# INT-US-21 CB-4: ReviewSpecHandler prefers `context.llm_router.get_for_task(...)` over
+# `context.llm` (review.py:32-36), and `sw run`/`sw resume` inject a real ModelRouter. Patching
+# only `create_llm_adapter` left the router building a LIVE adapter — once approve-on-resume let
+# E6/E7 reach review_spec they started making real Gemini calls (observed as 429s). Returning
+# None makes every routed lookup fall back to the scripted adapter on `context.llm`.
+_NO_ROUTING = "specweaver.infrastructure.llm.router.ModelRouter.get_for_task"
+
+
 _POST_REVIEW_STUBS = [
     "specweaver.core.flow.handlers.generation.GenerateCodeHandler.execute",
     "specweaver.core.flow.handlers.generation.GenerateTestsHandler.execute",
@@ -164,6 +177,48 @@ steps:
     (pipelines / "validation_spec_default_orchestrator.yaml").write_text(
         preset, encoding="utf-8"
     )
+
+
+def _run_status(tmp_path: Path) -> str:
+    """Read the latest persisted run's status.
+
+    INT-US-21 CB-4: exit code 0 is ambiguous — a PARKED run and a COMPLETED run both exit 0,
+    which is exactly why E6/E7 were vacuously green before. Assert on the stored state.
+    """
+    import os
+
+    from specweaver.core.flow.engine.store import StateStore
+
+    # The CLI binds `state_db_path` at import time, so these tests' monkeypatch of it does not
+    # reach the runner — the real DB lands under SPECWEAVER_DATA_DIR. Resolve the same way.
+    data_dir = os.environ.get("SPECWEAVER_DATA_DIR")
+    candidates = (
+        [pathlib.Path(data_dir) / "pipeline_state.db"] if data_dir else []
+    ) + sorted(tmp_path.rglob("pipeline_state.db")) + sorted(tmp_path.rglob("pipe_state.db"))
+    for db in candidates:
+        if not db.exists():
+            continue
+        runs = StateStore(db).list_runs(limit=1)
+        if runs:
+            return str(runs[0].status.value)
+    raise AssertionError(f"no pipeline run was persisted (looked in {candidates})")
+
+
+def _resume_until_terminal(tmp_path: Path, max_sessions: int = 6) -> tuple[str, int]:
+    """Resume repeatedly until the run leaves PARKED. Returns (final status, sessions used).
+
+    The session count is deliberately NOT hard-coded. With approve-on-resume (INT-US-21 FR-4)
+    each distinct park costs the human exactly one `sw resume`, and a review rejection adds a
+    loop_back that parks again — so the count is a property of the pipeline, not of the test.
+    Asserting the terminal status plus a sane bound is the honest contract.
+    """
+    for session in range(1, max_sessions + 1):
+        result = runner.invoke(app, ["resume"])
+        assert result.exit_code == 0, result.output
+        status = _run_status(tmp_path)
+        if status != "parked":
+            return status, session
+    return _run_status(tmp_path), max_sessions
 
 
 def _init_project(tmp_path: Path, name: str) -> Path:
@@ -297,10 +352,68 @@ def test_e5_provider_crash_fails_loud(tmp_path: Path) -> None:
 # E6 — UNUSUAL: park -> MANUAL spec -> resume -> new chain validates+reviews    #
 # --------------------------------------------------------------------------- #
 
-MANUAL_SPEC = f"""# Greeter Spec
+# INT-US-21 CB-4: this fixture used to carry only a Purpose section. That was survivable
+# only because resume() re-parked at draft_spec forever, so the run never actually reached
+# validate_spec — the "flows through the chain" claim was never exercised. With
+# approve-on-resume the real S-battery now judges this file, so it has to be a spec that can
+# genuinely pass: the same shape the Drafter's own template produces.
+MANUAL_SPEC = f"""# Greeter — Component Spec
+
+> **Status**: DRAFT
+> **Layer**: Component (L2)
+
+---
 
 ## 1. Purpose
 {SECTION_BODY}
+
+---
+
+## 2. Contract
+
+`greet(name: str) -> str`
+
+- **Input**: `name` — a non-empty user name.
+- **Returns**: the exact string `Hello, {{name}}!`.
+- **Raises**: `ValueError("name must not be empty")` when `name` is empty.
+
+Example:
+
+```python
+greet("Ada")  # returns "Hello, Ada!"
+```
+
+---
+
+## 3. Protocol
+
+Synchronous, single call. No I/O, no network, no persistence. The function is pure: the same
+`name` always yields the same greeting.
+
+---
+
+## 4. Policy
+
+- Empty or whitespace-only names are rejected with `ValueError`, never a silent default.
+- The greeting format is fixed and not configurable in this component.
+- No logging of user names (they are user-supplied input).
+
+---
+
+## 5. Boundaries
+
+- **In scope**: formatting a greeting for one supplied name.
+- **Out of scope**: localisation, honorifics, name validation beyond emptiness, persistence,
+  and any transport concern (HTTP, CLI) — those belong to the caller.
+
+---
+
+## Done Definition
+
+- [ ] `greet` returns the exact greeting for valid names
+- [ ] `greet` raises `ValueError` with the documented message for an empty name
+- [ ] All public methods have unit tests
+- [ ] Examples from Contract pass as test cases
 """
 
 
@@ -322,6 +435,7 @@ def test_e6_park_manual_spec_resume_flows_through_chain(
                 return_value=(_settings_mock(), adapter, MagicMock()),
             )
         )
+        stack.enter_context(patch(_NO_ROUTING, return_value=None))
         for s in stubs:
             stack.enter_context(s)
 
@@ -335,10 +449,16 @@ def test_e6_park_manual_spec_resume_flows_through_chain(
         spec = project / "specs" / "greeter_spec.md"
         spec.write_text(MANUAL_SPEC, encoding="utf-8")
 
-        # Session 2: resume — draft skips, REAL battery + REAL reviewer judge the
-        # human's file, then the (stubbed, out-of-contract) generation steps pass.
-        result2 = runner.invoke(app, ["resume"])
-        assert result2.exit_code == 0, result2.output
+        # Session 2+: resume until the run leaves PARKED. Session 1 was a *handler* park (the
+        # spec was missing), so session 2 re-executes draft, the spec now exists, it PASSES, and
+        # the draft_spec HITL gate parks — which session 3 approves (INT-US-21 FR-4), letting the
+        # REAL battery and REAL reviewer judge the human's file.
+        status, sessions = _resume_until_terminal(tmp_path)
+
+        # exit_code 0 is NOT proof — PARKED and COMPLETED both exit 0, which is exactly why this
+        # test was vacuously green before. Assert the persisted status.
+        assert status == "completed", f"journey ended {status} after {sessions} resume(s)"
+        assert not adapter.verdicts, "the scripted reviewer verdict was never consumed"
 
 
 # --------------------------------------------------------------------------- #
@@ -365,6 +485,7 @@ def test_e7_rejection_park_edit_resume_accepted(tmp_path: Path, monkeypatch) -> 
                 return_value=(_settings_mock(), adapter, MagicMock()),
             )
         )
+        stack.enter_context(patch(_NO_ROUTING, return_value=None))
         for s in stubs:
             stack.enter_context(s)
 
@@ -379,7 +500,11 @@ def test_e7_rejection_park_edit_resume_accepted(tmp_path: Path, monkeypatch) -> 
         spec.write_text(MANUAL_SPEC + "\nThe greeting format is exactly `Hello, {name}!`.\n",
                         encoding="utf-8")
 
-        # Session 2: resume -> draft skips (feedback was consumed at park) -> validate
-        # -> review ACCEPTED -> stubbed post-review steps pass.
-        result2 = runner.invoke(app, ["resume"])
-        assert result2.exit_code == 0, result2.output
+        # Session 2+: resume until terminal. The path is longer than it looks, and every hop is
+        # a real park the human must acknowledge: approve the draft gate -> validate passes ->
+        # review DENIES -> loop_back re-parks draft (headless, carrying findings) -> approve the
+        # draft gate again -> validate -> review ACCEPTS -> stubbed post-review steps.
+        status, sessions = _resume_until_terminal(tmp_path)
+
+        assert status == "completed", f"journey ended {status} after {sessions} resume(s)"
+        assert not adapter.verdicts, "both scripted verdicts should have been consumed"

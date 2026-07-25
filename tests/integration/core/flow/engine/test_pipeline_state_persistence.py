@@ -76,14 +76,27 @@ async def test_pipeline_halt_and_resume(tmp_path: Path) -> None:
     # Run 2: Resume from store
     context2 = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
 
+    # INT-US-21 FR-4: this used to do `pipeline2.steps[1].gate = None` to "remove the HITL gate
+    # so it progresses" — a workaround for resume() re-parking forever. The gate now stays: the
+    # step 1 record is a *handler* park (FakeHitlHandler returns WAITING_FOR_INPUT), so it
+    # correctly re-executes with FakePassHandler, passes, and its HITL gate parks once more.
     pipeline2 = pipeline.model_copy(deep=True)
-    pipeline2.steps[1].gate = None  # Remove HITL gate so it progresses past the review step
 
     runner2 = PipelineRunner(pipeline2, context2, store=store, registry=registry)
     # The runner will detect the latest run in the store for this project/pipeline
     run2 = await runner2.resume(run1.run_id)
 
-    # It should resume from step 1 (review), which now passes, and then complete
-    assert run2.status == RunStatus.COMPLETED
+    # Session 2 re-executes the handler-parked step; passing, its HITL gate parks again.
+    assert run2.status == RunStatus.PARKED
     assert run2.run_id == run1.run_id  # Same run
-    assert run2.current_step == 2  # Completed all 2 steps
+    assert run2.current_step == 1
+    assert run2.step_records[1].result is not None
+    assert run2.step_records[1].result.status == StepStatus.PASSED
+
+    # Session 3: resuming that reviewed gate-park IS the approval — no handler re-execution.
+    context3 = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+    runner3 = PipelineRunner(pipeline2, context3, store=store, registry=registry)
+    run3 = await runner3.resume(run1.run_id)
+
+    assert run3.status == RunStatus.COMPLETED
+    assert run3.current_step == 2

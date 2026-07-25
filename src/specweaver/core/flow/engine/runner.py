@@ -21,6 +21,7 @@ import logging
 import uuid
 from typing import TYPE_CHECKING, Any
 
+from specweaver.core.flow.engine.approval import try_approve_parked_step
 from specweaver.core.flow.engine.gates import GateEvaluator
 from specweaver.core.flow.engine.hydration import hydrate_plan_context, rehydrate_from_records
 from specweaver.core.flow.engine.routers import resolve_route_target
@@ -32,6 +33,7 @@ from specweaver.core.flow.engine.runner_utils import (
     setup_sandbox_caches,
     verify_vault_security,
 )
+from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import (
     PipelineRun,
     RunStatus,
@@ -183,7 +185,9 @@ class PipelineRunner:
 
         try:
             async with cqrs_context():
-                return await execute_run(self, run, logger)
+                # INT-US-21 FR-4: the human chose to resume, which IS the approval of a
+                # reviewed HITL gate-park. One-shot — consumed on the first loop iteration.
+                return await execute_run(self, run, logger, approve_parked=True)
         finally:
             await self._save_handover(run)
             self._flush_telemetry()
@@ -192,7 +196,12 @@ class PipelineRunner:
     # Core execution loop
     # ------------------------------------------------------------------
 
-    async def _execute_loop(self, run: PipelineRun) -> PipelineRun:  # noqa: C901
+    async def _execute_loop(  # noqa: C901
+        self,
+        run: PipelineRun,
+        *,
+        approve_parked: bool = False,
+    ) -> PipelineRun:
         """Walk through steps starting from current_step."""
         total = len(run.step_records)
 
@@ -222,6 +231,18 @@ class PipelineRunner:
             step_idx = run.current_step
             step_def = self._pipeline.steps[step_idx]
             attempts.setdefault(step_idx, 0)
+
+            # INT-US-21 FR-4 — MUST stay at the very top of the loop body. Two later blocks
+            # would otherwise destroy the evidence this decision reads:
+            #   * the staleness bypass below can complete the step as SKIPPED and `continue`,
+            #     discarding the human's approval and the stored result;
+            #   * mark_step_running() overwrites record.status WAITING_FOR_INPUT -> RUNNING.
+            # One-shot: consumed on the first iteration whether or not it approves, so a stale
+            # WAITING_FOR_INPUT record further down the pipeline can never be auto-approved.
+            if approve_parked:
+                approve_parked = False  # one-shot, consumed whether or not it approves
+                if try_approve_parked_step(self, run, step_def, step_idx, total):
+                    continue
 
             # Look up handler
             handler = self._registry.get(step_def.action, step_def.target)
@@ -259,45 +280,8 @@ class PipelineRunner:
 
             # Execute step
 
-            # --- Feature 3.32 SF-4: Staleness Bypass Instruction ---
-            if self._context.stale_nodes is not None:
-                step_target = step_def.params.get("target") or step_def.params.get("target_path")
-                # Global sweeps (e.g. '.', 'src') are NOT bypassed here.
-                # Downstream tools will natively rewrite targets via the RunContext injection.
-                is_global = not step_target or step_target in {
-                    ".",
-                    "src",
-                    "src/",
-                    "tests",
-                    "tests/",
-                }
-
-                if step_target and not is_global and step_target not in self._context.stale_nodes:
-                    logger.info(
-                        "[run_id=%s] Bypassing step '%s': Target '%s' is pristine (not in stale_nodes).",
-                        run.run_id,
-                        step_def.name,
-                        step_target,
-                    )
-                    bypass_res = StepResult(
-                        status=StepStatus.SKIPPED,
-                        output={"bypassed": True, "reason": "Node is pristine"},
-                        started_at=_now_iso(),
-                        completed_at=_now_iso(),
-                    )
-                    run.mark_step_running()
-                    run.complete_current_step(bypass_res)
-                    self._persist(run)
-                    self._log(run, "step_completed", step_def.name)
-                    self._emit(
-                        "step_completed",
-                        step_idx=step_idx,
-                        step_name=step_def.name,
-                        step_def=step_def,
-                        total_steps=total,
-                        result=bypass_res,
-                    )
-                    continue
+            if try_staleness_bypass(self, run, step_def, step_idx, total):
+                continue
 
             run.mark_step_running()
             self._persist(run)

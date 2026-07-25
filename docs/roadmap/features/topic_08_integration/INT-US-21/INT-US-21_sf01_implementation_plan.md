@@ -570,7 +570,7 @@ binding on the implementation; a fresh agent must not re-litigate them.
 | `pipeline_engine_guide.md` `feature_decomposition` journey currency block | **SF-03 / Guide-1** | — |
 | `domain_flow_engine.md` registry table missing shipped handler rows | **SF-03 docs pass** | Design §Refactoring Opportunities |
 | Retry counters do not survive resume (`attempts` re-init, R-14) | **Not scheduled** — `C-FLOW-07` territory | Named in design NFR-2 as an accepted inherited limit. **Do not "fix" it here** |
-| Shared mutable `RunContext` across concurrent fan-out sub-runners | **`TECH-009`** (filed 2026-07-25) — **NOT** the add-on | Re-scoped during CB-2 pre-commit. The runner writes `run_id`/`step_records`/`pipeline_runner` to the shared context on every step (`runner.py:404-406`), so lineage and telemetry are **already mis-attributed today** in shipped `C-FLOW-03` fan-out — independent of FR-2. It is a defect in delivered code, not a missing capability, so it must not be gated on `C-FLOW-12` (unbuilt, sequenced behind `C-EXEC-07`). FR-2 widened the blast radius to the plan fields but did not create it. **Should land before `C-FLOW-12`**, which ought to be able to assume context hygiene |
+| Shared mutable `RunContext` across concurrent fan-out sub-runners | **`TECH-014`** (filed 2026-07-25) — **NOT** the add-on | Re-scoped during CB-2 pre-commit. The runner writes `run_id`/`step_records`/`pipeline_runner` to the shared context on every step (`runner.py:404-406`), so lineage and telemetry are **already mis-attributed today** in shipped `C-FLOW-03` fan-out — independent of FR-2. It is a defect in delivered code, not a missing capability, so it must not be gated on `C-FLOW-12` (unbuilt, sequenced behind `C-EXEC-07`). FR-2 widened the blast radius to the plan fields but did not create it. **Should land before `C-FLOW-12`**, which ought to be able to assume context hygiene |
 | DI inversion of the `core/flow` → `workflows/drafting` seam | Existing monolith-purge ticket | AD-3; SF-01 only ledgers the debt (D8) |
 
 ## Progress
@@ -579,8 +579,8 @@ binding on the implementation; a fresh agent must not re-litigate them.
 |----|-------|-----|--------|
 | CB-1 | Registry completeness | FR-1 | ✅ Pre-commit passed (see notes below) |
 | CB-2 | `decomposition` field + shared hydration | FR-2 | ✅ Committed `c4c1a109` |
-| CB-3 | Cross-session rehydration | FR-3 | ✅ Pre-commit passed |
-| CB-4 | Approve-on-resume + NFR-1 re-assertions | FR-4 | ⬜ |
+| CB-3 | Cross-session rehydration | FR-3 | ✅ Committed `6811a943` |
+| CB-4 | Approve-on-resume + NFR-1 re-assertions | FR-4 | ✅ Pre-commit passed |
 
 ### CB-1 implementation notes (as built)
 
@@ -623,7 +623,7 @@ the Phase-2 gate — the first two were live bugs in CB-2's own new code:
 2. **`UnicodeDecodeError` escaped the guard (FIXED).** It subclasses `ValueError`, not `OSError`, so
    a corrupt/binary plan artifact propagated out of a function documented as never-raising — and
    did so *after* the gate had already decided to advance. Now caught.
-3. **Fan-out shared-context race → `TECH-009`** (user decision: fix fully, as a TECH ticket rather
+3. **Fan-out shared-context race → `TECH-014`** (user decision: fix fully, as a TECH ticket rather
    than inside the add-on). See the Backlog row.
 5. **Two refactors forced by the file-size gate.** `runner.py` was already at 598/600 lines before
    CB-2 — one line from the RED threshold. Rather than shave, two genuinely separable concerns were

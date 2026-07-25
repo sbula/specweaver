@@ -113,7 +113,7 @@ the loop_back rejection path is dead). Full order:
 - [x] Pre-commit skill, all 7 phases (Phase-2 challenge surfaced 4 findings; Phase 7.5 found 3)
 - [ ] **HITL commit stop**
 
-## CB-3 — Cross-session rehydration (FR-3)  ← CURRENT
+## CB-3 — Cross-session rehydration (FR-3)  ✅ COMMITTED 6811a943
 
 - [x] **T3.1** — In `resume()`, before `execute_run`, walk `step_records`; hydrate from records
       where `result is not None and result.status is PASSED` (NOT `record.status`).
@@ -123,19 +123,21 @@ the loop_back rejection path is dead). Full order:
 - [x] Pre-commit all 7 phases (Phase-2 corrected after HITL challenge: 8 integration tests added; Phase 7.5 found 1)
 - [ ] **HITL commit stop**
 
-## CB-4 — Approve-on-resume + NFR-1 re-assertions (FR-4)
+## CB-4 — Approve-on-resume + NFR-1 re-assertions (FR-4)  ← CURRENT
 
-- [ ] **T4.1** — Explicit approval kwarg on `_execute_loop`, forwarded through `execute_run`;
+- [x] **T4.1** — Explicit approval kwarg on `_execute_loop`, forwarded through `execute_run`;
       `resume()` passes `True`, `run()` unchanged (D1).
-- [ ] **T4.2** — Approval branch at the **very top of the loop body** (after
+- [x] **T4.2** — Approval branch at the **very top of the loop body** (after
       `attempts.setdefault`) — before the handler lookup, the staleness bypass, and
       `mark_step_running` (R/B C1.2 + R-1).
-- [ ] **T4.3** — Four-condition check (record `WAITING_FOR_INPUT` + stored result `PASSED` + HITL
+- [x] **T4.3** — Four-condition check (record `WAITING_FOR_INPUT` + stored result `PASSED` + HITL
       gate + signal live); hydrate, complete, persist, `gate_approved_on_resume`, emit with the
       `approved_on_resume` marker (D3).
-- [ ] **T4.4** — Re-assert INT-US-02 E6/E7 as **three-session** journeys asserting COMPLETED from
+- [x] **T4.4** — Re-assert INT-US-02 E6/E7 as **three-session** journeys asserting COMPLETED from
       the persisted record + a drained verdict queue (D2).
-- [ ] **T4.5** — Refresh `test_pipeline_state_persistence.py:79-80` (the `gate = None` workaround
+- [x] **T4.5** — Refresh `test_pipeline_state_persistence.py:79-80` (the `gate = None` workaround
       is obsolete); add the REST gate-approve regression test (D7).
-- [ ] Gate + **HITL commit stop**
+- [x] Full suite green (5646 passed / 19 skipped); all quality gates clean
+- [x] Pre-commit all 7 phases (Phase 7.5 found 1: the renamed-step approval hazard)
+- [ ] **HITL commit stop**
 - [ ] Design-doc tracker: `Dev ✅`, `Pre-Commit ✅`, `Committed ✅`; Session Handoff updated

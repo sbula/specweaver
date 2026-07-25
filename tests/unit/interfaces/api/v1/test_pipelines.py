@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from starlette.testclient import TestClient
@@ -224,6 +224,24 @@ def _get_cost_overrides_sync(db) -> dict:
             return await repo.get_cost_overrides()
 
     return _sync_run(_do())
+
+
+
+def _simple_pipeline():
+    """A minimal one-step PipelineDefinition for endpoint routing tests."""
+    from specweaver.core.flow.engine.models import (
+        PipelineDefinition,
+        PipelineStep,
+        StepAction,
+        StepTarget,
+    )
+
+    return PipelineDefinition(
+        name="validate_only",
+        steps=[
+            PipelineStep(name="validate_spec", action=StepAction.VALIDATE, target=StepTarget.SPEC)
+        ],
+    )
 
 
 class TestListPipelines:
@@ -521,6 +539,58 @@ class TestGateDecision:
             )
             assert resp.status_code == 200
             assert "rejected" in resp.json()["detail"].lower()
+
+    def test_gate_approve_routes_through_resume(self, client, tmp_path) -> None:
+        """POST /runs/{id}/gate with approve must go through PipelineRunner.resume().
+
+        INT-US-21 D7/R-6: this endpoint's "approve" was as broken as the CLI's — it called
+        resume(), which re-executed the parked step and let the HITL gate re-park forever. FR-4
+        repairs it for free via that shared path, so pin the routing: if approve ever stopped
+        going through resume(), the endpoint would silently regress to the old behaviour.
+        """
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+        from specweaver.core.flow.engine.store import StateStore
+
+        state_dir = tmp_path / ".specweaver"
+        state_dir.mkdir(exist_ok=True)
+        store = StateStore(state_dir / "pipeline_state.db")
+        store.save_run(
+            PipelineRun(
+                run_id="test-run-approve",
+                pipeline_name="validate_only",
+                project_name="myproject",
+                spec_path="/fake/spec.md",
+                status=RunStatus.PARKED,
+                current_step=0,
+                step_records=[],
+                started_at="2026-01-01T00:00:00",
+                updated_at="2026-01-01T00:00:01",
+            )
+        )
+
+        with (
+            patch.object(Path, "home", return_value=tmp_path),
+            # The approve branch resolves the project and loads the pipeline before resuming.
+            patch(
+                "specweaver.interfaces.api.v1.pipelines.resolve_project_root",
+                new=AsyncMock(return_value=tmp_path),
+            ),
+            patch(
+                "specweaver.core.flow.engine.parser.load_pipeline",
+                return_value=_simple_pipeline(),
+            ),
+            patch(
+                "specweaver.core.flow.engine.runner.PipelineRunner.resume",
+                new=AsyncMock(return_value=None),
+            ) as mock_resume,
+        ):
+            resp = client.post(
+                "/api/v1/runs/test-run-approve/gate",
+                json={"action": "approve"},
+            )
+
+        assert resp.status_code == 200, resp.text
+        assert mock_resume.called, "approve did not route through resume() — FR-4 cannot apply"
 
     # --- Gap #38: gate on non-parked run → 409 ---
 

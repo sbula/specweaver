@@ -138,8 +138,18 @@ def _dal_requires_isolation(context: RunContext, sandbox: Any, logger: logging.L
     return True
 
 
-async def execute_run(runner: Any, run: Any, logger: logging.Logger) -> PipelineRun:
+async def execute_run(
+    runner: Any,
+    run: Any,
+    logger: logging.Logger,
+    *,
+    approve_parked: bool = False,
+) -> PipelineRun:
     """C-EXEC-06: run the loop, wrapping it in ONE session worktree when session isolation is on.
+
+    ``approve_parked`` (INT-US-21 FR-4/D1) is forwarded to the loop: ``resume()`` passes True so a
+    reviewed HITL gate-park advances instead of re-parking; ``run()`` never does, so the
+    fresh-run path is byte-identical to before.
 
     The whole run executes in a single ephemeral worktree (generated code persists across steps),
     reconciled once at the end (reconcile lands in SF-02) and torn down once (worktree + branch).
@@ -147,7 +157,7 @@ async def execute_run(runner: Any, run: Any, logger: logging.Logger) -> Pipeline
     """
     context = runner._context
     if not getattr(context, "session_isolation", False):
-        return cast("PipelineRun", await runner._execute_loop(run))
+        return cast("PipelineRun", await runner._execute_loop(run, approve_parked=approve_parked))
 
     import copy
 
@@ -179,7 +189,7 @@ async def execute_run(runner: Any, run: Any, logger: logging.Logger) -> Pipeline
     runner._context = isolated
     runner._session_active = True
     try:
-        result = cast("PipelineRun", await runner._execute_loop(run))
+        result = cast("PipelineRun", await runner._execute_loop(run, approve_parked=approve_parked))
         # AD-4 (v1): a park inside a session is unsupported — the worktree is torn down in
         # finally, so parked state cannot survive a resume. Fail clearly.
         if run.status == RunStatus.PARKED:
