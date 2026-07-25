@@ -263,7 +263,7 @@ Strictly linear — no parallel sessions.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Flow-Engine Substrate | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Flow-Engine Substrate | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Decomposition Artifacts & Frozen Seams | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | CLI Journey, Proof & Registry Closure | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -273,11 +273,34 @@ Strictly linear — no parallel sessions.
 Cycles 1–2 complete; all four inherited gaps re-verified line-by-line against `main`; 9
 corrections folded in (marked `R/B C1.x` / `C2.x` inline). OQ-1 resolved as Option B — naming
 and structure stay as-is; the AD-9 closure audit replaces the rename.
-**SF-01 implementation plan APPROVED** (user, 2026-07-25) — see
-`INT-US-21_sf01_implementation_plan.md`. Its Phase-4 decisions D1–D8 and Red/Blue corrections are
-binding; do not re-litigate them. Four commit boundaries: CB-1 registry → CB-2 hydration →
-CB-3 rehydration → CB-4 approve-on-resume.
-**Next step**: Trigger the dev skill for SF-01 CB-1 (registry completeness, FR-1).
+**SF-01 is COMPLETE and committed** (2026-07-25), all four commit boundaries:
+
+| CB | Scope | FR | Commit |
+|----|-------|----|--------|
+| CB-1 | Registry completeness (`DraftFeatureHandler`, `(VALIDATE,FEATURE)`) | FR-1 | `f1de38f1` |
+| CB-2 | Plan hydration bridge (`engine/hydration.py`, `RunContext.decomposition`) | FR-2 | `c4c1a109` |
+| CB-3 | Cross-session rehydration on `resume()` | FR-3 | `6811a943` |
+| CB-4 | HITL approve-on-resume (`engine/approval.py`) | FR-4 | `5ebcc414` |
+
+All four inherited engine gaps from §Research Findings are closed. Suite: 5646 passed / 19 skipped.
+
+**Tickets spun off during SF-01** (registry repaired + both filed in `f0e1709a`):
+`TECH-014` fan-out `RunContext` isolation (live defect in shipped `C-FLOW-03`; should land before
+`C-FLOW-12`) and `TECH-015` retire grab-bag modules.
+
+**Next step**: Trigger the implementation-plan skill for **SF-02** (`plan INT-US-21 SF-02`) —
+decomposition artifacts & frozen seams, FR-5/6/7/9.
+
+> [!IMPORTANT]
+> **Two hard constraints SF-03 inherits from SF-01.** (1) `_resolve_spec_path`
+> (`core/flow/interfaces/cli.py`) still special-cases `new_feature` only, so
+> `sw run feature_decomposition greeter` does not resolve a spec. When SF-03/FR-8 fixes it, it MUST
+> derive `specs/{name}_feature_spec.md` and **import `FEATURE_SPEC_SUFFIX` from
+> `core/flow/handlers/draft.py`** rather than re-hardcode the literal — otherwise every drafting run
+> trips CB-1's convention guard. (2) SF-01 found **five** separate vacuous proofs in existing tests
+> (exit-code-only assertions, `_AlwaysPassHandler` overwriting the registry, `PIPELINES_DIR`
+> silently skipping two tests, a fixture that could not pass its own battery, and live API calls in
+> a "mocked" test). Treat existing coverage as unverified until read.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill. Phase-3 decisions D1a/D2/D3a/D4 were approved by
 the user on 2026-07-24 (see Architectural Decisions); the add-on split (`C-FLOW-12` +
