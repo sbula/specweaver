@@ -49,5 +49,15 @@ To resolve the DRY violation without breaking the Composition Root pattern, we w
 2. Instead, we will replace the 20-line private helper functions (`_load_constitution_content`, `_load_standards_content`) in the CLI with clean, 1-line public Domain APIs (`find_constitution` and `load_standards_content_async`).
 3. This slims the CLI down to a pure declarative injector, maintaining Dependency Inversion while resolving the code smell.
 
-## Future Adaptations (TECH-009 — CANCELLED)
-This section originally proposed extracting an explicit `ApplicationService` layer (TECH-009). After two rounds of adversarial Red Team / Blue Team analysis, this was proven to be an empty indirection wrapper with zero ROI. The constraints required (no typer, no db, no file I/O, no if/else, must be async) stripped it down to a single-line delegation to `PipelineRunner`. The real fix is TECH-006: expose the misplaced private CLI helpers as public Domain APIs.
+## Future Adaptations (formerly `TECH-08` — ABANDONED)
+
+> [!NOTE]
+> **ID-collision correction (2026-07-25).** This section previously cited `TECH-009`. That was an
+> artifact of the 2026-07-12 three-digit rename (`e73a58c9`), which shifted `TECH-02..07` to
+> `TECH-003..008` and carried this reference-only `TECH-08` onto `TECH-009` — while a brand-new
+> design doc, **`TECH-009` Git & Filesystem Subprocess Migration to SubprocessExecutor**, was
+> added in the *same commit* and also took `TECH-009`. One ID, two meanings. The migration ticket
+> is the live `TECH-009`; the abandoned proposal below has no design doc and no live TECH ID, so
+> it is referred to by its historical `TECH-08` label only.
+
+This section originally proposed extracting an explicit `ApplicationService` layer (then `TECH-08`). After two rounds of adversarial Red Team / Blue Team analysis, this was proven to be an empty indirection wrapper with zero ROI. The constraints required (no typer, no db, no file I/O, no if/else, must be async) stripped it down to a single-line delegation to `PipelineRunner`. The real fix is `TECH-006`: expose the misplaced private CLI helpers as public Domain APIs.
