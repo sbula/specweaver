@@ -1,0 +1,142 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+"""Plan-context hydration — the bridge from a completed step's output into the RunContext.
+
+INT-US-21 FR-2/AD-1. Two distinct plan concepts live on two distinct fields:
+
+* ``decompose+feature`` -> ``context.decomposition`` (DecompositionPlan, canonical JSON)
+* ``plan+spec``         -> ``context.plan`` (implementation PlanArtifact file content)
+
+Both the live runner loop and the resume-time rehydration call into here, so the two paths
+cannot drift apart.
+"""
+
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from specweaver.commons import json
+from specweaver.core.flow.engine.models import StepAction, StepTarget
+from specweaver.core.flow.engine.state import StepStatus
+
+if TYPE_CHECKING:
+    from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.engine.state import StepResult
+    from specweaver.core.flow.handlers.base import RunContext
+
+logger = logging.getLogger(__name__)
+
+
+def hydrate_plan_context(
+    step_def: PipelineStep,
+    result: StepResult,
+    context: RunContext,
+) -> None:
+    """Bridge a completed step's output into the RunContext plan fields (INT-US-21 FR-2).
+
+    Two distinct concepts, two distinct fields (AD-1):
+
+    * ``decompose+feature`` -> ``context.decomposition`` (DecompositionPlan, canonical JSON)
+    * ``plan+spec``         -> ``context.plan`` (implementation PlanArtifact file content)
+
+    Only ``PASSED`` results hydrate. This is the single hydration point: the runner calls it
+    after a step advances, and ``resume()`` replays it over persisted step records, so the
+    live path and the cross-session path cannot drift apart.
+
+    Never raises — a malformed or missing artifact degrades to a WARNING and leaves the field
+    untouched, so the consuming step fails with its own loud, specific message (NFR-2/NFR-4).
+    """
+    combo = (step_def.action, step_def.target)
+
+    if result.status != StepStatus.PASSED:
+        # A step that owns a plan field and *tried and failed* invalidates whatever it wrote on a
+        # previous attempt. Scenario: decompose passes -> hydrates -> a later step loops back
+        # -> decompose re-runs and fails. Retaining the superseded plan lets a downstream
+        # orchestrate step consume stale data and silently "succeed". No plan (loud failure)
+        # beats wrong plan (silent success). Only the field this combo owns is cleared.
+        #
+        # Restricted to FAILED/ERROR deliberately: SKIPPED and WAITING_FOR_INPUT mean the step
+        # produced no new verdict at all (bypassed, or parked and due to re-run on resume), so
+        # there is nothing to supersede and wiping a still-valid plan would be gratuitous.
+        if result.status not in (StepStatus.FAILED, StepStatus.ERROR):
+            return
+        if combo == (StepAction.DECOMPOSE, StepTarget.FEATURE) and context.decomposition:
+            logger.warning(
+                "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
+                "context.decomposition from a previous attempt",
+                getattr(context, "run_id", None),
+                step_def.name,
+                result.status.value,
+            )
+            context.decomposition = None
+        elif combo == (StepAction.PLAN, StepTarget.SPEC) and context.plan:
+            logger.warning(
+                "[run_id=%s] Step '%s' did not pass (%s) — clearing the superseded "
+                "context.plan from a previous attempt",
+                getattr(context, "run_id", None),
+                step_def.name,
+                result.status.value,
+            )
+            context.plan = None
+        return
+
+    if combo == (StepAction.DECOMPOSE, StepTarget.FEATURE):
+        try:
+            # `default=str` is NOT optional: StateStore persists step records with exactly
+            # these semantics (store.py:132-133). Without it, an output carrying a Path/set/
+            # custom object raises here on the LIVE path but hydrates fine on the RESUME path
+            # (where the store already stringified it) — the same run would behave differently
+            # depending on whether it was resumed. Sharing this function is only half the
+            # guarantee; the serialization semantics must match too.
+            context.decomposition = json.dumps(result.output or {}, default=str)
+        except (TypeError, ValueError) as exc:
+            logger.warning(
+                "[run_id=%s] Step '%s': decomposition output is not JSON-serializable (%s) — "
+                "context.decomposition left unset",
+                getattr(context, "run_id", None),
+                step_def.name,
+                exc,
+            )
+            return
+        logger.info(
+            "[run_id=%s] Hydrated context.decomposition from step '%s' (%d chars)",
+            getattr(context, "run_id", None),
+            step_def.name,
+            len(context.decomposition),
+        )
+        return
+
+    if combo == (StepAction.PLAN, StepTarget.SPEC):
+        raw_path = (result.output or {}).get("plan_path")
+        if not raw_path or not isinstance(raw_path, str):
+            logger.warning(
+                "[run_id=%s] Step '%s' passed but carries no usable 'plan_path' output — "
+                "context.plan left unset",
+                getattr(context, "run_id", None),
+                step_def.name,
+            )
+            return
+        try:
+            context.plan = Path(raw_path).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            # UnicodeDecodeError is a ValueError, NOT an OSError — a corrupt or binary plan
+            # artifact would otherwise escape this guard and blow up the runner loop *after*
+            # the gate already decided to advance.
+            logger.warning(
+                "[run_id=%s] Step '%s': plan artifact '%s' could not be read (%s) — "
+                "context.plan left unset",
+                getattr(context, "run_id", None),
+                step_def.name,
+                raw_path,
+                exc,
+            )
+            return
+        logger.info(
+            "[run_id=%s] Hydrated context.plan from step '%s' (%s)",
+            getattr(context, "run_id", None),
+            step_def.name,
+            raw_path,
+        )

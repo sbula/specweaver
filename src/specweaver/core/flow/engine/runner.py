@@ -22,6 +22,8 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.gates import GateEvaluator
+from specweaver.core.flow.engine.hydration import hydrate_plan_context
+from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.runner_utils import (
     RunnerEventCallback,
     _now_iso,
@@ -480,7 +482,12 @@ class PipelineRunner:
                     self._emit("run_failed", run=run)
                     return run
 
-            # Success — advance
+            # Success — advance.
+            # INT-US-21 FR-2: this is the join point BOTH advance paths reach — the gate's
+            # "advance" fall-through above and the no-gate else-branch. Hydrating inside the
+            # gate block would silently skip every gateless plan/decompose step.
+            hydrate_plan_context(step_def, result, self._context)
+
             logger.debug(
                 "[run_id=%s] Step '%s' completed with status=%s",
                 run.run_id,
@@ -490,40 +497,30 @@ class PipelineRunner:
 
             router = step_def.router
             if router is not None:
-                target_step_name = self._router_evaluator.evaluate(router, result.output)
-                target_idx = self._pipeline.get_step_index(target_step_name)
-
-                if target_idx is None:
-                    # Defensive programming; invalid targets are trapped by PipelineDefinition.validate_flow()
-                    error_msg = f"Router resolved to unknown step '{target_step_name}'"
+                target_idx, route_error, route_jumps = resolve_route_target(
+                    self._router_evaluator,
+                    router,
+                    result.output,
+                    self._pipeline,
+                    run.current_step,
+                    route_jumps,
+                )
+                if route_error is not None or target_idx is None:
+                    error_msg = route_error or "Router resolution failed"
                     logger.error("[run_id=%s] %s", run.run_id, error_msg)
-                    error_result = StepResult(
-                        status=StepStatus.ERROR,
-                        error_message=error_msg,
-                        started_at=_now_iso(),
-                        completed_at=_now_iso(),
-                    )
-                    run.fail_current_step(error_result)
-                    self._persist(run)
-                    self._emit("run_failed", run=run)
-                    return run
-
-                if target_idx <= run.current_step:
-                    route_jumps += 1
-                    if route_jumps > self._pipeline.max_total_loops:
-                        error_msg = f"Infinite routing loop detected: exceeded max_total_loops ({self._pipeline.max_total_loops})"
-                        logger.error("[run_id=%s] %s", run.run_id, error_msg)
-                        error_result = StepResult(
+                    run.fail_current_step(
+                        StepResult(
                             status=StepStatus.ERROR,
                             error_message=error_msg,
                             started_at=_now_iso(),
                             completed_at=_now_iso(),
                         )
-                        run.fail_current_step(error_result)
-                        self._persist(run)
-                        self._emit("run_failed", run=run)
-                        return run
+                    )
+                    self._persist(run)
+                    self._emit("run_failed", run=run)
+                    return run
 
+                target_step_name = self._pipeline.steps[target_idx].name
                 logger.info(
                     "[run_id=%s] Router resolved target '%s' (index %d). Routing.",
                     run.run_id,

@@ -116,15 +116,22 @@ class OrchestrateComponentsHandler(StepHandler):
             )
 
         try:
-            if not context.plan:
+            # INT-US-21 AD-1: reads context.decomposition, NOT context.plan. The latter is the
+            # implementation PlanArtifact consumed by the generation handlers; sharing one field
+            # for both concepts was a latent type bug. Populated by the runner's
+            # hydrate_plan_context hook after a decompose+feature step passes.
+            if not context.decomposition:
                 return StepResult(
                     status=StepStatus.FAILED,
-                    error_message="No DecompositionPlan found in context.",
+                    error_message=(
+                        "No DecompositionPlan found in context.decomposition — a "
+                        "decompose+feature step must run (and pass) earlier in this pipeline."
+                    ),
                     started_at="",
                     completed_at="",
                 )
 
-            plan_data = json.loads(context.plan)
+            plan_data = json.loads(context.decomposition)
             components = plan_data.get("components", [])
 
             if not components:

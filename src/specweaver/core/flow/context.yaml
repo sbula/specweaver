@@ -33,7 +33,9 @@ consumes:
 
 forbids:
   - specweaver/sandbox/*/interfaces  # Atoms and raw orchestrators must not execute intent-gated agent tools directly.
-    # commons is internal to loom — only atoms/tools may consume it
+    # NB: this refers to sandbox/commons (loom-internal — only atoms/tools may consume it),
+    # NOT the top-level specweaver/commons, which is an L0 `raw-data` foundation leaf
+    # (consumes: [], forbids: specweaver/*) that every layer may legally depend on.
   - specweaver/drafting  # Rules and adapters must remain isolated from interactive drafts.
   - specweaver/context
 

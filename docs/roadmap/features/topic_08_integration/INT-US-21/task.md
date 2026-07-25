@@ -11,7 +11,7 @@
 
 ---
 
-## CB-1 — Registry completeness (FR-1)  ← CURRENT
+## CB-1 — Registry completeness (FR-1)  ✅ COMMITTED f1de38f1
 
 ### Adversarial Test Matrix
 
@@ -94,22 +94,24 @@ the loop_back rejection path is dead). Full order:
   - [x] Phase 6 — Documentation
   - [x] Phase 7 — Walkthrough
   - [x] Phase 7.5 — Red/Blue on code changes
-- [ ] **HITL commit stop**
+- [x] **HITL commit stop** — committed f1de38f1
 
 ---
 
-## CB-2 — `RunContext.decomposition` + shared hydration (FR-2)
+## CB-2 ← CURRENT — `RunContext.decomposition` + shared hydration (FR-2)
 
-- [ ] **T2.1** — Add `decomposition: str | None` to `RunContext`; correct `plan`'s comment to name
+- [x] **T2.1** — Add `decomposition: str | None` to `RunContext`; correct `plan`'s comment to name
       the implementation PlanArtifact (AD-1).
-- [ ] **T2.2** — Hydration helper in `runner.py`: PASSED-only; `decompose+feature` →
+- [x] **T2.2** — Hydration helper in `runner.py`: PASSED-only; `decompose+feature` →
       `context.decomposition`; `plan+spec` → read `plan_path` → `context.plan`; missing key/file →
       WARNING + leave untouched; INFO log with `run_id`.
-- [ ] **T2.3** — Call it at the **join point before `router = step_def.router`** (`runner.py:491`),
+- [x] **T2.3** — Call it at the **join point before `router = step_def.router`** (`runner.py:491`),
       reached by both the gate-advance and no-gate paths (R/B C1.1 — NOT inside the gate block).
-- [ ] **T2.4** — Migrate `OrchestrateComponentsHandler` to `context.decomposition`
+- [x] **T2.4** — Migrate `OrchestrateComponentsHandler` to `context.decomposition`
       (`decompose.py:119,127`); update the error message. Fan-out mechanics below `:130` are DMZ.
-- [ ] Gate + **HITL commit stop**
+- [x] Full suite green (5603 passed / 19 skipped); ruff, mypy (305 files), C901, file sizes (0 errors), tach, roadmap sync all clean
+- [x] Pre-commit skill, all 7 phases (Phase-2 challenge surfaced 4 findings; Phase 7.5 found 3)
+- [ ] **HITL commit stop**
 
 ## CB-3 — Cross-session rehydration (FR-3)
 

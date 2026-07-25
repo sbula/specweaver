@@ -11,7 +11,12 @@ declarative operators mapping to native Python comparative logic.
 import logging
 from typing import Any
 
-from specweaver.core.flow.engine.models import RouterDefinition, RouterRule, RuleOperator
+from specweaver.core.flow.engine.models import (
+    PipelineDefinition,
+    RouterDefinition,
+    RouterRule,
+    RuleOperator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -97,3 +102,39 @@ class RouterEvaluator:
         if op == RuleOperator.GT:
             return bool(actual > target)
         return False
+
+
+def resolve_route_target(
+    evaluator: RouterEvaluator,
+    router: RouterDefinition,
+    result_output: dict[str, Any],
+    pipeline: PipelineDefinition,
+    current_step: int,
+    route_jumps: int,
+) -> tuple[int | None, str | None, int]:
+    """Resolve a router to a concrete step index, guarding unknown targets and route loops.
+
+    Returns ``(target_idx, error_message, route_jumps)``. When ``error_message`` is not None
+    the caller must fail the run; ``target_idx`` is then meaningless.
+
+    Extracted from ``PipelineRunner._execute_loop`` so router resolution lives in the router
+    module rather than the loop, and so the loop stays within the file-size budget.
+    """
+    target_step_name = evaluator.evaluate(router, result_output)
+    target_idx = pipeline.get_step_index(target_step_name)
+
+    if target_idx is None:
+        # Defensive: invalid targets are normally trapped by PipelineDefinition.validate_flow().
+        return None, f"Router resolved to unknown step '{target_step_name}'", route_jumps
+
+    if target_idx <= current_step:
+        route_jumps += 1
+        if route_jumps > pipeline.max_total_loops:
+            return (
+                None,
+                "Infinite routing loop detected: exceeded max_total_loops "
+                f"({pipeline.max_total_loops})",
+                route_jumps,
+            )
+
+    return target_idx, None, route_jumps

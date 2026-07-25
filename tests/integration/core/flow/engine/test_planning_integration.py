@@ -703,7 +703,7 @@ class TestDagOrchestratorIntegration:
                 },
             ]
         }
-        ctx.plan = json.dumps(plan_dict)
+        ctx.decomposition = json.dumps(plan_dict)
 
         # We need a PipelineRunner with a registry. We will mock the runner to fail on 'service_a'
         pipe = PipelineDefinition.model_validate_json(json.dumps({"name": "test", "steps": []}))
@@ -754,7 +754,7 @@ class TestDagOrchestratorIntegration:
                 {"component": "service_b", "dependencies": [], "target_modules": ["auth"]},
             ]
         }
-        ctx.plan = json.dumps(plan_dict)
+        ctx.decomposition = json.dumps(plan_dict)
 
         # Mock topology showing collision
         mock_topo = MagicMock(spec=TopologyGraph)
@@ -820,7 +820,7 @@ async def test_integration_topological_join_wave_n_deferred() -> None:
             ]
         }
     )
-    ctx.plan = mock_plan
+    ctx.decomposition = mock_plan
 
     import importlib.resources
 

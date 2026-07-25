@@ -78,7 +78,40 @@ The `PipelineRunner` walks through steps sequentially:
 1. Look up handler in registry
 2. Execute handler → get `StepResult`
 3. If step has a gate → evaluate it (advance/stop/retry/loop_back/park)
-4. Persist state to SQLite after each step (supports resume)
-5. Emit events for UI progress display
+4. **Hydrate plan context** from the step's output (see below)
+5. Persist state to SQLite after each step (supports resume)
+6. Emit events for UI progress display
 
 State is persisted so interrupted runs can `resume(run_id)`.
+
+### Plan Context Hydration (`engine/hydration.py`)
+
+Two distinct plan concepts flow between steps, on **two distinct `RunContext` fields**
+(INT-US-21 AD-1 — they previously shared one field that nothing ever wrote):
+
+| Producing step | Field | Content | Consumed by |
+|---|---|---|---|
+| `decompose+feature` | `context.decomposition` | `DecompositionPlan` as canonical JSON | `OrchestrateComponentsHandler` |
+| `plan+spec` | `context.plan` | implementation `PlanArtifact` file body | `GenerateCode/TestsHandler` (`add_plan`) |
+
+`hydrate_plan_context()` is the single writer for both. Contract:
+
+- **Only `PASSED` results hydrate.** A non-`PASSED` result *clears* the field that step owns, so a
+  superseded plan can never survive a failed re-run and be silently consumed downstream.
+- **Never raises.** A missing key, deleted file, unreadable path or non-serializable output
+  degrades to a WARNING and leaves the field untouched, so the consuming step fails with its own
+  specific message.
+- **Serializes with `default=str`, matching `StateStore` exactly** (`engine/store.py`). This is
+  load-bearing: without it an output carrying a `Path`/`set` would fail to hydrate on the live path
+  but succeed after a resume, making the same run behave differently depending on whether it was
+  interrupted.
+
+> [!IMPORTANT]
+> The hook is called from the **join point both advance paths reach** — after the gate's `advance`
+> fall-through *and* after the no-gate branch. Placing it inside the gate block would silently skip
+> every gateless plan/decompose step.
+
+> [!CAUTION]
+> `RunContext` is **shared** across concurrent fan-out sub-runners
+> (`handlers/decompose.py`), and the runner writes `run_id`/`step_records` onto it every step.
+> Concurrent sub-runs therefore race on this state — tracked as **`TECH-009`**.

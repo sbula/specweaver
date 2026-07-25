@@ -60,7 +60,12 @@ class RunContext(BaseModel):
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
-    plan: str | None = None  # Pre-loaded plan content (set by runner hook)
+    # INT-US-21 AD-1: two distinct plan concepts, deliberately on two fields. `plan` is the
+    # *implementation* PlanArtifact body (spec -> file layout, written by PlanSpecHandler);
+    # `decomposition` is the *DecompositionPlan* JSON (feature -> components). Both are set by
+    # the runner's hydrate_plan_context hook. Do not reconflate them.
+    plan: str | None = None  # Implementation PlanArtifact content (set by runner hook)
+    decomposition: str | None = None  # DecompositionPlan JSON (set by runner hook)
     workspace_roots: list[str] | None = None  # Override boundary roots (set by decomposition)
     api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
     task_id: str | None = None  # Target Task ID for Handover Protocol

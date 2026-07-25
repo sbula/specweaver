@@ -570,7 +570,7 @@ binding on the implementation; a fresh agent must not re-litigate them.
 | `pipeline_engine_guide.md` `feature_decomposition` journey currency block | **SF-03 / Guide-1** | — |
 | `domain_flow_engine.md` registry table missing shipped handler rows | **SF-03 docs pass** | Design §Refactoring Opportunities |
 | Retry counters do not survive resume (`attempts` re-init, R-14) | **Not scheduled** — `C-FLOW-07` territory | Named in design NFR-2 as an accepted inherited limit. **Do not "fix" it here** |
-| Shared mutable `RunContext` across concurrent fan-out sub-runners (`decompose.py:230-236`) | **`C-FLOW-12` / INT-US-21-SF02** | Latent race, never exercised; design AD-4 |
+| Shared mutable `RunContext` across concurrent fan-out sub-runners | **`TECH-009`** (filed 2026-07-25) — **NOT** the add-on | Re-scoped during CB-2 pre-commit. The runner writes `run_id`/`step_records`/`pipeline_runner` to the shared context on every step (`runner.py:404-406`), so lineage and telemetry are **already mis-attributed today** in shipped `C-FLOW-03` fan-out — independent of FR-2. It is a defect in delivered code, not a missing capability, so it must not be gated on `C-FLOW-12` (unbuilt, sequenced behind `C-EXEC-07`). FR-2 widened the blast radius to the plan fields but did not create it. **Should land before `C-FLOW-12`**, which ought to be able to assume context hygiene |
 | DI inversion of the `core/flow` → `workflows/drafting` seam | Existing monolith-purge ticket | AD-3; SF-01 only ledgers the debt (D8) |
 
 ## Progress
@@ -606,3 +606,32 @@ Deviations and discoveries worth carrying forward:
    assigned this to SF-03's docs pass; done here instead since CB-1 modifies that very registry.
 6. **New dev-guide pattern 24** (`special_patterns_and_adaptations.md`): Round-Trip Name Derivation
    for Self-Naming Writers.
+
+### CB-2 implementation notes (as built)
+
+Four findings surfaced by the user's "unusual flows / edge cases / graceful teardown" challenge at
+the Phase-2 gate — the first two were live bugs in CB-2's own new code:
+
+1. **Serialization asymmetry, live vs. resume (FIXED).** `StateStore` persists step records with
+   `json.dumps(..., default=str)` (`store.py:132-133`); the hydration hook used strict `dumps`.
+   Verified: a decompose output carrying a `Path` or `set` raised on the **live** path (field left
+   unset) but hydrated cleanly on the **resume** path, where the store had already stringified it.
+   The same run behaved differently depending on whether it was interrupted — exactly the drift the
+   shared hydration function was meant to prevent. **Sharing the function is only half the
+   guarantee; the serialization semantics must match too.** Now uses `default=str`, pinned by a
+   test that hydrates live and via a store round-trip and asserts byte-equality.
+2. **`UnicodeDecodeError` escaped the guard (FIXED).** It subclasses `ValueError`, not `OSError`, so
+   a corrupt/binary plan artifact propagated out of a function documented as never-raising — and
+   did so *after* the gate had already decided to advance. Now caught.
+3. **Fan-out shared-context race → `TECH-009`** (user decision: fix fully, as a TECH ticket rather
+   than inside the add-on). See the Backlog row.
+5. **Two refactors forced by the file-size gate.** `runner.py` was already at 598/600 lines before
+   CB-2 — one line from the RED threshold. Rather than shave, two genuinely separable concerns were
+   moved out: `hydrate_plan_context` → new **`engine/hydration.py`** (also where CB-3's resume
+   rehydration will import it from), and the router-target resolution block → **`engine/routers.py`**
+   as `resolve_route_target()`, putting router logic in the router module. `runner.py` is now 593.
+4. **Stale hydration on a failed re-run (FIXED, user decision F4-b).** Hydration fired only on
+   `PASSED` and never cleared, so `decompose passes → hydrates → loop_back → decompose re-runs and
+   fails` left the **superseded** plan in `context.decomposition` for a downstream orchestrate step
+   to consume silently. A non-`PASSED` result now clears the field **that combo owns** (and only
+   that one). Scope addition beyond FR-2's literal text, approved by the user.
