@@ -115,3 +115,24 @@ Two distinct plan concepts flow between steps, on **two distinct `RunContext` fi
 > `RunContext` is **shared** across concurrent fan-out sub-runners
 > (`handlers/decompose.py`), and the runner writes `run_id`/`step_records` onto it every step.
 > Concurrent sub-runs therefore race on this state — tracked as **`TECH-009`**.
+
+#### Cross-session rehydration
+
+The plan fields live in memory and die with the process. `resume()` calls
+`rehydrate_from_records()` **before the loop starts**, replaying `hydrate_plan_context` over the
+persisted step records so a resumed handler sees exactly what a same-session handler would.
+
+- **Keys on the stored RESULT status, never the record status.** A gate-parked step's *record*
+  is `WAITING_FOR_INPUT` while its stored *result* is `PASSED` — keying on the record would skip
+  precisely the step a resumed run needs.
+- **Pairs records to step definitions by index AND name.** A pipeline YAML edited between sessions
+  keeps its length when steps are merely reordered or renamed, so index alone would pair a stored
+  result with the wrong action/target and hydrate the wrong field. Mismatches are skipped with a
+  warning; a whole-run warning fires up front when `run.pipeline_name` disagrees with the
+  definition being resumed.
+- Records whose `result is None` (a loop-back resets its target that way) are skipped.
+
+> The store round-trip is the seam this all rests on — `StateStore.save_run` serializes step
+> records to JSON with `default=str` and `load_run` rebuilds them. It is pinned by
+> `tests/integration/core/flow/engine/test_rehydration_integration.py`, because in-memory unit
+> tests cannot catch a regression in the persistence layer.

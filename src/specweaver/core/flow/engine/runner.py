@@ -22,7 +22,7 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.gates import GateEvaluator
-from specweaver.core.flow.engine.hydration import hydrate_plan_context
+from specweaver.core.flow.engine.hydration import hydrate_plan_context, rehydrate_from_records
 from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.runner_utils import (
     RunnerEventCallback,
@@ -173,6 +173,11 @@ class PipelineRunner:
         )
         # Reset from terminal/parked state to running
         run.status = RunStatus.RUNNING
+
+        # INT-US-21 FR-3: the plan context lives in memory and died with the previous session.
+        # Rebuild it from persisted step records BEFORE the loop starts, so the first resumed
+        # handler sees the same context a same-session handler would have.
+        rehydrate_from_records(self._pipeline, run, self._context)
 
         from specweaver.core.config.database import cqrs_context
 

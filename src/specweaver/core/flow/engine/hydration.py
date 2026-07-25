@@ -23,8 +23,8 @@ from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.engine.state import StepResult
+    from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
+    from specweaver.core.flow.engine.state import PipelineRun, StepResult
     from specweaver.core.flow.handlers.base import RunContext
 
 logger = logging.getLogger(__name__)
@@ -140,3 +140,72 @@ def hydrate_plan_context(
             step_def.name,
             raw_path,
         )
+
+
+def rehydrate_from_records(
+    pipeline: PipelineDefinition,
+    run: PipelineRun,
+    context: RunContext,
+) -> None:
+    """Rebuild the plan context from persisted step records (INT-US-21 FR-3).
+
+    ``context.decomposition`` / ``context.plan`` live in memory and die with the process, so a
+    resumed run must reconstruct them before the loop starts. This replays
+    :func:`hydrate_plan_context` over the stored records, so the live path and the cross-session
+    path can never drift apart.
+
+    Two things are load-bearing:
+
+    * **Keys on the stored RESULT status, never the record status.** A gate-parked step's record
+      status is ``WAITING_FOR_INPUT`` while its stored result is ``PASSED`` — keying on the record
+      would skip exactly the step a resumed run needs (design R/B R2).
+    * **Pairs records to step definitions by index AND name.** The pipeline YAML can be edited
+      between sessions; a reordered file keeps the same length, so length alone would silently
+      pair a stored result with the wrong action/target and hydrate the wrong field.
+
+    Forward iteration means the highest matching index wins. Never raises.
+    """
+    # Cheap whole-run sanity check before the per-step ones: the caller chooses which
+    # PipelineDefinition to resume with, and nothing guarantees it is the one that produced
+    # these records (the REST resume path resolves it independently of the CLI path). A
+    # mismatch here means every per-step name guard below is about to fire.
+    if run.pipeline_name and run.pipeline_name != pipeline.name:
+        logger.warning(
+            "[run_id=%s] Resuming with pipeline '%s' but the run was recorded against '%s' — "
+            "plan rehydration will skip any step whose name does not line up",
+            run.run_id,
+            pipeline.name,
+            run.pipeline_name,
+        )
+
+    steps = pipeline.steps
+    for idx, record in enumerate(run.step_records):
+        if idx >= len(steps):
+            logger.warning(
+                "[run_id=%s] Stored step record '%s' (index %d) has no definition in the "
+                "current pipeline (%d steps) — skipping rehydration for it",
+                run.run_id,
+                record.step_name,
+                idx,
+                len(steps),
+            )
+            continue
+
+        step_def = steps[idx]
+        if record.step_name != step_def.name:
+            logger.warning(
+                "[run_id=%s] Stored step record '%s' does not match pipeline step '%s' at "
+                "index %d — the pipeline was edited between sessions; skipping rehydration "
+                "for it",
+                run.run_id,
+                record.step_name,
+                step_def.name,
+                idx,
+            )
+            continue
+
+        # A loop_back resets its target record to result=None; guard before touching .status.
+        if record.result is None:
+            continue
+
+        hydrate_plan_context(step_def, record.result, context)

@@ -578,8 +578,8 @@ binding on the implementation; a fresh agent must not re-litigate them.
 | CB | Scope | FRs | Status |
 |----|-------|-----|--------|
 | CB-1 | Registry completeness | FR-1 | ✅ Pre-commit passed (see notes below) |
-| CB-2 | `decomposition` field + shared hydration | FR-2 | ⬜ |
-| CB-3 | Cross-session rehydration | FR-3 | ⬜ |
+| CB-2 | `decomposition` field + shared hydration | FR-2 | ✅ Committed `c4c1a109` |
+| CB-3 | Cross-session rehydration | FR-3 | ✅ Pre-commit passed |
 | CB-4 | Approve-on-resume + NFR-1 re-assertions | FR-4 | ⬜ |
 
 ### CB-1 implementation notes (as built)

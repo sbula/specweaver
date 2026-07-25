@@ -98,7 +98,7 @@ the loop_back rejection path is dead). Full order:
 
 ---
 
-## CB-2 ← CURRENT — `RunContext.decomposition` + shared hydration (FR-2)
+## CB-2 ✅ COMMITTED c4c1a109 — `RunContext.decomposition` + shared hydration (FR-2)
 
 - [x] **T2.1** — Add `decomposition: str | None` to `RunContext`; correct `plan`'s comment to name
       the implementation PlanArtifact (AD-1).
@@ -113,13 +113,15 @@ the loop_back rejection path is dead). Full order:
 - [x] Pre-commit skill, all 7 phases (Phase-2 challenge surfaced 4 findings; Phase 7.5 found 3)
 - [ ] **HITL commit stop**
 
-## CB-3 — Cross-session rehydration (FR-3)
+## CB-3 — Cross-session rehydration (FR-3)  ← CURRENT
 
-- [ ] **T3.1** — In `resume()`, before `execute_run`, walk `step_records`; hydrate from records
+- [x] **T3.1** — In `resume()`, before `execute_run`, walk `step_records`; hydrate from records
       where `result is not None and result.status is PASSED` (NOT `record.status`).
-- [ ] **T3.2** — Pair-guard on **both** length and `step_name` identity; skip + warn on either
+- [x] **T3.2** — Pair-guard on **both** length and `step_name` identity; skip + warn on either
       mismatch (R/B C2.3 — a reordered YAML keeps the same length).
-- [ ] Gate + **HITL commit stop**
+- [x] Full suite green (5629 passed / 19 skipped); all quality gates clean
+- [x] Pre-commit all 7 phases (Phase-2 corrected after HITL challenge: 8 integration tests added; Phase 7.5 found 1)
+- [ ] **HITL commit stop**
 
 ## CB-4 — Approve-on-resume + NFR-1 re-assertions (FR-4)
 
