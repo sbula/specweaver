@@ -53,5 +53,15 @@ description: "Phase 5: Code quality checks — ruff, mypy, complexity, and file 
      matrix) MUST be surfaced to the user — never silently "fixed" in either direction,
      since resolving them touches finished-registry content (HITL + guard hook apply).
 
+5.7. Run **skill tree sync** check (only if you changed anything under a `skills/` directory):
+     ```
+     python scripts/check_skill_sync.py
+     ```
+     `.claude/skills/` and `.agents/skills/` hold two copies of the same files so that Claude Code
+     and other agents (Gemini/Antigravity) both find them. They are **separate files** — nothing
+     keeps them in step outside Claude Code, so a skill edited while working in another agent
+     updates only one side and the other silently goes stale. Any error MUST be fixed by copying
+     the correct version over the other; decide which side is correct by reading, not by timestamp.
+
 > [!IMPORTANT]
 > **NO HITL GATE HERE:** If all checks in Phase 5 pass successfully, update `task.md` and PROCEED IMMEDIATELY to Phase 6. Do NOT stop to ask the user for permission to continue.

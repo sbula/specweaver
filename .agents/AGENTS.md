@@ -13,6 +13,32 @@ These rules are ALWAYS active for every agent interaction in this workspace.
 - **TDD**: Red → Green → Refactor. Every task starts with a failing test. No exceptions.
 - **DAL-Level Awareness**: Respect the Data Access Layer levels. Pure-logic modules MUST NOT perform I/O. Adapters wrap externals. Orchestrators delegate.
 
+## Lifecycle Skills — where they live
+
+The SpecWeaver development lifecycle is driven by **skills**: numbered, gated procedures you follow
+verbatim rather than improvising. They live in **`.agents/skills/<skill-name>/SKILL.md`**, with
+multi-phase skills keeping one file per phase under `references/`.
+
+| Skill | Use it when |
+|---|---|
+| `specweaver-feature` | Driving a feature end-to-end (orchestrates the four below) |
+| `specweaver-design` | Designing a feature → `[ID]_design.md` |
+| `specweaver-implementation-plan` | Planning one sub-feature → `[ID]_sfNN_implementation_plan.md` |
+| `specweaver-dev` | Implementing a commit boundary, test-first |
+| `specweaver-pre-commit` | The 7-phase quality gate before EVERY commit |
+| `specweaver-red-blue-review` | Adversarial review of a design, plan, or diff |
+| `specweaver-ticket` | Minting a `TECH-NNN`, capability, or sub-story ID without collision |
+
+Read the skill's `SKILL.md` **in full before starting**, then each phase file as you reach it. Never
+skip or reorder phases, and never bypass a HITL gate.
+
+> [!IMPORTANT]
+> `.claude/skills/` holds a **second copy** of these files for Claude Code. They are separate
+> files, not hardlinks, and **nothing keeps them in step automatically outside Claude Code** — so a
+> skill you edit while working in another agent updates only one side and the other silently goes
+> stale. **If you change a skill, change BOTH paths**, then run `python scripts/check_skill_sync.py`
+> (it is part of the pre-commit gate and fails on any drift).
+
 ## Mandatory Context Loading
 
 Before modifying ANY module, you MUST:
