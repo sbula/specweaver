@@ -18,6 +18,7 @@ forbids:
 
 exposes:
   - Drafter
+  - FeatureDrafter
 
 # -- Operational Metadata --------------------------------------------------
 operational:

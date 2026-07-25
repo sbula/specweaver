@@ -33,8 +33,11 @@ from specweaver.core.flow.handlers.validation import ValidateSpecHandler
 # Paths
 # ---------------------------------------------------------------------------
 
+# parents[5] is the repo root: engine/flow/core/integration/tests/<root>.
+# Was parents[4] (= tests/), which silently pointed at a nonexistent path — the two tests
+# guarded by `if not path.exists(): pytest.skip(...)` had therefore never actually run.
 PIPELINES_DIR = (
-    Path(__file__).resolve().parents[4] / "src" / "specweaver" / "workflows" / "pipelines"
+    Path(__file__).resolve().parents[5] / "src" / "specweaver" / "workflows" / "pipelines"
 )
 
 
@@ -164,6 +167,68 @@ class TestFeatureDecompositionPipelineIntegration:
         reloaded = store.load_run(run.run_id)
         assert reloaded is not None
         assert reloaded.status == RunStatus.PARKED
+
+    def test_bundled_pipeline_runs_step_1_with_the_real_registry(
+        self, sample_project: Path
+    ) -> None:
+        """INT-US-21 FR-1: the shipped pipeline must reach its first gate with real handlers.
+
+        The sibling test above overwrites every handler with _AlwaysPassHandler, so it proves
+        nothing about registry completeness — before FR-1 the runner errored at step 1 with
+        "No handler registered for draft+feature". This test uses the DEFAULT registry.
+        """
+        yaml = YAML(typ="safe")
+        path = PIPELINES_DIR / "feature_decomposition.yaml"
+        data = yaml.load(path)
+        pipeline = PipelineDefinition.model_validate(data)
+
+        # Spec pre-exists and follows the feature convention -> draft skips, gate parks.
+        spec = sample_project / "specs" / "user_onboarding_feature_spec.md"
+        spec.parent.mkdir(parents=True, exist_ok=True)
+        spec.write_text(_FEATURE_SPEC, encoding="utf-8")
+
+        ctx = _make_context(sample_project, spec)
+        store = _make_store(sample_project)
+
+        # No registry= argument: the runner builds the real StepHandlerRegistry.
+        runner = PipelineRunner(pipeline, ctx, store=store)
+        run = asyncio.run(runner.run())
+
+        # Parked at the draft_feature HITL gate — NOT errored on a missing handler.
+        assert run.status == RunStatus.PARKED
+        assert run.current_step == 0
+
+        draft_record = run.step_records[0]
+        assert draft_record.result is not None
+        assert draft_record.result.error_message == ""
+        # The real DraftFeatureHandler ran and took the exists-skip branch.
+        assert draft_record.result.status == StepStatus.PASSED
+        assert "already exists" in draft_record.result.output["message"]
+        # Gate-park shape: record parked, stored result PASSED (what FR-4 keys approval on).
+        assert draft_record.status == StepStatus.WAITING_FOR_INPUT
+
+    def test_real_registry_resolves_both_new_feature_combos(self) -> None:
+        """The two rows FR-1 added, resolved from the default registry."""
+        from specweaver.core.flow.handlers.draft import DraftFeatureHandler
+
+        registry = StepHandlerRegistry()
+
+        draft_handler = registry.get(StepAction.DRAFT, StepTarget.FEATURE)
+        validate_handler = registry.get(StepAction.VALIDATE, StepTarget.FEATURE)
+
+        assert isinstance(draft_handler, DraftFeatureHandler)
+        # validate+feature reuses the spec handler; kind=feature routing already exists there.
+        assert isinstance(validate_handler, ValidateSpecHandler)
+
+        # Every combo the shipped pipeline declares must resolve.
+        yaml = YAML(typ="safe")
+        pipeline = PipelineDefinition.model_validate(
+            yaml.load(PIPELINES_DIR / "feature_decomposition.yaml")
+        )
+        for step in pipeline.steps:
+            assert registry.get(step.action, step.target) is not None, (
+                f"no handler for {step.action.value}+{step.target.value}"
+            )
 
     def test_pipeline_step_params_preserved_in_definition(self) -> None:
         """step.params (e.g. kind=feature) are preserved in the PipelineDefinition."""

@@ -372,3 +372,43 @@ When building `ContainerSubprocessExecutor` (B-EXEC-01) to route QA-runner execu
 
 > [!CAUTION]
 > **Corollary bug this pattern surfaces: host-specific paths don't survive the swap.** Wiring `ContainerSubprocessExecutor` into `PythonQARunner` (Commit Boundary 2) initially left `run_debugger()` building its command with `sys.executable` — the *host's* interpreter path (a Windows `.exe` path on the implementing machine). Every other method (`run_tests`, `run_linter`, `run_complexity`) already used the bare string `"python"`, resolved fresh inside whatever environment actually runs it. Only `run_debugger` was different, and only a **real-engine integration test** caught it — a mocked unit test can't, since the mock happily accepts whatever argv it's handed. General lesson: when a component's physical execution target becomes swappable, audit every call site for host-environment assumptions (interpreter paths, absolute tool paths, host-specific env vars) that silently stop being valid once the "physical location" changes — and don't trust unit tests alone to catch it; pair this pattern with at least one real, unmocked execution against the new target.
+
+---
+
+## 24. Round-Trip Name Derivation for Self-Naming Writers (The Path Reconciliation Guard)
+
+`FeatureDrafter.draft(name, output_dir)` does not accept a target file path — it **derives its own**
+output as `output_dir / f"{name}_feature_spec.md"` and returns it. But every downstream pipeline step
+(`validate+feature`, `decompose+feature`) reads `context.spec_path`. Wrapping such a writer naively
+means the drafter happily writes a file that nothing downstream ever opens, and nothing fails: the
+step returns PASSED, the next step reports "spec not found", and the real cause is two directories
+away from the error message.
+
+### How it works:
+`DraftFeatureHandler` (`core/flow/handlers/draft.py`) inverts the derivation instead of fighting it.
+It computes the `name` that will *make the writer produce the path we already want*:
+
+1. **Guard the shape first** — reject any `spec_path` not matching `<non-empty>_feature_spec.md`
+   with a loud ERROR, before any prompt building or LLM setup, so a bad name costs zero tokens.
+2. **Derive by slicing, never `removesuffix`** — `str.removesuffix` is a silent no-op when the
+   suffix is absent, so `foo.md` would yield `name="foo"` and write `foo_feature_spec.md`. The
+   guard plus an explicit slice makes the mismatch impossible rather than merely unlikely.
+3. **Reject the empty stem** — `_feature_spec.md` passes a naive suffix check and yields `name=""`,
+   which round-trips *perfectly* and would silently draft an unnamed spec. Only an explicit
+   non-empty check catches this one.
+4. **Assert the round trip after the call** — compare the writer's returned path against
+   `context.spec_path` and ERROR on mismatch. Steps 1–3 make it correct today; step 4 is what
+   fails loudly if the third-party writer's naming ever changes underneath us.
+
+### Why we do it:
+1. **The failure it prevents is silent and misattributed.** Without the post-call assertion, a
+   future change to `FeatureDrafter`'s filename convention produces an orphaned spec and an error
+   surfacing at a completely different pipeline step.
+2. **Cheaper than the alternatives.** Widening `FeatureDrafter.draft()` to accept a full path
+   changes a shipped signature and its callers; renaming the file after the fact is a hack that
+   leaves a window where the wrong file exists.
+3. **General applicability**: any time you wrap a component that *names its own output* — report
+   writers, exporters, scaffolders, code generators — derive the input that yields the path you
+   need, guard the shape before doing expensive work, and assert the round trip afterwards. Do not
+   assume the convention holds; pin it with an assertion that fails at the wrapper, not three
+   steps downstream.

@@ -45,17 +45,32 @@ The `StepHandlerRegistry` maps `(action, target)` pairs to handler classes:
 
 | Action + Target | Handler | Module |
 |----------------|---------|--------|
-| `draft+spec` | `DraftSpecHandler` | `flow/_draft.py` |
-| `validate+spec` | `ValidateSpecHandler` | `flow/_validation.py` |
-| `validate+code` | `ValidateCodeHandler` | `flow/_validation.py` |
-| `validate+tests` | `ValidateTestsHandler` | `flow/_validation.py` |
-| `review+spec` | `ReviewSpecHandler` | `flow/_review.py` |
-| `review+code` | `ReviewCodeHandler` | `flow/_review.py` |
-| `generate+code` | `GenerateCodeHandler` | `flow/_generation.py` |
-| `generate+tests` | `GenerateTestsHandler` | `flow/_generation.py` |
-| `lint_fix+code` | `LintFixHandler` | `flow/_lint_fix.py` |
-| `plan+spec` | `PlanSpecHandler` | `flow/_generation.py` |
-| `arbitrate+verdict` | `ArbitrateVerdictHandler` | `flow/_arbiter.py` |
+| `draft+spec` | `DraftSpecHandler` | `core/flow/handlers/draft.py` |
+| `draft+feature` | `DraftFeatureHandler` | `core/flow/handlers/draft.py` |
+| `validate+spec` | `ValidateSpecHandler` | `core/flow/handlers/validation.py` |
+| `validate+feature` | `ValidateSpecHandler` (routes `kind=feature` → `validation_spec_feature`) | `core/flow/handlers/validation.py` |
+| `validate+code` | `ValidateCodeHandler` | `core/flow/handlers/validation.py` |
+| `validate+tests` | `ValidateTestsHandler` | `core/flow/handlers/validation.py` |
+| `review+spec` | `ReviewSpecHandler` | `core/flow/handlers/review.py` |
+| `review+code` | `ReviewCodeHandler` | `core/flow/handlers/review.py` |
+| `generate+code` | `GenerateCodeHandler` | `core/flow/handlers/generation.py` |
+| `generate+tests` | `GenerateTestsHandler` | `core/flow/handlers/generation.py` |
+| `generate+contract` | `GenerateContractHandler` | `core/flow/handlers/generation.py` |
+| `generate+scenario` | `GenerateScenarioHandler` | `core/flow/handlers/scenario.py` |
+| `convert+scenario` | `ConvertScenarioHandler` | `core/flow/handlers/scenario.py` |
+| `lint_fix+code` | `LintFixHandler` | `core/flow/handlers/lint_fix.py` |
+| `plan+spec` | `PlanSpecHandler` | `core/flow/handlers/generation.py` |
+| `enrich+standards` | `EnrichStandardsHandler` | `core/flow/handlers/standards.py` |
+| `detect+drift` | `DriftCheckHandler` | `core/flow/handlers/drift.py` |
+| `decompose+feature` | `DecomposeFeatureHandler` | `core/flow/handlers/decompose.py` |
+| `orchestrate+components` | `OrchestrateComponentsHandler` | `core/flow/handlers/decompose.py` |
+| `arbitrate+verdict` | `ArbitrateVerdictHandler` | `core/flow/handlers/arbiter.py` |
+| `bash+script` | `BashActionHandler` | `core/flow/handlers/bash_action.py` |
+
+> Source of truth: `StepHandlerRegistry.__init__` in `core/flow/handlers/registry.py`. A pair
+> present in `VALID_STEP_COMBINATIONS` (`engine/models.py`) but absent here makes the pipeline
+> unrunnable — the runner errors with "No handler registered for `<action>`+`<target>`" at that
+> step. That was exactly the `feature_decomposition` defect INT-US-21 FR-1 closed.
 
 ## Runner
 

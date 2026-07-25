@@ -33,7 +33,7 @@ from specweaver.core.flow.handlers.decompose import (
 )
 
 # Re-export all handler implementations
-from specweaver.core.flow.handlers.draft import DraftSpecHandler
+from specweaver.core.flow.handlers.draft import DraftFeatureHandler, DraftSpecHandler
 from specweaver.core.flow.handlers.drift import DriftCheckHandler
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.generation import (
@@ -96,7 +96,12 @@ class StepHandlerRegistry:
     def __init__(self) -> None:
         self._handlers: dict[tuple[StepAction, StepTarget], StepHandler] = {
             (StepAction.DRAFT, StepTarget.SPEC): DraftSpecHandler(),
+            (StepAction.DRAFT, StepTarget.FEATURE): DraftFeatureHandler(),
             (StepAction.VALIDATE, StepTarget.SPEC): ValidateSpecHandler(),
+            # INT-US-21 FR-1: ValidateSpecHandler already routes kind=feature to the
+            # validation_spec_feature battery (validation.py:155-156) — a registry row is
+            # all the bundled feature_decomposition pipeline was missing.
+            (StepAction.VALIDATE, StepTarget.FEATURE): ValidateSpecHandler(),
             (StepAction.VALIDATE, StepTarget.CODE): ValidateCodeHandler(),
             (StepAction.VALIDATE, StepTarget.TESTS): ValidateTestsHandler(),
             (StepAction.REVIEW, StepTarget.SPEC): ReviewSpecHandler(),
