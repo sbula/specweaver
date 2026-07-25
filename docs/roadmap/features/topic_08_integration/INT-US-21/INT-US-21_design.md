@@ -264,7 +264,7 @@ Strictly linear — no parallel sessions.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Flow-Engine Substrate | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Decomposition Artifacts & Frozen Seams | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Decomposition Artifacts & Frozen Seams | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | CLI Journey, Proof & Registry Closure | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -288,8 +288,10 @@ All four inherited engine gaps from §Research Findings are closed. Suite: 5646 
 `TECH-014` fan-out `RunContext` isolation (live defect in shipped `C-FLOW-03`; should land before
 `C-FLOW-12`) and `TECH-015` retire grab-bag modules.
 
-**Next step**: Trigger the implementation-plan skill for **SF-02** (`plan INT-US-21 SF-02`) —
-decomposition artifacts & frozen seams, FR-5/6/7/9.
+**SF-02 implementation plan APPROVED** (user, 2026-07-25). Decisions D1–D7 binding; FR-5 and FR-7
+carry `(SF-02 Phase-0)` corrections. Three commit boundaries: CB-1 artifact persistence →
+CB-2 stub component specs → CB-3 seam pins.
+**Next step**: Trigger the dev skill for SF-02 CB-1 (artifact persistence, FR-5 + FR-7 data).
 
 > [!IMPORTANT]
 > **Two hard constraints SF-03 inherits from SF-01.** (1) `_resolve_spec_path`

@@ -5,7 +5,7 @@
 - **Design Document**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_sf02_implementation_plan.md
-- **Status**: DRAFT
+- **Status**: APPROVED (user, 2026-07-25)
 - **FRs in scope**: FR-5, FR-6, FR-7, FR-9
 - **Depends on**: SF-01 — COMPLETE (`f1de38f1`, `c4c1a109`, `6811a943`, `5ebcc414`)
 
@@ -156,6 +156,31 @@ untouched here.
 
 ---
 
+## Design Coverage Map (Phase 5.0 pre-check)
+
+Every FR, NFR, AD and Risk-Table entry from the design that touches SF-02, and where this plan
+discharges it.
+
+| Design item | Discharged by | Note |
+|---|---|---|
+| FR-5 artifact persistence | CB-1 | `mode="json"` per D1 — see R-2 |
+| FR-6 stub component specs | CB-2 | never-overwrite + name guard + Jinja render |
+| FR-7 DAL contract | CB-1 (data) + CB-2 (summary) | D2: handler-owned summary, no display change |
+| FR-9 seam pins | CB-3 | (a) decompose→orchestrate, (b) hook-driven plan→generate |
+| NFR-1 delivered-journey compat | CB-1/CB-2 regression tests | decompose gains writes; existing decompose tests must stay green |
+| NFR-2 cross-session honesty | CB-1 | **AD-8 holds: rehydration reads step records, NOT the artifact file.** SF-02 must not make any consumer depend on the file existing |
+| NFR-3 LLM economy | Test plan | persistence + stubs add ZERO LLM calls; assert handler call counts |
+| NFR-4 fail-loud parity | D6 | artifact write failure fails the step, plan retained in `output` |
+| NFR-5 injection safety | CB-2 | R-5 regex before **any** filesystem write; hostile test asserts nothing written outside the target dir |
+| NFR-6 boundary hygiene | §3.1 | zero new tach edges, zero new `consumes`; `jinja2` is 3rd-party (D3) |
+| NFR-7 observability | CB-1/CB-2 + **R/B C1.1** | INFO with `run_id` on artifact write and stub creation. **The design's "park messages name the artifact path" clause has the same defect as FR-7** — no park surface renders output. Same resolution as D2: the handler puts the path in its summary; rendering is SF-03 |
+| AD-4 freeze the add-on seams | CB-1/CB-2/CB-3 | SF-02 *is* the freezing: artifact schema, stub paths, `proposed_dal` presence, `context.decomposition` contract |
+| AD-6 DAL posture delegated | CB-1 | SF-02 guarantees the DAL **data** contract only; per-component isolation is `C-EXEC-07`/`C-FLOW-12` |
+| AD-7 artifact next to the spec | CB-1, D7 | stubs follow the same rule (`spec_path.parent`) |
+| AD-8 rehydration from records | CB-1 | the artifact is the human-facing copy; nothing reads it back |
+| RT stub writes collide with user files | CB-2 | never-overwrite; asserted byte-identical after a second run |
+| RT `context.decomposition` shape drifts | CB-3 (FR-9a) | the pin fails if the contract breaks |
+
 ## Work Breakdown — Commit Boundaries
 
 ### CB-1 — Decomposition artifact persistence (FR-5, FR-7 data half)
@@ -185,6 +210,20 @@ untouched here.
 4. Report created/skipped counts in the step output so the e2e inventory assertion has something to
    read.
 
+> [!NOTE]
+> **Why the stubs matter to the add-on (R/B C1.3).** `OrchestrateComponentsHandler` builds each
+> sub-pipeline from `new_feature.yaml` with `params["component"] = <node>`; it never checks that a
+> component spec exists. So the stubs are **not** a prerequisite for fan-out to start — they are
+> what makes each sub-run's `draft_spec` take the exists-skip path instead of parking for a human.
+> That is precisely the seam AD-4 freezes, and it is why FR-6 belongs in the base contract rather
+> than the add-on.
+
+> [!CAUTION]
+> **Stale stubs are out of scope but must not be silently wrong (R/B C1.2).** Never-overwrite means
+> a re-decomposition that drops or renames a component leaves the old stub on disk. SF-02 does NOT
+> reconcile or delete them (that is hand-edit arbitration — `C-FLOW-05`/`B-INTL-07` territory), but
+> the created/skipped report must make it visible that a stub was skipped rather than authored.
+
 ### CB-3 — FR-9 seam pins (+ FR-7 surfacing, pending Q2)
 
 **Files**: `[NEW] tests/integration/core/flow/engine/test_seam_pins.py`, possibly
@@ -207,8 +246,11 @@ untouched here.
 component with Purpose seeded; both seam pins green.
 
 **Boundary** — zero-component plan (artifact written, no stubs); a component whose spec already
-exists (skipped, byte-identical afterwards); missing `.specweaver/templates/` (local fallback used);
-spec stem that already ends in `_decomposition`; `coverage_score` exactly 1.0.
+exists (skipped, **byte-identical afterwards**); missing `.specweaver/templates/` (local fallback
+used); spec stem that already ends in `_decomposition`; `coverage_score` exactly 1.0;
+**re-running decompose reuses the existing artifact's uuid** rather than minting a new lineage
+identity (R-6's extract-or-generate); a re-decomposition that drops a component leaves the old
+stub untouched and reports it as skipped (R/B C1.2).
 
 **Degradation** — `context.db` unset (no lineage, still PASSES); template file unreadable (fallback,
 warning); specs dir missing (created or loud failure — Q7); disk write failure mid-way (partial
