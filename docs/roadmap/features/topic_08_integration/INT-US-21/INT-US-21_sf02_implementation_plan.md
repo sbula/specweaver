@@ -6,7 +6,7 @@
 - **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_sf02_implementation_plan.md
 - **Status**: APPROVED (user, 2026-07-25)
-- **FRs in scope**: FR-5, FR-6, FR-7, FR-9
+- **FRs in scope**: FR-5, FR-6, FR-7, FR-9 (FR-9 rescoped 2026-07-26 to the plan-bridge half only)
 - **Depends on**: SF-01 — COMPLETE (`f1de38f1`, `c4c1a109`, `6811a943`, `5ebcc414`)
 
 ---
@@ -91,23 +91,26 @@ module-level constant rather than a second copy.
 
 FR-5's analogues: `<stem>_decomposition.yaml`, `event_type="generated_decomposition"`.
 
-### R-7 — FR-9a's seam: `run_fan_out(runner, sub_pipelines, parent_run_id)`
+### R-7 — FR-9a's seam: `run_fan_out(runner, sub_pipelines, parent_run_id)` — **DESCOPED 2026-07-26**
+
+> [!WARNING]
+> **FR-9(a) is descoped; this research is retained for `C-FLOW-12` to inherit, not for SF-02 to
+> build.** The pin would have frozen the fan-out seam for `C-FLOW-12`, which does not exist — SF-03
+> *mints* it, sequenced behind `C-EXEC-07`. A regression pin written against an undesigned consumer
+> freezes a guess and charges the suite for it permanently. See the design's FR-9 row. `TECH-014`
+> (the fan-out `RunContext` race) should land before `C-FLOW-12` regardless.
 
 `runner_utils.py:242`. `OrchestrateComponentsHandler` builds sub-pipelines from
 `context.decomposition` (SF-01 CB-2 migrated it off `context.plan`), validates names, then fans out.
 The existing `test_integration_physical_io_join_locks` sets `ctx.pipeline_runner = runner` and is
 the closest working example.
 
-> **`TECH-014` applies here.** The fan-out hands the *same* `RunContext` to every sub-runner. FR-9a
-> only needs to prove the hydrated field *reaches* the fan-out and the DAG is enumerated — it must
-> NOT try to fix or work around the race, which is a separate ticket.
-
 ### R-8 — What SF-01 already guarantees (do not re-implement)
 
 `context.decomposition` is populated by `hydrate_plan_context` (`engine/hydration.py`) on any
 `PASSED` `decompose+feature` step, serialized with `default=str` to match `StateStore`, cleared on
-`FAILED`/`ERROR`, and rebuilt on `resume()` from persisted records. FR-9a's pin therefore tests the
-*consumer* side only.
+`FAILED`/`ERROR`, and rebuilt on `resume()` from persisted records. FR-9(b)'s pin therefore tests
+the *consumer* side only — that `context.plan` reaches generation hook-driven rather than seeded.
 
 ### External research
 
@@ -141,7 +144,7 @@ Target module: `specweaver/core/flow` — `archetype: orchestrator`; `consumes:`
   Rather than a third copy, the shared shape (derive path → uuid → tag → write → lineage) is a
   candidate for one helper. See Q5.
 - **Stub spec writing** — no existing capability writes component specs; genuinely new.
-- **Seam pins** — pure tests, no production code.
+- **Seam pin (FR-9b)** — pure tests, no production code.
 
 ### 3.3–3.5 Cycles / closure / stability
 
@@ -166,7 +169,7 @@ discharges it.
 | FR-5 artifact persistence | CB-1 | `mode="json"` per D1 — see R-2 |
 | FR-6 stub component specs | CB-2 | never-overwrite + name guard + Jinja render |
 | FR-7 DAL contract | CB-1 (data) + CB-2 (summary) | D2: handler-owned summary, no display change |
-| FR-9 seam pins | CB-3 | (a) decompose→orchestrate, (b) hook-driven plan→generate |
+| FR-9 plan-bridge seam pin | CB-3 | hook-driven plan→generate. **FR-9(a)'s decompose→orchestrate pin descoped 2026-07-26 — see R-7 and the design's FR-9 row** |
 | NFR-1 delivered-journey compat | CB-1/CB-2 regression tests | decompose gains writes; existing decompose tests must stay green |
 | NFR-2 cross-session honesty | CB-1 | **AD-8 holds: rehydration reads step records, NOT the artifact file.** SF-02 must not make any consumer depend on the file existing |
 | NFR-3 LLM economy | Test plan | persistence + stubs add ZERO LLM calls; assert handler call counts |
@@ -174,12 +177,12 @@ discharges it.
 | NFR-5 injection safety | CB-2 | R-5 regex before **any** filesystem write; hostile test asserts nothing written outside the target dir |
 | NFR-6 boundary hygiene | §3.1 | zero new tach edges, zero new `consumes`; `jinja2` is 3rd-party (D3) |
 | NFR-7 observability | CB-1/CB-2 + **R/B C1.1** | INFO with `run_id` on artifact write and stub creation. **The design's "park messages name the artifact path" clause has the same defect as FR-7** — no park surface renders output. Same resolution as D2: the handler puts the path in its summary; rendering is SF-03 |
-| AD-4 freeze the add-on seams | CB-1/CB-2/CB-3 | SF-02 *is* the freezing: artifact schema, stub paths, `proposed_dal` presence, `context.decomposition` contract |
+| AD-4 freeze the add-on seams | CB-1/CB-2 | SF-02 defines and tests the contracts **as they stand**: artifact schema, stub paths, `proposed_dal` presence, `context.decomposition` shape. It does NOT pin them against the unbuilt fan-out (FR-9(a), descoped) |
 | AD-6 DAL posture delegated | CB-1 | SF-02 guarantees the DAL **data** contract only; per-component isolation is `C-EXEC-07`/`C-FLOW-12` |
 | AD-7 artifact next to the spec | CB-1, D7 | stubs follow the same rule (`spec_path.parent`) |
 | AD-8 rehydration from records | CB-1 | the artifact is the human-facing copy; nothing reads it back |
 | RT stub writes collide with user files | CB-2 | never-overwrite; asserted byte-identical after a second run |
-| RT `context.decomposition` shape drifts | CB-3 (FR-9a) | the pin fails if the contract breaks |
+| RT `context.decomposition` shape drifts | CB-1 + SF-01 CB-2 | FR-5's artifact schema and SF-01's hydration tests break on any change to the JSON contract. **Accepted residual:** nothing pins it against what the unbuilt fan-out will need — `C-FLOW-12` writes that pin as its first commit |
 
 ## Work Breakdown — Commit Boundaries
 
@@ -224,18 +227,23 @@ discharges it.
 > reconcile or delete them (that is hand-edit arbitration — `C-FLOW-05`/`B-INTL-07` territory), but
 > the created/skipped report must make it visible that a stub was skipped rather than authored.
 
-### CB-3 — FR-9 seam pins (+ FR-7 surfacing, pending Q2)
+### CB-3 — FR-9 plan-bridge seam pin (+ FR-7 surfacing, pending Q2)
 
 **Files**: `[NEW] tests/integration/core/flow/engine/test_seam_pins.py`, possibly
 `[MODIFY] core/flow/engine/display.py`
 
-1. **FR-9a** — a custom `decompose → orchestrate` pipeline with a doubled sub-runner proves the
-   hydrated `context.decomposition` feeds the fan-out: DAG ordering reached, components enumerated.
-   **Do not** add an orchestrate step to `feature_decomposition.yaml`.
-2. **FR-9b** — a custom `plan+spec → generate+code` pipeline proves `context.plan` reaches
+1. **FR-9(b)** — a custom `plan+spec → generate+code` pipeline proves `context.plan` reaches
    generation **hook-driven**. Today's `test_planning_integration.py:441` seeds `ctx.plan` by hand,
    which proves nothing about production wiring.
-3. FR-7 park surfacing, scope per Q2.
+2. FR-7 park surfacing, scope per Q2.
+
+> [!NOTE]
+> **FR-9(a) was descoped on 2026-07-26** (the decompose→orchestrate pin with a doubled sub-runner,
+> freezing the fan-out seam for `C-FLOW-12`). `C-FLOW-12` does not exist yet — SF-03 mints it,
+> sequenced behind `C-EXEC-07` — so the pin would have frozen a guess at an undesigned consumer's
+> requirements and charged the suite for it permanently. **CB-3 is NOT deleted:** it still owns
+> FR-9(b) and the FR-7 surfacing. Research for the dropped half is retained in R-7 for `C-FLOW-12`
+> to inherit.
 
 ---
 
@@ -243,7 +251,7 @@ discharges it.
 
 **Happy** — artifact written next to the spec with the uuid tag; `proposed_dal` present and a
 **string** in the YAML; lineage event logged with `generated_decomposition`; stub spec created per
-component with Purpose seeded; both seam pins green.
+component with Purpose seeded; the plan-bridge seam pin green.
 
 **Boundary** — zero-component plan (artifact written, no stubs); a component whose spec already
 exists (skipped, **byte-identical afterwards**); missing `.specweaver/templates/` (local fallback
@@ -312,4 +320,4 @@ Sorted by severity.
 |----|-------|-----|--------|
 | CB-1 | Decomposition artifact persistence | FR-5, FR-7 (data) | ⬜ |
 | CB-2 | Stub component specs | FR-6 | ⬜ |
-| CB-3 | FR-9 seam pins (+ FR-7 surfacing) | FR-9, FR-7 | ⬜ |
+| CB-3 | FR-9 plan-bridge seam pin (+ FR-7 surfacing) | FR-9, FR-7 | ⬜ |

@@ -107,7 +107,7 @@ deliberately upstream and decoupled — gates stay authoring-agnostic (draft.py 
 | FR-6 | Stub component specs | `DecomposeFeatureHandler` (post-persist) | For each `ComponentChange` with a name-validated component (reuse the fan-out's `^[a-zA-Z0-9_\-]+$` guard), write `specs/<component>_spec.md` IF absent (never overwrite), pre-seeding Purpose from `description`. **Template source (R/B C1.2):** read `<project>/.specweaver/templates/component_spec.md` as a FILE (the `sw init` scaffold, `scaffold.py:275`); if absent — unscaffolded projects have no such file — fall back to a minimal heading skeleton defined locally in the handler. Do NOT import `_DEFAULT_COMPONENT_SPEC` from `workspace/project/scaffold.py`: `core/flow/context.yaml` `consumes` lists only `specweaver/workspace/memory`, so the import would be a new boundary violation (tach permits `specweaver.workspace` wholesale — it would not be caught) | The DAG becomes tangible per-component spec files the user can carry into `sw implement` today (D-INTL-02 §6.2 promise delivered), with no new consumes edge |
 | FR-7 | DAL artifact contract | Decompose output + artifact | `proposed_dal` per component survives serialization to the persisted artifact (see FR-5's correction — this is exactly what the `mode="json"` dump guarantees) and is carried in a human-readable summary the handler emits in its own `StepResult.output`. **Correction (SF-02 Phase-0, 2026-07-25):** no park surface renders step output today — `_on_run_parked` prints only the step name and the resume hint — so "shown at the HITL park" was not achievable as written. SF-02 guarantees the data and the summary; **rich rendering at the park belongs to SF-03's CLI journey (FR-8)**, which owns the display contract | The plan is the DAL source of truth downstream (C-FLOW-12's per-sub-run isolation and C-EXEC-07 consume it unchanged) |
 | FR-8 | CLI journey | `sw run` / `sw resume` | `sw run feature_decomposition <spec>` (spec pre-exists → draft skips) → gate-park #1 (draft HITL) → resume → validate (feature thresholds) → decompose → gate-park #2 (review) → resume → COMPLETED; display/exit-code parity with INT-US-02 (COMPLETED→0, FAILED→1, PARKED→0 + resume hint) | The full epic journey works end-to-end on the real CLI across three sessions |
-| FR-9 | Seam pins (forward-compat, both bridges) | Integration tests | (a) A custom decompose→orchestrate pipeline with a doubled sub-runner proves the hydrated `context.decomposition` feeds the fan-out (DAG ordering reached, components enumerated) — WITHOUT shipping an orchestrate step in `feature_decomposition.yaml`; (b) a custom plan→generate pipeline proves `context.plan` reaches generation HOOK-DRIVEN (today's `test_planning_integration.py` seeds it manually, proving nothing about prod wiring) | The `C-FLOW-12`/`INT-US-21-SF02` integration surface AND the D-INTL-03 plan bridge are frozen and regression-pinned (user mandate) |
+| FR-9 | Plan-bridge seam pin (hook-driven) | Integration tests | A custom `plan+spec → generate+code` pipeline proves `context.plan` reaches generation **hook-driven**; today's `test_planning_integration.py` seeds the field manually, so it proves nothing about production wiring. **Descoped 2026-07-26 (user, scope re-cut):** the original FR-9 also demanded *(a)* a decompose→orchestrate pin with a doubled sub-runner to freeze the fan-out seam for `C-FLOW-12`. `C-FLOW-12` does not exist — SF-03 *mints* it, and it is sequenced behind `C-EXEC-07` — so that half was a regression pin for a capability two stories away from being designed: speculative generality with a permanent suite cost. Dropped. The add-on writes its own pin when it lands, against a contract it can actually see | The D-INTL-03 plan bridge is proven in production wiring rather than in a fixture |
 | FR-10 | Verifiable proof | e2e suite (real CLI, scripted adapter) | Scenarios: happy 3-session journey (both approve-on-resume advances asserted at ZERO LLM calls + artifact/stub inventory + no strays); coverage<1.0 → HITL park with the coverage failure surfaced in the park message → resume re-executes decompose (fresh LLM round; human-bounded — the bundled gate is HITL, so the auto 3-strike loop is custom-pipeline territory, already pinned in `test_decomposition_loop_integration.py`); garbage LLM JSON → loud ValueError; headless park when spec missing; cross-session rehydration (fresh CliRunner per session, persisted-run-record assertions); zero-component plan; stub-spec no-overwrite | The contract is proven the INT-US-24 way; the first test in the suite to drive a bundled pipeline THROUGH a HITL gate |
 
 ## Non-Functional Requirements
@@ -136,12 +136,12 @@ deliberately upstream and decoupled — gates stay authoring-agnostic (draft.py 
 | AD-1 | Split the plan field: new `RunContext.decomposition` (DecompositionPlan JSON string) vs. `context.plan` (implementation PlanArtifact) | Two colliding concepts on one field is a latent type bug; one small migration in `decompose.py` ends it forever | No — approved by user 2026-07-24 (D1a) |
 | AD-2 | Approve-on-resume is derived from persisted state (gate-park = record `WAITING_FOR_INPUT` + stored result `PASSED` + HITL gate); everything else re-executes: handler-parks (stored result `WAITING_FOR_INPUT`), HITL-gate parks on FAILED/ERROR results (human resumed a failed step → fresh attempt, human-bounded retry), and RESERVE parks (stored result `PENDING` → reservation retried) | No schema change, no new approval store; the distinction already exists in persisted data; applies engine-wide so every HITL pipeline (incl. add-on's) inherits it; the `PASSED`-only rule makes misclassification structurally impossible | No — approved by user 2026-07-24 (D2) |
 | AD-3 | `DraftFeatureHandler` follows the existing `DraftSpecHandler` inline-import seam into `workflows/drafting` (`draft.py:121`). **Correction (R/B C1.3):** the *inline-import* half is acknowledged debt (`known_boundary_violations.md:9`); the `forbids: specweaver/drafting` breach in `core/flow/context.yaml` is NOT recorded anywhere — SF-01 adds that row (NFR-6) | Extends an acknowledged DEFERRED debt item without creating a new violation *class*; DI-inversion belongs to the existing monolith-purge ticket. Recording the unrecorded half keeps the debt ledger honest rather than inheriting a silent breach | **Yes — approved by user 2026-07-24 (D3a)** |
-| AD-4 | Base = decomposition journey only; autonomous DAG *execution* (per-component spec synthesis, race-hardened fan-out, `proposed_dal`-driven isolation) minted as **`C-FLOW-12` + `INT-US-21-SF02`**, sequenced behind `C-EXEC-07`. The base freezes the add-on's seams: `context.decomposition` contract (FR-2/FR-9 pin), artifact schema (FR-5), stub spec paths (FR-6), `proposed_dal` presence (FR-7), approve-on-resume (FR-4) | Delivers the stated US-21 benefit ("break it down BEFORE writing any code") and closes the epic honestly; execution needs capabilities nobody claimed built; user mandate: the add-on must integrate completely on top of the base without rework | No — approved by user 2026-07-24 (D4) |
+| AD-4 | Base = decomposition journey only; autonomous DAG *execution* (per-component spec synthesis, race-hardened fan-out, `proposed_dal`-driven isolation) minted as **`C-FLOW-12` + `INT-US-21-SF02`**, sequenced behind `C-EXEC-07`. The base freezes the add-on's seams: `context.decomposition` contract (FR-2 hydration + FR-5 artifact schema), stub spec paths (FR-6), `proposed_dal` presence (FR-7), approve-on-resume (FR-4). **Amended 2026-07-26:** "frozen" here means *the contract is defined and tested as it stands*, NOT that the base ships a forward-compatibility pin for the fan-out — the original FR-9(a) attempted that and was descoped (see FR-9). A pin written against an undesigned consumer freezes guesswork | Delivers the stated US-21 benefit ("break it down BEFORE writing any code") and closes the epic honestly; execution needs capabilities nobody claimed built; user mandate: the add-on must integrate completely on top of the base without rework | No — approved by user 2026-07-24 (D4) |
 | AD-5 | Authoring-agnostic gates: zero investment in feature-spec drafting UX; spec-pre-exists posture (INT-US-24 E6 precedent); `FeatureDrafter` wrapped as-is | Drafting is a D-INTL-07 supersession target (grill-style interview slots in behind unchanged gates, INT-US-02 precedent); D-INTL-04 outputs reach the decomposer via the existing profile system | No |
 | AD-6 | DAL execution posture delegated: journey-level isolation escalation stays with `C-EXEC-07`/`INT-US-09-SF06`; the base only guarantees the DAL *data* contract (FR-7) | Plan production is LLM-only (no untrusted code execution); same delegation INT-US-24 made; per-component posture belongs to the add-on where code actually runs | No |
 | AD-7 | Artifact lands next to the spec (`specs/<stem>_decomposition.yaml`), not a `features/` dir | `PlanSpecHandler` precedent (`<stem>_plan.yaml` next to spec); one convention for all plan-class artifacts | No |
 | AD-8 | Rehydration source of truth = persisted step records; the artifact file is the human-facing copy | Step records are already transactional & load-bearing for resume; file could be hand-edited between sessions (re-arbitrating hand-edits is `C-FLOW-05`/`B-INTL-07` territory, out of scope) | No |
-| AD-9 | **Delivered-add-on re-validation at epic closure.** When INT-US-21 is finished (SF-03 committed), audit the already-delivered `INT-US-21-SUB` / `C-INTL-01` (Iterative Decomposition) against the newly integrated base: is its claimed scope still valid, does it still cover what US-21 needs, and does it cooperate with the base contract's new seams (`context.decomposition`, the persisted `<stem>_decomposition.yaml` schema, approve-on-resume, the `feature_decomposition` journey)? Scope is **audit + report only**. If the audit finds a defect or a gap, remediation is a NEW story or a `TECH-XXX` ticket — never an edit to the delivered `INT-US-21-SUB` entry or its docs (finished-stories-immutable rule) | User mandate, 2026-07-25. `C-INTL-01` was delivered and proven against a decomposition path that was **never actually runnable end-to-end** (the four inherited gaps in §Research). Its integration claim — "covered by `pytest -m integration` and the `FeatureDecomposer` suite" — was therefore never exercised through a real `sw run feature_decomposition` journey. Closing the epic 🟢 on an unaudited add-on would repeat exactly the built-but-not-integrated failure this whole contract exists to fix | No |
+| AD-9 | **Delivered-add-on re-validation is `TECH-018`, not a clause of this feature.** The obligation stands unchanged in substance: audit the delivered `INT-US-21-SUB` / `C-INTL-01` (Iterative Decomposition) against the integrated base — claimed scope still valid, still covers what US-21 needs, cooperates with the new seams (`context.decomposition`, the persisted `<stem>_decomposition.yaml` schema, approve-on-resume, the `feature_decomposition` journey). **Audit + report only**; findings become NEW stories or tickets, never edits to `INT-US-21-SUB` (finished-stories-immutable). **Relocated 2026-07-26:** it is no longer a gate on US-21 going 🟢 | User mandate, 2026-07-25 — the *reasoning* was and is sound: `C-INTL-01` was proven against a decomposition path that was never runnable end-to-end (§Research gaps), so its integration claim was never exercised through a real journey. But as `AD-9` it made an audit of a **different, delivered** story block closure of this one, with unknown size, on the critical path. Auditing story A must not hold story B hostage. Sequenced after SF-03 commits, since the integrated base is what it audits against | No |
 
 ## ROI Analysis
 
@@ -171,7 +171,7 @@ deliberately upstream and decoupled — gates stay authoring-agnostic (draft.py 
 | Approve-on-resume changes behavior of a flow someone relied on parking forever | Low | Medium | It is the documented INT-US-02 contract made true; NFR-1 re-assertions; walkthrough + user-guide currency (4_interactive_hitl_gates.md) |
 | Gate-park vs handler-park misclassification (e.g. ERROR result under HITL gate) | Medium | Medium | Approval requires stored result `PASSED` explicitly; everything else re-executes; hostile-input tests in the 4-bucket matrix |
 | Stub spec writes collide with user files | Low | Medium | Never-overwrite rule + name validation (NFR-5); inventory-asserted in e2e |
-| `context.decomposition` shape drifts from what the add-on later needs | Low | High for add-on | FR-9 seam pin freezes the contract as a failing test if broken |
+| `context.decomposition` shape drifts from what the add-on later needs | Low | High for add-on | FR-2's hydration tests and FR-5's artifact schema pin the shape **as it stands** — any change to the JSON contract breaks them. **Accepted residual (2026-07-26):** nothing pins the shape against what the *unbuilt* fan-out will need, because that requirement does not exist yet; the descoped FR-9(a) claimed to and could only have frozen a guess. `C-FLOW-12` writes its own pin as its first commit |
 | Two-park journey feels heavy in interactive terminals | Medium | Low | Same posture as shipped `new_feature`; interactive short-circuit of gate-parks is a future D-INTL-07-class enhancement, noted not built |
 | Plan file deleted/moved between park and resume | Low | Low | Rehydration WARNING + skip; consuming step fails with its own loud message (NFR-2/FR-3); decomposition rehydrates from step records, not the file |
 
@@ -199,8 +199,8 @@ SF-03 mints the new add-on as `INT-US-21-SF02` alongside it. No delivered entry 
 is an accepted, documented inconsistency — recorded here so no future session re-opens it as
 "registry corruption".
 
-**In its place the user mandated a closure obligation — see AD-9 and SF-03.** The original
-options analysis is retained below for the record.
+**In its place the user mandated a re-validation obligation, now tracked as `TECH-018` — see AD-9.**
+The original options analysis is retained below for the record.
 
 <details>
 <summary>Original OQ-1 analysis (superseded by the resolution above)</summary>
@@ -239,15 +239,15 @@ not block SF-01 or SF-02.
 - **Scope**: Make the journey's output durable and PO-visible, and freeze the add-on's integration surface.
 - **FRs**: [FR-5, FR-6, FR-7, FR-9]
 - **Inputs**: SF-01's hydration bridge; `PlanSpecHandler` persist/lineage pattern; component spec template; DecompositionPlan model.
-- **Outputs**: `<stem>_decomposition.yaml` + lineage; stub component specs (never-overwrite, `.specweaver/templates/component_spec.md` read as a file with a local skeleton fallback — no new consumes edge); DAL surfaced at park; orchestrate seam integration pin (doubled sub-runner).
+- **Outputs**: `<stem>_decomposition.yaml` + lineage; stub component specs (never-overwrite, `.specweaver/templates/component_spec.md` read as a file with a local skeleton fallback — no new consumes edge); DAL summary in the step output; hook-driven plan→generate seam pin (FR-9). The orchestrate/fan-out pin was descoped 2026-07-26 — see FR-9.
 - **Depends on**: SF-01
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_sf02_implementation_plan.md
 
 ### SF-03: CLI Journey, Verifiable Proof & Registry Closure
-- **Scope**: Prove the full journey on the real CLI, update docs, re-validate the delivered add-on (AD-9), close the epic.
+- **Scope**: Prove the full journey on the real CLI, update docs, close the epic. (Delivered-add-on re-validation is `TECH-018`, sequenced after this — see AD-9.)
 - **FRs**: [FR-8, FR-10]
 - **Inputs**: SF-01 + SF-02 committed; INT-US-24 e2e harness pattern (scripted adapter, fresh CliRunner per session, persisted-run-record assertions).
-- **Outputs**: e2e suite (first bundled-pipeline-through-HITL proof); dev/user guide currency (Guides 1–2); registry closure: US-21 🟢, `C-FLOW-12` minted in topic_03 (verified free — `C-FLOW-11` is the current maximum in `capability_matrix.md`), `INT-US-21-SF02` minted in US-21_integration.md alongside the untouched `INT-US-21-SUB` (both Pending Design; OQ-1 Option B). **Plus the AD-9 re-validation report on `INT-US-21-SUB` / `C-INTL-01`** — audit-only; any defect it surfaces is filed as a new story or `TECH-XXX`, and the epic does NOT go 🟢 until the report is clean or its findings are filed and consciously accepted by the user.
+- **Outputs**: e2e suite (first bundled-pipeline-through-HITL proof); dev/user guide currency (Guides 1–2); registry closure: US-21 🟢, `C-FLOW-12` minted in topic_03 (verified free — `C-FLOW-11` is the current maximum in `capability_matrix.md`), `INT-US-21-SF02` minted in US-21_integration.md alongside the untouched `INT-US-21-SUB` (both Pending Design; OQ-1 Option B). **Closure gate (2026-07-26):** `python scripts/check_fr_coverage.py INT-US-21` must exit 0 — every FR the design declares is owned by a plan and cited by a test — together with a green full suite, which carries the always-on handler-reachability invariants. The delivered-add-on re-validation is `TECH-018` and does **not** gate 🟢 (see AD-9).
 - **Depends on**: SF-01, SF-02
 - **Impl Plan**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_sf03_implementation_plan.md
 
@@ -272,7 +272,7 @@ Strictly linear — no parallel sessions.
 **Current status**: Design **APPROVED** (user, 2026-07-25). Phase 6 consistency check + Red/Blue
 Cycles 1–2 complete; all four inherited gaps re-verified line-by-line against `main`; 9
 corrections folded in (marked `R/B C1.x` / `C2.x` inline). OQ-1 resolved as Option B — naming
-and structure stay as-is; the AD-9 closure audit replaces the rename.
+and structure stay as-is; the re-validation obligation (now `TECH-018`) replaces the rename.
 **SF-01 is COMPLETE and committed** (2026-07-25), all four commit boundaries:
 
 | CB | Scope | FR | Commit |
@@ -284,14 +284,41 @@ and structure stay as-is; the AD-9 closure audit replaces the rename.
 
 All four inherited engine gaps from §Research Findings are closed. Suite: 5646 passed / 19 skipped.
 
+> [!IMPORTANT]
+> **Scoping record (2026-07-26) — SF-01 was capability recovery, not integration. Do not copy this
+> story's shape.** Classified by what they actually do, **8 of this contract's 10 FRs build missing
+> capability** and only FR-8 and FR-10 integrate: FR-1 a new handler and registry rows, FR-2/FR-3/FR-4
+> new flow-engine mechanisms, FR-5/FR-6 capabilities `D-INTL-02` §6.2 promised and never shipped.
+> Two consequences worth naming, because both were mistaken for something else at the time:
+>
+> 1. **The unit-test weight in SF-01 was a symptom, not indiscipline.** You cannot integration-test
+>    your way through building four new engine mechanisms; new code is TDD'd unit-first. The tier
+>    mismatch that triggered `TECH-017` was the *story label* being wrong, not the tests. Had the
+>    work been scoped as capability stories, `TECH-017`'s rule would have needed no enforcement here.
+> 2. **The single highest-value thing delivered has nothing to do with feature decomposition.**
+>    FR-4 fixed park→resume **engine-wide** — every HITL pipeline in SpecWeaver was theatre, and two
+>    already-"delivered" stories (INT-US-02 E6/E7) were vacuously green. That belonged in its own
+>    flow-engine story where it would be findable, not buried as a sub-clause here.
+>
+> The root cause is scoping capability work as horizontal *components* ("build the decomposer"),
+> which structurally cannot own its own wiring — wiring lives between components and therefore in
+> nobody's scope, so it falls to "the integration story". Prefer thin **vertical threads** ("a user
+> can decompose a feature via `sw run feature_decomposition`, happy path"): registration, YAML
+> execution and artifact persistence then cannot be skipped, because the thread fails without them.
+> The guards committed in `f7a0f34f` (handler reachability + the FR ledger) detect both failure modes
+> that produced this story; the scoping heuristic is what prevents them.
+
 **Tickets spun off during SF-01** (registry repaired + both filed in `f0e1709a`):
 `TECH-014` fan-out `RunContext` isolation (live defect in shipped `C-FLOW-03`; should land before
 `C-FLOW-12`) and `TECH-015` retire grab-bag modules.
 
 **SF-02 implementation plan APPROVED** (user, 2026-07-25). Decisions D1–D7 binding; FR-5 and FR-7
 carry `(SF-02 Phase-0)` corrections. Three commit boundaries: CB-1 artifact persistence →
-CB-2 stub component specs → CB-3 seam pins.
-**Next step**: Trigger the dev skill for SF-02 CB-1 (artifact persistence, FR-5 + FR-7 data).
+CB-2 stub component specs → CB-3 plan-bridge seam pin (FR-9) + FR-7 summary. **CB-3 was rescoped
+2026-07-26:** FR-9(a)'s decompose→orchestrate fan-out pin is descoped (see FR-9), so CB-3 keeps
+FR-9(b) and the FR-7 surfacing only. CB-3 is not deleted — it still owns FR-7.
+**Next step**: SF-02 CB-1 (artifact persistence, FR-5 + FR-7 data) is implemented but **uncommitted**,
+and carries unit tests only. Per `TECH-017` it needs integration coverage before it earns a commit.
 
 > [!IMPORTANT]
 > **Two hard constraints SF-03 inherits from SF-01.** (1) `_resolve_spec_path`
@@ -306,7 +333,11 @@ CB-2 stub component specs → CB-3 seam pins.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and
 resume from there using the appropriate skill. Phase-3 decisions D1a/D2/D3a/D4 were approved by
 the user on 2026-07-24 (see Architectural Decisions); the add-on split (`C-FLOW-12` +
-`INT-US-21-SF02`) is a user mandate with frozen seams — do not pull execution scope into the base.
-AD-9 (delivered-add-on re-validation at closure) is a user mandate from 2026-07-25 and is the
-LAST thing done before US-21 goes 🟢 — it is audit-only; findings become new stories, never edits
-to `INT-US-21-SUB`.
+`INT-US-21-SF02`) is a user mandate — do not pull execution scope into the base. "Frozen seams"
+means the contract is defined and tested as it stands, NOT that the base pins it against the
+unbuilt fan-out (FR-9(a), descoped 2026-07-26).
+
+Before writing `Status: COMPLETE`, run the closure gate — `python scripts/check_fr_coverage.py
+INT-US-21` plus a green full suite. Delivered-add-on re-validation is **`TECH-018`**, sequenced
+after SF-03; it is audit-only, findings become new stories never edits to `INT-US-21-SUB`, and it
+does **not** gate US-21 going 🟢.

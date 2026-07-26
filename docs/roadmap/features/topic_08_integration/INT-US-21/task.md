@@ -123,7 +123,7 @@ the loop_back rejection path is dead). Full order:
 - [x] Pre-commit all 7 phases (Phase-2 corrected after HITL challenge: 8 integration tests added; Phase 7.5 found 1)
 - [ ] **HITL commit stop**
 
-## CB-4 — Approve-on-resume + NFR-1 re-assertions (FR-4)  ← CURRENT
+## CB-4 — Approve-on-resume + NFR-1 re-assertions (FR-4)  ✅ COMMITTED 5ebcc414
 
 - [x] **T4.1** — Explicit approval kwarg on `_execute_loop`, forwarded through `execute_run`;
       `resume()` passes `True`, `run()` unchanged (D1).
@@ -141,3 +141,69 @@ the loop_back rejection path is dead). Full order:
 - [x] Pre-commit all 7 phases (Phase 7.5 found 1: the renamed-step approval hazard)
 - [ ] **HITL commit stop**
 - [ ] Design-doc tracker: `Dev ✅`, `Pre-Commit ✅`, `Committed ✅`; Session Handoff updated
+
+---
+
+# SF-02 — Decomposition Artifacts & Frozen Seams
+
+- **Implementation Plan**: `INT-US-21_sf02_implementation_plan.md` (APPROVED 2026-07-25)
+- **Commit boundaries**: 3 — CB-1 artifact persistence (FR-5 + FR-7 data); CB-2 stub component
+  specs (FR-6); CB-3 plan-bridge seam pin (FR-9) + FR-7 summary. **Rescoped 2026-07-26:** FR-9(a)'s
+  decompose→orchestrate fan-out pin is descoped (`C-FLOW-12` does not exist yet); CB-3 keeps
+  FR-9(b) + FR-7.
+- **Binding**: decisions D1–D7. Most load-bearing: **D1 — serialize with `model_dump(mode="json")`,
+  never `model_dump()`** (the enum raises `RepresenterError`; 100% failure rate otherwise).
+
+## CB-1 — Decomposition artifact persistence (FR-5, FR-7 data)  ← CURRENT
+
+### Adversarial Test Matrix
+
+| Bucket | Covered by |
+|--------|-----------|
+| **Happy path** | artifact written to `<spec_stem>_decomposition.yaml` next to the spec; `proposed_dal` present and a **string**; uuid tag as the first line; lineage event `generated_decomposition`; path exposed in the step output |
+| **Boundary/Edge** | zero-component plan (artifact still written); **re-run reuses the existing artifact's uuid** rather than minting a new lineage identity; spec stem already ending in `_decomposition`; `coverage_score` exactly 1.0 (passes the `< 1.0` guard) |
+| **Graceful degradation** | `context.db` unset → no lineage, step still PASSES; `project_metadata` unset (existing `started_at` fallback) |
+| **Hostile/Wrong input** | artifact path unwritable (permission/dir-missing) → **step FAILS loudly with the plan retained in `output`** (D6), so a resume re-persists without re-calling the LLM; a spec path that is a directory |
+
+### Tasks
+
+- [x] **T5.1** — Derive `feature_name` from the spec stem when `step.params["feature_name"]` is
+      absent, killing the `"unknown_feature"` fallback (`decompose.py:30`).
+      *src*: `core/flow/handlers/decompose.py` · *test*: `tests/unit/core/flow/handlers/test_decompose.py`
+- [x] **T5.2** — Persist the artifact following R-6's sequence: path via
+      `spec_path.with_name(stem + "_decomposition.yaml")` (D7), **`model_dump(mode="json")`** (D1),
+      uuid extract-or-generate, `wrap_artifact_tag(uuid, "yaml")` prepended, write.
+      *src*: `decompose.py` · *test*: same
+- [x] **T5.3** — `log_artifact_event(event_type="generated_decomposition")` when `context.db` is set.
+      *src*: `decompose.py` · *test*: same
+- [x] **T5.4** — Expose the artifact path + the FR-7 DAL summary in the step output **without
+      polluting the frozen `context.decomposition` schema** — see the open question below.
+      *src*: `decompose.py` (+ possibly `engine/hydration.py`) · *test*: same + `test_runner_hydration.py`
+- [x] **T5.5** — D6: write failure fails the step loudly, plan retained in `output`.
+      *src*: `decompose.py` · *test*: same
+
+### Gate
+- [ ] Full suite green; ruff, mypy, C901, file sizes, tach, roadmap sync
+- [ ] Pre-commit skill, all 7 phases
+- [ ] **HITL commit stop**
+
+## CB-2 — Stub component specs (FR-6)
+
+- [ ] **T6.1** — Extract the component-name regex (`decompose.py:153`) to one module-level constant.
+- [ ] **T6.2** — Render `.specweaver/templates/component_spec.md` (Jinja, D3) per component; never
+      overwrite; local skeleton fallback; seed `purpose` from `description`.
+- [ ] **T6.3** — Report created/skipped counts; a skip must be visible, not silent.
+- [ ] Gate + **HITL commit stop**
+
+## CB-3 — Plan-bridge seam pin (FR-9) + FR-7 summary
+
+- [~] **T7.1** — ~~FR-9a: custom decompose→orchestrate pipeline, doubled sub-runner~~
+      **DESCOPED 2026-07-26.** The pin froze the fan-out seam for `C-FLOW-12`, which does not exist
+      (SF-03 mints it, sequenced behind `C-EXEC-07`). Research retained in the plan's R-7 for
+      `C-FLOW-12` to inherit; it writes its own pin against a contract it can see.
+- [ ] **T7.2** — FR-9b: custom plan→generate pipeline proves `context.plan` reaches generation
+      **hook-driven** (today's `test_planning_integration.py:441` seeds it by hand).
+- [ ] Gate + **HITL commit stop**
+- [ ] Closure gate before `Status: COMPLETE`: `python scripts/check_fr_coverage.py INT-US-21`
+      exits 0 (FR-9's citation comes from T7.2) + full suite green
+- [ ] Design-doc tracker: SF-02 `Dev ✅`, `Pre-Commit ✅`, `Committed ✅`
