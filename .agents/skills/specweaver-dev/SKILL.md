@@ -241,6 +241,11 @@ python -m pytest tests/e2e/ -v --tb=short -q
 - Update the Progress Tracker in the Design Document:
   `Dev ✅`, `Pre-Commit ✅`, `Committed ✅` for this sub-feature.
 - Update the Session Handoff paragraph in the Design Document.
+- **If this was the LAST sub-feature** (every other tracker row is `Committed ✅`), the story is
+  about to be declared finished — execute **Phase 4 of `specweaver-dev`'s parent,
+  `specweaver-feature`** (the closure gate: `check_fr_coverage.py` + the full suite) before writing
+  `Status: COMPLETE`. Do NOT declare a story finished from inside this skill without it; running
+  `dev` directly is otherwise a way to close a story having never checked the design's FR ledger.
 
 ---
 

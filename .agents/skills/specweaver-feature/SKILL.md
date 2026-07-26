@@ -138,9 +138,33 @@ Repeat until all sub-features have `Committed ✅`, then proceed to Phase 4.
 ## Phase 4: Completion
 
 4.1. Verify all Progress Tracker rows are fully `✅`.
-4.2. Update Design Document `Status: COMPLETE`.
-4.3. Update Session Handoff: "Feature complete. Ready for dogfood + merge."
-4.4. Inform the user:
+
+4.2. **Closure gate — HARD BLOCK.** Run both. A non-zero exit means the story is NOT finished;
+     there is no override:
+```
+python scripts/check_fr_coverage.py <STORY-ID>
+python -m pytest -q
+```
+
+- The **FR ledger** proves every FR the design declared is owned by an implementation plan *and*
+  cited by at least one test file. An uncited FR means either the proof is missing, or the FR was
+  silently descoped while the design still claims it. Fix the proof, or delete the row from the
+  design's FR table so the descoping is a visible decision.
+- The **suite** carries the always-on reachability invariants
+  (`tests/unit/core/flow/engine/test_handler_reachability.py`): every declared step combination
+  resolves to a registered handler, and every bundled pipeline step is executable.
+
+> [!CAUTION]
+> **Why this is a gate and not a checklist item.** `D-INTL-02` §6.2 promised
+> `<name>_decomposition.yaml` plus stub component specs, shipped neither, and was marked ✅. It also
+> declared `(DRAFT, FEATURE)` valid without registering a handler, so the pipeline it shipped could
+> not execute one step. Both survived because nothing checked the design's promises against the
+> code, and the proof only ever drove handlers directly instead of the artifacts users get. These
+> two commands are that check.
+
+4.3. Update Design Document `Status: COMPLETE`.
+4.4. Update Session Handoff: "Feature complete. Ready for dogfood + merge."
+4.5. Inform the user:
      - All commits included in this feature
      - Sub-features delivered
      - Suggested next steps: dogfood, validate, merge
