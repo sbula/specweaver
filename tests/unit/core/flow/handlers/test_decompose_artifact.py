@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from ruamel.yaml import YAML
 
 from specweaver.commons.enums.dal import DALLevel
@@ -376,3 +377,114 @@ class TestExecuteGuardPaths:
 
         assert result.status == StepStatus.PASSED
         assert inst.decompose.await_args.kwargs["spec_content"] == ""
+
+
+# ---------------------------------------------------------------------------
+# CB-2 — branch-level cases awkward to reach through a pipeline step (FR-6)
+# ---------------------------------------------------------------------------
+
+
+class TestComponentNamePattern:
+    """NFR-5: this regex is the only thing between LLM output and a path segment."""
+
+    @pytest.mark.parametrize("name", ["auth", "auth_v2", "auth-v2", "A1", "_x", "-x", "9"])
+    def test_accepts_plain_identifiers(self, name: str) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import COMPONENT_NAME_PATTERN
+
+        assert COMPONENT_NAME_PATTERN.match(name)
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "../etc/passwd",
+            "..",
+            "a/b",
+            "a\b",
+            "C:/windows",
+            "a b",
+            "a.b",
+            "",
+            "auth\x00",
+            "auth\n",
+            "auth\nrm -rf",
+            "\u00e9auth",
+            "au*th",
+            "~root",
+            "$HOME",
+        ],
+    )
+    def test_rejects_anything_that_could_leave_the_directory(self, name: str) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import COMPONENT_NAME_PATTERN
+
+        assert not COMPONENT_NAME_PATTERN.match(name)
+
+    def test_trailing_newline_cannot_sneak_past_via_dollar(self) -> None:
+        r"""`$` also matches before a trailing newline — `\Z` semantics matter here.
+
+        This was a live defect in the shipped fan-out guard until CB-2.
+        """
+        from specweaver.core.flow.handlers.decomposition_artifacts import COMPONENT_NAME_PATTERN
+
+        assert not COMPONENT_NAME_PATTERN.match("auth\n")
+
+    def test_the_fan_out_guard_uses_the_same_constant(self) -> None:
+        """Two copies of a security regex is one copy too many — CB-2 removed the duplicate."""
+        import inspect
+
+        from specweaver.core.flow.handlers import decompose, decomposition_artifacts
+
+        combined = inspect.getsource(decompose) + inspect.getsource(decomposition_artifacts)
+        assert combined.count('re.compile(r"^[a-zA-Z0-9_') == 1
+
+
+class TestComponentTemplateLoading:
+    """R-3: unscaffolded projects have no template file."""
+
+    def test_missing_template_returns_the_local_skeleton(self, tmp_path: Path) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import (
+            FALLBACK_COMPONENT_SPEC,
+            load_component_template,
+        )
+
+        assert load_component_template(tmp_path) == FALLBACK_COMPONENT_SPEC
+
+    def test_scaffolded_template_is_preferred(self, tmp_path: Path) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import load_component_template
+
+        tpl = tmp_path / ".specweaver" / "templates" / "component_spec.md"
+        tpl.parent.mkdir(parents=True)
+        tpl.write_text("# {{ component_name }} custom\n", encoding="utf-8")
+        assert load_component_template(tmp_path) == "# {{ component_name }} custom\n"
+
+    def test_unreadable_template_falls_back_rather_than_raising(self, tmp_path: Path) -> None:
+        """A directory at the template path raises OSError on read — must degrade, not crash."""
+        from specweaver.core.flow.handlers.decomposition_artifacts import (
+            FALLBACK_COMPONENT_SPEC,
+            load_component_template,
+        )
+
+        (tmp_path / ".specweaver" / "templates" / "component_spec.md").mkdir(parents=True)
+        assert load_component_template(tmp_path) == FALLBACK_COMPONENT_SPEC
+
+    def test_the_fallback_skeleton_renders_without_leftover_jinja(self) -> None:
+        from jinja2 import Template
+
+        from specweaver.core.flow.handlers.decomposition_artifacts import FALLBACK_COMPONENT_SPEC
+
+        out = Template(FALLBACK_COMPONENT_SPEC).render(
+            component_name="auth", date="2026-07-26", parent_feature="onboarding", purpose="p"
+        )
+        assert "{{" not in out and "}}" not in out
+        assert "auth" in out and "onboarding" in out
+
+    def test_fallback_defaults_hold_when_optional_vars_are_absent(self) -> None:
+        """`purpose` is None when a component has no description."""
+        from jinja2 import Template
+
+        from specweaver.core.flow.handlers.decomposition_artifacts import FALLBACK_COMPONENT_SPEC
+
+        out = Template(FALLBACK_COMPONENT_SPEC).render(component_name="auth", date="")
+        assert "{{" not in out
+        assert "TODO: Describe the single responsibility." in out
+        assert "N/A" in out
+        assert "None" not in out

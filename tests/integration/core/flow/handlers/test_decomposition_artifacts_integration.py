@@ -2,9 +2,9 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration tests — decomposition artifact persistence (INT-US-21 SF-02 CB-1, FR-5 + FR-7).
+"""Integration tests — decomposition artifacts (INT-US-21 SF-02 CB-1 + CB-2; FR-5, FR-6, FR-7).
 
-The 16 unit tests in ``tests/unit/core/flow/handlers/test_decompose_artifact.py`` instantiate
+The unit tests in ``tests/unit/core/flow/handlers/test_decompose_artifact.py`` instantiate
 ``DecomposeFeatureHandler()`` and call ``execute()`` directly, with a mocked ``context.db``. That
 proves the handler's own logic and nothing about the machinery around it. These tests exercise the
 seams the unit suite structurally cannot reach:
@@ -17,7 +17,9 @@ seams the unit suite structurally cannot reach:
   ``hydrate_plan_context`` by hand;
 * **real SQLite** for both the state store round trip and the ``generated_decomposition`` lineage
   row;
-* a **real filesystem failure** for D6, rather than a patched ``write_text``.
+* a **real filesystem failure** for D6, rather than a patched ``write_text``;
+* **real files on disk** for FR-6's stub component specs — the claim is that a user can carry
+  them into ``sw implement``, which a mocked filesystem cannot demonstrate.
 
 The mocked edge is the LLM: ``FeatureDecomposer`` is doubled to return a real ``DecompositionPlan``
 (never a ``MagicMock`` — a mock's ``model_dump()`` hides the enum-serialization defect that D1
@@ -424,3 +426,201 @@ class TestSeamKeyIsOneSymbol:
         assert json.loads(ctx.decomposition) == output[DECOMPOSITION_PLAN_KEY], (
             "hydration did not read the key the writer wrote"
         )
+
+
+# ---------------------------------------------------------------------------
+# CB-2 — stub component specs (FR-6)
+# ---------------------------------------------------------------------------
+
+
+def _stub(tmp_path: Path, component: str) -> Path:
+    """D7: stubs land next to the spec, NOT in project_path/'specs'."""
+    return tmp_path / "specs" / f"{component}_spec.md"
+
+
+def _scaffold_template(tmp_path: Path, body: str | None = None) -> Path:
+    tpl = tmp_path / ".specweaver" / "templates" / "component_spec.md"
+    tpl.parent.mkdir(parents=True, exist_ok=True)
+    tpl.write_text(
+        body
+        or (
+            "# {{ component_name }} - Component Spec\n\n"
+            "> **Parent Feature**: {{ parent_feature | default(\"N/A\") }}\n\n"
+            "## 1. Purpose\n\n{{ purpose | default(\"TODO\") }}\n"
+        ),
+        encoding="utf-8",
+    )
+    return tpl
+
+
+class TestStubComponentSpecs:
+    """FR-6: the DAG becomes tangible spec files a user can carry into `sw implement`."""
+
+    def test_one_stub_written_per_component_next_to_the_spec(self, tmp_path: Path) -> None:
+        _scaffold_template(tmp_path)
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        assert run.status == RunStatus.COMPLETED
+        assert _stub(tmp_path, "auth").is_file()
+        assert _stub(tmp_path, "billing").is_file()
+
+    def test_template_is_rendered_not_copied(self, tmp_path: Path) -> None:
+        """A verbatim copy would leave literal Jinja in the user's spec file."""
+        _scaffold_template(tmp_path)
+        _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        text = _stub(tmp_path, "auth").read_text(encoding="utf-8")
+        assert "{{" not in text and "}}" not in text
+        assert "auth" in text
+        assert "Handles login and token issuance." in text  # purpose seeded from description
+
+    def test_missing_template_falls_back_to_a_local_skeleton(self, tmp_path: Path) -> None:
+        """Unscaffolded projects have no .specweaver/templates — R-3."""
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        assert run.status == RunStatus.COMPLETED
+        text = _stub(tmp_path, "auth").read_text(encoding="utf-8")
+        assert "auth" in text
+        assert "{{" not in text
+
+    def test_existing_spec_is_never_overwritten(self, tmp_path: Path) -> None:
+        _scaffold_template(tmp_path)
+        existing = _stub(tmp_path, "auth")
+        existing.parent.mkdir(parents=True, exist_ok=True)
+        existing.write_text("# hand-written, do not clobber\n", encoding="utf-8")
+        before = existing.read_bytes()
+
+        _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        assert existing.read_bytes() == before
+
+    def test_created_and_skipped_are_reported_not_silent(self, tmp_path: Path) -> None:
+        """R/B C1.2: a skip must be visible, or stale stubs look authored."""
+        _scaffold_template(tmp_path)
+        _stub(tmp_path, "auth").parent.mkdir(parents=True, exist_ok=True)
+        _stub(tmp_path, "auth").write_text("# mine\n", encoding="utf-8")
+
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        stubs = run.step_records[0].result.output["component_specs"]
+        assert stubs["created"] == ["billing"]
+        assert stubs["skipped"] == ["auth"]
+
+    def test_zero_component_plan_writes_no_stubs(self, tmp_path: Path) -> None:
+        from specweaver.workflows.planning.decomposition import DecompositionPlan
+
+        empty = DecompositionPlan(
+            feature_spec=f"specs/{SPEC_STEM}.md",
+            components=[],
+            integration_seams=[],
+            build_sequence=[],
+            coverage_score=1.0,
+            alignment_notes=[],
+            timestamp="2026-07-26T00:00:00Z",
+        )
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), empty)
+
+        assert run.status == RunStatus.COMPLETED
+        assert run.step_records[0].result.output["component_specs"]["created"] == []
+        # The feature spec itself matches *_spec.md, so assert on the exact set.
+        written = {p.name for p in (tmp_path / "specs").glob("*_spec.md")}
+        assert written == {f"{SPEC_STEM}.md"}
+
+    def test_artifact_still_written_when_stubs_are_impossible(self, tmp_path: Path) -> None:
+        """A stub failure must not discard the durable artifact — the T1 lesson."""
+        _scaffold_template(tmp_path)
+        # Occupy every stub filename with a directory so write_text raises.
+        for name in ("auth", "billing"):
+            _stub(tmp_path, name).mkdir(parents=True, exist_ok=True)
+
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        assert run.status == RunStatus.COMPLETED
+        assert _artifact_path(tmp_path).is_file()
+        assert sorted(run.step_records[0].result.output["component_specs"]["failed"]) == [
+            "auth",
+            "billing",
+        ]
+
+
+class TestStubNameSafety:
+    """NFR-5: LLM-authored names reach the filesystem — validate before ANY write."""
+
+    def test_traversal_name_writes_nothing_outside_the_spec_dir(self, tmp_path: Path) -> None:
+        from specweaver.commons.enums.dal import DALLevel
+        from specweaver.workflows.planning.decomposition import ComponentChange, DecompositionPlan
+
+        hostile = DecompositionPlan(
+            feature_spec=f"specs/{SPEC_STEM}.md",
+            components=[
+                ComponentChange(
+                    component="../../../etc/pwned",
+                    exists=False,
+                    change_nature="new_interface",
+                    description="malicious",
+                    proposed_dal=DALLevel.DAL_B,
+                    dependencies=[],
+                    target_modules=[],
+                    confidence=50,
+                )
+            ],
+            integration_seams=[],
+            build_sequence=["../../../etc/pwned"],
+            coverage_score=1.0,
+            alignment_notes=[],
+            timestamp="2026-07-26T00:00:00Z",
+        )
+        _scaffold_template(tmp_path)
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), hostile)
+
+        stubs = run.step_records[0].result.output["component_specs"]
+        assert stubs["rejected"] == ["../../../etc/pwned"]
+        assert stubs["created"] == []
+
+        # The spec lives at tmp_path/specs/, so "../../../etc/pwned" resolves to
+        # tmp_path.parent/etc/pwned. Assert on that EXACT file, not on the `etc` directory:
+        # tmp_path.parent is pytest's session root, shared with every other test, so asserting the
+        # directory is absent passes or fails for reasons that have nothing to do with this claim
+        # (it green-lit in isolation and failed in the full suite when an unrelated test made one).
+        assert not (tmp_path.parent / "etc" / "pwned_spec.md").exists()
+        assert not (tmp_path / "etc").exists()
+        # And nothing landed beside the spec except the feature spec and the artifact.
+        assert {p.name for p in (tmp_path / "specs").iterdir()} == {
+            f"{SPEC_STEM}.md",
+            f"{SPEC_STEM}_decomposition.yaml",
+        }
+
+
+class TestStubRenderingDefaults:
+    """A component with no description must get the template's placeholder, never "None"."""
+
+    def test_missing_description_renders_the_placeholder_not_none(self, tmp_path: Path) -> None:
+        from specweaver.commons.enums.dal import DALLevel
+        from specweaver.workflows.planning.decomposition import ComponentChange, DecompositionPlan
+
+        plan = DecompositionPlan(
+            feature_spec=f"specs/{SPEC_STEM}.md",
+            components=[
+                ComponentChange(
+                    component="auth",
+                    exists=False,
+                    change_nature="new_interface",
+                    description="",
+                    proposed_dal=DALLevel.DAL_B,
+                    dependencies=[],
+                    target_modules=[],
+                    confidence=50,
+                )
+            ],
+            integration_seams=[],
+            build_sequence=["auth"],
+            coverage_score=1.0,
+            alignment_notes=[],
+            timestamp="2026-07-26T00:00:00Z",
+        )
+        _scaffold_template(tmp_path)
+        _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), plan)
+
+        text = _stub(tmp_path, "auth").read_text(encoding="utf-8")
+        assert "None" not in text
+        assert "TODO" in text

@@ -219,10 +219,38 @@ the loop_back rejection path is dead). Full order:
 `tests/integration/core/flow/handlers/test_decomposition_artifacts_integration.py` (extended);
 unit tests only for the name-regex and template-fallback branches.
 
-- [ ] **T6.1** — Extract the component-name regex (`decompose.py:153`) to one module-level constant.
-- [ ] **T6.2** — Render `.specweaver/templates/component_spec.md` (Jinja, D3) per component; never
-      overwrite; local skeleton fallback; seed `purpose` from `description`.
-- [ ] **T6.3** — Report created/skipped counts; a skip must be visible, not silent.
+- [x] **T6.1** — Extract the component-name regex to one module-level `COMPONENT_NAME_PATTERN`;
+      the fan-out now uses it instead of its own copy. **Fixed an inherited defect while doing so:**
+      the shipped guard used `$`, which in Python also matches before a trailing newline, so
+      `"auth
+"` passed validation — a legal POSIX filename and a log-injection vector. Now `\Z`.
+      Traversal was never possible (`/`, `\`, `.` are outside the class).
+- [x] **T6.2** — Render `.specweaver/templates/component_spec.md` (Jinja, D3) per component;
+      never overwrite (`is_file()`, so a directory at the path is an obstruction → `failed`, not a
+      mislabelled `skipped`); local skeleton fallback; `purpose` seeded from `description`.
+      **Bug found by its own test:** Jinja's `default()` fires on *undefined*, not `None`, so a
+      component without a description would have written the literal "None" into the user's spec.
+      The writer now passes only variables that have values.
+- [x] **T6.3** — Report `created` / `skipped` / `rejected` / `failed` in `output["component_specs"]`;
+      a stub problem never fails the step (the artifact is already durable — the T1 lesson).
+- [x] **T6.4** — Extract `decomposition_artifacts.py`. CB-2 took `decompose.py` to 586 lines against
+      a 450 threshold; now 369 + 249, and the file-size warning count is back to its 35 baseline.
+      Not `TECH-016`: this keeps the sequence local to decomposition instead of unifying it across
+      handlers, so D5 is honoured.
+- Pre-commit gate (2026-07-26):
+  - [x] Phase 1 architecture — new module placement clean, no new tach edge, `jinja2` is a
+        3rd-party dep not a `context.yaml` module edge (D3), no cycle (`decompose` →
+        `decomposition_artifacts`, one direction)
+  - [x] Phase 2 test gap — 3 defects found (see walkthrough), 2 gaps carried to CB-3
+  - [x] Phase 3 tests — 23 integration + 27 unit; **4 non-vacuity probes, all bite**
+  - [x] Phase 4 full suite — 5772 passed / 19 skipped / 0 failed
+  - [x] Phase 5 quality — ruff, mypy, tach, C901, file sizes 0 errors (warnings back to the
+        35 baseline after the extraction)
+  - [x] Phase 6 docs — no dev-guide work due (Guides 1–2 are SF-03)
+  - [x] Phase 7 walkthrough — `INT-US-21_sf02_cb2_walkthrough.md`
+  - [x] Phase 7.5 red/blue — traversal now verified from two independent directions: the regex
+        class excludes separators AND `Path.with_name()` raises `ValueError` on any separator, so
+        traversal is impossible even with the guard removed
 - [ ] Gate + **HITL commit stop**
 
 ## CB-3 — Plan-bridge seam pin (FR-9) + FR-7 summary
