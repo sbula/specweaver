@@ -8,7 +8,7 @@ never exercised — which is precisely how the enum-vs-YAML defect (D1) stayed i
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -24,9 +24,6 @@ from specweaver.workflows.planning.decomposition import (
     DecompositionPlan,
     IntegrationSeam,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 def _plan(*, components: list[ComponentChange] | None = None, coverage: float = 1.0) -> DecompositionPlan:
@@ -488,3 +485,74 @@ class TestComponentTemplateLoading:
         assert "TODO: Describe the single responsibility." in out
         assert "N/A" in out
         assert "None" not in out
+
+
+class TestStubReportEdgeCases:
+    """Branches in the stub writer that a pipeline step cannot easily reach."""
+
+    def test_component_dict_without_a_name_key_is_rejected_not_crashed(
+        self, tmp_path: Path
+    ) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import write_component_stubs
+
+        ctx = MagicMock()
+        ctx.project_path = tmp_path
+        ctx.spec_path = tmp_path / "x_feature_spec.md"
+        ctx.project_metadata = None
+        report = write_component_stubs({"components": [{"description": "orphan"}]}, ctx, "feat")
+        assert report["rejected"] == ["<unnamed>"]
+        assert report["created"] == []
+
+    def test_no_components_key_at_all(self) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import write_component_stubs
+
+        report = write_component_stubs({}, MagicMock(), "feat")
+        assert report == {"created": [], "skipped": [], "rejected": [], "failed": []}
+
+
+class TestDalSummaryFormatting:
+    """`build_dal_summary` is pure formatting — test its branches directly."""
+
+    def test_lists_each_component_with_its_dal(self) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import build_dal_summary
+
+        out = build_dal_summary(
+            {"components": [{"component": "auth", "proposed_dal": "DAL_B"}]},
+            Path("specs/x_decomposition.yaml"),
+            {"created": ["auth"], "skipped": [], "rejected": [], "failed": []},
+        )
+        assert "auth" in out and "DAL_B" in out
+        assert "x_decomposition.yaml" in out
+        assert "1 created" in out
+
+    def test_zero_components(self) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import build_dal_summary
+
+        out = build_dal_summary(
+            {"components": []},
+            Path("specs/x_decomposition.yaml"),
+            {"created": [], "skipped": [], "rejected": [], "failed": []},
+        )
+        assert "0 component" in out or "no components" in out.lower()
+
+    def test_missing_dal_does_not_crash_the_summary(self) -> None:
+        """`proposed_dal` is required on the model, but the summary takes a plain dict."""
+        from specweaver.core.flow.handlers.decomposition_artifacts import build_dal_summary
+
+        out = build_dal_summary(
+            {"components": [{"component": "auth"}]},
+            Path("x.yaml"),
+            {"created": [], "skipped": [], "rejected": [], "failed": []},
+        )
+        assert "auth" in out
+        assert "None" not in out
+
+    def test_non_created_outcomes_are_visible(self) -> None:
+        from specweaver.core.flow.handlers.decomposition_artifacts import build_dal_summary
+
+        out = build_dal_summary(
+            {"components": [{"component": "a", "proposed_dal": "DAL_A"}]},
+            Path("x.yaml"),
+            {"created": [], "skipped": ["a"], "rejected": ["../bad"], "failed": ["c"]},
+        )
+        assert "skipped" in out and "rejected" in out and "failed" in out

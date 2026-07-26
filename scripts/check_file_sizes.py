@@ -9,10 +9,15 @@ Thresholds (src/ files):
   - 451 to 600 lines: YELLOW (warning)
   - above 600 lines:  RED    (error, blocks pre-commit)
 
-Test files (tests/) use src thresholds x 1.5:
-  - up to 675 lines:  GREEN  (ok)
-  - 676 to 900 lines: YELLOW (warning)
+Test files (tests/) carry a higher allowance than src, set explicitly rather than derived:
+  - up to 800 lines:  GREEN  (ok)
+  - 801 to 900 lines: YELLOW (warning)
   - above 900 lines:  RED    (error, blocks pre-commit)
+
+800 is a deliberate project decision (user, 2026-07-26), not a scaled guess. A thorough test file
+legitimately runs long: the four adversarial buckets, a table of hostile inputs, and a docstring
+explaining what each seam proves all cost lines, and splitting a file that covers ONE contract
+across several just to satisfy a threshold makes the coverage harder to audit, not easier.
 
 Exit code 1 if any file exceeds the RED threshold.
 """
@@ -25,9 +30,9 @@ from pathlib import Path
 # Thresholds
 SRC_WARN = 450
 SRC_ERROR = 600
-TEST_SCALE = 1.5
-TEST_WARN = int(SRC_WARN * TEST_SCALE)  # 675
-TEST_ERROR = int(SRC_ERROR * TEST_SCALE)  # 900
+#: Set explicitly, not scaled from SRC_WARN — see the module docstring.
+TEST_WARN = 800
+TEST_ERROR = 900
 
 
 def _check_dir(

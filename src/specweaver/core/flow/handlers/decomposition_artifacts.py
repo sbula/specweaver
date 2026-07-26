@@ -205,7 +205,7 @@ def write_component_stubs(
                 getattr(context, "run_id", None),
                 name,
             )
-            report["rejected"].append(str(name))
+            report["rejected"].append(str(name) if name else "<unnamed>")
             continue
 
         target = context.spec_path.with_name(f"{name}_spec.md")
@@ -247,3 +247,31 @@ def write_component_stubs(
         len(report["failed"]),
     )
     return report
+
+
+def build_dal_summary(
+    dumped: dict[str, Any], artifact_path: Path, stub_report: dict[str, list[str]]
+) -> str:
+    """The human-readable half of FR-7 — `proposed_dal` per component, plus what reached disk.
+
+    D2: no park surface renders ``StepResult.output`` today (R-4), and changing
+    ``engine/display.py`` would touch shipped display used by every pipeline — wider than SF-02's
+    remit. So the handler owns the text and SF-03's CLI journey owns the rendering. Naming the
+    artifact file here is what lets a human review it before resuming (NFR-7).
+    """
+    components = dumped.get("components") or []
+    lines = [f"Decomposition artifact: {artifact_path.name}"]
+
+    if not components:
+        lines.append("0 components proposed.")
+    else:
+        width = max(len(str(c.get("component") or "<unnamed>")) for c in components)
+        lines.append(f"{len(components)} component(s), proposed DAL per component:")
+        for component in components:
+            name = str(component.get("component") or "<unnamed>")
+            dal = component.get("proposed_dal") or "unrated"
+            lines.append(f"  {name.ljust(width)}  {dal}")
+
+    outcomes = ", ".join(f"{len(v)} {k}" for k, v in stub_report.items() if v)
+    lines.append(f"Component specs: {outcomes or 'none written'}")
+    return "\n".join(lines)

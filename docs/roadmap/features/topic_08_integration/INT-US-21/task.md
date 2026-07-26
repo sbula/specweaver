@@ -259,8 +259,24 @@ unit tests only for the name-regex and template-fallback branches.
       **DESCOPED 2026-07-26.** The pin froze the fan-out seam for `C-FLOW-12`, which does not exist
       (SF-03 mints it, sequenced behind `C-EXEC-07`). Research retained in the plan's R-7 for
       `C-FLOW-12` to inherit; it writes its own pin against a contract it can see.
-- [ ] **T7.2** — FR-9b: custom plan→generate pipeline proves `context.plan` reaches generation
-      **hook-driven** (today's `test_planning_integration.py:441` seeds it by hand).
+- [x] **T7.2** — FR-9b: `tests/integration/core/flow/engine/test_seam_pins.py` (4 tests). A real
+      `plan+spec` step through the real registry, the real hook, and the value at the next step
+      asserted to equal the artifact **on disk**. The gap it closes: `test_planning_integration.py`
+      proves I8 (handler writes a loadable plan) and I9/I10 (a hand-seeded `RunContext(plan=...)`
+      reaches the generator) — **both pass while the bridge between them is missing**, which is
+      the state the repo was actually in. Probe: disabling the hook's `read_text` fails exactly the
+      two tests that assert the bridge works.
+- [x] **T7.3** — FR-7 `build_dal_summary()`: artifact filename (NFR-7, so a human can review before
+      resuming) + `proposed_dal` per component + stub outcome, in the handler's own output. No
+      `display.py` change (D2); rendering at the park is SF-03's.
+- [x] **T7.4** — Both gaps CB-2 carried forward: a component listed twice (created once, then
+      skipped, first description wins) and a component dict with no `component` key (reported as
+      `<unnamed>`, not the literal `"None"`).
+- [x] **T7.5** — `check_file_sizes.py` test threshold 675 → **800** (user, 2026-07-26), set
+      explicitly instead of scaled from `SRC_WARN`, reasoning recorded in the script.
+      Repo-wide warnings 36 → 24.
+- Pre-commit gate: [x] Ph1 arch · [x] Ph2 gap · [x] Ph3 tests · [ ] Ph4 suite · [x] Ph5 quality ·
+  [x] Ph6 docs · [x] Ph7 walkthrough (`INT-US-21_sf02_cb3_walkthrough.md`) · [x] Ph7.5 red/blue
 - [ ] Gate + **HITL commit stop**
 - [ ] Closure gate before `Status: COMPLETE`: `python scripts/check_fr_coverage.py INT-US-21`
       exits 0 (FR-9's citation comes from T7.2) + full suite green

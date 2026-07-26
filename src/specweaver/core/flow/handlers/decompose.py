@@ -13,6 +13,7 @@ from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext, StepHandler, _error_result, _now_iso
 from specweaver.core.flow.handlers.decomposition_artifacts import (
     COMPONENT_NAME_PATTERN,
+    build_dal_summary,
     feature_name_from_spec,
     log_decomposition_lineage,
     persist_decomposition,
@@ -104,6 +105,7 @@ class DecomposeFeatureHandler(StepHandler):
 
             await log_decomposition_lineage(context, artifact_uuid)
             component_specs = write_component_stubs(dumped, context, feature_name)
+            summary = build_dal_summary(dumped, artifact_path, component_specs)
 
             # The plan is NESTED so `decomposition_path` cannot leak into the frozen seam:
             # `hydrate_plan_context` unwraps `output["plan"]`, keeping `context.decomposition`
@@ -114,6 +116,7 @@ class DecomposeFeatureHandler(StepHandler):
                     DECOMPOSITION_PLAN_KEY: dumped,
                     "decomposition_path": str(artifact_path),
                     "component_specs": component_specs,
+                    "summary": summary,
                 },
                 started_at=started_at,
                 completed_at="",

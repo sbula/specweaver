@@ -624,3 +624,84 @@ class TestStubRenderingDefaults:
         text = _stub(tmp_path, "auth").read_text(encoding="utf-8")
         assert "None" not in text
         assert "TODO" in text
+
+
+# ---------------------------------------------------------------------------
+# CB-3 — FR-7 human-readable summary (D2: handler-owned, no display.py change)
+# ---------------------------------------------------------------------------
+
+
+class TestDalSummary:
+    """FR-7: `proposed_dal` is carried in a summary the handler emits itself.
+
+    No park surface renders step output today (R-4), so D2 puts the burden on the handler and
+    leaves rich rendering to SF-03's CLI journey. What CB-3 owes is that the data and the
+    human-readable form both exist in `StepResult.output`.
+    """
+
+    def test_summary_names_every_component_and_its_dal(self, tmp_path: Path) -> None:
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        summary = run.step_records[0].result.output["summary"]
+        assert "auth" in summary and "DAL_B" in summary
+        assert "billing" in summary and "DAL_D" in summary
+
+    def test_summary_names_the_artifact_path_for_review_before_resuming(
+        self, tmp_path: Path
+    ) -> None:
+        """NFR-7: the human must be able to find the artifact from the park."""
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        assert _artifact_path(tmp_path).name in run.step_records[0].result.output["summary"]
+
+    def test_summary_reports_the_stub_outcome(self, tmp_path: Path) -> None:
+        _scaffold_template(tmp_path)
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        summary = run.step_records[0].result.output["summary"]
+        assert "2 created" in summary
+
+    def test_summary_survives_the_sqlite_round_trip(self, tmp_path: Path) -> None:
+        store = StateStore(tmp_path / "s.db")
+        run, _ = _run(_pipeline(), _ctx(tmp_path), store, _plan())
+
+        reloaded = store.load_run(run.run_id)
+        assert "DAL_B" in reloaded.step_records[0].result.output["summary"]
+
+
+class TestCarriedForwardGaps:
+    """The two gaps CB-2's walkthrough recorded rather than buried."""
+
+    def test_a_component_listed_twice_is_created_once_then_skipped(self, tmp_path: Path) -> None:
+        from specweaver.commons.enums.dal import DALLevel
+        from specweaver.workflows.planning.decomposition import ComponentChange, DecompositionPlan
+
+        def _c(desc: str) -> ComponentChange:
+            return ComponentChange(
+                component="auth",
+                exists=False,
+                change_nature="new_interface",
+                description=desc,
+                proposed_dal=DALLevel.DAL_B,
+                dependencies=[],
+                target_modules=[],
+                confidence=90,
+            )
+
+        dupes = DecompositionPlan(
+            feature_spec=f"specs/{SPEC_STEM}.md",
+            components=[_c("first"), _c("second")],
+            integration_seams=[],
+            build_sequence=["auth"],
+            coverage_score=1.0,
+            alignment_notes=[],
+            timestamp="2026-07-26T00:00:00Z",
+        )
+        _scaffold_template(tmp_path)
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), dupes)
+
+        stubs = run.step_records[0].result.output["component_specs"]
+        assert stubs["created"] == ["auth"]
+        assert stubs["skipped"] == ["auth"]
+        # The first description wins; the duplicate never overwrites it.
+        assert "first" in _stub(tmp_path, "auth").read_text(encoding="utf-8")

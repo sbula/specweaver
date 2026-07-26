@@ -264,7 +264,7 @@ Strictly linear — no parallel sessions.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Flow-Engine Substrate | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Decomposition Artifacts & Frozen Seams | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Decomposition Artifacts & Frozen Seams | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | CLI Journey, Proof & Registry Closure | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -317,8 +317,28 @@ carry `(SF-02 Phase-0)` corrections. Three commit boundaries: CB-1 artifact pers
 CB-2 stub component specs → CB-3 plan-bridge seam pin (FR-9) + FR-7 summary. **CB-3 was rescoped
 2026-07-26:** FR-9(a)'s decompose→orchestrate fan-out pin is descoped (see FR-9), so CB-3 keeps
 FR-9(b) and the FR-7 surfacing only. CB-3 is not deleted — it still owns FR-7.
-**Next step**: SF-02 CB-1 (artifact persistence, FR-5 + FR-7 data) is implemented but **uncommitted**,
-and carries unit tests only. Per `TECH-017` it needs integration coverage before it earns a commit.
+**SF-02 is COMPLETE and committed** (2026-07-26), all three commit boundaries:
+
+| CB | Scope | FR | Commit |
+|----|-------|----|--------|
+| CB-1 | Decomposition artifact persistence | FR-5, FR-7 data | `4a42b87a` |
+| CB-2 | Stub component specs | FR-6 | `ce00be20` |
+| CB-3 | Plan-bridge seam pin + DAL summary | FR-9(b), FR-7 | see git log |
+
+Each boundary ran the **full** pre-commit gate, which earned its keep: CB-1 found a telemetry
+failure discarding an LLM-paid decomposition and a "frozen seam" held together by two unenforced
+string literals; CB-2 found an inherited name-guard defect (`$` matches before a trailing newline,
+so `"auth
+"` passed the fan-out's path-traversal guard — now `\Z`), a Jinja `default()` that
+writes the literal "None", and an `exists()` that mislabelled an obstruction as a user file.
+
+`python scripts/check_fr_coverage.py INT-US-21` **now exits 0** — it blocked on FR-9 from the day it
+was written until CB-3's pin landed. Note it verifies *citation*, not completeness: SF-03's FRs are
+cited by tests that reference them, and SF-03 itself is still unbuilt. The Progress Tracker is the
+authority on done-ness.
+
+**Next step**: SF-03 — CLI journey (FR-8), verifiable e2e proof (FR-10), docs currency, registry
+closure. Start with its implementation plan.
 
 > [!IMPORTANT]
 > **Two hard constraints SF-03 inherits from SF-01.** (1) `_resolve_spec_path`
