@@ -8,14 +8,106 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.core.flow.engine.hydration import DECOMPOSITION_PLAN_KEY
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import RunContext, StepHandler, _error_result, _now_iso
 from specweaver.workflows.planning.decomposer import FeatureDecomposer
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.core.flow.engine.models import PipelineStep
 
 logger = logging.getLogger(__name__)
+
+#: Suffix stripped when deriving a feature name from its spec filename (INT-US-21 FR-1 convention).
+_FEATURE_SPEC_STEM_SUFFIX = "_feature_spec"
+
+
+def _feature_name_from_spec(spec_path: Path) -> str:
+    """Derive a human-meaningful feature name from the spec filename."""
+    return spec_path.stem.removesuffix(_FEATURE_SPEC_STEM_SUFFIX) or spec_path.stem
+
+
+def _persist_decomposition(dumped: dict[str, Any], context: RunContext) -> tuple[Path, str]:
+    """Write ``<spec_stem>_decomposition.yaml`` next to the spec. Returns (path, artifact uuid).
+
+    Mirrors ``PlanSpecHandler``'s *sequence* — derive path, extract-or-generate uuid, tag, write —
+    but NOT its serialization call (see the caller's D1 note). Raises ``OSError`` on write failure
+    so the caller can honour D6.
+
+    Re-running decomposition reuses the existing artifact's uuid rather than minting a new lineage
+    identity for the same logical artifact.
+    """
+    import io
+    import uuid
+
+    from ruamel.yaml import YAML
+
+    from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
+
+    artifact_path = context.spec_path.with_name(
+        context.spec_path.stem + "_decomposition.yaml"
+    )
+
+    artifact_uuid = None
+    if artifact_path.exists():
+        artifact_uuid = extract_artifact_uuid(artifact_path.read_text(encoding="utf-8"))
+    if not artifact_uuid:
+        artifact_uuid = str(uuid.uuid4())
+
+    yaml = YAML()
+    yaml.default_flow_style = False
+    buf = io.StringIO()
+    yaml.dump(dumped, buf)
+
+    content = buf.getvalue()
+    tag_str = wrap_artifact_tag(artifact_uuid, "yaml")
+    if tag_str:
+        content = tag_str + "\n" + content
+
+    artifact_path.write_text(content, encoding="utf-8")
+    logger.info(
+        "[run_id=%s] Decomposition artifact written: %s (%d components)",
+        getattr(context, "run_id", None),
+        artifact_path,
+        len(dumped.get("components", [])),
+    )
+    return artifact_path, artifact_uuid
+
+
+async def _log_decomposition_lineage(context: RunContext, artifact_uuid: str) -> None:
+    """Record the ``generated_decomposition`` lineage event when a telemetry DB is configured.
+
+    **Never raises.** Lineage is telemetry, and by the time it runs the decomposition has already
+    been paid for with an LLM call and durably written to disk. Letting a DB problem propagate hands
+    it to ``execute``'s ``except Exception``, which returns ``ERROR`` with no ``output`` — throwing
+    the plan away and violating the very rule D6 exists to enforce. Found by the CB-1 pre-commit
+    gate (2026-07-26) against a non-bootstrapped database; the failure is logged at exception level
+    so it is loud in logs while the run continues.
+    """
+    if not context.db:
+        return
+
+    from specweaver.core.flow.store import FlowRepository
+
+    try:
+        async with context.db.async_session_scope() as session:
+            repo = FlowRepository(session)
+            await repo.log_artifact_event(
+                artifact_id=artifact_uuid,
+                parent_id=None,
+                run_id=getattr(context, "run_id", None) or "pipeline_run",
+                event_type="generated_decomposition",
+                model_id="unknown",
+            )
+    except Exception:
+        logger.exception(
+            "[run_id=%s] Decomposition lineage event failed for artifact %s — the artifact is "
+            "already on disk, so the step continues",
+            getattr(context, "run_id", None),
+            artifact_uuid,
+        )
 
 
 class DecomposeFeatureHandler(StepHandler):
@@ -26,8 +118,12 @@ class DecomposeFeatureHandler(StepHandler):
         started = _now_iso()
 
         try:
-            # Reconstruct the feature name from step params if passed, or derived
-            feature_name = step.params.get("feature_name", "unknown_feature")
+            # INT-US-21 FR-5: derive the feature name from the spec when the step does not name
+            # one. The bundled feature_decomposition.yaml passes no params, so the old
+            # "unknown_feature" fallback was what every real run got.
+            feature_name = step.params.get("feature_name") or _feature_name_from_spec(
+                context.spec_path
+            )
 
             # Use the LLM and the Decomposer
             decomposer = FeatureDecomposer(
@@ -67,12 +163,43 @@ class DecomposeFeatureHandler(StepHandler):
                     completed_at="",  # Runner will fill
                 )
 
-            # Return the plan as a serialized JSON dictionary in the output
+            # INT-US-21 FR-5/D1: mode="json" is REQUIRED, not stylistic. `model_dump()` leaves
+            # `proposed_dal` as a DALLevel enum and ruamel raises RepresenterError on it — and the
+            # field is mandatory on every component, so the python-mode dump fails on 100% of real
+            # plans. mode="json" also makes this byte-identical to the hydrated
+            # `context.decomposition`, so the on-disk and in-memory halves of this AD-4-frozen seam
+            # agree. Generalised by TECH-016.
+            dumped = plan.model_dump(mode="json")
+            started_at = context.project_metadata.date_iso if context.project_metadata else ""
+
+            try:
+                artifact_path, artifact_uuid = _persist_decomposition(dumped, context)
+            except OSError as exc:
+                # D6: fail loud, but never discard an expensive LLM decomposition — keeping the
+                # plan in `output` lets a resume re-persist without another LLM round.
+                logger.exception("Failed to persist the decomposition artifact")
+                return StepResult(
+                    status=StepStatus.FAILED,
+                    output={DECOMPOSITION_PLAN_KEY: dumped},
+                    error_message=f"Failed to write the decomposition artifact: {exc}",
+                    started_at=started_at,
+                    completed_at=_now_iso(),
+                )
+
+            await _log_decomposition_lineage(context, artifact_uuid)
+
+            # The plan is NESTED so `decomposition_path` cannot leak into the frozen seam:
+            # `hydrate_plan_context` unwraps `output["plan"]`, keeping `context.decomposition`
+            # canonical DecompositionPlan JSON (AD-4).
             return StepResult(
                 status=StepStatus.PASSED,
-                output=plan.model_dump(),
-                started_at=context.project_metadata.date_iso if context.project_metadata else "",
+                output={
+                    DECOMPOSITION_PLAN_KEY: dumped,
+                    "decomposition_path": str(artifact_path),
+                },
+                started_at=started_at,
                 completed_at="",
+                artifact_uuid=artifact_uuid,
             )
 
         except Exception as e:

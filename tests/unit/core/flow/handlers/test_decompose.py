@@ -140,7 +140,11 @@ async def test_decompose_feature_handler_success(
         mock_decomposer.decompose.assert_called_once()
         _, kwargs = mock_decomposer.decompose.call_args
         assert "base_prompt" in kwargs
-        assert result.output.get("coverage_score") == 1.0
+        # INT-US-21 SF-02: the plan is nested under "plan" so the handler can also report
+        # `decomposition_path` without that key leaking into the AD-4-frozen
+        # `context.decomposition` seam. Hydration unwraps it; see test_decompose_artifact.py.
+        assert result.output["plan"].get("coverage_score") == 1.0
+        assert result.output["decomposition_path"].endswith("_decomposition.yaml")
 
 
 @pytest.mark.asyncio

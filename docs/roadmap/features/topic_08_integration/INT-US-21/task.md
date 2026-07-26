@@ -182,12 +182,42 @@ the loop_back rejection path is dead). Full order:
 - [x] **T5.5** — D6: write failure fails the step loudly, plan retained in `output`.
       *src*: `decompose.py` · *test*: same
 
+- [x] **T5.6** — **Integration coverage (`TECH-017`).** 11 tests in
+      `tests/integration/core/flow/handlers/test_decomposition_artifacts_integration.py` driving the
+      real registry → real runner → real SQLite → real filesystem: registry resolution, the
+      hydration hook agreeing byte-for-byte with the artifact, state-store round trip, the
+      `generated_decomposition` lineage row, cross-session rehydration, uuid stability across two
+      runs, and D6 against a genuine `OSError` (a directory occupying the artifact filename).
+      Proven non-vacuous by probe: reverting `mode="json"` fails 8 of 11; flattening the nested
+      `output["plan"]` fails exactly the 3 seam-agreement tests.
+
 ### Gate
-- [ ] Full suite green; ruff, mypy, C901, file sizes, tach, roadmap sync
-- [ ] Pre-commit skill, all 7 phases
+- [x] Full suite green; ruff, mypy, C901, file sizes, tach, roadmap sync
+- Pre-commit skill (2026-07-26):
+  - [x] Phase 1 architecture verification — 1 new finding (A1: duplicated `"plan"` literal), 3 confirmed-documented, 1 process finding (stale doc path in the skill)
+  - [x] Phase 2 test gap — coverage matrix + 6 findings, incl. **T1 live defect: a lineage-DB failure discards the plan**, contradicting D6
+  - [x] Phase 3 implement missing tests — **F1 fix** (lineage failure no longer discards the plan)
+        + **A1 fix** (`DECOMPOSITION_PLAN_KEY` replaces two duplicated literals) + 7 new tests
+        (5 unit T2–T5, 3 integration T1/A1). T1 confirmed red before the fix: run ERRORed and
+        `context.decomposition` was `None`.
+  - [/] Phase 4 full suite — running
+  - [x] Phase 5 code quality — ruff, mypy, tach, C901 clean; `check_file_sizes` 0 errors
+        (`decompose.py` 453 > 450 YELLOW — extraction deferred to CB-2, which adds to the same file;
+        doing it now collides with `TECH-016`'s unified writer)
+  - [x] Phase 6 documentation — no dev-guide work due (Guides 1–2 are SF-03);
+        `known_boundary_violations.md` needs no new row (A2)
+  - [x] Phase 7 walkthrough — `INT-US-21_sf02_cb1_walkthrough.md`
+  - [x] Phase 7.5 red/blue — 5 attacks, 0 unresolved: path traversal safe (`with_name`, no LLM
+        input); uuid newline-injection **safe, verified** against the strict `_UUID_PATTERN` regex;
+        YAML injection safe (ruamel quotes); symlink-follow is a pre-existing class shared with
+        `PlanSpecHandler` → `TECH-016`; concurrent same-spec runs → `TECH-014`
 - [ ] **HITL commit stop**
 
 ## CB-2 — Stub component specs (FR-6)
+
+**Tier (`TECH-017`)**: integration test file is
+`tests/integration/core/flow/handlers/test_decomposition_artifacts_integration.py` (extended);
+unit tests only for the name-regex and template-fallback branches.
 
 - [ ] **T6.1** — Extract the component-name regex (`decompose.py:153`) to one module-level constant.
 - [ ] **T6.2** — Render `.specweaver/templates/component_spec.md` (Jinja, D3) per component; never

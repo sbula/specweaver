@@ -188,7 +188,19 @@ discharges it.
 
 ### CB-1 — Decomposition artifact persistence (FR-5, FR-7 data half)
 
-**Files**: `[MODIFY] core/flow/handlers/decompose.py`, `[MODIFY] tests/unit/core/flow/handlers/test_decompose.py`
+**Files**: `[MODIFY] core/flow/handlers/decompose.py`,
+`[NEW] tests/integration/core/flow/handlers/test_decomposition_artifacts_integration.py`,
+`[NEW] tests/unit/core/flow/handlers/test_decompose_artifact.py`,
+`[MODIFY] tests/unit/core/flow/handlers/test_decompose.py`
+
+> [!IMPORTANT]
+> **Tier corrected 2026-07-26 (`TECH-017`).** This boundary was planned unit-only and built
+> unit-only first — 16 unit tests, zero integration — which is what triggered `TECH-017`. The
+> integration file is not optional decoration: the unit tests construct
+> `DecomposeFeatureHandler()` by hand and mock `context.db`, so they cannot see the real registry
+> row, the real runner hydration hook, real SQLite, or a real filesystem failure. FR-5's central
+> claim — that the on-disk artifact and the in-memory `context.decomposition` agree — is only
+> provable through production wiring.
 
 1. Derive `feature_name` from the spec stem when `step.params["feature_name"]` is absent
    (kills the `"unknown_feature"` fallback at `decompose.py:30`).
@@ -202,7 +214,18 @@ discharges it.
 
 ### CB-2 — Stub component specs (FR-6)
 
-**Files**: `[MODIFY] core/flow/handlers/decompose.py`, `[MODIFY] tests/unit/core/flow/handlers/test_decompose.py`
+**Files**: `[MODIFY] core/flow/handlers/decompose.py`,
+`[MODIFY] tests/integration/core/flow/handlers/test_decomposition_artifacts_integration.py`,
+`[MODIFY] tests/unit/core/flow/handlers/test_decompose.py` (unit only for the name-regex and
+template-fallback branches)
+
+> [!IMPORTANT]
+> **Tier corrected 2026-07-26 (`TECH-017`).** This boundary was planned unit-only, the same defect
+> as CB-1. FR-6's claim is that a *user gets real spec files on disk they can carry into
+> `sw implement`* — a unit test with a mocked filesystem cannot prove that. The integration test
+> drives the decompose step through the real handler and asserts the files exist with rendered
+> content; unit tests stay for the branch-level cases (invalid name, missing template) that are
+> awkward to reach through the step.
 
 1. Extract R-5's name regex to a module-level constant; reuse it in both the fan-out and here.
 2. For each `ComponentChange`: validate the name, resolve `specs/<component>_spec.md`, **skip if it

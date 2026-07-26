@@ -29,6 +29,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+#: The key `decompose+feature` nests its DecompositionPlan under in ``StepResult.output``.
+#:
+#: This is the AD-4-frozen seam between the writer (``handlers/decompose.py``) and the reader
+#: (this module). It lived as the bare literal ``"plan"`` in both files until the CB-1 pre-commit
+#: gate (2026-07-26) observed that two string literals which MUST agree, with nothing forcing them
+#: to, is not a frozen seam. Both sides import this name; ``C-FLOW-12`` should too.
+DECOMPOSITION_PLAN_KEY = "plan"
+
 
 def hydrate_plan_context(
     step_def: PipelineStep,
@@ -91,7 +99,16 @@ def hydrate_plan_context(
             # (where the store already stringified it) — the same run would behave differently
             # depending on whether it was resumed. Sharing this function is only half the
             # guarantee; the serialization semantics must match too.
-            context.decomposition = json.dumps(result.output or {}, default=str)
+            # INT-US-21 SF-02: the handler nests the plan under "plan" so it can also report
+            # `decomposition_path` without that key leaking into this field. AD-4 freezes
+            # `context.decomposition` as canonical DecompositionPlan JSON, and
+            # OrchestrateComponentsHandler / C-FLOW-12 consume it as such. The `.get("plan", ...)`
+            # fallback keeps records persisted before SF-02 (flat plan) rehydrating correctly.
+            payload = result.output or {}
+            nested = payload.get(DECOMPOSITION_PLAN_KEY)
+            context.decomposition = json.dumps(
+                nested if isinstance(nested, dict) else payload, default=str
+            )
         except (TypeError, ValueError) as exc:
             logger.warning(
                 "[run_id=%s] Step '%s': decomposition output is not JSON-serializable (%s) — "
