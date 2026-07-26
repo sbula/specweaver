@@ -11,11 +11,39 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 ```
 
 **Pre-conditions — HARD STOP if any fail:**
-1. The Design Document at `<design_doc_path>` exists and `Status: APPROVED`.
-2. If `<sf_id>` is given: all sub-features in its `depends_on` list have `Impl Plan ✅`
+
+1. **Prerequisites are green IN CODE, not just in documents:**
+   ```
+   python scripts/check_story_preconditions.py <STORY-ID>
+   ```
+   A non-zero exit is a **hard block** — do not plan, do not "note it and continue", and do not
+   ask the user to waive it. Fix the reported facts first, or file the finding as its own ticket
+   (`specweaver-ticket`) and stop.
+
+   > [!CAUTION]
+   > This exists because document state lies. INT-US-21's design recorded its prerequisites as
+   > "all ✅: US-2 Core, D-INTL-02, D-INTL-03" — and **all three were materially broken**:
+   > handlers never registered so the shipped pipeline could not run a single step;
+   > `RunContext.plan` documented as "(set by runner hook)" with zero writes in `src/`; a required
+   > enum that cannot be serialized to YAML at all. Every checkbox was true as written and false
+   > in fact. The script verifies the *evidence* behind the checkbox: the declared proof exists,
+   > passes, and does not skip; every bundled pipeline step resolves to a real handler; no field
+   > documented as "set by X" is unwritten.
+
+2. The Design Document at `<design_doc_path>` exists and `Status: APPROVED`.
+3. If `<sf_id>` is given: all sub-features in its `depends_on` list have `Impl Plan ✅`
    in the Progress Tracker.
-3. If `<sf_id>` is omitted and the design has sub-features: ask the user which sub-feature
+4. If `<sf_id>` is omitted and the design has sub-features: ask the user which sub-feature
    to plan. Do NOT plan all sub-features at once.
+
+> [!IMPORTANT]
+> **TEST TIER MUST MATCH STORY TIER (`TECH-017`).** For an `INT-US-NN` integration contract the
+> proof is **integration and e2e** tests. Unit tests belong in an integration story only to fix a
+> specific behaviour or fill a narrow gap found while integrating. Decide this when drawing the
+> commit boundaries — **every** boundary carries integration coverage. Never defer all integration
+> work to one later boundary; that is how SF-02 CB-1 came to ship 16 unit tests and zero others.
+> And treat unit-test-heaviness as a **diagnostic**: it means the capability stories you are
+> integrating shipped incomplete, which is a finding against *them*.
 
 **Output header block** — write this at the top of every impl plan produced:
 ```markdown

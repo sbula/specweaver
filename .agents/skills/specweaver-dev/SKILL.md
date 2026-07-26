@@ -48,9 +48,23 @@ c. Read the Design Document in full. Focus on:
    - The sub-feature section for this plan (scope, FRs subset, inputs, outputs)
    - Progress Tracker (verify all pre-conditions are met)
 d. **Pre-condition checks — HARD STOP if any fail:**
+   - **Prerequisites green IN CODE:** run `python scripts/check_story_preconditions.py <STORY-ID>`.
+     A non-zero exit is a hard block — do not implement, do not waive it, do not ask for a waiver.
+     Document state lies: INT-US-21's three prerequisites were all marked `✅` and all three were
+     materially broken (handlers never registered; a field documented as hook-populated with zero
+     writes in `src/`; a required enum that cannot be YAML-serialized). This checks the evidence,
+     not the checkbox.
    - Design Document `Status: APPROVED`? If not → trigger the design skill first.
    - This sub-feature's `Impl Plan` is `✅` in the tracker? If not → trigger the implementation-plan skill first.
    - All sub-features in `depends_on` have `Committed ✅`? If not → tell the user which dep is incomplete.
+
+> [!CAUTION]
+> **TEST TIER MUST MATCH STORY TIER (`TECH-017`).** In an `INT-US-NN` story every commit boundary
+> is proven by **integration and e2e** tests. Unit tests are legitimate here only to fix a specific
+> behaviour or fill a narrow gap found while integrating — if you are writing many of them, the
+> capability being integrated shipped incomplete, and that is a finding against *it*. Before Phase 2,
+> check whether a CLI surface already works well enough for an e2e: an explicit spec path often
+> works long before bare-name resolution does.
 
 **1.0e. MANDATORY**: Read ALL relevant files in `docs/dev_guides/` and `docs/user_guides/`.
        These contain established patterns, conventions, and extension points.

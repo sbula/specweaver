@@ -29,6 +29,30 @@ automatically continues from where the Progress Tracker shows work stopped.
 
 ---
 
+## Phase 0: Precondition Gate (HARD BLOCK — run before anything else)
+
+0.1. Verify the story's prerequisites are green **in code**, not just in documents:
+```
+python scripts/check_story_preconditions.py <STORY-ID>
+```
+
+A non-zero exit **blocks the whole feature**. Do not design, plan, or implement; fix the reported
+facts, or file each as its own ticket (`specweaver-ticket`) and stop. There is deliberately no
+override — an overridable gate becomes a habit.
+
+> [!CAUTION]
+> **Why this is Phase 0 and not advice.** INT-US-21's design recorded its prerequisites as
+> "all ✅: US-2 Core, D-INTL-02, D-INTL-03". All three were materially broken: the shipped
+> `feature_decomposition.yaml` could not execute a single step because two handlers were never
+> registered; `RunContext.plan` was documented as "(set by runner hook)" with **zero** writes in
+> `src/`; and a required enum could not be serialized to YAML at all. Every checkbox was true as
+> written and false in fact, and the whole story became an archaeology exercise instead of an
+> integration. The gate checks the *evidence*: the declared proof exists, passes and does not skip;
+> every bundled pipeline step resolves to a real handler; no field documented as "set by X" is
+> unwritten.
+
+---
+
 ## Phase 1: Design
 
 1.1. Locate the Design Document:
