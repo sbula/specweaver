@@ -127,6 +127,16 @@ For each task in the breakdown:
 > 
 > You MUST write at least one test story for EACH of these 4 buckets. If a bucket is mathematically impossible for the current feature, explicitly justify why.
 
+> [!IMPORTANT]
+> **The matrix says WHAT to test; `specweaver-pre-commit/references/test-quality.md` says whether a
+> passing test proves anything.** Read it before writing assertions — the seven vacuous-proof
+> patterns are cheaper to avoid than to find later, and pattern 7 (deriving your expected value
+> from the thing under test) is invisible in review.
+>
+> Two workflow rules from that file apply here directly: **a targeted green is not evidence, only
+> the full suite is**, and **the tree is frozen while a full suite runs** — a run whose source
+> changed underneath it proves nothing.
+
 - Write the test(s) for the task according to your matrix. Include:
   - Happy path
   - Boundary/Edge cases

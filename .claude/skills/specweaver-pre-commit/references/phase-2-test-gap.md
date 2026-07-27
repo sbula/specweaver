@@ -92,32 +92,24 @@ description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, covera
 2.5b. **VACUOUS PROOF CHECK (MANDATORY)** — a passing test is not evidence.
 
 > [!CAUTION]
-> Before trusting ANY existing test as coverage, verify it can actually **fail** for the reason it
-> claims. A test that cannot distinguish the states it asserts about is worse than no test: it
-> reports green and suppresses the gap from this very analysis.
+> Read **`references/test-quality.md`** and check every test you intend to rely on against its
+> seven patterns. You MUST NOT cite an existing test as covering a gap until you have read its
+> body. "There is a test named `test_x_flows_through`" is not a finding. What it asserts is.
 >
-> **You MUST NOT cite an existing test as covering a gap until you have read its body.**
-> "There is a test named `test_x_flows_through`" is not a finding. What it asserts is.
+> Anything you find is a **finding for this analysis**, not a footnote: list it in the coverage
+> matrix as `❌`/`🟡` (never `✅`) and raise a story to make it honest. Per the
+> fix-inherited-failures rule, a vacuous test in code you touched must be repaired, not deferred.
 
-Check every test you intend to rely on against these six patterns. All six are real defects found
-in this repo (INT-US-21 SF-01, 2026-07-25) — none were hypothetical, and each hid a live bug:
+Run the executable half now — these block, so there is nothing to remember:
 
-| # | Pattern | How to detect it |
-|---|---|---|
-| 1 | **Ambiguous exit code** — asserts `exit_code == 0` where *two or more* outcomes exit 0 | Ask: which distinct end states share this code? A PARKED and a COMPLETED run both exit 0. Assert the **persisted status**, not the process code |
-| 2 | **Stubbed-away subject** — the test replaces the very component under test | e.g. registering a fake handler for *every* step, then claiming the test proves the real registry resolves them. Grep the test for wholesale registry/handler substitution |
-| 3 | **Never executed** — a skip guard that is always true | `if not path.exists(): pytest.skip(...)` with a wrong path silently skips forever. Compare skip counts before/after your change; an unexplained skip is a dead test |
-| 4 | **Fixture cannot satisfy the assertion** — the input could never produce the asserted outcome | Run the real validator/battery against the fixture once. A spec fixture that scores 4/6 can never prove "the chain validates it" |
-| 5 | **Escaped mock** — a "mocked" test reaching a real network/paid API | Look for *alternative* resolution paths that bypass the patch (e.g. a router/factory that builds its own client). Check logs for real endpoints, timeouts, 4xx/5xx quota errors |
-| 6 | **Assertion weaker than the claim** — the docstring promises more than the assert checks | Read the test name and docstring, then the asserts. "flows through the whole chain" backed by a single truthiness check is a gap, not coverage |
-
-For each one you find, it is a **finding for this analysis**, not a footnote: list it in the
-coverage matrix as `❌`/`🟡` (never `✅`) and raise a story to make it honest. Per the
-fix-inherited-failures rule, a vacuous test in code you touched must be repaired, not deferred.
+```bash
+python scripts/check_useless_asserts.py
+python scripts/check_test_basenames.py
+```
 
 > [!TIP]
-> The cheapest reliable probe: **make the test fail on purpose.** Break the behaviour it claims to
-> cover and confirm it goes red. If it stays green, you have found pattern 1, 2, or 6.
+> The cheapest reliable probe: **make the test fail on purpose.** `test-quality.md` treats this as
+> mandatory rather than optional, with four worked examples of what it caught.
 
 2.6. Do NOT invent arbitrary test counts. Every story must trace to real code.
 2.7. Present the FULL list — do NOT limit to 10 items.
