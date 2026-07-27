@@ -265,7 +265,7 @@ Strictly linear — no parallel sessions.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Flow-Engine Substrate | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Decomposition Artifacts & Frozen Seams | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | CLI Journey, Proof & Registry Closure | SF-01, SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | CLI Journey, Proof & Registry Closure | SF-01, SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 

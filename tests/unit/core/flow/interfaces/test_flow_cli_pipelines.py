@@ -18,10 +18,8 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from specweaver.core.flow.interfaces.cli import (
-    _create_display,
-    _resolve_spec_path,
-)
+from specweaver.core.flow.interfaces.cli import _create_display
+from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()
@@ -38,27 +36,27 @@ def _mock_db(tmp_path: Path, monkeypatch):
     return db
 
 
-# ── _resolve_spec_path edge cases ────────────────────────────────────────
+# ── resolve_spec_path edge cases ────────────────────────────────────────
 
 
 class TestResolveSpecPathEdgeCases:
     def test_module_with_underscores(self, tmp_path: Path) -> None:
-        result = _resolve_spec_path("new_feature", "my_cool_service", tmp_path)
+        result = resolve_spec_path("new_feature", "my_cool_service", tmp_path)
         assert result == tmp_path / "specs" / "my_cool_service_spec.md"
 
     def test_module_with_hyphens(self, tmp_path: Path) -> None:
-        result = _resolve_spec_path("new_feature", "my-service", tmp_path)
+        result = resolve_spec_path("new_feature", "my-service", tmp_path)
         assert result == tmp_path / "specs" / "my-service_spec.md"
 
     def test_absolute_path_existing(self, tmp_path: Path) -> None:
         spec = tmp_path / "abs" / "spec.md"
         spec.parent.mkdir()
         spec.write_text("content")
-        result = _resolve_spec_path("validate_only", str(spec), tmp_path)
+        result = resolve_spec_path("validate_only", str(spec), tmp_path)
         assert result == spec
 
     def test_nonexistent_returns_literal(self, tmp_path: Path) -> None:
-        result = _resolve_spec_path("validate_only", "ghost.md", tmp_path)
+        result = resolve_spec_path("validate_only", "ghost.md", tmp_path)
         assert result == Path("ghost.md")
 
 

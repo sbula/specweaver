@@ -4,7 +4,7 @@
 
 """Integration tests — sw pipelines / sw run / sw resume CLI subcommands.
 
-Covers: pipelines listing, _resolve_spec_path, _create_display,
+Covers: pipelines listing, resolve_spec_path, _create_display,
 run error paths, resume error paths.
 """
 
@@ -67,44 +67,44 @@ class TestPipelinesList:
 
 
 # ---------------------------------------------------------------------------
-# _resolve_spec_path
+# resolve_spec_path
 # ---------------------------------------------------------------------------
 
 
 class TestResolveSpecPath:
-    """Test the _resolve_spec_path helper."""
+    """Test the resolve_spec_path helper."""
 
     def test_existing_file_returned_directly(self, tmp_path: Path) -> None:
         """An existing file path is returned as-is."""
-        from specweaver.core.flow.interfaces.cli import _resolve_spec_path
+        from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 
         spec = tmp_path / "myspec.md"
         spec.write_text("content", encoding="utf-8")
-        result = _resolve_spec_path("validate_only", str(spec), tmp_path)
+        result = resolve_spec_path("validate_only", str(spec), tmp_path)
         assert result == spec
 
     def test_new_feature_derives_spec_path(self, tmp_path: Path) -> None:
         """For new_feature pipeline, spec path is derived from module name."""
-        from specweaver.core.flow.interfaces.cli import _resolve_spec_path
+        from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 
-        result = _resolve_spec_path("new_feature", "greeter", tmp_path)
+        result = resolve_spec_path("new_feature", "greeter", tmp_path)
         assert result == tmp_path / "specs" / "greeter_spec.md"
 
     def test_relative_to_project(self, tmp_path: Path) -> None:
         """A relative path is resolved against the project directory."""
-        from specweaver.core.flow.interfaces.cli import _resolve_spec_path
+        from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 
         spec = tmp_path / "specs" / "calculator.md"
         spec.parent.mkdir(exist_ok=True)
         spec.write_text("content", encoding="utf-8")
-        result = _resolve_spec_path("validate_only", "specs/calculator.md", tmp_path)
+        result = resolve_spec_path("validate_only", "specs/calculator.md", tmp_path)
         assert result == spec
 
     def test_nonexistent_falls_through(self, tmp_path: Path) -> None:
         """Non-existent path falls through as literal Path."""
-        from specweaver.core.flow.interfaces.cli import _resolve_spec_path
+        from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 
-        result = _resolve_spec_path("validate_only", "nonexistent.md", tmp_path)
+        result = resolve_spec_path("validate_only", "nonexistent.md", tmp_path)
         assert result == Path("nonexistent.md")
 
 

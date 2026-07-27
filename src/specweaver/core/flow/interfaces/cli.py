@@ -16,6 +16,7 @@ from specweaver.assurance.graph.loader import load_topology, select_topology_con
 from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.constitution import find_constitution
@@ -96,35 +97,6 @@ def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> No
         _core.console.print(
             "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
         )
-
-
-def _resolve_spec_path(
-    pipeline_name: str,
-    spec_or_module: str,
-    project_path: Path,
-) -> Path:
-    """Resolve the spec argument based on pipeline type.
-
-    For validate-style pipelines:  treat as direct file path.
-    For new_feature-style:         treat as module name, derive spec path.
-    """
-    # If it looks like an existing file, use it directly
-    spec_path = Path(spec_or_module)
-    if spec_path.exists():
-        return spec_path
-
-    # For new_feature pipelines, derive from module name
-    if pipeline_name == "new_feature":
-        derived = project_path / "specs" / f"{spec_or_module}_spec.md"
-        return derived
-
-    # Try relative to project
-    relative = project_path / spec_or_module
-    if relative.exists():
-        return relative
-
-    # Fall back to the literal path (will fail later with clear message)
-    return spec_path
 
 
 def _create_display(
@@ -291,7 +263,7 @@ def _execute_run(  # noqa: C901
     pipeline_def = load_pipeline(Path(pipeline))
 
     # Resolve spec path based on pipeline type
-    spec_path = _resolve_spec_path(pipeline_def.name, spec_or_module, project_path)
+    spec_path = resolve_spec_path(pipeline_def.name, spec_or_module, project_path)
 
     # For pipelines that need an existing spec, check it exists
     spec_must_exist = pipeline_def.name not in ("new_feature",)
