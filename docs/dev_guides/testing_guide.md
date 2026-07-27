@@ -145,16 +145,16 @@ Keep source files under **500 lines**. If a file grows beyond this, consider ref
 ### Standards / Constitution (Feature 3.5a-4)
 ```bash
 # All constitution tests (unit)
-pytest tests/unit/project/test_constitution.py
+pytest tests/unit/workspace/project/test_project_constitution.py
 
 # All standards tests (unit + integration)
-pytest tests/unit/standards tests/integration/cli/test_cli_standards_integration.py
+pytest tests/unit/assurance/standards tests/integration/interfaces/cli/test_cli_standards_integration.py
 
 # Config database tests (includes schema migrations)
-pytest tests/unit/config/test_database.py
+pytest tests/unit/core/config/test_database.py
 
 # CLI tests for constitution and config commands
-pytest tests/unit/cli/test_constitution.py tests/unit/cli/test_config.py
+pytest tests/unit/workspace/project/interfaces/test_project_cli_constitution.py tests/unit/core/config/interfaces/test_config_cli.py
 ```
 
 ### Async SQLite Data Stores (e.g. Agent Memory Bank)
@@ -211,7 +211,7 @@ pytest -m "live" --tb=long -v        # With verbose output
 
 Some tests are skipped at runtime via `pytest.skip()` or `skipIf()` due to **platform-specific limitations**. These are not failures — they are expected on certain operating systems.
 
-### Windows Skips (5 tests in `test_executor.py`)
+### Windows Skips (5 tests in `tests/unit/sandbox/execution/test_execution_executor.py`)
 
 | Test | Reason |
 |------|--------|

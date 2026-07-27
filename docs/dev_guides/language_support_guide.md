@@ -85,8 +85,12 @@ We rigorously separate test boundaries. Do not mix Mock constraints into Live fi
 
 ### Integration Tests (True OS Integrity)
 **Location:** 
-1. `tests/integration/sandbox/qa_runner/go/test_atom.py`
-2. `tests/integration/sandbox/qa_runner/go/test_tool.py`
+1. `tests/integration/sandbox/atoms/qa_runner/go/test_go_atom.py`
+2. `tests/integration/sandbox/tools/qa_runner/go/test_go_tool.py`
+
+> **Test filenames must be unique repo-wide.** `test_atom.py` / `test_tool.py` existed nine times
+> each until 2026-07-26; duplicate basenames make "find every reference" searches unreliable and
+> make failure output ambiguous. Name the file for its language and subject.
 3. `tests/integration/loom/test_polyglot_ast_edge_cases.py` (Must append your target language Tree-Sitter boundaries!)
 
 - **Absolute Rule:** Do not mock `subprocess`.
