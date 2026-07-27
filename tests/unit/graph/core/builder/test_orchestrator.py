@@ -95,16 +95,26 @@ def test_builder_ingest_ast_edge_delta():
     engine = InMemoryGraphEngine()
     builder = GraphBuilder(engine)
 
+    # v1 declares three functions; v2 drops `baz`, so `baz`'s containment edge must be deleted.
+    #
+    # The original fixture instead gave `foo` a `"calls": ["bar"]` key and removed it in v2 —
+    # but NOTHING in `src/specweaver/graph/` reads `calls`. The mapper builds edges from
+    # `children` only, so no call edge was ever created and the deletion path was never entered:
+    # both versions produced the same two module->function edges. Paired with an
+    # `assert len(edges) >= 0` that cannot fail, this test proved nothing about Story 4 for its
+    # entire life. Vacuous-proof pattern 4 — the fixture could not satisfy the assertion.
     ast_data_v1 = {
         "type": "module",
         "children": [
-            {"type": "function_definition", "name": "foo", "calls": ["bar"]},
+            {"type": "function_definition", "name": "foo"},
             {"type": "function_definition", "name": "bar"},
+            {"type": "function_definition", "name": "baz"},
         ],
     }
     builder.ingest_ast("src/test.py", ast_data_v1)
 
-    assert len(engine._nx_graph.edges) > 0
+    edges_v1 = set(engine._nx_graph.edges)
+    assert len(edges_v1) == 3, f"expected one edge per function, got {sorted(edges_v1)}"
 
     ast_data_v2 = {
         "type": "module",
@@ -115,7 +125,22 @@ def test_builder_ingest_ast_edge_delta():
     }
     builder.ingest_ast("src/test.py", ast_data_v2)
 
-    assert len(engine._nx_graph.edges) >= 0
+    # A strict subset, not an absolute count: foo and bar are still legitimately contained, so
+    # exactly one edge — baz's — may disappear.
+    #
+    # This asserts the observable graph state, NOT which internal mechanism produced it. Verified
+    # by probe: `ingest_ast` prunes stale edges twice over — step 1 (`edges_to_remove`) and step 2
+    # (`remove_node`, which cascades in NetworkX) — and disabling either alone still satisfies
+    # this test. That redundancy means **step 1 is currently exercised by no test**: with the
+    # mapper producing only parent->child containment edges, an edge can never disappear while
+    # both endpoints survive, which is the only case step 1 uniquely handles. It would become
+    # reachable if the mapper ever emits non-containment edges (calls, imports).
+    edges_v2 = set(engine._nx_graph.edges)
+
+    assert edges_v2 < edges_v1, (
+        f"re-ingest deleted no edges; before={sorted(edges_v1)} after={sorted(edges_v2)}"
+    )
+    assert len(edges_v2) == 2, f"expected baz's edge gone and no others, got {sorted(edges_v2)}"
 
 
 def test_orchestrator_build_target_happy_path(tmp_path):

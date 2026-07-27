@@ -348,4 +348,10 @@ class TestDraftChain:
         from specweaver.workflows.review.interfaces.cli import _build_draft_pipeline
 
         pipeline = _build_draft_pipeline("greeter")
-        pipeline.validate_flow()  # must not raise
+
+        # `validate_flow` RETURNS the error list; it never raises. Calling it and discarding the
+        # result asserted nothing, so this "tripwire against reordering" would have stayed green
+        # against a completely broken pipeline. Fixed 2026-07-26.
+        errors = pipeline.validate_flow()
+
+        assert errors == [], f"the inline draft pipeline is not a valid flow: {errors}"

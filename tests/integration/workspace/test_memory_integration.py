@@ -308,6 +308,22 @@ class TestMemoryBankIntegrationSimulations:
         await repo.transition_state(task_id, TaskStatus.IN_PROGRESS, TransitionReason.ACQUIRED)
         await repo.transition_state(task_id, TaskStatus.DONE, TransitionReason.COMPLETED)
 
+        # This journey ran six repository operations and asserted nothing until 2026-07-26 —
+        # every state transition could have silently failed. Assert the three claims the
+        # docstring actually makes: the defect was logged, the human resolved it, the agent
+        # finished. Every sibling test in this file asserts; this one was the outlier.
+        task_final = await repo.get_task(task_id)
+        assert task_final["status"] == TaskStatus.DONE.value
+
+        defects = await repo.list_defects(task_id)
+        assert len(defects) == 1
+        assert str(defects[0]["status"]).upper().endswith("RESOLVED")
+
+        # A DONE task that never passed through BLOCKED would satisfy the above, so pin the
+        # sticky part: the task really did block on the defect and come back.
+        history = [str(t["to_status"]) for t in await repo.get_task_transitions(task_id)]
+        assert any("BLOCKED" in h.upper() for h in history), history
+
     async def test_e2e_5_automatic_epic_closure_simulation(
         self, session: AsyncSession, base_project: Project
     ) -> None:

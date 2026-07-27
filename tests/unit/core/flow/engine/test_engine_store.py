@@ -74,9 +74,25 @@ class TestStoreSchema:
         assert db_path.exists()
 
     def test_idempotent_creation(self, tmp_path: Path) -> None:
+        """A second StateStore over the same file reuses the schema rather than clobbering it.
+
+        Until 2026-07-26 this only ran the constructor twice with a "should not raise" comment,
+        which is a weaker claim than the test's name: a second constructor that silently dropped
+        and recreated the schema — losing every persisted run — would have passed.
+        """
         db_path = tmp_path / "test.db"
-        StateStore(db_path)
-        StateStore(db_path)  # second call should not raise
+        first = StateStore(db_path)
+        conn = first.connect()
+        before = conn.execute("PRAGMA user_version").fetchone()[0]
+        conn.close()
+
+        second = StateStore(db_path)
+
+        conn = second.connect()
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == before
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        conn.close()
+        assert tables, "the second construction left no tables behind"
 
     def test_wal_mode(self, store: StateStore) -> None:
         conn = store.connect()
