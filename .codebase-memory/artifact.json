@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "cd8f348a557dfa4930b003fd3e70e2f6e2af8e67",
-    "indexed_at": "2026-07-21T19:25:27Z",
+    "commit": "a003b16478117681d29035161c9ed42c69480fba",
+    "indexed_at": "2026-07-28T18:12:20Z",
     "project": "C-development-pitbula-specweaver",
-    "nodes": 19123,
-    "edges": 87371,
-    "original_size": 66256896,
-    "compressed_size": 10417549,
+    "nodes": 22074,
+    "edges": 105248,
+    "original_size": 78577664,
+    "compressed_size": 12227134,
     "compression_level": 3
 }
