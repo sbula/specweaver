@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-021
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: STUB — not yet run through the `specweaver-design` skill
+- **Status**: ✅ RESOLVED (2026-07-28) — fixed directly; the change was two lines and its proof already existed as a strict `xfail`
 - **Origin**: INT-US-21 SF-03 CB-3 e2e (2026-07-28) — found by the first test to drive a bundled
   pipeline through a HITL gate
 
@@ -61,3 +61,28 @@ Run the `specweaver-design` skill. The failing case is already reproducible from
 `TestE8ValidationFailureLoopsBack::test_the_validation_failure_is_recorded_for_the_human` is a
 **strict `xfail`** — it will start failing the moment this is fixed, which is the signal to remove
 the marker.
+
+---
+
+## Resolution (2026-07-28)
+
+`_handle_loop_back` in `engine/gates.py` now records the failing step's status and result before it
+rewinds:
+
+```python
+run.step_records[step_idx].status = result.status
+run.step_records[step_idx].result = result
+```
+
+Placed in the gate evaluator rather than the runner deliberately — `runner.py` sits at its 600-line
+RED threshold with zero headroom (`TECH-020`), and the evaluator already owns this kind of state
+mutation (`park_current_step`).
+
+**The strict `xfail` worked exactly as intended.** The moment the fix landed the test reported
+`XPASS(strict)` and failed the suite, which is what signalled the marker could go. It is now an
+ordinary passing test. That is the argument for `xfail(strict=True)` over deleting a test or
+asserting the broken behaviour: the tripwire tells you when it is obsolete.
+
+**Still open and NOT fixed here:** the retry budget does not accumulate across sessions —
+`_execute_loop` re-initialises `attempts` on every entry, so each `sw run --resume` grants a fresh
+3-strike allowance. That remains `C-FLOW-07`'s (via INT-US-21 `NFR-2`), unchanged.

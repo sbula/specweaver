@@ -212,6 +212,14 @@ class GateEvaluator:
                     attempts[step_idx],
                     gate.max_retries,
                 )
+                # TECH-021: retain the FAILING step's result before rewinding. Without this the
+                # record was left status=RUNNING / result=None, so a human parked at the loop
+                # target had no record of why the later step failed — they saw the draft gate and
+                # nothing else. Found by INT-US-21's e2e driving a spec that fails the battery:
+                # every resume looked identical to the first, with the reason discarded each time.
+                run.step_records[step_idx].status = result.status
+                run.step_records[step_idx].result = result
+
                 # Reset target step to PENDING
                 run.step_records[target_idx].status = StepStatus.PENDING
                 run.step_records[target_idx].result = None

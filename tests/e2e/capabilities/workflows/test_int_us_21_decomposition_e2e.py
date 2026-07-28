@@ -577,15 +577,6 @@ class TestE8ValidationFailureLoopsBack:
         assert run.current_step == 0, "the loop_back should return to draft_feature"
         assert run.step_records[0].attempt <= 3
 
-    @pytest.mark.xfail(
-        reason=(
-            "KNOWN GAP (found by this e2e, 2026-07-28): loop_back discards the failing step's "
-            "result. validate_feature is left status=running / result=None, so the human is "
-            "parked at the DRAFT gate with no recorded reason why their spec failed the battery. "
-            "Engine-wide loop_back behaviour, wider than INT-US-21 — see TECH-021."
-        ),
-        strict=True,
-    )
     def test_the_validation_failure_is_recorded_for_the_human(
         self, project: Path, data_dir: Path
     ) -> None:
@@ -597,6 +588,10 @@ class TestE8ValidationFailureLoopsBack:
             _resume(project, run_id)
             run = _store(data_dir).load_run(run_id)
 
+        # Was a strict xfail until TECH-021 was fixed (2026-07-28): `loop_back` discarded the
+        # failing step's result, leaving status=running / result=None. The marker was the
+        # tripwire -- it XPASSed the moment `gates.py` started retaining the result, which is
+        # what signalled the marker could go.
         validate = next(r for r in run.step_records if r.step_name == "validate_feature")
         assert validate.result is not None, (
             "the failing validation result was discarded by loop_back"
@@ -744,3 +739,57 @@ class TestE12InterruptSurvival:
             "validate_feature",
             "decompose",
         ]
+
+
+class TestTeardownActuallyRuns:
+    """The `finally:` teardown claim, which `TestE12InterruptSurvival` does NOT prove.
+
+    Those tests pass with both `_save_handover` and `_flush_telemetry` disabled — the run survives
+    because the store persists after each step. So "Run state saved" was an unverified claim about
+    a different mechanism. Asserted here by spying on the two calls rather than on their side
+    effects, because both are deliberately fail-safe (they swallow their own exceptions and no-op
+    without a database), so absence of an effect proves nothing about invocation.
+    """
+
+    def _interrupt_and_spy(self, project: Path, data_dir: Path):
+        import specweaver.core.flow.engine.handover as handover_mod
+        import specweaver.core.flow.engine.runner_utils as runner_utils_mod
+
+        calls = {"handover": 0, "telemetry": 0}
+        real_handover = handover_mod.save_handover_context
+        real_flush = runner_utils_mod.flush_telemetry
+
+        async def spy_handover(context, run):
+            calls["handover"] += 1
+            return await real_handover(context, run)
+
+        def spy_flush(*a, **kw):
+            calls["telemetry"] += 1
+            return real_flush(*a, **kw)
+
+        with scripted_world(ScriptedLLM([_plan_json()])):
+            _start(project)
+            run_id = _latest(data_dir).run_id
+
+            with patch.object(handover_mod, "save_handover_context", spy_handover), patch.object(
+                runner_utils_mod, "flush_telemetry", spy_flush
+            ), patch(
+                "specweaver.core.flow.handlers.decompose.DecomposeFeatureHandler.execute",
+                new=_InterruptingDecompose.execute,
+            ):
+                _resume(project, run_id)
+        return calls
+
+    def test_handover_is_saved_on_the_interrupt_path(
+        self, project: Path, data_dir: Path
+    ) -> None:
+        assert self._interrupt_and_spy(project, data_dir)["handover"] >= 1, (
+            "the `finally:` never reached _save_handover, so 'Run state saved' is not true"
+        )
+
+    def test_telemetry_is_flushed_on_the_interrupt_path(
+        self, project: Path, data_dir: Path
+    ) -> None:
+        assert self._interrupt_and_spy(project, data_dir)["telemetry"] >= 1, (
+            "the `finally:` never reached _flush_telemetry"
+        )
