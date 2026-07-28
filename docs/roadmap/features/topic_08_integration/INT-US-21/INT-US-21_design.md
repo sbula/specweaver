@@ -2,7 +2,7 @@
 
 - **Feature ID**: INT-US-21
 - **Phase**: Integration (Topic 08)
-- **Status**: APPROVED (user, 2026-07-25)
+- **Status**: COMPLETE (2026-07-28) — US-21 epic closed
 - **Design Doc**: docs/roadmap/features/topic_08_integration/INT-US-21/INT-US-21_design.md
 
 ## Feature Overview
@@ -265,7 +265,7 @@ Strictly linear — no parallel sessions.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Flow-Engine Substrate | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Decomposition Artifacts & Frozen Seams | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | CLI Journey, Proof & Registry Closure | SF-01, SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | CLI Journey, Proof & Registry Closure | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -337,8 +337,32 @@ was written until CB-3's pin landed. Note it verifies *citation*, not completene
 cited by tests that reference them, and SF-03 itself is still unbuilt. The Progress Tracker is the
 authority on done-ness.
 
-**Next step**: SF-03 — CLI journey (FR-8), verifiable e2e proof (FR-10), docs currency, registry
-closure. Start with its implementation plan.
+**SF-03 is COMPLETE and committed** (2026-07-28), five commit boundaries:
+
+| CB | Scope | FR | Commit |
+|----|-------|----|--------|
+| CB-1 | Bare-name resolution + `kind` battery passthrough | FR-8 | `8fff2470` |
+| CB-2 | Spec-name collision reporting + interrupt run id | — | `d0c020f4` |
+| CB-3 | Verifiable proof: the journey | FR-10 | `ccdda8f8` |
+| CB-4 | Interrupt survival & teardown | FR-10 | `39aa3860` |
+| CB-5 | Guides + registry closure | — | this commit |
+
+**The feature is closed.** `sw run feature_decomposition` works end to end across three sessions;
+the e2e is the first test in the suite to drive a bundled pipeline THROUGH a HITL gate, and every
+assertion reads persisted run status because PARKED and COMPLETED both exit 0.
+
+**Defects found and fixed while integrating** (none were in the FR list at design time): a
+telemetry failure discarding an LLM-paid decomposition; a "frozen seam" held together by two
+unenforced string literals; an inherited path-guard regex accepting a trailing newline; a Jinja
+`default()` writing the literal "None" into user specs; `exists()` mislabelling an obstruction as a
+user file; and a resume of a COMPLETED run leaving it stuck in RUNNING forever.
+
+**Deliberately left open**, each with a ticket: `TECH-018` (re-validate the delivered add-on),
+`TECH-020` (extract the 360-line `_execute_loop`), `TECH-021` (`loop_back` discards the failing
+step's result — pinned by a strict `xfail` that starts failing the moment it is fixed).
+
+**Next step**: none for this feature. `C-FLOW-12` / `INT-US-21-SF02` carry autonomous DAG
+execution, sequenced behind `C-EXEC-07` and `TECH-014`.
 
 > [!IMPORTANT]
 > **Two hard constraints SF-03 inherits from SF-01.** (1) `_resolve_spec_path`

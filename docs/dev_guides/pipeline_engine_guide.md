@@ -351,3 +351,90 @@ Starting with Feature D-INTL-06 (Context Hydration & Handover Engine), the Pipel
   )
   ```
   The engine autonomously parses this dictionary key, deduplicates the array, and truncates paths safely. Any malformed output is gracefully ignored natively by the fail-safe type check.
+
+
+---
+
+## 13. The `feature_decomposition` Journey (INT-US-21)
+
+The bundled `feature_decomposition.yaml` turns an epic-level feature spec into a DAG of DAL-rated
+component specs. It is the reference example of a **multi-session HITL journey**, and the only
+bundled pipeline with two human gates.
+
+```bash
+sw run feature_decomposition specs/onboarding_feature_spec.md   # explicit path
+sw run feature_decomposition onboarding                         # bare name, same spec
+```
+
+Bare names resolve to `specs/<name>_feature_spec.md`. That suffix is a single constant
+(`FEATURE_SPEC_SUFFIX` in `core/flow/handlers/draft.py`) which the resolver **imports** —
+`DraftFeatureHandler` errors loudly on a spec path that does not match it, so a second literal
+anywhere would trip the guard on every drafting run.
+
+### The three sessions
+
+| Session | What happens | Ends |
+|---|---|---|
+| 1 | `draft_feature` — an existing spec takes the exists-skip path | **PARK** at the draft gate |
+| 2 | resume = approval → `validate_feature` (feature battery) → `decompose` (one LLM call) | **PARK** at the review gate |
+| 3 | resume = approval | **COMPLETED** |
+
+Each park costs exactly one `sw resume`. Resuming a gate-parked step that **passed** approves it and
+advances without re-running it; everything else re-executes. See User Handbook 4.
+
+> [!CAUTION]
+> **`PARKED` and `COMPLETED` both exit `0`.**
+> The exit code cannot tell "waiting for you" apart from "finished" — `FAILED` is the only non-zero
+> outcome (`1`), and an interrupt exits `130`. Any script or test that branches on this journey MUST
+> read the persisted run status from the state store, never the process exit code. This is not
+> hypothetical: `INT-US-02`'s end-to-end proof was green for months while never advancing past its
+> first gate, because exit-code assertions could not see the difference.
+
+### What reaches disk
+
+- **`specs/<stem>_decomposition.yaml`** — the reviewed plan, carrying a `# sw-artifact:` uuid tag
+  and a `generated_decomposition` lineage event. Re-running reuses the existing uuid rather than
+  minting a new lineage identity for the same logical artifact.
+- **`specs/<component>_spec.md`** — one stub per component, rendered from
+  `.specweaver/templates/component_spec.md` (a built-in skeleton is used when the project was never
+  scaffolded). **Never overwritten.** The step reports five disjoint buckets in its output:
+  `created`, `skipped` (a spec was already there), `rejected` (the name failed validation),
+  `failed` (write error) and `collided` (the name would have targeted the feature spec itself).
+
+> [!IMPORTANT]
+> **Serialize with `model_dump(mode="json")`, never `model_dump()`.**
+> `DecompositionPlan.components[].proposed_dal` is a required `DALLevel` enum, and `ruamel` raises
+> `RepresenterError` on an enum — python-mode dump fails on 100% of real plans. `mode="json"` also
+> makes the on-disk artifact byte-identical to the hydrated `context.decomposition`, so both halves
+> of that frozen seam agree by construction. Generalised by `TECH-016`.
+
+### Coverage failures park; they do not silently loop
+
+§5's CAUTION describes `DecomposeFeatureHandler`'s internal `coverage_score >= 1.0` assertion and
+its 3-strike loop. That is the **auto-gate** behaviour, and it is what a custom pipeline gets.
+
+The bundled journey behaves differently, because its decompose gate is **HITL**: a gate parks
+unconditionally, whatever the step returned. So a low-coverage plan produces a *failed* step that
+parks for a human rather than looping to `FAILED`. A resume of a failed gate-park is **not** an
+approval — the step re-executes, costing a fresh LLM round. Measured, not inferred.
+
+The same applies to `validate_feature`: a spec that fails the battery loops back to
+`draft_feature`, which parks. Note the retry budget does **not** accumulate across sessions —
+`_execute_loop` re-initialises `attempts` on every entry, so each `sw resume` grants a fresh
+3-strike allowance. That is a known inherited limit (`C-FLOW-07` owns it), recorded here so no
+planner assumes otherwise.
+
+### Host posture
+
+> [!WARNING]
+> **This journey requires `session_isolation` OFF.**
+> `C-EXEC-06` v1 raises on any park inside a session worktree, by design. A pipeline that parks
+> twice therefore cannot run under session isolation. This is a documented constraint, not a bug to
+> work around.
+
+### Resuming
+
+Resuming a **completed** run is refused — `PipelineRunner.resume()` would otherwise set it back to
+`RUNNING` and leave a finished journey reporting as in-flight forever. Parked and failed runs stay
+resumable. An interrupt (`Ctrl-C`) exits `130`, and the message names the run id so the printed
+command can be pasted directly.

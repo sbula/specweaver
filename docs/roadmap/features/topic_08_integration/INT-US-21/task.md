@@ -154,7 +154,7 @@ the loop_back rejection path is dead). Full order:
 - **Binding**: decisions D1–D7. Most load-bearing: **D1 — serialize with `model_dump(mode="json")`,
   never `model_dump()`** (the enum raises `RepresenterError`; 100% failure rate otherwise).
 
-## CB-1 — Decomposition artifact persistence (FR-5, FR-7 data)  ← CURRENT
+## CB-1 — Decomposition artifact persistence (FR-5, FR-7 data)  ✅ COMMITTED 4a42b87a
 
 ### Adversarial Test Matrix
 
@@ -213,7 +213,7 @@ the loop_back rejection path is dead). Full order:
         `PlanSpecHandler` → `TECH-016`; concurrent same-spec runs → `TECH-014`
 - [ ] **HITL commit stop**
 
-## CB-2 — Stub component specs (FR-6)
+## CB-2 — Stub component specs (FR-6)  ✅ COMMITTED ce00be20
 
 **Tier (`TECH-017`)**: integration test file is
 `tests/integration/core/flow/handlers/test_decomposition_artifacts_integration.py` (extended);
@@ -253,7 +253,7 @@ unit tests only for the name-regex and template-fallback branches.
         traversal is impossible even with the guard removed
 - [ ] Gate + **HITL commit stop**
 
-## CB-3 — Plan-bridge seam pin (FR-9) + FR-7 summary
+## CB-3 — Plan-bridge seam pin (FR-9) + FR-7 summary  ✅ COMMITTED 5aa20ffa
 
 - [~] **T7.1** — ~~FR-9a: custom decompose→orchestrate pipeline, doubled sub-runner~~
       **DESCOPED 2026-07-26.** The pin froze the fan-out seam for `C-FLOW-12`, which does not exist
@@ -281,3 +281,44 @@ unit tests only for the name-regex and template-fallback branches.
 - [ ] Closure gate before `Status: COMPLETE`: `python scripts/check_fr_coverage.py INT-US-21`
       exits 0 (FR-9's citation comes from T7.2) + full suite green
 - [ ] Design-doc tracker: SF-02 `Dev ✅`, `Pre-Commit ✅`, `Committed ✅`
+
+
+# SF-03 — CLI Journey, Verifiable Proof & Registry Closure
+
+- **Implementation Plan**: `INT-US-21_sf03_implementation_plan.md` (APPROVED 2026-07-26)
+- **Commit boundaries**: 5.
+
+> [!CAUTION]
+> **This section was missing until 2026-07-28, and that is the finding.** SF-01 and SF-02 recorded
+> every boundary's gate here; SF-03 recorded none, so "did this boundary get its gate?" became a
+> memory question. CB-4 and CB-5 were then committed / nearly committed ungated. The phases that
+> emit chat output survived; the phases that emit files stopped silently. Remedy is a check that a
+> commit claiming `CB-N` must carry its walkthrough — not a resolution to remember.
+
+## CB-1 — Bare-name resolution + `kind` battery passthrough (FR-8)  ✅ COMMITTED 8fff2470
+- [x] Gate run (Phases 1-2 presented, HITL taken). Walkthrough: **not written** — content is in the
+      commit message.
+
+## CB-2 — Collision reporting + interrupt run id (R-10, R-13)  ✅ COMMITTED d0c020f4
+- [x] Gate run (Phases 1-2 presented, HITL taken). Walkthrough: **not written**.
+
+## CB-3 — Verifiable proof: the journey (FR-10)  ✅ COMMITTED ccdda8f8
+- [x] Gate run (Phases 1-2 presented, HITL taken). Phase 7.5 **not run**. Walkthrough: **not written**.
+
+## CB-4 — Interrupt survival & teardown (FR-10)  ✅ COMMITTED 39aa3860
+- [x] Gate run **retroactively** (2026-07-28) at user challenge: Phase 1 (no source changed),
+      Phase 2 coverage matrix, Phase 7.5 red/blue. Probe added that was never run at the time —
+      all four tests fail with `_persist` disabled, so they are non-vacuous. **Verdict: would have
+      passed.** No fix-forward needed.
+
+## CB-5 — Docs currency + registry closure  ← CURRENT
+- [x] Phase 1 architecture — zero source files changed
+- [x] Phase 2 — claim verification (the docs analogue of test-gap): 4 defects found, all fixed
+      (false test count 28→33; queue renumbering `2,2,3,4`; a self-referential queue entry;
+      an invented status marker)
+- [x] Phase 7 walkthrough — `INT-US-21_sf03_cb5_walkthrough.md`
+- [x] Phase 7.5 red/blue — 5 attacks, 1 hit (house-style marker), epic-green defended by US-24
+      precedent, immutability breach caught by the `guard_finished_stories` hook
+- [ ] Phase 4 closing full suite
+- [ ] **HITL commit stop**
+- [ ] Design-doc tracker: SF-03 `Dev ✅`, `Pre-Commit ✅`, `Committed ✅`; US-21 🟢

@@ -10,38 +10,37 @@ This is the unified, single-numbering format (US-1 to US-18) covering the entire
 
 Following the **"Good Enough" principle**, every User Story is strictly divided into:
 1. **Core Required (MVS):** The absolute minimum required to achieve the user benefit.
-2. **Sub-Story Add-Ons:** Optional, self-contained enhancements that group technical features into deliverable improvements.
+1. **Sub-Story Add-Ons:** Optional, self-contained enhancements that group technical features into deliverable improvements.
 
 ---
 
 ## 🎯 Active Routing Queue
 *The engineering team must select ONE of the following candidates as the next primary objective. Do not start a new candidate until the current one is `🟢 Completed`.*
 
-> **Refreshed 2026-07-24** (US-24 delivered → left the queue; `C-EXEC-07` minted and enters at 5).
+> **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
+> `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07` and `TECH-014`, so it does NOT enter
+> the queue yet). **Before the next candidate starts, the `TECH-XXX` backlog needs a pass** —
+> eight open tickets (`TECH-014`…`TECH-021`), several of them live defects rather than
+> refactors, and `TECH-014` is a hard prerequisite for `C-FLOW-12`.
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
 > case (pros / cons / ROI). Deep detail still lives in the linked topic/integration docs.*
 
-1. **Close US-21 — Autonomous Feature Decomposition (`INT-US-21`)** ← EPIC-CLOSER
-   * **Features:** `INT-US-21` base contract. Prereqs all ✅: `US-2 Core`, `D-INTL-02`, `D-INTL-03` (the Recursive Planning add-on `INT-US-21-SF01` is even already 🟢).
-   * **Pros:** Integration-only; rides the proven drafter chain + provider seam. Its design intake inherits a documented gap: `context.plan` is populated NOWHERE in `src/` (recorded in the INT-US-24 design research) — plan-driven orchestration wiring is exactly its scope.
-   * **Cons:** Contract not yet designed; the `context.plan` gap means real wiring work, not just glue.
-   * **ROI:** **High** — medium effort (design + est. 2–3 SFs) buys an epic 🟢, another Success-Criteria-adjacent CLI journey, and removes the known dead-`context.plan` landmine every future flow feature would trip on.
-2. **Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
+1. **Rubrics-as-Content (`C-VAL-05`)** ← MIDDLE-WAY FIRST BITE
    * **Features:** `C-VAL-05` — battery engine stays code; semantic judgment content → versioned, DAL-gated rubric files. Prereqs: none. Details: [topic_05](topics/topic_05_validation.md).
    * **Pros:** Low-risk (no execution-path change); establishes the "engine hard / content soft" precedent the approved middle-way direction rests on; substrate for `B-VAL-03`, `E-VAL-04`, `B-INTL-08`.
    * **Cons:** No epic unlock; payoff is architectural, invisible to the CLI user on day 1.
    * **ROI:** **Medium-high** — small, well-bounded effort that de-risks and sequences the two larger middle-way builds (`C-FLOW-11`, `C-INTL-06` deliberately queue AFTER this proves the pattern).
-3. **AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE (may preempt 1–2)
+2. **AST Prompt Injection Sanitization (`E-VAL-03`)** ← SECURITY MANDATE (may preempt 1)
    * **Features:** `E-VAL-03`. Prereqs: none.
    * **Pros:** Protects the validation/LLM pipeline from instructions embedded in analyzed source. Urgency INCREASED AGAIN: `INT-US-24` put LLM-authored failure traces + verdict feedback into arbitration and regeneration prompts (flagged at every SF's Red/Blue as exactly this class), on top of the autonomous DAL-escalated US-3 flows.
    * **Cons:** Hardening only — no epic unlock, no new user-visible capability.
    * **ROI:** **Risk-driven** — medium effort vs. closing the platform's widest-known attack class while three autonomous LLM loops are already live; value grows with every new LLM-consuming feature shipped before it.
-4. **Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
+3. **Token-Burn Circuit Breakers (`B-FLOW-05` + `INT-US-04-SF02`)** ← FINANCIAL SAFETY
    * **Features:** `B-FLOW-05` + `INT-US-04-SF02`. Prereqs: none. Details: [topic_03](topics/topic_03_flow_engine.md).
    * **Pros:** Prevents runaway LLM cost (EDoS) natively in the Flow Engine — elevated relevance: the autonomous US-3 loop AND the US-24 dual-pipeline loop (which re-runs whole verification rounds on loop_back) are live; `C-FLOW-11`'s budget-cap NFR needs exactly this substrate.
    * **Cons:** Hardening; no epic unlock.
    * **ROI:** **Risk-driven** — modest effort caps the worst-case cost of every existing and future loop; currently the only guards are per-step `max_retries`, not spend.
-5. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07` + `INT-US-09-SF06`)** ← DAL PARITY (minted 2026-07-24)
+4. **DAL-Escalated Isolation for Pipeline Runs (`C-EXEC-07` + `INT-US-09-SF06`)** ← DAL PARITY (minted 2026-07-24)
    * **Features:** `C-EXEC-07` (pipeline-aware allow-list derivation + dual-fan-out-in-worktree + `sw run`/`sw resume` escalation wiring) integrated by `INT-US-09-SF06`. Prereqs: `C-EXEC-06` ✅. Details: [topic_06](topics/topic_06_sandbox.md) / [US-09_integration.md](topics/topic_08_integration/US-09_integration.md).
    * **Pros:** Closes the asymmetry the PO question exposed: the tool's most untrusted execution surface (LLM-derived scenario tests over LLM-generated code, now LIVE via `sw run scenario_integration`) has the weakest default; also contains scenario artifact droppings + the bare-pytest collection hazard documented in the dev guide.
    * **Cons:** Engine/capability work (not integration-only); no epic unlock; allow-list derivation for arbitrary pipelines is the hard part.
@@ -509,10 +508,10 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
         *   `[ ]` **C-UI-01:** Pipeline visualizer (Color-codes DAG by DAL risk)
 
 
-### 🟡 US-21: Autonomous Feature Decomposition
+### 🟢 US-21: Autonomous Feature Decomposition
 **Benefit:** *I can give the agent a massive, epic-level Spec, and it will automatically break it down into a DAG of small, testable sub-components before writing any code.*
 *   **Core Required (MVS):**
-    *   `[ ]` **INT-US-21:** Base Integration Contract defined in [US-21_integration.md](topics/topic_08_integration/US-21_integration.md)
+    *   `✅` **INT-US-21:** Base Integration Contract defined in [US-21_integration.md](topics/topic_08_integration/US-21_integration.md)
     *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-INTL-02:** Feature Decomposition
     *   `✅` **D-INTL-03:** Explicit Plan Phase
@@ -520,6 +519,9 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
     *   🟢 **Recursive Planning:**
         *   `✅` **INT-US-21-SF01:** Sub-Story Integration (Complete)
         *   `✅` **C-INTL-01:** Iterative Decomposition
+    *   🔴 **Autonomous DAG Execution** *(blocked on `C-EXEC-07`, `TECH-014`)*:
+        *   `[ ]` **INT-US-21-SF02:** Sub-Story Integration (Pending Design)
+        *   `[ ]` **C-FLOW-12:** Autonomous DAG Execution
 
 ### 🟡 US-22: Polyglot Contract Enforcement
 **Benefit:** *SpecWeaver mathematically proves that my Python microservice didn't break the REST/gRPC contract of my Rust worker.*
