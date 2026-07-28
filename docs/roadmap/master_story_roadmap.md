@@ -708,8 +708,66 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-011:** [Load-Time Params Validation for All Pipeline Step Types](features/topic_07_technical_debt/TECH-011/TECH-011_design.md)
 
+### 🟢 TECH-012: Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)
+**Benefit:** *Multi-step untrusted loops actually run in isolation instead of crashing on step 2.*
+*   **Core Required (MVS):**
+    *   `✅` **TECH-012:** [Multi-Step Git-Worktree Isolation is Broken (Reconcile Never Commits; Crashes on Step 2)](features/topic_07_technical_debt/TECH-012/TECH-012_design.md)
+
 ### 🔴 TECH-013: API Composition Roots Do Not Resolve Worktree-Isolation Policy
 **Benefit:** *REST-triggered pipeline runs honor the operator's `[sandbox]` worktree-isolation policy.*
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-013:** [API Composition Roots Do Not Resolve Worktree-Isolation Policy](features/topic_07_technical_debt/TECH-013/TECH-013_design.md)
+
+### 🔴 TECH-014: Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)
+**Benefit:** *Lineage and telemetry from concurrent sub-runs are attributed to the sub-run that actually produced them.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-014:** [Fan-Out RunContext Isolation (Concurrent Sub-Run State Corruption)](features/topic_07_technical_debt/TECH-014/TECH-014_design.md)
+*   **Sequencing:** Live defect in shipped `C-FLOW-03` fan-out; should land before `C-FLOW-12`.
+
+### 🔴 TECH-015: Retire Grab-Bag Modules (Name-Says-Nothing Refactor)
+**Benefit:** *Every module is named for its contract, so the next addition has something to violate instead of somewhere to hide.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-015:** [Retire Grab-Bag Modules (Name-Says-Nothing Refactor)](features/topic_07_technical_debt/TECH-015/TECH-015_design.md)
+
+### 🔴 TECH-016: Unified Artifact Writer & Serialization Format Enforcement
+**Benefit:** *One artifact writer, and a check that makes it required — an enum field can no longer silently break a YAML writer.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-016:** [Unified Artifact Writer & Serialization Format Enforcement](features/topic_07_technical_debt/TECH-016/TECH-016_design.md)
+
+### 🔴 TECH-017: Integration-Contract Proof Audit (Test Tier Must Match Story Tier)
+**Benefit:** *Every `INT-US-NN` contract is proven by integration/e2e tests, and capability stories that shipped incomplete are named.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-017:** [Integration-Contract Proof Audit (Test Tier Must Match Story Tier)](features/topic_07_technical_debt/TECH-017/TECH-017_design.md)
+*   **Sequencing:** Ships a tier-ratio guardrail at *planning* time — precedes whatever candidate is planned next.
+
+### 🔜 TECH-018: Delivered Add-On Re-Validation Against an Integrated Base (INT-US-21-SUB / C-INTL-01)
+**Benefit:** *A delivered add-on's integration claim is re-checked against the base that now exists underneath it.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-018:** [Delivered Add-On Re-Validation Against an Integrated Base](features/topic_07_technical_debt/TECH-018/TECH-018_design.md)
+*   **Sequencing:** Audit-only; precondition (INT-US-21 SF-03 committed) met 2026-07-28. Findings become NEW stories.
+
+### 🔴 TECH-019: Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders
+**Benefit:** *Skill instructions cannot order the agent to read files that do not exist, and two phases cannot both mandate opposite formats.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-019:** [Skill Instruction Integrity — Dangling Doc References and Contradictory Gate Orders](features/topic_07_technical_debt/TECH-019/TECH-019_design.md)
+*   **Sequencing:** Six live instruction sites point at a file `TECH-008` deleted — land ahead of the next feature's *design* phase.
+
+### 🔴 TECH-020: Extract the Step-Execution Loop from PipelineRunner
+**Benefit:** *`runner.py` has headroom again, and `_execute_loop`'s complexity is fixed rather than suppressed.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-020:** [Extract the Step-Execution Loop from PipelineRunner](features/topic_07_technical_debt/TECH-020/TECH-020_design.md)
+*   **Sequencing:** File sits at exactly 600/600 RED; sequence before `C-FLOW-12`'s fan-out work. The `# noqa: C901` must be removed, not relocated.
+
+### 🟢 TECH-021: `loop_back` Discards the Failing Step's Result
+**Benefit:** *A human parked at a loop-back target can see which step failed and why, instead of an identical prompt every resume.*
+*   **Core Required (MVS):**
+    *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
+*   **Verifiable Proof:**
+    *   `tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py::TestE8ValidationFailureLoopsBack` — fixed `a003b164`.
+
+### 🔴 TECH-022: TECH Registry Split-Brain — Roadmap and Topic Doc Disagree on Seven Statuses
+**Benefit:** *One answer to "what is the state of this ticket", and a check that keeps the two registries from drifting again.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-022:** [TECH Registry Split-Brain — Roadmap and Topic Doc Disagree on Seven Statuses](features/topic_07_technical_debt/TECH-022/TECH-022_design.md)
+*   **Sequencing:** D1 (this section stopping at `TECH-013`) repaired 2026-07-28. D2 — seven contradictory statuses dating to `e73a58c9` — needs per-ID evidence, not a bulk flip.
 
