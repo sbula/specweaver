@@ -19,9 +19,12 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 > **Refreshed 2026-07-28** (US-21 delivered → left the queue; `C-FLOW-12` minted for the
 > `INT-US-21-SF02` add-on, sequenced behind `C-EXEC-07` and `TECH-014`, so it does NOT enter
-> the queue yet). **Before the next candidate starts, the `TECH-XXX` backlog needs a pass** —
-> eight open tickets (`TECH-014`…`TECH-021`), several of them live defects rather than
-> refactors, and `TECH-014` is a hard prerequisite for `C-FLOW-12`.
+> the queue yet). **This queue does not route technical debt, and the backlog now needs a pass —
+> 14 open tickets, not the eight this note previously claimed.** The earlier count was
+> `TECH-014`…`TECH-021`, i.e. only the ones INT-US-21 itself filed; `TECH-001`, `002`, `005`,
+> `009`, `010`, `011` and `013` predate it and have never been ranked here at all. `TECH-021` has
+> since been fixed (`a003b164`). Several are live defects rather than refactors, and four assert
+> sequencing claims against candidates below — see **Debt sequencing**.
 > *The queue is the decision surface: unlike story entries, each candidate carries the full routing
 > case (pros / cons / ROI). Deep detail still lives in the linked topic/integration docs.*
 
@@ -48,6 +51,25 @@ Following the **"Good Enough" principle**, every User Story is strictly divided 
 
 > **Reserve** (integration-only epic-closers; backfill as slots free): `US-16`, `US-22`, `US-23`.
 > **Not queue-eligible:** `US-17` (needs `B-VAL-04`), `US-19` (needs `C-FLOW-04`), `C-FLOW-11`/`C-INTL-06` (sequenced behind `C-VAL-05`), `TECH-013` (fold into next API-touching story).
+
+### 🔧 Debt Sequencing
+
+*No `TECH` ticket is a ranked candidate above — but four assert a sequencing claim on the
+candidates that are, so picking a candidate without reading this makes the choice blind. Claims
+are the tickets' own, restated; ranking them into the queue is a routing decision, not recorded
+here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
+
+| Ticket | Claim | Against |
+|---|---|---|
+| `TECH-019` 🔴 | Land **ahead of the next feature's design phase** — six live instruction sites order the agent to read a file `TECH-008` deleted, so every design / impl-plan / pre-commit run since has been told to load architecture that cannot load. | **Any** candidate — it degrades the process used to build it |
+| `TECH-017` 🔴 | Ships a tier-ratio guardrail at **planning** time; recording it as a review check did not stop the next day's plan being unit-only. | **Any** candidate's planning phase |
+| `TECH-014` 🔴 | Live fan-out `RunContext` race in shipped `C-FLOW-03`; should land **before** `C-FLOW-12`. | Candidate 4 (`C-EXEC-07`) → `C-FLOW-12` |
+| `TECH-020` 🔴 | `runner.py` at **exactly 600/600 RED**, `_execute_loop` 360 lines under `# noqa: C901`; sequence before `C-FLOW-12`'s fan-out work or that feature pays the tax. | Candidate 4 (`C-EXEC-07`) → `C-FLOW-12` |
+
+**Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
+SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
+**Pre-existing, never ranked:** `TECH-001` 🔜, `TECH-002` 🟡, `TECH-005` 🟡, `TECH-009` 🔜,
+`TECH-010` 🔜, `TECH-011` 🔜.
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
