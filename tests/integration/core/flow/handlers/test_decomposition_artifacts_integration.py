@@ -705,3 +705,88 @@ class TestCarriedForwardGaps:
         assert stubs["skipped"] == ["auth"]
         # The first description wins; the duplicate never overwrites it.
         assert "first" in _stub(tmp_path, "auth").read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# SF-03 CB-2 — R-10: a component name that collides with the feature spec
+# ---------------------------------------------------------------------------
+
+
+class TestFeatureSpecNameCollision:
+    """A component whose stub path IS the feature spec must not be reported as `skipped`.
+
+    `spec_path.with_name(f"{name}_spec.md")` for a component named `<feature>_feature` produces
+    `<feature>_feature_spec.md` — the feature spec itself. Never-overwrite protects the file, but
+    reporting it as `skipped` tells the user a component spec already exists where their own
+    feature spec sits, and no stub was produced. Different cause, different remedy: `rejected`
+    means fix the LLM output, `collided` means rename the component.
+    """
+
+    def _colliding_plan(self):
+        from specweaver.commons.enums.dal import DALLevel
+        from specweaver.workflows.planning.decomposition import ComponentChange, DecompositionPlan
+
+        def _c(name: str) -> ComponentChange:
+            return ComponentChange(
+                component=name,
+                exists=False,
+                change_nature="new_interface",
+                description=f"{name} does things.",
+                proposed_dal=DALLevel.DAL_B,
+                dependencies=[],
+                target_modules=[],
+                confidence=80,
+            )
+
+        # SPEC_STEM is "onboarding_feature_spec"; a component named "onboarding_feature"
+        # therefore targets "onboarding_feature_spec.md" — the feature spec.
+        return DecompositionPlan(
+            feature_spec=f"specs/{SPEC_STEM}.md",
+            components=[_c("onboarding_feature"), _c("auth")],
+            integration_seams=[],
+            build_sequence=["onboarding_feature", "auth"],
+            coverage_score=1.0,
+            alignment_notes=[],
+            timestamp="2026-07-27T00:00:00Z",
+        )
+
+    def test_collision_is_reported_distinctly_not_as_skipped(self, tmp_path: Path) -> None:
+        _scaffold_template(tmp_path)
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan())
+
+        stubs = run.step_records[0].result.output["component_specs"]
+        assert stubs["collided"] == ["onboarding_feature"]
+        assert "onboarding_feature" not in stubs["skipped"]
+        assert "onboarding_feature" not in stubs["created"]
+
+    def test_the_feature_spec_is_left_untouched(self, tmp_path: Path) -> None:
+        _scaffold_template(tmp_path)
+        ctx = _ctx(tmp_path)
+        before = ctx.spec_path.read_bytes()
+
+        _run(_pipeline(), ctx, StateStore(tmp_path / "s.db"), self._colliding_plan())
+
+        assert ctx.spec_path.read_bytes() == before
+
+    def test_other_components_are_unaffected(self, tmp_path: Path) -> None:
+        """One colliding name must not abort the rest of the batch."""
+        _scaffold_template(tmp_path)
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan())
+
+        stubs = run.step_records[0].result.output["component_specs"]
+        assert stubs["created"] == ["auth"]
+        assert _stub(tmp_path, "auth").is_file()
+
+    def test_the_report_always_carries_every_bucket(self, tmp_path: Path) -> None:
+        """A consumer reading `collided` must not have to guess whether the key exists."""
+        _scaffold_template(tmp_path)
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), _plan())
+
+        stubs = run.step_records[0].result.output["component_specs"]
+        assert set(stubs) == {"created", "skipped", "rejected", "failed", "collided"}
+
+    def test_the_summary_surfaces_the_collision(self, tmp_path: Path) -> None:
+        _scaffold_template(tmp_path)
+        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan())
+
+        assert "collided" in run.step_records[0].result.output["summary"]

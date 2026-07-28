@@ -79,6 +79,9 @@ class PipelineRunner:
         self._on_event = on_event
         self._gate_evaluator = GateEvaluator(pipeline, context)
 
+        # INT-US-21 SF-03 CB-2 (R-13) — see `current_run_id`.
+        self._current_run_id: str | None = None
+
         from specweaver.core.config.dal_resolver import DALResolver
         from specweaver.core.flow.engine.routers import RouterEvaluator
 
@@ -96,6 +99,17 @@ class PipelineRunner:
 
     def _setup_sandbox_caches(self, wt_dir: str) -> None:
         setup_sandbox_caches(self._context, wt_dir, logger)
+
+    @property
+    def current_run_id(self) -> str | None:
+        """Id of the run in progress (or the last one); None before any run starts.
+
+        ``run()`` builds its ``PipelineRun`` as a local, so an interrupt took the id down with the
+        frame and the CLI could only print ``sw run --resume`` with nothing to resume. The
+        ``finally:`` block already persists the run, so the id IS resumable — it just was not
+        reachable. Survives an exception escaping ``run()``/``resume()``, which is the whole point.
+        """
+        return self._current_run_id
 
     async def run(self, parent_run_id: str | None = None) -> PipelineRun:
         """Execute the pipeline from the beginning.
@@ -129,6 +143,7 @@ class PipelineRunner:
             self._context.project_path.name,
             self._context.spec_path.name,
         )
+        self._current_run_id = run.run_id
 
         from specweaver.core.config.database import cqrs_context
 
@@ -158,6 +173,7 @@ class PipelineRunner:
             logger.error(msg)
             raise ValueError(msg)
 
+        self._current_run_id = run_id
         verify_vault_security(self._context)
 
         run = self._store.load_run(run_id)

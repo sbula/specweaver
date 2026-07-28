@@ -11,15 +11,23 @@ resume-time rehydration (CB-3) so the two can never drift apart.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TYPE_CHECKING
 
 import pytest
 
 from specweaver.core.flow.engine.hydration import hydrate_plan_context
-from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+from specweaver.core.flow.engine.models import (
+    PipelineDefinition,
+    PipelineStep,
+    StepAction,
+    StepTarget,
+)
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.store import StateStore
 from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -35,6 +43,22 @@ def _result(status: StepStatus = StepStatus.PASSED, **output) -> StepResult:
 
 def _ctx(tmp_path: Path) -> RunContext:
     return RunContext(project_path=tmp_path, spec_path=tmp_path / "greeter_spec.md")
+
+
+def _pipeline_with(action: StepAction, target: StepTarget) -> PipelineDefinition:
+    return PipelineDefinition(name="p", steps=[_step(action, target, "only")])
+
+
+class _PassHandler:
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        return StepResult(status=StepStatus.PASSED, output={}, started_at="1", completed_at="2")
+
+
+class _InterruptingHandler:
+    """Stands in for a user pressing Ctrl-C mid-step."""
+
+    async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
+        raise KeyboardInterrupt
 
 
 DECOMPOSE_STEP = _step(StepAction.DECOMPOSE, StepTarget.FEATURE, "decompose")
@@ -481,3 +505,121 @@ class TestHydrationWiredIntoTheLoop:
 
         assert ctx.decomposition is not None
         assert json.loads(ctx.decomposition)["components"][0]["name"] == "auth"
+
+
+# ---------------------------------------------------------------------------
+# SF-03 CB-2 — R-13: the run id must be reachable after an interrupt
+# ---------------------------------------------------------------------------
+
+
+class TestCurrentRunIdAccessor:
+    """`PipelineRunner.run()` creates the run as a LOCAL, so an interrupt loses the id.
+
+    The CLI's `except KeyboardInterrupt` printed `sw run --resume` with no id — an instruction a
+    user cannot follow — because `_execute_run` had already raised by the time it ran, and the id
+    lived only inside the runner's frame. The runner's `finally:` block DOES persist the run, so
+    the id is genuinely resumable; it just was not reachable.
+    """
+
+    def test_is_none_before_a_run_starts(self, tmp_path: Path) -> None:
+        from specweaver.core.flow.engine.runner import PipelineRunner
+
+        runner = PipelineRunner(
+            _pipeline_with(StepAction.DECOMPOSE, StepTarget.FEATURE),
+            _ctx(tmp_path),
+            registry=StepHandlerRegistry(),
+            store=StateStore(tmp_path / "s.db"),
+        )
+
+        assert runner.current_run_id is None
+
+    def test_is_set_once_the_run_has_started(self, tmp_path: Path) -> None:
+        from specweaver.core.flow.engine.runner import PipelineRunner
+
+        registry = StepHandlerRegistry()
+        registry.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _PassHandler())
+        runner = PipelineRunner(
+            _pipeline_with(StepAction.DECOMPOSE, StepTarget.FEATURE),
+            _ctx(tmp_path),
+            registry=registry,
+            store=StateStore(tmp_path / "s.db"),
+        )
+
+        run = asyncio.run(runner.run())
+
+        assert runner.current_run_id == run.run_id
+
+    def test_survives_an_interrupt_so_the_id_can_be_reported(self, tmp_path: Path) -> None:
+        """The whole point: after KeyboardInterrupt the caller can still name the run."""
+        from specweaver.core.flow.engine.runner import PipelineRunner
+
+        registry = StepHandlerRegistry()
+        registry.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _InterruptingHandler())
+        runner = PipelineRunner(
+            _pipeline_with(StepAction.DECOMPOSE, StepTarget.FEATURE),
+            _ctx(tmp_path),
+            registry=registry,
+            store=StateStore(tmp_path / "s.db"),
+        )
+
+        with pytest.raises(KeyboardInterrupt):
+            asyncio.run(runner.run())
+
+        assert runner.current_run_id, "the id was lost with the runner's frame"
+
+    def test_the_interrupted_run_is_actually_loadable_by_that_id(self, tmp_path: Path) -> None:
+        """An id a user cannot resume is no better than no id."""
+        from specweaver.core.flow.engine.runner import PipelineRunner
+
+        store = StateStore(tmp_path / "s.db")
+        registry = StepHandlerRegistry()
+        registry.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _InterruptingHandler())
+        runner = PipelineRunner(
+            _pipeline_with(StepAction.DECOMPOSE, StepTarget.FEATURE),
+            _ctx(tmp_path),
+            registry=registry,
+            store=store,
+        )
+
+        with pytest.raises(KeyboardInterrupt):
+            asyncio.run(runner.run())
+
+        assert store.load_run(runner.current_run_id) is not None
+
+    def test_resume_reports_the_requested_id_even_when_it_does_not_exist(
+        self, tmp_path: Path
+    ) -> None:
+        """`resume()` takes the id on trust, so a bad id is echoed back before the lookup fails.
+
+        Harmless — the store lookup raises loudly a moment later, and reporting the id the user
+        actually typed is more useful than reporting None. Pinned so the behaviour is a decision
+        rather than an accident.
+        """
+        from specweaver.core.flow.engine.runner import PipelineRunner
+
+        runner = PipelineRunner(
+            _pipeline_with(StepAction.DECOMPOSE, StepTarget.FEATURE),
+            _ctx(tmp_path),
+            registry=StepHandlerRegistry(),
+            store=StateStore(tmp_path / "s.db"),
+        )
+
+        with pytest.raises(ValueError, match=r"Run 'no-such-run-id' not found"):
+            asyncio.run(runner.resume("no-such-run-id"))
+
+        assert runner.current_run_id == "no-such-run-id"
+
+    def test_resume_without_a_store_leaves_the_id_unset(self, tmp_path: Path) -> None:
+        """The store guard runs first, so a misconfigured runner never claims a run."""
+        from specweaver.core.flow.engine.runner import PipelineRunner
+
+        runner = PipelineRunner(
+            _pipeline_with(StepAction.DECOMPOSE, StepTarget.FEATURE),
+            _ctx(tmp_path),
+            registry=StepHandlerRegistry(),
+        )
+
+        with pytest.raises(ValueError, match="no store configured"):
+            asyncio.run(runner.resume("anything"))
+
+        assert runner.current_run_id is None

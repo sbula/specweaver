@@ -99,6 +99,25 @@ def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> No
         )
 
 
+def _print_resume_hint(run_id: str | None) -> None:
+    """Tell the user how to resume, naming the run when it is known.
+
+    One wording, matching the park message in `engine/display.py`. Two different instructions --
+    `sw resume <id>` and `sw run --resume <id>` -- both shipped and disagreed; SF-03 plan Q1 settles
+    on the form the park message prints, because that is what a user sees most.
+    """
+    if run_id:
+        _core.console.print(
+            "\n[yellow]Interrupted.[/yellow] [dim]Run state saved. "
+            f"Resume with:[/dim] sw run --resume {run_id}",
+        )
+        return
+    _core.console.print(
+        "\n[yellow]Interrupted.[/yellow] [dim]Run state saved. "
+        "Find the run with `sw runs` and resume with: sw run --resume <run_id>[/dim]",
+    )
+
+
 def _create_display(
     *,
     use_json: bool = False,
@@ -201,10 +220,12 @@ def run_pipeline(
             selector=selector,
         )
     except KeyboardInterrupt:
-        _core.console.print(
-            "\n[yellow]Interrupted.[/yellow] "
-            "[dim]Run state saved. Resume with: sw run --resume[/dim]",
-        )
+        # Fallback only. `_execute_run` handles the interrupt where `runner.current_run_id` is
+        # reachable and exits 130 itself, so this fires only for an interrupt BEFORE the run exists
+        # (argument resolution, pipeline loading). There is no id to give then — and no run to
+        # resume — so it points at how to find one instead of printing the unfollowable
+        # "Resume with: sw run --resume" that used to be here.
+        _print_resume_hint(None)
         raise typer.Exit(code=130) from None
     except typer.Exit:
         # INT-US-02 SF-02 (inherited fix): intentional exits (e.g. PARKED -> Exit(code=0),
@@ -364,6 +385,14 @@ def _execute_run(  # noqa: C901
         else:
             # Fresh run
             final_run = asyncio.run(runner.run())
+    except KeyboardInterrupt:
+        # INT-US-21 SF-03 CB-2 (R-13): handled HERE, not in the caller's `except KeyboardInterrupt`.
+        # By the time the caller sees it, `_execute_run` has already raised and the run id is gone
+        # with the frame -- which is why the message used to say `sw run --resume` with nothing to
+        # resume. The runner's own `finally:` has already saved handover, so the id is real.
+        display.stop()
+        _print_resume_hint(runner.current_run_id)
+        raise typer.Exit(code=130) from None
     except Exception:
         display.stop()
         raise

@@ -507,7 +507,13 @@ class TestStubReportEdgeCases:
         from specweaver.core.flow.handlers.decomposition_artifacts import write_component_stubs
 
         report = write_component_stubs({}, MagicMock(), "feat")
-        assert report == {"created": [], "skipped": [], "rejected": [], "failed": []}
+        assert report == {
+            "created": [],
+            "skipped": [],
+            "rejected": [],
+            "failed": [],
+            "collided": [],
+        }
 
 
 class TestDalSummaryFormatting:

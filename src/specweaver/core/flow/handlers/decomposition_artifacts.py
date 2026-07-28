@@ -177,8 +177,15 @@ def write_component_stubs(
 ) -> dict[str, list[str]]:
     """Write ``<component>_spec.md`` beside the feature spec (D7), never overwriting.
 
-    Returns a report with four disjoint lists — ``created``, ``skipped`` (already existed),
-    ``rejected`` (name failed :data:`COMPONENT_NAME_PATTERN`) and ``failed`` (write error).
+    Returns a report with five disjoint lists — ``created``, ``skipped`` (a component spec already
+    existed), ``rejected`` (name failed :data:`COMPONENT_NAME_PATTERN`), ``failed`` (write error)
+    and ``collided`` (the stub path IS the feature spec).
+
+    ``collided`` is separate from ``skipped`` on purpose: both leave a file untouched, but the
+    remedy differs. ``skipped`` means a component spec is already authored — nothing to do.
+    ``collided`` means the LLM named a component ``<feature>_feature``, whose stub path resolves to
+    the feature spec itself, so the user must rename the component. Folding it into ``skipped``
+    claimed a component spec existed where their own feature spec sat.
 
     **A stub problem never fails the step.** By the time this runs the decomposition has been paid
     for with an LLM call and the artifact is durably on disk; discarding that because one component
@@ -189,7 +196,13 @@ def write_component_stubs(
     """
     from jinja2 import Template  # D3: an existing project dep, not a context.yaml module edge
 
-    report: dict[str, list[str]] = {"created": [], "skipped": [], "rejected": [], "failed": []}
+    report: dict[str, list[str]] = {
+        "created": [],
+        "skipped": [],
+        "rejected": [],
+        "failed": [],
+        "collided": [],
+    }
     components = dumped.get("components") or []
     if not components:
         return report
@@ -209,6 +222,23 @@ def write_component_stubs(
             continue
 
         target = context.spec_path.with_name(f"{name}_spec.md")
+
+        # Checked BEFORE is_file(), because the feature spec IS a file and would otherwise be
+        # reported as `skipped` — telling the user a component spec exists where their own feature
+        # spec sits. A component named `<feature>_feature` targets `<feature>_feature_spec.md`.
+        # Distinct bucket because the remedy differs: `rejected` means fix the LLM output,
+        # `collided` means rename the component.
+        if target == context.spec_path:
+            logger.warning(
+                "[run_id=%s] Component '%s' would overwrite the feature spec itself (%s) — "
+                "skipping; rename the component",
+                getattr(context, "run_id", None),
+                name,
+                target.name,
+            )
+            report["collided"].append(name)
+            continue
+
         # is_file(), not exists(): a directory sitting at the stub path is an obstruction, not a
         # spec to preserve. exists() would label it "skipped" — reporting a user file that is not
         # there. Matches DraftSpecHandler's exists-skip, which is also is_file().
@@ -239,12 +269,13 @@ def write_component_stubs(
         report["created"].append(name)
 
     logger.info(
-        "[run_id=%s] Component specs: %d created, %d skipped, %d rejected, %d failed",
+        "[run_id=%s] Component specs: %d created, %d skipped, %d rejected, %d failed, %d collided",
         getattr(context, "run_id", None),
         len(report["created"]),
         len(report["skipped"]),
         len(report["rejected"]),
         len(report["failed"]),
+        len(report["collided"]),
     )
     return report
 
