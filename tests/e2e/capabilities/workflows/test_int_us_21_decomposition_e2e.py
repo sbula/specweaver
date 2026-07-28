@@ -604,3 +604,143 @@ class TestE8ValidationFailureLoopsBack:
         rules = validate.result.output.get("results", [])
         failed = [r["rule_id"] for r in rules if str(r["status"]).lower() == "fail"]
         assert failed, f"validation passed a spec measured to fail: {rules}"
+
+
+# --------------------------------------------------------------------------- #
+# CB-4 — teardown and interrupt survival (E12-E14)                              #
+# --------------------------------------------------------------------------- #
+
+
+class _InterruptingDecompose:
+    """Stands in for a user pressing Ctrl-C while the decomposer is working."""
+
+    async def execute(self, step, context):
+        raise KeyboardInterrupt
+
+
+class TestE12InterruptSurvival:
+    """What survives a Ctrl-C, and what a user can do next.
+
+    Scope stated honestly, because a probe corrected the first version of this docstring:
+    disabling BOTH `_save_handover` and `_flush_telemetry` in the runner's `finally:` leaves every
+    test in this class green. The run survives because the store persists after each step, not
+    because of the teardown block — so these tests prove **resumability**, and say nothing about
+    whether handover context or telemetry actually flush. That remains unproven, which is what
+    `TECH-017` already records about graceful shutdown repo-wide.
+
+    What IS proven: the interrupted run is persisted, loadable, structurally intact, resumable to
+    completion, and leaves no half-written artifact — and the message names an id that really loads.
+
+    Written in-process rather than by delivering a real SIGINT. Python surfaces SIGINT AS
+    `KeyboardInterrupt`, so this exercises the same handler chain, the same `finally:`, and the
+    same CLI branch — on every platform. The one thing it does not cover is OS-level signal
+    delivery. That distinction is stated rather than hidden behind a blanket
+    `pytest.skip("...Windows...")`, which is why the repo's only other SIGINT test has never run
+    here.
+    """
+
+    def test_the_run_survives_the_interrupt_and_is_resumable(
+        self, project: Path, data_dir: Path
+    ) -> None:
+        from specweaver.core.flow.engine.state import RunStatus
+
+        with scripted_world(ScriptedLLM([_plan_json()])):
+            _start(project)
+            run_id = _latest(data_dir).run_id
+
+            with patch(
+                "specweaver.core.flow.handlers.decompose.DecomposeFeatureHandler.execute",
+                new=_InterruptingDecompose.execute,
+            ):
+                interrupted = _resume(project, run_id)
+
+            assert interrupted.exit_code == 130, interrupted.output
+
+            after_interrupt = _store(data_dir).load_run(run_id)
+            assert after_interrupt is not None, "the interrupted run was not persisted at all"
+
+            # The real point: the journey can still be finished afterwards. It costs one extra
+            # cycle, correctly — the interrupted decompose never reached its review gate, so
+            # resuming re-runs it and THEN parks for the approval the human never gave.
+            _resume(project, run_id)
+            assert _store(data_dir).load_run(run_id).status == RunStatus.PARKED
+
+            _resume(project, run_id)
+            final = _store(data_dir).load_run(run_id)
+
+        assert final.status == RunStatus.COMPLETED
+        assert _artifact(project).is_file()
+
+    def test_the_interrupt_names_a_run_the_user_can_actually_resume(
+        self, project: Path, data_dir: Path
+    ) -> None:
+        """E13 — the hint is only useful if the id it prints really loads."""
+        import re
+
+        with scripted_world(ScriptedLLM([_plan_json()])):
+            _start(project)
+            run_id = _latest(data_dir).run_id
+
+            with patch(
+                "specweaver.core.flow.handlers.decompose.DecomposeFeatureHandler.execute",
+                new=_InterruptingDecompose.execute,
+            ):
+                result = _resume(project, run_id)
+
+        flattened = re.sub(r"\s+", " ", result.output)
+        match = re.search(r"--resume ([0-9a-f-]{36})", flattened)
+
+        assert match, f"no resumable run id in the interrupt message: {flattened}"
+        assert _store(data_dir).load_run(match.group(1)) is not None, (
+            "the printed id does not load"
+        )
+
+    def test_no_half_written_artifact_survives_the_interrupt(
+        self, project: Path, data_dir: Path
+    ) -> None:
+        """E14 — the decomposition is either absent or complete, never truncated."""
+        from ruamel.yaml import YAML
+
+        with scripted_world(ScriptedLLM([_plan_json()])):
+            _start(project)
+            run_id = _latest(data_dir).run_id
+
+            with patch(
+                "specweaver.core.flow.handlers.decompose.DecomposeFeatureHandler.execute",
+                new=_InterruptingDecompose.execute,
+            ):
+                _resume(project, run_id)
+
+            assert not _artifact(project).exists(), "an artifact appeared for a step that never ran"
+
+            _resume(project, run_id)
+
+        loaded = YAML(typ="safe").load(_artifact(project).read_text(encoding="utf-8"))
+        assert [c["component"] for c in loaded["components"]] == ["auth", "billing"]
+
+    def test_the_interrupt_does_not_leave_the_run_unloadable(
+        self, project: Path, data_dir: Path
+    ) -> None:
+        """Handover runs in a `finally:`, so the persisted record must stay readable.
+
+        A run that cannot be deserialised after an interrupt would be worse than one that was
+        never saved: the CLI would offer it for resume and then fail on load.
+        """
+        with scripted_world(ScriptedLLM([_plan_json()])):
+            _start(project)
+            run_id = _latest(data_dir).run_id
+
+            with patch(
+                "specweaver.core.flow.handlers.decompose.DecomposeFeatureHandler.execute",
+                new=_InterruptingDecompose.execute,
+            ):
+                _resume(project, run_id)
+
+            run = _store(data_dir).load_run(run_id)
+
+        assert run is not None
+        assert [r.step_name for r in run.step_records] == [
+            "draft_feature",
+            "validate_feature",
+            "decompose",
+        ]
