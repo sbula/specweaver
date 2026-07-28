@@ -16,6 +16,7 @@ from specweaver.assurance.graph.loader import load_topology, select_topology_con
 from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.interfaces.resume_policy import guard_resumable, print_resume_hint
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
@@ -97,25 +98,6 @@ def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> No
         _core.console.print(
             "[yellow]Warning:[/yellow] No LLM configured. LLM-dependent steps will fail.",
         )
-
-
-def _print_resume_hint(run_id: str | None) -> None:
-    """Tell the user how to resume, naming the run when it is known.
-
-    One wording, matching the park message in `engine/display.py`. Two different instructions --
-    `sw resume <id>` and `sw run --resume <id>` -- both shipped and disagreed; SF-03 plan Q1 settles
-    on the form the park message prints, because that is what a user sees most.
-    """
-    if run_id:
-        _core.console.print(
-            "\n[yellow]Interrupted.[/yellow] [dim]Run state saved. "
-            f"Resume with:[/dim] sw run --resume {run_id}",
-        )
-        return
-    _core.console.print(
-        "\n[yellow]Interrupted.[/yellow] [dim]Run state saved. "
-        "Find the run with `sw runs` and resume with: sw run --resume <run_id>[/dim]",
-    )
 
 
 def _create_display(
@@ -225,7 +207,7 @@ def run_pipeline(
         # (argument resolution, pipeline loading). There is no id to give then — and no run to
         # resume — so it points at how to find one instead of printing the unfollowable
         # "Resume with: sw run --resume" that used to be here.
-        _print_resume_hint(None)
+        print_resume_hint(None)
         raise typer.Exit(code=130) from None
     except typer.Exit:
         # INT-US-02 SF-02 (inherited fix): intentional exits (e.g. PARKED -> Exit(code=0),
@@ -374,6 +356,9 @@ def _execute_run(  # noqa: C901
         on_event=display,
     )
 
+    if resume_id is not None:
+        guard_resumable(store, resume_id)
+
     # Initialize display
     step_info = [(step.name, step.description or "") for step in pipeline_def.steps]
     display.start(pipeline_def.name, step_info)
@@ -391,7 +376,7 @@ def _execute_run(  # noqa: C901
         # with the frame -- which is why the message used to say `sw run --resume` with nothing to
         # resume. The runner's own `finally:` has already saved handover, so the id is real.
         display.stop()
-        _print_resume_hint(runner.current_run_id)
+        print_resume_hint(runner.current_run_id)
         raise typer.Exit(code=130) from None
     except Exception:
         display.stop()

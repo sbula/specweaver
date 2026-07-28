@@ -108,10 +108,10 @@ class TestEveryResumeHintNamesARun:
         import inspect
 
         from specweaver.core.flow.engine import display
-        from specweaver.core.flow.interfaces import cli
+        from specweaver.core.flow.interfaces import cli, resume_policy
 
         offenders: list[str] = []
-        for module in (display, cli):
+        for module in (display, cli, resume_policy):
             tree = ast.parse(inspect.getsource(module))
 
             # Adjacent literals concatenate, so an f-string's plain fragments appear as Constant
@@ -123,6 +123,19 @@ class TestEveryResumeHintNamesARun:
                 for node in ast.walk(tree)
                 if isinstance(node, ast.JoinedStr)
                 for v in node.values
+            }
+
+            # Docstrings are Constant nodes too, and they legitimately QUOTE the broken message
+            # while explaining it. The AST drops comments but not docstrings, so exclude them
+            # explicitly — documentation is not something a user is ever shown.
+            docstrings = {
+                id(node.body[0].value)
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Module | ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef)
+                and node.body
+                and isinstance(node.body[0], ast.Expr)
+                and isinstance(node.body[0].value, ast.Constant)
+                and isinstance(node.body[0].value.value, str)
             }
 
             for node in ast.walk(tree):
@@ -139,6 +152,7 @@ class TestEveryResumeHintNamesARun:
                     isinstance(node, ast.Constant)
                     and isinstance(node.value, str)
                     and id(node) not in inside_fstring
+                    and id(node) not in docstrings
                     and "Resume with" in node.value
                     and "<run_id>" not in node.value
                 ):
@@ -167,13 +181,13 @@ class TestTheTwoHintBranchesDiffer:
 
         from rich.console import Console
 
-        from specweaver.core.flow.interfaces import cli
+        from specweaver.core.flow.interfaces import resume_policy
         from specweaver.interfaces.cli import _core
 
         buffer = io.StringIO()
         original, _core.console = _core.console, Console(file=buffer, width=200)
         try:
-            cli._print_resume_hint(run_id)
+            resume_policy.print_resume_hint(run_id)
         finally:
             _core.console = original
         return re.sub(r"\s+", " ", buffer.getvalue()).strip()
