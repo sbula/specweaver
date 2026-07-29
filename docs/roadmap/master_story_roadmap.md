@@ -764,10 +764,3 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py::TestE8ValidationFailureLoopsBack` — fixed `a003b164`.
-
-### 🔴 TECH-022: TECH Registry Split-Brain — Roadmap and Topic Doc Disagree on Seven Statuses
-**Benefit:** *One answer to "what is the state of this ticket", and a check that keeps the two registries from drifting again.*
-*   **Core Required (MVS):**
-    *   `[ ]` **TECH-022:** [TECH Registry Split-Brain — Roadmap and Topic Doc Disagree on Seven Statuses](features/topic_07_technical_debt/TECH-022/TECH-022_design.md)
-*   **Sequencing:** D1 (this section stopping at `TECH-013`) repaired 2026-07-28. D2 — seven contradictory statuses dating to `e73a58c9` — needs per-ID evidence, not a bulk flip.
-
