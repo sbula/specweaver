@@ -1,11 +1,12 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 from __future__ import annotations
 
 import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-
-import anyio
 
 from specweaver.core.config.settings import (
     DALImpactMatrix,
@@ -36,20 +37,13 @@ logger = logging.getLogger(__name__)
 
 
 def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
-    import asyncio
+    """Run an already-created coroutine from sync code.
 
-    import nest_asyncio  # type: ignore
+    Never re-enters a running loop — see `commons.async_bridge`.
+    """
+    from specweaver.commons.async_bridge import run_sync
 
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        nest_asyncio.apply(loop)
-        return loop.run_until_complete(coro)
-
-    return anyio.run(lambda: coro)
+    return run_sync(lambda: coro)
 
 
 def _load_toml_standards(root_path: str | None) -> StandardsSettings:

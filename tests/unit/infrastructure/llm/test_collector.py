@@ -232,6 +232,95 @@ class TestCollectorFlush:
             assert count == 1
 
 
+class TestFlushFromARunningLoop:
+    """The sync `flush()` must never re-enter the caller's event loop.
+
+    `flush()` used to call `nest_asyncio.apply(loop)` and then `loop.run_until_complete()` on the
+    ALREADY-RUNNING loop. The re-entrant run drains the loop's `_ready` deque while the outer
+    `_run_once` is midway through `for i in range(ntodo): self._ready.popleft()`, so the outer
+    loop then pops from an empty deque and dies with `IndexError`.
+
+    Two things made it expensive to find. The damage lands on the OUTER loop, so `flush()`'s own
+    "never raises" handler could not catch it. And whether it fires depends on what else happens
+    to be scheduled — `test_telemetry_roundtrip` passed when the whole integration tier ran and
+    failed when its file ran alone, which reads like flakiness rather than a defect.
+
+    This is not test-only: `PipelineRunner._flush_telemetry()` is called from the `finally` of
+    `async def run()` and `async def resume()`, so every `sw run` took the same path.
+    """
+
+    def test_the_collector_does_not_import_nest_asyncio(self):
+        """Asserted at module level on purpose, not by observing one call.
+
+        `nest_asyncio.apply` patches the loop CLASS and leaves it patched for the whole process,
+        so a before/after comparison inside one test passes spuriously as soon as any earlier
+        test has already triggered it. The only order-independent statement is that this module
+        does not reach for the library at all.
+        """
+        from specweaver.infrastructure.llm import collector as collector_module
+
+        assert not hasattr(collector_module, "nest_asyncio")
+
+    @pytest.mark.asyncio
+    async def test_the_loop_still_works_afterwards(self):
+        """The symptom was the OUTER loop dying later, not flush() raising."""
+        import asyncio
+
+        collector = TelemetryCollector(FakeAdapter(), project="proj")
+        await collector.generate([], GenerationConfig(model="m"))
+
+        mock_db = MagicMock()
+        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
+
+        from unittest.mock import AsyncMock, patch
+
+        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
+            mock_repo_cls.return_value.log_usage = AsyncMock()
+            collector.flush(mock_db)
+
+        results = await asyncio.gather(*(asyncio.sleep(0, result=i) for i in range(25)))
+
+        assert results == list(range(25))
+
+    @pytest.mark.asyncio
+    async def test_records_are_still_persisted_and_cleared(self):
+        """Fixing the loop damage must not quietly stop the flush from working."""
+        collector = TelemetryCollector(FakeAdapter(), project="proj")
+        await collector.generate([], GenerationConfig(model="m"))
+        await collector.generate([], GenerationConfig(model="m"))
+
+        mock_db = MagicMock()
+        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
+
+        from unittest.mock import AsyncMock, patch
+
+        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
+            mock_repo_cls.return_value.log_usage = AsyncMock()
+            count = collector.flush(mock_db)
+
+        assert count == 2
+        assert len(collector.records) == 0
+
+    def test_flush_still_works_with_no_loop_running(self):
+        """The plain synchronous path must keep working for genuinely sync callers."""
+        import asyncio
+
+        collector = TelemetryCollector(FakeAdapter(), project="proj")
+        asyncio.run(collector.generate([], GenerationConfig(model="m")))
+
+        mock_db = MagicMock()
+        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
+
+        from unittest.mock import AsyncMock, patch
+
+        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
+            mock_repo_cls.return_value.log_usage = AsyncMock()
+            count = collector.flush(mock_db)
+
+        assert count == 1
+        assert len(collector.records) == 0
+
+
 class TestCollectorDelegation:
     """Test that non-generation methods delegate correctly."""
 

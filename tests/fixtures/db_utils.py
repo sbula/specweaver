@@ -1,15 +1,16 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Database utilities for tests to replace monolithic Database methods."""
 
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING
 
-import anyio
-import nest_asyncio
 from sqlalchemy import delete, select
 
+from specweaver.commons.async_bridge import run_sync
 from specweaver.infrastructure.llm.store import LlmProfile, LlmRepository, ProjectLlmLink
 from specweaver.workspace.store import WorkspaceRepository
 
@@ -18,15 +19,12 @@ if TYPE_CHECKING:
 
 
 def _sync_or_async(coro):
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
+    """Run a coroutine from a sync test helper without re-entering a running loop.
 
-    if loop and loop.is_running():
-        nest_asyncio.apply(loop)
-        return loop.run_until_complete(coro)
-    return anyio.run(lambda: coro)
+    This used to apply `nest_asyncio` to the caller's loop, which is what made
+    `test_telemetry_roundtrip` fail when its file ran alone and pass when the whole tier ran.
+    """
+    return run_sync(lambda: coro)
 
 
 def register_test_project(db: Database, name: str, root_path: str) -> None:

@@ -69,8 +69,19 @@ tasks:
     assert "AST Drift Detected" in result.stdout
     assert "expected_func" in result.stdout
 
-    # Performance bound strictly < 5000ms (we allow up to 5s for interpreter startup in e2e on Windows, 50ms is just the AST subset constraint)
-    assert duration_ms < 5000
+    # Hang detector, NOT a performance bound.
+    #
+    # This used to assert < 5000ms and failed under parallel execution at 5571ms with every
+    # functional assertion green. The number never measured what its comment claimed: the stated
+    # constraint is ~50ms for the AST subset, but this spawns a fresh interpreter and measures
+    # startup plus whatever else the machine is doing — so the bound was padded 100x to hide
+    # that, which only moved the flake rather than removing it. A wall-clock budget shared with
+    # 15 other pytest workers is not a property of this code.
+    #
+    # If the 50ms AST constraint is worth enforcing, it needs its own in-process benchmark that
+    # times the AST pass instead of a subprocess launch. This bound now only catches a genuine
+    # hang.
+    assert duration_ms < 120_000
 
 
 def test_git_hook_safe_skip_on_deleted_staged_files(tmp_path: Path) -> None:

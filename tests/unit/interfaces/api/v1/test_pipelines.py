@@ -129,21 +129,15 @@ def _get_cost_overrides_sync(db) -> dict:
     return anyio.run(_do)
 
 
-import asyncio  # noqa: E402
+from specweaver.commons.async_bridge import run_sync  # noqa: E402
 
 
 def _sync_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
+    """Run a coroutine from a sync test helper without re-entering a running loop.
 
-            nest_asyncio.apply(loop)
-            return loop.run_until_complete(coro)
-        else:
-            return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
+    Previously applied `nest_asyncio` to the caller's loop. See `commons.async_bridge`.
+    """
+    return run_sync(lambda: coro)
 
 
 def _set_domain_profile_sync(db, project: str, profile: str) -> None:
@@ -224,7 +218,6 @@ def _get_cost_overrides_sync(db) -> dict:
             return await repo.get_cost_overrides()
 
     return _sync_run(_do())
-
 
 
 def _simple_pipeline():

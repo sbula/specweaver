@@ -89,23 +89,15 @@ from greet_service import greet
 
 import asyncio  # noqa: E402
 
+from specweaver.commons.async_bridge import run_sync  # noqa: E402
+
+
 def _sync_run(coro):
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
+    """Run a coroutine from a sync test helper without re-entering a running loop.
 
-    if loop and loop.is_running():
-        import nest_asyncio
-        nest_asyncio.apply(loop)
-        return loop.run_until_complete(coro)
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+    Previously applied `nest_asyncio` to the caller's loop. See `commons.async_bridge`.
+    """
+    return run_sync(lambda: coro)
 
 def _set_constitution_max_size_sync(db, project: str, size: int) -> None:
     from specweaver.workspace.store import WorkspaceRepository

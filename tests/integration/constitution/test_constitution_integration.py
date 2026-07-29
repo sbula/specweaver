@@ -31,30 +31,18 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest
-import asyncio
 
+from specweaver.commons.async_bridge import run_sync
 from specweaver.core.config.db_bootstrap import bootstrap_database
 from tests.fixtures.db_utils import register_test_project
 
 
 def _sync_run(coro):
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
+    """Run a coroutine from a sync test helper without re-entering a running loop.
 
-    if loop and loop.is_running():
-        import nest_asyncio
-
-        nest_asyncio.apply(loop)
-        return loop.run_until_complete(coro)
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+    Previously applied `nest_asyncio` to the caller's loop. See `commons.async_bridge`.
+    """
+    return run_sync(lambda: coro)
 
 
 def _set_constitution_max_size_sync(db, project: str, size: int) -> None:

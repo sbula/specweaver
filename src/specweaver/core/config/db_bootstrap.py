@@ -1,12 +1,13 @@
-import asyncio
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 import logging
 
-import anyio
-import nest_asyncio  # type: ignore
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine
 
 import specweaver.workspace.memory.store  # noqa: F401
+from specweaver.commons.async_bridge import run_sync
 from specweaver.core.config.database import Database, session_scope
 from specweaver.core.config.paths import config_db_path
 from specweaver.core.flow.store import Base as FlowBase
@@ -71,16 +72,9 @@ def bootstrap_database(db_path: str) -> None:
 
         await engine.dispose()
 
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        nest_asyncio.apply(loop)
-        loop.run_until_complete(_create_all())
-    else:
-        anyio.run(_create_all)
+    # Never re-enters a running loop — see `commons.async_bridge`. Called from async tests and
+    # from `get_db()`, so both paths matter.
+    run_sync(_create_all)
 
 
 def get_db() -> Database:
