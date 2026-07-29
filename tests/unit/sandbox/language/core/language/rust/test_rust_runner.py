@@ -218,4 +218,3 @@ class TestRustRunner:
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = RustRunner(cwd=tmp_path)
         assert runner.language_name == "rust"
-

@@ -77,10 +77,7 @@ def _run_architecture_and_build_context(workspace: Path) -> dict:
             "message": "Architecture check complete",
             "exports": {
                 "violation_count": result.violation_count,
-                "violations": [
-                    {"code": v.code, "message": v.message}
-                    for v in result.violations
-                ],
+                "violations": [{"code": v.code, "message": v.message} for v in result.violations],
             },
         }
     }

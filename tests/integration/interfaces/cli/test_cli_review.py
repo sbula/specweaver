@@ -222,9 +222,7 @@ def _invoke_draft_with(run_state, tmp_path):
         mock_create.return_value = (settings, MagicMock(), MagicMock())
         mock_runner_class.return_value.run = AsyncMock(return_value=run_state)
         result = runner.invoke(app, ["draft", "greeter", "--project", str(project_dir)])
-        pipeline = (
-            mock_runner_class.call_args.args[0] if mock_runner_class.call_args else None
-        )
+        pipeline = mock_runner_class.call_args.args[0] if mock_runner_class.call_args else None
     return result, pipeline
 
 
@@ -267,9 +265,7 @@ class TestDraftChain:
         assert r_gate.loop_target == "draft_spec"
         assert r_gate.max_retries == 2
 
-    def test_happy_report_shows_all_outcomes_and_drops_stale_message(
-        self, tmp_path: Path
-    ) -> None:
+    def test_happy_report_shows_all_outcomes_and_drops_stale_message(self, tmp_path: Path) -> None:
         """[Happy/FR-6] accept path: spec path + validation + verdict inline; the stale
         'sw check' handoff line is GONE; exit 0."""
         from specweaver.core.flow.engine.state import RunStatus
@@ -283,9 +279,7 @@ class TestDraftChain:
         assert "accepted" in result.output.lower()
         assert "sw check" not in result.output  # stale manual handoff removed (FR-6)
 
-    def test_review_rejected_exhausted_exits_nonzero_with_findings(
-        self, tmp_path: Path
-    ) -> None:
+    def test_review_rejected_exhausted_exits_nonzero_with_findings(self, tmp_path: Path) -> None:
         """[Degradation] review rejected until retries exhausted -> non-zero exit and the
         findings are surfaced."""
         from specweaver.core.flow.engine.state import RunStatus, StepStatus

@@ -43,9 +43,7 @@ def mock_step() -> PipelineStep:
 
 class TestDualPipelineDispatch:
     @pytest.mark.asyncio
-    async def test_dual_mode_delegates_before_plan_guard(
-        self, mock_context: RunContext
-    ) -> None:
+    async def test_dual_mode_delegates_before_plan_guard(self, mock_context: RunContext) -> None:
         # [Happy] context.decomposition is None — the old code failed here with
         # "No DecompositionPlan"; dual mode must never hit that guard.
         from specweaver.core.flow.engine.state import StepResult

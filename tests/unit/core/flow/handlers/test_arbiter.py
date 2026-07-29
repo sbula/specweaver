@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -157,7 +160,9 @@ class TestArbitrateVerdictHandler:
 
 
 def _arb_step() -> PipelineStep:
-    return PipelineStep(name="arbitrate_verdict", action=StepAction.ARBITRATE, target=StepTarget.VERDICT)
+    return PipelineStep(
+        name="arbitrate_verdict", action=StepAction.ARBITRATE, target=StepTarget.VERDICT
+    )
 
 
 class TestArbitrateEvidenceContract:
@@ -294,9 +299,7 @@ class TestArbitrateEvidenceContract:
     @pytest.mark.asyncio
     async def test_non_dict_failure_entries_error_cleanly(self, run_context):
         # [Hostile] failures list with non-dict entries → ERROR, no crash.
-        run_context.feedback = {
-            "scenario_test_failures": _evidence(failures=["not-a-dict", 42])
-        }
+        run_context.feedback = {"scenario_test_failures": _evidence(failures=["not-a-dict", 42])}
         result = await ArbitrateVerdictHandler().execute(_arb_step(), run_context)
 
         assert result.status == StepStatus.ERROR

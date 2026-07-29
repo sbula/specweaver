@@ -151,8 +151,16 @@ def _run_proof_suite(paths: list[Path], report: Report) -> None:
     # timeout escalation and credential stripping for free.
     from specweaver.sandbox.execution.executor import SubprocessExecutor
 
-    cmd = [sys.executable, "-m", "pytest", "-q", "--no-header", "-p", "no:randomly",
-           *[str(p) for p in paths]]
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-q",
+        "--no-header",
+        "-p",
+        "no:randomly",
+        *[str(p) for p in paths],
+    ]
     result = SubprocessExecutor(cwd=REPO_ROOT, timeout_seconds=1800).execute(cmd)
 
     tail = (result.stdout or "")[-4000:]
@@ -168,7 +176,9 @@ def _run_proof_suite(paths: list[Path], report: Report) -> None:
         )
         return
     passed = re.search(r"(\d+) passed", tail)
-    report.ok(f"declared proof suite passed ({passed.group(1) if passed else '?'} tests, 0 skipped)")
+    report.ok(
+        f"declared proof suite passed ({passed.group(1) if passed else '?'} tests, 0 skipped)"
+    )
 
 
 def check_declared_dependencies(story_id: str, report: Report) -> None:
@@ -204,9 +214,7 @@ def check_declared_dependencies(story_id: str, report: Report) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _unresolved_steps(
-    registry: Any, path: Path, data: dict[str, Any]
-) -> tuple[list[str], int]:
+def _unresolved_steps(registry: Any, path: Path, data: dict[str, Any]) -> tuple[list[str], int]:
     """Return (unresolved step descriptions, number of steps inspected) for one pipeline file.
 
     Module-level rather than nested: a closure counts toward its enclosing function's cyclomatic
@@ -319,7 +327,9 @@ def check_no_dead_promises(report: Report) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("story_id", help="e.g. INT-US-21")
     ap.add_argument("--fast", action="store_true", help="skip executing the declared proof suite")
     args = ap.parse_args(argv)

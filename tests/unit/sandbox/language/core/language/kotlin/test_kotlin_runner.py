@@ -33,9 +33,7 @@ class TestKotlinRunner:
     def test_run_compiler_gradle(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").touch()
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="BUILD SUCCESSFUL"
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="BUILD SUCCESSFUL")
         runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
 
         res = runner.run_compiler(target="")
@@ -66,9 +64,7 @@ class TestKotlinRunner:
         stale_xml.touch()
 
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="BUILD SUCCESSFUL"
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="BUILD SUCCESSFUL")
         runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
 
         res = runner.run_tests(target="")

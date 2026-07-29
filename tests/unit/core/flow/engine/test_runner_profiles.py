@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Tests for PipelineRunner integration with Prompt Render Profiles."""
 
 from unittest.mock import MagicMock, patch

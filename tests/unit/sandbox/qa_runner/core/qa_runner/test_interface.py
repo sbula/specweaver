@@ -168,9 +168,7 @@ class TestPythonQARunnerTests:
 
     def test_all_tests_pass(self, tmp_path: Path) -> None:
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="5 passed in 0.50s\n"
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="5 passed in 0.50s\n")
         runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
         result = runner.run_tests(target="tests/unit/", kind="unit")
@@ -224,9 +222,7 @@ class TestPythonQARunnerTests:
 
     def test_scope_parameter(self, tmp_path: Path) -> None:
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="3 passed in 0.30s\n"
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="3 passed in 0.30s\n")
         runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
         result = runner.run_tests(target="tests/", kind="unit", scope="flow")
@@ -237,9 +233,7 @@ class TestPythonQARunnerTests:
 
     def test_kind_e2e(self, tmp_path: Path) -> None:
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="2 passed in 5.00s\n"
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="2 passed in 5.00s\n")
         runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
         _ = runner.run_tests(target="tests/", kind="e2e")

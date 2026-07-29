@@ -63,9 +63,10 @@ class TestsPassRule(Rule):
             )
 
         # Check for timeout
-        if result_data.get("status") == "FAILED" and "timed out" in (
-            result_data.get("message") or ""
-        ).lower():
+        if (
+            result_data.get("status") == "FAILED"
+            and "timed out" in (result_data.get("message") or "").lower()
+        ):
             return self._fail(
                 "Tests timed out after 60 seconds",
                 [Finding(message="Test execution timed out", severity=Severity.ERROR)],

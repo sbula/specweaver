@@ -109,13 +109,9 @@ def _scan_imports_against_forbids(
             continue
         if isinstance(node, ast.Import):
             for alias in node.names:
-                violations.extend(
-                    _check_forbids(alias.name, forbids, target_path)
-                )
+                violations.extend(_check_forbids(alias.name, forbids, target_path))
         elif isinstance(node, ast.ImportFrom) and node.module:
-            violations.extend(
-                _check_forbids(node.module, forbids, target_path)
-            )
+            violations.extend(_check_forbids(node.module, forbids, target_path))
 
     return violations
 

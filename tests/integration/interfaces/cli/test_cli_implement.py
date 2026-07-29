@@ -276,11 +276,15 @@ class TestImplementQALoop:
             ),
             patch(
                 "specweaver.core.flow.handlers.validation.ValidateTestsHandler.execute",
-                new=AsyncMock(return_value=_qa_result(passed=True, output={"passed": 1, "failed": 0})),
+                new=AsyncMock(
+                    return_value=_qa_result(passed=True, output={"passed": 1, "failed": 0})
+                ),
             ),
             patch(
                 "specweaver.core.flow.handlers.validation.ValidateCodeHandler.execute",
-                new=AsyncMock(return_value=_qa_result(passed=True, output={"passed": 8, "total": 8})),
+                new=AsyncMock(
+                    return_value=_qa_result(passed=True, output={"passed": 8, "total": 8})
+                ),
             ),
         ):
             result = runner.invoke(app, ["implement", str(spec), "--project", str(project)])

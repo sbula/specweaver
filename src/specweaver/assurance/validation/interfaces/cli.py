@@ -164,6 +164,7 @@ def _run_lineage_scan(project: str | None) -> None:
 
     _core.console.print("[green]Lineage scan passed.[/green] All files correctly tagged.")
 
+
 @validation_cli.command(name="check")
 def check(
     target: str = typer.Argument(

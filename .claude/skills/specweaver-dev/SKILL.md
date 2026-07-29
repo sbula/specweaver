@@ -188,11 +188,17 @@ Debug loop: read error → re-read source → fix → re-run failing test → re
 
 - Clean up duplication, naming, structure.
 - Run tests again — still green.
-- Run lint — fix any issues immediately.
+- Run the fast quality gate — fix any issues immediately.
 ```
 python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
-ruff check src/ tests/
+python scripts/quality.py quick
 ```
+
+`quick` is the sub-second subset (lint, cognitive complexity, file sizes, conventions and the
+test-source guards, diff-scoped) and is meant to be run as often as you like. It is deliberately
+NOT the commit gate: `python scripts/quality.py cb` runs at the commit boundary, adds mypy, tach,
+the suppression ratchet, class health and cycle detection, and widens every check to the whole
+source tree. Never treat a green `quick` as permission to commit.
 
 ### 3.4 Update task.md
 
@@ -214,15 +220,23 @@ For **each commit boundary** in `task.md`, in order:
 
 **Step A — Complete the task batch (autonomous):**
 - Run all TDD tasks in this batch to completion (red → green → refactor).
-- **MANDATORY EXHAUSTIVE TESTING**: After completing the final task in this batch, you MUST run the absolute FULL project test suite (unit, integration, and e2e). 
-- **DO NOT** limit the test run to the modified modules or classes. The entire project must pass.
+- **MANDATORY TESTING**: After completing the final task in this batch, run the test gate for
+  this commit boundary and story:
 ```
-python -m pytest tests/unit/ -v --tb=short -q
-python -m pytest tests/integration/ -v --tb=short -q
-python -m pytest tests/e2e/ -v --tb=short -q
+python scripts/tests.py cb <STORY-ID>
 ```
-- Or run them all together: `python -m pytest -v --tb=short -q`
-- Fix any regressions anywhere in the project before proceeding to Step B.
+- A TECH ticket must add `--kind refactor|bugfix|tooling|audit`.
+- **DO NOT** hand-pick which tiers or paths to run. The gate decides from the story's type and
+  DAL, and `python scripts/tests.py matrix` shows every profile. `--also`/`--all` may widen the
+  run; nothing narrows it.
+- **This is deliberately narrower than a full-suite sweep at every commit boundary.** A capability
+  story runs unit tests for the packages it touched here, and the full sweep across all tiers
+  happens at `sf` and `feature`. The trade is bought with the scoping, not skipped: a cross-module
+  regression surfaces at the sub-feature gate rather than immediately. If a batch touched a
+  widely-depended-on module and you want the sweep now, `--all` is the honest way to ask for it.
+- A tier reporting `selected NO tests` is a **failure**, not a pass — it means you changed source
+  nothing mirrors.
+- Fix any regressions before proceeding to Step B.
 
 **Step B — Pre-Commit Quality Gate (autonomous, gates may fire):**
 - Execute the full pre-commit skill (all 7 phases). This is MANDATORY.

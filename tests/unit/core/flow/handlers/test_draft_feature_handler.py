@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Tests for draft+feature — INT-US-21 SF-01 CB-1 (FR-1).
 
 The handler wraps the shipped ``FeatureDrafter`` with full ``DraftSpecHandler`` parity and
@@ -94,9 +97,7 @@ class TestDraftFeatureHappyPath:
         assert spec.exists()
 
     @pytest.mark.asyncio
-    async def test_drafter_receives_stem_derived_name_and_parent_dir(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_drafter_receives_stem_derived_name_and_parent_dir(self, tmp_path: Path) -> None:
         """name = the '_feature_spec.md' prefix; output_dir = spec_path.parent."""
         nested = tmp_path / "specs" / "sub"
         nested.mkdir(parents=True)
@@ -202,9 +203,7 @@ class TestDraftFeatureDegradation:
         async def boom(*_args, **_kwargs):
             raise RuntimeError("provider exploded")
 
-        with patch(
-            "specweaver.workflows.drafting.feature_drafter.FeatureDrafter.draft", new=boom
-        ):
+        with patch("specweaver.workflows.drafting.feature_drafter.FeatureDrafter.draft", new=boom):
             result = await DraftFeatureHandler().execute(_step(), ctx)
 
         assert result.status == StepStatus.ERROR
@@ -315,9 +314,7 @@ class TestDraftFeatureHostile:
         assert result.status == StepStatus.WAITING_FOR_INPUT
 
     @pytest.mark.asyncio
-    async def test_derived_name_can_never_contain_a_path_separator(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_derived_name_can_never_contain_a_path_separator(self, tmp_path: Path) -> None:
         """Traversal cannot be introduced by the derivation: name comes from Path.name."""
         nested = tmp_path / "specs"
         nested.mkdir()
@@ -540,9 +537,7 @@ class TestDraftFeatureLineageAndConfig:
             result = await DraftFeatureHandler().execute(_step(), ctx)
 
         assert result.status == StepStatus.PASSED, result.error_message
-        assert (
-            mock_repo.log_artifact_event.call_args.kwargs["model_id"] == "gemini-3-flash-preview"
-        )
+        assert mock_repo.log_artifact_event.call_args.kwargs["model_id"] == "gemini-3-flash-preview"
 
     @pytest.mark.asyncio
     @patch("specweaver.core.flow.store.FlowRepository")

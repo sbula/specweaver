@@ -219,9 +219,7 @@ class TestGenerateScenarioFeedback:
         assert "generate_code" in ctx.feedback
         assert "scenario_test_failures" in ctx.feedback
 
-    async def test_dictator_shaped_feedback_tolerated_remarks_dropped(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_dictator_shaped_feedback_tolerated_remarks_dropped(self, tmp_path: Path) -> None:
         # [Boundary] G-b: HITL-reject-shaped feedback (remarks, no FAIL results)
         # is the Q2 "knowingly ignored" path — no crash, no verdict block, key
         # still consumed. If scenario steps ever gain HITL gates, this pin
@@ -241,9 +239,7 @@ class TestGenerateScenarioFeedback:
         assert "Prior Verdict Feedback" not in mock_llm.generate.call_args[0][0]
         assert "generate_scenarios" not in ctx.feedback
 
-    async def test_malformed_findings_treated_as_no_feedback(
-        self, tmp_path: Path, caplog
-    ) -> None:
+    async def test_malformed_findings_treated_as_no_feedback(self, tmp_path: Path, caplog) -> None:
         # [Graceful degradation] a malformed findings value must not crash the
         # regeneration — call-site guard treats it as no-feedback + WARNING.
         mock_llm = AsyncMock()

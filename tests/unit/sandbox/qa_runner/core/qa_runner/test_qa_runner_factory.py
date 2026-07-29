@@ -92,9 +92,7 @@ class TestNonPythonContainerWarning:
             runner = resolve_runner(tmp_path, executor=container_executor)
 
         assert isinstance(runner, PythonQARunner)
-        assert not any(
-            "may not have its toolchain" in rec.message for rec in caplog.records
-        )
+        assert not any("may not have its toolchain" in rec.message for rec in caplog.records)
 
     def test_no_warning_for_non_python_runner_with_plain_executor(
         self, tmp_path: Path, caplog
@@ -105,6 +103,4 @@ class TestNonPythonContainerWarning:
         with caplog.at_level("WARNING"):
             resolve_runner(tmp_path, executor=plain_executor)
 
-        assert not any(
-            "may not have its toolchain" in rec.message for rec in caplog.records
-        )
+        assert not any("may not have its toolchain" in rec.message for rec in caplog.records)

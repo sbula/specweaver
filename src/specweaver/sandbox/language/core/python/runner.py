@@ -349,7 +349,9 @@ class PythonQARunner(QARunnerInterface):
         # (e.g. a Windows .exe path), meaningless inside a Linux container — use the
         # bare "python" name there instead, resolved fresh inside whatever env runs it
         # (matches run_tests/run_linter/run_complexity, which already use "python").
-        python_bin = "python" if isinstance(self._executor, ContainerSubprocessExecutor) else sys.executable
+        python_bin = (
+            "python" if isinstance(self._executor, ContainerSubprocessExecutor) else sys.executable
+        )
         cmd = [python_bin, entrypoint]
         logger.debug("Running Python debugger wrapper: %s", shlex.join(cmd))
 
@@ -395,9 +397,7 @@ class PythonQARunner(QARunnerInterface):
             target: File or directory to check (relative to cwd).
             dal_level: Active DAL for the target boundary.
         """
-        logger.debug(
-            "PythonQARunner.run_architecture_check: target=%s, dal=%s", target, dal_level
-        )
+        logger.debug("PythonQARunner.run_architecture_check: target=%s, dal=%s", target, dal_level)
 
         target_path = self._cwd / target
 

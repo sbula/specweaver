@@ -22,10 +22,10 @@ from specweaver.core.flow.handlers.decomposition_artifacts import (
 from specweaver.workflows.planning.decomposer import FeatureDecomposer
 
 if TYPE_CHECKING:
-
     from specweaver.core.flow.engine.models import PipelineStep
 
 logger = logging.getLogger(__name__)
+
 
 class DecomposeFeatureHandler(StepHandler):
     """Generates the DecompositionPlan via FeatureDecomposer."""

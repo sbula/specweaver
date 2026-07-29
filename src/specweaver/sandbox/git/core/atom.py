@@ -507,9 +507,7 @@ class GitAtom(Atom):
         from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
         from specweaver.sandbox.git.core.worktree_ops import handle_worktree_commit
 
-        wt_executor = EngineGitExecutor(
-            cwd=self._cwd / path, whitelist=set(self._ENGINE_WHITELIST)
-        )
+        wt_executor = EngineGitExecutor(cwd=self._cwd / path, whitelist=set(self._ENGINE_WHITELIST))
         return handle_worktree_commit(wt_executor)
 
     def _intent_is_tracked(self, context: dict[str, Any]) -> AtomResult:

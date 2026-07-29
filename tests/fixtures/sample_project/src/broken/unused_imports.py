@@ -1,3 +1,6 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Module with unused imports — auto-fixable by ruff.
 
 DO NOT FIX — this is a test fixture for integration tests.

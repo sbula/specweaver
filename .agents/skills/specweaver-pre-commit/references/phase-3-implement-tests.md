@@ -19,11 +19,15 @@ description: "Phase 3: Implement missing tests identified in Phase 2."
      Follow existing test patterns (fixtures, helpers, naming conventions)
      already established in the test files.
 3.1b **MANDATORY HITL YIELD**: Instead of proceeding directly to Phase 4, you MUST explicitly list exactly which edge cases you just implemented tests for and YIELD YOUR TURN. A yield means making ZERO further tool calls. You must end your response and wait for the user to type a reply explicitly approving the tests before you can start Phase 4.
-3.2. Run ruff on any new or modified test files to ensure lint-clean:
+3.2. Run lint on any new or modified test files to ensure lint-clean:
      ```
-     python -m ruff check tests/
+     python scripts/quality.py quick --only ruff
      ```
      Fix any errors immediately!
+
+     This covers `src/`, `tests/` and `scripts/` in one pass — a test file that lints clean while
+     the module it exercises does not is not a state worth reporting. The full gate runs in
+     Phase 5; this is the fast subset for the loop you are in.
 
 > [!IMPORTANT]
 > **NO HITL GATE HERE:**: Phase 3 is complete. If all the required tests are implemented and passes flawlessly, update `task.md` and PROCEED IMMEDIATELY to Phase 4. Do NOT stop to ask the user for permission to continue.

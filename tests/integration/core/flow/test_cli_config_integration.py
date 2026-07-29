@@ -113,8 +113,7 @@ def test_toml_session_allowed_paths_override_used_verbatim(tmp_path: Path) -> No
     project_dir = _init_project(
         tmp_path,
         "cexec06-override",
-        "[sandbox]\nenforce_session_isolation = true\n"
-        'session_allowed_paths = ["src/only.py"]\n',
+        '[sandbox]\nenforce_session_isolation = true\nsession_allowed_paths = ["src/only.py"]\n',
     )
     context = _run_and_capture(project_dir)
     assert context.session_isolation is True
@@ -183,9 +182,7 @@ def test_high_dal_project_does_not_auto_isolate_on_sw_run(tmp_path: Path) -> Non
     assert context.allowed_paths == []
 
 
-def test_toml_isolation_policy_true_flows_onto_resume_context(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_toml_isolation_policy_true_flows_onto_resume_context(tmp_path: Path, monkeypatch) -> None:
     """[Happy Path] the same real-toml policy reaches the resume composition root."""
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
 
@@ -224,9 +221,7 @@ def test_toml_isolation_policy_true_flows_onto_resume_context(
     assert context.enforce_isolation is True
 
 
-def test_toml_session_isolation_true_flows_onto_resume_context(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_toml_session_isolation_true_flows_onto_resume_context(tmp_path: Path, monkeypatch) -> None:
     """[Happy Path — C-EXEC-06 SF-03] per-run isolation policy + allow-list reach the
     resume composition root too."""
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus

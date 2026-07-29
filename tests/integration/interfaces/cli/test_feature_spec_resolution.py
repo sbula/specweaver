@@ -64,7 +64,7 @@ class TestFeatureDecompositionResolution:
 
         assert inspect.getsource(draft).count('FEATURE_SPEC_SUFFIX = "') == 1
         assert '_feature_spec.md"' not in inspect.getsource(spec_path_resolution).replace(
-            'FEATURE_SPEC_SUFFIX', ''
+            "FEATURE_SPEC_SUFFIX", ""
         ), "the resolver re-spells the suffix instead of importing it"
 
     def test_explicit_path_still_wins_over_derivation(self, tmp_path: Path) -> None:
@@ -205,11 +205,7 @@ Registers a customer.
         from ruamel.yaml import YAML
 
         pipelines = (
-            Path(__file__).resolve().parents[4]
-            / "src"
-            / "specweaver"
-            / "workflows"
-            / "pipelines"
+            Path(__file__).resolve().parents[4] / "src" / "specweaver" / "workflows" / "pipelines"
         )
         data = YAML(typ="safe").load(
             (pipelines / "feature_decomposition.yaml").read_text(encoding="utf-8")

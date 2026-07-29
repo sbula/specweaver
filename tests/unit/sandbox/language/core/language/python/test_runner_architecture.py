@@ -77,9 +77,7 @@ class TestForbidsChecking:
         codes = [v.code for v in result.violations]
         assert "ForbiddenImport" in codes
 
-    def test_no_forbids_violation_when_clean(
-        self, runner: PythonQARunner, tmp_path: Path
-    ) -> None:
+    def test_no_forbids_violation_when_clean(self, runner: PythonQARunner, tmp_path: Path) -> None:
         """Clean imports produce zero forbids violations."""
         _write_py(
             tmp_path,
@@ -115,9 +113,7 @@ class TestForbidsChecking:
         # No forbids violations — only tach would matter
         assert result.violation_count == 0
 
-    def test_forbids_pattern_glob_matching(
-        self, runner: PythonQARunner, tmp_path: Path
-    ) -> None:
+    def test_forbids_pattern_glob_matching(self, runner: PythonQARunner, tmp_path: Path) -> None:
         """Glob pattern 'specweaver/sandbox/*' matches deep imports but not others."""
         _write_py(
             tmp_path,
@@ -156,9 +152,7 @@ class TestForbidsChecking:
         assert "specweaver.llm" in result.violations[0].message
         assert "llm_tools" not in result.violations[0].message
 
-    def test_tach_and_forbids_merged(
-        self, runner: PythonQARunner, tmp_path: Path
-    ) -> None:
+    def test_tach_and_forbids_merged(self, runner: PythonQARunner, tmp_path: Path) -> None:
         """Both forbids and tach violations are merged in the result."""
         _write_py(
             tmp_path,
@@ -174,9 +168,7 @@ class TestForbidsChecking:
             code="UndeclaredDependency",
             message="tach violation",
         )
-        tach_result = ArchitectureRunResult(
-            violation_count=1, violations=[tach_violation]
-        )
+        tach_result = ArchitectureRunResult(violation_count=1, violations=[tach_violation])
 
         with patch.object(runner, "_run_tach_check", return_value=tach_result):
             result = runner.run_architecture_check(target="src/module.py")
@@ -203,9 +195,7 @@ class TestForbidsChecking:
 
         assert "DAL_A" in caplog.text
 
-    def test_non_python_file_skips_forbids(
-        self, runner: PythonQARunner, tmp_path: Path
-    ) -> None:
+    def test_non_python_file_skips_forbids(self, runner: PythonQARunner, tmp_path: Path) -> None:
         """Non-Python files skip the forbids phase."""
         txt_file = tmp_path / "src" / "readme.txt"
         txt_file.parent.mkdir(parents=True, exist_ok=True)
@@ -218,9 +208,7 @@ class TestForbidsChecking:
         # Only tach, no forbids
         assert result.violation_count == 0
 
-    def test_directory_target_skips_forbids(
-        self, runner: PythonQARunner, tmp_path: Path
-    ) -> None:
+    def test_directory_target_skips_forbids(self, runner: PythonQARunner, tmp_path: Path) -> None:
         """Directory targets skip the forbids phase."""
         (tmp_path / "src").mkdir(parents=True, exist_ok=True)
         _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
@@ -251,9 +239,7 @@ class TestForbidsChecking:
         # Only tach, no crash
         assert result.violation_count == 0
 
-    def test_type_checking_import_not_flagged(
-        self, runner: PythonQARunner, tmp_path: Path
-    ) -> None:
+    def test_type_checking_import_not_flagged(self, runner: PythonQARunner, tmp_path: Path) -> None:
         """Imports inside if TYPE_CHECKING: blocks must NOT be flagged (RED-5)."""
         _write_py(
             tmp_path,

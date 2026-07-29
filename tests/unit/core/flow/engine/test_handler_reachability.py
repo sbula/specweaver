@@ -100,7 +100,9 @@ def unresolvable_steps(
         try:
             resolved = registry.get(StepAction(action), StepTarget(target))
         except ValueError:
-            bad.append(f"{filename}::{step_name} declares unknown action/target {action!r}/{target!r}")
+            bad.append(
+                f"{filename}::{step_name} declares unknown action/target {action!r}/{target!r}"
+            )
             continue
         if resolved is None:
             bad.append(f"{filename}::{step_name} ({action}+{target}) has no registered handler")
@@ -192,9 +194,9 @@ class TestBundledPipelinesResolve:
     def test_frameworks_subdirectory_is_swept(self) -> None:
         """rglob, not glob: the framework overlays are a directory deeper."""
         _, batteries = discover_flow_steps(PIPELINES_DIR)
-        assert any(
-            p.parent.name == "java" for p in batteries
-        ), "frameworks/java/*.yaml was not reached — discovery is not recursive"
+        assert any(p.parent.name == "java" for p in batteries), (
+            "frameworks/java/*.yaml was not reached — discovery is not recursive"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -268,7 +270,9 @@ class TestFlowStepsParsing:
         ]
 
     def test_extends_only_battery_has_no_steps_key(self) -> None:
-        assert flow_steps({"name": "validation_spec_feature", "extends": "x", "remove": ["y"]}) == []
+        assert (
+            flow_steps({"name": "validation_spec_feature", "extends": "x", "remove": ["y"]}) == []
+        )
 
     def test_none_payload(self) -> None:
         assert flow_steps(None) == []

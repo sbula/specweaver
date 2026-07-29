@@ -131,7 +131,9 @@ class TestEveryResumeHintNamesARun:
             docstrings = {
                 id(node.body[0].value)
                 for node in ast.walk(tree)
-                if isinstance(node, ast.Module | ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef)
+                if isinstance(
+                    node, ast.Module | ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef
+                )
                 and node.body
                 and isinstance(node.body[0], ast.Expr)
                 and isinstance(node.body[0].value, ast.Constant)

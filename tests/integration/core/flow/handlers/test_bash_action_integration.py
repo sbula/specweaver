@@ -124,7 +124,9 @@ class _FakeHandler(StepHandler):
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         self.call_count += 1
-        return StepResult(status=StepStatus.PASSED, output={}, started_at="2026", completed_at="2026")
+        return StepResult(
+            status=StepStatus.PASSED, output={}, started_at="2026", completed_at="2026"
+        )
 
 
 def _router_step(script_name: str) -> PipelineStep:
@@ -136,7 +138,11 @@ def _router_step(script_name: str) -> PipelineStep:
         params={"script": script_name},
         gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
         router=RouterDefinition(
-            rules=[RouterRule(field="exit_code", operator=RuleOperator.EQ, value=0, target="on_success")],
+            rules=[
+                RouterRule(
+                    field="exit_code", operator=RuleOperator.EQ, value=0, target="on_success"
+                )
+            ],
             default_target="on_failure",
         ),
     )

@@ -103,9 +103,13 @@ description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, covera
 Run the executable half now — these block, so there is nothing to remember:
 
 ```bash
-python scripts/check_useless_asserts.py
-python scripts/check_test_basenames.py
+python scripts/quality.py cb --only useless_asserts,test_basenames
 ```
+
+> Both guards also run as part of the full gate in Phase 5. They are pulled forward here because
+> a vacuous assertion found during gap analysis is a finding for THIS phase's coverage matrix,
+> and discovering it two phases later means redoing the analysis. `--only` runs exactly those two
+> at `cb` scope — the whole `tests/` tree, not just what changed.
 
 > [!TIP]
 > The cheapest reliable probe: **make the test fail on purpose.** `test-quality.md` treats this as

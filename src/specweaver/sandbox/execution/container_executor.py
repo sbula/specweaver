@@ -70,7 +70,9 @@ def _resolve_image(source_root: Path) -> str:
                 else:
                     version = _DEFAULT_TAG
         except (OSError, tomllib.TOMLDecodeError, AttributeError, TypeError):
-            logger.debug("ContainerSubprocessExecutor: could not parse %s for requires-python", pyproject)
+            logger.debug(
+                "ContainerSubprocessExecutor: could not parse %s for requires-python", pyproject
+            )
     return f"{_DEFAULT_IMAGE_REPO}:{version}"
 
 
@@ -129,7 +131,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
 
         msg = (
             f"No live container engine found (tried: {', '.join(attempted)}). "
-            "Install Podman or Docker, or set [sandbox] execution_mode = \"host\" "
+            'Install Podman or Docker, or set [sandbox] execution_mode = "host" '
             "in specweaver.toml."
         )
         raise ContainerEngineUnavailableError(msg)

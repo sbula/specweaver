@@ -230,7 +230,9 @@ async def test_fr6_leaky_verdict_reaches_code_generator_vocabulary_free(tmp_path
     # Now the REAL coding handler consumes what the arbiter wrote.
     from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 
-    gen_step = PipelineStep(name="generate_code", action=StepAction.GENERATE, target=StepTarget.CODE)
+    gen_step = PipelineStep(
+        name="generate_code", action=StepAction.GENERATE, target=StepTarget.CODE
+    )
     with (
         patch("specweaver.workflows.implementation.generator.Generator") as mock_gen_cls,
         patch(

@@ -87,9 +87,7 @@ class TestBasenameGuard:
         assert set(dupes) == {"test_dup.py"}
         assert len(dupes["test_dup.py"]) == 3
 
-    def test_pycache_copies_are_not_duplicates(
-        self, basenames: ModuleType, tmp_path: Path
-    ) -> None:
+    def test_pycache_copies_are_not_duplicates(self, basenames: ModuleType, tmp_path: Path) -> None:
         _write(tmp_path, "unit/test_alpha.py")
         _write(tmp_path, "unit/__pycache__/test_alpha.py")
 
@@ -112,7 +110,7 @@ class TestBasenameGuard:
 # Assertions that cannot fail
 # ---------------------------------------------------------------------------
 
-SYNTHETIC_BAD = '''
+SYNTHETIC_BAD = """
 from unittest.mock import MagicMock
 
 def test_literal():
@@ -138,9 +136,9 @@ def test_mock_truthiness():
     m = MagicMock()
     do_work(m)
     assert m.was_called
-'''
+"""
 
-SYNTHETIC_GOOD = '''
+SYNTHETIC_GOOD = """
 from unittest.mock import MagicMock
 
 def test_real_equality():
@@ -159,7 +157,7 @@ def test_mock_call_is_checked():
 
 def test_falsy_literal_is_a_real_failure_not_a_vacuous_pass():
     assert False, "intentionally failing placeholder"
-'''
+"""
 
 
 class TestUselessAssertGuard:

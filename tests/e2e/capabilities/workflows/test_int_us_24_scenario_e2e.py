@@ -94,7 +94,7 @@ scenarios:
 - [ ] `farewell` raises `ValueError` for empty names (FR-2)
 """
 
-CORRECT_IMPL = '''\
+CORRECT_IMPL = """\
 def greet(name):
     return f"Hello {name}"
 
@@ -103,7 +103,7 @@ def farewell(name):
     if not name:
         raise ValueError("name required")
     return f"Bye {name}"
-'''
+"""
 
 # Business-wrong but unit-green in the (doubled) coding pipeline: the
 # salutation is dropped. Only independent scenario verification catches it.
@@ -179,7 +179,12 @@ SCENARIO_ERROR_VERDICT = json.dumps(
     }
 )
 AMBIGUITY_VERDICT = json.dumps(
-    {"verdict": "spec_ambiguity", "spec_clause": "FR-1", "coding_feedback": "", "scenario_feedback": ""}
+    {
+        "verdict": "spec_ambiguity",
+        "spec_clause": "FR-1",
+        "coding_feedback": "",
+        "scenario_feedback": "",
+    }
 )
 
 
@@ -395,7 +400,6 @@ EXPECTED_ARTIFACTS = {
 }
 
 
-
 def _latest_run(data_dir, project_name: str):
     """The persisted run record — where step error messages actually live
     (the rich CLI display does not surface them on these paths)."""
@@ -409,7 +413,13 @@ def _latest_run(data_dir, project_name: str):
 def _run_cli(project: Path):
     return runner.invoke(
         app,
-        ["run", "scenario_integration", str(project / "specs" / "greet_spec.md"), "--project", str(project)],
+        [
+            "run",
+            "scenario_integration",
+            str(project / "specs" / "greet_spec.md"),
+            "--project",
+            str(project),
+        ],
     )
 
 

@@ -162,9 +162,7 @@ class DraftSpecHandler:
         if findings is not None:
             import json
 
-            base_prompt.add_context(
-                json.dumps(findings, ensure_ascii=False), "reviewer_findings"
-            )
+            base_prompt.add_context(json.dumps(findings, ensure_ascii=False), "reviewer_findings")
 
         drafter = Drafter(
             llm=context.llm,
@@ -254,9 +252,7 @@ class DraftFeatureHandler:
                     "DraftFeatureHandler: reviewer feedback received — re-drafting '%s'",
                     context.spec_path,
                 )
-                return await self._execute_drafting(
-                    step, context, started, name, findings=findings
-                )
+                return await self._execute_drafting(step, context, started, name, findings=findings)
             logger.info(
                 "DraftFeatureHandler: reviewer feedback received but no interactive provider — "
                 "parking '%s' for user input",

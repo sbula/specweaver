@@ -211,9 +211,7 @@ class TestConstruction:
     def test_image_clamps_below_oldest_supported_tag(self, tmp_path: Path) -> None:
         """requires-python below 3.11 clamps to the oldest supported tag, not a literal 3.9."""
         mounts = _mounts(tmp_path)
-        (mounts.source_root / "pyproject.toml").write_text(
-            '[project]\nrequires-python = ">=3.9"\n'
-        )
+        (mounts.source_root / "pyproject.toml").write_text('[project]\nrequires-python = ">=3.9"\n')
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
         assert executor._image.endswith(":3.11")
 
@@ -240,9 +238,7 @@ class TestConstruction:
         """A non-string requires-python (TOML int) raises TypeError inside re.search,
         caught, falling back to the default tag rather than crashing construction."""
         mounts = _mounts(tmp_path)
-        (mounts.source_root / "pyproject.toml").write_text(
-            "[project]\nrequires-python = 312\n"
-        )
+        (mounts.source_root / "pyproject.toml").write_text("[project]\nrequires-python = 312\n")
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
         assert executor._image.endswith(":3.13")
 
@@ -289,9 +285,7 @@ class TestBuildContainerCmd:
         assert argv[mem_idx + 1] == "2147483648"
         assert argv[pids_idx + 1] == "128"
 
-    def test_user_flag_matches_invoking_uid_on_linux(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_user_flag_matches_invoking_uid_on_linux(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setattr(sys, "platform", "linux")
         monkeypatch.setattr(os, "getuid", lambda: 1000, raising=False)
         monkeypatch.setattr(os, "getgid", lambda: 1000, raising=False)
@@ -334,14 +328,14 @@ class TestBuildContainerCmd:
 
 
 class TestExecuteOverride:
-    def _executor(self, tmp_path: Path, monkeypatch, run_id: str = "run123") -> ContainerSubprocessExecutor:
+    def _executor(
+        self, tmp_path: Path, monkeypatch, run_id: str = "run123"
+    ) -> ContainerSubprocessExecutor:
         monkeypatch.setattr(
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        return ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=_mounts(tmp_path), run_id=run_id
-        )
+        return ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path), run_id=run_id)
 
     def test_deterministic_name_includes_run_id_and_uuid_suffix(
         self, tmp_path: Path, monkeypatch
@@ -417,7 +411,9 @@ class TestExecuteOverride:
         assert result.stdout == "5 passed in 0.5s"
         assert result.exit_code == 0
 
-    def test_engine_unavailable_propagates_before_any_run(self, tmp_path: Path, monkeypatch) -> None:
+    def test_engine_unavailable_propagates_before_any_run(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
         monkeypatch.setattr(
             "specweaver.sandbox.execution.container_executor.shutil.which", lambda name: None
         )
@@ -450,9 +446,7 @@ class TestExecuteOverride:
         executor.execute(["python", "-m", "pytest"], timeout_seconds=999)
 
         run_call = next(
-            call
-            for call in mock_execute.call_args_list
-            if call.args and "pytest" in call.args[0]
+            call for call in mock_execute.call_args_list if call.args and "pytest" in call.args[0]
         )
         assert run_call.kwargs.get("timeout_seconds") == 999
         # Distinct from the fixed 5s engine-probe / 10s cleanup timeouts elsewhere.

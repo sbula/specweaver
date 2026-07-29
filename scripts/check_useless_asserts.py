@@ -104,11 +104,24 @@ def scan_source(source: str) -> list[tuple[int, str, str]]:
     return visitor.hits
 
 
-def scan_tree(tests_root: Path) -> list[tuple[Path, int, str, str]]:
+def iter_test_files(paths: list[Path]) -> list[Path]:
+    """Expand a mixed list of files and directories.
+
+    A directory is globbed for `test_*.py`; a file named explicitly is scanned as given, since a
+    caller passing one diff-scoped path means that file regardless of how it is named.
+    """
+    found: set[Path] = set()
+    for path in paths:
+        if path.is_dir():
+            found.update(p for p in path.rglob("test_*.py") if "__pycache__" not in p.parts)
+        elif path.is_file() and path.suffix == ".py":
+            found.add(path)
+    return sorted(found)
+
+
+def scan_files(files: list[Path]) -> list[tuple[Path, int, str, str]]:
     out: list[tuple[Path, int, str, str]] = []
-    for path in sorted(tests_root.rglob("test_*.py")):
-        if "__pycache__" in path.parts:
-            continue
+    for path in files:
         try:
             source = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
@@ -117,19 +130,25 @@ def scan_tree(tests_root: Path) -> list[tuple[Path, int, str, str]]:
     return out
 
 
+def scan_tree(tests_root: Path) -> list[tuple[Path, int, str, str]]:
+    return scan_files(iter_test_files([tests_root]))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("tests_root", nargs="?", default=str(REPO_ROOT / "tests"))
+    ap.add_argument("paths", nargs="*", help="test files or directories (default: the tests/ tree)")
     args = ap.parse_args(argv)
 
-    root = Path(args.tests_root)
-    if not root.is_dir():
-        print(f"FAIL  tests root not found: {root}")
+    raw = [Path(p) for p in args.paths] if args.paths else [REPO_ROOT / "tests"]
+    missing = [p for p in raw if not p.exists()]
+    if missing:
+        for path in missing:
+            print(f"FAIL  tests root not found: {path}")
         return 1
 
-    findings = scan_tree(root)
+    findings = scan_files(iter_test_files(raw))
     if not findings:
         print("Useless-assert check: no assertion that cannot fail")
         return 0

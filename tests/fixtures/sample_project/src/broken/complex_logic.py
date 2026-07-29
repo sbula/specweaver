@@ -1,3 +1,6 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Module with high cyclomatic complexity — triggers C901.
 
 DO NOT SIMPLIFY — this is a test fixture for integration tests.

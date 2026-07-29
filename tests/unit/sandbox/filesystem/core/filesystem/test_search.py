@@ -84,7 +84,14 @@ def test_grep_ripgrep_parses_json_matches(tmp_path: Path) -> None:
     mock_executor = _mock_ripgrep_executor(stdout=match_line + "\n")
 
     matches, truncated, warning = _grep_ripgrep(
-        "rg", tmp_path, "needle", 3, False, 20, None, mock_executor,
+        "rg",
+        tmp_path,
+        "needle",
+        3,
+        False,
+        20,
+        None,
+        mock_executor,
     )
 
     assert len(matches) == 1
@@ -110,7 +117,14 @@ def test_grep_ripgrep_timeout_returns_warning(tmp_path: Path) -> None:
     mock_executor = _mock_ripgrep_executor(timed_out=True)
 
     matches, truncated, warning = _grep_ripgrep(
-        "rg", tmp_path, "needle", 3, False, 20, None, mock_executor,
+        "rg",
+        tmp_path,
+        "needle",
+        3,
+        False,
+        20,
+        None,
+        mock_executor,
     )
 
     assert matches == []
@@ -119,7 +133,8 @@ def test_grep_ripgrep_timeout_returns_warning(tmp_path: Path) -> None:
 
 
 def test_grep_content_falls_back_to_python_when_rg_missing(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """When ripgrep isn't on PATH, grep_content must not touch SubprocessExecutor
     at all — proving the executor param is only consulted on the ripgrep path."""

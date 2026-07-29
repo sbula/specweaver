@@ -144,9 +144,7 @@ class ScenarioConverter:
             lines.append(f"# @trace({req_id})")
 
         if len(scenarios) > 1:
-            lines.extend(
-                ScenarioConverter._render_parametrize_data(func_name, category, scenarios)
-            )
+            lines.extend(ScenarioConverter._render_parametrize_data(func_name, category, scenarios))
         else:
             lines.extend(ScenarioConverter._render_single_test(func_name, scenarios[0]))
 

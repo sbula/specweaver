@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """SEQUENCING PIN (not an e2e proof) for scenario_integration.yaml.
 
 Every handler is mocked (`StepHandlerRegistry.get` patched) — this pins ONLY

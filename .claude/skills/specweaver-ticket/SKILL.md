@@ -99,7 +99,7 @@ registry defect — three tickets had drifted as of 2026-07-25.
 ## Phase 5: Verify (MANDATORY)
 
 ```bash
-python scripts/check_roadmap_sync.py
+python scripts/quality.py doc --only roadmap_sync
 grep -n "^## \|^\* \*\*.TECH-" docs/roadmap/topics/topic_07_technical_debt.md   # section placement
 ```
 

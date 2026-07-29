@@ -130,7 +130,9 @@ class TestContainmentAndExistence:
         assert "outside" in result.message.lower() or "boundary" in result.message.lower()
 
     def test_workspace_boundary_error_handled_without_symlink(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Platform-independent coverage of the WorkspaceBoundaryError except-branch
         itself, decoupled from *how* an escape is detected (symlinks need admin on
@@ -160,13 +162,16 @@ class TestContainmentAndExistence:
 
 
 class TestBashAvailability:
-    def test_bash_not_on_path_fails_cleanly(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_bash_not_on_path_fails_cleanly(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         scripts_dir = tmp_path / ".specweaver" / "scripts"
         scripts_dir.mkdir(parents=True)
         (scripts_dir / "x.sh").write_text("echo hi\n", encoding="utf-8")
 
         monkeypatch.setattr(
-            "specweaver.sandbox.execution.core.atom.shutil.which", lambda _name: None,
+            "specweaver.sandbox.execution.core.atom.shutil.which",
+            lambda _name: None,
         )
         atom = BashActionAtom(cwd=tmp_path)
         result = atom.run({"script": "x.sh"})
@@ -213,7 +218,7 @@ class TestHappyPathExecution:
 
     def test_args_passed_through(self, tmp_path: Path) -> None:
         scripts_dir = tmp_path / ".specweaver" / "scripts"
-        _write_script(scripts_dir, "echo_arg.sh", "#!/usr/bin/env bash\necho \"$1\"\n")
+        _write_script(scripts_dir, "echo_arg.sh", '#!/usr/bin/env bash\necho "$1"\n')
         atom = BashActionAtom(cwd=tmp_path)
 
         result = atom.run({"script": "echo_arg.sh", "args": ["hello-arg"]})
@@ -260,7 +265,9 @@ class TestHappyPathExecution:
         assert "traversal" in result.message.lower() or "boundary" in result.message.lower()
 
     def test_resource_limits_applied_by_default(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         from specweaver.sandbox.execution.core import atom as atom_module
 
@@ -310,7 +317,7 @@ class TestTruncationAndEnvIntegration:
 
     def test_env_map_passed_through(self, tmp_path: Path) -> None:
         scripts_dir = tmp_path / ".specweaver" / "scripts"
-        _write_script(scripts_dir, "echo_env.sh", "#!/usr/bin/env bash\necho \"$MY_VAR\"\n")
+        _write_script(scripts_dir, "echo_env.sh", '#!/usr/bin/env bash\necho "$MY_VAR"\n')
         atom = BashActionAtom(cwd=tmp_path)
 
         result = atom.run({"script": "echo_env.sh", "env": {"MY_VAR": "custom-value"}})
@@ -320,7 +327,9 @@ class TestTruncationAndEnvIntegration:
     def test_env_does_not_leak_run_context_vars(self, tmp_path: Path) -> None:
         scripts_dir = tmp_path / ".specweaver" / "scripts"
         _write_script(
-            scripts_dir, "echo_secret.sh", "#!/usr/bin/env bash\necho \"[$SECRET_VAR]\"\n",
+            scripts_dir,
+            "echo_secret.sh",
+            '#!/usr/bin/env bash\necho "[$SECRET_VAR]"\n',
         )
         atom = BashActionAtom(cwd=tmp_path)
 
@@ -349,7 +358,9 @@ class TestTimeoutAndExceptionContainment:
         assert "done" not in result.exports["stdout"]
 
     def test_crashing_executor_never_propagates(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         from specweaver.sandbox.execution.core import atom as atom_module
 
@@ -380,7 +391,7 @@ class TestHostileArgs:
         as a single, inert, literal string — never interpreted/executed as a
         nested shell command. Proves NFR-2 (fixed argv, no shell=True)."""
         scripts_dir = tmp_path / ".specweaver" / "scripts"
-        _write_script(scripts_dir, "echo_arg.sh", "#!/usr/bin/env bash\necho \"got: $1\"\n")
+        _write_script(scripts_dir, "echo_arg.sh", '#!/usr/bin/env bash\necho "got: $1"\n')
         atom = BashActionAtom(cwd=tmp_path)
 
         hostile_arg = "; echo pwned; $(whoami)"

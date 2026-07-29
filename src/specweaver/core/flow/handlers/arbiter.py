@@ -158,7 +158,9 @@ class ArbitrateVerdictHandler(StepHandler):
 
         if failed == 0 and errors == 0:
             # Verification green: no arbitration needed, no LLM call spent.
-            logger.info("ArbitrateVerdictHandler: %d/%d scenario tests green — no arbitration", total, total)
+            logger.info(
+                "ArbitrateVerdictHandler: %d/%d scenario tests green — no arbitration", total, total
+            )
             context.feedback.pop("scenario_test_failures", None)
             return StepResult(
                 status=StepStatus.PASSED,

@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Tests for the runner's plan-hydration bridge — INT-US-21 SF-01 CB-2 (FR-2).
 
 Two colliding plan concepts previously shared one never-written field:
@@ -108,9 +111,7 @@ class TestHydrationHappyPath:
         msgs = [r.getMessage() for r in caplog.records if r.levelname == "INFO"]
         assert any("run-abc" in m and "context.decomposition" in m for m in msgs)
 
-    def test_plan_hydration_logs_at_info_with_run_id_and_path(
-        self, tmp_path: Path, caplog
-    ) -> None:
+    def test_plan_hydration_logs_at_info_with_run_id_and_path(self, tmp_path: Path, caplog) -> None:
         ctx = _ctx(tmp_path)
         ctx.run_id = "run-xyz"
         plan_file = tmp_path / "greeter_spec_plan.yaml"
@@ -143,8 +144,13 @@ class TestHydrationHappyPath:
 class TestHydrationBoundaries:
     @pytest.mark.parametrize(
         "status",
-        [StepStatus.FAILED, StepStatus.ERROR, StepStatus.WAITING_FOR_INPUT, StepStatus.SKIPPED,
-         StepStatus.PENDING],
+        [
+            StepStatus.FAILED,
+            StepStatus.ERROR,
+            StepStatus.WAITING_FOR_INPUT,
+            StepStatus.SKIPPED,
+            StepStatus.PENDING,
+        ],
     )
     def test_only_passed_results_hydrate(self, tmp_path: Path, status: StepStatus) -> None:
         ctx = _ctx(tmp_path)
@@ -154,9 +160,7 @@ class TestHydrationBoundaries:
         assert ctx.decomposition is None
 
     @pytest.mark.parametrize("status", [StepStatus.SKIPPED, StepStatus.WAITING_FOR_INPUT])
-    def test_non_failure_statuses_do_not_clear(
-        self, tmp_path: Path, status: StepStatus
-    ) -> None:
+    def test_non_failure_statuses_do_not_clear(self, tmp_path: Path, status: StepStatus) -> None:
         """SKIPPED / parked produce no new verdict — there is nothing to supersede.
 
         Wiping a still-valid plan because a step was bypassed (or parked and due to re-run on

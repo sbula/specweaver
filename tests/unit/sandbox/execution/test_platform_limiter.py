@@ -55,11 +55,15 @@ class TestNoOpLimiter:
             limiter = NoOpLimiter()
             limits = ResourceLimits(max_memory_bytes=1024)
             limiter.apply_post_start(MagicMock(), limits)
-        assert any("unsupported" in r.message.lower() or "no-op" in r.message.lower() for r in caplog.records)
+        assert any(
+            "unsupported" in r.message.lower() or "no-op" in r.message.lower()
+            for r in caplog.records
+        )
 
     def test_noop_limiter_no_logs_if_none(self, caplog: pytest.LogCaptureFixture) -> None:
         """NoOpLimiter does not log if limits are None."""
         import logging
+
         with caplog.at_level(logging.WARNING):
             limiter = NoOpLimiter()
             limits = ResourceLimits()  # All None
@@ -296,6 +300,7 @@ class TestWindowsLimiter:
         import logging
 
         from specweaver.sandbox.execution.platform_limiter import WindowsLimiter
+
         limiter = WindowsLimiter()
         limits = ResourceLimits(max_memory_bytes=1024)
         mock_ctypes = MagicMock()
@@ -311,6 +316,7 @@ class TestWindowsLimiter:
         import logging
 
         from specweaver.sandbox.execution.platform_limiter import WindowsLimiter
+
         limiter = WindowsLimiter()
         limits = ResourceLimits(max_memory_bytes=1024)
         mock_ctypes = MagicMock()
@@ -328,6 +334,7 @@ class TestWindowsLimiter:
         import logging
 
         from specweaver.sandbox.execution.platform_limiter import WindowsLimiter
+
         limiter = WindowsLimiter()
         limits = ResourceLimits(max_memory_bytes=1024)
         mock_ctypes = MagicMock()
@@ -340,5 +347,3 @@ class TestWindowsLimiter:
 
         assert "OpenProcess failed" in caplog.text
         mock_ctypes.windll.kernel32.CloseHandle.assert_called_with(42)
-
-

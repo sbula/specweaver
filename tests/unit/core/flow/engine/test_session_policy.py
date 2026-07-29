@@ -32,9 +32,7 @@ def _ctx(spec_name: str = "foo_spec.md", tmp: Path | None = None) -> RunContext:
     return RunContext(project_path=base, spec_path=base / spec_name)
 
 
-def _settings(
-    *, session: bool = False, allowed: list[str] | None = None, min_dal: str = "DAL_B"
-):
+def _settings(*, session: bool = False, allowed: list[str] | None = None, min_dal: str = "DAL_B"):
     """A minimal settings stand-in exposing `.sandbox.<knobs>` like SpecWeaverSettings."""
     sandbox = SimpleNamespace(
         enforce_session_isolation=session,
@@ -140,9 +138,7 @@ class TestApplySessionPolicy:
         def _boom(_spec):
             raise RuntimeError("derivation blew up")
 
-        monkeypatch.setattr(
-            "specweaver.core.flow.engine.runner_utils._derive_allowed_paths", _boom
-        )
+        monkeypatch.setattr("specweaver.core.flow.engine.runner_utils._derive_allowed_paths", _boom)
         ctx = _ctx("foo_spec.md")
         apply_session_policy(ctx, _settings(session=True), _LOG)
         assert ctx.session_isolation is False
@@ -267,9 +263,7 @@ class TestApplySessionPolicyDalEscalation:
         def _boom(self, target):
             raise RuntimeError("dal blew up")
 
-        monkeypatch.setattr(
-            "specweaver.core.config.dal_resolver.DALResolver.resolve", _boom
-        )
+        monkeypatch.setattr("specweaver.core.config.dal_resolver.DALResolver.resolve", _boom)
         ctx = _git_ctx(tmp_path)
         apply_session_policy(ctx, _settings(min_dal="DAL_B"), _LOG, dal_auto_escalate=True)
         assert ctx.session_isolation is False

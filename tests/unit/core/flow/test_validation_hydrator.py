@@ -30,10 +30,7 @@ def _make_pipeline(rule_ids: list[str]) -> ValidationPipeline:
     """Create a minimal pipeline with the given rule IDs."""
     return ValidationPipeline(
         name="test",
-        steps=[
-            ValidationStep(name=f"step_{rid}", rule=rid)
-            for rid in rule_ids
-        ],
+        steps=[ValidationStep(name=f"step_{rid}", rule=rid) for rid in rule_ids],
     )
 
 
@@ -255,9 +252,7 @@ class TestExecuteValidationFlow:
 
         with patch(_PATCH_ATOM) as mock_atom_cls, patch(_PATCH_EXEC) as mock_exec:
             mock_exec.return_value = []
-            execute_validation_flow(
-                pipeline, "pass\n", spec_path=code_file, project_root=None
-            )
+            execute_validation_flow(pipeline, "pass\n", spec_path=code_file, project_root=None)
 
         # QARunnerAtom should never be instantiated
         mock_atom_cls.assert_not_called()

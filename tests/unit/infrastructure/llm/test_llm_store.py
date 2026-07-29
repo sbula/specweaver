@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 from datetime import UTC, datetime
 
 import pytest
@@ -30,7 +33,12 @@ async def engine():
 async def setup_test_db(engine):
     """Create all tables for the LLM domain store."""
     # Define dummy projects table to satisfy the cross-module ForeignKey during create_all
-    Table("workspace_projects", Base.metadata, Column("name", String, primary_key=True), extend_existing=True)
+    Table(
+        "workspace_projects",
+        Base.metadata,
+        Column("name", String, primary_key=True),
+        extend_existing=True,
+    )
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

@@ -223,7 +223,9 @@ class WindowsLimiter(PlatformLimiter):
             ]
 
         ext_info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
-        ext_info.BasicLimitInformation.LimitFlags = job_object_limit_process_memory | job_object_limit_kill_on_job_close
+        ext_info.BasicLimitInformation.LimitFlags = (
+            job_object_limit_process_memory | job_object_limit_kill_on_job_close
+        )
         ext_info.ProcessMemoryLimit = limits.max_memory_bytes
 
         result = kernel32.SetInformationJobObject(

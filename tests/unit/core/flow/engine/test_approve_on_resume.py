@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Tests for HITL approve-on-resume — INT-US-21 SF-01 CB-4 (FR-4, AD-2).
 
 `GateEvaluator` parks HITL gates unconditionally and `resume()` only flipped the status back to
@@ -208,9 +211,7 @@ class TestApproveOnResume:
         )
         events: list[tuple[str, dict]] = []
 
-        _park_then_resume(
-            tmp_path, pipeline, _Counting(components=[]), _Counting(), events=events
-        )
+        _park_then_resume(tmp_path, pipeline, _Counting(components=[]), _Counting(), events=events)
 
         completed = [kw for name, kw in events if name == "step_completed"]
         assert completed, "no step_completed emitted for the approved step"
@@ -503,9 +504,7 @@ class TestApprovalInsertionPoint:
         """
         pipeline = PipelineDefinition(
             name="p",
-            steps=[
-                _stale_target_step()
-            ],
+            steps=[_stale_target_step()],
         )
         store = StateStore(tmp_path / "state.db")
         run1 = asyncio.run(

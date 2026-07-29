@@ -87,8 +87,12 @@ class TestCheckpoint:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # add
-                SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),  # diff --staged --quiet (changes exist)
-                SubprocessResult(exit_code=0, stdout="[main abc] chk\n", stderr="", duration_seconds=0.0),  # commit
+                SubprocessResult(
+                    exit_code=1, stdout="", stderr="", duration_seconds=0.0
+                ),  # diff --staged --quiet (changes exist)
+                SubprocessResult(
+                    exit_code=0, stdout="[main abc] chk\n", stderr="", duration_seconds=0.0
+                ),  # commit
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "checkpoint", "message": "flow checkpoint"})
@@ -100,7 +104,9 @@ class TestCheckpoint:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # add
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # diff --staged --quiet (no changes)
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # diff --staged --quiet (no changes)
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "checkpoint"})
@@ -109,7 +115,9 @@ class TestCheckpoint:
 
     def test_add_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=1, stdout="", stderr="add err", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=1, stdout="", stderr="add err", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "checkpoint", "message": "x"})
         assert result.status == AtomStatus.FAILED
@@ -119,8 +127,12 @@ class TestCheckpoint:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # add
-                SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),  # diff (has changes)
-                SubprocessResult(exit_code=1, stdout="", stderr="commit err", duration_seconds=0.0),  # commit fails
+                SubprocessResult(
+                    exit_code=1, stdout="", stderr="", duration_seconds=0.0
+                ),  # diff (has changes)
+                SubprocessResult(
+                    exit_code=1, stdout="", stderr="commit err", duration_seconds=0.0
+                ),  # commit fails
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "checkpoint", "message": "x"})
@@ -150,7 +162,9 @@ class TestIsolate:
 
     def test_success(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "isolate", "branch": "flow/task-42"})
         assert result.status == AtomStatus.SUCCESS
@@ -164,7 +178,9 @@ class TestIsolate:
 
     def test_branch_already_exists_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=128, stdout="", stderr="already exists", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=128, stdout="", stderr="already exists", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "isolate", "branch": "flow/existing"})
         assert result.status == AtomStatus.FAILED
@@ -181,7 +197,9 @@ class TestRestore:
 
     def test_success(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "restore", "branch": "main"})
         assert result.status == AtomStatus.SUCCESS
@@ -194,7 +212,9 @@ class TestRestore:
 
     def test_switch_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=1, stdout="", stderr="no such branch", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=1, stdout="", stderr="no such branch", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "restore", "branch": "nonexistent"})
         assert result.status == AtomStatus.FAILED
@@ -210,14 +230,18 @@ class TestDiscardAll:
 
     def test_success(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "discard_all"})
         assert result.status == AtomStatus.SUCCESS
 
     def test_restore_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=1, stdout="", stderr="err", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=1, stdout="", stderr="err", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "discard_all"})
         assert result.status == AtomStatus.FAILED
@@ -233,7 +257,9 @@ class TestRollback:
 
     def test_success(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "rollback"})
         assert result.status == AtomStatus.SUCCESS
@@ -241,7 +267,9 @@ class TestRollback:
 
     def test_no_commits_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=128, stdout="", stderr="unknown rev", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=128, stdout="", stderr="unknown rev", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "rollback"})
         assert result.status == AtomStatus.FAILED
@@ -257,7 +285,9 @@ class TestPublish:
 
     def test_success_default_remote(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "publish"})
         assert result.status == AtomStatus.SUCCESS
@@ -265,7 +295,9 @@ class TestPublish:
 
     def test_success_with_branch(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "publish", "remote": "upstream", "branch": "main"})
         assert result.status == AtomStatus.SUCCESS
@@ -274,7 +306,9 @@ class TestPublish:
 
     def test_push_rejected(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=1, stdout="", stderr="rejected", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=1, stdout="", stderr="rejected", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "publish"})
         assert result.status == AtomStatus.FAILED
@@ -292,8 +326,12 @@ class TestIntegrate:
     def test_success(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
-                SubprocessResult(exit_code=0, stdout="Merge made\n", stderr="", duration_seconds=0.0),  # merge
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # checkout
+                SubprocessResult(
+                    exit_code=0, stdout="Merge made\n", stderr="", duration_seconds=0.0
+                ),  # merge
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
@@ -320,7 +358,9 @@ class TestIntegrate:
 
     def test_checkout_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=1, stdout="", stderr="no such branch", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=1, stdout="", stderr="no such branch", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
                 {
@@ -335,10 +375,18 @@ class TestIntegrate:
     def test_conflict_default_fail(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
-                SubprocessResult(exit_code=1, stdout="", stderr="CONFLICT", duration_seconds=0.0),  # merge fails
-                SubprocessResult(exit_code=0, stdout="app.py\n", stderr="", duration_seconds=0.0),  # diff --name-only
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # merge --abort
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # checkout
+                SubprocessResult(
+                    exit_code=1, stdout="", stderr="CONFLICT", duration_seconds=0.0
+                ),  # merge fails
+                SubprocessResult(
+                    exit_code=0, stdout="app.py\n", stderr="", duration_seconds=0.0
+                ),  # diff --name-only
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # merge --abort
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
@@ -355,10 +403,18 @@ class TestIntegrate:
     def test_conflict_resolve_returns_retry(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
-                SubprocessResult(exit_code=1, stdout="", stderr="CONFLICT", duration_seconds=0.0),  # merge fails
-                SubprocessResult(exit_code=0, stdout="app.py\nutils.py\n", stderr="", duration_seconds=0.0),  # diff
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # merge --abort
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # checkout
+                SubprocessResult(
+                    exit_code=1, stdout="", stderr="CONFLICT", duration_seconds=0.0
+                ),  # merge fails
+                SubprocessResult(
+                    exit_code=0, stdout="app.py\nutils.py\n", stderr="", duration_seconds=0.0
+                ),  # diff
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # merge --abort
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
@@ -389,7 +445,9 @@ class TestSync:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # fetch
-                SubprocessResult(exit_code=0, stdout="Up to date\n", stderr="", duration_seconds=0.0),  # pull
+                SubprocessResult(
+                    exit_code=0, stdout="Up to date\n", stderr="", duration_seconds=0.0
+                ),  # pull
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "sync"})
@@ -398,7 +456,9 @@ class TestSync:
 
     def test_fetch_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=1, stdout="", stderr="network err", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=1, stdout="", stderr="network err", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "sync"})
         assert result.status == AtomStatus.FAILED
@@ -407,9 +467,15 @@ class TestSync:
     def test_pull_conflict_aborts(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # fetch ok
-                SubprocessResult(exit_code=1, stdout="", stderr="CONFLICT", duration_seconds=0.0),  # pull fails
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # merge --abort
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # fetch ok
+                SubprocessResult(
+                    exit_code=1, stdout="", stderr="CONFLICT", duration_seconds=0.0
+                ),  # pull fails
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # merge --abort
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "sync"})
@@ -444,7 +510,9 @@ class TestTag:
 
     def test_success(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "tag", "name": "v1.0"})
         assert result.status == AtomStatus.SUCCESS
@@ -458,7 +526,9 @@ class TestTag:
 
     def test_tag_already_exists_fails(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=128, stdout="", stderr="already exists", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=128, stdout="", stderr="already exists", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "tag", "name": "v1.0"})
         assert result.status == AtomStatus.FAILED
@@ -546,7 +616,9 @@ class TestWorktreeAdd:
 
     def test_success_with_defaults(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
                 {
@@ -568,7 +640,9 @@ class TestWorktreeAdd:
 
     def test_git_failure(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=128, stdout="", stderr="fatal", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=128, stdout="", stderr="fatal", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
                 {
@@ -597,7 +671,9 @@ class TestIsTracked:
 
     def test_tracked_file_returns_true(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="path/file.txt\n", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="path/file.txt\n", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "is_tracked", "path": "path/file.txt"})
         assert result.status == AtomStatus.SUCCESS
@@ -605,7 +681,9 @@ class TestIsTracked:
 
     def test_untracked_file_returns_false(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=1, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run({"intent": "is_tracked", "path": "path/untracked.txt"})
         assert result.status == AtomStatus.SUCCESS
@@ -622,7 +700,9 @@ class TestWorktreeTeardown:
 
     def test_success_clean_removal(self, tmp_path: Path) -> None:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
                 {
@@ -647,7 +727,9 @@ class TestWorktreeTeardown:
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock_run:
             # First subproc fails (git worktree remove --force ...), second succeeds (git worktree prune)
             mock_run.side_effect = [
-                SubprocessResult(exit_code=1, stdout="", stderr="Device or resource busy", duration_seconds=0.0),
+                SubprocessResult(
+                    exit_code=1, stdout="", stderr="Device or resource busy", duration_seconds=0.0
+                ),
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
             ]
             atom = GitAtom(cwd=tmp_path)
@@ -673,7 +755,9 @@ class TestWorktreeTeardown:
         mock_rmtree.side_effect = PermissionError("Locked")
 
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock_run:
-            mock_run.return_value = SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0)
+            mock_run.return_value = SubprocessResult(
+                exit_code=1, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
                 {
@@ -700,7 +784,9 @@ class TestWorktreeSync:
         wt_dir = tmp_path / ".worktrees" / "agent"
         wt_dir.mkdir(parents=True)
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
+            mock.return_value = SubprocessResult(
+                exit_code=0, stdout="", stderr="", duration_seconds=0.0
+            )
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
                 {
@@ -730,20 +816,33 @@ class TestStripMerge:
                 # git merge
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
                 # git diff
-                SubprocessResult(exit_code=0, stdout="src/good.py\nREADME.md\ndocs/arch.md\nsrc/bad.py\n", stderr="", duration_seconds=0.0),
+                SubprocessResult(
+                    exit_code=0,
+                    stdout="src/good.py\nREADME.md\ndocs/arch.md\nsrc/bad.py\n",
+                    stderr="",
+                    duration_seconds=0.0,
+                ),
                 # loops for README.md
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # checkout
                 # loops for docs/arch.md
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # checkout
                 # loops for src/bad.py
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # checkout
                 # post-strip diff --cached --quiet: exit 1 = survivors remain → commit
                 SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),
                 # git commit
-                SubprocessResult(exit_code=0, stdout="committed strips", stderr="", duration_seconds=0.0),
+                SubprocessResult(
+                    exit_code=0, stdout="committed strips", stderr="", duration_seconds=0.0
+                ),
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(
@@ -768,14 +867,23 @@ class TestStripMerge:
                 # git merge
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
                 # git diff
-                SubprocessResult(exit_code=0, stdout="src/good.py\ncomponent/doc_updates.md\nsrc/bad.py\n", stderr="", duration_seconds=0.0),
+                SubprocessResult(
+                    exit_code=0,
+                    stdout="src/good.py\ncomponent/doc_updates.md\nsrc/bad.py\n",
+                    stderr="",
+                    duration_seconds=0.0,
+                ),
                 # loops for src/bad.py ONLY (doc_updates is skipped)
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
-                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # checkout
+                SubprocessResult(
+                    exit_code=0, stdout="", stderr="", duration_seconds=0.0
+                ),  # checkout
                 # post-strip diff --cached --quiet: exit 1 = survivors remain → commit
                 SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),
                 # git commit
-                SubprocessResult(exit_code=0, stdout="committed strips", stderr="", duration_seconds=0.0),
+                SubprocessResult(
+                    exit_code=0, stdout="committed strips", stderr="", duration_seconds=0.0
+                ),
             ]
             atom = GitAtom(cwd=tmp_path)
             result = atom.run(

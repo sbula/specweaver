@@ -96,9 +96,7 @@ def persist_decomposition(dumped: dict[str, Any], context: RunContext) -> tuple[
 
     from specweaver.infrastructure.llm.lineage import extract_artifact_uuid, wrap_artifact_tag
 
-    artifact_path = context.spec_path.with_name(
-        context.spec_path.stem + "_decomposition.yaml"
-    )
+    artifact_path = context.spec_path.with_name(context.spec_path.stem + "_decomposition.yaml")
 
     artifact_uuid = None
     if artifact_path.exists():

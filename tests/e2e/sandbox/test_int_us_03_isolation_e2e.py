@@ -67,12 +67,14 @@ def _git(cwd: Path, *args: str) -> None:
 def _commit_project(tmp_path: Path, dal: str) -> None:
     """Real git repo marked at a given DAL, carrying the generator script + the probe."""
     (tmp_path / ".specweaver" / "scripts").mkdir(parents=True, exist_ok=True)
-    (tmp_path / ".specweaver" / "scripts" / "gen.sh").write_text(_GEN, encoding="utf-8", newline="\n")
-    (tmp_path / "tests").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "tests" / "test_persist_probe.py").write_text(_PROBE, encoding="utf-8", newline="\n")
-    (tmp_path / "context.yaml").write_text(
-        f"operational:\n  dal_level: {dal}\n", encoding="utf-8"
+    (tmp_path / ".specweaver" / "scripts" / "gen.sh").write_text(
+        _GEN, encoding="utf-8", newline="\n"
     )
+    (tmp_path / "tests").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "tests" / "test_persist_probe.py").write_text(
+        _PROBE, encoding="utf-8", newline="\n"
+    )
+    (tmp_path / "context.yaml").write_text(f"operational:\n  dal_level: {dal}\n", encoding="utf-8")
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
     _git(tmp_path, "init")
     _git(tmp_path, "config", "user.email", "t@t")

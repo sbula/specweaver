@@ -212,9 +212,7 @@ class TestRealTestBodies:
         # [Boundary] G-a: >=2 error scenarios for one function share a
         # parametrized body that asserts a raise (never equality).
         scenarios = [
-            _make_scenario(
-                name="err_a", category="error", inputs={"u": ""}, expected_output=None
-            ),
+            _make_scenario(name="err_a", category="error", inputs={"u": ""}, expected_output=None),
             _make_scenario(
                 name="err_b", category="error", inputs={"u": None}, expected_output=None
             ),

@@ -51,7 +51,9 @@ _BASH = shutil.which("bash")
 pytestmark = pytest.mark.skipif(_GIT is None or _BASH is None, reason="git and bash required")
 
 # Generator: writes an ALLOWED source file + a DISALLOWED file, relative to cwd (worktree).
-_GEN_SCRIPT = "mkdir -p src\nprintf 'VALUE = 42\\n' > src/foo.py\nprintf 'LEAK = 1\\n' > secret.py\n"
+_GEN_SCRIPT = (
+    "mkdir -p src\nprintf 'VALUE = 42\\n' > src/foo.py\nprintf 'LEAK = 1\\n' > secret.py\n"
+)
 
 # Generator variant that ALSO writes a docs/ file (hard-blocked even if allow-listed).
 _GEN_WITH_DOCS = (

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Agent Memory Bank — Resilience Repository Mixin.
 
 Provides Zombie Reaper, Circuit Breakers, and DAG state propagation.

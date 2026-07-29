@@ -1,3 +1,7 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+
 def _pop_scc(root: str, stack: list[str], on_stack: set[str]) -> list[str]:
     """Pop a strongly connected component off the Tarjan stack."""
     scc: list[str] = []

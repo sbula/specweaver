@@ -1,3 +1,6 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Prompt slot registry and render profile mechanism types.
 
 Domain-agnostic data structures used by the prompt rendering pipeline.

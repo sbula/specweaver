@@ -52,7 +52,10 @@ def _review_sequence(*verdicts: str):
 
     async def _execute(self, step, context):
         verdict = seq.pop(0)
-        output = {"verdict": verdict, "findings": [] if verdict == "accepted" else ["Purpose vague"]}
+        output = {
+            "verdict": verdict,
+            "findings": [] if verdict == "accepted" else ["Purpose vague"],
+        }
         return _passed(output) if verdict == "accepted" else _failed(output)
 
     return _execute

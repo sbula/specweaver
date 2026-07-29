@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """INT-US-02 SF-03 (G-b): direct tests for the inline draft-chain report (FR-6).
 
 The report had NO direct test — which is how the uppercase-"FAIL" comparison bug
@@ -18,7 +21,9 @@ from specweaver.workflows.review.interfaces.cli import _report_draft_chain
 
 
 def _record(step_name: str, status: StepStatus, output):
-    return SimpleNamespace(step_name=step_name, status=status, result=SimpleNamespace(output=output))
+    return SimpleNamespace(
+        step_name=step_name, status=status, result=SimpleNamespace(output=output)
+    )
 
 
 def _run_report(monkeypatch, records) -> str:

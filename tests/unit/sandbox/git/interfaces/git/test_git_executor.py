@@ -106,7 +106,9 @@ class TestGitExecutorExecution:
 
     def test_successful_command(self, tmp_path: Path) -> None:
         mock_executor = _mock_executor(stdout="nothing to commit\n")
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor)
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor
+        )
 
         result = executor.run("status")
 
@@ -116,7 +118,9 @@ class TestGitExecutorExecution:
 
     def test_failed_command(self, tmp_path: Path) -> None:
         mock_executor = _mock_executor(exit_code=1, stderr="nothing to commit\n")
-        executor = GitExecutor(cwd=tmp_path, whitelist={"commit"}, subprocess_executor=mock_executor)
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"commit"}, subprocess_executor=mock_executor
+        )
 
         result = executor.run("commit", "-m", "test")
 
@@ -134,7 +138,9 @@ class TestGitExecutorExecution:
 
     def test_os_error(self, tmp_path: Path) -> None:
         mock_executor = _mock_executor(exit_code=-1, stderr="git not found")
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor)
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor
+        )
 
         result = executor.run("status")
 
@@ -143,7 +149,9 @@ class TestGitExecutorExecution:
 
     def test_cwd_passed_to_subprocess(self, tmp_path: Path) -> None:
         mock_executor = _mock_executor()
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor)
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor
+        )
 
         executor.run("status")
 
@@ -195,13 +203,17 @@ class TestGitExecutorEdgeCases:
 
     def test_exit_code_minus_one_on_timeout(self, tmp_path: Path) -> None:
         mock_executor = _mock_executor(exit_code=-1, timed_out=True, duration_seconds=5.0)
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor)
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor
+        )
         result = executor.run("status", timeout=5)
         assert result.exit_code == -1
 
     def test_exit_code_minus_one_on_os_error(self, tmp_path: Path) -> None:
         mock_executor = _mock_executor(exit_code=-1, stderr="No such file")
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor)
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor
+        )
         result = executor.run("status")
         assert result.exit_code == -1
 
@@ -214,7 +226,9 @@ class TestGitExecutorEdgeCases:
 
     def test_stderr_preserved_on_failure(self, tmp_path: Path) -> None:
         mock_executor = _mock_executor(exit_code=128, stderr="fatal: not a git repository")
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor)
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=mock_executor
+        )
         result = executor.run("status")
         assert result.stderr == "fatal: not a git repository"
         assert result.exit_code == 128

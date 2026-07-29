@@ -584,9 +584,7 @@ class TestAtomRunArchitecture:
         with patch.object(
             atom._runner, "run_architecture_check", return_value=mock_result
         ) as mock_check:
-            atom.run(
-                {"intent": "run_architecture", "target": "src/", "dal_level": DALLevel.DAL_B}
-            )
+            atom.run({"intent": "run_architecture", "target": "src/", "dal_level": DALLevel.DAL_B})
 
         mock_check.assert_called_once_with(target="src/", dal_level=DALLevel.DAL_B)
 

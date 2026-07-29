@@ -117,6 +117,7 @@ try:
 except ImportError as e:
     console.print(f"[bold red]Failed to load workspace project plugin:[/bold red] {e}")
 
+
 def _stdin_isatty() -> bool:
     """Patchable indirection for the interactivity check (the TTY knowledge lives here,
     in the delivery layer — core's channel seam is terminal-agnostic)."""

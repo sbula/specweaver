@@ -62,7 +62,9 @@ def _commit_project(tmp_path: Path, *scripts: tuple[str, str]) -> None:
 
 
 def _bash(name: str, script: str) -> PipelineStep:
-    return PipelineStep(name=name, action=StepAction.BASH, target=StepTarget.SCRIPT, params={"script": script})
+    return PipelineStep(
+        name=name, action=StepAction.BASH, target=StepTarget.SCRIPT, params={"script": script}
+    )
 
 
 def _ctx(tmp_path: Path, *, allowed: list[str]) -> RunContext:
@@ -117,9 +119,7 @@ def test_strip_merge_failure_is_surfaced(tmp_path: Path) -> None:
 
     _commit_project(tmp_path, ("gen.sh", _GEN))
 
-    real_run = __import__(
-        "specweaver.sandbox.git.core.atom", fromlist=["GitAtom"]
-    ).GitAtom.run
+    real_run = __import__("specweaver.sandbox.git.core.atom", fromlist=["GitAtom"]).GitAtom.run
 
     def _fail_strip(self, context):
         if context.get("intent") == "strip_merge":
@@ -143,7 +143,9 @@ def test_dirty_real_tree_fails_loud_and_leaves_repo_clean(tmp_path: Path) -> Non
     # Commit src/foo.py so it is tracked, plus gen.sh which rewrites it in the worktree.
     sd = tmp_path / ".specweaver" / "scripts"
     sd.mkdir(parents=True, exist_ok=True)
-    (sd / "gen.sh").write_text('echo "def foo(): pass" > src/foo.py\n', encoding="utf-8", newline="\n")
+    (sd / "gen.sh").write_text(
+        'echo "def foo(): pass" > src/foo.py\n', encoding="utf-8", newline="\n"
+    )
     src = tmp_path / "src"
     src.mkdir()
     (src / "foo.py").write_text("original\n", encoding="utf-8")
@@ -198,7 +200,9 @@ def _patch_intent_fail(intent: str):
 
 def test_empty_allowed_paths_lands_nothing(tmp_path: Path) -> None:
     _commit_project(tmp_path, ("gen.sh", _GEN))
-    run_state = _run(PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]), _ctx(tmp_path, allowed=[]))
+    run_state = _run(
+        PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]), _ctx(tmp_path, allowed=[])
+    )
     assert run_state.status == RunStatus.COMPLETED
     assert not (tmp_path / "src" / "foo.py").exists()
     assert not (tmp_path / "secret.py").exists()
@@ -212,7 +216,10 @@ def test_docs_hardblocked_even_if_allowed(tmp_path: Path) -> None:
     gen = 'mkdir -p docs\necho "evil" > docs/evil.md\n'
     _commit_project(tmp_path, ("gd.sh", gen))
     # docs/evil.md is EXPLICITLY allowed — the hard-block must still strip it.
-    run_state = _run(PipelineDefinition(name="p", steps=[_bash("g", "gd.sh")]), _ctx(tmp_path, allowed=["docs/evil.md"]))
+    run_state = _run(
+        PipelineDefinition(name="p", steps=[_bash("g", "gd.sh")]),
+        _ctx(tmp_path, allowed=["docs/evil.md"]),
+    )
     assert run_state.status == RunStatus.COMPLETED
     assert not (tmp_path / "docs" / "evil.md").exists()
 
@@ -223,7 +230,10 @@ def test_docs_hardblocked_even_if_allowed(tmp_path: Path) -> None:
 def test_reconcile_raises_on_commit_failure(tmp_path: Path) -> None:
     _commit_project(tmp_path, ("gen.sh", _GEN))
     with _patch_intent_fail("worktree_commit"), pytest.raises(RuntimeError, match="commit"):
-        _run(PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]), _ctx(tmp_path, allowed=["src/foo.py"]))
+        _run(
+            PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]),
+            _ctx(tmp_path, allowed=["src/foo.py"]),
+        )
 
 
 # --- G4 [Graceful teardown]: worktree + branch cleaned up on reconcile fail -
@@ -232,7 +242,10 @@ def test_reconcile_raises_on_commit_failure(tmp_path: Path) -> None:
 def test_worktree_torn_down_on_reconcile_failure(tmp_path: Path) -> None:
     _commit_project(tmp_path, ("gen.sh", _GEN))
     with _patch_intent_fail("strip_merge"), pytest.raises(RuntimeError):
-        _run(PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]), _ctx(tmp_path, allowed=["src/foo.py"]))
+        _run(
+            PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]),
+            _ctx(tmp_path, allowed=["src/foo.py"]),
+        )
     # The finally teardown ran despite the reconcile failure — no orphaned worktree/branch.
     _no_worktrees_or_branch(tmp_path)
 
@@ -243,7 +256,10 @@ def test_worktree_torn_down_on_reconcile_failure(tmp_path: Path) -> None:
 def test_all_stripped_leaves_repo_clean(tmp_path: Path) -> None:
     gen = 'echo "secret" > secret.py\n'  # only a disallowed file
     _commit_project(tmp_path, ("gs.sh", gen))
-    run_state = _run(PipelineDefinition(name="p", steps=[_bash("g", "gs.sh")]), _ctx(tmp_path, allowed=["src/foo.py"]))
+    run_state = _run(
+        PipelineDefinition(name="p", steps=[_bash("g", "gs.sh")]),
+        _ctx(tmp_path, allowed=["src/foo.py"]),
+    )
     assert run_state.status == RunStatus.COMPLETED
     assert not (tmp_path / "secret.py").exists()
     assert "strip merge" not in _log(tmp_path)  # nothing merged
@@ -255,7 +271,10 @@ def test_all_stripped_leaves_repo_clean(tmp_path: Path) -> None:
 
 def test_empty_session_noop_reconcile(tmp_path: Path) -> None:
     _commit_project(tmp_path, ("noop.sh", "echo hi\n"))
-    run_state = _run(PipelineDefinition(name="p", steps=[_bash("g", "noop.sh")]), _ctx(tmp_path, allowed=["src/foo.py"]))
+    run_state = _run(
+        PipelineDefinition(name="p", steps=[_bash("g", "noop.sh")]),
+        _ctx(tmp_path, allowed=["src/foo.py"]),
+    )
     assert run_state.status == RunStatus.COMPLETED
     assert "strip merge" not in _log(tmp_path)  # nothing to reconcile
 
@@ -266,6 +285,8 @@ def test_empty_session_noop_reconcile(tmp_path: Path) -> None:
 def test_doc_updates_md_survives(tmp_path: Path) -> None:
     _commit_project(tmp_path, ("du.sh", 'echo "claim" > doc_updates.md\n'))
     # Even with an empty allow-list, doc_updates.md survives by explicit rule.
-    run_state = _run(PipelineDefinition(name="p", steps=[_bash("g", "du.sh")]), _ctx(tmp_path, allowed=[]))
+    run_state = _run(
+        PipelineDefinition(name="p", steps=[_bash("g", "du.sh")]), _ctx(tmp_path, allowed=[])
+    )
     assert run_state.status == RunStatus.COMPLETED
     assert (tmp_path / "doc_updates.md").exists()

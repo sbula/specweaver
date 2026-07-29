@@ -36,9 +36,7 @@ class ImportDirectionRule(Rule):
         # Read pre-hydrated QA results from context
         result_data = self.context.get("qa_architecture_result")
         if result_data is None:
-            return self._skip(
-                "Architecture check results not available (QA context not hydrated)"
-            )
+            return self._skip("Architecture check results not available (QA context not hydrated)")
 
         exports = result_data.get("exports") or {}
         violation_count = exports.get("violation_count", 0)

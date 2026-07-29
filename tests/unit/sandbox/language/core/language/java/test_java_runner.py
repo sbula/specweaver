@@ -199,9 +199,7 @@ class TestJavaRunner:
     def test_run_debugger_gradle(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").write_text("")
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="DEBUG OK", stderr=""
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="DEBUG OK", stderr="")
         runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
 
         result = runner.run_debugger(target="src/", entrypoint="com.example.Main")
@@ -213,9 +211,7 @@ class TestJavaRunner:
     def test_run_debugger_maven(self, tmp_path: Path) -> None:
         (tmp_path / "pom.xml").write_text("")
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="DEBUG OK", stderr=""
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout="DEBUG OK", stderr="")
         runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
 
         result = runner.run_debugger(target="src/", entrypoint="com.example.Main")
@@ -232,9 +228,7 @@ class TestJavaRunner:
         ctx_file.write_text("forbids:\n  - com.evil.*\n")
 
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            timed_out=True, duration_seconds=60.0
-        )
+        mock_executor.execute.return_value = _make_result(timed_out=True, duration_seconds=60.0)
         runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
 
         result = runner.run_architecture_check(target="src/")
@@ -255,9 +249,7 @@ class TestJavaRunner:
             "ARCH_VIOLATION|src/main/java/Svc.java|com.evil.*\n"
         )
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout=arch_stdout
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=0, stdout=arch_stdout)
         runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
 
         result = runner.run_architecture_check(target="src/")
@@ -272,4 +264,3 @@ class TestJavaRunner:
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = JavaRunner(cwd=tmp_path)
         assert runner.language_name == "java"
-

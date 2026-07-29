@@ -51,9 +51,10 @@ class CoverageRule(Rule):
             )
 
         # Check for timeout
-        if result_data.get("status") == "FAILED" and "timed out" in (
-            result_data.get("message") or ""
-        ).lower():
+        if (
+            result_data.get("status") == "FAILED"
+            and "timed out" in (result_data.get("message") or "").lower()
+        ):
             return self._fail(
                 "Coverage check timed out",
                 [Finding(message="Coverage check timed out after 120s", severity=Severity.ERROR)],

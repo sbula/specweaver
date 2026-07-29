@@ -143,7 +143,7 @@ Repeat until all sub-features have `Committed ✅`, then proceed to Phase 4.
      there is no override:
 ```
 python scripts/check_fr_coverage.py <STORY-ID>
-python -m pytest -q
+python scripts/tests.py feature <STORY-ID>
 ```
 
 - The **FR ledger** proves every FR the design declared is owned by an implementation plan *and*

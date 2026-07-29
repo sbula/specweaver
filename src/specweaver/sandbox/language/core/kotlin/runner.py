@@ -215,9 +215,7 @@ class KotlinRunner(QARunnerInterface):
         errors: list[CompileError] = []
         if result.exit_code != 0:
             errors.append(
-                CompileError(
-                    file="", line=0, column=0, code="COMPILE_ERROR", message=result.stderr
-                )
+                CompileError(file="", line=0, column=0, code="COMPILE_ERROR", message=result.stderr)
             )
 
         return CompileRunResult(

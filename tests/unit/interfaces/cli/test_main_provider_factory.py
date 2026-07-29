@@ -22,10 +22,12 @@ def test_factory_returns_hitl_provider_on_tty() -> None:
         provider = main_mod._interactive_context_provider()
     assert isinstance(provider, HITLProvider)
 
+
 def test_factory_returns_none_when_headless() -> None:
     """[Boundary/FR-5] no TTY -> None (parking stays the headless contract)."""
     with patch.object(main_mod, "_stdin_isatty", return_value=False):
         assert main_mod._interactive_context_provider() is None
+
 
 def test_factory_registered_with_the_seam_at_import() -> None:
     """[Happy/R4] importing main registers the factory on the core seam."""

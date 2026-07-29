@@ -1,3 +1,6 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 import importlib.util
 import sys
 from pathlib import Path
@@ -134,16 +137,26 @@ def test_live_sqlite_migration(migration: Any) -> None:
         conn.execute(text("CREATE TABLE active_state (key TEXT PRIMARY KEY)"))
         conn.execute(text("CREATE TABLE project_standards (id INTEGER PRIMARY KEY)"))
         conn.execute(
-            text("CREATE TABLE artifact_events (id INTEGER PRIMARY KEY, artifact_id TEXT, parent_id TEXT)")
+            text(
+                "CREATE TABLE artifact_events (id INTEGER PRIMARY KEY, artifact_id TEXT, parent_id TEXT)"
+            )
         )
         conn.execute(text("CREATE TABLE project_llm_links (id INTEGER PRIMARY KEY)"))
 
-        conn.execute(text("CREATE INDEX ix_artifact_events_artifact_id ON artifact_events (artifact_id)"))
-        conn.execute(text("CREATE INDEX ix_artifact_events_parent_id ON artifact_events (parent_id)"))
+        conn.execute(
+            text("CREATE INDEX ix_artifact_events_artifact_id ON artifact_events (artifact_id)")
+        )
+        conn.execute(
+            text("CREATE INDEX ix_artifact_events_parent_id ON artifact_events (parent_id)")
+        )
 
         # Also test foreign key propagation for memory_epics (verifies RED-1.1 defense)
-        conn.execute(text("PRAGMA foreign_keys=OFF;")) # Simulate Alembic default
-        conn.execute(text("CREATE TABLE memory_epics (id INTEGER PRIMARY KEY, project_name TEXT REFERENCES projects(name))"))
+        conn.execute(text("PRAGMA foreign_keys=OFF;"))  # Simulate Alembic default
+        conn.execute(
+            text(
+                "CREATE TABLE memory_epics (id INTEGER PRIMARY KEY, project_name TEXT REFERENCES projects(name))"
+            )
+        )
 
         # 2. Run Upgrade
         ctx = MigrationContext.configure(conn)
@@ -153,7 +166,12 @@ def test_live_sqlite_migration(migration: Any) -> None:
             migration.upgrade()
 
         # 3. Verify post-upgrade state
-        tables = [row[0] for row in conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'")).fetchall()]
+        tables = [
+            row[0]
+            for row in conn.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table'")
+            ).fetchall()
+        ]
         assert "workspace_projects" in tables
         assert "workspace_active_state" in tables
         assert "workspace_project_standards" in tables
@@ -161,25 +179,47 @@ def test_live_sqlite_migration(migration: Any) -> None:
         assert "llm_project_links" in tables
         assert "projects" not in tables
 
-        indexes = [row[0] for row in conn.execute(text("SELECT name FROM sqlite_master WHERE type='index'")).fetchall()]
+        indexes = [
+            row[0]
+            for row in conn.execute(
+                text("SELECT name FROM sqlite_master WHERE type='index'")
+            ).fetchall()
+        ]
         assert "ix_flow_artifact_events_artifact_id" in indexes
         assert "ix_flow_artifact_events_parent_id" in indexes
         assert "ix_artifact_events_artifact_id" not in indexes
 
         # Verify foreign key was automatically propagated by SQLite >= 3.26
-        child_sql = conn.execute(text("SELECT sql FROM sqlite_master WHERE name='memory_epics'")).scalar()
+        child_sql = conn.execute(
+            text("SELECT sql FROM sqlite_master WHERE name='memory_epics'")
+        ).scalar()
         assert isinstance(child_sql, str)
-        assert "REFERENCES \"workspace_projects\"(name)" in child_sql or "REFERENCES workspace_projects" in child_sql or "REFERENCES `workspace_projects`" in child_sql or "REFERENCES projects" not in child_sql
+        assert (
+            'REFERENCES "workspace_projects"(name)' in child_sql
+            or "REFERENCES workspace_projects" in child_sql
+            or "REFERENCES `workspace_projects`" in child_sql
+            or "REFERENCES projects" not in child_sql
+        )
 
         # 4. Run Downgrade
         with patch("af60fd3509a2.op", new=op_inst):
             migration.downgrade()
 
         # 5. Verify post-downgrade state
-        tables = [row[0] for row in conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'")).fetchall()]
+        tables = [
+            row[0]
+            for row in conn.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table'")
+            ).fetchall()
+        ]
         assert "projects" in tables
         assert "workspace_projects" not in tables
 
-        indexes = [row[0] for row in conn.execute(text("SELECT name FROM sqlite_master WHERE type='index'")).fetchall()]
+        indexes = [
+            row[0]
+            for row in conn.execute(
+                text("SELECT name FROM sqlite_master WHERE type='index'")
+            ).fetchall()
+        ]
         assert "ix_artifact_events_artifact_id" in indexes
         assert "ix_flow_artifact_events_artifact_id" not in indexes

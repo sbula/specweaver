@@ -118,9 +118,12 @@ flagged (`tests/unit/scripts/test_check_test_quality.py`).
 These are checks, not advice, because advice gets skipped:
 
 ```bash
-python scripts/check_useless_asserts.py    # assertions that cannot fail
-python scripts/check_test_basenames.py     # every test file uniquely named
+python scripts/quality.py cb --only useless_asserts,test_basenames
 ```
+
+Both are registered in `scripts/quality.py` and run at every gate from `quick` upward, so the
+full gate covers them too — `--only` is for when you want just these two while iterating on
+tests.
 
 `check_test_basenames.py` exists because duplicate basenames are not cosmetic: a truncated
 reference search hid a twin file and stopped 5806 tests from collecting, minutes after a targeted

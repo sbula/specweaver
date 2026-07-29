@@ -102,9 +102,7 @@ class _CaptureContextAtGenerate:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         self._sink["plan"] = context.plan
         self._sink["decomposition"] = context.decomposition
-        return StepResult(
-            status=StepStatus.PASSED, output={}, started_at="1", completed_at="2"
-        )
+        return StepResult(status=StepStatus.PASSED, output={}, started_at="1", completed_at="2")
 
 
 def _spec(tmp_path: Path) -> Path:
@@ -129,12 +127,8 @@ def _run(tmp_path: Path, sink: dict[str, Any]):
     assert isinstance(registry.get(StepAction.PLAN, StepTarget.SPEC), PlanSpecHandler), (
         "the real registry must resolve plan+spec to the real handler"
     )
-    registry.register(
-        StepAction.GENERATE, StepTarget.CODE, _CaptureContextAtGenerate(sink)
-    )
-    ctx = RunContext(
-        project_path=tmp_path, spec_path=_spec(tmp_path), llm=_FakeLLM([_plan_json()])
-    )
+    registry.register(StepAction.GENERATE, StepTarget.CODE, _CaptureContextAtGenerate(sink))
+    ctx = RunContext(project_path=tmp_path, spec_path=_spec(tmp_path), llm=_FakeLLM([_plan_json()]))
     runner = PipelineRunner(
         _plan_then_generate(), ctx, registry=registry, store=StateStore(tmp_path / "state.db")
     )
@@ -154,9 +148,7 @@ class TestPlanBridgeIsHookDriven:
             "context.plan was still unset at the generate step — the D-INTL-03 bridge is not wired"
         )
 
-    def test_the_value_is_the_artifact_on_disk_not_something_invented(
-        self, tmp_path: Path
-    ) -> None:
+    def test_the_value_is_the_artifact_on_disk_not_something_invented(self, tmp_path: Path) -> None:
         """Guards the capture handler against proving itself (vacuous-proof pattern 2)."""
         sink: dict[str, Any] = {}
         run, _ = _run(tmp_path, sink)
@@ -165,9 +157,7 @@ class TestPlanBridgeIsHookDriven:
         assert plan_path.is_file()
         assert sink["plan"] == plan_path.read_text(encoding="utf-8")
 
-    def test_the_plan_bridge_does_not_populate_the_decomposition_seam(
-        self, tmp_path: Path
-    ) -> None:
+    def test_the_plan_bridge_does_not_populate_the_decomposition_seam(self, tmp_path: Path) -> None:
         """AD-1: two plan concepts, two fields. A `plan+spec` step must not touch the other one."""
         sink: dict[str, Any] = {}
         _run(tmp_path, sink)
@@ -192,9 +182,7 @@ class TestPlanBridgeIsHookDriven:
         assert plan_path.is_file()
 
         sink2: dict[str, Any] = {}
-        registry.register(
-            StepAction.GENERATE, StepTarget.CODE, _DeleteArtifactThenCapture(sink2)
-        )
+        registry.register(StepAction.GENERATE, StepTarget.CODE, _DeleteArtifactThenCapture(sink2))
 
         class _PlanThenVanish:
             """A plan step that reports a path it has already deleted."""

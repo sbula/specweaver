@@ -171,9 +171,7 @@ class TestPythonQARunner:
 
     def test_run_architecture_check_invalid_type(self, tmp_path: Path) -> None:
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=1, stdout='{"error": "fatal"}'
-        )
+        mock_executor.execute.return_value = _make_result(exit_code=1, stdout='{"error": "fatal"}')
         runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
         with patch("shutil.which", return_value="/usr/bin/tach"):
@@ -221,9 +219,7 @@ class TestContainerModeIntegration:
         assert result.violation_count == 1
         assert result.violations[0].code == "FileNotFoundError"
 
-    def test_run_tests_engine_unavailable_becomes_synthetic_failure(
-        self, tmp_path: Path
-    ) -> None:
+    def test_run_tests_engine_unavailable_becomes_synthetic_failure(self, tmp_path: Path) -> None:
         from specweaver.sandbox.execution.container_executor import ContainerEngineUnavailableError
 
         mock_executor = MagicMock(spec=SubprocessExecutor)
@@ -236,9 +232,7 @@ class TestContainerModeIntegration:
         assert result.failures[0].nodeid == "<sandbox>"
         assert "no engine" in result.failures[0].message
 
-    def test_run_linter_engine_unavailable_becomes_synthetic_failure(
-        self, tmp_path: Path
-    ) -> None:
+    def test_run_linter_engine_unavailable_becomes_synthetic_failure(self, tmp_path: Path) -> None:
         from specweaver.sandbox.execution.container_executor import ContainerEngineUnavailableError
 
         mock_executor = MagicMock(spec=SubprocessExecutor)

@@ -15,20 +15,21 @@ from specweaver.sandbox.execution.models import ResourceLimits
 
 
 class TestSubprocessExecutorIntegration:
-
     @pytest.mark.skipif(sys.platform == "win32", reason="Unix-only limits")
     def test_process_limit_unix(self, tmp_path: Path) -> None:
         """Verify fork bomb protection on Unix (FR-10)."""
         executor = SubprocessExecutor(
-            cwd=tmp_path,
-            resource_limits=ResourceLimits(max_processes=50)
+            cwd=tmp_path, resource_limits=ResourceLimits(max_processes=50)
         )
         # We don't actually run a fork bomb in tests to avoid crashing CI,
         # but we verify the setrlimit call happened by checking limits inside the child
-        result = executor.execute([
-            "python3", "-c",
-            "import resource, sys; sys.stdout.write(str(resource.getrlimit(resource.RLIMIT_NPROC)[0]))"
-        ])
+        result = executor.execute(
+            [
+                "python3",
+                "-c",
+                "import resource, sys; sys.stdout.write(str(resource.getrlimit(resource.RLIMIT_NPROC)[0]))",
+            ]
+        )
         assert result.exit_code == 0
         assert "50" in result.stdout
 
@@ -37,8 +38,7 @@ class TestSubprocessExecutorIntegration:
         # Set limit to 20MB. Python baseline is ~15MB.
         limit_bytes = 20 * 1024 * 1024
         executor = SubprocessExecutor(
-            cwd=tmp_path,
-            resource_limits=ResourceLimits(max_memory_bytes=limit_bytes)
+            cwd=tmp_path, resource_limits=ResourceLimits(max_memory_bytes=limit_bytes)
         )
         py = "python" if sys.platform == "win32" else "python3"
 
@@ -49,13 +49,15 @@ class TestSubprocessExecutorIntegration:
         # Should be killed by OS (OOM or Job Object violation)
         assert result.exit_code != 0
 
-    @pytest.mark.skipif(sys.platform == "win32", reason="Windows Job Objects do not support max file size per process")
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Windows Job Objects do not support max file size per process",
+    )
     def test_file_size_limit(self, tmp_path: Path) -> None:
         """Verify file size limits are enforced on Unix (FR-10)."""
         limit_bytes = 1024 * 1024  # 1MB
         executor = SubprocessExecutor(
-            cwd=tmp_path,
-            resource_limits=ResourceLimits(max_file_size_bytes=limit_bytes)
+            cwd=tmp_path, resource_limits=ResourceLimits(max_file_size_bytes=limit_bytes)
         )
         py = "python" if sys.platform == "win32" else "python3"
 
@@ -94,6 +96,7 @@ class TestSubprocessExecutorIntegration:
 
         # Process should be dead
         import specweaver.sandbox.execution._signals as sig
+
         sig._cleanup_active_processes()  # Should handle dead processes gracefully
 
     def test_symlink_escape(self, tmp_path: Path) -> None:
@@ -122,10 +125,9 @@ class TestSubprocessExecutorIntegration:
         py = "python" if sys.platform == "win32" else "python3"
         monkeypatch.setenv("GEMINI_API_KEY", "supersecret")
 
-        result = executor.execute([
-            py, "-c",
-            "import os; print(os.environ.get('GEMINI_API_KEY', 'NOT_FOUND'))"
-        ])
+        result = executor.execute(
+            [py, "-c", "import os; print(os.environ.get('GEMINI_API_KEY', 'NOT_FOUND'))"]
+        )
         assert result.exit_code == 0
         assert "NOT_FOUND" in result.stdout
 

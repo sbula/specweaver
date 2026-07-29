@@ -48,7 +48,9 @@ def _branch_delete_calls(ex: _FakeExec) -> list[tuple]:
 
 def test_branch_deleted_when_present(tmp_path: Path) -> None:
     ex = _FakeExec([SimpleNamespace(exit_code=0, stderr="")])  # worktree remove OK
-    res = handle_worktree_teardown(ex, tmp_path, {"path": ".worktrees/session-x", "branch": "sf-session-x"})
+    res = handle_worktree_teardown(
+        ex, tmp_path, {"path": ".worktrees/session-x", "branch": "sf-session-x"}
+    )
     assert res.status == AtomStatus.SUCCESS
     assert _branch_delete_calls(ex) == [("branch", "-D", "sf-session-x")]
 
@@ -73,7 +75,9 @@ def test_branch_delete_failure_is_best_effort(tmp_path: Path) -> None:
             SimpleNamespace(exit_code=1, stderr="branch not fully merged"),  # branch -D fails
         ]
     )
-    res = handle_worktree_teardown(ex, tmp_path, {"path": ".worktrees/session-x", "branch": "sf-session-x"})
+    res = handle_worktree_teardown(
+        ex, tmp_path, {"path": ".worktrees/session-x", "branch": "sf-session-x"}
+    )
     # teardown still succeeds; the failed branch-delete was attempted and swallowed
     assert res.status == AtomStatus.SUCCESS
     assert _branch_delete_calls(ex) == [("branch", "-D", "sf-session-x")]
@@ -90,6 +94,8 @@ def test_branch_deleted_on_fallback_path(tmp_path: Path) -> None:
         ]
     )
     # The worktree path does not exist under tmp_path → rmtree block is skipped.
-    res = handle_worktree_teardown(ex, tmp_path, {"path": ".worktrees/session-x", "branch": "sf-session-x"})
+    res = handle_worktree_teardown(
+        ex, tmp_path, {"path": ".worktrees/session-x", "branch": "sf-session-x"}
+    )
     assert res.status == AtomStatus.SUCCESS
     assert _branch_delete_calls(ex) == [("branch", "-D", "sf-session-x")]

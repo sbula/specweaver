@@ -131,9 +131,7 @@ class TestContainerExecutorRealEngine:
         )
         assert ps.stdout.strip() == ""
 
-    def test_result_contract_matches_subprocess_result_from_real_run(
-        self, tmp_path: Path
-    ) -> None:
+    def test_result_contract_matches_subprocess_result_from_real_run(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
         executor = ContainerSubprocessExecutor(
             cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="result-test"

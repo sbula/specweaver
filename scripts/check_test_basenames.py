@@ -37,12 +37,20 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def duplicate_basenames(tests_root: Path) -> dict[str, list[Path]]:
-    """Map each repeated test basename to every path carrying it."""
+def _collect(roots: list[Path]) -> list[Path]:
+    return sorted(
+        {p for root in roots for p in root.rglob("test_*.py") if "__pycache__" not in p.parts}
+    )
+
+
+def duplicate_basenames(*tests_roots: Path) -> dict[str, list[Path]]:
+    """Map each repeated test basename to every path carrying it.
+
+    Takes roots rather than files: a collision is only visible when every candidate is compared
+    against every other, so this check can never be handed a diff-scoped subset.
+    """
     by_name: dict[str, list[Path]] = collections.defaultdict(list)
-    for path in sorted(tests_root.rglob("test_*.py")):
-        if "__pycache__" in path.parts:
-            continue
+    for path in _collect(list(tests_roots)):
         by_name[path.name].append(path)
     return {name: paths for name, paths in by_name.items() if len(paths) > 1}
 
@@ -51,20 +59,23 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("tests_root", nargs="?", default=str(REPO_ROOT / "tests"))
+    ap.add_argument("paths", nargs="*", help="test directories (default: the tests/ tree)")
     args = ap.parse_args(argv)
 
-    root = Path(args.tests_root)
-    if not root.is_dir():
-        print(f"FAIL  tests root not found: {root}")
+    roots = [Path(p) for p in args.paths] if args.paths else [REPO_ROOT / "tests"]
+    not_dirs = [p for p in roots if not p.is_dir()]
+    if not_dirs:
+        for path in not_dirs:
+            print(f"FAIL  tests root not found: {path}")
         return 1
 
-    total = sum(1 for p in root.rglob("test_*.py") if "__pycache__" not in p.parts)
+    total = len(_collect(roots))
     if not total:
-        print(f"FAIL  no test files found under {root} — the check would pass vacuously")
+        joined = ", ".join(str(r) for r in roots)
+        print(f"FAIL  no test files found under {joined} — the check would pass vacuously")
         return 1
 
-    dupes = duplicate_basenames(root)
+    dupes = duplicate_basenames(*roots)
     if not dupes:
         print(f"Test basename check: {total} file(s), all unique")
         return 0

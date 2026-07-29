@@ -67,9 +67,7 @@ class _CaptureOnEntry:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         self._sink["decomposition"] = context.decomposition
         self._sink["plan"] = context.plan
-        return StepResult(
-            status=StepStatus.PASSED, output={}, started_at="1", completed_at="2"
-        )
+        return StepResult(status=StepStatus.PASSED, output={}, started_at="1", completed_at="2")
 
 
 def _ctx(project: Path) -> RunContext:
@@ -131,8 +129,12 @@ class TestStoreRoundTripSeam:
         registry.register(
             StepAction.DECOMPOSE,
             StepTarget.FEATURE,
-            _Stub(components=[{"name": "a", "proposed_dal": "DAL_A"},
-                              {"name": "b", "proposed_dal": "DAL_D"}]),
+            _Stub(
+                components=[
+                    {"name": "a", "proposed_dal": "DAL_A"},
+                    {"name": "b", "proposed_dal": "DAL_D"},
+                ]
+            ),
         )
 
         run = asyncio.run(
@@ -226,9 +228,7 @@ class TestCrossSessionJourney:
         reg2.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _Stub(components=[]))
         reg2.register(StepAction.VALIDATE, StepTarget.SPEC, _CaptureOnEntry(seen))
         asyncio.run(
-            PipelineRunner(pipeline, _ctx(tmp_path), registry=reg2, store=store).resume(
-                run1.run_id
-            )
+            PipelineRunner(pipeline, _ctx(tmp_path), registry=reg2, store=store).resume(run1.run_id)
         )
 
         assert seen["plan"] == PLAN_BODY
@@ -266,9 +266,7 @@ class TestCrossSessionJourney:
         reg2.register(StepAction.DECOMPOSE, StepTarget.FEATURE, _Stub(components=[]))
         reg2.register(StepAction.VALIDATE, StepTarget.SPEC, _CaptureOnEntry(seen))
         run2 = asyncio.run(
-            PipelineRunner(pipeline, _ctx(tmp_path), registry=reg2, store=store).resume(
-                run1.run_id
-            )
+            PipelineRunner(pipeline, _ctx(tmp_path), registry=reg2, store=store).resume(run1.run_id)
         )
 
         # The run continues; only the unavailable field stays unset.
@@ -317,7 +315,9 @@ class TestCrossSessionJourney:
         pipeline = PipelineDefinition(name="p", steps=[first, second])
 
         run = asyncio.run(
-            PipelineRunner(pipeline, _ctx(tmp_path), registry=StepHandlerRegistry(), store=store).run()
+            PipelineRunner(
+                pipeline, _ctx(tmp_path), registry=StepHandlerRegistry(), store=store
+            ).run()
         )
         # Hand-build the two records the scenario needs, then persist them for real.
         reloaded = store.load_run(run.run_id)
@@ -341,9 +341,7 @@ class TestCrossSessionJourney:
 class TestBundledPipelineCrossSession:
     """The shipped feature_decomposition.yaml, driven across two sessions."""
 
-    def test_bundled_pipeline_rehydrates_the_decomposition_on_resume(
-        self, tmp_path: Path
-    ) -> None:
+    def test_bundled_pipeline_rehydrates_the_decomposition_on_resume(self, tmp_path: Path) -> None:
         yaml = YAML(typ="safe")
         pipeline = PipelineDefinition.model_validate(
             yaml.load(PIPELINES_DIR / "feature_decomposition.yaml")

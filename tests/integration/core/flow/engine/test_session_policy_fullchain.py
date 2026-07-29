@@ -65,9 +65,13 @@ def _git(cwd: Path, *args: str) -> None:
 
 def _commit_project(tmp_path: Path, toml_body: str) -> None:
     (tmp_path / ".specweaver" / "scripts").mkdir(parents=True, exist_ok=True)
-    (tmp_path / ".specweaver" / "scripts" / "gen.sh").write_text(_GEN, encoding="utf-8", newline="\n")
+    (tmp_path / ".specweaver" / "scripts" / "gen.sh").write_text(
+        _GEN, encoding="utf-8", newline="\n"
+    )
     (tmp_path / "tests").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "tests" / "test_persist_probe.py").write_text(_PROBE, encoding="utf-8", newline="\n")
+    (tmp_path / "tests" / "test_persist_probe.py").write_text(
+        _PROBE, encoding="utf-8", newline="\n"
+    )
     (tmp_path / "specweaver.toml").write_text(toml_body, encoding="utf-8")
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
     _git(tmp_path, "init")
@@ -136,7 +140,7 @@ def test_toml_session_policy_drives_isolated_run_and_authorized_reconcile(tmp_pa
 def test_toml_session_policy_off_runs_without_isolation(tmp_path: Path) -> None:
     """[Boundary/NFR-2] with the knob absent, apply_session_policy leaves the run
     un-isolated (session off, empty allow-list) — the composition chain is a true no-op."""
-    _commit_project(tmp_path, "[sandbox]\nexecution_mode = \"host\"\n")
+    _commit_project(tmp_path, '[sandbox]\nexecution_mode = "host"\n')
 
     settings = SpecWeaverSettings(
         llm={"model": "gemini-2.0-flash"},

@@ -12,7 +12,6 @@ from specweaver.sandbox.execution.models import ResourceLimits
 
 
 class TestSubprocessExecutorE2E:
-
     def test_adversarial_payload_lifecycle(self, tmp_path: Path) -> None:
         """Verify executor handles a hostile payload trying to breach sandbox.
 
@@ -26,7 +25,7 @@ class TestSubprocessExecutorE2E:
             cwd=tmp_path,
             timeout_seconds=2,
             resource_limits=ResourceLimits(max_memory_bytes=limit_bytes),
-            env_allowlist=frozenset({"PATH", "PYTHONPATH"})
+            env_allowlist=frozenset({"PATH", "PYTHONPATH"}),
         )
 
         # Inject secret that should be stripped

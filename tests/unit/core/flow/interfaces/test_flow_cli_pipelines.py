@@ -320,9 +320,7 @@ class TestResumeContextConfigWiring:
         from specweaver.core.flow.engine.state import PipelineRun, RunStatus
 
         _state_path = tmp_path / "pipe_state.db"
-        monkeypatch.setattr(
-            "specweaver.core.config.paths.state_db_path", lambda: _state_path
-        )
+        monkeypatch.setattr("specweaver.core.config.paths.state_db_path", lambda: _state_path)
         # dir basename == registered name so load_settings resolves it.
         project_dir = tmp_path / "res-proj"
         project_dir.mkdir()
@@ -354,9 +352,7 @@ class TestResumeContextConfigWiring:
             patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
             # Patch the loader to a sentinel so we assert the *wiring* (resume assigns
             # load_settings' result to context.config) independent of project resolution.
-            patch(
-                "specweaver.core.config.settings_loader.load_settings", return_value=sentinel
-            ),
+            patch("specweaver.core.config.settings_loader.load_settings", return_value=sentinel),
         ):
             mock_get_store.return_value.load_run.return_value = mock_run_state
             mock_runner = mock_runner_class.return_value

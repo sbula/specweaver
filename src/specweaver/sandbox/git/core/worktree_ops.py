@@ -106,7 +106,9 @@ def handle_worktree_commit(executor: "EngineGitExecutor") -> AtomResult:
             message=f"Session commit failed: {getattr(commit, 'stderr', '')}",
         )
     return AtomResult(
-        status=AtomStatus.SUCCESS, message="Committed session snapshot.", exports={"committed": True}
+        status=AtomStatus.SUCCESS,
+        message="Committed session snapshot.",
+        exports={"committed": True},
     )
 
 

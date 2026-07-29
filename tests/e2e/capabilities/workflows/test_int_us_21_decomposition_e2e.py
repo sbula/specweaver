@@ -205,8 +205,16 @@ def _start(project: Path, spec: str = SPEC_NAME):
 
 def _resume(project: Path, run_id: str):
     return runner.invoke(
-        app, ["run", PIPELINE, str(project / "specs" / SPEC_NAME), "--project", str(project),
-              "--resume", run_id]
+        app,
+        [
+            "run",
+            PIPELINE,
+            str(project / "specs" / SPEC_NAME),
+            "--project",
+            str(project),
+            "--resume",
+            run_id,
+        ],
     )
 
 
@@ -686,9 +694,7 @@ class TestE12InterruptSurvival:
         match = re.search(r"--resume ([0-9a-f-]{36})", flattened)
 
         assert match, f"no resumable run id in the interrupt message: {flattened}"
-        assert _store(data_dir).load_run(match.group(1)) is not None, (
-            "the printed id does not load"
-        )
+        assert _store(data_dir).load_run(match.group(1)) is not None, "the printed id does not load"
 
     def test_no_half_written_artifact_survives_the_interrupt(
         self, project: Path, data_dir: Path
@@ -771,18 +777,18 @@ class TestTeardownActuallyRuns:
             _start(project)
             run_id = _latest(data_dir).run_id
 
-            with patch.object(handover_mod, "save_handover_context", spy_handover), patch.object(
-                runner_utils_mod, "flush_telemetry", spy_flush
-            ), patch(
-                "specweaver.core.flow.handlers.decompose.DecomposeFeatureHandler.execute",
-                new=_InterruptingDecompose.execute,
+            with (
+                patch.object(handover_mod, "save_handover_context", spy_handover),
+                patch.object(runner_utils_mod, "flush_telemetry", spy_flush),
+                patch(
+                    "specweaver.core.flow.handlers.decompose.DecomposeFeatureHandler.execute",
+                    new=_InterruptingDecompose.execute,
+                ),
             ):
                 _resume(project, run_id)
         return calls
 
-    def test_handover_is_saved_on_the_interrupt_path(
-        self, project: Path, data_dir: Path
-    ) -> None:
+    def test_handover_is_saved_on_the_interrupt_path(self, project: Path, data_dir: Path) -> None:
         assert self._interrupt_and_spy(project, data_dir)["handover"] >= 1, (
             "the `finally:` never reached _save_handover, so 'Run state saved' is not true"
         )

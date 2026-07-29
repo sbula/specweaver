@@ -30,7 +30,11 @@ class _FakeExec:
 
     def run(self, *args: str):
         self.calls.append(args)
-        res = self._results[self._i] if self._i < len(self._results) else SimpleNamespace(exit_code=0, stderr="")
+        res = (
+            self._results[self._i]
+            if self._i < len(self._results)
+            else SimpleNamespace(exit_code=0, stderr="")
+        )
         self._i += 1
         return res
 
@@ -68,7 +72,9 @@ def test_clean_worktree_skips_commit() -> None:
 
 
 def test_commit_failure_is_surfaced() -> None:
-    ex = _FakeExec([_ok(), _has_changes(), SimpleNamespace(exit_code=1, stderr="commit boom", stdout="")])
+    ex = _FakeExec(
+        [_ok(), _has_changes(), SimpleNamespace(exit_code=1, stderr="commit boom", stdout="")]
+    )
     res = handle_worktree_commit(ex)
     assert res.status == AtomStatus.FAILED
     assert "boom" in res.message

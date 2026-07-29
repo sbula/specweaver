@@ -174,9 +174,7 @@ steps:
   - name: s08_ambiguity
     rule: S08
 """
-    (pipelines / "validation_spec_default_orchestrator.yaml").write_text(
-        preset, encoding="utf-8"
-    )
+    (pipelines / "validation_spec_default_orchestrator.yaml").write_text(preset, encoding="utf-8")
 
 
 def _run_status(tmp_path: Path) -> str:
@@ -193,8 +191,10 @@ def _run_status(tmp_path: Path) -> str:
     # reach the runner — the real DB lands under SPECWEAVER_DATA_DIR. Resolve the same way.
     data_dir = os.environ.get("SPECWEAVER_DATA_DIR")
     candidates = (
-        [pathlib.Path(data_dir) / "pipeline_state.db"] if data_dir else []
-    ) + sorted(tmp_path.rglob("pipeline_state.db")) + sorted(tmp_path.rglob("pipe_state.db"))
+        ([pathlib.Path(data_dir) / "pipeline_state.db"] if data_dir else [])
+        + sorted(tmp_path.rglob("pipeline_state.db"))
+        + sorted(tmp_path.rglob("pipe_state.db"))
+    )
     for db in candidates:
         if not db.exists():
             continue
@@ -307,9 +307,7 @@ def test_e3_headless_new_feature_parks_exit_zero(tmp_path: Path) -> None:
         "specweaver.infrastructure.llm.factory.create_llm_adapter",
         return_value=(_settings_mock(), ScriptedAdapter([]), MagicMock()),
     ):
-        result = runner.invoke(
-            app, ["run", "new_feature", "greeter", "--project", str(project)]
-        )
+        result = runner.invoke(app, ["run", "new_feature", "greeter", "--project", str(project)])
 
     assert result.exit_code == 0, result.output  # parked is NOT an error (SF-02 fix)
     assert "Resume with" in result.output
@@ -417,9 +415,7 @@ Synchronous, single call. No I/O, no network, no persistence. The function is pu
 """
 
 
-def test_e6_park_manual_spec_resume_flows_through_chain(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_e6_park_manual_spec_resume_flows_through_chain(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
         "specweaver.core.config.paths.state_db_path", lambda: tmp_path / "pipe_state.db"
     )
@@ -440,9 +436,7 @@ def test_e6_park_manual_spec_resume_flows_through_chain(
             stack.enter_context(s)
 
         # Session 1: headless run parks at draft (the historic workflow's first half).
-        result1 = runner.invoke(
-            app, ["run", "new_feature", "greeter", "--project", str(project)]
-        )
+        result1 = runner.invoke(app, ["run", "new_feature", "greeter", "--project", str(project)])
         assert result1.exit_code == 0, result1.output
 
         # The human writes the spec MANUALLY, exactly as the park message instructs.
@@ -491,14 +485,13 @@ def test_e7_rejection_park_edit_resume_accepted(tmp_path: Path, monkeypatch) -> 
 
         # Session 1: validate passes, review DENIES -> loop_back -> headless draft
         # parks WITH the reviewer findings (SF-01 branch). Parked = exit 0.
-        result1 = runner.invoke(
-            app, ["run", "new_feature", "greeter", "--project", str(project)]
-        )
+        result1 = runner.invoke(app, ["run", "new_feature", "greeter", "--project", str(project)])
         assert result1.exit_code == 0, result1.output
 
         # The human revises the spec per the findings.
-        spec.write_text(MANUAL_SPEC + "\nThe greeting format is exactly `Hello, {name}!`.\n",
-                        encoding="utf-8")
+        spec.write_text(
+            MANUAL_SPEC + "\nThe greeting format is exactly `Hello, {name}!`.\n", encoding="utf-8"
+        )
 
         # Session 2+: resume until terminal. The path is longer than it looks, and every hop is
         # a real park the human must acknowledge: approve the draft gate -> validate passes ->

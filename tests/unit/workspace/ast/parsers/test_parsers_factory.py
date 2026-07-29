@@ -1,3 +1,6 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 from specweaver.workspace.ast.parsers.factory import get_default_parsers
 from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
 from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure

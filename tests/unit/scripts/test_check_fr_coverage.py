@@ -206,7 +206,12 @@ class TestMain:
             tmp_path, design, {"TEST-US-1_implementation_plan.md": "covers FR-1 and FR-2"}
         )
         (tests_root / "test_x.py").write_text("# TEST-US-1 FR-1 FR-2\n", encoding="utf-8")
-        assert mod.main(["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]) == 0
+        assert (
+            mod.main(
+                ["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]
+            )
+            == 0
+        )
 
     def test_fr_missing_from_plan_blocks(self, mod: ModuleType, tmp_path: Path) -> None:
         design = "| FR-1 | a | b | c | d |\n| FR-2 | a | b | c | d |\n"
@@ -214,7 +219,12 @@ class TestMain:
             tmp_path, design, {"TEST-US-1_implementation_plan.md": "covers FR-1 only"}
         )
         (tests_root / "test_x.py").write_text("# TEST-US-1 FR-1 FR-2\n", encoding="utf-8")
-        assert mod.main(["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]) == 1
+        assert (
+            mod.main(
+                ["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]
+            )
+            == 1
+        )
 
     def test_fr_missing_from_tests_blocks(self, mod: ModuleType, tmp_path: Path) -> None:
         design = "| FR-1 | a | b | c | d |\n| FR-2 | a | b | c | d |\n"
@@ -222,12 +232,22 @@ class TestMain:
             tmp_path, design, {"TEST-US-1_implementation_plan.md": "covers FR-1 and FR-2"}
         )
         (tests_root / "test_x.py").write_text("# TEST-US-1 FR-1\n", encoding="utf-8")
-        assert mod.main(["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]) == 1
+        assert (
+            mod.main(
+                ["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]
+            )
+            == 1
+        )
 
     def test_no_plan_at_all_blocks(self, mod: ModuleType, tmp_path: Path) -> None:
         features, tests_root = _story_tree(tmp_path, "| FR-1 | a | b | c | d |\n", {})
         (tests_root / "test_x.py").write_text("# TEST-US-1 FR-1\n", encoding="utf-8")
-        assert mod.main(["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]) == 1
+        assert (
+            mod.main(
+                ["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]
+            )
+            == 1
+        )
 
     def test_design_without_fr_table_blocks_rather_than_passing_vacuously(
         self, mod: ModuleType, tmp_path: Path
@@ -236,17 +256,30 @@ class TestMain:
         features, tests_root = _story_tree(
             tmp_path, "# Design\n\nNo table here.\n", {"TEST-US-1_implementation_plan.md": "x"}
         )
-        assert mod.main(["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]) == 1
+        assert (
+            mod.main(
+                ["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]
+            )
+            == 1
+        )
 
     def test_missing_design_doc_blocks_cleanly(self, mod: ModuleType, tmp_path: Path) -> None:
         features = tmp_path / "features"
         features.mkdir()
         tests_root = tmp_path / "tests"
         tests_root.mkdir()
-        assert mod.main(["NOPE-US-9", "--features-root", str(features), "--tests-root", str(tests_root)]) == 1
+        assert (
+            mod.main(
+                ["NOPE-US-9", "--features-root", str(features), "--tests-root", str(tests_root)]
+            )
+            == 1
+        )
 
     def test_bad_story_id_blocks_cleanly(self, mod: ModuleType, tmp_path: Path) -> None:
-        assert mod.main(["../etc", "--features-root", str(tmp_path), "--tests-root", str(tmp_path)]) == 1
+        assert (
+            mod.main(["../etc", "--features-root", str(tmp_path), "--tests-root", str(tmp_path)])
+            == 1
+        )
 
     def test_multiple_plans_are_unioned(self, mod: ModuleType, tmp_path: Path) -> None:
         design = "| FR-1 | a | b | c | d |\n| FR-2 | a | b | c | d |\n"
@@ -259,4 +292,9 @@ class TestMain:
             },
         )
         (tests_root / "test_x.py").write_text("# TEST-US-1 FR-1 FR-2\n", encoding="utf-8")
-        assert mod.main(["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]) == 0
+        assert (
+            mod.main(
+                ["TEST-US-1", "--features-root", str(features), "--tests-root", str(tests_root)]
+            )
+            == 0
+        )

@@ -59,7 +59,9 @@ def _commit_project(tmp_path: Path) -> None:
     _git(tmp_path, "config", "user.email", "t@t")
     _git(tmp_path, "config", "user.name", "t")
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
-    _git(tmp_path, "add", "README.md", ".specweaver/scripts/write.sh", ".specweaver/scripts/read.sh")
+    _git(
+        tmp_path, "add", "README.md", ".specweaver/scripts/write.sh", ".specweaver/scripts/read.sh"
+    )
     _git(tmp_path, "commit", "-m", "init")
 
 
@@ -88,7 +90,9 @@ def _run(pipeline: PipelineDefinition, context: RunContext):
 
 def test_session_persists_file_across_steps(tmp_path: Path) -> None:
     _commit_project(tmp_path)
-    pipe = PipelineDefinition(name="p", steps=[_bash_step("w", "write.sh"), _bash_step("r", "read.sh")])
+    pipe = PipelineDefinition(
+        name="p", steps=[_bash_step("w", "write.sh"), _bash_step("r", "read.sh")]
+    )
     run_state = _run(pipe, _ctx(tmp_path, session=True))
 
     assert run_state.status == RunStatus.COMPLETED, run_state
@@ -99,9 +103,7 @@ def test_session_persists_file_across_steps(tmp_path: Path) -> None:
     assert not (tmp_path / "shared.txt").exists()
     # Cleanup: worktree gone, session branch gone.
     assert not (tmp_path / ".worktrees").exists() or not any((tmp_path / ".worktrees").iterdir())
-    branches = subprocess.run(
-        [_GIT, "branch"], cwd=tmp_path, capture_output=True, text=True
-    ).stdout
+    branches = subprocess.run([_GIT, "branch"], cwd=tmp_path, capture_output=True, text=True).stdout
     assert "sf-session-" not in branches
 
 
@@ -131,7 +133,10 @@ def test_session_empty_pipeline_noop(tmp_path: Path) -> None:
 
 def test_no_session_runs_at_real_root(tmp_path: Path) -> None:
     _commit_project(tmp_path)
-    run_state = _run(PipelineDefinition(name="p", steps=[_bash_step("w", "write.sh")]), _ctx(tmp_path, session=False))
+    run_state = _run(
+        PipelineDefinition(name="p", steps=[_bash_step("w", "write.sh")]),
+        _ctx(tmp_path, session=False),
+    )
     assert run_state.status == RunStatus.COMPLETED
     # Not isolated → the file was written at the real root.
     assert (tmp_path / "shared.txt").exists()
@@ -166,9 +171,7 @@ def test_park_inside_session_raises(tmp_path: Path) -> None:
     from specweaver.core.flow.engine.state import StepResult, StepStatus
 
     _commit_project(tmp_path)
-    parked = StepResult(
-        status=StepStatus.WAITING_FOR_INPUT, started_at="t0", completed_at="t1"
-    )
+    parked = StepResult(status=StepStatus.WAITING_FOR_INPUT, started_at="t0", completed_at="t1")
     with (
         patch(
             "specweaver.core.flow.handlers.bash_action.BashActionHandler.execute",
@@ -176,7 +179,10 @@ def test_park_inside_session_raises(tmp_path: Path) -> None:
         ),
         pytest.raises(RuntimeError, match=r"parking"),
     ):
-        _run(PipelineDefinition(name="p", steps=[_bash_step("w", "write.sh")]), _ctx(tmp_path, session=True))
+        _run(
+            PipelineDefinition(name="p", steps=[_bash_step("w", "write.sh")]),
+            _ctx(tmp_path, session=True),
+        )
 
 
 # --- Q3: idempotent create recovers from a crash-orphaned worktree/branch --
@@ -197,7 +203,9 @@ def test_crash_orphan_worktree_is_pruned_before_readd(tmp_path: Path) -> None:
     _git(tmp_path, "worktree", "add", "-b", branch, wt, "HEAD")
     assert (tmp_path / wt).exists()
 
-    pipe = PipelineDefinition(name="p", steps=[_bash_step("w", "write.sh"), _bash_step("r", "read.sh")])
+    pipe = PipelineDefinition(
+        name="p", steps=[_bash_step("w", "write.sh"), _bash_step("r", "read.sh")]
+    )
     with patch("specweaver.core.flow.engine.runner.uuid.uuid4", return_value=fixed):
         run_state = _run(pipe, _ctx(tmp_path, session=True))
 

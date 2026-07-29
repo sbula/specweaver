@@ -56,12 +56,15 @@ class TestResolveShouldIsolate:
 
     def test_context_missing_enforce_isolation_defaults_host(self) -> None:
         # step None + a context that lacks enforce_isolation entirely → host, no AttributeError.
-        assert resolve_should_isolate(SimpleNamespace(use_worktree=None), SimpleNamespace()) is False
+        assert (
+            resolve_should_isolate(SimpleNamespace(use_worktree=None), SimpleNamespace()) is False
+        )
 
     def test_step_missing_use_worktree_defers_to_policy(self) -> None:
         # a step object with no use_worktree attribute → treated as None → policy decides.
         assert (
-            resolve_should_isolate(SimpleNamespace(), SimpleNamespace(enforce_isolation=True)) is True
+            resolve_should_isolate(SimpleNamespace(), SimpleNamespace(enforce_isolation=True))
+            is True
         )
 
     def test_both_attributes_missing_defaults_host(self) -> None:

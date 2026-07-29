@@ -44,16 +44,12 @@ class TestSubprocessResult:
 
     def test_default_timed_out_false(self) -> None:
         """timed_out defaults to False."""
-        result = SubprocessResult(
-            exit_code=0, stdout="", stderr="", duration_seconds=0.1
-        )
+        result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.1)
         assert result.timed_out is False
 
     def test_default_events_empty(self) -> None:
         """events defaults to an empty list."""
-        result = SubprocessResult(
-            exit_code=0, stdout="", stderr="", duration_seconds=0.1
-        )
+        result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.1)
         assert result.events == []
 
     def test_timed_out_true(self) -> None:
@@ -70,32 +66,24 @@ class TestSubprocessResult:
     # Boundary / Edge cases
     def test_zero_duration(self) -> None:
         """Duration of 0.0 is valid."""
-        result = SubprocessResult(
-            exit_code=0, stdout="", stderr="", duration_seconds=0.0
-        )
+        result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0)
         assert result.duration_seconds == 0.0
 
     def test_negative_exit_code(self) -> None:
         """Negative exit code (signal-killed) is valid."""
-        result = SubprocessResult(
-            exit_code=-9, stdout="", stderr="", duration_seconds=0.5
-        )
+        result = SubprocessResult(exit_code=-9, stdout="", stderr="", duration_seconds=0.5)
         assert result.exit_code == -9
 
     # Hostile input — frozen immutability
     def test_frozen_cannot_mutate_exit_code(self) -> None:
         """SubprocessResult is frozen — cannot mutate exit_code."""
-        result = SubprocessResult(
-            exit_code=0, stdout="", stderr="", duration_seconds=0.1
-        )
+        result = SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.1)
         with pytest.raises(dataclasses.FrozenInstanceError):
             result.exit_code = 1  # type: ignore[misc]
 
     def test_frozen_cannot_mutate_stdout(self) -> None:
         """SubprocessResult is frozen — cannot mutate stdout."""
-        result = SubprocessResult(
-            exit_code=0, stdout="hello", stderr="", duration_seconds=0.1
-        )
+        result = SubprocessResult(exit_code=0, stdout="hello", stderr="", duration_seconds=0.1)
         with pytest.raises(dataclasses.FrozenInstanceError):
             result.stdout = "hacked"  # type: ignore[misc]
 
@@ -159,9 +147,13 @@ class TestSubprocessExecutorEnv:
         executor = SubprocessExecutor(cwd=tmp_path)
         # Execute a command that prints an env var
         if sys.platform == "win32":
-            result = executor.execute(["python", "-c", "import os; print(os.environ.get('PATH', 'MISSING'))"])
+            result = executor.execute(
+                ["python", "-c", "import os; print(os.environ.get('PATH', 'MISSING'))"]
+            )
         else:
-            result = executor.execute(["python3", "-c", "import os; print(os.environ.get('PATH', 'MISSING'))"])
+            result = executor.execute(
+                ["python3", "-c", "import os; print(os.environ.get('PATH', 'MISSING'))"]
+            )
         assert result.stdout.strip() != "MISSING"
 
     def test_extra_env_injected(self, tmp_path: Path) -> None:
@@ -184,6 +176,7 @@ class TestSubprocessExecutorEnv:
         py = "python" if sys.platform == "win32" else "python3"
         # Set GIT_EXEC_PATH in parent env, verify it reaches child
         import os
+
         old = os.environ.get("GIT_EXEC_PATH")
         os.environ["GIT_EXEC_PATH"] = "/test/git/path"
         try:
@@ -248,16 +241,18 @@ class TestSubprocessExecutorEnv:
 
     def test_env_stripping_azure(self, tmp_path: Path) -> None:
         from specweaver.sandbox.execution.executor import SubprocessExecutor
+
         executor = SubprocessExecutor(cwd=tmp_path)
-        env = executor._build_env({'AZURE_CLIENT_SECRET': 'secret', 'AZURE_TENANT_ID': 'tenant'})
-        assert 'AZURE_CLIENT_SECRET' not in env
-        assert 'AZURE_TENANT_ID' not in env
+        env = executor._build_env({"AZURE_CLIENT_SECRET": "secret", "AZURE_TENANT_ID": "tenant"})
+        assert "AZURE_CLIENT_SECRET" not in env
+        assert "AZURE_TENANT_ID" not in env
 
     def test_env_stripping_false_bypass(self, tmp_path: Path) -> None:
         from specweaver.sandbox.execution.executor import SubprocessExecutor
+
         executor = SubprocessExecutor(cwd=tmp_path, strip_credentials=False)
-        env = executor._build_env({'GEMINI_API_KEY': 'secret'})
-        assert env.get('GEMINI_API_KEY') == 'secret'
+        env = executor._build_env({"GEMINI_API_KEY": "secret"})
+        assert env.get("GEMINI_API_KEY") == "secret"
 
 
 # ---------------------------------------------------------------------------
@@ -295,6 +290,7 @@ class TestSubprocessExecutorPathValidation:
         import os
 
         from specweaver.sandbox.execution.executor import SubprocessExecutor
+
         executor = SubprocessExecutor(cwd=tmp_path)
         # Create a symlink that points outside tmp_path
         target_dir = tmp_path.parent
@@ -422,7 +418,9 @@ class TestSubprocessExecutorExecute:
         log_text = " ".join(r.message for r in caplog.records)
         assert "subprocess_execute" in log_text or "execute" in log_text.lower()
 
-    def test_debug_logging_contains_cmd(self, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    def test_debug_logging_contains_cmd(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Log entry contains the command that was run."""
         import logging
 
@@ -438,10 +436,15 @@ class TestSubprocessExecutorExecute:
     def test_execute_oserror(self, tmp_path: Path) -> None:
         """OSError translates into exit_code=-1 and stderr."""
         from specweaver.sandbox.execution.executor import SubprocessExecutor
+
         executor = SubprocessExecutor(cwd=tmp_path)
         result = executor.execute(["does_not_exist_binary"])
         assert result.exit_code == -1
-        assert "WinError" in result.stderr or "No such file" in result.stderr or "FileNotFoundError" in result.stderr
+        assert (
+            "WinError" in result.stderr
+            or "No such file" in result.stderr
+            or "FileNotFoundError" in result.stderr
+        )
 
     def test_signal_propagation_logic(self, tmp_path: Path) -> None:
         """Test process tracking adds process to _active_processes."""
@@ -455,6 +458,7 @@ class TestSubprocessExecutorExecute:
         # It might still be in the weakset, though it's finished.
         # But testing weakset size is flaky due to gc, so we just verify it doesn't crash.
         import specweaver.sandbox.execution._signals as sig
+
         sig._cleanup_active_processes()  # Should not crash
 
 
@@ -521,4 +525,3 @@ class TestSubprocessExecutorInputText:
         assert result.exit_code == 0
         assert "MAKE ME UPPERCASE" in result.stdout
         assert result.timed_out is False
-

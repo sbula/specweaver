@@ -132,9 +132,7 @@ def _artifact_path(tmp_path: Path) -> Path:
 
 def _pipeline(*, hitl: bool = False) -> PipelineDefinition:
     """A minimal pipeline whose only step is the real decompose step."""
-    step = PipelineStep(
-        name="decompose", action=StepAction.DECOMPOSE, target=StepTarget.FEATURE
-    )
+    step = PipelineStep(name="decompose", action=StepAction.DECOMPOSE, target=StepTarget.FEATURE)
     if hitl:
         step.gate = GateDefinition(type=GateType.HITL, condition=GateCondition.COMPLETED)
     return PipelineDefinition(name="decompose_only", steps=[step])
@@ -149,11 +147,12 @@ def _run(pipeline: PipelineDefinition, ctx: RunContext, store: StateStore, plan:
         "constructing the handler by hand is what let D-INTL-02 ship unregistered"
     )
     runner = PipelineRunner(pipeline, ctx, registry=registry, store=store)
-    with patch(
-        "specweaver.core.flow.handlers.decompose.FeatureDecomposer"
-    ) as cls, patch(
-        "specweaver.core.flow.handlers.base._build_base_prompt",
-        new=AsyncMock(return_value=MagicMock()),
+    with (
+        patch("specweaver.core.flow.handlers.decompose.FeatureDecomposer") as cls,
+        patch(
+            "specweaver.core.flow.handlers.base._build_base_prompt",
+            new=AsyncMock(return_value=MagicMock()),
+        ),
     ):
         inst = AsyncMock()
         inst.decompose.return_value = plan
@@ -445,8 +444,8 @@ def _scaffold_template(tmp_path: Path, body: str | None = None) -> Path:
         body
         or (
             "# {{ component_name }} - Component Spec\n\n"
-            "> **Parent Feature**: {{ parent_feature | default(\"N/A\") }}\n\n"
-            "## 1. Purpose\n\n{{ purpose | default(\"TODO\") }}\n"
+            '> **Parent Feature**: {{ parent_feature | default("N/A") }}\n\n'
+            '## 1. Purpose\n\n{{ purpose | default("TODO") }}\n'
         ),
         encoding="utf-8",
     )
@@ -752,7 +751,9 @@ class TestFeatureSpecNameCollision:
 
     def test_collision_is_reported_distinctly_not_as_skipped(self, tmp_path: Path) -> None:
         _scaffold_template(tmp_path)
-        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan())
+        run, _ = _run(
+            _pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan()
+        )
 
         stubs = run.step_records[0].result.output["component_specs"]
         assert stubs["collided"] == ["onboarding_feature"]
@@ -771,7 +772,9 @@ class TestFeatureSpecNameCollision:
     def test_other_components_are_unaffected(self, tmp_path: Path) -> None:
         """One colliding name must not abort the rest of the batch."""
         _scaffold_template(tmp_path)
-        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan())
+        run, _ = _run(
+            _pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan()
+        )
 
         stubs = run.step_records[0].result.output["component_specs"]
         assert stubs["created"] == ["auth"]
@@ -787,6 +790,8 @@ class TestFeatureSpecNameCollision:
 
     def test_the_summary_surfaces_the_collision(self, tmp_path: Path) -> None:
         _scaffold_template(tmp_path)
-        run, _ = _run(_pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan())
+        run, _ = _run(
+            _pipeline(), _ctx(tmp_path), StateStore(tmp_path / "s.db"), self._colliding_plan()
+        )
 
         assert "collided" in run.step_records[0].result.output["summary"]

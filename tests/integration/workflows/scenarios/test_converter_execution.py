@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.integration
 
-CORRECT_IMPL = '''\
+CORRECT_IMPL = """\
 def greet(name):
     return f"Hello {name}"
 
@@ -36,7 +36,7 @@ def farewell(name):
     if not name:
         raise ValueError("name required")
     return f"Bye {name}"
-'''
+"""
 
 # Business-wrong: greet drops the salutation (the US-24 disease).
 WRONG_IMPL = CORRECT_IMPL.replace('return f"Hello {name}"', "return name")

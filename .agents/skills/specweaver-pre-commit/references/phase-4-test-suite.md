@@ -1,37 +1,66 @@
 ---
-description: "Phase 4: Run the full test suite — all tests must pass. Report exact counts."
+description: "Phase 4: Run the test tiers this story requires at this commit point. Report exact counts."
 ---
 
-# Phase 4: Run Full Test Suite
+# Phase 4: Run the Test Gate
 
 > [!CAUTION]
-> You MUST run the tests in the exact order below.
-> Do NOT proceed to the next test level if there are ANY failures in the current level.
-> Fix all failures before advancing to the next command. All commands must be run autonomously.
-> 
-> **STRICT ANTI-CACHING RULE:** You MUST physically execute every single one of these `run_command` tools right now. NEVER assume tests pass because you ran `pytest` five minutes ago. You are in a strict pre-commit gate, and the laws of the gate require a fresh run.
+> **STRICT ANTI-CACHING RULE:** You MUST physically execute the command below right now. NEVER
+> assume tests pass because you ran `pytest` five minutes ago. You are in a strict pre-commit
+> gate, and the laws of the gate require a fresh run.
 
-4.1. Run **Unit** Tests:
-     ```
-     python -m pytest tests/unit/
-     ```
+4.1. Run the test gate for the commit point you are at and the story you are on:
 
-4.2. Run **Integration** Tests:
      ```
-     python -m pytest tests/integration/
+     python scripts/tests.py cb <STORY-ID>        # a commit boundary (CB-N)
+     python scripts/tests.py sf <STORY-ID>        # the sub-feature (SF-N) is complete
+     python scripts/tests.py feature <STORY-ID>   # the feature / story is closing
      ```
 
-4.3. Run **End-to-End (E2E)** Tests:
+     A **TECH ticket must also declare its kind**, because the four kinds need different proof:
+
      ```
-     python -m pytest tests/e2e/
+     python scripts/tests.py cb TECH-020 --kind refactor
      ```
 
-4.4. **MANDATORY REPORTING**: After all test suites pass, report the **exact numbers**:
-     - Total unit tests passed: X
-     - Total integration tests passed: X
-     - Total e2e tests passed: X
-     - **Grand total: X tests passed**
-     These numbers MUST be extracted from the actual pytest output, not estimated.
+     `refactor` · `bugfix` · `tooling` · `audit`.
+
+     This replaces the three unconditional `pytest tests/unit|integration|e2e` invocations that
+     used to be this phase. **Which tiers run, and over how much code, is not your choice** — it
+     is decided by the story's type and DAL:
+
+     - **Capability stories** (`C-FLOW-12`) are unit-led; integration and e2e arrive at `sf` and
+       `feature`.
+     - **Integration stories** (`INT-US-21`) run **no unit tier at all** — integration and e2e
+       from the first commit. If you find yourself wanting a unit test in an INT story, that is
+       not a coverage gap to fill here: it is the signal that the capability underneath shipped
+       incomplete, and it belongs upstream as its own story.
+     - **DAL shifts the whole profile.** DAL-A runs every tier at full scope from `cb`; DAL-B one
+       state earlier than baseline; DAL-D/E later. An INT story inherits the **most critical** DAL
+       among the capabilities it integrates — and note the direction: DAL-A is Mission-Critical,
+       DAL-E is Prototyping, so "most critical" is the *lowest* letter.
+
+     `python scripts/tests.py matrix` prints every profile.
 
 > [!IMPORTANT]
-> **NO HITL GATE HERE:** If the entire test sequence passes successfully, update `task.md` and PROCEED IMMEDIATELY to Phase 5. Do NOT stop to ask the user for permission to continue.
+> **Widening is allowed; narrowing never is.** `--also integration` or `--all` may add tiers when
+> you have reason to want more. There is no flag that removes one. If a run feels too slow, that
+> is the profile telling you what this story costs — not a setting to turn down.
+
+4.2. **A tier that selects ZERO tests is a FAILURE, not a pass.** If the gate reports
+     `selected NO tests`, you changed source that nothing mirrors. That is missing coverage: go
+     back to Phase 2/3 and write the test, do not work around the scope.
+
+4.3. **For `--kind refactor`, the gate also asserts that you did not modify any test file.** A
+     refactor's entire claim is that behaviour did not change, and the proof is that the existing
+     tests pass *unmodified*. If it blocks, either the behaviour genuinely moved — in which case
+     it is not a refactor and must be reclassified — or the tests were bent to fit, which is worse.
+
+4.4. **MANDATORY REPORTING**: After the gate passes, report the **exact numbers** per tier that
+     ran, taken from the actual pytest output and never estimated:
+     - Tier, scope, and tests passed for each tier the gate selected
+     - **Grand total: X tests passed**
+     - The story's resolved DAL and where it came from (the gate prints this)
+
+> [!IMPORTANT]
+> **NO HITL GATE HERE:** If the test gate passes, update `task.md` and PROCEED IMMEDIATELY to Phase 5. Do NOT stop to ask the user for permission to continue.

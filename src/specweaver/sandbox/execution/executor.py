@@ -37,22 +37,45 @@ logger = logging.getLogger(__name__)
 # Default environment allowlist (H-3: includes GIT_* vars)
 # ---------------------------------------------------------------------------
 
-_DEFAULT_ENV_ALLOWLIST: frozenset[str] = frozenset({
-    "PATH", "HOME", "USERPROFILE", "LANG", "LC_ALL", "TERM",
-    "PYTHONPATH", "PYTHONHASHSEED",
-    "NODE_PATH", "CARGO_HOME", "JAVA_HOME", "GRADLE_HOME",
-    "GOPATH", "GOROOT",
-    "VIRTUAL_ENV", "CONDA_PREFIX",
-    "TMPDIR", "TEMP", "TMP",
-    "SystemRoot", "COMSPEC",
-    "GIT_EXEC_PATH", "GIT_DIR",
-})
+_DEFAULT_ENV_ALLOWLIST: frozenset[str] = frozenset(
+    {
+        "PATH",
+        "HOME",
+        "USERPROFILE",
+        "LANG",
+        "LC_ALL",
+        "TERM",
+        "PYTHONPATH",
+        "PYTHONHASHSEED",
+        "NODE_PATH",
+        "CARGO_HOME",
+        "JAVA_HOME",
+        "GRADLE_HOME",
+        "GOPATH",
+        "GOROOT",
+        "VIRTUAL_ENV",
+        "CONDA_PREFIX",
+        "TMPDIR",
+        "TEMP",
+        "TMP",
+        "SystemRoot",
+        "COMSPEC",
+        "GIT_EXEC_PATH",
+        "GIT_DIR",
+    }
+)
 
 # Credential env vars to ALWAYS strip — even from extra_env (red team cycle 1)
-_CREDENTIAL_VARS: frozenset[str] = frozenset({
-    "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-    "MISTRAL_API_KEY", "QWEN_API_KEY", "AWS_SECRET_ACCESS_KEY",
-})
+_CREDENTIAL_VARS: frozenset[str] = frozenset(
+    {
+        "GEMINI_API_KEY",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "MISTRAL_API_KEY",
+        "QWEN_API_KEY",
+        "AWS_SECRET_ACCESS_KEY",
+    }
+)
 
 # Prefix-based credential stripping
 _CREDENTIAL_PREFIXES: tuple[str, ...] = ("AZURE_",)
@@ -112,7 +135,9 @@ class SubprocessExecutor:
             ValueError: If cwd_override escapes the allowed boundary.
             FileNotFoundError: If cwd_override does not exist.
         """
-        effective_timeout = timeout_seconds if timeout_seconds is not None else self._timeout_seconds
+        effective_timeout = (
+            timeout_seconds if timeout_seconds is not None else self._timeout_seconds
+        )
         effective_cwd = self._validate_cwd(cwd_override)
         env = self._build_env(extra_env)
 
@@ -145,7 +170,8 @@ class SubprocessExecutor:
             self._limiter.apply_post_start(proc, self._resource_limits)
 
             stdout, stderr = proc.communicate(
-                input=input_text, timeout=effective_timeout,
+                input=input_text,
+                timeout=effective_timeout,
             )
             exit_code = proc.returncode
 
@@ -285,4 +311,3 @@ class SubprocessExecutor:
                 events.append(OutputEvent(category="stderr", output=line))
 
         return events
-

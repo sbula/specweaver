@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Tests for resume-time plan rehydration — INT-US-21 SF-01 CB-3 (FR-3).
 
 `context.decomposition` / `context.plan` live in memory and die with the process. On
@@ -67,9 +70,7 @@ def _record(
 ) -> StepRecord:
     result = None
     if result_status is not None:
-        result = StepResult(
-            status=result_status, output=output, started_at="1", completed_at="2"
-        )
+        result = StepResult(status=result_status, output=output, started_at="1", completed_at="2")
     return StepRecord(step_name=name, status=record_status, result=result)
 
 
@@ -106,9 +107,7 @@ class TestRehydrationHappyPath:
 
     def test_completed_record_rehydrates(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
-        run = _run(
-            _record("decompose", StepStatus.PASSED, StepStatus.PASSED, components=[])
-        )
+        run = _run(_record("decompose", StepStatus.PASSED, StepStatus.PASSED, components=[]))
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
@@ -191,9 +190,7 @@ class TestRehydrationBoundaries:
         assert json.loads(ctx.decomposition)["components"][0]["n"] == "a"
         assert any("gone" in r.getMessage() for r in caplog.records)
 
-    def test_reordered_pipeline_skips_mismatched_indices(
-        self, tmp_path: Path, caplog
-    ) -> None:
+    def test_reordered_pipeline_skips_mismatched_indices(self, tmp_path: Path, caplog) -> None:
         """Same length, steps swapped — index pairing alone would hydrate the wrong field."""
         ctx = _ctx(tmp_path)
         run = _run(
@@ -225,9 +222,7 @@ class TestRehydrationBoundaries:
         with caplog.at_level("WARNING"):
             rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
-        assert any(
-            "a_completely_different_pipeline" in r.getMessage() for r in caplog.records
-        )
+        assert any("a_completely_different_pipeline" in r.getMessage() for r in caplog.records)
         # Same-named steps still rehydrate — the warning is advisory, not a hard stop.
         assert ctx.decomposition is not None
 
@@ -296,9 +291,7 @@ class TestRehydrationHostile:
     def test_handler_parked_record_does_not_rehydrate(self, tmp_path: Path) -> None:
         """Handler-park: BOTH record and result are WAITING_FOR_INPUT — nothing was produced."""
         ctx = _ctx(tmp_path)
-        run = _run(
-            _record("decompose", StepStatus.WAITING_FOR_INPUT, StepStatus.WAITING_FOR_INPUT)
-        )
+        run = _run(_record("decompose", StepStatus.WAITING_FOR_INPUT, StepStatus.WAITING_FOR_INPUT))
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
@@ -312,9 +305,7 @@ class TestRehydrationHostile:
         self, tmp_path: Path, result_status: StepStatus
     ) -> None:
         ctx = _ctx(tmp_path)
-        run = _run(
-            _record("decompose", StepStatus.WAITING_FOR_INPUT, result_status, components=[])
-        )
+        run = _run(_record("decompose", StepStatus.WAITING_FOR_INPUT, result_status, components=[]))
 
         rehydrate_from_records(_pipeline(DECOMPOSE), run, ctx)
 
@@ -322,9 +313,7 @@ class TestRehydrationHostile:
 
     def test_corrupt_plan_path_type_does_not_raise(self, tmp_path: Path) -> None:
         ctx = _ctx(tmp_path)
-        run = _run(
-            _record("plan_spec", StepStatus.PASSED, StepStatus.PASSED, plan_path=12345)
-        )
+        run = _run(_record("plan_spec", StepStatus.PASSED, StepStatus.PASSED, plan_path=12345))
 
         rehydrate_from_records(_pipeline(PLAN), run, ctx)
 

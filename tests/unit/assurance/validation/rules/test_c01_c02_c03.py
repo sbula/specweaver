@@ -142,5 +142,3 @@ class TestTestsExistRule:
         rule = TestsExistRule()
         result = rule.check("code", spec_path=src)
         assert result.status == Status.FAIL
-
-

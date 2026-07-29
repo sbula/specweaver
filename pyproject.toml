@@ -113,6 +113,11 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "src/specweaver/sandbox/execution/*.py" = ["TID251"]
 "tests/**" = ["TID251"]
+# Declared exemption (user, 2026-07-28): `scripts/quality.py` shells out to ruff/mypy/tach with
+# stdlib subprocess rather than SubprocessExecutor. SubprocessExecutor lives in
+# src/specweaver/sandbox/, and a quality gate that imports the product it checks cannot run when
+# that product is broken — precisely when the gate is needed.
+"scripts/**" = ["TID251"]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "subprocess".msg = "Use SubprocessExecutor from specweaver.sandbox.execution.executor instead."
@@ -136,4 +141,6 @@ dev = [
     "types-networkx>=3.6.1.20260408",
     "types-pyyaml>=6.0.12.20260408",
     "respx>=0.21.1",
+    "complexipy>=6.2.0",
+    "pytest-xdist>=3.8.0",
 ]

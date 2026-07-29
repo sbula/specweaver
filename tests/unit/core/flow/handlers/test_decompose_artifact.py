@@ -1,4 +1,7 @@
 # mypy: ignore-errors
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
 """Tests for decomposition artifact persistence — INT-US-21 SF-02 CB-1 (FR-5, FR-7 data).
 
 These use REAL ``DecompositionPlan`` objects, never a ``MagicMock``. The sibling tests in
@@ -26,7 +29,9 @@ from specweaver.workflows.planning.decomposition import (
 )
 
 
-def _plan(*, components: list[ComponentChange] | None = None, coverage: float = 1.0) -> DecompositionPlan:
+def _plan(
+    *, components: list[ComponentChange] | None = None, coverage: float = 1.0
+) -> DecompositionPlan:
     if components is None:
         components = [
             ComponentChange(
@@ -82,10 +87,12 @@ def _ctx(tmp_path: Path) -> RunContext:
 
 def _run(ctx: RunContext, step: PipelineStep, plan: DecompositionPlan):
     """Execute the handler with the decomposer stubbed to return a REAL plan."""
-    with patch(
-        "specweaver.core.flow.handlers.decompose.FeatureDecomposer"
-    ) as cls, patch(
-        "specweaver.core.flow.handlers.base._build_base_prompt", new=AsyncMock(return_value=MagicMock())
+    with (
+        patch("specweaver.core.flow.handlers.decompose.FeatureDecomposer") as cls,
+        patch(
+            "specweaver.core.flow.handlers.base._build_base_prompt",
+            new=AsyncMock(return_value=MagicMock()),
+        ),
     ):
         inst = AsyncMock()
         inst.decompose.return_value = plan

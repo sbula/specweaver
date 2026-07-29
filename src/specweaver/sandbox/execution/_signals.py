@@ -14,9 +14,11 @@ import weakref
 _active_processes: weakref.WeakSet[subprocess.Popen[str]] = weakref.WeakSet()
 _signals_registered = False
 
+
 def track_process(proc: subprocess.Popen[str]) -> None:
     """Register a process for cleanup on interpreter shutdown."""
     _active_processes.add(proc)
+
 
 def _cleanup_active_processes() -> None:
     """Terminate all tracked subprocesses during interpreter shutdown."""
@@ -33,6 +35,7 @@ def _cleanup_active_processes() -> None:
                         proc.kill()
         except Exception:
             pass
+
 
 def _register_signals_once() -> None:
     global _signals_registered
@@ -60,5 +63,6 @@ def _register_signals_once() -> None:
             signal.signal(signal.SIGINT, sig_handler)
         except (ValueError, OSError):
             pass
+
 
 _register_signals_once()

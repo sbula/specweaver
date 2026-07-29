@@ -36,7 +36,9 @@ def _truncate(text: str) -> str:
 
 
 def _validate_cheap(
-    script: str | None, timeout_seconds: int | None, env: dict[str, str],
+    script: str | None,
+    timeout_seconds: int | None,
+    env: dict[str, str],
 ) -> str | None:
     """In-memory checks that must pass before any filesystem/process I/O.
 
@@ -95,7 +97,8 @@ class BashActionAtom(Atom):
         bash_path = shutil.which("bash")
         if not bash_path:
             return AtomResult(
-                status=AtomStatus.FAILED, message="bash interpreter not found on PATH.",
+                status=AtomStatus.FAILED,
+                message="bash interpreter not found on PATH.",
             )
 
         args = context.get("args", [])
