@@ -97,8 +97,13 @@ description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, covera
 > body. "There is a test named `test_x_flows_through`" is not a finding. What it asserts is.
 >
 > Anything you find is a **finding for this analysis**, not a footnote: list it in the coverage
-> matrix as `❌`/`🟡` (never `✅`) and raise a story to make it honest. Per the
+> matrix as `❌`/`🟡` (never `✅`) and add it to Deliverable 2 as a proposed story. Per the
 > fix-inherited-failures rule, a vacuous test in code you touched must be repaired, not deferred.
+>
+> **Do NOT invoke `specweaver-ticket` from inside this phase.** A proposed story is a line item for
+> the human to review at the Phase 2 HITL gate (2.8) — it becomes a real TECH ticket only if the
+> user asks for one there. Minting on your own initiative mid-phase is the exact failure this note
+> exists to prevent (see `specweaver-ticket`'s own incident log).
 
 Run the executable half now — these block, so there is nothing to remember:
 

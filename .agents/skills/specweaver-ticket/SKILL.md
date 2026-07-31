@@ -24,6 +24,23 @@ ticket's identity. This skill exists because that failure has actually happened.
 > topic doc listed only a *subset*; five tickets existed solely as design-doc directories. The
 > true maximum was `TECH-013`.
 
+> [!CAUTION]
+> **A second failure this prevents (2026-07-30, real).** `specweaver-pre-commit` Phase 2 told the
+> agent to "raise a story to make it honest" for a vacuous-test finding. Read as a standing
+> invocation of this skill, that ran Phases 1-5 to completion — registry entry, design-doc stub,
+> cross-references — inside an unrelated pre-commit task, with no point where the human was asked
+> whether a new ticket should exist at all. Another skill's prose is never a green light to mint.
+
+> [!IMPORTANT]
+> **STOP before Phase 3.** This skill creates a permanent registry ID and a feature-folder — undoing
+> a wrong one means renumbering or orphaning a directory, not a quick edit. Before writing anything:
+> 1. State the proposed ID, its title, and which family it belongs to.
+> 2. Confirm with the user that a *new* ticket is wanted (as opposed to, e.g., folding the finding
+>    into the story already in progress). If you arrived here via another skill's instructions rather
+>    than a direct "file a ticket" / "mint a capability" ask, **that confirmation is mandatory, not
+>    optional** — do not treat another skill's wording as the user's approval.
+> 3. Only proceed to Phase 3 after the user says yes.
+
 ---
 
 ## Phase 1: Identify the Registry (do NOT skip)
