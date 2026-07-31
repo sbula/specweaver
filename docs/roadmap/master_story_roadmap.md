@@ -771,3 +771,9 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-022:** [Circular Dependencies Between `core.config` and `infrastructure.llm` / `core.flow`](features/topic_07_technical_debt/TECH-022/TECH-022_design.md)
 *   **Sequencing:** Found during the 2026-07-31 code-verified TECH registry audit; `TECH-001` is finished and immutable, so this tracks the residual gap as new work rather than an edit to that entry.
+
+### 🔴 TECH-023: Unprefixed Raw-sqlite3 Tables Outside SQLAlchemy Model Coverage
+**Benefit:** *Every database table — not just the SQLAlchemy-backed ones — follows the domain-prefix convention `TECH-005` established, so `TECH-005`'s "all existing database tables" claim becomes true.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-023:** [Unprefixed Raw-sqlite3 Tables Outside SQLAlchemy Model Coverage](features/topic_07_technical_debt/TECH-023/TECH-023_design.md)
+*   **Sequencing:** Found during the 2026-07-31 code-verified TECH registry audit; `TECH-005` is finished and immutable, so this tracks the residual gap as new work rather than an edit to that entry.

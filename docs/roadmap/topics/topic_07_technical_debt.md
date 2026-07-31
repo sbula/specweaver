@@ -48,6 +48,8 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 ## Schema & Data Layer
 * **`TECH-005` 🟢: Database Table Prefix Harmonization**
   > [Description](../features/topic_07_technical_debt/TECH-005/TECH-005_design.md) | Refactor all existing database tables to use a strict domain-prefix naming convention (e.g., `workspace_projects`, `flow_artifact_events`). Established during B-INTL-09 with the `memory_` prefix pattern. Prevents naming collisions as domain count grows.
+* **`TECH-023` 🔴: Unprefixed Raw-sqlite3 Tables Outside SQLAlchemy Model Coverage**
+  > [Description](../features/topic_07_technical_debt/TECH-023/TECH-023_design.md) | _(new, 2026-07-31 — found during a code-verified audit of the TECH registry)_ | `TECH-005` claims "all existing database tables" got the domain-prefix convention, but six raw-`sqlite3` tables outside SQLAlchemy model coverage remain unprefixed: `nodes`/`edges` (graph store), `pipeline_runs`/`audit_log`/`state_schema_version` (flow engine store), `sw_reservations` (flow engine reservation). `TECH-005`'s SQLAlchemy-side renames are otherwise confirmed correct and finished/immutable — this ticket tracks the residual raw-sqlite3 gap as new work.
 
 ## Context Loading & RunContext Anti-Patterns
 * **`TECH-021` 🟢: `loop_back` Discards the Failing Step's Result** — FIXED 2026-07-28
