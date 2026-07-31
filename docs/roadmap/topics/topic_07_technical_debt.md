@@ -7,8 +7,6 @@ This document tracks all massive refactoring efforts, technical debt removal, an
   > [Description](../features/topic_07_technical_debt/TECH-001/TECH-001_design.md) | SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales. The massive refactoring effort to align the legacy `config/`, `cli/`, and `loom/` layers with the pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad.
 * **`TECH-002` 🟢: BaseTool Metaclass Registry Refactoring**
   > [Description](../features/topic_07_technical_debt/TECH-002/TECH-002_design.md) | Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.
-* **`TECH-022` 🔴: Circular Dependencies Between `core.config` and `infrastructure.llm` / `core.flow`**
-  > [Description](../features/topic_07_technical_debt/TECH-022/TECH-022_design.md) | _(new, 2026-07-31 — found during a code-verified audit of the TECH registry)_ | `TECH-001` claims its DDD unification prevents circular dependencies, but `tach.toml` declares two live mutual dependencies: `core.config` ⇄ `infrastructure.llm` and `core.config` ⇄ `core.flow`. `TECH-001`'s bounded-context claim otherwise holds — only the circular-dependency part is false as written, and per finished-stories-immutable this ticket tracks the fix rather than editing `TECH-001`'s entry.
 
 ## Architecture & Restructuring
 * **`TECH-020` 🔴: Extract the Step-Execution Loop from PipelineRunner**

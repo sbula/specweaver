@@ -765,9 +765,3 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py::TestE8ValidationFailureLoopsBack` — fixed `a003b164`.
-
-### 🔴 TECH-022: Circular Dependencies Between `core.config` and `infrastructure.llm` / `core.flow`
-**Benefit:** *`core.config` stops being mutually dependent on higher-level bounded contexts, so `TECH-001`'s "preventing circular dependencies" claim becomes true rather than aspirational.*
-*   **Core Required (MVS):**
-    *   `[ ]` **TECH-022:** [Circular Dependencies Between `core.config` and `infrastructure.llm` / `core.flow`](features/topic_07_technical_debt/TECH-022/TECH-022_design.md)
-*   **Sequencing:** Found during the 2026-07-31 code-verified TECH registry audit; `TECH-001` is finished and immutable, so this tracks the residual gap as new work rather than an edit to that entry.
