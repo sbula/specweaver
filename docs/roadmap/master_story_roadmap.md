@@ -777,9 +777,3 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-023:** [Unprefixed Raw-sqlite3 Tables Outside SQLAlchemy Model Coverage](features/topic_07_technical_debt/TECH-023/TECH-023_design.md)
 *   **Sequencing:** Found during the 2026-07-31 code-verified TECH registry audit; `TECH-005` is finished and immutable, so this tracks the residual gap as new work rather than an edit to that entry.
-
-### 🔴 TECH-024: RunContext God Object (TECH-006 Finding 3 Regrew, Not Fixed)
-**Benefit:** *`RunContext` stops accreting an unbounded field for every new context source, so `TECH-006`'s Finding 3 is actually fixed instead of documented and left to grow.*
-*   **Core Required (MVS):**
-    *   `[ ]` **TECH-024:** [RunContext God Object (TECH-006 Finding 3 Regrew, Not Fixed)](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
-*   **Sequencing:** Found during the 2026-07-31 code-verified TECH registry audit; `TECH-006` is finished and immutable, so this tracks Finding 3 as new work rather than an edit to that entry. Coordinate with `TECH-015`, which flags the same file as adjacent scope.
