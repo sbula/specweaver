@@ -783,9 +783,3 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-024:** [RunContext God Object (TECH-006 Finding 3 Regrew, Not Fixed)](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
 *   **Sequencing:** Found during the 2026-07-31 code-verified TECH registry audit; `TECH-006` is finished and immutable, so this tracks Finding 3 as new work rather than an edit to that entry. Coordinate with `TECH-015`, which flags the same file as adjacent scope.
-
-### 🔴 TECH-025: TECH-Ticket Roadmap-Registration Guardrail (`specweaver-ticket` Phase 4 + `check_roadmap_sync.py`)
-**Benefit:** *A TECH ticket can no longer exist in the topic doc without a matching roadmap header (or vice versa) — the exact split-brain `TECH-022` fixed once cannot silently recur.*
-*   **Core Required (MVS):**
-    *   `[ ]` **TECH-025:** [TECH-Ticket Roadmap-Registration Guardrail](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
-*   **Sequencing:** `TECH-022`'s own retirement commit (`657f9948`) named this exact gap as deliberately uncarried work needing its own ticket. Found during the 2026-07-31 code-verified TECH registry audit.
