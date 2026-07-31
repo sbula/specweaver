@@ -68,8 +68,9 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
-**Pre-existing, never ranked:** `TECH-001` 🔜, `TECH-002` 🟡, `TECH-005` 🟡, `TECH-009` 🔜,
-`TECH-010` 🔜, `TECH-011` 🔜.
+**Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
+`TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
+`### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.)*
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
