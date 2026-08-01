@@ -43,6 +43,7 @@ The `core/loom/` Sandbox groups files by layer (`atoms/`, `tools/`, `commons/`) 
 | FR-6 | Refactor Loom Sandbox Domains | System | Groups `atoms/`, `tools/`, and `commons/` into feature directories | Directories like `sandbox/git/` and `sandbox/qa/` exist with native layer files. |
 | FR-7 | Config Control Flow Decoupling | System | Strips `database.py` and `settings.py` of all domain orchestration logic and inline imports. | Configuration modules contain zero control flow, shifting DB schema initialization and settings loading to Orchestrator layers (CLI). |
 | FR-8 | LLM Factory Dependency Injection | System | Removes `Database` coupling from `llm/router.py` and `llm/factory.py`. | The LLM domain strictly accepts pure Pydantic `SpecWeaverSettings` via DI, severing it from active project state logic. |
+| FR-9 | Eliminate `core.config` Circular Dependencies | System | Removes the mutual `tach.toml` dependency between `core.config` and `infrastructure.llm`, and between `core.config` and `core.flow`. | `core.config` is a pure leaf module with no outbound dependency on higher-level bounded contexts; both cycles are gone from `tach.toml`. |
 
 ## Non-Functional Requirements
 
@@ -153,9 +154,18 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-001/TECH-001_sf03_implementation_plan.md
 
+### SF-04: Eliminate `core.config` Circular Dependencies
+- **Scope**: `tach.toml` currently declares `core.config` ⇄ `infrastructure.llm` and `core.config` ⇄ `core.flow` as live mutual dependencies. A declared cycle is still a cycle, and it directly contradicts this feature's own "preventing circular dependencies" claim — `core.config` must become a pure leaf module with no outbound dependency on higher-level bounded contexts.
+- **FRs**: [FR-9]
+- **Inputs**: `tach.toml` dependency declarations (`core.config` at line 34 depends on `core.flow` and `infrastructure.llm`; `core.flow` at line 42 and `infrastructure.llm` at line 54 depend back on `core.config`) and the concrete imports each declares.
+- **Outputs**: Both cycles removed from `tach.toml`; `core.config` has no outbound dependency on `infrastructure.llm` or `core.flow`.
+- **Depends on**: none
+- **Impl Plan**: not yet written
+- **Note (2026-08-01)**: this scope was briefly split into a standalone `TECH-022` ticket (minted 2026-07-31 under the finished-stories-immutable rule, since TECH-001 was — incorrectly — considered fully delivered at the time). Once TECH-001 itself was corrected to reflect that it was never actually finished, `TECH-022` was retired and its scope folded back in here as SF-04, rather than left to live on as a permanently "tracked" gap next to a story marked done.
+
 ## Execution Order
 
-1. SF-01, SF-02, and SF-03 can run in parallel (no shared dependencies).
+1. SF-01, SF-02, and SF-03 can run in parallel (no shared dependencies). SF-04 is independent and can start any time.
 
 ## Progress Tracker
 
@@ -164,10 +174,11 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 | SF-01 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Decentralize CLI Layer | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Consolidate Sandbox | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-04 | Eliminate `core.config` Circular Dependencies | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-03 fully implemented, tested, and committed. TECH-001 refactoring is complete.
-**Next step**: Proceed with the next feature in the master story roadmap.
+**Current status**: SF-01–03 fully implemented, tested, and committed. SF-04 is NOT done — `tach.toml` still declares `core.config ⇄ infrastructure.llm` and `core.config ⇄ core.flow` as live mutual dependencies. TECH-001 is not complete until SF-04 lands.
+**Next step**: Design and implement SF-04 (run through `specweaver-design` to determine the correct dependency direction, then an implementation plan).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

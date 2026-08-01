@@ -68,9 +68,10 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
-**Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
+**Pre-existing, never ranked:** `TECH-001` 🟡, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
-`### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.)*
+`### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
+2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding.)*
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -638,15 +639,15 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 These stories do not add new user-facing features, but are critical epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels.
 
 ### 🟡 TECH-001: Domain-Driven Design Unification
-**Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
+**Benefit:** *SpecWeaver's internal architecture is cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns as the team scales. `core.config` is not yet a pure leaf module — the last piece of the circular-dependency elimination.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-001:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-001/TECH-001_design.md)
+    *   `[ ]` **TECH-001:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-001/TECH-001_design.md)
         *   `✅` SF-01: Deconstruct Config Monolith
         *   `✅` SF-02: Decentralize CLI Layer
         *   `✅` SF-03: Consolidate Sandbox
+        *   `[ ]` SF-04: Eliminate `core.config` Circular Dependencies — `core.config ⇄ infrastructure.llm` and `core.config ⇄ core.flow` are still live mutual deps in `tach.toml`.
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
-*   **Status correction (2026-08-01):** Downgraded 🟢→🟡 — `tach.toml` declares live circular dependencies (`core.config ⇄ infrastructure.llm`, `core.config ⇄ core.flow`) that contradict this ticket's "preventing circular dependencies" claim. Bounded-context layout itself is real. Gap tracked by `TECH-022`.
 
 ### 🟢 TECH-002: BaseTool Meta-Class Registry
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.*
@@ -766,9 +767,3 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py::TestE8ValidationFailureLoopsBack` — fixed `a003b164`.
-
-### 🔴 TECH-022: Circular Dependencies Between `core.config` and `infrastructure.llm` / `core.flow`
-**Benefit:** *`core.config` stops being mutually dependent on higher-level bounded contexts, so `TECH-001`'s "preventing circular dependencies" claim becomes true rather than aspirational.*
-*   **Core Required (MVS):**
-    *   `[ ]` **TECH-022:** [Circular Dependencies Between `core.config` and `infrastructure.llm` / `core.flow`](features/topic_07_technical_debt/TECH-022/TECH-022_design.md)
-*   **Sequencing:** Found during the 2026-07-31 code-verified TECH registry audit; `TECH-001` is finished and immutable, so this tracks the residual gap as new work rather than an edit to that entry.
