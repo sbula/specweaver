@@ -5,7 +5,7 @@ This document tracks all massive refactoring efforts, technical debt removal, an
 ## Domain-Driven Design (DDD)
 * **`TECH-001` 🟡: Domain-Driven Design Unification**
   > [Description](../features/topic_07_technical_debt/TECH-001/TECH-001_design.md) | SpecWeaver's internal architecture is cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns as the team scales. The refactoring effort aligned the legacy `config/`, `cli/`, and `loom/` layers with pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad. Not yet finished: `core.config` still has live mutual dependencies with `infrastructure.llm` and `core.flow` (`tach.toml`) — a declared cycle is still a cycle. SF-04 eliminates it.
-* **`TECH-002` 🟡: BaseTool Metaclass Registry Refactoring**
+* **`TECH-002` 🟡: BaseTool Registry Refactoring**
   > [Description](../features/topic_07_technical_debt/TECH-002/TECH-002_design.md) | Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools via an explicit `ToolRegistry` (`sandbox/registry.py`). Automatic registration via `__init_subclass__` was never implemented — the approved design deliberately rejected it (global import-time auto-registration pollutes memory space and bypasses isolation limits) in favor of the explicit registry actually shipped. Status corrected because the mechanism this entry originally described never existed.
 
 ## Architecture & Restructuring

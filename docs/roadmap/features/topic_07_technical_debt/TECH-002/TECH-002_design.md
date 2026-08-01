@@ -1,14 +1,15 @@
-# Design: BaseTool Metaclass Registry Refactoring
+# Design: BaseTool Registry Refactoring
 
 - **Feature ID**: TECH-002
 - **Phase**: 1
 - **Status**: APPROVED
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-002/TECH-002_design.md
+- **Note (2026-08-01)**: retitled from "BaseTool Metaclass Registry Refactoring" — no metaclass mechanism was ever built (see Research Findings below); this doc, `TECH-002_base_tool_registry.md`, and the roadmap entries all previously implied one existed. Corrected across all three plus `topic_07_technical_debt.md` and `master_story_roadmap.md`.
 
 ## Feature Overview
 
 Feature TECH-002 adds an explicit, decoupled ToolRegistry to the specweaver.sandbox component.
-It solves the tight coupling of dynamic imports and boundary bypasses in ToolDispatcher by removing implicit global metaclass auto-registration and replacing it with explicit domain-level tool list exports.
+It solves the tight coupling of dynamic imports and boundary bypasses in ToolDispatcher by building an explicit `ToolRegistry` and domain-level tool factory exports from the start — deliberately avoiding metaclass-based (`__init_subclass__`) auto-registration, which TECH-001 considered and rejected before this ticket began (see Research Findings). There was never an existing metaclass mechanism to "remove"; the original proposal (`TECH-002_base_tool_registry.md`) described that as the motivating problem, but it was aspirational, not shipped.
 It interacts with all sandbox domain tools (git, filesystem, qa_runner, mcp, protocol, web, code_structure) and does NOT touch actual LLM model adapters or core SQLite CQRS database schemas.
 Key constraints: zero regression (all tests must pass) and targeted enforcement of context.yaml boundaries in the validation rules layer (removing direct sandbox imports in c03, c04, c05).
 

@@ -651,10 +651,10 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
 
-### 🟡 TECH-002: BaseTool Meta-Class Registry
+### 🟡 TECH-002: BaseTool Registry
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools via an explicit `ToolRegistry`. The originally-described `__init_subclass__` mechanism was never built — the approved design deliberately rejected it in favor of the registry actually shipped.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-002:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
+    *   `✅` **TECH-002:** [BaseTool Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
 *   **Verifiable Proof:**
     *   `tests/integration/sandbox/test_dispatcher_sf3_integration.py`
 
