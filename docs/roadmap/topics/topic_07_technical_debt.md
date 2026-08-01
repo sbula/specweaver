@@ -3,8 +3,8 @@
 This document tracks all massive refactoring efforts, technical debt removal, and underlying architectural epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels. These stories do not add new user-facing features but are critical for long-term project viability.
 
 ## Domain-Driven Design (DDD)
-* **`TECH-001` 🟢: Domain-Driven Design Unification**
-  > [Description](../features/topic_07_technical_debt/TECH-001/TECH-001_design.md) | SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales. The massive refactoring effort to align the legacy `config/`, `cli/`, and `loom/` layers with the pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad.
+* **`TECH-001` 🟡: Domain-Driven Design Unification**
+  > [Description](../features/topic_07_technical_debt/TECH-001/TECH-001_design.md) | SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales. The massive refactoring effort to align the legacy `config/`, `cli/`, and `loom/` layers with the pure Domain-Driven Design (Package by Feature) principles established by the B-SENS-02 Graph Triad. _(2026-08-01: status corrected 🟢→🟡 — code-verified audit confirms the bounded-context restructuring is real, but the "preventing circular dependencies" claim is false as written: `tach.toml` declares live mutual dependencies `core.config ⇄ infrastructure.llm` and `core.config ⇄ core.flow`. Gap tracked by `TECH-022`.)_
 * **`TECH-002` 🟢: BaseTool Metaclass Registry Refactoring**
   > [Description](../features/topic_07_technical_debt/TECH-002/TECH-002_design.md) | Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.
 * **`TECH-022` 🔴: Circular Dependencies Between `core.config` and `infrastructure.llm` / `core.flow`**

@@ -637,7 +637,7 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 These stories do not add new user-facing features, but are critical epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels.
 
-### 🟢 TECH-001: Domain-Driven Design Unification
+### 🟡 TECH-001: Domain-Driven Design Unification
 **Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
 *   **Core Required (MVS):**
     *   `✅` **TECH-001:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-001/TECH-001_design.md)
@@ -646,6 +646,7 @@ These stories do not add new user-facing features, but are critical epics requir
         *   `✅` SF-03: Consolidate Sandbox
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
+*   **Status correction (2026-08-01):** Downgraded 🟢→🟡 — `tach.toml` declares live circular dependencies (`core.config ⇄ infrastructure.llm`, `core.config ⇄ core.flow`) that contradict this ticket's "preventing circular dependencies" claim. Bounded-context layout itself is real. Gap tracked by `TECH-022`.
 
 ### 🟢 TECH-002: BaseTool Meta-Class Registry
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.*
