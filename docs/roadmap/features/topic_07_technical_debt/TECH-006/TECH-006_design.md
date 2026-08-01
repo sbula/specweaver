@@ -89,6 +89,7 @@ proj = _core.run_repo_op(lambda r: r.get_project(name))
 | FR-3 | Delete `_require_llm_adapter` | Replace all 4 imports with direct `load_settings()` + `create_llm_adapter()` calls. Each CLI caller handles its own errors via `typer.Exit`. Hardcoded fallback (`api_key="test-key"`) is deliberately killed — security risk. | LLM wiring decoupled from CLI |
 | FR-4 | Delete both copies of `_run_workspace_op` | Add typed `run_repo_op()` to `interfaces/cli/_core.py`. Replace all ~20 call sites across 8 modules with `_core.run_repo_op(lambda r: r.method())` (type-safe, grep-friendly, 1 line per call) | String-dispatch anti-pattern eliminated. Duplicate definition deleted. |
 | FR-5 | Delete `_load_topology` + `_select_topology_contexts` | Add a small public facade in `assurance/graph/` for topology loading + selector execution. Replace all 4 imports. Remove `console.print` from domain logic. | Topology logic moved to domain layer. API silent-print bug fixed. |
+| FR-6 | Reduce `RunContext` God Object | Split `RunContext`'s (`core/flow/handlers/base.py`) responsibilities into cohesive, narrower pieces instead of one growing shared bag; shorten `model_post_init`'s side-effecting initialization. | `RunContext` field count and `model_post_init` size trend down instead of up as new features land. |
 
 ## Non-Functional Requirements
 
@@ -121,18 +122,29 @@ proj = _core.run_repo_op(lambda r: r.get_project(name))
 - **Depends on**: none
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-006/TECH-006_sf01_implementation_plan.md
 
+### SF-02: Reduce `RunContext` God Object
+- **Scope**: Finding 3 from the original topic-doc entry (RunContext god object) was documented but never incorporated into this design's FRs — SF-01 only ever covered Findings 1 & 2. `RunContext` (`core/flow/handlers/base.py`) has grown from the 23 fields the topic-doc entry named as the problem to 32 fields today, with a 68-line `model_post_init` handling parser injection, project-metadata construction, and config introspection as side effects. Per the 2026-07-21 direction update, the destination is NOT further centralization into the prompt factory — split `RunContext`'s responsibilities into cohesive, narrower pieces so new fields have somewhere better to land than one shared bag.
+- **FRs**: [FR-6]
+- **Inputs**: `RunContext`'s current 32 fields and `model_post_init` body in `core/flow/handlers/base.py`.
+- **Outputs**: `RunContext` field count reduced and/or split into cohesive sub-contexts; `model_post_init` shortened, its side effects made explicit at construction call sites.
+- **Depends on**: none
+- **Impl Plan**: not yet written
+- **Note (2026-08-01)**: the roadmap blurb claiming this ticket "reduces RunContext from a 23-field God Object to a lean execution context" was never true — Finding 3 was never designed or built. SF-02 is the actual work needed to make that claim true.
+
 ## Execution Order
 
 1. SF-01 — single atomic commit covering all 5 functions.
+2. SF-02 — independent of SF-01, can start any time.
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Delete All CLI Wrappers | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | Reduce `RunContext` God Object | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Impl Plan APPROVED — ready for development.
-**Next step**: Run `/dev docs/roadmap/features/topic_07_technical_debt/TECH-006/TECH-006_sf01_implementation_plan.md`
+**Current status**: SF-01 fully implemented, tested, and committed. SF-02 (RunContext god object) is NOT done — `RunContext` has 32 fields today (worse than the 23-field baseline the ticket names as the problem). TECH-006 is not complete until SF-02 lands.
+**Next step**: Design and implement SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume from there using the appropriate workflow.

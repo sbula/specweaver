@@ -678,10 +678,12 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Verifiable Proof:**
     *   `tests/unit/alembic/test_af60fd3509a2_tech_005_rename_tables.py`
 
-### 🟢 TECH-006: Context Loading Pipeline Refactoring
-**Benefit:** *Eliminates business logic from CLI layers, kills the cross-interface spider web of private helper imports, and reduces RunContext from a 23-field God Object to a lean execution context.*
+### 🟡 TECH-006: Context Loading Pipeline Refactoring
+**Benefit:** *Eliminates business logic from CLI layers and kills the cross-interface spider web of private helper imports. RunContext reduction is not yet done — it has grown to 32 fields, worse than the 23-field baseline this ticket names as the problem.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-006:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-006/TECH-006_design.md)
+    *   `[ ]` **TECH-006:** [Context Loading Pipeline Refactoring](features/topic_07_technical_debt/TECH-006/TECH-006_design.md)
+        *   `✅` SF-01: Delete All CLI Wrappers
+        *   `[ ]` SF-02: Reduce `RunContext` God Object — 32 fields today, 68-line `model_post_init`.
 *   **Dependency:** D-INTL-06 SF-02 (Prompt Factory) — the highest-ROI refactoring (moving constitution/standards loading inside the factory) requires the factory to exist first.
 *   **Discovered during:** D-INTL-06 Red Team Cycle 4 pattern analysis.
 
