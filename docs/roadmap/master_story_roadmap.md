@@ -68,10 +68,11 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
-**Pre-existing, never ranked:** `TECH-001` 🟡, `TECH-002` 🟢, `TECH-005` 🟢, `TECH-009` 🟢,
+**Pre-existing, never ranked:** `TECH-001` 🟡, `TECH-002` 🟡, `TECH-005` 🟢, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
-2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding.)*
+2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding. `TECH-002` corrected to 🟡 — shipped
+mechanism never matched the entry's description.)*
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -649,8 +650,8 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
 
-### 🟢 TECH-002: BaseTool Meta-Class Registry
-**Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools by utilizing `__init_subclass__`.*
+### 🟡 TECH-002: BaseTool Meta-Class Registry
+**Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools via an explicit `ToolRegistry`. The originally-described `__init_subclass__` mechanism was never built — the approved design deliberately rejected it in favor of the registry actually shipped.*
 *   **Core Required (MVS):**
     *   `✅` **TECH-002:** [BaseTool Meta-Class Registry](features/topic_07_technical_debt/TECH-002/TECH-002_design.md)
 *   **Verifiable Proof:**

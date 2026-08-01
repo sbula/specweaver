@@ -137,3 +137,4 @@ Key constraints: zero regression (all tests must pass) and targeted enforcement 
 
 **Current status**: TECH-002 complete. All 4 sub-features committed.
 **Commit**: `f74f5844` — feat(TECH-002/SF-4): isolate validation layer from sandbox imports
+**Note (2026-08-01)**: the roadmap entries (`master_story_roadmap.md`, `topic_07_technical_debt.md`) previously described this ticket as "utilizing `__init_subclass__`" — that mechanism is not and was never part of this design (see line 19 above: it was deliberately rejected before SF-1 started). The roadmap wording has been corrected to match this doc; no code changes were needed.
