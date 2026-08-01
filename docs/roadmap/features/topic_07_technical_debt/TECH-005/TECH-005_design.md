@@ -41,6 +41,7 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 | FR-5 | Update queries and references | System | Update all raw SQL queries and string-based ForeignKey references | All tests and queries execute without reference errors. |
 | FR-6 | Rename Indexes | System | Explicitly rename any existing indexes tied to the old table names to match the new table names | Indexes remain functionally intact and clearly named. |
 | FR-7 | Generate Migration | System | Generate an Alembic migration using `op.rename_table` for all renamed tables | The database schema is migrated safely. |
+| FR-8 | Rename raw-sqlite3 tables | System | Rename the six tables created via raw `CREATE TABLE IF NOT EXISTS` (not SQLAlchemy models) to bounded-context-prefixed equivalents: `nodes`/`edges` → `graph_nodes`/`graph_edges`; `pipeline_runs`/`audit_log`/`state_schema_version` → `flow_pipeline_runs`/`flow_audit_log`/`flow_state_schema_version`; `sw_reservations` → `flow_reservations` | Every table in the SQLite database follows the domain-prefix convention, not just the SQLAlchemy-managed ones. |
 
 ## Non-Functional Requirements
 
@@ -110,10 +111,20 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 - **Depends on**: SF-1
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-005/TECH-005_sf2_implementation_plan.md
 
+### SF-3: Prefix Raw-SQLite3 Tables
+- **Scope**: Six tables created via raw `CREATE TABLE IF NOT EXISTS` (not SQLAlchemy models, so SF-1/SF-2 never touched them) remain unprefixed: `nodes`, `edges` (`graph/core/store/repository.py`), `pipeline_runs`, `audit_log`, `state_schema_version` (`core/flow/engine/store.py`), `sw_reservations` (`core/flow/engine/reservation.py`). This contradicts the ticket's "all existing database tables" claim. Rename all six to their bounded-context-prefixed equivalents.
+- **FRs**: [FR-8]
+- **Inputs**: Raw `CREATE TABLE` DDL strings in the three files above; any hand-written SQL referencing the old names.
+- **Outputs**: All six tables renamed and prefixed; no dangling references to the old names.
+- **Depends on**: none
+- **Impl Plan**: not yet written
+- **Note (2026-08-01)**: this ticket's original scope only ever covered SQLAlchemy-managed tables (SF-1/SF-2) — the raw-sqlite3 tables were never in its FRs despite the roadmap blurb claiming "all existing database tables." SF-3 closes that gap so the claim becomes true instead of overstated.
+
 ## Execution Order
 
 1. SF-1 (no deps — start immediately)
 2. SF-2 (depends on SF-1)
+3. SF-3 (no deps — can start any time, independent of SF-1/SF-2)
 
 ## Progress Tracker
 
@@ -121,11 +132,14 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Model Refactoring | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Alembic Migration | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-3 | Prefix Raw-SQLite3 Tables | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: TECH-005 is 100% COMPLETE.
-**Next step**: Move to the next active epic on the master roadmap (e.g. TECH-009).
+**Current status**: SF-1–2 (SQLAlchemy-managed tables) fully complete. SF-3 (raw-sqlite3 tables) is NOT done — six tables remain unprefixed. TECH-005 is not complete until SF-3 lands.
+**Next step**: Design and implement SF-3.
+**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
+in any row and resume from there using the appropriate workflow.
 
 ---
 # Red/Blue Team Review Report

@@ -68,11 +68,12 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
-**Pre-existing, never ranked:** `TECH-001` 🟡, `TECH-002` 🟡, `TECH-005` 🟢, `TECH-009` 🟢,
+**Pre-existing, never ranked:** `TECH-001` 🟡, `TECH-002` 🟡, `TECH-005` 🟡, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
 2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding. `TECH-002` corrected to 🟡 — shipped
-mechanism never matched the entry's description.)*
+mechanism never matched the entry's description. `TECH-005` corrected to 🟡 — SF-3 outstanding
+(raw-sqlite3 tables never prefixed).)*
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -667,12 +668,13 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `✅` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
 
-### 🟢 TECH-005: Database Table Prefix Harmonization
-**Benefit:** *All database tables use a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows.*
+### 🟡 TECH-005: Database Table Prefix Harmonization
+**Benefit:** *SQLAlchemy-managed database tables use a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows. Six raw-sqlite3 tables are not yet covered.*
 *   **Core Required (MVS):**
-    *   `✅` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
+    *   `[ ]` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
         *   `✅` SF-1: Model Refactoring
         *   `✅` SF-2: Alembic Migration
+        *   `[ ]` SF-3: Prefix Raw-SQLite3 Tables — `nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw_reservations` are still unprefixed.
 *   **Verifiable Proof:**
     *   `tests/unit/alembic/test_af60fd3509a2_tech_005_rename_tables.py`
 

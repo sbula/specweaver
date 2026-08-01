@@ -44,8 +44,8 @@ This document tracks all massive refactoring efforts, technical debt removal, an
   > [Description](../features/topic_07_technical_debt/TECH-011/TECH-011_design.md) | _Status: STUB. Origin: `C-EXEC-02 SF-2` implementation-plan Phase 4, Q1 (2026-07-14)._ | `PipelineStep.params` is opaque to `PipelineDefinition.validate_flow()`, so every step type's params are validated only when the step **executes** — potentially far into a long HITL-gated run. Combined with Pydantic `extra="ignore"`, an author typo (e.g. `script:` at step level instead of under `params:`) surfaces as a confusing runtime handler error instead of an immediate load-time failure. Must apply to **all** step types uniformly, not as a bash-specific special case.
 
 ## Schema & Data Layer
-* **`TECH-005` 🟢: Database Table Prefix Harmonization**
-  > [Description](../features/topic_07_technical_debt/TECH-005/TECH-005_design.md) | Refactor all existing database tables to use a strict domain-prefix naming convention (e.g., `workspace_projects`, `flow_artifact_events`). Established during B-INTL-09 with the `memory_` prefix pattern. Prevents naming collisions as domain count grows.
+* **`TECH-005` 🟡: Database Table Prefix Harmonization**
+  > [Description](../features/topic_07_technical_debt/TECH-005/TECH-005_design.md) | SQLAlchemy-managed tables use a strict domain-prefix naming convention (e.g., `workspace_projects`, `flow_artifact_events`), established during B-INTL-09 with the `memory_` prefix pattern. Not yet finished: six tables created via raw `CREATE TABLE` (not SQLAlchemy models) remain unprefixed — `nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw_reservations`. SF-3 prefixes them.
 
 ## Context Loading & RunContext Anti-Patterns
 * **`TECH-021` 🟢: `loop_back` Discards the Failing Step's Result** — FIXED 2026-07-28
