@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
+from tests.fixtures.db_utils import register_test_project
 
+from specweaver.core.config.bootstrap.settings_loader import load_settings
 from specweaver.core.config.database import Database
 from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
-from specweaver.core.config.bootstrap.settings_loader import load_settings
-from tests.fixtures.db_utils import register_test_project
 
 
 class TestSandboxSettingsModel:

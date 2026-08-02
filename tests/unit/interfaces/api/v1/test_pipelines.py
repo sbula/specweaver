@@ -20,7 +20,7 @@ from tests.fixtures.db_utils import register_test_project
 @pytest.fixture()
 def _db(tmp_path):
     """Creates a temp database with a registered project."""
-    from specweaver.core.config.db_bootstrap import bootstrap_database
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")

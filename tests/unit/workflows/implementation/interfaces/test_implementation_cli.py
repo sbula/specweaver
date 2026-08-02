@@ -29,12 +29,12 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.core.config.db_bootstrap.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", lambda: db)
     return db
 
 
@@ -66,7 +66,7 @@ class TestImplementOutputPaths:
     """Test implement command output file naming."""
 
     @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    @patch("specweaver.core.config.settings_loader.load_settings")
+    @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
     @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
     def test_output_files_created(
@@ -102,7 +102,7 @@ class TestImplementOutputPaths:
         assert (project / "tests" / "test_greeter.py").exists()
 
     @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    @patch("specweaver.core.config.settings_loader.load_settings")
+    @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
     @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
     def test_spec_suffix_stripped(

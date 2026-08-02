@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     import pytest
 
 from specweaver.commons.async_bridge import run_sync
-from specweaver.core.config.db_bootstrap import bootstrap_database
+from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from tests.fixtures.db_utils import register_test_project
 
 

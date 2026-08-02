@@ -34,7 +34,7 @@ async def review_spec(
     """
     project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
-    from specweaver.core.config.settings_loader import load_settings_async
+    from specweaver.core.config.bootstrap.settings_loader import load_settings_async
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
     from specweaver.workflows.review.reviewer import Reviewer
     from specweaver.workspace.project.constitution import find_constitution

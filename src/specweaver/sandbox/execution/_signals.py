@@ -55,7 +55,7 @@ def _register_signals_once() -> None:
                 # (SIGBREAK) is the only signal that CAN be targeted at just the child, so it must
                 # trigger the same graceful-cleanup path or Windows children have no working
                 # interrupt signal at all.
-                handled.append(signal.SIGBREAK)  # type: ignore[attr-defined]
+                handled.append(signal.SIGBREAK)
 
             old_handlers = {sig: signal.getsignal(sig) for sig in handled}
 

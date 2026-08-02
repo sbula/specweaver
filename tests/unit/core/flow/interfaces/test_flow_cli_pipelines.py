@@ -27,12 +27,12 @@ runner = CliRunner()
 
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch):
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".sw-test" / "specweaver.db"))
     db = Database(tmp_path / ".sw-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.core.config.db_bootstrap.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", lambda: db)
     return db
 
 
@@ -290,7 +290,7 @@ class TestRunContextConfigWiring:
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
             patch(
-                "specweaver.core.config.settings_loader.load_settings",
+                "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 side_effect=RuntimeError("settings boom"),
             ),
         ):
@@ -352,7 +352,10 @@ class TestResumeContextConfigWiring:
             patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
             # Patch the loader to a sentinel so we assert the *wiring* (resume assigns
             # load_settings' result to context.config) independent of project resolution.
-            patch("specweaver.core.config.settings_loader.load_settings", return_value=sentinel),
+            patch(
+                "specweaver.core.config.bootstrap.settings_loader.load_settings",
+                return_value=sentinel,
+            ),
         ):
             mock_get_store.return_value.load_run.return_value = mock_run_state
             mock_runner = mock_runner_class.return_value

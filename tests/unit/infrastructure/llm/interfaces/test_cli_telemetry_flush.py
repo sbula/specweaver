@@ -56,7 +56,7 @@ class TestReviewCommandFlush:
 
         with (
             patch(
-                "specweaver.core.config.settings_loader.load_settings",
+                "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
             patch(
@@ -103,7 +103,7 @@ class TestImplementCommandFlush:
 
         with (
             patch(
-                "specweaver.core.config.settings_loader.load_settings",
+                "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
             patch(
@@ -156,7 +156,7 @@ class TestDraftCommandFlush:
 
         with (
             patch(
-                "specweaver.core.config.settings_loader.load_settings",
+                "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 return_value=mock_settings,
             ),
             patch(

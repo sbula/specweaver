@@ -51,6 +51,14 @@ def tr() -> ModuleType:
     return _load("tests.py", "sw_test_tier_runner")
 
 
+@pytest.fixture(scope="module")
+def rds() -> ModuleType:
+    """`_refactor_diff_safety.py` — split out of `tests.py` (2026-08-02) to stay under the
+    file-size RED threshold. `_parse_hunks`/`_is_safe_hunk` live here now; `refactor_violations`
+    is re-exported from `tests.py` and is still reachable via the `tr` fixture."""
+    return _load("_refactor_diff_safety.py", "sw_refactor_diff_safety")
+
+
 # ---------------------------------------------------------------------------
 # DAL direction
 # ---------------------------------------------------------------------------
@@ -319,6 +327,11 @@ class TestScopeResolution:
 
 
 class TestRefactorRule:
+    """`refactor_violations`'s original coarse behaviour: a nonexistent/no-diff path has nothing
+    to prove it safe, so it stays a violation — same outcome as before this class's `_is_path_only`
+    refinement below, just for a different reason (no diff to examine, not "diff examined and
+    found unsafe")."""
+
     def test_a_refactor_touching_tests_is_reported(self, tr: ModuleType) -> None:
         changed = [Path("src/specweaver/a.py"), Path("tests/unit/test_a.py")]
 
@@ -329,6 +342,343 @@ class TestRefactorRule:
 
     def test_non_python_test_assets_are_not_violations(self, tr: ModuleType) -> None:
         assert tr.refactor_violations([Path("tests/fixtures/sample.yaml")]) == []
+
+
+class TestLogicalLineGroups:
+    """`_logical_line_groups`: bracket-depth splitting of a hunk-side into matchable units —
+    coarse enough to keep a formatter's multi-line reflow together, fine enough to keep an
+    import-sorter's bundled-but-independent relocations apart."""
+
+    def test_balanced_lines_are_each_their_own_group(self, rds: ModuleType) -> None:
+        lines = ["import a", "import b"]
+
+        assert rds._logical_line_groups(lines) == [["import a"], ["import b"]]
+
+    def test_an_open_bracket_merges_with_the_lines_that_close_it(self, rds: ModuleType) -> None:
+        lines = ["foo(", "    bar,", ")"]
+
+        assert rds._logical_line_groups(lines) == [["foo(", "    bar,", ")"]]
+
+    def test_the_real_bug_this_pins_bundled_independent_relocations_stay_separate(
+        self, rds: ModuleType
+    ) -> None:
+        """The exact shape ruff's import sorter produced in tests/unit/interfaces/api/test_ui.py:
+        one hunk's added side held TWO unrelated import lines (one relocation, one reordering) —
+        each balanced on its own, so each must be its own group, not one joined blob."""
+        lines = [
+            "    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database",
+            "    from specweaver.core.config.database import Database",
+        ]
+
+        groups = rds._logical_line_groups(lines)
+
+        assert len(groups) == 2
+
+    def test_a_line_with_balanced_brackets_on_its_own_does_not_merge_with_its_neighbor(
+        self, rds: ModuleType
+    ) -> None:
+        """A single physical line that opens AND closes its own brackets (e.g. a function call
+        with no line-wrap) must not accidentally swallow the next unrelated line."""
+        lines = ["extra_new_line()", "import a"]
+
+        assert rds._logical_line_groups(lines) == [["extra_new_line()"], ["import a"]]
+
+    def test_empty_input_yields_no_groups(self, rds: ModuleType) -> None:
+        assert rds._logical_line_groups([]) == []
+
+    def test_boundary_unbalanced_trailing_close_never_goes_negative_forever(
+        self, rds: ModuleType
+    ) -> None:
+        """A stray closing bracket (depth would go negative) still closes and resets — it must
+        not poison the running depth count for every subsequent line in the hunk."""
+        lines = [")", "import a"]
+
+        assert rds._logical_line_groups(lines) == [[")"], ["import a"]]
+
+
+class TestParseHunks:
+    """`_parse_hunks` turns `git diff -U0` text into (removed, added) line-list pairs per hunk."""
+
+    def test_single_line_substitution(self, rds: ModuleType) -> None:
+        diff_text = (
+            "diff --git a/x.py b/x.py\n"
+            "--- a/x.py\n"
+            "+++ b/x.py\n"
+            "@@ -17 +17 @@ def f():\n"
+            "-    from a.b import c\n"
+            "+    from a.b.d import c\n"
+        )
+
+        hunks = rds._parse_hunks(diff_text)
+
+        assert hunks == [(["    from a.b import c"], ["    from a.b.d import c"])]
+
+    def test_multiple_hunks_stay_separate(self, rds: ModuleType) -> None:
+        diff_text = "@@ -1 +1 @@\n-old1\n+new1\n@@ -5 +5 @@\n-old2\n+new2\n"
+
+        assert rds._parse_hunks(diff_text) == [(["old1"], ["new1"]), (["old2"], ["new2"])]
+
+    def test_empty_diff_yields_no_hunks(self, rds: ModuleType) -> None:
+        assert rds._parse_hunks("") == []
+
+    def test_file_header_lines_are_not_mistaken_for_content(self, rds: ModuleType) -> None:
+        """`---`/`+++` are the file-identity header, not a removed/added blank line."""
+        diff_text = "--- a/x.py\n+++ b/x.py\n@@ -1 +1 @@\n-old\n+new\n"
+
+        assert rds._parse_hunks(diff_text) == [(["old"], ["new"])]
+
+
+class TestIsSafeHunk:
+    """`_is_safe_hunk`: True if the hunk is either (a) a 1:1 line-for-line pairing that differs
+    solely by dotted-path-shaped tokens, or (b) a pure addition (nothing removed). Both are
+    provably incapable of "bending an existing assertion to hide a bug" — (a) never changes
+    anything but where a module lives, (b) never touches an existing line at all, only adds new
+    ones. Extending an existing test file with new coverage is the complement of weakening it, not
+    a variant of the same risk."""
+
+    def test_pure_import_path_relocation_is_path_only(self, rds: ModuleType) -> None:
+        removed = ["    from specweaver.core.config.db_bootstrap import get_db"]
+        added = ["    from specweaver.core.config.bootstrap.db_bootstrap import get_db"]
+
+        assert rds._is_safe_hunk(removed, added) is True
+
+    def test_monkeypatch_string_target_is_path_only(self, rds: ModuleType) -> None:
+        removed = ['monkeypatch.setattr("specweaver.core.config.db_bootstrap.get_db", f)']
+        added = ['monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", f)']
+
+        assert rds._is_safe_hunk(removed, added) is True
+
+    def test_boundary_an_assertion_change_alongside_a_path_change_is_not_path_only(
+        self, rds: ModuleType
+    ) -> None:
+        """The exact case this check must still catch: a real behaviour change riding along
+        with a legitimate-looking import fix."""
+        removed = ["    from a.b import c", "    assert result == 5"]
+        added = ["    from a.b.d import c", "    assert result == 3"]
+
+        assert rds._is_safe_hunk(removed, added) is False
+
+    def test_a_path_substitution_plus_an_unrelated_new_line_is_safe(self, rds: ModuleType) -> None:
+        """Design decision, made explicit: under logical-group matching (not whole-hunk-blob
+        matching), `extra_new_line()` is its OWN group — a balanced, bracket-complete statement,
+        not a continuation of the import line. It has no removed counterpart, so it's just a pure
+        addition (safe by the same logic as `test_a_pure_addition_is_safe`), sitting next to an
+        independently-safe path substitution. Mismatched line COUNT alone no longer means unsafe —
+        only an unmatched REMOVED group does (see the assertion-change test above, which still
+        blocks because "5" has no home in the added side, not because of a raw count mismatch)."""
+        removed = ["    from a.b import c"]
+        added = ["    from a.b.d import c", "    extra_new_line()"]
+
+        assert rds._is_safe_hunk(removed, added) is True
+
+    def test_a_line_wrapped_by_ruff_format_after_a_path_substitution_is_still_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """The real bug this test pins: `ruff format` reflows a long `monkeypatch.setattr(...)`
+        call from 1 line into 3 once the substituted path makes it exceed the line-length limit.
+        Mismatched line COUNT (1 removed vs 3 added) must not be confused with mismatched
+        CONTENT — only the whitespace changed, so this must still be safe."""
+        removed = [
+            '    monkeypatch.setattr("specweaver.core.config.db_bootstrap.config_db_path", lambda: test_db_path)'
+        ]
+        added = [
+            "    monkeypatch.setattr(",
+            '        "specweaver.core.config.bootstrap.db_bootstrap.config_db_path", lambda: test_db_path',
+            "    )",
+        ]
+
+        assert rds._is_safe_hunk(removed, added) is True
+
+    def test_a_reflow_that_adds_black_style_trailing_comma_is_still_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """The real bug this test pins, from tests/unit/core/flow/interfaces/test_flow_cli_pipelines.py:
+        `ruff format` reflowing a `patch(...)` call onto multiple lines also adds a Black-style
+        trailing comma before the closing paren that the single-line version never had
+        (`sentinel)` -> `sentinel,\\n)`). That comma is syntactically insignificant — it must not
+        make an otherwise-identical reflow register as a content change."""
+        removed = [
+            '            patch("specweaver.core.config.settings_loader.load_settings", return_value=sentinel),'
+        ]
+        added = [
+            "            patch(",
+            '                "specweaver.core.config.bootstrap.settings_loader.load_settings",',
+            "                return_value=sentinel,",
+            "            ),",
+        ]
+
+        assert rds._is_safe_hunk(removed, added) is True
+
+    def test_a_multi_import_reflow_gaining_required_wrapping_parens_is_still_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """The real bug this test pins, from tests/unit/core/config/test_settings_db.py: Python
+        allows `from x import a, b` unwrapped on one line, but a multi-line reflow of the SAME
+        import REQUIRES wrapping parens (`from x import (\\n    a,\\n    b,\\n)`) that the
+        single-line form never had and never needs. The parens exist only because of the line
+        wrap, not because the imported names changed."""
+        removed = [
+            "        from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config"
+        ]
+        added = [
+            "        from specweaver.core.config.bootstrap.settings_loader import (",
+            "            load_settings,",
+            "            migrate_legacy_config,",
+            "        )",
+        ]
+
+        assert rds._is_safe_hunk(removed, added) is True
+
+    def test_boundary_empty_hunk_is_trivially_path_only(self, rds: ModuleType) -> None:
+        assert rds._is_safe_hunk([], []) is True
+
+    def test_a_pure_addition_is_safe(self, rds: ModuleType) -> None:
+        """Extending an existing test file with a brand-new test function: nothing removed,
+        so nothing existing could have been weakened — this is the case the user explicitly
+        flagged as wrongly blocked by the original any-diff check."""
+        removed: list[str] = []
+        added = ["def test_new_case() -> None:", "    assert something_new() is True"]
+
+        assert rds._is_safe_hunk(removed, added) is True
+
+    def test_boundary_a_pure_deletion_is_not_automatically_safe(self, rds: ModuleType) -> None:
+        """The mirror image of a pure addition is NOT automatically safe — deleting an existing
+        assertion (removed non-empty, added empty) is exactly "bending a test to hide a bug"."""
+        removed = ["    assert result == 5"]
+        added: list[str] = []
+
+        assert rds._is_safe_hunk(removed, added) is False
+
+    def test_hostile_no_code_execution_on_diff_content(self, rds: ModuleType) -> None:
+        """Diff lines are only ever text-compared, never eval'd/exec'd — a line containing
+        exploit-shaped text is just a string that fails to match, not a code-execution vector.
+        Justifies the 'hostile input' test-matrix bucket: there is no interpreter in this path."""
+        removed = ["    x = 1"]
+        added = ["    x = __import__('os').system('rm -rf /')"]
+
+        assert rds._is_safe_hunk(removed, added) is False
+
+
+class TestIsSafeFileDiff:
+    """`_is_safe_file_diff`: judges a WHOLE file's diff (all hunks together), not one hunk in
+    isolation — needed because a formatter/import-sorter can split a single line-move into a
+    separate addition hunk and deletion hunk elsewhere in the same file."""
+
+    def test_a_relocated_import_split_across_two_hunks_is_still_safe(self, rds: ModuleType) -> None:
+        """The real bug this test pins: ruff's import sorter deleted an import at its old
+        alphabetical position and re-added it, differently-pathed, at a NEW position — two
+        separate hunks, neither of which is individually a 1:1 substitution or a self-contained
+        pure addition/deletion. Judged in isolation, the deletion hunk looks like an unmatched
+        loss and wrongly blocks; judged as a whole file, the addition elsewhere covers it."""
+        hunks = [
+            (
+                [],
+                [
+                    "    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database"
+                ],
+            ),
+            (["    from specweaver.core.config.db_bootstrap import bootstrap_database"], []),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is True
+
+    def test_boundary_an_unmatched_deletion_elsewhere_in_the_file_is_not_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """The case relocation-matching must NOT paper over: a real assertion deleted from one
+        hunk, with an unrelated addition elsewhere that happens to not match it."""
+        hunks = [
+            ([], ["    def test_new_case(): pass"]),
+            (["    assert result == 5"], []),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is False
+
+    def test_a_normal_single_safe_hunk_still_passes_at_file_level(self, rds: ModuleType) -> None:
+        hunks = [(["    from a.b import c"], ["    from a.b.d import c"])]
+
+        assert rds._is_safe_file_diff(hunks) is True
+
+    def test_no_hunks_is_trivially_safe(self, rds: ModuleType) -> None:
+        assert rds._is_safe_file_diff([]) is True
+
+    def test_duplicate_signatures_must_each_be_matched_once(self, rds: ModuleType) -> None:
+        """Two identical removed lines need TWO matching added lines, not one covering both —
+        this is exactly what a multiset (not a plain set) comparison guarantees."""
+        hunks = [
+            (["    assert x == 1"], []),
+            (["    assert x == 1"], []),
+            ([], ["    assert x == 1"]),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is False
+
+
+class TestRefactorViolationsRealDiff:
+    """End-to-end: `refactor_violations` against a REAL git repo and REAL `git diff` output —
+    the pure-function tests above prove the logic, this proves the wiring."""
+
+    def test_import_path_only_change_in_a_real_repo_is_not_a_violation(
+        self, tr: ModuleType, tmp_path: Path
+    ) -> None:
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        subprocess_run = tr.subprocess.run
+        subprocess_run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess_run(["git", "config", "user.email", "t@t.com"], cwd=repo, check=True)
+        subprocess_run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+
+        test_file = repo / "tests" / "unit" / "test_x.py"
+        test_file.parent.mkdir(parents=True)
+        test_file.write_text("from a.b import c\n")
+        subprocess_run(["git", "add", "."], cwd=repo, check=True)
+        subprocess_run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+
+        test_file.write_text("from a.b.d import c\n")
+
+        violations = tr.refactor_violations([Path("tests/unit/test_x.py")], repo_root=repo)
+
+        assert violations == []
+
+    def test_assertion_change_in_a_real_repo_is_a_violation(
+        self, tr: ModuleType, tmp_path: Path
+    ) -> None:
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        subprocess_run = tr.subprocess.run
+        subprocess_run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess_run(["git", "config", "user.email", "t@t.com"], cwd=repo, check=True)
+        subprocess_run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+
+        test_file = repo / "tests" / "unit" / "test_x.py"
+        test_file.parent.mkdir(parents=True)
+        test_file.write_text("assert result == 5\n")
+        subprocess_run(["git", "add", "."], cwd=repo, check=True)
+        subprocess_run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+
+        test_file.write_text("assert result == 3\n")
+
+        violations = tr.refactor_violations([Path("tests/unit/test_x.py")], repo_root=repo)
+
+        assert violations == [Path("tests/unit/test_x.py")]
+
+    def test_untracked_new_test_file_with_no_diff_is_still_a_violation(
+        self, tr: ModuleType, tmp_path: Path
+    ) -> None:
+        """Graceful degradation: no committed baseline to diff against -> nothing proves it
+        safe -> conservative default wins, same as the pre-fix behaviour."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        subprocess_run = tr.subprocess.run
+        subprocess_run(["git", "init", "-q"], cwd=repo, check=True)
+
+        test_file = repo / "tests" / "unit" / "test_new.py"
+        test_file.parent.mkdir(parents=True)
+        test_file.write_text("def test_it(): pass\n")
+
+        violations = tr.refactor_violations([Path("tests/unit/test_new.py")], repo_root=repo)
+
+        assert violations == [Path("tests/unit/test_new.py")]
 
 
 class TestCliSurface:

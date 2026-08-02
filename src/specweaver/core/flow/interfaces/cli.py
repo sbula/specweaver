@@ -88,7 +88,7 @@ def _wire_llm(context: RunContext, pipeline_name: str, project_path: Path) -> No
     if pipeline_name == "validate_only":
         return
     try:
-        from specweaver.core.config.settings_loader import load_settings
+        from specweaver.core.config.bootstrap.settings_loader import load_settings
         from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
         settings = load_settings(_core.get_db(), project_path.name)
@@ -304,7 +304,7 @@ def _execute_run(  # noqa: C901
     # DraftSpecHandler's parking contract is untouched without a TTY).
     _maybe_attach_provider(context)
 
-    from specweaver.core.config.settings_loader import load_settings
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner_utils import apply_session_policy
 
     # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition
@@ -509,7 +509,7 @@ def resume(  # noqa: C901
     # DraftSpecHandler's parking contract is untouched without a TTY).
     _maybe_attach_provider(context)
 
-    from specweaver.core.config.settings_loader import load_settings
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner_utils import apply_session_policy
 
     # INT-US-09 + C-EXEC-06: resolve the worktree-isolation policies at the composition

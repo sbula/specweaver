@@ -19,7 +19,7 @@ depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace", "specwea
 
 [[modules]]
 path = "specweaver.assurance.standards.interfaces"
-depends_on = [ "specweaver.core.config", "specweaver.workspace.project", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.core.config.bootstrap", "specweaver.workspace.project", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.assurance.validation"
@@ -27,11 +27,15 @@ depends_on = [ "specweaver.workspace.analyzers", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.assurance.validation.interfaces"
-depends_on = [ "specweaver.workspace.analyzers", "specweaver.core.flow", "specweaver.graph.lineage", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.config",]
+depends_on = [ "specweaver.workspace.analyzers", "specweaver.core.flow", "specweaver.graph.lineage", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.config", "specweaver.core.config.bootstrap",]
 
 [[modules]]
 path = "specweaver.core.config"
-depends_on = [ "specweaver.core.flow", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.memory",]
+depends_on = []
+
+[[modules]]
+path = "specweaver.core.config.bootstrap"
+depends_on = [ "specweaver.core.config", "specweaver.core.flow", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.config.interfaces"
@@ -43,7 +47,7 @@ depends_on = [ "specweaver.graph", "specweaver.workflows.planning", "specweaver.
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
-depends_on = [ "specweaver.core.config", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.workspace.project", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.workspace.project", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.sandbox"
@@ -59,11 +63,11 @@ depends_on = [ "specweaver.interfaces.cli", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.interfaces.api"
-depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.workflows.implementation",]
+depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.workflows.implementation",]
 
 [[modules]]
 path = "specweaver.interfaces.cli"
-depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context",]
+depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.workflows.drafting"
@@ -75,7 +79,7 @@ depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.implementation.interfaces"
-depends_on = [ "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace.analyzers", "specweaver.core.config", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.flow",]
+depends_on = [ "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace.analyzers", "specweaver.core.config.bootstrap", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.flow",]
 
 [[modules]]
 path = "specweaver.workflows.pipelines"
@@ -91,7 +95,7 @@ depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.review.interfaces"
-depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.infrastructure.llm", "specweaver.workspace.analyzers", "specweaver.assurance.standards", "specweaver.interfaces.cli",]
+depends_on = [ "specweaver.workflows.review", "specweaver.core.config.bootstrap", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.infrastructure.llm", "specweaver.workspace.analyzers", "specweaver.assurance.standards", "specweaver.interfaces.cli",]
 
 [[modules]]
 path = "specweaver.workspace.context"
@@ -176,6 +180,10 @@ expose = [ "cli", "cli.usage_app", "cli.costs_app",]
 [[interfaces]]
 from = [ "specweaver.core.config.interfaces",]
 expose = [ "cli", "cli.config_app",]
+
+[[interfaces]]
+from = [ "specweaver.core.config.bootstrap",]
+expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_loader.load_settings", "settings_loader.load_settings_async", "settings_loader.load_settings_for_active", "settings_loader.migrate_legacy_config",]
 
 [[interfaces]]
 from = [ "specweaver.graph.interfaces",]

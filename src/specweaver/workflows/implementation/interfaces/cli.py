@@ -182,7 +182,7 @@ def implement(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.core.config.settings_loader import load_settings
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers.base import RunContext
     from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter

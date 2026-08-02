@@ -87,7 +87,7 @@ def drift_check(
     )
 
     if analyze:
-        from specweaver.core.config.settings_loader import load_settings
+        from specweaver.core.config.bootstrap.settings_loader import load_settings
         from specweaver.infrastructure.llm.factory import LLMAdapterError, create_llm_adapter
 
         drift_db = _core.get_db()

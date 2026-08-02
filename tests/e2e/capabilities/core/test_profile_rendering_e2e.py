@@ -130,7 +130,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     )
 
     db_path = _isolate_env / "specweaver.db"
-    from specweaver.core.config.db_bootstrap import bootstrap_database
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(db_path))
 
@@ -270,7 +270,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     )
 
     db_path = _isolate_env / "specweaver.db"
-    from specweaver.core.config.db_bootstrap import bootstrap_database
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(db_path))
 

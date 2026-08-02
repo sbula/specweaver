@@ -25,8 +25,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from specweaver.core.config.bootstrap.settings_loader import _load_toml_sandbox
 from specweaver.core.config.settings import SpecWeaverSettings
-from specweaver.core.config.settings_loader import _load_toml_sandbox
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
     PipelineStep,

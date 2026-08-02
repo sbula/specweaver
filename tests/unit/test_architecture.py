@@ -1,9 +1,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+import ast
+import importlib.util
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
+from types import ModuleType
 
 
 def test_tach_architectural_boundaries() -> None:
@@ -107,3 +111,63 @@ def test_tach_keeps_runner_soft_deprecated() -> None:
                 "CRITICAL: The 'runner' module must remain soft-deprecated! "
                 "Do NOT add 'runner' to the validation interfaces in tach.toml."
             )
+
+
+def _load_check_coupling() -> ModuleType:
+    """`scripts/` isn't an importable package; load `check_coupling.py` by path
+    (same pattern as `tests/unit/scripts/test_check_coupling.py`)."""
+    root_dir = Path(__file__).resolve().parent.parent.parent
+    path = root_dir / "scripts" / "check_coupling.py"
+    spec = importlib.util.spec_from_file_location("check_coupling", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["check_coupling"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_core_config_has_no_cross_domain_runtime_imports() -> None:
+    """TECH-001 SF-04 regression guard.
+
+    `core.config`'s own `context.yaml` declares `consumes: []` (a pure leaf), but two files
+    (`db_bootstrap.py`, `settings_loader.py`) imported `infrastructure.llm`/`core.flow`/`workspace`
+    directly, creating three separate `tach.toml`-declared circular dependencies -- only two of
+    which (llm, flow) were ever named in TECH-001/TECH-022; the third (`workspace`) was found
+    during this SF's own Red/Blue review. Both files moved to `core.config.bootstrap` (an
+    `adapter`-archetype sub-boundary explicitly allowed to touch those domains) to fix it. This
+    pins `core.config` itself -- excluding `bootstrap/` and `interfaces/`, both separately-scoped
+    boundaries -- to never regrow a runtime import of those three domains.
+
+    Uses `check_coupling.py`'s own `iter_runtime_imports` so `if TYPE_CHECKING:`-guarded imports
+    are excluded the same way that script already had to fix for itself (see its test file): a
+    check that flags correct code (a TYPE_CHECKING-only import breaks no cycle at runtime) is a
+    check that gets suppressed.
+    """
+    check_coupling = _load_check_coupling()
+    root_dir = Path(__file__).resolve().parent.parent.parent
+    config_dir = root_dir / "src" / "specweaver" / "core" / "config"
+    assert config_dir.is_dir(), f"expected {config_dir} to exist"
+
+    forbidden_prefixes = (
+        "specweaver.infrastructure.llm",
+        "specweaver.core.flow",
+        "specweaver.workspace",
+    )
+
+    def _imported_names(node: ast.Import | ast.ImportFrom) -> list[str]:
+        if isinstance(node, ast.Import):
+            return [alias.name for alias in node.names]
+        return [node.module or ""]
+
+    violations: list[str] = []
+    for path in sorted(config_dir.glob("*.py")):  # top-level only: skips bootstrap/, interfaces/
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in check_coupling.iter_runtime_imports(tree):
+            for name in _imported_names(node):
+                if name.startswith(forbidden_prefixes):
+                    violations.append(f"{path.name}: {name}")
+
+    assert not violations, (
+        "core.config regrew a cross-domain circular dependency (TECH-001 SF-04 regression): "
+        f"{violations}"
+    )

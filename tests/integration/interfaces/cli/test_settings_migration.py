@@ -4,12 +4,12 @@
 
 from pathlib import Path
 
+from specweaver.core.config.bootstrap.settings_loader import load_settings, migrate_legacy_config
 from specweaver.core.config.database import Database
-from specweaver.core.config.settings_loader import load_settings, migrate_legacy_config
 
 
 def test_migrate_legacy_config_happy_path(tmp_path: Path):
-    from specweaver.core.config.db_bootstrap import bootstrap_database
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     db_path = tmp_path / "specweaver.db"
     bootstrap_database(str(db_path))
@@ -40,7 +40,7 @@ llm:
 
 
 def test_migrate_legacy_config_missing_file(tmp_path: Path):
-    from specweaver.core.config.db_bootstrap import bootstrap_database
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     db_path = tmp_path / "specweaver.db"
     bootstrap_database(str(db_path))
@@ -54,7 +54,7 @@ def test_migrate_legacy_config_missing_file(tmp_path: Path):
 
 
 def test_migrate_legacy_config_degradation_corrupt_file(tmp_path: Path):
-    from specweaver.core.config.db_bootstrap import bootstrap_database
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     db_path = tmp_path / "specweaver.db"
     bootstrap_database(str(db_path))

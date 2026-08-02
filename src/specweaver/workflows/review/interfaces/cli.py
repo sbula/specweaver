@@ -163,7 +163,7 @@ def draft(
         )
         raise typer.Exit(code=1)
 
-    from specweaver.core.config.settings_loader import load_settings
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import RunStatus
     from specweaver.core.flow.handlers.base import RunContext
@@ -257,7 +257,7 @@ def review(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.core.config.settings_loader import load_settings
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers.base import RunContext

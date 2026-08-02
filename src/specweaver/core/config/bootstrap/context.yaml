@@ -1,0 +1,29 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: config.bootstrap
+level: module
+purpose: >
+  DB schema bootstrap and settings hydration that must reach across domain
+  stores (llm, flow, workspace) — the one piece of "config" that is
+  legitimately adapter code, not pure-logic. Split out of core.config
+  (TECH-001 SF-04) so core.config itself can be a true pure leaf.
+
+archetype: adapter
+
+consumes:
+  - specweaver/core/flow
+  - specweaver/infrastructure/llm
+  - specweaver/workspace
+  - specweaver/workspace/memory
+
+forbids:
+  - specweaver/sandbox/*  # Same boundary rule as core.config itself — no raw process execution.
+
+exposes:
+  - db_bootstrap.get_db
+  - db_bootstrap.bootstrap_database
+  - settings_loader.load_settings
+  - settings_loader.load_settings_async
+  - settings_loader.load_settings_for_active
+  - settings_loader.migrate_legacy_config

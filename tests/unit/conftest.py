@@ -19,4 +19,6 @@ def mock_global_db_path(tmp_path_factory, monkeypatch):
     """Ensure no test ever touches the real ~/.specweaver/specweaver.db."""
     test_db_dir = tmp_path_factory.mktemp("global_db")
     test_db_path = test_db_dir / "specweaver.db"
-    monkeypatch.setattr("specweaver.core.config.db_bootstrap.config_db_path", lambda: test_db_path)
+    monkeypatch.setattr(
+        "specweaver.core.config.bootstrap.db_bootstrap.config_db_path", lambda: test_db_path
+    )

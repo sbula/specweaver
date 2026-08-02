@@ -167,7 +167,7 @@ def _yaml_body(path: Path) -> dict:
 
 @pytest.fixture
 def lineage_db(tmp_path: Path) -> Database:
-    from specweaver.core.config.db_bootstrap import bootstrap_database
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     db_path = tmp_path / "specweaver.db"
     bootstrap_database(str(db_path))

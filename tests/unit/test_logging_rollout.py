@@ -34,9 +34,11 @@ class TestBatch1LoggingRollout:
         """Loading settings emits a DEBUG log entry with the project path."""
         from unittest.mock import MagicMock
 
-        from specweaver.core.config.settings_loader import load_settings
+        from specweaver.core.config.bootstrap.settings_loader import load_settings
 
-        with caplog.at_level(logging.DEBUG, logger="specweaver.core.config.settings_loader"):
+        with caplog.at_level(
+            logging.DEBUG, logger="specweaver.core.config.bootstrap.settings_loader"
+        ):
             try:
                 mock_db = MagicMock()
                 mock_db.get_project.return_value = None

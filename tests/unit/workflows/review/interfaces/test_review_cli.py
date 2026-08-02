@@ -21,12 +21,12 @@ runner = CliRunner()
 
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch):
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
     from specweaver.core.config.database import Database
-    from specweaver.core.config.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    monkeypatch.setattr("specweaver.core.config.db_bootstrap.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", lambda: db)
     return db
 
 
@@ -39,7 +39,7 @@ class TestReviewCommand:
     """Test the review command behavior using PipelineRunner."""
 
     @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    @patch("specweaver.core.config.settings_loader.load_settings")
+    @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_success_no_exit(self, mock_run, mock_load, mock_create, tmp_path: Path) -> None:
         """Pipeline returns completed and step PASSED -> exit 0."""
@@ -77,7 +77,7 @@ class TestReviewCommand:
         assert "Looks good." in result.output
 
     @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    @patch("specweaver.core.config.settings_loader.load_settings")
+    @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_denied_exit_1(self, mock_run, mock_load, mock_create, tmp_path: Path) -> None:
         """Pipeline PASSED but review verdict DENIED -> exit 1."""
@@ -120,7 +120,7 @@ class TestReviewCommand:
         assert "No Purpose" in result.output
 
     @patch("specweaver.infrastructure.llm.factory.create_llm_adapter")
-    @patch("specweaver.core.config.settings_loader.load_settings")
+    @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new_callable=AsyncMock)
     def test_review_error_exit_1(self, mock_run, mock_load, mock_create, tmp_path: Path) -> None:
         """Pipeline returns parked or step FAILED -> exit 1."""

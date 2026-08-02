@@ -46,13 +46,39 @@ file and nothing mirrors it, that is not a clean run, it is code with no direct 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import re
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_sibling(module_name: str) -> ModuleType:
+    """Load a same-directory script by path.
+
+    `scripts/` is not an importable package (no `__init__.py`, matching the rest of this repo's
+    namespace-package convention), so a plain `from _refactor_diff_safety import ...` only
+    resolves when `python scripts/tests.py` puts `scripts/` on `sys.path[0]` for free — a test
+    harness loading this file via `importlib.util.spec_from_file_location` gets no such freebie.
+    """
+    path = Path(__file__).resolve().parent / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+refactor_violations = _load_sibling("_refactor_diff_safety").refactor_violations
+
 SRC_PACKAGE = REPO_ROOT / "src" / "specweaver"
 
 STATES = ("quick", "cb", "sf", "feature")
@@ -403,17 +429,9 @@ def paths_for(
 
 
 # ---------------------------------------------------------------------------
-# The refactor rule
+# The refactor rule — see scripts/_refactor_diff_safety.py (split out to stay under the
+# file-size RED threshold; no behaviour change).
 # ---------------------------------------------------------------------------
-
-
-def refactor_violations(changed: list[Path]) -> list[Path]:
-    """Test files a pure refactor modified — which is exactly what it must not do.
-
-    If a diff touches both a module and the tests covering it, either the behaviour changed or
-    the tests were bent to match. A refactor's whole claim is that neither happened.
-    """
-    return [p for p in changed if p.as_posix().startswith("tests/") and p.suffix == ".py"]
 
 
 # ---------------------------------------------------------------------------

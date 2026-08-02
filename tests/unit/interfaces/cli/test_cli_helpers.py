@@ -23,11 +23,11 @@ def _mock_db_fixture(tmp_path, monkeypatch):
     from specweaver.core.config.database import Database
 
     with patch("specweaver.core.config.database.Database._ensure_schema", create=True):
-        from specweaver.core.config.db_bootstrap import bootstrap_database
+        from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
         bootstrap_database(str(tmp_path / ".sw-test" / "specweaver.db"))
         db = Database(tmp_path / ".sw-test" / "specweaver.db")
-        monkeypatch.setattr("specweaver.core.config.db_bootstrap.get_db", lambda: db)
+        monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", lambda: db)
         return db
 
 

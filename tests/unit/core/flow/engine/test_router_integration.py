@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import anyio
 import pytest
 
+from specweaver.core.config.bootstrap.settings_loader import load_settings
 from specweaver.core.config.database import Database
-from specweaver.core.config.settings_loader import load_settings
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.base import RunContext
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
@@ -23,7 +23,7 @@ from tests.fixtures.db_utils import register_test_project, set_test_active_proje
 @pytest.fixture
 def tmp_db(tmp_path: Path) -> Database:
     """Provides a fresh database with a registered project."""
-    from specweaver.core.config.db_bootstrap import bootstrap_database
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(tmp_path / "test.db")
