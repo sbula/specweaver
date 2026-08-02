@@ -174,16 +174,18 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 | SF-01 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Decentralize CLI Layer | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Consolidate Sandbox | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Eliminate `core.config` Circular Dependencies | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Eliminate `core.config` Circular Dependencies | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-01–03 fully implemented, tested, and committed. SF-04's implementation plan
-is APPROVED (2026-08-02, `TECH-001_sf04_implementation_plan.md`, 2-cycle Red/Blue review — also
-surfaced and fixed a third, previously-unnamed `core.config ⇄ workspace` cycle beyond the two
-originally scoped). Dev has not started — `tach.toml` still declares all three cycles live today.
-TECH-001 is not complete until SF-04 lands.
-**Next step**: Run the `dev` skill against `TECH-001_sf04_implementation_plan.md`, TDD, per the
-plan's Test Plan and Proposed Changes sections.
+**Current status**: SF-01–04 all fully implemented, tested, and committed (SF-04: commit
+`346f64c3`, 2026-08-02). `core.config` now has `depends_on = []` in `tach.toml` — a true pure
+leaf, matching its own `context.yaml`'s `consumes: []` claim for the first time. All three live
+circular dependencies are gone (`core.config ⇄ infrastructure.llm`, `core.config ⇄ core.flow`,
+and the previously-unnamed `core.config ⇄ workspace` found during SF-04's own Red/Blue review).
+Every sub-feature's Progress Tracker row is now fully `✅` — this is the last one.
+**Next step**: Run the closure gate (`specweaver-feature` Phase 4: `check_fr_coverage.py` + full
+suite) before writing `Status: COMPLETE`, per the `dev` skill's own instruction for a story whose
+last sub-feature just landed. If it passes, TECH-001's roadmap status can move back to 🟢.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.

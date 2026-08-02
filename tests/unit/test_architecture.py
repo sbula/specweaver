@@ -127,7 +127,8 @@ def _load_check_coupling() -> ModuleType:
 
 
 def test_core_config_has_no_cross_domain_runtime_imports() -> None:
-    """TECH-001 SF-04 regression guard.
+    """TECH-001 SF-04 regression guard, proving FR-9 (Eliminate `core.config` Circular
+    Dependencies).
 
     `core.config`'s own `context.yaml` declares `consumes: []` (a pure leaf), but two files
     (`db_bootstrap.py`, `settings_loader.py`) imported `infrastructure.llm`/`core.flow`/`workspace`

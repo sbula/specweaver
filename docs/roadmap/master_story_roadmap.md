@@ -68,12 +68,13 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
-**Pre-existing, never ranked:** `TECH-001` 🟡, `TECH-002` 🟡, `TECH-005` 🟡, `TECH-009` 🟢,
+**Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟡, `TECH-005` 🟡, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
 2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding. `TECH-002` corrected to 🟡 — shipped
 mechanism never matched the entry's description. `TECH-005` corrected to 🟡 — SF-3 outstanding
-(raw-sqlite3 tables never prefixed).)*
+(raw-sqlite3 tables never prefixed). 2026-08-02: `TECH-001` corrected back to 🟢 — SF-04 landed
+(commit `346f64c3`), all three circular dependencies eliminated.)*
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -640,16 +641,18 @@ A story only enters the Active Routing Queue if it satisfies one of these rules:
 
 These stories do not add new user-facing features, but are critical epics required to ensure the platform remains stable, secure, and mathematically sound as it scales to enterprise levels.
 
-### 🟡 TECH-001: Domain-Driven Design Unification
-**Benefit:** *SpecWeaver's internal architecture is cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns as the team scales. `core.config` is not yet a pure leaf module — the last piece of the circular-dependency elimination.*
+### 🟢 TECH-001: Domain-Driven Design Unification
+**Benefit:** *SpecWeaver's internal architecture is perfectly cohesive and microservice-ready, preventing "Dumping Ground" anti-patterns and circular dependencies as the team scales.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-001:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-001/TECH-001_design.md)
+    *   `✅` **TECH-001:** [Domain-Driven Design Unification](features/topic_07_technical_debt/TECH-001/TECH-001_design.md)
         *   `✅` SF-01: Deconstruct Config Monolith
         *   `✅` SF-02: Decentralize CLI Layer
         *   `✅` SF-03: Consolidate Sandbox
-        *   `[ ]` SF-04: Eliminate `core.config` Circular Dependencies — `core.config ⇄ infrastructure.llm` and `core.config ⇄ core.flow` are still live mutual deps in `tach.toml`.
+        *   `✅` SF-04: Eliminate `core.config` Circular Dependencies — commit `346f64c3` (2026-08-02); `core.config` now has `depends_on = []` in `tach.toml`.
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/infrastructure/test_cqrs_e2e.py`
+    *   `tests/unit/test_architecture.py::test_core_config_has_no_cross_domain_runtime_imports`
+*   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in SF-01/02/03 (found by SF-04's own closure gate) — unrelated to this ticket's substantive claim, which is now true.
 
 ### 🟡 TECH-002: BaseTool Registry
 **Benefit:** *Eliminates manual tool registration and automates dependency injection bindings for all sandbox tools via an explicit `ToolRegistry`. The originally-described `__init_subclass__` mechanism was never built — the approved design deliberately rejected it in favor of the registry actually shipped.*
@@ -784,3 +787,9 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
 *   **Sequencing:** Found running `quality.py cb` for `TECH-001` SF-04 (2026-08-02); confirmed chronic and unrelated via `git stash`. One cycle overlaps `TECH-020`/`TECH-015`'s files — coordinate sequencing rather than duplicating.
+
+### 🔴 TECH-025: TECH-001's Pre-Existing FR Traceability Gap (SF-01/02/03)
+**Benefit:** *`check_fr_coverage.py TECH-001` passes cleanly instead of reporting 7 uncited FRs, closing the loop between the design's promises and what actually proves them.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-025:** [TECH-001's Pre-Existing FR Traceability Gap](features/topic_07_technical_debt/TECH-025/TECH-025_design.md)
+*   **Sequencing:** Found running `check_fr_coverage.py TECH-001` as SF-04's closure gate (2026-08-02). FR-1 through FR-8 (all SF-01/02/03, delivered before this session) are uncited by the literal `FR-N` string in any plan or test naming `TECH-001` — a citation-convention gap, not a functional one; SF-01/02/03's own `Verifiable Proof` suite passes. `TECH-001` itself is not blocked on this — its substantive circular-dependency claim is independently verified true.
