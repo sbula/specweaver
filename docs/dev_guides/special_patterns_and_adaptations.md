@@ -412,3 +412,41 @@ It computes the `name` that will *make the writer produce the path we already wa
    need, guard the shape before doing expensive work, and assert the round trip afterwards. Do not
    assume the convention holds; pin it with an assertion that fails at the wrapper, not three
    steps downstream.
+
+---
+
+## 25. Consistent-Rename Fixpoint Inference (The Refactor-Safety Gate)
+
+`scripts/tests.py`'s `--kind refactor` gate exists to catch a real failure mode: a "refactor" whose
+tests were quietly bent to hide a still-present bug rather than genuinely proving behaviour didn't
+change. `scripts/_refactor_diff_safety.py` (`_is_safe_file_diff`) implements the actual rule, and it
+has grown in deliberate, TDD-pinned stages rather than as one design: pure additions and dotted-path
+relocations (TECH-001 SF-04) are safe by construction; a *literal identifier rename* consistent
+across a whole file — the exact shape TECH-005 SF-3's database table renames produced across dozens
+of test-file SQL strings — needed a further extension (`_infer_token_rename_map`).
+
+### How it works:
+A single left-to-right pass over "which added line matches which removed line" cannot handle a file
+with **multiple simultaneous renames** (`nodes` -> `graph_nodes` on most lines, `edges` ->
+`graph_edges` on one line): a structurally similar line from the *wrong* rename can look like an
+equally valid candidate purely by coincidence of matching length and a single differing token. The
+gate instead resolves candidates as a **fixpoint**: each round locks in only the removed lines whose
+candidate set — after filtering out anything that conflicts with pairs *already* established —
+reduces to exactly one distinct `(old_token, new_token)` pair; repeat until no more progress. A line
+still ambiguous when the fixpoint settles, or one whose only viable match gets consumed by another
+line first, is genuinely unexplained and the file is **not** classified safe. Bare numeric tokens
+are excluded from candidacy entirely (`[A-Za-z_]\w*`, never a lone digit run) — without that, `assert
+result == 5` -> `assert result == 3` sitting next to an unrelated real rename was once inferred as
+"the" rename and silently laundered a weakened assertion.
+
+### Why we do it:
+1. **Extending tests must stay easy; hiding a bug behind a "refactor" must stay hard.** A blunt
+   any-diff-to-a-test-file check blocks legitimate mechanical maintenance (a renamed table, a moved
+   module) exactly as hard as it blocks a bug-hiding edit, which trains developers to route around
+   the gate rather than trust it. Each extension only recognizes one more *provably* safe pattern —
+   it never adds an escape hatch.
+2. **General applicability**: any diff-classification heuristic that must tell "mechanical, provably
+   safe change" from "the same textual shape, but actually a behaviour change" should prefer a
+   fixpoint/constraint-propagation resolution over a single greedy pass once more than one
+   independent substitution can coexist in the same file — and should always pair a new "safe"
+   pattern with an adversarial test proving the specific bug-hiding shape it must still reject.

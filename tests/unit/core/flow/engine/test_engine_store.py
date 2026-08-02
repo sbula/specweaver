@@ -136,13 +136,292 @@ class TestStoreSchema:
 
         # Verify schema version was bumped
         conn = sqlite3.connect(db_path)
-        version = conn.execute("SELECT MAX(version) FROM state_schema_version").fetchone()[0]
+        version = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0]
         assert version == 2
 
         # Verify parent_run_id column exists
-        columns = [row[1] for row in conn.execute("PRAGMA table_info(pipeline_runs)").fetchall()]
+        columns = [
+            row[1] for row in conn.execute("PRAGMA table_info(flow_pipeline_runs)").fetchall()
+        ]
         assert "parent_run_id" in columns
         conn.close()
+
+    def test_migrates_legacy_table_names_from_v2_shape(self, tmp_path: Path) -> None:
+        """TECH-005 FR-8: the more common real-world case — an installation already on the current
+        V2 column shape (has `parent_run_id`), whose only gap is the pre-SF-3 unprefixed table
+        names. All three tables' real row data must survive the rename exactly, and the schema
+        version must NOT be spuriously re-migrated (it is already 2)."""
+        db_path = tmp_path / "legacy_v2.db"
+        import sqlite3
+
+        conn = sqlite3.connect(db_path)
+        conn.executescript(
+            """
+            CREATE TABLE pipeline_runs (
+                run_id        TEXT PRIMARY KEY,
+                parent_run_id TEXT REFERENCES pipeline_runs(run_id),
+                pipeline_name TEXT NOT NULL,
+                project_name  TEXT NOT NULL,
+                spec_path     TEXT NOT NULL,
+                status        TEXT NOT NULL DEFAULT 'not_started',
+                current_step  INTEGER NOT NULL DEFAULT 0,
+                step_records  TEXT NOT NULL DEFAULT '[]',
+                started_at    TEXT NOT NULL,
+                updated_at    TEXT NOT NULL
+            );
+            CREATE TABLE audit_log (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id    TEXT NOT NULL REFERENCES pipeline_runs(run_id),
+                timestamp TEXT NOT NULL,
+                event     TEXT NOT NULL,
+                step_name TEXT,
+                details   TEXT
+            );
+            CREATE TABLE state_schema_version (
+                version    INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL
+            );
+            """
+        )
+        conn.execute(
+            "INSERT INTO state_schema_version (version, applied_at) VALUES (2, '2026-03-14T18:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO pipeline_runs (run_id, parent_run_id, pipeline_name, project_name, "
+            "spec_path, status, current_step, step_records, started_at, updated_at) VALUES "
+            "('run-legacy', NULL, 'p', 'proj', 'spec.md', 'completed', 1, '[]', "
+            "'2026-03-14T18:00:00Z', '2026-03-14T18:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO audit_log (run_id, timestamp, event, step_name, details) VALUES "
+            "('run-legacy', '2026-03-14T18:00:00Z', 'step_started', 'validate_spec', NULL)"
+        )
+        conn.commit()
+        conn.close()
+
+        store = StateStore(db_path)
+
+        conn = sqlite3.connect(db_path)
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert not {"pipeline_runs", "audit_log", "state_schema_version"} & tables
+        assert {"flow_pipeline_runs", "flow_audit_log", "flow_state_schema_version"} <= tables
+
+        assert (
+            conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0] == 2
+        )  # not re-migrated
+
+        run_row = conn.execute(
+            "SELECT run_id, pipeline_name, status FROM flow_pipeline_runs"
+        ).fetchone()
+        assert run_row == ("run-legacy", "p", "completed")
+
+        audit_row = conn.execute("SELECT run_id, event FROM flow_audit_log").fetchone()
+        assert audit_row == ("run-legacy", "step_started")
+        conn.close()
+
+        # The store's own public API must work normally against the migrated tables.
+        loaded = store.load_run("run-legacy")
+        assert loaded is not None
+        assert loaded.status == RunStatus.COMPLETED
+
+    def test_legacy_table_migration_preserves_foreign_key_integrity(self, tmp_path: Path) -> None:
+        """TECH-005 FR-8/D-5: after migrating a legacy DB, the `audit_log.run_id ->
+        pipeline_runs(run_id)` foreign key must still enforce against the renamed tables — an
+        insert referencing a nonexistent run_id must still raise, not silently succeed."""
+        db_path = tmp_path / "legacy_fk.db"
+        import sqlite3
+
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            "CREATE TABLE pipeline_runs (run_id TEXT PRIMARY KEY, pipeline_name TEXT NOT NULL, "
+            "project_name TEXT NOT NULL, spec_path TEXT NOT NULL, status TEXT NOT NULL, "
+            "current_step INTEGER NOT NULL, step_records TEXT NOT NULL, started_at TEXT NOT NULL, "
+            "updated_at TEXT NOT NULL)"
+        )
+        conn.execute(
+            "CREATE TABLE audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "run_id TEXT NOT NULL REFERENCES pipeline_runs(run_id), timestamp TEXT NOT NULL, "
+            "event TEXT NOT NULL, step_name TEXT, details TEXT)"
+        )
+        conn.execute(
+            "CREATE TABLE state_schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+        )
+        conn.execute(
+            "INSERT INTO state_schema_version (version, applied_at) VALUES (2, '2026-03-14T18:00:00Z')"
+        )
+        conn.commit()
+        conn.close()
+
+        StateStore(db_path)
+
+        conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA foreign_keys=ON")
+        with pytest.raises(sqlite3.IntegrityError):
+            conn.execute(
+                "INSERT INTO flow_audit_log (run_id, timestamp, event) "
+                "VALUES ('does-not-exist', '2026-03-14T18:00:00Z', 'x')"
+            )
+        conn.close()
+
+    def test_legacy_table_rename_is_idempotent_across_repeated_construction(
+        self, tmp_path: Path
+    ) -> None:
+        """[Robustness] Two `StateStore` instances constructed back-to-back against the same
+        legacy-named DB (simulating a second process racing at startup) must not raise on the
+        second construction."""
+        db_path = tmp_path / "legacy_race.db"
+        import sqlite3
+
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            "CREATE TABLE state_schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+        )
+        conn.commit()
+        conn.close()
+
+        StateStore(db_path)
+        StateStore(db_path)  # must not raise
+
+        conn = sqlite3.connect(db_path)
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        conn.close()
+        assert "flow_state_schema_version" in tables
+        assert "state_schema_version" not in tables
+
+    def test_resumes_a_half_migrated_state(self, tmp_path: Path) -> None:
+        """[Robustness] `ALTER TABLE`/`CREATE TABLE` are DDL — each auto-commits independently in
+        Python's `sqlite3` module, NOT as one atomic unit protected by `with conn:` (empirically
+        verified). A process killed partway through `_rename_legacy_tables`'s three renames
+        (`pipeline_runs`, `audit_log`, `state_schema_version`, in that order) leaves a genuinely
+        half-migrated DB — the first two renamed, the third still old-named. The next construction
+        must complete the interrupted migration, not error or silently skip the pending table."""
+        db_path = tmp_path / "half_migrated.db"
+        import sqlite3
+
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            "CREATE TABLE flow_pipeline_runs (run_id TEXT PRIMARY KEY, parent_run_id TEXT, "
+            "pipeline_name TEXT NOT NULL, project_name TEXT NOT NULL, spec_path TEXT NOT NULL, "
+            "status TEXT NOT NULL, current_step INTEGER NOT NULL, step_records TEXT NOT NULL, "
+            "started_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
+        )
+        conn.execute(
+            "CREATE TABLE flow_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT "
+            "NULL, timestamp TEXT NOT NULL, event TEXT NOT NULL, step_name TEXT, details TEXT)"
+        )
+        # `state_schema_version` deliberately still old-named -- the interrupted table.
+        conn.execute(
+            "CREATE TABLE state_schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+        )
+        conn.execute(
+            "INSERT INTO state_schema_version (version, applied_at) VALUES (2, '2026-03-14T18:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO flow_pipeline_runs (run_id, pipeline_name, project_name, spec_path, "
+            "status, current_step, step_records, started_at, updated_at) VALUES "
+            "('run-half', 'p', 'proj', 'spec.md', 'completed', 1, '[]', "
+            "'2026-03-14T18:00:00Z', '2026-03-14T18:00:00Z')"
+        )
+        conn.commit()
+        conn.close()
+
+        store = StateStore(db_path)
+
+        conn = sqlite3.connect(db_path)
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        conn.close()
+        assert "state_schema_version" not in tables
+        assert "flow_state_schema_version" in tables
+
+        loaded = store.load_run("run-half")
+        assert loaded is not None
+        assert loaded.status == RunStatus.COMPLETED
+
+    def test_skips_rename_when_both_old_and_new_tables_exist(self, tmp_path: Path) -> None:
+        """[Graceful degradation] A partially-migrated or corrupt DB with BOTH the old-named and
+        new-named tables present must not raise and must not drop either — `repository.py` and
+        `reservation.py` both have this test already (D-3); this store never did."""
+        db_path = tmp_path / "legacy_both.db"
+        import sqlite3
+
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            "CREATE TABLE pipeline_runs (run_id TEXT PRIMARY KEY, pipeline_name TEXT NOT NULL, "
+            "project_name TEXT NOT NULL, spec_path TEXT NOT NULL, status TEXT NOT NULL, "
+            "current_step INTEGER NOT NULL, step_records TEXT NOT NULL, started_at TEXT NOT NULL, "
+            "updated_at TEXT NOT NULL)"
+        )
+        conn.execute(
+            "CREATE TABLE flow_pipeline_runs (run_id TEXT PRIMARY KEY, parent_run_id TEXT, "
+            "pipeline_name TEXT NOT NULL, project_name TEXT NOT NULL, spec_path TEXT NOT NULL, "
+            "status TEXT NOT NULL, current_step INTEGER NOT NULL, step_records TEXT NOT NULL, "
+            "started_at TEXT NOT NULL, updated_at TEXT NOT NULL)"
+        )
+        conn.commit()
+        conn.close()
+
+        StateStore(db_path)  # must not raise
+
+        conn = sqlite3.connect(db_path)
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        conn.close()
+        assert "pipeline_runs" in tables
+        assert "flow_pipeline_runs" in tables
+
+    def test_rename_swallows_concurrent_operational_error(self) -> None:
+        """[Graceful degradation] `_rename_legacy_tables` must swallow `sqlite3.OperationalError`
+        raised by `ALTER TABLE` itself when a RE-CHECK proves another process already finished the
+        rename (`flow_pipeline_runs` now exists) — not just reach the same outcome via the
+        membership-check skip already covered by the idempotent-construction test above."""
+        import sqlite3
+        from unittest import mock
+
+        store = StateStore.__new__(StateStore)
+        select_call_count = 0
+
+        def fake_execute(sql, *_args, **_kwargs):
+            nonlocal select_call_count
+            stripped = sql.strip()
+            if stripped.startswith("SELECT name FROM sqlite_master"):
+                select_call_count += 1
+                if select_call_count == 1:
+                    return [("pipeline_runs",)]
+                return [("pipeline_runs",), ("flow_pipeline_runs",)]
+            if stripped.startswith("ALTER TABLE pipeline_runs RENAME"):
+                raise sqlite3.OperationalError("no such table: pipeline_runs")
+            raise AssertionError(f"unexpected SQL: {sql}")
+
+        mock_conn = mock.MagicMock()
+        mock_conn.execute.side_effect = fake_execute
+
+        store._rename_legacy_tables(mock_conn)  # must not raise
+
+        mock_conn.execute.assert_any_call("ALTER TABLE pipeline_runs RENAME TO flow_pipeline_runs")
+
+    def test_rename_reraises_genuine_operational_errors(self) -> None:
+        """[Hostile] A genuine `OperationalError` during the `ALTER TABLE` (disk I/O failure, lock
+        contention, corruption) that is NOT explained by "another process already finished the
+        rename" must propagate, not be silently swallowed. Swallowing it unconditionally would let
+        `_ensure_schema()` proceed straight to `executescript(_STATE_SCHEMA_V2)`, creating an empty
+        new `flow_pipeline_runs` table and silently orphaning the untouched old table's data."""
+        import sqlite3
+        from unittest import mock
+
+        store = StateStore.__new__(StateStore)
+
+        def fake_execute(sql, *_args, **_kwargs):
+            stripped = sql.strip()
+            if stripped.startswith("SELECT name FROM sqlite_master"):
+                return [("pipeline_runs",)]  # flow_pipeline_runs never appears
+            if stripped.startswith("ALTER TABLE pipeline_runs RENAME"):
+                raise sqlite3.OperationalError("disk I/O error")
+            raise AssertionError(f"unexpected SQL: {sql}")
+
+        mock_conn = mock.MagicMock()
+        mock_conn.execute.side_effect = fake_execute
+
+        with pytest.raises(sqlite3.OperationalError, match="disk I/O error"):
+            store._rename_legacy_tables(mock_conn)
 
 
 # ---------------------------------------------------------------------------
@@ -371,7 +650,7 @@ class TestStoreEdgeCases:
     def test_schema_version_persisted(self, store: StateStore) -> None:
         """Schema version table should have exactly one entry."""
         conn = store.connect()
-        row = conn.execute("SELECT MAX(version) FROM state_schema_version").fetchone()
+        row = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()
         conn.close()
         assert row is not None
         assert row[0] == 2
@@ -391,7 +670,7 @@ class TestStoreEdgeCases:
         # Manually corrupt the DB payload
         conn = store.connect()
         conn.execute(
-            "UPDATE pipeline_runs SET step_records = ? WHERE run_id = ?",
+            "UPDATE flow_pipeline_runs SET step_records = ? WHERE run_id = ?",
             ("{bad_json:", "run-corrupt"),
         )
         conn.commit()

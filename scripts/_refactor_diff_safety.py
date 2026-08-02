@@ -20,6 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 _DOTTED_PATH_TOKEN = re.compile(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+")
 _WHITESPACE_RUN = re.compile(r"\s+")
 _WRAPPING_PUNCTUATION = re.compile(r"[()\[\]{},]")
+_WORD_TOKEN = re.compile(r"[A-Za-z_]\w*")
 
 
 def _joined_with_word_boundaries(lines: list[str]) -> str:
@@ -59,6 +60,15 @@ def _parse_hunks(diff_text: str) -> list[tuple[list[str], list[str]]]:
     return hunks
 
 
+def _signature_from_text(text: str) -> str:
+    """The dotted-path-stripped, whitespace-free, punctuation-free reduction shared by
+    `_hunk_signature` (fresh diff text) and the single-token-rename closure check (substituted
+    text) — see `_hunk_signature` for why the three strips run in this exact order."""
+    without_paths = _DOTTED_PATH_TOKEN.sub("", text)
+    without_whitespace = _WHITESPACE_RUN.sub("", without_paths)
+    return _WRAPPING_PUNCTUATION.sub("", without_whitespace)
+
+
 def _hunk_signature(lines: list[str]) -> str:
     """One logical group of lines, reduced to a dotted-path-stripped, whitespace-free signature.
 
@@ -77,9 +87,118 @@ def _hunk_signature(lines: list[str]) -> str:
       `from x import a, b` never needs — the parens exist only because of the line wrap.
     Neither changes what the statement does, so neither may register as a content change.
     """
-    without_paths = _DOTTED_PATH_TOKEN.sub("", _joined_with_word_boundaries(lines))
-    without_whitespace = _WHITESPACE_RUN.sub("", without_paths)
-    return _WRAPPING_PUNCTUATION.sub("", without_whitespace)
+    return _signature_from_text(_joined_with_word_boundaries(lines))
+
+
+def _normalized_group_text(group: list[str]) -> str:
+    """A logical group's lines collapsed to one whitespace-normalized string — unlike
+    `_hunk_signature`, paths and punctuation are NOT stripped here, because the single-token-rename
+    inference below needs to see and diff literal tokens (e.g. `nodes` vs `graph_nodes`), not a
+    signature that has already erased word content."""
+    return _WHITESPACE_RUN.sub(" ", _joined_with_word_boundaries(group)).strip()
+
+
+def _surviving_candidates(
+    removed_idx: int,
+    removed_token_lists: list[list[str]],
+    added_token_lists: list[list[str]],
+    used_added_indices: set[int],
+    rename_map: dict[str, str],
+) -> list[tuple[int, tuple[str, str]]]:
+    """Every added index still usable that differs from `removed_idx`'s tokens in EXACTLY one
+    position, excluding candidates whose implied pair conflicts with `rename_map`'s current state
+    — see `_infer_token_rename_map` for why this filtering is fixpoint-driven, not one-shot."""
+    removed_tokens = removed_token_lists[removed_idx]
+    out: list[tuple[int, tuple[str, str]]] = []
+    for added_idx, added_tokens in enumerate(added_token_lists):
+        if added_idx in used_added_indices or len(removed_tokens) != len(added_tokens):
+            continue
+        diffs = [(r, a) for r, a in zip(removed_tokens, added_tokens, strict=True) if r != a]
+        if len(diffs) != 1:
+            continue
+        old_token, new_token = diffs[0]
+        if old_token in rename_map and rename_map[old_token] != new_token:
+            continue  # conflicts with an already-established mapping — not a real candidate
+        out.append((added_idx, (old_token, new_token)))
+    return out
+
+
+def _infer_token_rename_map(
+    removed_texts: list[str], added_texts: list[str]
+) -> dict[str, str] | None:
+    """Pair every removed leftover text with a DISTINCT added leftover text that differs from it
+    in EXACTLY one identifier-shaped token, and collect those (old_token, new_token) pairs into a
+    rename map — refusing (returning `None`) the moment any removed text ends up with zero or
+    more than one candidate that survives filtering against pairs already established, or a
+    candidate that conflicts with one already collected.
+
+    This intentionally allows MULTIPLE simultaneous renames in the same file (e.g. `nodes` ->
+    `graph_nodes` on most lines and `edges` -> `graph_edges` on one line, both parts of the same
+    table-prefix rename) — an earlier single-global-pair design rejected that real, non-hypothetical
+    shape as "ambiguous" even though every individual line was unambiguously explained.
+
+    Resolution runs as a FIXPOINT, not a single left-to-right pass, because with multiple
+    simultaneous renames a removed line can have a genuinely ambiguous candidate set on its own
+    (two same-length, one-token-different added lines, each implying a DIFFERENT substitution) that
+    only resolves once ANOTHER, less coincidentally-shaped line has already pinned down one of
+    those substitutions. The real case this fixes: `cursor.execute("SELECT COUNT(*) FROM
+    nodes;")` is the same token length as, and differs in exactly one position from, BOTH its true
+    counterpart (`...FROM graph_nodes;`) AND an unrelated line from a DIFFERENT simultaneous rename
+    (`...FROM graph_edges;`) — resolvable only after `edges -> graph_edges` is independently
+    established elsewhere and used to filter out the spurious cross-candidate. Each fixpoint round
+    locks in only the removed lines whose SURVIVING candidate set (after filtering out anything
+    that conflicts with already-established pairs) reduces to exactly one distinct pair; repeat
+    until no more progress. A removed line still unresolved when the fixpoint settles — or one that
+    has zero candidates the moment its only matches get consumed by other lines — is genuinely
+    unexplained or ambiguous, and this returns `None`. That is the load-bearing guard against
+    laundering a real behaviour change as a fake rename: a bug-hiding edit essentially never
+    reduces to "every changed line pairs uniquely with some added line via one consistent,
+    fixpoint-derivable global mapping" — and if it somehow did, `_is_safe_file_diff`'s closure
+    check after this still re-verifies the full multiset, not just this per-line discovery.
+
+    `_WORD_TOKEN` matches identifier-shaped tokens only (`[A-Za-z_]\\w*`) — NOT bare numeric
+    literals. The regression this specifically fixes: `assert result == 5` -> `assert result ==
+    3` alongside an unrelated genuine rename elsewhere in the same leftover set. With digits
+    treated as tokens, `('5', '3')` was inferred as a rename candidate and the closure check then
+    rewrote the weakened assertion into matching the new expected value, laundering exactly the bug
+    this gate exists to catch. Excluding digit-only tokens from candidacy makes a value change
+    invisible to this inference entirely.
+    """
+    removed_token_lists = [_WORD_TOKEN.findall(text) for text in removed_texts]
+    added_token_lists = [_WORD_TOKEN.findall(text) for text in added_texts]
+
+    rename_map: dict[str, str] = {}
+    used_added_indices: set[int] = set()
+    resolved_removed_indices: set[int] = set()
+
+    made_progress = True
+    while made_progress:
+        made_progress = False
+        for removed_idx in range(len(removed_texts)):
+            if removed_idx in resolved_removed_indices:
+                continue
+            candidates = _surviving_candidates(
+                removed_idx,
+                removed_token_lists,
+                added_token_lists,
+                used_added_indices,
+                rename_map,
+            )
+            if not candidates:
+                return None  # no viable match remains — unexplained, not a rename
+            distinct_pairs = {pair for _idx, pair in candidates}
+            if len(distinct_pairs) != 1:
+                continue  # still ambiguous this round — may resolve after others lock in
+            added_idx, (old_token, new_token) = candidates[0]
+            rename_map[old_token] = new_token
+            used_added_indices.add(added_idx)
+            resolved_removed_indices.add(removed_idx)
+            made_progress = True
+
+    if len(resolved_removed_indices) != len(removed_texts):
+        return None  # fixpoint settled with genuine, unresolvable ambiguity left over
+
+    return rename_map or None
 
 
 def _logical_line_groups(lines: list[str]) -> list[list[str]]:
@@ -143,20 +262,52 @@ def _is_safe_file_diff(hunks: list[tuple[list[str], list[str]]]) -> bool:
     file — duplicates must each be matched individually (a multiset difference, not a set
     difference), so two identical deletions need two identical additions, not one covering both.
     Unmatched added signatures (pure new coverage, anywhere) never block; any unmatched removed
-    signature means something existing was lost with nothing provably equivalent replacing it.
+    signature means something existing was lost with nothing provably equivalent replacing it —
+    UNLESS the entire remaining gap closes under one or more consistent literal-token renames (see
+    `_infer_token_rename_map`): identifiers renamed consistently across every touched line, which
+    cannot be a dotted-path relocation (the pattern above already covers that) but is just as
+    provably safe when the closure is exact and total.
     """
     removed_sigs: Counter[str] = Counter()
     added_sigs: Counter[str] = Counter()
+    removed_raw_by_sig: dict[str, list[str]] = {}
+    added_raw_by_sig: dict[str, list[str]] = {}
+
     for removed, added in hunks:
         for group in _logical_line_groups(removed):
             sig = _hunk_signature(group)
             if sig:
                 removed_sigs[sig] += 1
+                removed_raw_by_sig.setdefault(sig, []).append(_normalized_group_text(group))
         for group in _logical_line_groups(added):
             sig = _hunk_signature(group)
             if sig:
                 added_sigs[sig] += 1
-    return not (removed_sigs - added_sigs)
+                added_raw_by_sig.setdefault(sig, []).append(_normalized_group_text(group))
+
+    residual_removed = removed_sigs - added_sigs
+    if not residual_removed:
+        return True
+
+    residual_added = added_sigs - removed_sigs
+    removed_leftover_texts = [
+        text for sig, count in residual_removed.items() for text in removed_raw_by_sig[sig][:count]
+    ]
+    added_leftover_texts = [
+        text for sig, count in residual_added.items() for text in added_raw_by_sig[sig][:count]
+    ]
+
+    rename_map = _infer_token_rename_map(removed_leftover_texts, added_leftover_texts)
+    if rename_map is None:
+        return False
+
+    pattern = re.compile(r"\b(" + "|".join(re.escape(old) for old in rename_map) + r")\b")
+    substituted_sigs: Counter[str] = Counter()
+    for text in removed_leftover_texts:
+        substituted_text = pattern.sub(lambda m: rename_map[m.group(0)], text)
+        substituted_sigs[_signature_from_text(substituted_text)] += 1
+
+    return not (substituted_sigs - residual_added)
 
 
 def _is_import_path_only_change(path: Path, repo_root: Path) -> bool:

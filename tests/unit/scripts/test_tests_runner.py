@@ -614,6 +614,184 @@ class TestIsSafeFileDiff:
         assert rds._is_safe_file_diff(hunks) is False
 
 
+class TestSingleTokenRenameClosure:
+    """A further safe pattern beyond exact-match and path-relocation: a single, file-wide-
+    consistent literal-token substitution (e.g. a SQL table rename `nodes` -> `graph_nodes`
+    embedded in string literals, which the dotted-path stripper does not touch since it isn't a
+    dotted module path). Discovered as a real, non-hypothetical blocker while planning TECH-005
+    SF-3: every mechanical test-file update for that ticket's table renames is exactly this shape,
+    and `--kind refactor` would otherwise hard-block a legitimate, Red/Blue-reviewed rename.
+
+    The load-bearing guarantee is CLOSURE: the inferred (old, new) pair must explain every
+    remaining unmatched line with nothing left over, and inference itself must find exactly ONE
+    consistent pair or refuse — this is what stops a genuine bug-hiding edit (which essentially
+    never reduces to one clean global word swap) from being laundered as a rename.
+    """
+
+    def test_a_consistent_table_rename_across_multiple_lines_is_safe(self, rds: ModuleType) -> None:
+        hunks = [
+            (
+                ["            SELECT id FROM nodes WHERE is_active = 1"],
+                ["            SELECT id FROM graph_nodes WHERE is_active = 1"],
+            ),
+            (
+                ['cursor.execute("INSERT INTO nodes (id) VALUES (?)", (1,))'],
+                ['cursor.execute("INSERT INTO graph_nodes (id) VALUES (?)", (1,))'],
+            ),
+            (
+                ['assert "nodes" in tables'],
+                ['assert "graph_nodes" in tables'],
+            ),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is True
+
+    def test_boundary_a_rename_alongside_an_unrelated_pure_addition_is_still_safe(
+        self, rds: ModuleType
+    ) -> None:
+        hunks = [
+            (["FROM nodes"], ["FROM graph_nodes"]),
+            ([], ["def test_new_case(): pass"]),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is True
+
+    def test_graceful_degradation_a_rename_that_only_closes_part_of_the_gap_is_not_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """One line matches the inferred nodes->graph_nodes pair; a second, unrelated removed
+        line (`assert count == 5`) has no home under that same substitution and must still block."""
+        hunks = [
+            (["FROM nodes"], ["FROM graph_nodes"]),
+            (["assert count == 5"], []),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is False
+
+    def test_hostile_two_different_substitutions_required_is_not_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """The case that must keep being caught: two independent single-word changes, each
+        individually shaped like a clean rename, but NOT explainable by one consistent pair —
+        exactly what a bug hidden behind a fake "rename" would look like."""
+        hunks = [
+            (["FROM nodes"], ["FROM graph_nodes"]),
+            (["assert x == 1"], ["assert x == 2"]),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is False
+
+    def test_hostile_ambiguous_inference_with_no_clear_pair_is_not_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """Different token counts on every candidate pairing -- no single-token substitution can
+        even be inferred, so this must fall through to the existing (safe default: unsafe) verdict."""
+        hunks = [(["assert result == 5 and flag is True"], ["totally different shape entirely"])]
+
+        assert rds._is_safe_file_diff(hunks) is False
+
+    def test_two_simultaneous_consistent_renames_in_the_same_file_are_both_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """The real bug this pins, found running the actual TECH-005 SF-3 gate: a single file
+        legitimately needing TWO independent, each-internally-consistent renames at once (`nodes`
+        -> `graph_nodes` on most lines, `edges` -> `graph_edges` on one line) was rejected as
+        "ambiguous" by an inference that only ever accepted a single global (old, new) pair. A file
+        needing several simultaneous identifier renames is exactly TECH-005 SF-3's own shape and
+        must be recognized, not just the single-identifier case the earlier, narrower tests here
+        happened to use."""
+        hunks = [
+            (["SELECT id FROM nodes"], ["SELECT id FROM graph_nodes"]),
+            (["UPDATE nodes SET x = 1"], ["UPDATE graph_nodes SET x = 1"]),
+            (["INSERT INTO edges VALUES (1)"], ["INSERT INTO graph_edges VALUES (1)"]),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is True
+
+    def test_duplicate_lines_needing_the_same_rename_are_still_safe(self, rds: ModuleType) -> None:
+        """The real bug this pins, found running the actual TECH-005 SF-3 gate:
+        `tests/unit/graph/core/store/test_repository_load.py` has THREE identical
+        `INSERT INTO nodes (...)` lines (repeated fixture setup) all renamed to the identical
+        `INSERT INTO graph_nodes (...)`. Discovery matched the first removed line against all
+        three not-yet-used added candidates, found 3 (not 1) matches, and rejected as "ambiguous"
+        even though every match implied the exact same (nodes, graph_nodes) substitution."""
+        hunks = [
+            (
+                ["INSERT INTO nodes (a, b)"],
+                ["INSERT INTO graph_nodes (a, b)"],
+            ),
+            (
+                ["INSERT INTO nodes (a, b)"],
+                ["INSERT INTO graph_nodes (a, b)"],
+            ),
+            (
+                ["INSERT INTO nodes (a, b)"],
+                ["INSERT INTO graph_nodes (a, b)"],
+            ),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is True
+
+    def test_a_spurious_cross_rename_candidate_is_resolved_by_already_established_pairs(
+        self, rds: ModuleType
+    ) -> None:
+        """The real bug this pins, found running the actual TECH-005 SF-3 gate against
+        `test_repository_flush.py`: with TWO simultaneous renames active (`nodes` ->
+        `graph_nodes`, `edges` -> `graph_edges`), the line `SELECT COUNT(*) FROM nodes;` is the
+        SAME TOKEN LENGTH as, and differs in exactly one position from, BOTH its true counterpart
+        (`FROM graph_nodes;`) AND an unrelated added line from the OTHER rename
+        (`FROM graph_edges;` — same sentence shape, different renamed table). A naive per-line
+        match sees two equally-plausible candidates implying two DIFFERENT substitutions for
+        `nodes` and rejects as ambiguous, even though the correct pairing is unambiguous once the
+        two renames from other, less coincidentally-shaped lines are already known."""
+        hunks = [
+            (["FROM nodes ORDER BY x"], ["FROM graph_nodes ORDER BY x"]),  # resolves nodes first
+            (["FROM edges e"], ["FROM graph_edges e"]),  # resolves edges next
+            (
+                ['cursor.execute("SELECT COUNT(*) FROM nodes;")'],
+                ['cursor.execute("SELECT COUNT(*) FROM graph_nodes;")'],
+            ),
+            (
+                ['cursor.execute("SELECT COUNT(*) FROM edges;")'],
+                ['cursor.execute("SELECT COUNT(*) FROM graph_edges;")'],
+            ),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is True
+
+    def test_hostile_permanently_ambiguous_pair_reaches_the_fixpoint_exhausted_exit(
+        self, rds: ModuleType
+    ) -> None:
+        """Every other hostile test here resolves via the IMMEDIATE `not candidates: return None`
+        exit (some removed line runs out of viable candidates outright). This one instead reaches
+        the OTHER unsafe exit: the fixpoint loop runs to a stable state where two removed lines
+        (`target p`/`target q`) each keep exactly 2 distinct candidate pairs forever (matched
+        against `target zz`/`target ww` either way — nothing about them narrows the ambiguity),
+        while an unrelated third pair (`nodes`->`graph_nodes`) resolves cleanly first. Only the
+        trailing `len(resolved_removed_indices) != len(removed_texts)` check catches this."""
+        hunks = [
+            (["FROM nodes"], ["FROM graph_nodes"]),
+            (["target p"], ["target zz"]),
+            (["target q"], ["target ww"]),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is False
+
+    def test_hostile_a_numeric_assertion_change_beside_a_real_rename_is_not_safe(
+        self, rds: ModuleType
+    ) -> None:
+        """The real regression this pins: with digit tokens treated as candidates, `5` -> `3` was
+        inferred as "the" rename (the only single-token diff actually compared) and the closure
+        check rewrote the weakened assertion to match — laundering exactly the bug this whole gate
+        exists to catch. Numeric literals must never be rename candidates, only identifiers."""
+        hunks = [
+            (["FROM nodes"], ["FROM graph_nodes"]),
+            (["    assert result == 5"], ["    assert result == 3"]),
+        ]
+
+        assert rds._is_safe_file_diff(hunks) is False
+
+
 class TestRefactorViolationsRealDiff:
     """End-to-end: `refactor_violations` against a REAL git repo and REAL `git diff` output —
     the pure-function tests above prove the logic, this proves the wiring."""

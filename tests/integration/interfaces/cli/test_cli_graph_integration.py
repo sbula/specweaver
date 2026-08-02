@@ -47,7 +47,7 @@ def test_graph_build_integration_real_flow(tmp_path, monkeypatch):
 
     with sqlite3.connect(str(db_path)) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT semantic_hash, file_id, service_name, is_active FROM nodes")
+        cursor.execute("SELECT semantic_hash, file_id, service_name, is_active FROM graph_nodes")
         nodes = cursor.fetchall()
 
         # Verify default service name and normalized file path
@@ -89,7 +89,7 @@ def test_graph_build_integration_topology_service(tmp_path, monkeypatch):
     db_path = tmp_path / ".specweaver" / "graph.db"
     with sqlite3.connect(str(db_path)) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT service_name FROM nodes LIMIT 1")
+        cursor.execute("SELECT service_name FROM graph_nodes LIMIT 1")
         row = cursor.fetchone()
         assert row is not None
         assert row[0] == "payment_service"

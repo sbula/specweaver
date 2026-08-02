@@ -71,7 +71,7 @@ def test_load_ignores_tombstoned_nodes(repo):
 
     # Manually tombstone it
     with sqlite3.connect(repo.db_path) as conn:
-        conn.execute("UPDATE nodes SET is_active=0;")
+        conn.execute("UPDATE graph_nodes SET is_active=0;")
 
     g_out = repo.load_from_db()
 
@@ -101,7 +101,7 @@ def test_load_corrupted_node_metadata(repo):
     with sqlite3.connect(repo.db_path) as conn:
         conn.execute(
             """
-            INSERT INTO nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
+            INSERT INTO graph_nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
             (
@@ -129,14 +129,14 @@ def test_load_corrupted_edge_metadata(repo):
     with sqlite3.connect(repo.db_path) as conn:
         conn.execute(
             """
-            INSERT INTO nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
+            INSERT INTO graph_nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
             ("test_service:ast:1", "c1", "f1", "test_service", "p1", 1, "{}"),
         )
         conn.execute(
             """
-            INSERT INTO nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
+            INSERT INTO graph_nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
             ("test_service:ast:2", "c1", "f1", "test_service", "p1", 1, "{}"),
@@ -144,14 +144,14 @@ def test_load_corrupted_edge_metadata(repo):
 
         # Get their IDs
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM nodes ORDER BY id")
+        cursor.execute("SELECT id FROM graph_nodes ORDER BY id")
         rows = cursor.fetchall()
         id1, id2 = rows[0][0], rows[1][0]
 
         # Insert corrupted edge
         conn.execute(
             """
-            INSERT INTO edges (source_id, target_id, type, metadata)
+            INSERT INTO graph_edges (source_id, target_id, type, metadata)
             VALUES (?, ?, ?, ?)
         """,
             (id1, id2, "CALLS", "INVALID_JSON_EDGE"),
@@ -165,9 +165,9 @@ def test_load_corrupted_edge_metadata(repo):
     # We can retrieve the semantic hashes by fetching them.
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT semantic_hash FROM nodes WHERE id=?", (id1,))
+        cursor.execute("SELECT semantic_hash FROM graph_nodes WHERE id=?", (id1,))
         hash1 = cursor.fetchone()[0]
-        cursor.execute("SELECT semantic_hash FROM nodes WHERE id=?", (id2,))
+        cursor.execute("SELECT semantic_hash FROM graph_nodes WHERE id=?", (id2,))
         hash2 = cursor.fetchone()[0]
 
     edge_data = g_out.edges[hash1, hash2]

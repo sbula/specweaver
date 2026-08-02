@@ -32,7 +32,7 @@ def test_get_all_file_hashes(repo):
     # Also add a node for a different service to ensure isolation
     with sqlite3.connect(repo.db_path) as conn:
         conn.execute(
-            "INSERT INTO nodes (semantic_hash, file_id, clone_hash, service_name, is_active) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO graph_nodes (semantic_hash, file_id, clone_hash, service_name, is_active) VALUES (?, ?, ?, ?, ?)",
             ("other_service:ast:5", "file4", "c4", "other_service", 1),
         )
 
@@ -53,7 +53,7 @@ def test_purge_file(repo):
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT semantic_hash, is_active FROM nodes ORDER BY semantic_hash")
+        cursor.execute("SELECT semantic_hash, is_active FROM graph_nodes ORDER BY semantic_hash")
         rows = cursor.fetchall()
 
         assert rows == [

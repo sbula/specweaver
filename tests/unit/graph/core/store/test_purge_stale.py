@@ -32,7 +32,7 @@ def get_active_files(repo) -> set[str]:
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT DISTINCT file_id FROM nodes WHERE is_active = 1 AND service_name = 'test_service'"
+            "SELECT DISTINCT file_id FROM graph_nodes WHERE is_active = 1 AND service_name = 'test_service'"
         )
         return {row[0] for row in cursor.fetchall()}
 

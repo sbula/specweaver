@@ -32,7 +32,7 @@ def test_flush_happy_path(repo):
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT semantic_hash, file_id, service_name, package_name, metadata, is_active FROM nodes ORDER BY semantic_hash;"
+            "SELECT semantic_hash, file_id, service_name, package_name, metadata, is_active FROM graph_nodes ORDER BY semantic_hash;"
         )
         nodes = cursor.fetchall()
 
@@ -57,9 +57,9 @@ def test_flush_happy_path(repo):
         # Verify edges
         cursor.execute("""
             SELECT n1.semantic_hash, n2.semantic_hash, e.type, e.metadata
-            FROM edges e
-            JOIN nodes n1 ON e.source_id = n1.id
-            JOIN nodes n2 ON e.target_id = n2.id
+            FROM graph_edges e
+            JOIN graph_nodes n1 ON e.source_id = n1.id
+            JOIN graph_nodes n2 ON e.target_id = n2.id
         """)
         edges = cursor.fetchall()
         assert len(edges) == 1
@@ -85,9 +85,9 @@ def test_flush_large_graph_chunking(repo):
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM nodes;")
+        cursor.execute("SELECT COUNT(*) FROM graph_nodes;")
         assert cursor.fetchone()[0] == 6000
-        cursor.execute("SELECT COUNT(*) FROM edges;")
+        cursor.execute("SELECT COUNT(*) FROM graph_edges;")
         assert cursor.fetchone()[0] == 5999
 
 
@@ -98,7 +98,7 @@ def test_flush_tombstone_recovery(repo):
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO nodes (semantic_hash, file_id, service_name, package_name, is_active, metadata)
+            INSERT INTO graph_nodes (semantic_hash, file_id, service_name, package_name, is_active, metadata)
             VALUES (?, ?, ?, ?, ?, ?)
         """,
             ("test_service:ast:999", "file1", "test_service", "pkg1", 0, '{"old": "data"}'),
@@ -118,7 +118,7 @@ def test_flush_tombstone_recovery(repo):
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT is_active, clone_hash, metadata FROM nodes WHERE semantic_hash = 'test_service:ast:999';"
+            "SELECT is_active, clone_hash, metadata FROM graph_nodes WHERE semantic_hash = 'test_service:ast:999';"
         )
         row = cursor.fetchone()
 
@@ -150,13 +150,13 @@ def test_flush_lazy_target(repo):
         cursor = conn.cursor()
         # Verify the ghost node was created so the edge has a target
         cursor.execute(
-            "SELECT id, is_active FROM nodes WHERE semantic_hash = 'test_service:ast:GHOST';"
+            "SELECT id, is_active FROM graph_nodes WHERE semantic_hash = 'test_service:ast:GHOST';"
         )
         row = cursor.fetchone()
         assert row is not None
         # Ghost nodes might be inserted as is_active=0 or 1, but they exist.
 
-        cursor.execute("SELECT COUNT(*) FROM edges;")
+        cursor.execute("SELECT COUNT(*) FROM graph_edges;")
         assert cursor.fetchone()[0] == 1
 
 
@@ -180,11 +180,13 @@ def test_flush_unserializable_metadata(repo):
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT metadata FROM nodes WHERE semantic_hash = 'test_service:ast:123';")
+        cursor.execute(
+            "SELECT metadata FROM graph_nodes WHERE semantic_hash = 'test_service:ast:123';"
+        )
         meta = cursor.fetchone()[0]
         assert "{" in meta  # Successfully serialized as string
 
-        cursor.execute("SELECT metadata FROM edges WHERE type='CALLS'")
+        cursor.execute("SELECT metadata FROM graph_edges WHERE type='CALLS'")
         metadata_str = cursor.fetchone()[0]
         # In json.dumps, a set raises TypeError, so if our default=str caught it, it will be the string repr of a set.
         assert "{" in metadata_str
@@ -197,9 +199,9 @@ def test_flush_empty_graph(repo):
 
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT count(*) FROM nodes")
+        cursor.execute("SELECT count(*) FROM graph_nodes")
         assert cursor.fetchone()[0] == 0
-        cursor.execute("SELECT count(*) FROM edges")
+        cursor.execute("SELECT count(*) FROM graph_edges")
         assert cursor.fetchone()[0] == 0
 
 
@@ -219,7 +221,7 @@ def test_flush_prefix_spoofing(repo):
     with sqlite3.connect(repo.db_path) as conn:
         cursor = conn.cursor()
         # It should prepend the validated service name to the hash if missing, or replace the service_name column.
-        cursor.execute("SELECT semantic_hash, service_name FROM nodes;")
+        cursor.execute("SELECT semantic_hash, service_name FROM graph_nodes;")
         row = cursor.fetchone()
 
         # The service_name column MUST be the validated one

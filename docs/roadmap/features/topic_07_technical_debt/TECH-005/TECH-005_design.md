@@ -132,12 +132,12 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Model Refactoring | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Alembic Migration | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Prefix Raw-SQLite3 Tables | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Prefix Raw-SQLite3 Tables | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-1–2 (SQLAlchemy-managed tables) fully complete. SF-3 (raw-sqlite3 tables) is NOT done — six tables remain unprefixed. TECH-005 is not complete until SF-3 lands.
-**Next step**: Design and implement SF-3.
+**Current status**: SF-1–2 (SQLAlchemy-managed tables) fully complete. SF-3 (raw-sqlite3 tables) has an approved design and implementation plan (`TECH-005_sf3_implementation_plan.md`, Red/Blue reviewed, 2 cycles) but no code yet — six tables remain unprefixed. TECH-005 is not complete until SF-3's dev + pre-commit + commit land.
+**Next step**: Run the `specweaver-dev` skill against `TECH-005_sf3_implementation_plan.md` (task breakdown, TDD, commit boundaries).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
 

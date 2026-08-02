@@ -26,13 +26,43 @@ class SQLiteReservationSystem:
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
 
+    def _rename_legacy_table(self, conn: sqlite3.Connection) -> None:
+        """TECH-005 FR-8: migrate a pre-SF-3 installation's `sw_reservations` table to
+        `flow_reservations` in place, preserving all held locks. Held locks are transient, but the
+        TABLE name is not self-healing — `expires_at` is written but never read/enforced (no TTL
+        sweep exists), so a crashed run can leave stale rows under the old name indefinitely.
+
+        Skips (does not raise) when `flow_reservations` already exists alongside `sw_reservations`
+        — a partially-migrated or corrupt state must degrade safely. Also tolerates a concurrent
+        second construction racing to rename the same table: an `OperationalError` from the
+        `ALTER TABLE` is swallowed ONLY if a re-check proves `flow_reservations` now exists (the
+        race really did happen and finished elsewhere) — any other cause (disk I/O, lock
+        contention, corruption) re-raises, since silently swallowing it would let
+        `_ensure_schema()` proceed to `CREATE TABLE IF NOT EXISTS` and orphan every held lock in
+        the untouched old table instead of surfacing a loud construction failure.
+        """
+        existing = {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "sw_reservations" not in existing or "flow_reservations" in existing:
+            return
+        try:
+            conn.execute("ALTER TABLE sw_reservations RENAME TO flow_reservations")
+        except sqlite3.OperationalError:
+            still_missing = "flow_reservations" not in {
+                row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            }
+            if still_missing:
+                raise
+
     def _ensure_schema(self) -> None:
         """Create the atomic uniqueness reservation table if missing."""
         try:
             with self._get_connection() as conn:
+                self._rename_legacy_table(conn)
                 conn.execute(
                     """
-                    CREATE TABLE IF NOT EXISTS sw_reservations (
+                    CREATE TABLE IF NOT EXISTS flow_reservations (
                         resource_id TEXT PRIMARY KEY,
                         run_id TEXT NOT NULL,
                         expires_at DATETIME
@@ -58,7 +88,7 @@ class SQLiteReservationSystem:
         try:
             with self._get_connection() as conn:
                 conn.execute(
-                    "INSERT INTO sw_reservations (resource_id, run_id, expires_at) VALUES (?, ?, ?)",
+                    "INSERT INTO flow_reservations (resource_id, run_id, expires_at) VALUES (?, ?, ?)",
                     (resource_id, run_id, expires_at),
                 )
             logger.info(
@@ -82,7 +112,7 @@ class SQLiteReservationSystem:
         """Release any held locks associated with this pipeline run."""
         try:
             with self._get_connection() as conn:
-                cursor = conn.execute("DELETE FROM sw_reservations WHERE run_id = ?", (run_id,))
+                cursor = conn.execute("DELETE FROM flow_reservations WHERE run_id = ?", (run_id,))
                 if cursor.rowcount > 0:
                     logger.info(
                         "SQLiteReservationSystem released %d locks for run_id=%s",

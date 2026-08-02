@@ -26,11 +26,45 @@ class SqliteGraphRepository:
         conn.execute("PRAGMA foreign_keys=ON;")
         return conn
 
+    def _rename_legacy_tables(self, conn: sqlite3.Connection) -> None:
+        """TECH-005 FR-8: migrate a pre-SF-3 installation's `nodes`/`edges` tables to
+        `graph_nodes`/`graph_edges` in place, preserving all data (`ALTER TABLE RENAME` also
+        auto-patches `edges`'s FK reference to `nodes(id)`). Renaming `nodes` before `edges`
+        mirrors DDL order below; SQLite's FK-reference patching is schema-wide, not order-
+        dependent, so this is purely for diff readability.
+
+        Skips (does not raise) when a table's new name already exists alongside the old one — a
+        partially-migrated or corrupt state must degrade safely, not crash the whole application
+        over one ambiguous table. Also tolerates a concurrent second construction racing to rename
+        the same table: an `OperationalError` from the `ALTER TABLE` is swallowed ONLY if a
+        re-check proves the new name now exists (the race really did happen and finished
+        elsewhere) — any other cause (disk I/O, lock contention, corruption) re-raises, since
+        silently swallowing it would let `_init_db()` proceed to `CREATE TABLE IF NOT EXISTS` and
+        orphan the untouched old table's data instead of surfacing a loud construction failure.
+        """
+        existing = {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        for old_name, new_name in (("nodes", "graph_nodes"), ("edges", "graph_edges")):
+            if old_name not in existing or new_name in existing:
+                continue
+            try:
+                conn.execute(f"ALTER TABLE {old_name} RENAME TO {new_name}")
+            except sqlite3.OperationalError:
+                still_missing = new_name not in {
+                    row[0]
+                    for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                }
+                if still_missing:
+                    raise
+
     def _init_db(self) -> None:
         with self._get_connection() as conn:
+            self._rename_legacy_tables(conn)
+
             # Nodes schema
             conn.execute("""
-                CREATE TABLE IF NOT EXISTS nodes (
+                CREATE TABLE IF NOT EXISTS graph_nodes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     semantic_hash TEXT UNIQUE,
                     clone_hash TEXT,
@@ -44,13 +78,13 @@ class SqliteGraphRepository:
 
             # Edges schema (no FK on target_id due to Lazy Edges)
             conn.execute("""
-                CREATE TABLE IF NOT EXISTS edges (
+                CREATE TABLE IF NOT EXISTS graph_edges (
                     source_id INTEGER,
                     target_id INTEGER,
                     type TEXT,
                     metadata JSON,
                     PRIMARY KEY (source_id, target_id, type),
-                    FOREIGN KEY (source_id) REFERENCES nodes(id) ON DELETE CASCADE
+                    FOREIGN KEY (source_id) REFERENCES graph_nodes(id) ON DELETE CASCADE
                 )
             """)
 
@@ -90,7 +124,7 @@ class SqliteGraphRepository:
             chunk = hashes[i : i + 999]
             placeholders = ",".join(["?"] * len(chunk))
             cursor.execute(
-                f"SELECT semantic_hash, id FROM nodes WHERE semantic_hash IN ({placeholders})",
+                f"SELECT semantic_hash, id FROM graph_nodes WHERE semantic_hash IN ({placeholders})",
                 chunk,
             )
             for h, int_id in cursor.fetchall():
@@ -103,7 +137,7 @@ class SqliteGraphRepository:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             upsert_sql = """
-                INSERT INTO nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
+                INSERT INTO graph_nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(semantic_hash) DO UPDATE SET
                     is_active=1, clone_hash=excluded.clone_hash, file_id=excluded.file_id,
@@ -113,7 +147,7 @@ class SqliteGraphRepository:
                 cursor.executemany(upsert_sql, node_batch[i : i + 5000])
 
             ghost_sql = """
-                INSERT OR IGNORE INTO nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
+                INSERT OR IGNORE INTO graph_nodes (semantic_hash, clone_hash, file_id, service_name, package_name, is_active, metadata)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """
             for i in range(0, len(ghost_batch), 5000):
@@ -131,7 +165,7 @@ class SqliteGraphRepository:
                     edge_batch.append((source_id, target_id, data.get("type", "CALLS"), meta_str))
 
             edge_sql = """
-                INSERT OR REPLACE INTO edges (source_id, target_id, type, metadata)
+                INSERT OR REPLACE INTO graph_edges (source_id, target_id, type, metadata)
                 VALUES (?, ?, ?, ?)
             """
             for i in range(0, len(edge_batch), 5000):
@@ -148,7 +182,7 @@ class SqliteGraphRepository:
             cursor.execute(
                 """
                 SELECT id, semantic_hash, clone_hash, file_id, service_name, package_name, metadata
-                FROM nodes
+                FROM graph_nodes
                 WHERE is_active = 1 AND service_name = ?
             """,
                 (self.validated_service_name,),
@@ -182,9 +216,9 @@ class SqliteGraphRepository:
             cursor.execute(
                 """
                 SELECT n1.semantic_hash, n2.semantic_hash, e.type, e.metadata
-                FROM edges e
-                JOIN nodes n1 ON e.source_id = n1.id
-                JOIN nodes n2 ON e.target_id = n2.id
+                FROM graph_edges e
+                JOIN graph_nodes n1 ON e.source_id = n1.id
+                JOIN graph_nodes n2 ON e.target_id = n2.id
                 WHERE n1.is_active = 1 AND n2.is_active = 1
                   AND n1.service_name = ? AND n2.service_name = ?
             """,
@@ -205,7 +239,7 @@ class SqliteGraphRepository:
         with self._get_connection() as conn:
             conn.execute(
                 """
-                UPDATE nodes
+                UPDATE graph_nodes
                 SET is_active = 0
                 WHERE file_id = ? AND service_name = ?
             """,
@@ -223,7 +257,7 @@ class SqliteGraphRepository:
             cursor.execute(
                 """
                 SELECT DISTINCT file_id
-                FROM nodes
+                FROM graph_nodes
                 WHERE is_active = 1 AND service_name = ? AND file_id != ""
                 """,
                 (self.validated_service_name,),
@@ -236,7 +270,7 @@ class SqliteGraphRepository:
                 placeholders = ",".join(["?"] * len(stale_files))
                 cursor.execute(
                     f"""
-                    UPDATE nodes
+                    UPDATE graph_nodes
                     SET is_active = 0
                     WHERE service_name = ? AND file_id IN ({placeholders})
                     """,
@@ -252,7 +286,7 @@ class SqliteGraphRepository:
             cursor.execute(
                 """
                 SELECT file_id, clone_hash
-                FROM nodes
+                FROM graph_nodes
                 WHERE service_name = ? AND file_id != ""
                 GROUP BY file_id
             """,
