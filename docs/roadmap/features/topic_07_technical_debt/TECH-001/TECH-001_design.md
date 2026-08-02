@@ -174,11 +174,16 @@ Evaluate if this feature introduces a new sub-system, paradigm, or extension lay
 | SF-01 | Deconstruct Config Monolith | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Decentralize CLI Layer | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Consolidate Sandbox | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Eliminate `core.config` Circular Dependencies | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Eliminate `core.config` Circular Dependencies | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: SF-01–03 fully implemented, tested, and committed. SF-04 is NOT done — `tach.toml` still declares `core.config ⇄ infrastructure.llm` and `core.config ⇄ core.flow` as live mutual dependencies. TECH-001 is not complete until SF-04 lands.
-**Next step**: Design and implement SF-04 (run through `specweaver-design` to determine the correct dependency direction, then an implementation plan).
+**Current status**: SF-01–03 fully implemented, tested, and committed. SF-04's implementation plan
+is APPROVED (2026-08-02, `TECH-001_sf04_implementation_plan.md`, 2-cycle Red/Blue review — also
+surfaced and fixed a third, previously-unnamed `core.config ⇄ workspace` cycle beyond the two
+originally scoped). Dev has not started — `tach.toml` still declares all three cycles live today.
+TECH-001 is not complete until SF-04 lands.
+**Next step**: Run the `dev` skill against `TECH-001_sf04_implementation_plan.md`, TDD, per the
+plan's Test Plan and Proposed Changes sections.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
