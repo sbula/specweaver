@@ -74,28 +74,91 @@ class Report:
 
 
 def _story_block(story_id: str) -> str | None:
-    """Return the master-roadmap section for e.g. INT-US-21 -> the 'US-21:' block."""
+    """Return the master-roadmap section for a story ID.
+
+    Two heading shapes exist. `INT-US-NN` contracts are headed "### US-N: ..." (unpadded, the
+    "INT-" prefix dropped). Every other family — e.g. `TECH-NNN` — is headed with its own literal
+    ID, e.g. "### TECH-042: ...". Treating every ID as the INT-US shape mangled "TECH-042" into
+    the token "TECH" and searched for a literal "US-TECH:" heading, which never matches — a
+    failure mode that blocked every TECH-NNN ticket outright (found blocking TECH-001 SF-04
+    planning, 2026-08-01).
+    """
     if not ROADMAP.exists():
         return None
-    num = story_id.replace("INT-US-", "").split("-")[0]
     text = ROADMAP.read_text(encoding="utf-8", errors="replace")
-    # Story IDs are zero-padded (INT-US-01) but the roadmap headings are not (### US-1:), so both
-    # spellings must be tried. Matching only the padded form reported six delivered stories as
-    # "no roadmap section found" — a failure mode that would have blocked every one of them.
-    variants = {num, num.lstrip("0") or "0"}
-    m = None
-    for v in variants:
-        m = re.search(rf"^###\s+.*US-{v}:.*$", text, re.M)
-        if m:
-            break
+
+    if story_id.startswith("INT-US-"):
+        num = story_id.replace("INT-US-", "").split("-")[0]
+        # Story IDs are zero-padded (INT-US-01) but the roadmap headings are not (### US-1:), so
+        # both spellings must be tried. Matching only the padded form reported six delivered
+        # stories as "no roadmap section found" — a failure mode that would have blocked every
+        # one of them.
+        variants = {num, num.lstrip("0") or "0"}
+        m = None
+        for v in variants:
+            m = re.search(rf"^###\s+.*US-{v}:.*$", text, re.M)
+            if m:
+                break
+    else:
+        m = re.search(rf"^###\s+.*\b{re.escape(story_id)}:.*$", text, re.M)
+
     if not m:
         return None
     nxt = re.search(r"^###\s+", text[m.end() :], re.M)
     return text[m.start() : m.end() + (nxt.start() if nxt else len(text))]
 
 
+def _check_proof_in_roadmap_block(story_id: str, report: Report, *, fast: bool) -> list[Path]:
+    """Proof check for families with no separate integration contract (e.g. `TECH-NNN`).
+
+    These declare their `Verifiable Proof` directly inside their own master-roadmap section
+    instead of a `topic_08_integration/US-N_integration.md` file — requiring one there is what
+    made `check_contract_and_proof` fail every TECH-NNN ticket with a nonsensical path like
+    `US-TECH_integration.md`.
+    """
+    block = _story_block(story_id)
+    if block is None:
+        report.fail(f"no roadmap section found for {story_id}")
+        return []
+
+    m = re.search(r"\*\*Verifiable Proof[^:]*:\*\*(.{0,600})", block, re.S)
+    if not m:
+        report.warn(f"{story_id}: no 'Verifiable Proof' field in its roadmap section")
+        return []
+
+    segment = m.group(1)
+    declared = [REPO_ROOT / p for p in re.findall(r"tests/[\w/]+\.py", segment)]
+    if not declared:
+        report.warn(f"{story_id}: Verifiable Proof field names no test path")
+        return []
+
+    missing = [p for p in declared if not p.exists()]
+    for p in missing:
+        report.fail(f"declared proof file does not exist: {p.relative_to(REPO_ROOT)}")
+    present = [p for p in declared if p.exists()]
+    for p in present:
+        report.ok(f"declared proof present: {p.relative_to(REPO_ROOT)}")
+
+    if present and not fast:
+        _run_proof_suite(present, report)
+    elif present:
+        report.warn("--fast: proof suite NOT executed (existence checked only)")
+    return present
+
+
 def check_contract_and_proof(story_id: str, report: Report, *, fast: bool) -> list[Path]:
-    """Checks 1-3, 5: the contract exists, its proof is declared, present, and actually passes."""
+    """Checks 1-3, 5: the contract exists, its proof is declared, present, and actually passes.
+
+    Only `INT-US-NN` stories have a separate `topic_08_integration` contract document. Other
+    families (e.g. `TECH-NNN`) are delegated to `_check_proof_in_roadmap_block`.
+    """
+    if not story_id.startswith("INT-US-"):
+        return _check_proof_in_roadmap_block(story_id, report, fast=fast)
+    return _check_int_us_contract_and_proof(story_id, report, fast=fast)
+
+
+def _check_int_us_contract_and_proof(story_id: str, report: Report, *, fast: bool) -> list[Path]:
+    """The `INT-US-NN` branch of `check_contract_and_proof`, split out to stay under C901."""
     num = story_id.replace("INT-US-", "").split("-")[0]
     contract = CONTRACTS / f"US-{num}_integration.md"
     if not contract.exists():
