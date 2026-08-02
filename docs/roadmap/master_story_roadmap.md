@@ -772,3 +772,15 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `✅` **TECH-021:** [`loop_back` Discards the Failing Step's Result](features/topic_07_technical_debt/TECH-021/TECH-021_design.md)
 *   **Verifiable Proof:**
     *   `tests/e2e/capabilities/workflows/test_int_us_21_decomposition_e2e.py::TestE8ValidationFailureLoopsBack` — fixed `a003b164`.
+
+### 🔴 TECH-023: Repo-Wide Cyclomatic Complexity Violations (complexipy)
+**Benefit:** *`complexipy` reports a clean baseline instead of 98 chronic failures, so a NEW violation is visible instead of lost in noise.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-023:** [Repo-Wide Cyclomatic Complexity Violations](features/topic_07_technical_debt/TECH-023/TECH-023_design.md)
+*   **Sequencing:** Found running `quality.py cb` for `TECH-001` SF-04 (2026-08-02); confirmed chronic and unrelated via `git stash`. Excludes `TECH-020`'s and `TECH-006` SF-02's already-owned functions.
+
+### 🔴 TECH-024: Repo-Wide Dependency Cycles (check_coupling)
+**Benefit:** *`check_coupling.py --cycles-only` reports zero cycles instead of 4 chronic ones, so modules can be understood, tested, and extracted independently.*
+*   **Core Required (MVS):**
+    *   `[ ]` **TECH-024:** [Repo-Wide Dependency Cycles](features/topic_07_technical_debt/TECH-024/TECH-024_design.md)
+*   **Sequencing:** Found running `quality.py cb` for `TECH-001` SF-04 (2026-08-02); confirmed chronic and unrelated via `git stash`. One cycle overlaps `TECH-020`/`TECH-015`'s files — coordinate sequencing rather than duplicating.
