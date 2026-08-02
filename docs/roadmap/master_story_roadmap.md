@@ -68,13 +68,15 @@ here. Full detail: [topic_07](topics/topic_07_technical_debt.md).*
 
 **Unblocked, no claim on a candidate:** `TECH-018` 🔜 (audit-only; its precondition — INT-US-21
 SF-03 committed — is now met), `TECH-015` 🔴, `TECH-016` 🔴.
-**Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟡, `TECH-005` 🟡, `TECH-009` 🟢,
+**Pre-existing, never ranked:** `TECH-001` 🟢, `TECH-002` 🟡, `TECH-005` 🟢, `TECH-009` 🟢,
 `TECH-010` 🔴, `TECH-011` 🔴. *(Synced 2026-07-31 — this note had drifted from each ticket's own
 `### TECH-NNN` header since 2026-07-28; statuses above now match those headers, code-verified.
 2026-08-01: `TECH-001` corrected to 🟡 — SF-04 outstanding. `TECH-002` corrected to 🟡 — shipped
 mechanism never matched the entry's description. `TECH-005` corrected to 🟡 — SF-3 outstanding
 (raw-sqlite3 tables never prefixed). 2026-08-02: `TECH-001` corrected back to 🟢 — SF-04 landed
-(commit `346f64c3`), all three circular dependencies eliminated.)*
+(commit `346f64c3`), all three circular dependencies eliminated. `TECH-005` corrected back to
+🟢 — SF-3 landed (commit `4ebb89cf`), all six raw-sqlite3 tables prefixed with a zero-data-loss
+migration path.)*
 
 ### 📋 Routing Selection Matrix
 A story only enters the Active Routing Queue if it satisfies one of these rules:
@@ -671,15 +673,19 @@ These stories do not add new user-facing features, but are critical epics requir
 *   **Core Required (MVS):**
     *   `✅` **TECH-004:** [Architectural Analysis & Refactoring of `sw graph build` CLI](features/topic_07_technical_debt/TECH-004/TECH-004_design.md)
 
-### 🟡 TECH-005: Database Table Prefix Harmonization
-**Benefit:** *SQLAlchemy-managed database tables use a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows. Six raw-sqlite3 tables are not yet covered.*
+### 🟢 TECH-005: Database Table Prefix Harmonization
+**Benefit:** *Every database table — SQLAlchemy-managed and raw-sqlite3 alike — uses a consistent domain-prefix naming convention, preventing naming collisions and making schema ownership crystal clear as domain count grows.*
 *   **Core Required (MVS):**
-    *   `[ ]` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
+    *   `✅` **TECH-005:** [Database Table Prefix Harmonization](features/topic_07_technical_debt/TECH-005/TECH-005_design.md)
         *   `✅` SF-1: Model Refactoring
         *   `✅` SF-2: Alembic Migration
-        *   `[ ]` SF-3: Prefix Raw-SQLite3 Tables — `nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw_reservations` are still unprefixed.
+        *   `✅` SF-3: Prefix Raw-SQLite3 Tables — commit `4ebb89cf` (2026-08-02); `nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw_reservations` renamed with a zero-data-loss migration path for pre-SF-3 installations.
 *   **Verifiable Proof:**
     *   `tests/unit/alembic/test_af60fd3509a2_tech_005_rename_tables.py`
+    *   `tests/unit/graph/core/store/test_repository_schema.py`
+    *   `tests/unit/core/flow/engine/test_engine_store.py::TestStoreSchema`
+    *   `tests/unit/core/flow/engine/test_reservation.py`
+*   **Known separate gap:** `TECH-025` tracks a pre-existing FR-traceability citation gap in SF-1/2 (found by SF-3's own closure gate) — unrelated to this ticket's substantive claim, which is now true.
 
 ### 🟡 TECH-006: Context Loading Pipeline Refactoring
 **Benefit:** *Eliminates business logic from CLI layers and kills the cross-interface spider web of private helper imports. RunContext reduction is not yet done — it has grown to 32 fields, worse than the 23-field baseline this ticket names as the problem.*

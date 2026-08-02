@@ -132,12 +132,19 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-1 | Model Refactoring | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-2 | Alembic Migration | SF-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-3 | Prefix Raw-SQLite3 Tables | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-3 | Prefix Raw-SQLite3 Tables | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: SF-1–2 (SQLAlchemy-managed tables) fully complete. SF-3 (raw-sqlite3 tables) has an approved design and implementation plan (`TECH-005_sf3_implementation_plan.md`, Red/Blue reviewed, 2 cycles) but no code yet — six tables remain unprefixed. TECH-005 is not complete until SF-3's dev + pre-commit + commit land.
-**Next step**: Run the `specweaver-dev` skill against `TECH-005_sf3_implementation_plan.md` (task breakdown, TDD, commit boundaries).
+**Current status**: All three sub-features committed (`4ebb89cf` for SF-3). All six raw-sqlite3
+tables (`nodes`/`edges`, `pipeline_runs`/`audit_log`/`state_schema_version`, `sw_reservations`)
+are renamed with a zero-data-loss migration path for pre-SF-3 installations, alongside SF-1/SF-2's
+SQLAlchemy-managed renames. Every table in the SQLite database now follows the domain-prefix
+convention. Story-level closure gate (`check_fr_coverage.py TECH-005` + full suite) still needs to
+run before this can be marked `Status: COMPLETE` — see `TECH-005_sf3_task.md`'s T5 for the known,
+pre-existing FR-1–7 citation gap (SF-1/SF-2 predate the citation convention) that closure will
+surface and must route to a new ticket, not block SF-3's own delivery.
+**Next step**: Run T5 (story closure) per `TECH-005_sf3_task.md`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate workflow.
 

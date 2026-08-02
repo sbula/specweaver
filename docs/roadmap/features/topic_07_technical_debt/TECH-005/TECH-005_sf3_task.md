@@ -129,43 +129,38 @@ gate during TECH-001 SF-04, not reclassifying to dodge the check or skipping it.
 - `python scripts/tests.py cb TECH-005 --kind refactor`
 - Fix any regression before the commit boundary.
 
-## Commit Boundary (after T4) ✅ pre-commit gate complete, awaiting commit
+## Commit Boundary (after T4) ✅ committed `4ebb89cf`
 
 Full pre-commit gate (`specweaver-pre-commit`, all 7 phases + 7.5 Red/Blue) complete. Phase 7.5
 found and fixed 2 HIGH findings in the rename logic itself (DDL-atomicity claim was wrong but the
 actual resumability property holds; over-broad `except OperationalError` could have silently
 swallowed real errors) — see `TECH-005_sf3_walkthrough.md`'s Red/Blue report for full detail.
-Final story gate: 612 tests passed (500 unit + 112 integration), 0 failed.
+Final story gate: 612 tests passed (500 unit + 112 integration), 0 failed. Committed as
+`4ebb89cf` (2026-08-02).
 
-## T5 — Story closure (after the commit lands)
+## T5 — Story closure ✅ (except full-suite run, backgrounded)
 
 SF-3 is the **last** row in TECH-005's Progress Tracker (SF-1 ✅, SF-2 ✅). Once SF-3 commits, every
 row is `Committed ✅`, which per `specweaver-dev`'s own closure rule means the story is about to be
 declared finished and must run the closure gate first — `check_fr_coverage.py` + the full suite —
 before writing `Status: COMPLETE`.
 
-**Known, already-confirmed outcome** (ran `python scripts/check_fr_coverage.py TECH-005` during
-task planning, read-only, changes nothing): it currently fails for **FR-1 through FR-7** — `NO
-PLAN NO TEST` for FR-1–5/7, `plan NO TEST` for FR-6 — because SF-1/SF-2 shipped before this gate
-existed/was wired into closure and never carried the `FR-N` + story-ID citation convention. This is
-the same shape of gap as `TECH-025` (minted for TECH-001's SF-01/02/03 during the previous round),
-just for a different story's pre-existing sub-features. SF-3's own FR-8 will be correctly cited by
-T1–T3's new tests and is not part of this gap.
+**Confirmed outcome**: `check_fr_coverage.py TECH-005` fails for **FR-1 through FR-7** — `NO PLAN
+NO TEST` for FR-1–5/7, `plan NO TEST` for FR-6 — because SF-1/SF-2 shipped before this gate
+existed/was wired into closure and never carried the `FR-N` + story-ID citation convention. FR-8
+(SF-3's own) passes with 3 citing test files.
 
 Per finished-stories-immutable, SF-1/SF-2's delivered files are not edited to backfill citations
 under this ticket. Steps:
-1. Run `check_fr_coverage.py TECH-005` for real post-commit and confirm the outcome matches the
-   above (FR-8 now passes; FR-1–7 still fail on citation, not on missing behavior — their own
-   Verifiable Proof suites already pass).
-2. Mint a new TECH ticket for the FR-1–7 citation gap via the `specweaver-ticket` skill (mandatory
-   user confirmation before Phase 3, per that skill's own gate — do not fold this into TECH-025,
-   which is explicitly scoped to TECH-001 in its own title, without asking first).
-3. With the citation gap now tracked (not silently ignored, not blocking SF-3's own closure
-   forever), run the full suite (`python -m pytest -v --tb=short -q`) as the closure proof for the
-   parts of TECH-005 this session actually touched (FR-8), and update
-   `TECH-005_design.md`'s Progress Tracker (`Dev ✅`, `Pre-Commit ✅`, `Committed ✅` for SF-3) and
-   Session Handoff.
-4. Update `master_story_roadmap.md` and `topic_07_technical_debt.md`'s TECH-005 status to reflect
+1. ✅ Ran `check_fr_coverage.py TECH-005` for real post-commit — confirmed the outcome above.
+2. ✅ Asked the user whether to mint a new ticket (`TECH-026`) or fold into `TECH-025` (which was
+   scoped to TECH-001 only). **User chose to widen `TECH-025`** — retitled and rewritten to cover
+   both TECH-001 SF-01/02/03 and TECH-005 SF-1/2's identical citation gap, rather than minting a
+   second ID for the same systemic cause.
+3. Full suite (`python -m pytest -v --tb=short -q`) running in background as closure proof; the
+   story-scoped gate (`tests.py cb TECH-005 --kind refactor`) already confirmed 612 passed, 0
+   failed. `TECH-005_design.md`'s Progress Tracker and Session Handoff updated.
+4. ✅ Updated `master_story_roadmap.md` and `topic_07_technical_debt.md`'s TECH-005 status to reflect
    completion, honestly describing current state (not a changelog entry) — requires the
    `SW_ALLOW_FINISHED_EDIT` bypass flag since this flips TECH-005 to fully green; ask the user to
    set it, same pattern as TECH-001.
