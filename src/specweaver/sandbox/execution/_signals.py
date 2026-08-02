@@ -47,20 +47,29 @@ def _register_signals_once() -> None:
 
     if threading.current_thread() is threading.main_thread():
         try:
-            old_term = signal.getsignal(signal.SIGTERM)
-            old_int = signal.getsignal(signal.SIGINT)
+            handled = [signal.SIGTERM, signal.SIGINT]
+            if sys.platform == "win32":
+                # Ctrl+C (SIGINT) cannot be delivered to a Windows child process without also
+                # signalling the caller, unless the child runs in its own process group — and
+                # Windows disables Ctrl+C handling for a new process group by default. Ctrl+Break
+                # (SIGBREAK) is the only signal that CAN be targeted at just the child, so it must
+                # trigger the same graceful-cleanup path or Windows children have no working
+                # interrupt signal at all.
+                handled.append(signal.SIGBREAK)  # type: ignore[attr-defined]
+
+            old_handlers = {sig: signal.getsignal(sig) for sig in handled}
 
             def sig_handler(signum: int, frame: object) -> None:
                 _cleanup_active_processes()
 
-                old_handler = old_term if signum == signal.SIGTERM else old_int
+                old_handler = old_handlers.get(signum)
                 if callable(old_handler):
                     old_handler(signum, frame)
                 else:
                     sys.exit(128 + signum)
 
-            signal.signal(signal.SIGTERM, sig_handler)
-            signal.signal(signal.SIGINT, sig_handler)
+            for sig in handled:
+                signal.signal(sig, sig_handler)
         except (ValueError, OSError):
             pass
 

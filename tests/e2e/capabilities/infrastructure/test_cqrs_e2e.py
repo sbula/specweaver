@@ -42,16 +42,31 @@ class TestCQRSE2E:
         # but the process MUST exit.
 
     def test_story_9_sigint_survival(self, temp_workspace: Path) -> None:
-        """E2E Story 9: SIGINT / Process Interruption Survival."""
-        if sys.platform == "win32":
-            pytest.skip("SIGINT testing requires POSIX signals or complex Windows workaround.")
+        """E2E Story 9: SIGINT / Process Interruption Survival.
 
-        # Launch the CLI as a subprocess
+        Branches on platform rather than skipping one branch: Windows cannot deliver SIGINT
+        (`CTRL_C_EVENT`) to a child process without also signalling the caller — it targets the
+        whole console process group, including this test — so Ctrl+Break (`CTRL_BREAK_EVENT` /
+        `SIGBREAK`) is the only signal that can be targeted at just the child, via
+        `CREATE_NEW_PROCESS_GROUP`. `_signals._register_signals_once()` routes SIGBREAK through
+        the same graceful-cleanup handler as SIGINT/SIGTERM (see
+        `specweaver/sandbox/execution/_signals.py`), so this is a real equivalent of the POSIX
+        path, not a weaker stand-in. A previous version of this test used `pytest.skip()` on
+        Windows; that made the declared proof suite always report one skipped test regardless of
+        which platform it ran on, which `scripts/check_story_preconditions.py` correctly treats
+        as "not proof" — branching instead means the test actually runs, and asserts, everywhere.
+        """
+        popen_kwargs: dict[str, object] = {
+            "cwd": temp_workspace,
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+        }
+        if sys.platform == "win32":
+            popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+
         proc = subprocess.Popen(
             [sys.executable, "-m", "specweaver.interfaces.cli.main", "check"],
-            cwd=temp_workspace,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            **popen_kwargs,  # type: ignore[arg-type]
         )
 
         # Give it a moment to boot and acquire the CQRS context
@@ -59,16 +74,20 @@ class TestCQRSE2E:
 
         time.sleep(0.5)
 
-        # Send SIGINT to simulate user Ctrl+C
-        proc.send_signal(signal.SIGINT)
+        # Simulate user interruption: real SIGINT on POSIX, Ctrl+Break on Windows (see docstring).
+        interrupt_signal = signal.CTRL_BREAK_EVENT if sys.platform == "win32" else signal.SIGINT
+        proc.send_signal(interrupt_signal)
 
         try:
             _, stderr = proc.communicate(timeout=5.0)
         except subprocess.TimeoutExpired:
             proc.kill()
-            pytest.fail("Process hung on SIGINT! CQRS flush likely deadlocked.")
+            pytest.fail("Process hung on interrupt! CQRS flush likely deadlocked.")
 
-        # Verify it shut down without a complete Python traceback (graceful exit)
+        # Verify it shut down without a complete Python traceback (graceful exit). On POSIX the
+        # default SIGINT disposition raises KeyboardInterrupt, so that string is expected in
+        # stderr; on Windows, sys.exit(128 + SIGBREAK) raises SystemExit, which the interpreter
+        # does not dump as a traceback when uncaught — absence of a raw traceback is the signal.
         output = stderr.decode()
         assert "KeyboardInterrupt" in output or "Traceback" not in output
         # Process should return a non-zero exit code due to interruption, but not a segfault
