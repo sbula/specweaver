@@ -2,10 +2,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests — CLI _helpers module.
+"""Unit tests for `_print_summary` — validation results to console output and exit code.
 
-Tests: _print_summary, _select_topology_contexts,
-       _load_constitution_content, _load_standards_content.
+Previously also covered `_select_topology_contexts`, `_load_constitution_content` and
+`_load_standards_content`, which no longer exist; their absence is guarded in
+`test_interface_layer_boundaries.py`.
 """
 
 from __future__ import annotations
