@@ -138,8 +138,8 @@ class GenerateCodeHandler:
             )
 
             targets = []
-            if context.api_contract_paths:
-                targets.extend(context.api_contract_paths)
+            if context.graph.api_contract_paths:
+                targets.extend(context.graph.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
             from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
@@ -156,8 +156,8 @@ class GenerateCodeHandler:
             )
             if context.plan_context.plan:
                 base_prompt.add_plan(context.plan_context.plan)
-            if context.topology:
-                base_prompt.add_topology([context.topology])
+            if context.graph.topology:
+                base_prompt.add_topology([context.graph.topology])
 
             generated = await generator.generate_code(
                 context.spec_path,
@@ -244,8 +244,8 @@ class GenerateTestsHandler:
             )
 
             targets = []
-            if context.api_contract_paths:
-                targets.extend(context.api_contract_paths)
+            if context.graph.api_contract_paths:
+                targets.extend(context.graph.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
             from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
@@ -262,8 +262,8 @@ class GenerateTestsHandler:
             )
             if context.plan_context.plan:
                 base_prompt.add_plan(context.plan_context.plan)
-            if context.topology:
-                base_prompt.add_topology([context.topology])
+            if context.graph.topology:
+                base_prompt.add_topology([context.graph.topology])
 
             generated = await generator.generate_tests(
                 context.spec_path,
@@ -554,9 +554,15 @@ class GenerateContractHandler:
             logger.info("GenerateContractHandler: contract written to '%s'", output_path)
 
             # Wire contract path into RunContext for downstream consumption (SF-B)
-            if context.api_contract_paths is None:
-                context.api_contract_paths = []
-            context.api_contract_paths.append(str(output_path))
+            # Frozen, so this is a rebuild-and-replace rather than an append.
+            context.graph = context.graph.model_copy(
+                update={
+                    "api_contract_paths": [
+                        *(context.graph.api_contract_paths or []),
+                        str(output_path),
+                    ]
+                }
+            )
 
             return StepResult(
                 status=StepStatus.PASSED,

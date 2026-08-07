@@ -129,6 +129,29 @@ class AnalysisContext(BaseModel):
     parsers: Any = None  # dict[tuple[str, ...], CodeStructureInterface] | None
 
 
+class GraphContext(BaseModel):
+    """What this run knows about the project's dependency graph.
+
+    Beware: only ``topology`` and ``api_contract_paths`` are actually filled in during a real
+    run. ``stale_nodes`` and ``workspace_roots`` have code that READS them but nothing that
+    writes them, so in production they are always ``None`` — a half-built feature rather than
+    dead code. Do not assume a value is present just because a field exists here.
+
+    Attributes:
+        topology: The project's component graph, when one was loaded.
+        stale_nodes: Nodes changed since the last run, to narrow what gets re-checked.
+        workspace_roots: Narrows the boundary to specific roots instead of the whole project.
+        api_contract_paths: Neighbouring API surfaces a step should read but not modify.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    topology: Any = None
+    stale_nodes: set[str] | None = None
+    workspace_roots: list[str] | None = None
+    api_contract_paths: list[str] | None = None
+
+
 class RunContext(BaseModel):
     """Everything a pipeline step needs, passed to every handler as one object.
 
@@ -146,7 +169,7 @@ class RunContext(BaseModel):
         run: This run's id, its runner, and the task it belongs to.
         analysis: Analyzer factory and AST parsers, when a step needs them.
         context_provider: Asks a human for input, for interactive steps.
-        topology: The project's dependency graph.
+        graph: What is known about the project's dependency graph.
         settings: Per-project validation settings and overrides.
         feedback: Messages passed between steps, including loop-back findings.
         constitution: Pre-loaded project constitution text.
@@ -166,7 +189,6 @@ class RunContext(BaseModel):
     project_path: Path
     spec_path: Path
     context_provider: Any = None  # ContextProvider | None
-    topology: Any = None  # TopologyContext | None
     settings: Any = None  # ValidationSettings | None
     output_dir: Path | None = None
     isolation: IsolationPolicy = Field(default_factory=IsolationPolicy)
@@ -174,17 +196,15 @@ class RunContext(BaseModel):
     model: ModelAccess = Field(default_factory=ModelAccess)
     run: RunHandle = Field(default_factory=RunHandle)
     analysis: AnalysisContext = Field(default_factory=AnalysisContext)
+    graph: GraphContext = Field(default_factory=GraphContext)
     feedback: dict[str, Any] = Field(default_factory=dict)
     constitution: str | None = None  # Pre-loaded constitution content
     standards: str | None = None  # Pre-loaded project standards
-    workspace_roots: list[str] | None = None  # Override boundary roots (set by decomposition)
-    api_contract_paths: list[str] | None = None  # Neighboring API surfaces (read-only)
     db: Any = None  # Database | None — for telemetry flush (set by CLI/API)
     project_metadata: Any = None  # ProjectMetadata | None
     step_records: list[dict[str, Any]] | None = None
     env_vars: dict[str, str] = Field(default_factory=dict)
     pipeline_name: str | None = None
-    stale_nodes: set[str] | None = None
 
     def model_post_init(self, __context: Any) -> None:
         """Inject ProjectMetadata into context execution strictly securely."""

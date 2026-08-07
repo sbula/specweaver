@@ -91,7 +91,7 @@ def _build_tool_dispatcher(context: RunContext, role: str) -> ToolDispatcher | N
         role=role,
         allowed_tools=allowed_tools,
         analyzer_factory=context.analysis.analyzer_factory,
-        topology=context.topology,
+        topology=context.graph.topology,
     )
 
 
@@ -123,8 +123,8 @@ class ReviewSpecHandler:
             )
 
             targets = []
-            if context.api_contract_paths:
-                targets.extend(context.api_contract_paths)
+            if context.graph.api_contract_paths:
+                targets.extend(context.graph.api_contract_paths)
             s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
             from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
@@ -139,8 +139,8 @@ class ReviewSpecHandler:
             base_prompt = await _build_base_prompt(
                 context, SPEC_REVIEW_INSTRUCTIONS, profile=profile, skeleton_files=s_files
             )
-            if context.topology:
-                base_prompt.add_topology([context.topology])
+            if context.graph.topology:
+                base_prompt.add_topology([context.graph.topology])
 
             result = await reviewer.review_spec(
                 context.spec_path,
@@ -192,8 +192,8 @@ class ReviewSpecHandler:
                     candidates,
                     context.project_path,
                     workspace_roots=(
-                        [context.project_path / r for r in context.workspace_roots]
-                        if context.workspace_roots
+                        [context.project_path / r for r in context.graph.workspace_roots]
+                        if context.graph.workspace_roots
                         else None
                     ),
                 )
@@ -246,8 +246,8 @@ class ReviewCodeHandler:
                             candidates,
                             context.project_path,
                             workspace_roots=(
-                                [context.project_path / r for r in context.workspace_roots]
-                                if context.workspace_roots
+                                [context.project_path / r for r in context.graph.workspace_roots]
+                                if context.graph.workspace_roots
                                 else None
                             ),
                         )
@@ -268,8 +268,8 @@ class ReviewCodeHandler:
             )
 
             targets = []
-            if context.api_contract_paths:
-                targets.extend(context.api_contract_paths)
+            if context.graph.api_contract_paths:
+                targets.extend(context.graph.api_contract_paths)
             # also extract code target if reviewing code
             if code_path and str(code_path) not in targets:
                 targets.append(str(code_path))
@@ -287,8 +287,8 @@ class ReviewCodeHandler:
             base_prompt = await _build_base_prompt(
                 context, CODE_REVIEW_INSTRUCTIONS, profile=profile, skeleton_files=s_files
             )
-            if context.topology:
-                base_prompt.add_topology([context.topology])
+            if context.graph.topology:
+                base_prompt.add_topology([context.graph.topology])
 
             result = await reviewer.review_code(
                 code_path,
@@ -358,7 +358,7 @@ def _scan_and_store_mentions(
     """Scan LLM response for file mentions and store in context.feedback.
 
     Resolution respects workspace boundaries: only files within
-    ``context.project_path`` (or ``context.workspace_roots``) are included.
+    ``context.project_path`` (or ``context.graph.workspace_roots``) are included.
     """
     from specweaver.infrastructure.llm.mention_scanner.scanner import extract_mentions
 
@@ -370,8 +370,8 @@ def _scan_and_store_mentions(
         candidates,
         context.project_path,
         workspace_roots=(
-            [context.project_path / r for r in context.workspace_roots]
-            if context.workspace_roots
+            [context.project_path / r for r in context.graph.workspace_roots]
+            if context.graph.workspace_roots
             else None
         ),
     )

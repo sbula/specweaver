@@ -23,7 +23,7 @@ async def test_generate_code_handler_skeleton_wiring(
 ) -> None:
     """Story 9: GenerateCodeHandler properly proxies dictionary seamlessly into Generator."""
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
-    ctx.api_contract_paths = ["c:/fake/contract.py"]
+    ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": ["c:/fake/contract.py"]})
     ctx.model = ctx.model.model_copy(update={"llm": MagicMock()})
 
     step = PipelineStep(name="test", action="generate", target="code")
@@ -67,7 +67,7 @@ async def test_review_code_handler_skeleton_wiring(
     code_path = tmp_path / "foo.py"
     code_path.touch()
 
-    ctx.api_contract_paths = ["c:/fake/contract.py"]
+    ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": ["c:/fake/contract.py"]})
     ctx.model = ctx.model.model_copy(update={"llm": MagicMock()})
 
     step = PipelineStep(name="test", action="review", target="code")
@@ -123,7 +123,7 @@ async def test_review_e2e_fallback_protection(
 ) -> None:
     """Story 12: Pipeline Completely suppresses binary faults and falls back downstream natively."""
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
-    ctx.api_contract_paths = ["c:/fake/contract.py"]
+    ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": ["c:/fake/contract.py"]})
     ctx.model = ctx.model.model_copy(update={"llm": MagicMock()})
 
     step = PipelineStep(name="test", action="review", target="spec")

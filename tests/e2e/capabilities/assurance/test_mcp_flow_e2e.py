@@ -13,7 +13,7 @@ import pytest
 from specweaver.assurance.graph.topology import TopologyContext
 from specweaver.core.config.settings import LLMSettings, SpecWeaverSettings
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.base import ModelAccess, RunContext
+from specweaver.core.flow.handlers.base import GraphContext, ModelAccess, RunContext
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 
 
@@ -96,9 +96,9 @@ class TestMCPFlowE2E:
             ),
             project_path=tmp_path,
             spec_path=spec,
-            topology=topology,
             output_dir=src_dir,
             db=mock_db,
+            graph=GraphContext(topology=topology),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
@@ -146,8 +146,8 @@ class TestMCPFlowE2E:
             ),
             project_path=tmp_path,
             spec_path=spec,
-            topology=topology,
             output_dir=tmp_path,
+            graph=GraphContext(topology=topology),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         from unittest.mock import MagicMock
@@ -217,8 +217,8 @@ class TestMCPFlowE2E:
             ),
             project_path=tmp_path,
             spec_path=spec,
-            topology=topology,
             output_dir=tmp_path,
+            graph=GraphContext(topology=topology),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         from unittest.mock import MagicMock

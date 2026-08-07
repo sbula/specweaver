@@ -149,7 +149,7 @@ class TestScanAndStoreMentions:
     def _make_context(project_path: Path) -> MagicMock:
         ctx = MagicMock()
         ctx.project_path = project_path
-        ctx.workspace_roots = None
+        ctx.graph = ctx.graph.model_copy(update={"workspace_roots": None})
         ctx.feedback = {}
         return ctx
 

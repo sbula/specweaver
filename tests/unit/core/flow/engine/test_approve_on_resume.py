@@ -518,7 +518,8 @@ class TestApprovalInsertionPoint:
         assert run1.status == RunStatus.PARKED
 
         ctx2 = _ctx(tmp_path)
-        ctx2.stale_nodes = set()  # nothing is stale -> the bypass would fire
+        # nothing is stale -> the bypass would fire
+        ctx2.graph = ctx2.graph.model_copy(update={"stale_nodes": set()})
         second = _Counting()
         run2 = asyncio.run(
             PipelineRunner(

@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from specweaver.core.flow.handlers.base import (
     AnalysisContext,
+    GraphContext,
     IsolationPolicy,
     ModelAccess,
     PlanContext,
@@ -409,3 +410,77 @@ class TestAnalysisContext:
         for gone in ("analyzer_factory", "parsers"):
             with pytest.raises(AttributeError):
                 getattr(context, gone)
+
+
+class TestGraphContext:
+    """What the run knows about the project's dependency graph."""
+
+    # --- [Happy Path] ------------------------------------------------------
+
+    def test_defaults_are_all_none(self) -> None:
+        graph = GraphContext()
+        assert graph.topology is None
+        assert graph.stale_nodes is None
+        assert graph.workspace_roots is None
+        assert graph.api_contract_paths is None
+
+    def test_run_context_gets_a_default_graph_context(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        assert isinstance(context.graph, GraphContext)
+
+    # --- [Boundary] --------------------------------------------------------
+
+    @pytest.mark.parametrize(
+        ("existing", "expected"),
+        [
+            (None, ["new.py"]),
+            ([], ["new.py"]),
+            (["a.py"], ["a.py", "new.py"]),
+            (["a.py", "b.py"], ["a.py", "b.py", "new.py"]),
+        ],
+    )
+    def test_appending_a_contract_path_builds_a_new_list(
+        self, tmp_path: Path, existing: list[str] | None, expected: list[str]
+    ) -> None:
+        """Generation appends to this list as it writes API contracts. The object is frozen,
+        so an append has to become a read-build-replace. Covers the empty and unset starting
+        points, because those are the ones where a naive rewrite silently drops the value."""
+        context = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "spec.md",
+            graph=GraphContext(api_contract_paths=existing),
+        )
+
+        context.graph = context.graph.model_copy(
+            update={"api_contract_paths": [*(context.graph.api_contract_paths or []), "new.py"]}
+        )
+
+        assert context.graph.api_contract_paths == expected
+
+    def test_replacing_one_field_leaves_the_others(self, tmp_path: Path) -> None:
+        original = GraphContext(topology="topo", stale_nodes={"a"}, workspace_roots=["src"])
+
+        updated = original.model_copy(update={"api_contract_paths": ["x.py"]})
+
+        assert updated.topology == "topo"
+        assert updated.stale_nodes == {"a"}
+        assert updated.workspace_roots == ["src"]
+
+    # --- [Hostile / Wrong Input] ------------------------------------------
+
+    def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        with pytest.raises(ValidationError):
+            context.graph.topology = "x"
+
+    def test_unknown_kwarg_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            GraphContext(bogus=1)
+
+    def test_old_flat_paths_are_gone(self, tmp_path: Path) -> None:
+        context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
+        for gone in ("topology", "stale_nodes", "workspace_roots", "api_contract_paths"):
+            with pytest.raises(AttributeError):
+                getattr(context, gone)
+            with pytest.raises(ValidationError):
+                RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", **{gone: None})

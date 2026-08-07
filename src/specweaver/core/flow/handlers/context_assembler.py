@@ -45,8 +45,8 @@ def evaluate_and_fetch_skeleton_context(
 
     # Try to grab the resolved archetype from context if available, otherwise just use generic
     active_archetype = "generic"
-    if getattr(context, "topology", None) and hasattr(context.topology, "archetype"):
-        active_archetype = context.topology.archetype
+    if context.graph.topology and hasattr(context.graph.topology, "archetype"):
+        active_archetype = context.graph.topology.archetype
 
     # Instantiate the CodeStructure atom statically with injected parser mappings
     # ensuring we adhere to the architectural dependency boundary.

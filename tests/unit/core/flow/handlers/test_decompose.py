@@ -240,7 +240,7 @@ async def test_orchestrate_components_handler_success_dag(
     mock_topology = MagicMock()
     # No physical collisions
     mock_topology.impact_of.side_effect = lambda module: {module}
-    mock_context.topology = mock_topology
+    mock_context.graph = mock_context.graph.model_copy(update={"topology": mock_topology})
 
     handler = OrchestrateComponentsHandler()
     result = await handler.execute(mock_orchestrate_step, mock_context)
@@ -326,7 +326,7 @@ async def test_orchestrate_components_handler_child_failure(
 
     mock_topology = MagicMock()
     mock_topology.impact_of.return_value = set()
-    mock_context.topology = mock_topology
+    mock_context.graph = mock_context.graph.model_copy(update={"topology": mock_topology})
 
     result = await handler.execute(mock_orchestrate_step, mock_context)
     assert result.status == StepStatus.FAILED
@@ -417,7 +417,7 @@ async def test_orchestrate_components_preserves_params_gap_1(
 
     mock_topology = MagicMock()
     mock_topology.impact_of.return_value = set()
-    mock_context.topology = mock_topology
+    mock_context.graph = mock_context.graph.model_copy(update={"topology": mock_topology})
 
     # Inject YAML with step containing existing pre-set params
     fake_yaml = {
@@ -453,7 +453,9 @@ async def test_orchestrate_components_handles_gate_gaps_2_3_4(
     mock_runner_instance.run.return_value = mock_success
     mock_pipeline_runner_cls.return_value = mock_runner_instance
     mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
-    mock_context.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+    mock_context.graph = mock_context.graph.model_copy(
+        update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
+    )
 
     # s1: No gate (Gap 2)
     # s3: Non-JOIN hitl dict gate (Gap 4)
@@ -501,7 +503,9 @@ async def test_orchestrate_components_skips_wave_n_if_failed_gap_5(
     mock_runner_instance.run.return_value = mock_fail
     mock_pipeline_runner_cls.return_value = mock_runner_instance
     mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
-    mock_context.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+    mock_context.graph = mock_context.graph.model_copy(
+        update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
+    )
 
     # Even right though there's a JOIN step, since the fan_out failed, Wave N must not run!
     fake_yaml = {
@@ -536,7 +540,9 @@ async def test_orchestrate_components_skips_wave_n_if_empty_gap_6(
     mock_runner_instance.run.return_value = mock_success
     mock_pipeline_runner_cls.return_value = mock_runner_instance
     mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
-    mock_context.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+    mock_context.graph = mock_context.graph.model_copy(
+        update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
+    )
 
     # Zero JOIN steps
     fake_yaml = {
@@ -572,7 +578,9 @@ async def test_orchestrate_components_wave_n_crash_gap_7(
     mock_runner_instance.run.side_effect = [mock_success, mock_fail]
     mock_pipeline_runner_cls.return_value = mock_runner_instance
     mock_context.run = mock_context.run.model_copy(update={"pipeline_runner": MagicMock()})
-    mock_context.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+    mock_context.graph = mock_context.graph.model_copy(
+        update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
+    )
 
     fake_yaml = {
         "name": "test",

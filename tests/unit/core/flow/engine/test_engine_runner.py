@@ -433,7 +433,7 @@ class TestPipelineRunnerStalenessBypass:
         pipeline = PipelineDefinition(name="staleness_pipe", steps=steps)
 
         ctx = _make_context(tmp_path)
-        ctx.stale_nodes = {"src/specweaver/billing"}
+        ctx.graph = ctx.graph.model_copy(update={"stale_nodes": {"src/specweaver/billing"}})
         # Target is CODE, but the specific module target is 'src/specweaver/auth'
         steps[0].target = StepTarget.CODE
         steps[0].params = {"target": "src/specweaver/auth"}
@@ -463,7 +463,7 @@ class TestPipelineRunnerStalenessBypass:
         pipeline = PipelineDefinition(name="staleness_pipe_global", steps=steps)
 
         ctx = _make_context(tmp_path)
-        ctx.stale_nodes = {"src/specweaver/billing"}
+        ctx.graph = ctx.graph.model_copy(update={"stale_nodes": {"src/specweaver/billing"}})
 
         registry = StepHandlerRegistry()
         registry.register(StepAction.VALIDATE, StepTarget.TESTS, ContextInjectionHandler())
@@ -477,7 +477,7 @@ class TestPipelineRunnerStalenessBypass:
         assert result.step_records[0].status == StepStatus.PASSED
         assert result.step_records[0].result is not None
         assert result.step_records[0].result.output is not None
-        # In a real atom, it reads context.stale_nodes
+        # In a real atom, it reads context.graph.stale_nodes
 
 
 class TestPipelineRunnerVaultSecurity:

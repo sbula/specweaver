@@ -68,7 +68,9 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
     handler = OrchestrateComponentsHandler()
     runner = PipelineRunner(pipeline=MagicMock(), context=ctx, registry=registry, store=MagicMock())
     ctx.run = ctx.run.model_copy(update={"pipeline_runner": runner})
-    ctx.topology = MagicMock(impact_of=MagicMock(return_value=set()))
+    ctx.graph = ctx.graph.model_copy(
+        update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
+    )
 
     with patch("yaml.safe_load", return_value=custom_yaml), patch("importlib.resources.files"):
         step_def = PipelineStep(

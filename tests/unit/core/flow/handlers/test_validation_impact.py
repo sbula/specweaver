@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import GraphContext, RunContext
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
 
 
@@ -16,7 +16,7 @@ def mock_run_context(tmp_path: Path):
     return RunContext(
         project_path=tmp_path / "project",
         spec_path=tmp_path / "project" / "spec.yaml",
-        stale_nodes={"flow", "graph"},
+        graph=GraphContext(stale_nodes={"flow", "graph"}),
     )
 
 

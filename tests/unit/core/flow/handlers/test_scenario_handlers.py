@@ -10,7 +10,13 @@ import json
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
-from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.handlers.base import (
+    AnalysisContext,
+    GraphContext,
+    ModelAccess,
+    RunContext,
+    RunHandle,
+)
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
 
@@ -45,12 +51,13 @@ def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:
     # a handler reads has to be a real instance here, not a mock attribute.
     ctx.run = RunHandle()
     ctx.analysis = AnalysisContext()
+    ctx.graph = GraphContext()
     ctx.spec_path = spec_path
     ctx.project_path = tmp_path
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.model = ModelAccess(llm=llm, config=None, llm_router=None)
-    ctx.api_contract_paths = [str(contract_path)]
+    ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": [str(contract_path)]})
     ctx.constitution = None
     ctx.project_metadata = None
 

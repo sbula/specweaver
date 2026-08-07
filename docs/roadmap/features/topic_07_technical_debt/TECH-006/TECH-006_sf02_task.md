@@ -13,7 +13,7 @@ Never leave an old and a new field alive for the same data across a commit bound
 | 1 | `IsolationPolicy` | `enforce_isolation`, `execution_root`, `session_isolation`, `allowed_paths`, `dal_level` | ✅ `4e23171b` |
 | 2 | `PlanContext` | `plan`, `decomposition` | ✅ |
 | 3 | `RunHandle` + `AnalysisContext` + `ModelAccess` | `run_id`, `pipeline_runner`, `task_id`, `analyzer_factory`, `parsers`, `llm`, `config`, `llm_router` | ✅ |
-| 4 | `GraphContext` | `topology`, `stale_nodes`, `workspace_roots`, `api_contract_paths` | ⬜ |
+| 4 | `GraphContext` | `topology`, `stale_nodes`, `workspace_roots`, `api_contract_paths` | ✅ |
 | 5 | Dead-field cleanup + `model_post_init` split | deletes `env_vars`, `step_records`, `pipeline_name` | ⬜ |
 
 Field-count ledger (NFR-7): 32 today → 32−5+1 = 28 (CB1) → 27 (CB2) → 22 (CB3) → 19 (CB4) → 16 (CB5). ✅ ≤16.
@@ -514,3 +514,38 @@ and the crossover. (`scripts/tests.py` already passed `-n auto` — using it wou
 Incidental discovery: `.claude/skills/` and `.agents/skills/` are **hard-linked** (same inode), not
 merely kept in sync as an older working note claims; one edit updates both, and an editor that
 replaces rather than truncates would silently break the link.
+
+
+---
+# CB4 Execution Record — `GraphContext`
+
+`RunContext`: 22 → **19** counted attributes. Full suite **6206 passed, 0 failed**.
+
+## CB3's lesson applied up front
+Grepped for `getattr(context, "<field>", ...)` BEFORE renaming anything, per CB3's record. Found
+two (`staleness.py:44`, `context_assembler.py:48`) that would otherwise have started silently
+returning their defaults. Cost: one grep. In CB3 the same class of site was 40-odd and was only
+caught by reading the diff.
+
+## The append that had to stop being an append
+`generation.py` did `context.api_contract_paths.append(...)` after a `None` guard. Frozen makes
+that a rebuild-and-replace. Tested at 0, 1, N *and* unset starting points, because the unset and
+empty cases are the ones where a careless rewrite silently drops the value.
+
+## Two mock traps, both already seen in CB3
+- `MagicMock(spec=RunContext)` fixtures needed a real `GraphContext`; six were seeded.
+- `test_contract_handler.py` held a bare `MagicMock` whose `graph.model_copy()` returned another
+  mock, so the test asserted against a mock rather than the list the handler built. Real object.
+
+## The var-name gap bit twice
+`mock_run_context` escaped the migration again — the same name that escaped CB3 and was caught
+only by the full suite. A word-boundary match on `run_context` does not match inside
+`mock_run_context`. Any future rename over this codebase should enumerate context variable names
+from the fixtures first rather than assuming a list.
+
+## Verification
+- Assertion-integrity audit: 4 removed, all with exact nested-path counterparts, **zero outliers**.
+- Ratchet 22 → 19; the sub-model health test now covers all six extracted models.
+- One self-inflicted defect worth recording: the assignment rewriter swallowed a trailing `#`
+  comment into a `model_copy(...)` call, producing invalid syntax. Ruff caught it immediately.
+  Line-based rewriting must split trailing comments off before touching the expression.

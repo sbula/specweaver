@@ -41,12 +41,12 @@ def try_staleness_bypass(
     handler, and keeping them inline pushed runner.py past its file-size budget.
     """
     context = runner._context
-    if getattr(context, "stale_nodes", None) is None:
+    if context.graph.stale_nodes is None:
         return False
 
     step_target = step_def.params.get("target") or step_def.params.get("target_path")
     is_global = not step_target or step_target in {".", "src", "src/", "tests", "tests/"}
-    if not step_target or is_global or step_target in context.stale_nodes:
+    if not step_target or is_global or step_target in context.graph.stale_nodes:
         return False
 
     logger.info(

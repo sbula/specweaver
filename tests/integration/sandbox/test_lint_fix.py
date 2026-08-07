@@ -115,7 +115,7 @@ class TestLintFixAutoFix:
 
         mock_llm = AsyncMock()
         ctx = _make_context(sample_project, llm=mock_llm)
-        ctx.stale_nodes = {str(file_b)}
+        ctx.graph = ctx.graph.model_copy(update={"stale_nodes": {str(file_b)}})
 
         step = _make_step(target="src/")
         handler = LintFixHandler()

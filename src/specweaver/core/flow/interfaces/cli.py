@@ -349,7 +349,7 @@ def _execute_run(  # noqa: C901
             module_name,
             selector_name=selector,
         )
-        context.topology = topo_contexts
+        context.graph = context.graph.model_copy(update={"topology": topo_contexts})
 
     # Set up state store
     store = _get_state_store()

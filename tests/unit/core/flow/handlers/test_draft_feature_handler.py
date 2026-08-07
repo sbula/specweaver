@@ -571,7 +571,7 @@ class TestDraftFeatureLineageAndConfig:
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
         topology = [MagicMock()]
-        ctx.topology = topology
+        ctx.graph = ctx.graph.model_copy(update={"topology": topology})
         seen: dict[str, Any] = {}
 
         async def fake_draft(_self, _name, _output_dir, **kwargs):
@@ -591,7 +591,7 @@ class TestDraftFeatureLineageAndConfig:
         """A single TopologyContext (not a list) must not be passed through raw."""
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
-        ctx.topology = MagicMock()
+        ctx.graph = ctx.graph.model_copy(update={"topology": MagicMock()})
         seen: dict[str, Any] = {}
 
         async def fake_draft(_self, _name, _output_dir, **kwargs):

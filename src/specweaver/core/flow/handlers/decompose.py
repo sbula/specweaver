@@ -66,7 +66,7 @@ class DecomposeFeatureHandler(StepHandler):
                 feature_name=feature_name,
                 spec_content=spec_content,
                 base_prompt=base_prompt,
-                topology_contexts=[context.topology] if context.topology else None,
+                topology_contexts=[context.graph.topology] if context.graph.topology else None,
             )
 
             # FR-5 Coverage Assertion Bounds
@@ -242,16 +242,16 @@ class OrchestrateComponentsHandler(StepHandler):
                 running_impacts = set()
                 for rn in active_tasks:
                     running_impacts.add(rn)
-                    if context.topology:
+                    if context.graph.topology:
                         for tm in comp_by_name[rn].get("target_modules", []):
-                            running_impacts.update(context.topology.impact_of(tm))
+                            running_impacts.update(context.graph.topology.impact_of(tm))
 
                 dispatched_this_round = []
                 for node in list(pending_dispatch):
                     node_impacts = {node}
-                    if context.topology:
+                    if context.graph.topology:
                         for tm in comp_by_name[node].get("target_modules", []):
-                            node_impacts.update(context.topology.impact_of(tm))
+                            node_impacts.update(context.graph.topology.impact_of(tm))
 
                     if not node_impacts.intersection(running_impacts):
                         pending_dispatch.remove(node)

@@ -123,10 +123,10 @@ class TestAttributeCount:
     #: an upper bound, so it fails in both directions: adding a field fails, and so does a
     #: step that claims to have removed fields but left them in place.
     #:
-    #: Lower it as each group lands. Remaining: 22 -> 19 (graph fields) -> 15 (dead fields
-    #: dropped, constitution/standards paired). 15 is the limit, so the last step is the one
-    #: that stops this file being reported.
-    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 22
+    #: Lower it as each group lands. Remaining: 19 -> 15 (drop the three fields nothing
+    #: reads, and pair constitution with standards). 15 is the limit, so that last step is
+    #: the one that stops this file being reported at all.
+    EXPECTED_RUN_CONTEXT_ATTRIBUTES = 19
 
     def test_run_context_attribute_count_matches_the_expected_step(self, ch: ModuleType) -> None:
         path = REPO_ROOT / "src" / "specweaver" / "core" / "flow" / "handlers" / "base.py"
@@ -154,7 +154,14 @@ class TestAttributeCount:
 
     @pytest.mark.parametrize(
         "extracted",
-        ["IsolationPolicy", "PlanContext", "ModelAccess", "RunHandle", "AnalysisContext"],
+        [
+            "IsolationPolicy",
+            "PlanContext",
+            "ModelAccess",
+            "RunHandle",
+            "AnalysisContext",
+            "GraphContext",
+        ],
     )
     def test_the_extracted_sub_models_are_not_god_objects(
         self, ch: ModuleType, extracted: str

@@ -51,7 +51,7 @@ class LintFixHandler:
 
         run_kwargs: dict[str, Any]
         # Resolve targets topologically if stale_nodes is present
-        if context.stale_nodes is not None:
+        if context.graph.stale_nodes is not None:
             target_path = (context.project_path / target).resolve()
             all_py = []
             if target_path.is_file():
@@ -63,7 +63,7 @@ class LintFixHandler:
             for f in all_py:
                 abs_str = str(f)
                 rel_str = f.relative_to(context.project_path).as_posix()
-                if abs_str in context.stale_nodes or rel_str in context.stale_nodes:
+                if abs_str in context.graph.stale_nodes or rel_str in context.graph.stale_nodes:
                     resolved_targets.append(rel_str)
 
             run_kwargs = {"intent": "run_linter", "targets": resolved_targets}

@@ -272,12 +272,12 @@ class TestLintFixEdgeCases:
 
     @pytest.mark.asyncio
     async def test_lint_fix_passes_stale_nodes(self, tmp_path: Path) -> None:
-        """SF-4: LintFixHandler natively injects context.stale_nodes into Atom intent payloads."""
+        """SF-4: LintFixHandler natively injects context.graph.stale_nodes into Atom intent payloads."""
         mock_atom = MagicMock()
         mock_atom.run.return_value = _clean()
 
         ctx = _make_context(tmp_path)
-        ctx.stale_nodes = {"src/foo.py", "tests/bar.py"}
+        ctx.graph = ctx.graph.model_copy(update={"stale_nodes": {"src/foo.py", "tests/bar.py"}})
 
         # Create the files so that LintFixHandler can resolve them
         (tmp_path / "src").mkdir(exist_ok=True)

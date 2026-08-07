@@ -37,10 +37,10 @@ class GenerateScenarioHandler:
 
             # Read contract content from api_contract_paths
             contract_content = ""
-            if context.api_contract_paths:
+            if context.graph.api_contract_paths:
                 from pathlib import Path
 
-                for cp in context.api_contract_paths:
+                for cp in context.graph.api_contract_paths:
                     p = Path(cp)
                     if p.exists():
                         contract_content += p.read_text(encoding="utf-8")

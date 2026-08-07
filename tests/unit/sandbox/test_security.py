@@ -130,20 +130,20 @@ class TestFromRunContext:
         assert boundary.roots == [tmp_path]
 
     def test_component_level_uses_workspace_roots(self, tmp_path: Path) -> None:
-        from specweaver.core.flow.handlers.base import RunContext
+        from specweaver.core.flow.handlers.base import GraphContext, RunContext
 
         svc_root = tmp_path / "services" / "auth"
         svc_root.mkdir(parents=True)
         ctx = RunContext(
             project_path=tmp_path,
             spec_path=svc_root / "specs" / "login_spec.md",
-            workspace_roots=[str(svc_root)],
+            graph=GraphContext(workspace_roots=[str(svc_root)]),
         )
         boundary = WorkspaceBoundary.from_run_context(ctx)
         assert boundary.roots == [svc_root]
 
     def test_component_level_with_api_paths(self, tmp_path: Path) -> None:
-        from specweaver.core.flow.handlers.base import RunContext
+        from specweaver.core.flow.handlers.base import GraphContext, RunContext
 
         svc_root = tmp_path / "services" / "auth"
         api_path = tmp_path / "services" / "payments" / "api"
@@ -152,8 +152,7 @@ class TestFromRunContext:
         ctx = RunContext(
             project_path=tmp_path,
             spec_path=svc_root / "specs" / "login_spec.md",
-            workspace_roots=[str(svc_root)],
-            api_contract_paths=[str(api_path)],
+            graph=GraphContext(workspace_roots=[str(svc_root)], api_contract_paths=[str(api_path)]),
         )
         boundary = WorkspaceBoundary.from_run_context(ctx)
         assert boundary.roots == [svc_root]

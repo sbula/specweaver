@@ -16,6 +16,7 @@ from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers.base import (
     AnalysisContext,
+    GraphContext,
     IsolationPolicy,
     ModelAccess,
     RunContext,
@@ -88,6 +89,7 @@ async def test_scenario_pipeline_end_to_end_integration(
     # a handler reads has to be a real instance here, not a mock attribute.
     ctx.run = RunHandle()
     ctx.analysis = AnalysisContext()
+    ctx.graph = GraphContext()
     # Spec'd mocks do not invent attributes, and the runner reads `isolation.dal_level` while
     # constructing. A real policy object keeps this honest.
     ctx.isolation = IsolationPolicy(dal_level=None)
@@ -96,13 +98,15 @@ async def test_scenario_pipeline_end_to_end_integration(
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.model = ModelAccess(llm=mock_llm, config=None, llm_router=None)
-    ctx.api_contract_paths = [str(project_workspace / "contracts" / "auth_contract.py")]
+    ctx.graph = ctx.graph.model_copy(
+        update={"api_contract_paths": [str(project_workspace / "contracts" / "auth_contract.py")]}
+    )
     ctx.constitution = None
     ctx.project_metadata = None
     ctx.llm_routing_enabled = False
     ctx.generation_config = None
     ctx.feedback = {}
-    ctx.stale_nodes = None
+    ctx.graph = ctx.graph.model_copy(update={"stale_nodes": None})
 
     runner = PipelineRunner(definition, ctx)
     result = await runner.run()

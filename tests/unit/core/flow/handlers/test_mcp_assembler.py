@@ -12,7 +12,7 @@ from unittest.mock import patch
 import pytest
 
 from specweaver.assurance.graph.topology import TopologyContext
-from specweaver.core.flow.handlers.base import RunContext
+from specweaver.core.flow.handlers.base import GraphContext, RunContext
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
@@ -40,7 +40,7 @@ def mock_run_context(tmp_path: Path) -> RunContext:
     return RunContext(
         project_path=tmp_path,
         spec_path=tmp_path / "test_spec.md",
-        topology=topology,
+        graph=GraphContext(topology=topology),
     )
 
 
@@ -52,7 +52,7 @@ def mock_run_context(tmp_path: Path) -> RunContext:
 @pytest.mark.asyncio
 async def test_no_mcp_servers(mock_run_context: RunContext) -> None:
     """If no MCP servers are defined in the topology, returns None instantly."""
-    mock_run_context.topology.mcp_servers.clear()
+    mock_run_context.graph.topology.mcp_servers.clear()
     result = await evaluate_and_fetch_mcp_context(mock_run_context)
     assert result is None
 
@@ -60,7 +60,7 @@ async def test_no_mcp_servers(mock_run_context: RunContext) -> None:
 @pytest.mark.asyncio
 async def test_no_consumes_resources(mock_run_context: RunContext) -> None:
     """If mcp_servers exist but no specific resources are requested, returns None."""
-    mock_run_context.topology.consumes_resources.clear()
+    mock_run_context.graph.topology.consumes_resources.clear()
     result = await evaluate_and_fetch_mcp_context(mock_run_context)
     assert result is None
 
@@ -139,13 +139,15 @@ async def test_handles_atom_failure_gracefully(mock_run_context: RunContext) -> 
 @pytest.mark.asyncio
 async def test_invalid_mcp_uri_format(mock_run_context: RunContext, tmp_path: Path) -> None:
     """If URI does not start with mcp://, it appends an inline error."""
-    mock_run_context.topology = TopologyContext(
-        name="test_module",
-        purpose="Testing.",
-        archetype="pure-logic",
-        relationship="self",
-        mcp_servers={"localdb": {"command": "docker", "args": ["run"]}},
-        consumes_resources=["http://localdb/users"],
+    mock_run_context.graph = GraphContext(
+        topology=TopologyContext(
+            name="test_module",
+            purpose="Testing.",
+            archetype="pure-logic",
+            relationship="self",
+            mcp_servers={"localdb": {"command": "docker", "args": ["run"]}},
+            consumes_resources=["http://localdb/users"],
+        )
     )
     result = await evaluate_and_fetch_mcp_context(mock_run_context)
     assert "ERROR: Invalid MCP URI format" in result
@@ -154,13 +156,15 @@ async def test_invalid_mcp_uri_format(mock_run_context: RunContext, tmp_path: Pa
 @pytest.mark.asyncio
 async def test_missing_mcp_server_config(mock_run_context: RunContext, tmp_path: Path) -> None:
     """If server parsed from mcp URI is absent in topology, it appends an inline error."""
-    mock_run_context.topology = TopologyContext(
-        name="test_module",
-        purpose="Testing.",
-        archetype="pure-logic",
-        relationship="self",
-        mcp_servers={"localdb": {"command": "docker", "args": ["run"]}},
-        consumes_resources=["mcp://unknown_db/users"],
+    mock_run_context.graph = GraphContext(
+        topology=TopologyContext(
+            name="test_module",
+            purpose="Testing.",
+            archetype="pure-logic",
+            relationship="self",
+            mcp_servers={"localdb": {"command": "docker", "args": ["run"]}},
+            consumes_resources=["mcp://unknown_db/users"],
+        )
     )
     result = await evaluate_and_fetch_mcp_context(mock_run_context)
     assert "ERROR: Server 'unknown_db' not found in topology bounds" in result
@@ -202,16 +206,18 @@ async def test_empty_contents_payload(mock_run_context: RunContext) -> None:
 @pytest.mark.asyncio
 async def test_multiple_mcp_servers_integration(mock_run_context: RunContext) -> None:
     """Verify that evaluate_and_fetch_mcp_context retrieves strings across multiple distinct MCP servers simultaneously."""
-    mock_run_context.topology = TopologyContext(
-        name="test_module",
-        purpose="Testing.",
-        archetype="pure-logic",
-        relationship="self",
-        mcp_servers={
-            "db_server": {"command": "docker", "args": ["run"]},
-            "api_server": {"command": "docker", "args": ["run_api"]},
-        },
-        consumes_resources=["mcp://db_server/users", "mcp://api_server/schema"],
+    mock_run_context.graph = GraphContext(
+        topology=TopologyContext(
+            name="test_module",
+            purpose="Testing.",
+            archetype="pure-logic",
+            relationship="self",
+            mcp_servers={
+                "db_server": {"command": "docker", "args": ["run"]},
+                "api_server": {"command": "docker", "args": ["run_api"]},
+            },
+            consumes_resources=["mcp://db_server/users", "mcp://api_server/schema"],
+        )
     )
 
     def mock_atom_run_multi(inputs: dict[str, Any]) -> AtomResult:

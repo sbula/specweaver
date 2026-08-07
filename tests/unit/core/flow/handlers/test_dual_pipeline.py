@@ -9,7 +9,13 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.handlers.base import (
+    AnalysisContext,
+    GraphContext,
+    ModelAccess,
+    RunContext,
+    RunHandle,
+)
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 
 
@@ -20,6 +26,7 @@ def run_context():
     # a handler reads has to be a real instance here, not a mock attribute.
     ctx.model = ModelAccess()
     ctx.analysis = AnalysisContext()
+    ctx.graph = GraphContext()
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.run = RunHandle(run_id="test_run_123")

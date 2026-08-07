@@ -8,6 +8,7 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock
 
+from specweaver.core.flow.handlers.base import GraphContext
 from specweaver.core.flow.handlers.generation import GenerateContractHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
@@ -93,7 +94,10 @@ def _make_context(tmp_path: Path, spec_content: str) -> MagicMock:
     ctx = MagicMock()
     ctx.spec_path = spec_file
     ctx.project_path = tmp_path
-    ctx.api_contract_paths = None
+    # A real object, not a mock attribute: the handler rebuilds this via `model_copy`, and
+    # on a MagicMock that just returns another MagicMock, so the test below would assert
+    # against a mock instead of the list the handler actually produced.
+    ctx.graph = GraphContext(api_contract_paths=None)
     return ctx
 
 
@@ -112,9 +116,9 @@ class TestContractHandlerExecute:
         ctx = _make_context(tmp_path, _SAMPLE_SPEC)
         handler = GenerateContractHandler()
         await handler.execute(MagicMock(), ctx)
-        assert ctx.api_contract_paths is not None
-        assert len(ctx.api_contract_paths) == 1
-        assert "greeter_contract.py" in ctx.api_contract_paths[0]
+        assert ctx.graph.api_contract_paths is not None
+        assert len(ctx.graph.api_contract_paths) == 1
+        assert "greeter_contract.py" in ctx.graph.api_contract_paths[0]
 
     async def test_execute_no_contract_section_errors(self, tmp_path: Path) -> None:
         ctx = _make_context(tmp_path, "## 1. Purpose\n\nNo contract here.\n")

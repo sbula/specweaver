@@ -5,7 +5,13 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from specweaver.core.flow.engine.runner_utils import setup_sandbox_caches
-from specweaver.core.flow.handlers.base import AnalysisContext, ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.handlers.base import (
+    AnalysisContext,
+    GraphContext,
+    ModelAccess,
+    RunContext,
+    RunHandle,
+)
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 
@@ -18,6 +24,7 @@ def test_setup_sandbox_caches_uses_file_system_atom(tmp_path: Path) -> None:
     context.run = RunHandle()
     context.model = ModelAccess()
     context.analysis = AnalysisContext()
+    context.graph = GraphContext()
     context.project_path = tmp_path
 
     # Create dummy node_modules to trigger linking

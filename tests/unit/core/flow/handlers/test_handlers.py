@@ -40,7 +40,7 @@ class TestRunContext:
         )
         assert ctx.project_path == tmp_path
         assert ctx.model.llm is None
-        assert ctx.topology is None
+        assert ctx.graph.topology is None
         assert ctx.settings is None
 
     @patch("specweaver.workspace.ast.parsers.factory.get_default_parsers")

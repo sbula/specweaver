@@ -471,7 +471,7 @@ class ValidateTestsHandler:
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:
         """Resolve precise test directories from TopologyGraph stale nodes."""
-        stale_nodes = context.stale_nodes
+        stale_nodes = context.graph.stale_nodes
         if stale_nodes is None or target not in {".", "", "src", "src/", "tests", "tests/"}:
             return [target]
 
