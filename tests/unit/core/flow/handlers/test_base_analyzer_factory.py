@@ -8,8 +8,8 @@ from specweaver.core.flow.handlers.base import AnalysisContext, RunContext
 
 
 def test_run_context_accepts_analyzer_factory():
-    """TECH-006 SF-02 CB3: the DI'd factory now arrives via `analysis`. Same guarantee —
-    what the caller injects is what a handler reads back, by identity."""
+    """The injected factory now arrives via `analysis`. The guarantee is unchanged: what the
+    caller passes in is the very object a handler reads back."""
     dummy_factory = object()
     context = RunContext(
         project_path=Path("/tmp/proj"),

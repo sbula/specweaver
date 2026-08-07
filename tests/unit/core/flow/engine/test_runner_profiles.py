@@ -37,9 +37,8 @@ async def test_pipeline_runner_passes_render_profile_to_handler():
     # 2. Setup runner and context
     from pathlib import Path
 
-    # TECH-006 SF-02 CB1: `workspace_dir` was never a RunContext field — Pydantic's default
-    # `extra="ignore"` silently discarded it since INT-US-04-SF08. FR-12's `extra="forbid"`
-    # surfaced it; dropped, because it never had any effect to preserve.
+    # `workspace_dir` was never a field on this class. It was silently discarded for months;
+    # rejecting unknown kwargs surfaced it. Dropped, because it never did anything.
     context = RunContext(
         project_path=Path("/tmp/workspace/project"),
         spec_path=Path("/tmp/workspace/project/spec.yaml"),

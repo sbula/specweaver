@@ -35,12 +35,10 @@ class MockContext:
     project_path = MockPath()
     spec_path = MockPath()
     db = MagicMock()
-    # TECH-006 SF-02 CB1: `dal_level` moved onto the nested `isolation` policy. It is set here
-    # (as before) purely so `PipelineRunner.__init__` sees a resolved DAL and skips its own
-    # `DALResolver` pass — this duck type has no real project on disk to resolve against.
-    # A REAL `IsolationPolicy` rather than another stand-in: the engine now reads several of
-    # its fields non-defensively (NFR-6), so a partial namespace would only re-break here the
-    # next time one of them is read.
+    # Set only so the runner sees a resolved DAL and skips its own lookup — this stand-in has
+    # no real project on disk to resolve against. A real policy object rather than another
+    # fake: the engine reads several of these fields directly, so a partial stand-in would
+    # just break here again the next time one of them is read.
     isolation = IsolationPolicy(dal_level="DAL_A")
 
 

@@ -90,8 +90,8 @@ def test_run_context_isolation_fields_default(tmp_path: Path) -> None:
     """INT-US-09 T5: execution_root defaults to None (callers fall back to project_path);
     enforce_isolation defaults to False (opt-in policy off).
 
-    TECH-006 SF-02 (FR-6): both now live on the nested `isolation` sub-model. The asserted
-    behaviour is unchanged — only the path to it is.
+    Both now live on the nested `isolation` object. The behaviour asserted here is unchanged;
+    only the path to it is.
     """
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
     assert context.isolation.execution_root is None
@@ -108,8 +108,8 @@ def test_run_context_isolation_fields_default(tmp_path: Path) -> None:
 
 
 class TestIsolationPolicy:
-    """TECH-006 SF-02 CB1 (FR-6, FR-12, NFR-6, NFR-8, AD-8): the five worktree-isolation
-    fields move off `RunContext`'s flat surface into one frozen, extra-forbidding sub-model."""
+    """The five worktree-isolation fields, moved off `RunContext` into one frozen object that
+    also rejects unknown keyword arguments."""
 
     # --- [Happy Path] ------------------------------------------------------
 
@@ -217,9 +217,10 @@ class TestIsolationPolicy:
 
 
 class TestPlanContext:
-    """TECH-006 SF-02 CB2 (FR-6, FR-10, AD-8): the two plan concepts move into one frozen
-    sub-model. INT-US-21 AD-1's rule that they are DISTINCT and must not be reconflated is
-    unchanged by the move — it is now expressed by the sub-model's own shape."""
+    """The two plan documents, moved into one frozen object.
+
+    The rule that they are DIFFERENT things and must not be merged is unchanged by the move —
+    it is now carried by the object's shape and pinned by the tests below."""
 
     # --- [Happy Path] ------------------------------------------------------
 
@@ -285,7 +286,7 @@ class TestPlanContext:
 
 
 class TestModelAccess:
-    """TECH-006 SF-02 CB3 (FR-6): LLM wiring — adapter, settings, and per-task router."""
+    """How a run reaches a language model: adapter, settings, and per-task router."""
 
     def test_defaults_match_the_previous_flat_defaults(self) -> None:
         access = ModelAccess()
@@ -326,7 +327,7 @@ class TestModelAccess:
 
 
 class TestRunHandle:
-    """TECH-006 SF-02 CB3 (FR-6, FR-11): runner-injected identity for this run."""
+    """Who the run is: id, runner, and owning task, all stamped on by the runner."""
 
     def test_defaults_match_the_previous_flat_defaults(self) -> None:
         handle = RunHandle()
@@ -363,7 +364,7 @@ class TestRunHandle:
 
 
 class TestAnalysisContext:
-    """TECH-006 SF-02 CB3 (FR-6, FR-9): DI'd analyzer factory + AST parsers."""
+    """The injected code-analysis tools: an analyzer factory and the AST parsers."""
 
     def test_analyzer_factory_defaults_to_none(self) -> None:
         assert AnalysisContext().analyzer_factory is None

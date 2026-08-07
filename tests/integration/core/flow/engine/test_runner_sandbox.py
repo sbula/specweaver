@@ -287,13 +287,11 @@ async def test_execute_in_sandbox_rebinds_execution_root(
     """T8: execute_in_sandbox sets the isolated context's execution_root to the worktree
     source-tree path (so untrusted-execution handlers bind their cwd there, not project_path).
 
-    TECH-006 SF-02 CB1 (NFR-8) — this is the direct regression test for the shallow-copy
-    corruption bug class. ``execute_in_sandbox`` isolates via ``copy.copy(context)``, which
-    SHARES the ``IsolationPolicy`` instance between the copy and the original. Asserting only
-    "the handler saw a worktree path" would pass even under a naive in-place mutation that
-    corrupted the original context too, so the structural assertions below (a *different*
-    policy instance reached the handler; the original's ``execution_root`` is still None) are
-    the part that actually proves the ``model_copy``-and-reassign discipline was followed.
+    This is the regression test for a specific bug: ``execute_in_sandbox`` isolates with
+    ``copy.copy(context)``, which leaves the copy and the original SHARING one isolation
+    object. Asserting only "the handler saw a worktree path" would still pass if the code
+    edited that shared object and corrupted the original run. The two identity assertions
+    below are what actually prove a fresh object was built and rebound instead.
 
     Parametrised over 0/1/N ``allowed_paths`` to prove the unlisted fields survive the copy
     rather than being reset by the partial update.

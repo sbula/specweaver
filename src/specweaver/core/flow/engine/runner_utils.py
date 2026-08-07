@@ -29,9 +29,9 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     step_val = getattr(step_def, "use_worktree", None)
     if step_val is not None:
         return bool(step_val)
-    # TECH-006 SF-02: policy moved onto `context.isolation`, so the read is now two hops — both
-    # defensive, because this function is duck-typed and callers pass `None`. It cannot mask a
-    # migration miss: `RunContext.isolation` is non-nullable, so a real context always has it.
+    # Two hops, both guarded, because this function is duck-typed and callers do pass `None`
+    # for the context. That cannot hide a mistake: a real context always has `isolation`, so a
+    # missing one here means a stand-in object, not a field someone forgot to rename.
     return bool(getattr(getattr(context, "isolation", None), "enforce_isolation", False))
 
 
@@ -83,9 +83,9 @@ def apply_session_policy(
     C2 (no half-apply): the allow-list is computed BEFORE either field is mutated, so a
     derivation failure leaves the context fully default (session off) rather than the
     dangerous "session on, empty allow-list" state that would drop all generated code.
-    TECH-006 SF-02 strengthens this: both fields now land in ONE ``model_copy``, so the
-    half-applied state is not merely avoided by ordering — it is unrepresentable. Keep it
-    one call; splitting it into two would silently repeal the guarantee.
+    Both fields land in ONE ``model_copy``, so the half-applied state is not merely avoided by
+    careful ordering — it cannot be represented at all. Keep it a single call: splitting it in
+    two quietly brings the danger back.
     Best-effort: never raises (the composition root also wraps this call defensively).
     """
     try:
@@ -208,9 +208,10 @@ async def execute_run(
     isolated = copy.copy(original)
     isolated.project_path = original.project_path / wt_path
     isolated.output_dir = None
-    # NFR-8: `copy.copy` is SHALLOW, so `isolated.isolation` IS `original.isolation`. Rebind the
-    # whole attribute on the copy — mutating a field in place would corrupt the original too
-    # (frozen, so it raises). `enforce_isolation=False`: no per-step isolation nested in a session.
+    # `copy.copy` is SHALLOW, so `isolated.isolation` is literally `original.isolation`. Rebind
+    # the whole attribute on the copy; editing a field in place would change the original run's
+    # isolation too (it is frozen, so that raises rather than corrupting silently).
+    # `enforce_isolation=False`: inside a session worktree, do not nest a per-step one.
     isolated.isolation = isolated.isolation.model_copy(
         update={"execution_root": isolated.project_path, "enforce_isolation": False}
     )
@@ -386,11 +387,9 @@ async def execute_in_sandbox(
 
     atom = GitAtom(cwd=context.project_path)
     clean_pipeline = (context.pipeline_name or "default_pipe").replace(" ", "_")
-    # NOTE: exact prior semantics preserved — this read was `getattr(context, "task_id", ...)`
-    # whose default was unreachable (the attribute always existed), so it resolved to
-    # `context.task_id` and could legitimately be None. CB5 owns the documented improvement
-    # to `task_id or run_id or "default"`; widening it here would smuggle a behaviour change
-    # into a relocation commit.
+    # This can be None, and then the branch below is named "...-None". That is pre-existing
+    # behaviour, kept deliberately: falling back to the run id would be an improvement, but
+    # making it here would hide a behaviour change inside a pure field move.
     task_id = context.run.task_id
     branch = f"sf-{clean_pipeline}-{task_id}"
     wt_path = f".worktrees/{task_id}"
@@ -414,8 +413,8 @@ async def execute_in_sandbox(
     # INT-US-09: rebind the execution root to the worktree source tree so untrusted-
     # execution handlers (bash actions, run_tests) construct their SubprocessExecutor
     # cwd inside the worktree rather than against the real project root.
-    # NFR-8: `copy.copy` is shallow, so rebind the whole `isolation` attribute on the copy
-    # rather than mutating the policy instance both contexts still share.
+    # `copy.copy` is shallow, so rebind the whole `isolation` attribute on the copy rather than
+    # editing the policy object that both contexts still point at.
     isolated_context.isolation = isolated_context.isolation.model_copy(
         update={"execution_root": context.project_path / wt_path}
     )

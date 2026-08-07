@@ -71,9 +71,9 @@ def _evidence(**overrides):
 @pytest.fixture
 def run_context():
     ctx = MagicMock()
-    # TECH-006 SF-02 CB3: real sub-model instances, not mocked attributes. `model_copy` on a
-    # bare MagicMock returns another MagicMock, so the AsyncMock llm would never actually land
-    # on `ctx.model.llm` and the handler would see a non-awaitable stub.
+    # Real objects, not mock attributes: `model_copy` on a bare MagicMock just returns another
+    # MagicMock, so the AsyncMock below would never reach `ctx.model.llm` and the handler
+    # would be handed something it cannot await.
     ctx.run = RunHandle(run_id="test_run")
     ctx.model = ModelAccess(llm=AsyncMock())
     ctx.feedback = {"scenario_test_failures": _evidence()}

@@ -28,27 +28,28 @@ logger = logging.getLogger(__name__)
 
 
 class IsolationPolicy(BaseModel):
-    """TECH-006 SF-02 (FR-6): the run's worktree-isolation policy, resolved at the
-    composition root and read by the engine's sandbox paths.
+    """Whether and where this run executes inside a git worktree instead of the real repo.
 
-    Frozen on purpose (AD-8). ``runner_utils`` isolates a step/session by taking a
-    ``copy.copy(context)`` — a *shallow* copy, so the copy and the original share this
-    instance by reference. Mutating a field here in place would therefore corrupt the
-    original context too. Frozen turns that mistake into an immediate ``ValidationError``
-    instead of silent corruption: update via
-    ``context.isolation = context.isolation.model_copy(update={...})``, which rebinds the
-    whole attribute on one context only (NFR-8).
+    Resolved once at start-up and read by the engine's sandbox paths.
 
-    Caveat: ``frozen`` blocks attribute *reassignment*, not mutation of a mutable value —
-    ``policy.allowed_paths.append(...)`` still works. Nothing in ``src/`` does that (the
-    list is only ever replaced wholesale); do not start.
+    **Frozen deliberately.** ``runner_utils`` isolates a step or a session with
+    ``copy.copy(context)``, which is SHALLOW: the copy and the original then share this one
+    instance. Setting a field on it would silently change the original run's isolation too.
+    Frozen turns that mistake into an immediate error. To change anything here, build a new
+    one and rebind the whole attribute::
+
+        context.isolation = context.isolation.model_copy(update={...})
+
+    Frozen stops the attribute being *replaced*, not the contents of a mutable value being
+    edited — ``policy.allowed_paths.append(...)`` still works and would still leak across the
+    shared copy. Nothing replaces that list piecemeal today; keep it that way.
 
     Attributes:
-        enforce_isolation: INT-US-09 per-step worktree-isolation policy.
-        execution_root: Where untrusted processes bind cwd (worktree); None -> project_path.
-        session_isolation: C-EXEC-06 per-run isolation — the whole run in ONE worktree.
-        allowed_paths: C-EXEC-06 repo-relative paths the end-of-run reconcile may write back.
-        dal_level: DALLevel | None — enforced boundary strictness.
+        enforce_isolation: Run each step in its own worktree.
+        execution_root: Where untrusted processes bind cwd; None means the project root.
+        session_isolation: Run the WHOLE run in one shared worktree instead of one per step.
+        allowed_paths: The only paths the end-of-run merge is permitted to write back.
+        dal_level: How strict the boundary rules are for the code being touched.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -61,17 +62,16 @@ class IsolationPolicy(BaseModel):
 
 
 class PlanContext(BaseModel):
-    """TECH-006 SF-02 (FR-6): the run's two plan artifacts, hydrated by the runner hook.
+    """The two plan documents a run produces, filled in by the runner as steps complete.
 
-    INT-US-21 AD-1: two distinct plan concepts, deliberately on two fields. ``plan`` is the
-    *implementation* PlanArtifact body (spec -> file layout, written by PlanSpecHandler);
-    ``decomposition`` is the *DecompositionPlan* JSON (feature -> components). Both are set by
-    the runner's hydrate_plan_context hook. Do not reconflate them.
+    These are two DIFFERENT things and must never be merged into one field. ``plan`` is the
+    implementation plan — spec to file layout, written by the plan step. ``decomposition`` is
+    the feature-to-components breakdown, as JSON, written by the decompose step. Code that
+    wants one and reads the other will appear to work and be wrong.
 
-    Frozen (AD-8): ``hydration.py`` sets each on success and clears it on FAILED/ERROR via
-    ``context.plan_context = context.plan_context.model_copy(update={...})``. The resulting
-    values are exactly as before (FR-10) — only the write mechanism differs, and a partial
-    update must not disturb the sibling field.
+    Frozen, so both are replaced together via ``model_copy``. A partial update must leave the
+    other field alone: ``hydration.py`` clears exactly one of them when its own step fails,
+    and clearing one must not wipe a plan the other step legitimately produced.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -81,13 +81,13 @@ class PlanContext(BaseModel):
 
 
 class ModelAccess(BaseModel):
-    """TECH-006 SF-02 (FR-6): how this run reaches a language model.
+    """How this run reaches a language model: the adapter, its settings, and the router.
 
-    Every field is ``Any`` to avoid a runtime import across the ``core.flow`` boundary, matching
-    what these fields already were as flat attributes (D-2/D-3 — relocation only).
+    Everything is typed ``Any`` on purpose — importing the real types here would cross a module
+    boundary this package is not allowed to cross.
 
-    Note on the attribute name: Pydantic v2 reserves the ``model_`` *prefix*, not the bare word
-    ``model``, so ``RunContext.model`` is legal. Verified directly rather than assumed.
+    The attribute is called ``model`` on the context, which is safe: Pydantic reserves the
+    ``model_`` prefix, not the bare word.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -98,12 +98,11 @@ class ModelAccess(BaseModel):
 
 
 class RunHandle(BaseModel):
-    """TECH-006 SF-02 (FR-6, FR-11): the run's identity, injected by the runner.
+    """Who this run is: its id, the runner executing it, and the task it belongs to.
 
-    ``run_id`` is re-stamped on every step iteration, so partial updates via ``model_copy`` must
-    leave ``pipeline_runner`` intact — the fan-out in ``decompose.py``/``dual_pipeline.py``
-    reaches through it. FR-11 keeps that access pattern exactly as it was; redesigning the
-    fan-out mechanism is explicitly out of SF-02's scope.
+    The runner rewrites ``run_id`` on every step, so any partial update must preserve
+    ``pipeline_runner`` — the fan-out in ``decompose.py`` and ``dual_pipeline.py`` reaches
+    through it to spawn sub-pipelines, and dropping it breaks them with no obvious cause.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -114,13 +113,14 @@ class RunHandle(BaseModel):
 
 
 class AnalysisContext(BaseModel):
-    """TECH-006 SF-02 (FR-6, FR-9): injected code-analysis tooling.
+    """The code-analysis tools a run may use: a language-analyzer factory and AST parsers.
 
-    ``parsers`` is default-injected by ``RunContext.model_post_init`` when not supplied, and that
-    load is best-effort: a failure leaves it ``None`` rather than making the context
-    unconstructible. ``analyzer_factory`` stays ``Any`` (D-2) because
-    ``AnalyzerFactoryProtocol`` lives outside ``core.flow``'s ``consumes`` list — giving it a real
-    runtime import would be a new boundary question, not something this ticket decides.
+    ``parsers`` is filled in automatically when the caller does not supply it, and that load is
+    best-effort — if it fails the field stays ``None`` rather than making the context
+    impossible to build, because most steps never touch a parser.
+
+    ``analyzer_factory`` is typed ``Any`` because its real type lives in a package this one is
+    not permitted to import at runtime.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -130,25 +130,35 @@ class AnalysisContext(BaseModel):
 
 
 class RunContext(BaseModel):
-    """Execution context passed to every step handler.
+    """Everything a pipeline step needs, passed to every handler as one object.
+
+    Related fields are grouped into small frozen sub-models rather than left loose here, so
+    that adding a field means choosing which group it belongs to instead of making this class
+    a little bigger every time.
 
     Attributes:
         project_path: Root directory of the target project.
-        spec_path: Path to the spec being processed.
-        llm: LLM adapter (None for validate-only pipelines).
-        context_provider: For HITL-interactive steps (draft).
-        topology: Project graph topology context.
-        settings: Per-project validation settings/overrides.
-        output_dir: Output directory for generated code/tests.
-        plan: Pre-loaded plan content (populated by runner post-step hook).
-        analyzer_factory: Optional DI injected AnalyzerFactoryProtocol instance.
-        isolation: Worktree-isolation policy for this run (see ``IsolationPolicy``).
+        spec_path: The spec being processed.
+        output_dir: Where generated code and tests are written.
+        isolation: Whether and where this run is sandboxed in a worktree.
+        plan_context: The implementation plan and the feature decomposition.
+        model: The LLM adapter, its settings, and the per-task router.
+        run: This run's id, its runner, and the task it belongs to.
+        analysis: Analyzer factory and AST parsers, when a step needs them.
+        context_provider: Asks a human for input, for interactive steps.
+        topology: The project's dependency graph.
+        settings: Per-project validation settings and overrides.
+        feedback: Messages passed between steps, including loop-back findings.
+        constitution: Pre-loaded project constitution text.
+        standards: Pre-loaded coding standards text.
+        db: Database handle, for telemetry and memory.
+        project_metadata: Computed on construction; describes the project to prompts.
 
-    ``extra="forbid"`` (TECH-006 SF-02, FR-12) is load-bearing, not hygiene: Pydantic's
-    default (``extra="ignore"``) would let a construction site still passing a since-moved
-    flat field silently drop it, leaving the run on a default policy with no error. Forbid
-    turns every missed migration into a ``ValidationError`` at construction, matching the
-    ``AttributeError`` an unmigrated *read* already raises (NFR-6).
+    Unknown keyword arguments are REJECTED, which is load-bearing rather than tidiness. The
+    default Pydantic behaviour silently discards them, so a caller still passing a field that
+    has since moved into one of the sub-models would build a context with that value quietly
+    missing and no error anywhere. Rejecting them makes such a call fail at construction, the
+    same way reading a moved field already fails at the attribute.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")

@@ -84,17 +84,17 @@ async def test_scenario_pipeline_end_to_end_integration(
     mock_llm.generate.return_value = json.dumps(valid_response)
 
     ctx = MagicMock(spec=RunContext)
-    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
-    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    # `MagicMock(spec=RunContext)` exposes no Pydantic model fields at all, so any sub-model
+    # a handler reads has to be a real instance here, not a mock attribute.
     ctx.run = RunHandle()
     ctx.analysis = AnalysisContext()
-    # TECH-006 SF-02 CB1: spec'd mocks do not auto-create attributes, and the runner reads
-    # `isolation.dal_level` at construction. A real IsolationPolicy keeps this honest.
+    # Spec'd mocks do not invent attributes, and the runner reads `isolation.dal_level` while
+    # constructing. A real policy object keeps this honest.
     ctx.isolation = IsolationPolicy(dal_level=None)
     ctx.spec_path = project_workspace / "specs" / "auth_spec.md"
     ctx.project_path = project_workspace
-    # TECH-006 SF-02 CB3: `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields,
-    # so the sub-model must be a REAL instance rather than a mocked attribute.
+    # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
+    # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.model = ModelAccess(llm=mock_llm, config=None, llm_router=None)
     ctx.api_contract_paths = [str(project_workspace / "contracts" / "auth_contract.py")]
     ctx.constitution = None

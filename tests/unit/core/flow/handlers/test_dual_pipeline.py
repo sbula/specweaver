@@ -16,12 +16,12 @@ from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHan
 @pytest.fixture
 def run_context():
     ctx = MagicMock(spec=RunContext)
-    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
-    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    # `MagicMock(spec=RunContext)` exposes no Pydantic model fields at all, so any sub-model
+    # a handler reads has to be a real instance here, not a mock attribute.
     ctx.model = ModelAccess()
     ctx.analysis = AnalysisContext()
-    # TECH-006 SF-02 CB3: `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields,
-    # so the sub-model must be a REAL instance rather than a mocked attribute.
+    # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
+    # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.run = RunHandle(run_id="test_run_123")
     ctx.spec_path = Path("/mock/project/specs/login_spec.md")
     # Need to mock the pipeline_runner and its components

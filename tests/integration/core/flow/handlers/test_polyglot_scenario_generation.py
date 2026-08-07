@@ -54,8 +54,8 @@ scenarios:
     scenario_yaml_path.write_text(yaml_data, encoding="utf-8")
 
     ctx = MagicMock(spec=RunContext)
-    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
-    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    # `MagicMock(spec=RunContext)` exposes no Pydantic model fields at all, so any sub-model
+    # a handler reads has to be a real instance here, not a mock attribute.
     ctx.run = RunHandle()
     ctx.model = ModelAccess()
     ctx.analysis = AnalysisContext()

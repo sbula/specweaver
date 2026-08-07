@@ -17,11 +17,10 @@ class TestResolveShouldIsolate:
     missing attribute) defers to `context.isolation.enforce_isolation`; every read is
     defensive.
 
-    TECH-006 SF-02 CB1: the policy moved onto a nested `isolation` sub-model, so the read
-    is now a two-hop `getattr`. That splits the single "attribute absent" case this class
-    used to have into three structurally distinct absence shapes — all three are covered
-    below deliberately, because a mechanical one-for-one reshape would have kept the suite
-    green while silently testing only the last of them."""
+    The policy now sits on a nested object, so the read is a two-hop `getattr`. That turns
+    the single "attribute missing" case this class used to have into three genuinely
+    different ones, all covered below on purpose: a like-for-like rewrite would have stayed
+    green while only ever exercising the last of them."""
 
     # --- [Happy Path] None defers to the policy ---
 
@@ -65,9 +64,9 @@ class TestResolveShouldIsolate:
 
     # --- [Graceful Degradation / Hostile] missing attributes must never raise ---
 
-    # TECH-006 SF-02 CB1: at the nested path there are THREE distinct absence shapes where
-    # there used to be one. Each gets its own test — the two-hop `getattr` has two places to
-    # fail, and only the third shape is what a naive reshape of the old test would produce.
+    # Three different ways the value can be absent, where there used to be one. Each gets its
+    # own test: the two-hop read has two places to fail, and only the third is what a
+    # like-for-like rewrite of the old single test would have produced.
 
     def test_context_missing_isolation_entirely_defaults_host(self) -> None:
         # Shape 1: no `isolation` attribute at all → host, no AttributeError.

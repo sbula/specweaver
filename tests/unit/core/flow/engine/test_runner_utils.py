@@ -13,8 +13,8 @@ def test_setup_sandbox_caches_uses_file_system_atom(tmp_path: Path) -> None:
     """Test that setup_sandbox_caches uses FileSystemAtom for safe linking."""
     # Create mock context
     context = MagicMock(spec=RunContext)
-    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
-    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    # `MagicMock(spec=RunContext)` exposes no Pydantic model fields at all, so any sub-model
+    # a handler reads has to be a real instance here, not a mock attribute.
     context.run = RunHandle()
     context.model = ModelAccess()
     context.analysis = AnalysisContext()

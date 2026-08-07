@@ -41,14 +41,14 @@ def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:
     contract_path.write_text("class AuthProtocol: ...", encoding="utf-8")
 
     ctx = MagicMock(spec=RunContext)
-    # `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields, so every
-    # sub-model a handler reads must be a real instance (TECH-006 SF-02 CB3).
+    # `MagicMock(spec=RunContext)` exposes no Pydantic model fields at all, so any sub-model
+    # a handler reads has to be a real instance here, not a mock attribute.
     ctx.run = RunHandle()
     ctx.analysis = AnalysisContext()
     ctx.spec_path = spec_path
     ctx.project_path = tmp_path
-    # TECH-006 SF-02 CB3: `MagicMock(spec=RunContext)` exposes no Pydantic v2 model fields,
-    # so the sub-model must be a REAL instance rather than a mocked attribute.
+    # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
+    # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.model = ModelAccess(llm=llm, config=None, llm_router=None)
     ctx.api_contract_paths = [str(contract_path)]
     ctx.constitution = None
