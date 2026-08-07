@@ -24,8 +24,6 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any
 
-import pytest
-
 from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
@@ -318,8 +316,11 @@ class TestApprovalNegatives:
 
         db = tmp_path / ".specweaver" / "reservations.db"
         db.parent.mkdir(parents=True, exist_ok=True)
+        # Must match the resource the gate actually asks for, which is keyed on THIS pipeline's
+        # name. It used to read a context field nothing ever set, so every pipeline collided on
+        # one shared "default_pipeline" entry.
         SQLiteReservationSystem(db).acquire(
-            resource_id="pipeline:default_pipeline", run_id="someone-else", timeout_seconds=3600
+            resource_id="pipeline:p", run_id="someone-else", timeout_seconds=3600
         )
 
         run1 = asyncio.run(
@@ -330,8 +331,10 @@ class TestApprovalNegatives:
                 store=store,
             ).run()
         )
-        if run1.status != RunStatus.PARKED:
-            pytest.skip("reservation did not collide in this environment")
+        # No skip-if-it-did-not-collide escape hatch: the collision is deterministic now that the
+        # seeded resource matches the one the gate requests. That hatch previously turned a real
+        # behaviour change into a silent skip.
+        assert run1.status == RunStatus.PARKED
         assert run1.step_records[0].result.status == StepStatus.PENDING
 
         second = _Counting(components=[])
